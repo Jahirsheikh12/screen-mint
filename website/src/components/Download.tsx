@@ -111,8 +111,10 @@ function PlatformIcon({ platform }: { platform: string }) {
 export function Download() {
 	const [platform, setPlatform] = useState<Platform>("unknown");
 	const [macArchitecture, setMacArchitecture] = useState<MacArchitecture>("unknown");
+	const [macMenuOpen, setMacMenuOpen] = useState(false);
 	const [xattrCopied, setXattrCopied] = useState(false);
 	const sectionRef = useRef<HTMLElement>(null);
+	const macMenuRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
 		const detectedPlatform = detectPlatform();
@@ -195,6 +197,28 @@ export function Download() {
 		return () => ctx.revert();
 	}, []);
 
+	useEffect(() => {
+		const handlePointerDown = (event: MouseEvent) => {
+			if (!macMenuRef.current?.contains(event.target as Node)) {
+				setMacMenuOpen(false);
+			}
+		};
+
+		const handleEscape = (event: KeyboardEvent) => {
+			if (event.key === "Escape") {
+				setMacMenuOpen(false);
+			}
+		};
+
+		document.addEventListener("mousedown", handlePointerDown);
+		document.addEventListener("keydown", handleEscape);
+
+		return () => {
+			document.removeEventListener("mousedown", handlePointerDown);
+			document.removeEventListener("keydown", handleEscape);
+		};
+	}, []);
+
 	const handleCopyXattr = async () => {
 		try {
 			await navigator.clipboard.writeText(XATTR_COMMAND);
@@ -205,14 +229,14 @@ export function Download() {
 		}
 	};
 
-	const macButtons = [
+	const macOptions = [
 		{
 			...downloadTargets.macAppleSilicon,
-			emphasized: macArchitecture === "apple-silicon" || macArchitecture === "unknown",
+			recommended: macArchitecture === "apple-silicon",
 		},
 		{
 			...downloadTargets.macIntel,
-			emphasized: macArchitecture === "intel",
+			recommended: macArchitecture === "intel",
 		},
 	];
 
@@ -223,12 +247,83 @@ export function Download() {
 				? downloadTargets.linux
 				: null;
 
-	const allBuilds = [
-		downloadTargets.macAppleSilicon,
-		downloadTargets.macIntel,
-		downloadTargets.windows,
-		downloadTargets.linux,
-	];
+	const secondaryTargets =
+		platform === "windows"
+			? [downloadTargets.linux]
+			: platform === "linux"
+				? [downloadTargets.windows]
+				: platform === "macos"
+					? [downloadTargets.windows, downloadTargets.linux]
+					: [downloadTargets.windows, downloadTargets.linux];
+
+	const macRecommendationText =
+		macArchitecture === "apple-silicon"
+			? "Apple Silicon detected. The menu will recommend the right build."
+			: macArchitecture === "intel"
+				? "Intel Mac detected. The menu will recommend the right build."
+				: "Click once, then choose Apple Silicon or Intel from the menu.";
+
+	const renderMacDownloadMenu = (compact = false) => (
+		<div
+			ref={macMenuRef}
+			className={compact ? "relative" : "relative mx-auto mb-10 max-w-md"}
+		>
+			<button
+				type="button"
+				onClick={() => setMacMenuOpen((open) => !open)}
+				className={
+					compact
+						? "flex w-full items-center justify-center gap-2.5 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-4 text-[14px] text-[#d2d2d7] hover:text-[#f5f5f7] hover:border-white/[0.14] hover:bg-white/[0.05] transition-colors duration-300"
+						: "group inline-flex w-full items-center justify-center gap-3 rounded-full bg-brand-500 px-10 py-5 text-lg font-semibold text-white shadow-[0_0_40px_rgba(16,185,129,0.2)] transition-all duration-300 hover:bg-brand-400 active:scale-[0.97]"
+				}
+				aria-haspopup="menu"
+				aria-expanded={macMenuOpen}
+			>
+				<PlatformIcon platform="apple" />
+				<span>{compact ? "macOS" : "Download for macOS"}</span>
+				<svg
+					width="16"
+					height="16"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					strokeWidth="2.5"
+					strokeLinecap="round"
+					strokeLinejoin="round"
+					className={`transition-transform duration-300 ${macMenuOpen ? "rotate-180" : ""}`}
+				>
+					<polyline points="6 9 12 15 18 9" />
+				</svg>
+			</button>
+
+			{macMenuOpen ? (
+				<div
+					className="absolute left-0 right-0 top-[calc(100%+14px)] z-20 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#101011]/95 p-2 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl"
+					role="menu"
+				>
+					{macOptions.map((target) => (
+						<a
+							key={target.shortLabel}
+							href={target.href}
+							onClick={() => setMacMenuOpen(false)}
+							className="flex items-center justify-between gap-4 rounded-xl px-4 py-3 text-left text-[#f5f5f7] transition-colors duration-200 hover:bg-white/[0.06]"
+							role="menuitem"
+						>
+							<div>
+								<p className="text-[15px] font-semibold">{target.shortLabel}</p>
+								<p className="text-[12px] text-[#86868b]">{target.note}</p>
+							</div>
+							{target.recommended ? (
+								<span className="rounded-full border border-brand-500/20 bg-brand-500/[0.12] px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-brand-300">
+									Recommended
+								</span>
+							) : null}
+						</a>
+					))}
+				</div>
+			) : null}
+		</div>
+	);
 
 	return (
 		<section
@@ -263,33 +358,11 @@ export function Download() {
 									Download For macOS
 								</p>
 								<h3 className="text-2xl md:text-3xl font-semibold text-[#f5f5f7]">
-									Choose the build that matches your Mac
+									One click, then choose your Mac
 								</h3>
-								<p className="text-[13px] text-[#86868b]/80 mt-3">
-									{macArchitecture === "apple-silicon"
-										? "Apple Silicon detected. The recommended build is highlighted."
-										: macArchitecture === "intel"
-											? "Intel Mac detected. The recommended build is highlighted."
-											: "Apple Silicon and Intel downloads are both available below."}
-								</p>
+								<p className="text-[13px] text-[#86868b]/80 mt-3">{macRecommendationText}</p>
 							</div>
-
-							<div className="grid gap-4 md:grid-cols-2 mb-10">
-								{macButtons.map((target) => (
-									<a
-										key={target.shortLabel}
-										href={target.href}
-										className={`group inline-flex items-center justify-center gap-3 px-6 py-5 rounded-2xl text-base font-semibold transition-all duration-300 ${
-											target.emphasized
-												? "bg-brand-500 text-white hover:bg-brand-400 shadow-[0_0_40px_rgba(16,185,129,0.2)]"
-												: "border border-white/[0.08] bg-white/[0.02] text-[#f5f5f7] hover:border-white/[0.18] hover:bg-white/[0.05]"
-										}`}
-									>
-										<PlatformIcon platform={target.icon} />
-										<span>Download for {target.shortLabel}</span>
-									</a>
-								))}
-							</div>
+							{renderMacDownloadMenu()}
 							<p className="text-[13px] text-[#86868b]/60 mb-10">
 								{downloadTargets.macAppleSilicon.note}
 							</p>
@@ -328,13 +401,14 @@ export function Download() {
 								Choose your installer
 							</h3>
 							<p className="text-[13px] text-[#86868b]/80">
-								Direct downloads are available for Apple Silicon, Intel Mac, Windows, and Linux.
+								Use the direct download that matches your system.
 							</p>
 						</div>
 					)}
 
-					<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4 mb-10">
-						{allBuilds.map((target) => (
+					<div className="grid gap-3 md:grid-cols-3 mb-10">
+						{platform === "macos" ? null : renderMacDownloadMenu(true)}
+						{secondaryTargets.map((target) => (
 							<a
 								key={target.label}
 								href={target.href}
