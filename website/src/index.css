@@ -1,0 +1,155 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	* {
+		box-sizing: border-box;
+	}
+
+	html {
+		scroll-behavior: smooth;
+	}
+
+	body {
+		font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display",
+			"SF Pro Text", sans-serif;
+		overflow-x: hidden;
+		background: #1d1d1f;
+		color: #f5f5f7;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+	}
+
+	::selection {
+		background: rgba(16, 185, 129, 0.3);
+	}
+}
+
+/* ── Feature card glow border on hover ── */
+.feature-card {
+	position: relative;
+}
+
+.feature-card::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	padding: 1px;
+	background: linear-gradient(135deg, transparent 0%, transparent 100%);
+	-webkit-mask: linear-gradient(#fff 0 0) content-box,
+		linear-gradient(#fff 0 0);
+	-webkit-mask-composite: xor;
+	mask-composite: exclude;
+	transition: background 0.6s ease;
+	pointer-events: none;
+}
+
+.feature-card:hover::before {
+	background: linear-gradient(
+		135deg,
+		rgba(16, 185, 129, 0.4) 0%,
+		rgba(5, 150, 105, 0.15) 100%
+	);
+}
+
+/* ── Command copy button ── */
+.command-copy {
+	opacity: 0;
+	transition: opacity 0.2s;
+}
+.command-block:hover .command-copy {
+	opacity: 1;
+}
+
+/* ── Smooth scrollbar ── */
+::-webkit-scrollbar {
+	width: 6px;
+}
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.08);
+	border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+	background: rgba(255, 255, 255, 0.15);
+}
+
+/* ── Pulse animation for badges ── */
+@keyframes pulse-ring {
+	0% {
+		box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+	}
+	70% {
+		box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+	}
+	100% {
+		box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+	}
+}
+.pulse-ring {
+	animation: pulse-ring 2s ease-out infinite;
+}
+
+/* ── Dot grid ── */
+.dot-grid {
+	background-image: radial-gradient(
+		rgba(255, 255, 255, 0.04) 1px,
+		transparent 1px
+	);
+	background-size: 32px 32px;
+}
+
+/* ── Section divider ── */
+.section-divider {
+	height: 1px;
+	background: linear-gradient(
+		90deg,
+		transparent,
+		rgba(255, 255, 255, 0.06) 50%,
+		transparent
+	);
+}
+
+/* ── Smooth fade-in animation helper ── */
+.will-animate {
+	will-change: transform, opacity;
+}
+
+/* ── FAQ accordion ── */
+.faq-answer {
+	display: grid;
+	grid-template-rows: 0fr;
+	transition: grid-template-rows 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.faq-answer.open {
+	grid-template-rows: 1fr;
+}
+.faq-answer > div {
+	overflow: hidden;
+}
+
+/* ── Apple-style large section headings ── */
+.section-eyebrow {
+	font-size: 17px;
+	font-weight: 600;
+	letter-spacing: -0.01em;
+	color: #10b981;
+}
+
+.section-headline {
+	font-size: clamp(2rem, 5vw, 3.5rem);
+	font-weight: 700;
+	letter-spacing: -0.025em;
+	line-height: 1.1;
+	color: #f5f5f7;
+}
+
+.section-copy {
+	font-size: clamp(1rem, 1.5vw, 1.25rem);
+	line-height: 1.6;
+	color: rgba(245, 245, 247, 0.4);
+}

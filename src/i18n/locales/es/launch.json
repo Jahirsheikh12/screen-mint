@@ -1,0 +1,40 @@
+{
+	"recording": {
+		"disableSystemAudio": "Desactivar audio del sistema",
+		"enableSystemAudio": "Activar audio del sistema",
+		"disableMicrophone": "Desactivar micrófono",
+		"enableMicrophone": "Activar micrófono",
+		"countdownDelay": "Retraso de cuenta regresiva",
+		"noDelay": "Sin retraso",
+		"record": "Grabar",
+		"recordingFolder": "Carpeta de grabaciones: {{path}}",
+		"chooseRecordingsFolder": "Elegir carpeta de grabaciones",
+		"folderPath": "Ruta: /{{name}}/",
+		"openVideoFile": "Abrir archivo de video",
+		"openProject": "Abrir proyecto",
+		"hideHudFromVideo": "Ocultar HUD en la grabación",
+		"showHudInVideo": "Mostrar HUD en la grabación",
+		"hideHud": "Ocultar HUD",
+		"closeApp": "Cerrar aplicación"
+	},
+	"sourceSelector": {
+		"loadingSources": "Cargando fuentes...",
+		"screens": "Pantallas",
+		"windows": "Ventanas",
+		"windowsNote": "Solo se pueden grabar las ventanas visibles (no minimizadas).",
+		"windowPlaceholder": "Ventana",
+		"cancel": "Cancelar",
+		"share": "Compartir"
+	},
+	"permissions": {
+		"screenRecordingNeeded": "ScreenMint necesita permiso de grabación de pantalla antes de comenzar. Se ha abierto Configuración del sistema. Después de habilitarlo, cierra y vuelve a abrir ScreenMint.",
+		"screenRecordingMissing": "El permiso de grabación de pantalla aún falta. Se ha abierto Configuración del sistema nuevamente. Habilítalo, luego cierra y vuelve a abrir ScreenMint antes de grabar.",
+		"accessibilityNeeded": "ScreenMint también necesita permiso de accesibilidad para el seguimiento del cursor. Se ha abierto Configuración del sistema. Después de habilitarlo, cierra y vuelve a abrir ScreenMint.",
+		"accessibilityMissing": "El permiso de accesibilidad aún falta. Se ha abierto Configuración del sistema nuevamente. Habilítalo, luego cierra y vuelve a abrir ScreenMint antes de grabar.",
+		"selectSource": "Por favor selecciona una fuente para grabar",
+		"systemAudioUnavailable": "El audio del sistema no está disponible para esta fuente. La grabación continuará sin audio del sistema.",
+		"microphoneDenied": "Se denegó el acceso al micrófono. La grabación continuará sin audio del micrófono.",
+		"failedToStart": "Error al iniciar la grabación: {{error}}",
+		"failedToStartGeneric": "Error al iniciar la grabación"
+	}
+}

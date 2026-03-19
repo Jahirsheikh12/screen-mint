@@ -1,0 +1,18 @@
+{
+	"app": {
+		"name": "ScreenMint",
+		"editorTitle": "Editor de ScreenMint",
+		"subtitle": "Grabación de pantalla y edición"
+	},
+	"actions": {
+		"cancel": "Cancelar",
+		"save": "Guardar",
+		"delete": "Eliminar",
+		"done": "Hecho"
+	},
+	"errors": {
+		"invalidFileType": "Tipo de archivo inválido",
+		"failedToUploadImage": "Error al subir la imagen",
+		"fileReadError": "Hubo un error al leer el archivo."
+	}
+}
