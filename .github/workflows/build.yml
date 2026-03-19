@@ -1,7 +1,9 @@
-
 name: Build ScreenMint App
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -10,23 +12,21 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '22'
-          
+          node-version: "22"
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Install app dependencies
         run: npx electron-builder install-app-deps
-        
+
       - name: Build Windows app
         run: npm run build:win
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        
+
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:
@@ -43,12 +43,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '22'
+          node-version: "22"
 
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install dependencies
         run: npm ci
@@ -58,8 +58,6 @@ jobs:
 
       - name: Build macOS app
         run: npm run build:mac
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload macOS build
         uses: actions/upload-artifact@v4
@@ -77,7 +75,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '22'
+          node-version: "22"
 
       - name: Install dependencies
         run: npm ci
@@ -87,8 +85,6 @@ jobs:
 
       - name: Build Linux app
         run: npm run build:linux
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Linux build
         uses: actions/upload-artifact@v4
@@ -96,4 +92,3 @@ jobs:
           name: linux-installer
           path: release/**/*.AppImage
           retention-days: 30
-
