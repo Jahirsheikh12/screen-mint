@@ -1,0 +1,42 @@
+name: Website Checks
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/release.yml"
+      - ".github/workflows/website-checks.yml"
+      - "website/**"
+  pull_request:
+    paths:
+      - ".github/workflows/release.yml"
+      - ".github/workflows/website-checks.yml"
+      - "website/**"
+  workflow_dispatch:
+
+jobs:
+  website:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install website dependencies
+        run: npm ci
+
+      - name: Validate download links
+        run: npm run check:downloads
+
+      - name: Build website
+        run: npm run build

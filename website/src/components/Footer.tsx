@@ -1,3 +1,5 @@
+import { CONTRIBUTING_URL, LICENSE_URL, REPO_URL } from "../lib/links";
+
 export function Footer() {
 	return (
 		<footer className="border-t border-white/[0.04] bg-[#1d1d1f]">
@@ -59,7 +61,7 @@ export function Footer() {
 								Community
 							</span>
 							<a
-								href="https://github.com/Jahirsheikh12/screenmint"
+								href={REPO_URL}
 								target="_blank"
 								rel="noopener noreferrer"
 								className="text-[13px] text-white/35 hover:text-white/60 transition-colors"
@@ -67,7 +69,7 @@ export function Footer() {
 								GitHub
 							</a>
 							<a
-								href="https://github.com/Jahirsheikh12/screenmint/blob/main/LICENSE"
+								href={LICENSE_URL}
 								target="_blank"
 								rel="noopener noreferrer"
 								className="text-[13px] text-white/35 hover:text-white/60 transition-colors"
@@ -75,7 +77,7 @@ export function Footer() {
 								License
 							</a>
 							<a
-								href="https://github.com/Jahirsheikh12/screenmint/blob/main/CONTRIBUTING.md"
+								href={CONTRIBUTING_URL}
 								target="_blank"
 								rel="noopener noreferrer"
 								className="text-[13px] text-white/35 hover:text-white/60 transition-colors"

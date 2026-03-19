@@ -9,11 +9,11 @@ const commands = [
 	},
 	{
 		label: "Windows (EXE)",
-		command: "start ScreenMint.exe",
+		command: "start ScreenMint-windows-x64.exe",
 	},
 	{
 		label: "Linux (AppImage)",
-		command: "chmod +x ScreenMint.AppImage && ./ScreenMint.AppImage",
+		command: "chmod +x ScreenMint-linux-x64.AppImage && ./ScreenMint-linux-x64.AppImage",
 	},
 ];
 

@@ -1,6 +1,7 @@
 import gsap from "gsap";
 import { useEffect, useRef } from "react";
 import { prefersReducedMotion } from "../hooks/useGSAP";
+import { REPO_URL } from "../lib/links";
 
 export function Hero() {
 	const sectionRef = useRef<HTMLElement>(null);
@@ -163,7 +164,7 @@ export function Hero() {
 						Download for Free
 					</a>
 					<a
-						href="https://github.com/Jahirsheikh12/screenmint"
+						href={REPO_URL}
 						target="_blank"
 						rel="noopener noreferrer"
 						className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full border border-white/[0.12] text-white/70 font-medium text-[15px] hover:border-white/25 hover:text-white hover:bg-white/[0.04] transition-all duration-300"

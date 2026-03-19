@@ -1,6 +1,7 @@
 import gsap from "gsap";
 import { useEffect, useRef, useState } from "react";
 import { prefersReducedMotion } from "../hooks/useGSAP";
+import { REPO_URL } from "../lib/links";
 
 export function Navbar() {
 	const [scrolled, setScrolled] = useState(false);
@@ -155,7 +156,7 @@ export function Navbar() {
 						FAQ
 					</a>
 					<a
-						href="https://github.com/Jahirsheikh12/screenmint"
+						href={REPO_URL}
 						target="_blank"
 						rel="noopener noreferrer"
 						className="px-3 py-1.5 text-[13px] text-white/40 hover:text-white transition-colors rounded-full hover:bg-white/[0.04]"
@@ -256,7 +257,7 @@ export function Navbar() {
 						FAQ
 					</a>
 					<a
-						href="https://github.com/Jahirsheikh12/screenmint"
+						href={REPO_URL}
 						target="_blank"
 						rel="noopener noreferrer"
 						onClick={() => setMobileOpen(false)}

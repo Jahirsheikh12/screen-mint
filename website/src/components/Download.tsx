@@ -1,10 +1,50 @@
 import gsap from "gsap";
 import { useEffect, useRef, useState } from "react";
 import { prefersReducedMotion } from "../hooks/useGSAP";
+import { DOWNLOAD_LINKS, REPO_URL } from "../lib/links";
 
 type Platform = "macos" | "windows" | "linux" | "unknown";
+type MacArchitecture = "apple-silicon" | "intel" | "unknown";
+type DownloadTarget = {
+	label: string;
+	shortLabel: string;
+	href: string;
+	icon: string;
+	note: string;
+};
 
 const XATTR_COMMAND = "xattr -cr /Applications/ScreenMint.app";
+
+const downloadTargets = {
+	macAppleSilicon: {
+		label: "macOS (Apple Silicon)",
+		shortLabel: "Apple Silicon",
+		href: DOWNLOAD_LINKS.macAppleSilicon,
+		icon: "apple",
+		note: "macOS 12+ required",
+	},
+	macIntel: {
+		label: "macOS (Intel)",
+		shortLabel: "Intel Mac",
+		href: DOWNLOAD_LINKS.macIntel,
+		icon: "apple",
+		note: "macOS 12+ required",
+	},
+	windows: {
+		label: "Windows",
+		shortLabel: "Windows",
+		href: DOWNLOAD_LINKS.windows,
+		icon: "windows",
+		note: "Windows 10+ required",
+	},
+	linux: {
+		label: "Linux",
+		shortLabel: "Linux",
+		href: DOWNLOAD_LINKS.linux,
+		icon: "linux",
+		note: "AppImage format",
+	},
+} as const satisfies Record<string, DownloadTarget>;
 
 function detectPlatform(): Platform {
 	const ua = navigator.userAgent.toLowerCase();
@@ -14,35 +54,37 @@ function detectPlatform(): Platform {
 	return "unknown";
 }
 
-const platformInfo: Record<
-	Platform,
-	{ label: string; artifact: string; icon: string; note: string }
-> = {
-	macos: {
-		label: "macOS",
-		artifact: "ScreenMint.dmg",
-		icon: "apple",
-		note: "macOS 12+ required",
-	},
-	windows: {
-		label: "Windows",
-		artifact: "ScreenMint.exe",
-		icon: "windows",
-		note: "Windows 10+ required",
-	},
-	linux: {
-		label: "Linux",
-		artifact: "ScreenMint.AppImage",
-		icon: "linux",
-		note: "AppImage format",
-	},
-	unknown: {
-		label: "macOS",
-		artifact: "ScreenMint.dmg",
-		icon: "apple",
-		note: "macOS 12+ required",
-	},
-};
+async function detectMacArchitecture(): Promise<MacArchitecture> {
+	type NavigatorWithUAData = Navigator & {
+		userAgentData?: {
+			getHighEntropyValues?: (
+				hints: string[],
+			) => Promise<{ architecture?: string; platform?: string }>;
+		};
+	};
+
+	const typedNavigator = navigator as NavigatorWithUAData;
+
+	try {
+		const highEntropyValues = await typedNavigator.userAgentData?.getHighEntropyValues?.([
+			"architecture",
+			"platform",
+		]);
+		const architecture = highEntropyValues?.architecture?.toLowerCase();
+
+		if (architecture?.includes("arm")) return "apple-silicon";
+		if (architecture?.includes("x86")) return "intel";
+	} catch {
+		// Fall back to user agent sniffing below.
+	}
+
+	const ua = navigator.userAgent.toLowerCase();
+	if (ua.includes("arm") || ua.includes("aarch64") || ua.includes("apple silicon")) {
+		return "apple-silicon";
+	}
+
+	return "unknown";
+}
 
 function PlatformIcon({ platform }: { platform: string }) {
 	if (platform === "apple") {
@@ -68,11 +110,17 @@ function PlatformIcon({ platform }: { platform: string }) {
 
 export function Download() {
 	const [platform, setPlatform] = useState<Platform>("unknown");
+	const [macArchitecture, setMacArchitecture] = useState<MacArchitecture>("unknown");
 	const [xattrCopied, setXattrCopied] = useState(false);
 	const sectionRef = useRef<HTMLElement>(null);
 
 	useEffect(() => {
-		setPlatform(detectPlatform());
+		const detectedPlatform = detectPlatform();
+		setPlatform(detectedPlatform);
+
+		if (detectedPlatform === "macos") {
+			void detectMacArchitecture().then(setMacArchitecture);
+		}
 	}, []);
 
 	useEffect(() => {
@@ -157,10 +205,30 @@ export function Download() {
 		}
 	};
 
-	const primary = platformInfo[platform] ?? platformInfo.unknown;
-	const others = (["macos", "windows", "linux"] as Platform[]).filter(
-		(p) => p !== platform && p !== "unknown",
-	);
+	const macButtons = [
+		{
+			...downloadTargets.macAppleSilicon,
+			emphasized: macArchitecture === "apple-silicon" || macArchitecture === "unknown",
+		},
+		{
+			...downloadTargets.macIntel,
+			emphasized: macArchitecture === "intel",
+		},
+	];
+
+	const primaryTarget =
+		platform === "windows"
+			? downloadTargets.windows
+			: platform === "linux"
+				? downloadTargets.linux
+				: null;
+
+	const allBuilds = [
+		downloadTargets.macAppleSilicon,
+		downloadTargets.macIntel,
+		downloadTargets.windows,
+		downloadTargets.linux,
+	];
 
 	return (
 		<section
@@ -188,43 +256,92 @@ export function Download() {
 
 				{/* Download card */}
 				<div className="download-card rounded-3xl bg-[#2d2d2f]/50 border border-white/[0.06] p-10 md:p-14 text-center mb-8 will-animate">
-					{/* Primary download */}
-					<a
-						href={`https://github.com/Jahirsheikh12/screenmint/releases/latest/download/${primary.artifact}`}
-						className="group inline-flex items-center gap-3 px-10 py-5 rounded-full bg-brand-500 text-white text-lg font-semibold hover:bg-brand-400 active:scale-[0.97] transition-all duration-300 shadow-[0_0_40px_rgba(16,185,129,0.2)] mb-4"
-					>
-						<PlatformIcon platform={primary.icon} />
-						<span>Download for {primary.label}</span>
-						<svg
-							width="16"
-							height="16"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							strokeWidth="2.5"
-							strokeLinecap="round"
-							strokeLinejoin="round"
-							className="transition-transform duration-300 group-hover:translate-y-0.5"
-						>
-							<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-							<polyline points="7 10 12 15 17 10" />
-							<line x1="12" y1="15" x2="12" y2="3" />
-						</svg>
-					</a>
-					<p className="text-[13px] text-[#86868b]/60 mb-10">
-						{primary.note}
-					</p>
+					{platform === "macos" ? (
+						<>
+							<div className="mb-6">
+								<p className="text-[13px] uppercase tracking-[0.24em] text-brand-400/80 mb-3">
+									Download For macOS
+								</p>
+								<h3 className="text-2xl md:text-3xl font-semibold text-[#f5f5f7]">
+									Choose the build that matches your Mac
+								</h3>
+								<p className="text-[13px] text-[#86868b]/80 mt-3">
+									{macArchitecture === "apple-silicon"
+										? "Apple Silicon detected. The recommended build is highlighted."
+										: macArchitecture === "intel"
+											? "Intel Mac detected. The recommended build is highlighted."
+											: "Apple Silicon and Intel downloads are both available below."}
+								</p>
+							</div>
 
-					{/* Other platforms */}
-					<div className="flex items-center justify-center gap-8 mb-10">
-						{others.map((p) => (
+							<div className="grid gap-4 md:grid-cols-2 mb-10">
+								{macButtons.map((target) => (
+									<a
+										key={target.shortLabel}
+										href={target.href}
+										className={`group inline-flex items-center justify-center gap-3 px-6 py-5 rounded-2xl text-base font-semibold transition-all duration-300 ${
+											target.emphasized
+												? "bg-brand-500 text-white hover:bg-brand-400 shadow-[0_0_40px_rgba(16,185,129,0.2)]"
+												: "border border-white/[0.08] bg-white/[0.02] text-[#f5f5f7] hover:border-white/[0.18] hover:bg-white/[0.05]"
+										}`}
+									>
+										<PlatformIcon platform={target.icon} />
+										<span>Download for {target.shortLabel}</span>
+									</a>
+								))}
+							</div>
+							<p className="text-[13px] text-[#86868b]/60 mb-10">
+								{downloadTargets.macAppleSilicon.note}
+							</p>
+						</>
+					) : primaryTarget ? (
+						<>
 							<a
-								key={p}
-								href={`https://github.com/Jahirsheikh12/screenmint/releases/latest/download/${platformInfo[p].artifact}`}
-								className="flex items-center gap-2.5 text-[14px] text-[#86868b] hover:text-[#f5f5f7] transition-colors duration-300"
+								href={primaryTarget.href}
+								className="group inline-flex items-center gap-3 px-10 py-5 rounded-full bg-brand-500 text-white text-lg font-semibold hover:bg-brand-400 active:scale-[0.97] transition-all duration-300 shadow-[0_0_40px_rgba(16,185,129,0.2)] mb-4"
 							>
-								<PlatformIcon platform={platformInfo[p].icon} />
-								{platformInfo[p].label}
+								<PlatformIcon platform={primaryTarget.icon} />
+								<span>Download for {primaryTarget.label}</span>
+								<svg
+									width="16"
+									height="16"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									strokeWidth="2.5"
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									className="transition-transform duration-300 group-hover:translate-y-0.5"
+								>
+									<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+									<polyline points="7 10 12 15 17 10" />
+									<line x1="12" y1="15" x2="12" y2="3" />
+								</svg>
+							</a>
+							<p className="text-[13px] text-[#86868b]/60 mb-10">
+								{primaryTarget.note}
+							</p>
+						</>
+					) : (
+						<div className="mb-10">
+							<h3 className="text-2xl md:text-3xl font-semibold text-[#f5f5f7] mb-3">
+								Choose your installer
+							</h3>
+							<p className="text-[13px] text-[#86868b]/80">
+								Direct downloads are available for Apple Silicon, Intel Mac, Windows, and Linux.
+							</p>
+						</div>
+					)}
+
+					<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4 mb-10">
+						{allBuilds.map((target) => (
+							<a
+								key={target.label}
+								href={target.href}
+								className="flex items-center justify-center gap-2.5 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-4 text-[14px] text-[#d2d2d7] hover:text-[#f5f5f7] hover:border-white/[0.14] hover:bg-white/[0.05] transition-colors duration-300"
+							>
+								<PlatformIcon platform={target.icon} />
+								<span>{target.label}</span>
 							</a>
 						))}
 					</div>
@@ -262,7 +379,7 @@ export function Download() {
 							No Watermarks
 						</span>
 						<a
-							href="https://github.com/Jahirsheikh12/screenmint"
+							href={REPO_URL}
 							target="_blank"
 							rel="noopener noreferrer"
 							className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-white/[0.06] bg-white/[0.02] text-[#86868b] text-[13px] font-medium hover:text-[#f5f5f7] transition-colors duration-300"
