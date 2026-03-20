@@ -1,6 +1,6 @@
-import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useEffect, useRef } from "react";
 import { prefersReducedMotion } from "../hooks/useGSAP";
 
 const features = [
@@ -219,28 +219,21 @@ export function Features() {
 	}, []);
 
 	return (
-		<section
-			ref={sectionRef}
-			id="features"
-			className="relative py-32 md:py-40 px-6"
-		>
+		<section ref={sectionRef} id="features" className="relative py-32 md:py-40 px-6">
 			{/* Divider */}
 			<div className="section-divider max-w-6xl mx-auto mb-32" />
 
 			<div className="max-w-6xl mx-auto">
 				{/* Heading */}
 				<div className="text-center mb-20">
-					<p className="features-eyebrow section-eyebrow mb-4 will-animate">
-						Features
-					</p>
+					<p className="features-eyebrow section-eyebrow mb-4 will-animate">Features</p>
 					<h2 className="features-headline section-headline mb-6 will-animate">
 						Everything you need.
 						<br />
 						Nothing you don&apos;t.
 					</h2>
 					<p className="features-copy section-copy max-w-lg mx-auto will-animate">
-						Record, edit, and export polished screen recordings. All
-						in one app, all for free.
+						Record, edit, and export polished screen recordings. All in one app, all for free.
 					</p>
 				</div>
 
@@ -268,13 +261,9 @@ export function Features() {
 									<div className="w-9 h-9 rounded-xl bg-brand-500/10 border border-brand-500/15 flex items-center justify-center text-brand-400 group-hover:text-brand-300 transition-colors duration-300 flex-shrink-0">
 										{feature.icon}
 									</div>
-									<h3 className="text-[16px] font-semibold text-[#f5f5f7]">
-										{feature.title}
-									</h3>
+									<h3 className="text-[16px] font-semibold text-[#f5f5f7]">{feature.title}</h3>
 								</div>
-								<p className="text-[14px] text-[#86868b] leading-relaxed">
-									{feature.description}
-								</p>
+								<p className="text-[14px] text-[#86868b] leading-relaxed">{feature.description}</p>
 							</div>
 						</div>
 					))}

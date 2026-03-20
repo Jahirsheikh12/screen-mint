@@ -15,7 +15,16 @@
 		"hideHudFromVideo": "在录制中隐藏 HUD",
 		"showHudInVideo": "在录制中显示 HUD",
 		"hideHud": "隐藏 HUD",
-		"closeApp": "关闭应用"
+		"closeApp": "关闭应用",
+		"disableWebcam": "禁用摄像头",
+		"enableWebcam": "启用摄像头",
+		"selectCamera": "选择摄像头",
+		"cameraOff": "关闭",
+		"cameraOn": "摄像头已开启",
+		"cameraLabelFallback": "摄像头",
+		"noCameraFound": "未找到摄像头",
+		"hideCameraPreview": "隐藏摄像头预览",
+		"mirrorCameraPreview": "镜像摄像头预览"
 	},
 	"sourceSelector": {
 		"loadingSources": "正在加载源...",

@@ -4,10 +4,14 @@ import { ASPECT_RATIOS, type AspectRatio, isCustomAspectRatio } from "@/utils/as
 import {
 	type AnnotationRegion,
 	type AudioRegion,
+	type CameraLayoutRegion,
+	DEFAULT_CAMERA_LAYOUT_MODE,
+	DEFAULT_CAMERA_SIZE_DURING_ZOOM,
 	type CropRegion,
 	DEFAULT_ANNOTATION_POSITION,
 	DEFAULT_ANNOTATION_SIZE,
 	DEFAULT_ANNOTATION_STYLE,
+	DEFAULT_BLUR_DATA,
 	DEFAULT_CROP_REGION,
 	DEFAULT_CURSOR_CLICK_BOUNCE,
 	DEFAULT_CURSOR_MOTION_BLUR,
@@ -16,10 +20,12 @@ import {
 	DEFAULT_CURSOR_SWAY,
 	DEFAULT_FIGURE_DATA,
 	DEFAULT_PLAYBACK_SPEED,
+	DEFAULT_WEBCAM_REGION,
 	DEFAULT_ZOOM_DEPTH,
 	DEFAULT_ZOOM_MOTION_BLUR,
 	type SpeedRegion,
 	type TrimRegion,
+	type WebcamRegion,
 	type ZoomRegion,
 } from "./types";
 
@@ -47,6 +53,12 @@ export interface ProjectEditorState {
 	annotationRegions: AnnotationRegion[];
 	audioRegions: AudioRegion[];
 	aspectRatio: AspectRatio;
+	webcamPath?: string;
+	webcamRegion: import("./types").WebcamRegion;
+	showWebcam: boolean;
+	mirrorWebcam: boolean;
+	cameraSizeDuringZoom: number;
+	cameraLayouts: CameraLayoutRegion[];
 	exportQuality: ExportQuality;
 	exportFormat: ExportFormat;
 	gifFrameRate: GifFrameRate;
@@ -60,6 +72,77 @@ export interface EditorProjectData {
 	editor: ProjectEditorState;
 }
 
+function normalizePartialWebcamRegion(candidate: unknown): Partial<WebcamRegion> | undefined {
+	if (!candidate || typeof candidate !== "object") {
+		return undefined;
+	}
+
+	const partial = candidate as Partial<WebcamRegion>;
+	const normalized: Partial<WebcamRegion> = {};
+
+	if (partial.position && typeof partial.position === "object") {
+		const position = partial.position as Partial<WebcamRegion["position"]>;
+		const nextPosition: Partial<WebcamRegion["position"]> = {};
+
+		if (isFiniteNumber(position.x)) {
+			nextPosition.x = clamp(position.x, 0, 100);
+		}
+
+		if (isFiniteNumber(position.y)) {
+			nextPosition.y = clamp(position.y, 0, 100);
+		}
+
+		if (Object.keys(nextPosition).length > 0) {
+			normalized.position = {
+				x: nextPosition.x ?? DEFAULT_WEBCAM_REGION.position.x,
+				y: nextPosition.y ?? DEFAULT_WEBCAM_REGION.position.y,
+			};
+		}
+	}
+
+	if (partial.size && typeof partial.size === "object") {
+		const size = partial.size as Partial<WebcamRegion["size"]>;
+		const nextSize: Partial<WebcamRegion["size"]> = {};
+
+		if (isFiniteNumber(size.width)) {
+			nextSize.width = clamp(size.width, 1, 100);
+		}
+
+		if (isFiniteNumber(size.height)) {
+			nextSize.height = clamp(size.height, 1, 100);
+		}
+
+		if (Object.keys(nextSize).length > 0) {
+			normalized.size = {
+				width: nextSize.width ?? DEFAULT_WEBCAM_REGION.size.width,
+				height: nextSize.height ?? DEFAULT_WEBCAM_REGION.size.height,
+			};
+		}
+	}
+
+	if (partial.shape === "circle" || partial.shape === "rectangle") {
+		normalized.shape = partial.shape;
+	}
+
+	if (isFiniteNumber(partial.borderRadius)) {
+		normalized.borderRadius = clamp(partial.borderRadius, 0, 100);
+	}
+
+	if (isFiniteNumber(partial.opacity)) {
+		normalized.opacity = clamp(partial.opacity, 0, 1);
+	}
+
+	if (isFiniteNumber(partial.borderWidth)) {
+		normalized.borderWidth = clamp(partial.borderWidth, 0, 20);
+	}
+
+	if (typeof partial.borderColor === "string" && partial.borderColor.trim().length > 0) {
+		normalized.borderColor = partial.borderColor;
+	}
+
+	return Object.keys(normalized).length > 0 ? normalized : undefined;
+}
+
 function isFiniteNumber(value: unknown): value is number {
 	return typeof value === "number" && Number.isFinite(value);
 }
@@ -70,6 +153,36 @@ function clamp(value: number, min: number, max: number) {
 
 function isFileUrl(value: string): boolean {
 	return /^file:\/\//i.test(value);
+}
+
+function normalizeCameraLayouts(candidate: unknown): CameraLayoutRegion[] {
+	if (!Array.isArray(candidate)) {
+		return [];
+	}
+
+	return candidate
+		.filter((value): value is Partial<CameraLayoutRegion> => Boolean(value && typeof value === "object"))
+		.map((layout, index) => {
+			const startMs = isFiniteNumber(layout.startMs) ? Math.max(0, Math.round(layout.startMs)) : 0;
+			const endMs = isFiniteNumber(layout.endMs)
+				? Math.max(startMs, Math.round(layout.endMs))
+				: startMs;
+			const mode =
+				layout.mode === "fullscreen" || layout.mode === "hidden" || layout.mode === "default"
+					? layout.mode
+					: DEFAULT_CAMERA_LAYOUT_MODE;
+
+			return {
+				id:
+					typeof layout.id === "string" && layout.id.trim().length > 0
+						? layout.id
+						: `camera-layout-${index + 1}`,
+				startMs,
+				endMs,
+				mode,
+				regionOverride: normalizePartialWebcamRegion(layout.regionOverride),
+			};
+		});
 }
 
 function encodePathSegments(pathname: string, keepWindowsDrive = false): string {
@@ -257,7 +370,10 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 						id: region.id,
 						startMs,
 						endMs,
-						type: region.type === "image" || region.type === "figure" ? region.type : "text",
+						type:
+							region.type === "image" || region.type === "figure" || region.type === "blur"
+								? region.type
+								: "text",
 						content: typeof region.content === "string" ? region.content : "",
 						textContent: typeof region.textContent === "string" ? region.textContent : undefined,
 						imageContent: typeof region.imageContent === "string" ? region.imageContent : undefined,
@@ -304,6 +420,12 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 									...region.figureData,
 								}
 							: undefined,
+						blurData: region.blurData
+							? {
+									...DEFAULT_BLUR_DATA,
+									...region.blurData,
+								}
+							: undefined,
 					};
 				})
 		: [];
@@ -341,6 +463,7 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 	const rawCropHeight = isFiniteNumber(editor.cropRegion?.height)
 		? editor.cropRegion.height
 		: DEFAULT_CROP_REGION.height;
+	const normalizedWebcamOverride = normalizePartialWebcamRegion(editor.webcamRegion);
 
 	const cropX = clamp(rawCropX, 0, 1);
 	const cropY = clamp(rawCropY, 0, 1);
@@ -405,14 +528,33 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 				? editor.gifFrameRate
 				: 15,
 		gifLoop: typeof editor.gifLoop === "boolean" ? editor.gifLoop : true,
-		gifSizePreset:
-			editor.gifSizePreset === "medium" ||
-			editor.gifSizePreset === "large" ||
-			editor.gifSizePreset === "original"
-				? editor.gifSizePreset
-				: "medium",
-	};
-}
+			gifSizePreset:
+				editor.gifSizePreset === "medium" ||
+				editor.gifSizePreset === "large" ||
+				editor.gifSizePreset === "original"
+					? editor.gifSizePreset
+					: "medium",
+			webcamPath: typeof editor.webcamPath === "string" ? editor.webcamPath : undefined,
+			webcamRegion: {
+				...DEFAULT_WEBCAM_REGION,
+				...normalizedWebcamOverride,
+				position: {
+					...DEFAULT_WEBCAM_REGION.position,
+					...normalizedWebcamOverride?.position,
+				},
+				size: {
+					...DEFAULT_WEBCAM_REGION.size,
+					...normalizedWebcamOverride?.size,
+				},
+			},
+			showWebcam: typeof editor.showWebcam === "boolean" ? editor.showWebcam : true,
+			mirrorWebcam: typeof editor.mirrorWebcam === "boolean" ? editor.mirrorWebcam : false,
+			cameraSizeDuringZoom: isFiniteNumber(editor.cameraSizeDuringZoom)
+				? clamp(editor.cameraSizeDuringZoom, 0.25, 1)
+				: DEFAULT_CAMERA_SIZE_DURING_ZOOM,
+			cameraLayouts: normalizeCameraLayouts(editor.cameraLayouts),
+		};
+	}
 
 export function createProjectData(
 	videoPath: string,

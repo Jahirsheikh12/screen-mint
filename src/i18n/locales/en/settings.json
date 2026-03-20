@@ -43,6 +43,28 @@
 		"uploadSuccess": "Custom image uploaded successfully!",
 		"uploadError": "Please upload a JPG or JPEG image file."
 	},
+	"webcam": {
+		"title": "Webcam",
+		"showWebcam": "Show Webcam",
+		"layoutBadge": "Layout",
+		"cameraLayout": "Camera layout",
+		"defaultMode": "Default",
+		"fullscreenMode": "Fullscreen",
+		"hiddenMode": "Hidden",
+		"mirrorCamera": "Mirror camera",
+		"cameraDuringZoom": "Camera during zoom",
+		"sameSize": "Same size",
+		"size": "Size",
+		"shape": "Shape",
+		"opacity": "Opacity",
+		"borderWidth": "Border Width",
+		"roundness": "Roundness",
+		"position": "Position Presets",
+		"topLeft": "Top Left",
+		"topRight": "Top Right",
+		"bottomLeft": "Bottom Left",
+		"bottomRight": "Bottom Right"
+	},
 	"export": {
 		"mp4": "MP4",
 		"gif": "GIF",

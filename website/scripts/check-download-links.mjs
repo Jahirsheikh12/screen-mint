@@ -62,10 +62,7 @@ if (releaseArtifacts.size !== expectedArtifacts.length) {
 	);
 }
 
-for (const command of [
-	"ScreenMint-windows-x64.exe",
-	"ScreenMint-linux-x64.AppImage",
-]) {
+for (const command of ["ScreenMint-windows-x64.exe", "ScreenMint-linux-x64.AppImage"]) {
 	if (!quickStartFile.includes(command)) {
 		throw new Error(`Quick Start commands are not using ${command}`);
 	}

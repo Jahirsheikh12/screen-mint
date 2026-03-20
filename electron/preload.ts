@@ -141,6 +141,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	clearCurrentVideoPath: () => {
 		return ipcRenderer.invoke("clear-current-video-path");
 	},
+	setCurrentWebcamPath: (path: string) => {
+		return ipcRenderer.invoke("set-current-webcam-path", path);
+	},
+	getCurrentWebcamPath: () => {
+		return ipcRenderer.invoke("get-current-webcam-path");
+	},
+	clearCurrentWebcamPath: () => {
+		return ipcRenderer.invoke("clear-current-webcam-path");
+	},
 	saveProjectFile: (projectData: unknown, suggestedName?: string, existingProjectPath?: string) => {
 		return ipcRenderer.invoke("save-project-file", projectData, suggestedName, existingProjectPath);
 	},

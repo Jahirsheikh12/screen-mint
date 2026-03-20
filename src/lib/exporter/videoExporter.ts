@@ -1,10 +1,12 @@
-import type {
-	AnnotationRegion,
-	AudioRegion,
-	CropRegion,
-	CursorTelemetryPoint,
+	import type {
+		AnnotationRegion,
+		AudioRegion,
+		CameraLayoutRegion,
+		CropRegion,
+		CursorTelemetryPoint,
 	SpeedRegion,
 	TrimRegion,
+	WebcamRegion,
 	ZoomRegion,
 } from "@/components/video-editor/types";
 import { AudioProcessor } from "./audioEncoder";
@@ -39,8 +41,14 @@ interface VideoExporterConfig extends ExportConfig {
 	audioRegions?: AudioRegion[];
 	previewWidth?: number;
 	previewHeight?: number;
-	onProgress?: (progress: ExportProgress) => void;
-}
+		webcamPath?: string | null;
+		webcamRegion?: WebcamRegion;
+		showWebcam?: boolean;
+		mirrorWebcam?: boolean;
+		cameraSizeDuringZoom?: number;
+		cameraLayouts?: CameraLayoutRegion[];
+		onProgress?: (progress: ExportProgress) => void;
+	}
 
 export class VideoExporter {
 	private config: VideoExporterConfig;
@@ -99,7 +107,13 @@ export class VideoExporter {
 				cursorMotionBlur: this.config.cursorMotionBlur,
 				cursorClickBounce: this.config.cursorClickBounce,
 				cursorSway: this.config.cursorSway,
-			});
+					webcamPath: this.config.webcamPath,
+					webcamRegion: this.config.webcamRegion,
+					showWebcam: this.config.showWebcam,
+					mirrorWebcam: this.config.mirrorWebcam,
+					cameraSizeDuringZoom: this.config.cameraSizeDuringZoom,
+					cameraLayouts: this.config.cameraLayouts,
+				});
 			await this.renderer.initialize();
 
 			// Initialize video encoder

@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
 import gsap from "gsap";
+import { useEffect, useRef } from "react";
 import { prefersReducedMotion } from "../hooks/useGSAP";
 
 export function DemoSection() {
@@ -8,12 +8,7 @@ export function DemoSection() {
 	const progressRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
-		if (
-			prefersReducedMotion() ||
-			!sectionRef.current ||
-			!containerRef.current
-		)
-			return;
+		if (prefersReducedMotion() || !sectionRef.current || !containerRef.current) return;
 
 		const ctx = gsap.context(() => {
 			// Heading animations
@@ -60,19 +55,10 @@ export function DemoSection() {
 			});
 
 			// Progress bar scrub
-			tl.fromTo(
-				progressRef.current,
-				{ scaleX: 0 },
-				{ scaleX: 1, ease: "none" },
-			);
+			tl.fromTo(progressRef.current, { scaleX: 0 }, { scaleX: 1, ease: "none" });
 
 			// Raw label fades out
-			tl.fromTo(
-				".demo-label-raw",
-				{ opacity: 1 },
-				{ opacity: 0, duration: 0.3 },
-				0.25,
-			);
+			tl.fromTo(".demo-label-raw", { opacity: 1 }, { opacity: 0, duration: 0.3 }, 0.25);
 
 			// Polished label fades in
 			tl.fromTo(
@@ -95,12 +81,7 @@ export function DemoSection() {
 			);
 
 			// Polished layer border glow
-			tl.fromTo(
-				".demo-after-border",
-				{ opacity: 0 },
-				{ opacity: 1, duration: 0.3 },
-				0.6,
-			);
+			tl.fromTo(".demo-after-border", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 0.6);
 		}, sectionRef);
 
 		return () => ctx.revert();
@@ -115,18 +96,14 @@ export function DemoSection() {
 			<div className="max-w-5xl w-full mx-auto">
 				{/* Heading */}
 				<div className="text-center mb-16">
-					<p className="demo-eyebrow section-eyebrow mb-4 will-animate">
-						How it works
-					</p>
+					<p className="demo-eyebrow section-eyebrow mb-4 will-animate">How it works</p>
 					<h2 className="demo-headline section-headline mb-4 will-animate">
 						From raw to{" "}
 						<span className="bg-gradient-to-r from-brand-300 to-brand-500 bg-clip-text text-transparent">
 							remarkable
 						</span>
 					</h2>
-					<p className="section-copy will-animate">
-						Scroll to see the transformation
-					</p>
+					<p className="section-copy will-animate">Scroll to see the transformation</p>
 				</div>
 
 				{/* Before / After container */}
@@ -165,8 +142,7 @@ export function DemoSection() {
 										Polished Output
 									</div>
 									<p className="text-[#86868b] text-sm">
-										Auto-zoom, cursor effects, custom
-										background applied
+										Auto-zoom, cursor effects, custom background applied
 									</p>
 								</div>
 							</div>
@@ -192,34 +168,16 @@ export function DemoSection() {
 										strokeLinejoin="round"
 										opacity="0.3"
 									>
-										<rect
-											x="2"
-											y="3"
-											width="20"
-											height="14"
-											rx="2"
-										/>
-										<line
-											x1="8"
-											y1="21"
-											x2="16"
-											y2="21"
-										/>
-										<line
-											x1="12"
-											y1="17"
-											x2="12"
-											y2="21"
-										/>
+										<rect x="2" y="3" width="20" height="14" rx="2" />
+										<line x1="8" y1="21" x2="16" y2="21" />
+										<line x1="12" y1="17" x2="12" y2="21" />
 									</svg>
 								</div>
 								<div>
 									<div className="text-xl md:text-2xl font-bold text-[#f5f5f7]/40 mb-1">
 										Raw Recording
 									</div>
-									<p className="text-[#86868b]/50 text-sm">
-										Plain screen capture, no effects
-									</p>
+									<p className="text-[#86868b]/50 text-sm">Plain screen capture, no effects</p>
 								</div>
 							</div>
 						</div>
@@ -231,8 +189,7 @@ export function DemoSection() {
 							ref={progressRef}
 							className="h-full origin-left"
 							style={{
-								background:
-									"linear-gradient(90deg, #059669, #10B981, #34d399)",
+								background: "linear-gradient(90deg, #059669, #10B981, #34d399)",
 								transform: "scaleX(0)",
 							}}
 						/>

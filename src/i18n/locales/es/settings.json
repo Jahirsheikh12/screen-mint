@@ -43,6 +43,28 @@
 		"uploadSuccess": "¡Imagen personalizada subida exitosamente!",
 		"uploadError": "Por favor sube un archivo de imagen JPG o JPEG."
 	},
+	"webcam": {
+		"title": "Cámara web",
+		"showWebcam": "Mostrar cámara web",
+		"layoutBadge": "Diseño",
+		"cameraLayout": "Diseño de cámara",
+		"defaultMode": "Predeterminado",
+		"fullscreenMode": "Pantalla completa",
+		"hiddenMode": "Oculta",
+		"mirrorCamera": "Reflejar cámara",
+		"cameraDuringZoom": "Cámara durante el zoom",
+		"sameSize": "Mismo tamaño",
+		"size": "Tamaño",
+		"shape": "Forma",
+		"opacity": "Opacidad",
+		"borderWidth": "Ancho del borde",
+		"roundness": "Redondez",
+		"position": "Posiciones predefinidas",
+		"topLeft": "Arriba izquierda",
+		"topRight": "Arriba derecha",
+		"bottomLeft": "Abajo izquierda",
+		"bottomRight": "Abajo derecha"
+	},
 	"export": {
 		"mp4": "MP4",
 		"gif": "GIF",

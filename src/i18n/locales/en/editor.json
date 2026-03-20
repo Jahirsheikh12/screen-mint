@@ -35,7 +35,10 @@
 		"tipCycleForward": "Use Tab to cycle through overlapping items.",
 		"tipCycleBackward": "Use Shift+Tab to cycle backwards.",
 		"imageUploadSuccess": "Image uploaded successfully!",
-		"imageUploadError": "Please upload a JPG, PNG, GIF, or WebP image file."
+		"imageUploadError": "Please upload a JPG, PNG, GIF, or WebP image file.",
+		"blur": "Blur",
+		"blurAmount": "Blur Amount",
+		"blurShape": "Shape"
 	},
 	"fontStyles": {
 		"classic": "Classic",

@@ -1,12 +1,12 @@
-import { useEffect } from "react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Navbar } from "./components/Navbar";
-import { Hero } from "./components/Hero";
-import { Features } from "./components/Features";
+import { useEffect } from "react";
 import { DemoSection } from "./components/DemoSection";
 import { Download } from "./components/Download";
 import { FAQ } from "./components/FAQ";
+import { Features } from "./components/Features";
 import { Footer } from "./components/Footer";
+import { Hero } from "./components/Hero";
+import { Navbar } from "./components/Navbar";
 
 export default function App() {
 	useEffect(() => {

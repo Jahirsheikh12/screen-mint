@@ -35,7 +35,10 @@
 		"tipCycleForward": "Usa Tab para recorrer los elementos superpuestos.",
 		"tipCycleBackward": "Usa Shift+Tab para recorrer hacia atrás.",
 		"imageUploadSuccess": "¡Imagen subida exitosamente!",
-		"imageUploadError": "Por favor sube un archivo de imagen JPG, PNG, GIF o WebP."
+		"imageUploadError": "Por favor sube un archivo de imagen JPG, PNG, GIF o WebP.",
+		"blur": "Difuminar",
+		"blurAmount": "Cantidad de difuminado",
+		"blurShape": "Forma"
 	},
 	"fontStyles": {
 		"classic": "Clásico",

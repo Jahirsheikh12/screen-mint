@@ -112,6 +112,9 @@ interface Window {
 		setCurrentVideoPath: (path: string) => Promise<{ success: boolean }>;
 		getCurrentVideoPath: () => Promise<{ success: boolean; path?: string }>;
 		clearCurrentVideoPath: () => Promise<{ success: boolean }>;
+		setCurrentWebcamPath: (path: string) => Promise<{ success: boolean }>;
+		getCurrentWebcamPath: () => Promise<{ success: boolean; path?: string }>;
+		clearCurrentWebcamPath: () => Promise<{ success: boolean }>;
 		saveProjectFile: (
 			projectData: unknown,
 			suggestedName?: string,

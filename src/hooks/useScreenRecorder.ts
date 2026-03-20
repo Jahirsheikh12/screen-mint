@@ -1,6 +1,7 @@
 import { fixWebmDuration } from "@fix-webm-duration/fix";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import type { CameraSessionState } from "@/components/video-editor/types";
 
 const TARGET_FRAME_RATE = 60;
 const TARGET_WIDTH = 3840;
@@ -22,6 +23,7 @@ const BITS_PER_MEGABIT = 1_000_000;
 const MIN_FRAME_RATE = 30;
 const CHROME_MEDIA_SOURCE = "desktop";
 const RECORDING_FILE_PREFIX = "recording-";
+const WEBCAM_FILE_PREFIX = "webcam-";
 const VIDEO_FILE_EXTENSION = ".webm";
 const AUDIO_BITRATE_VOICE = 128_000;
 const AUDIO_BITRATE_SYSTEM = 192_000;
@@ -39,6 +41,8 @@ type ExtendedDisplayVideoConstraints = MediaTrackConstraints & {
 	cursor?: "always" | "motion" | "never";
 };
 
+const WEBCAM_BITRATE = 4_000_000;
+
 type UseScreenRecorderReturn = {
 	recording: boolean;
 	countdownActive: boolean;
@@ -53,6 +57,13 @@ type UseScreenRecorderReturn = {
 	setSystemAudioEnabled: (enabled: boolean) => void;
 	countdownDelay: number;
 	setCountdownDelay: (delay: number) => void;
+	webcamEnabled: boolean;
+	setWebcamEnabled: (enabled: boolean) => void;
+	cameraSession: CameraSessionState;
+	setCameraDeviceId: (deviceId?: string) => void;
+	setCameraPreviewVisible: (visible: boolean) => void;
+	setCameraPreviewMirrored: (mirrored: boolean) => void;
+	cameraPreviewStream: MediaStream | null;
 };
 
 export function useScreenRecorder(): UseScreenRecorderReturn {
@@ -64,12 +75,22 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 	const [microphoneDeviceId, setMicrophoneDeviceId] = useState<string | undefined>(undefined);
 	const [systemAudioEnabled, setSystemAudioEnabled] = useState(false);
 	const [countdownDelay, setCountdownDelayState] = useState(3);
+	const [cameraSession, setCameraSession] = useState<CameraSessionState>({
+		enabled: false,
+		deviceId: undefined,
+		previewVisible: true,
+		previewMirrored: true,
+	});
+	const [cameraPreviewStream, setCameraPreviewStream] = useState<MediaStream | null>(null);
 	const mediaRecorder = useRef<MediaRecorder | null>(null);
 	const stream = useRef<MediaStream | null>(null);
 	const screenStream = useRef<MediaStream | null>(null);
 	const microphoneStream = useRef<MediaStream | null>(null);
 	const mixingContext = useRef<AudioContext | null>(null);
 	const chunks = useRef<Blob[]>([]);
+	const webcamStream = useRef<MediaStream | null>(null);
+	const webcamRecorder = useRef<MediaRecorder | null>(null);
+	const webcamChunks = useRef<Blob[]>([]);
 	const startTime = useRef<number>(0);
 	const nativeScreenRecording = useRef(false);
 	const wgcRecording = useRef(false);
@@ -77,6 +98,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 	const hasPromptedForReselect = useRef(false);
 	const hasShownWgcFallbackToast = useRef(false);
 	const countdownDelayLoaded = useRef(false);
+	const webcamEnabled = cameraSession.enabled;
 
 	const preparePermissions = useCallback(async (options: { startup?: boolean } = {}) => {
 		const platform = await window.electronAPI.getPlatform();
@@ -147,6 +169,56 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		return Math.round(BITRATE_BASE * highFrameRateBoost);
 	};
 
+	const releaseWebcamStream = useCallback(() => {
+		if (webcamStream.current) {
+			webcamStream.current.getTracks().forEach((track) => track.stop());
+			webcamStream.current = null;
+		}
+
+		setCameraPreviewStream(null);
+	}, []);
+
+	const setWebcamEnabled = useCallback(
+		(enabled: boolean) => {
+			setCameraSession((prev) => ({
+				...prev,
+				enabled,
+				previewVisible: enabled ? prev.previewVisible : false,
+			}));
+
+			if (!enabled) {
+				void window.electronAPI.clearCurrentWebcamPath();
+				releaseWebcamStream();
+			}
+		},
+		[releaseWebcamStream],
+	);
+
+	const setCameraDeviceId = useCallback(
+		(deviceId?: string) => {
+			setCameraSession((prev) => ({
+				...prev,
+				deviceId,
+				enabled: Boolean(deviceId),
+				previewVisible: deviceId ? true : prev.previewVisible,
+			}));
+
+			if (webcamRecorder.current?.state !== "recording") {
+				void window.electronAPI.clearCurrentWebcamPath();
+				releaseWebcamStream();
+			}
+		},
+		[releaseWebcamStream],
+	);
+
+	const setCameraPreviewVisible = useCallback((visible: boolean) => {
+		setCameraSession((prev) => ({ ...prev, previewVisible: visible }));
+	}, []);
+
+	const setCameraPreviewMirrored = useCallback((mirrored: boolean) => {
+		setCameraSession((prev) => ({ ...prev, previewMirrored: mirrored }));
+	}, []);
+
 	const cleanupCapturedMedia = useCallback(() => {
 		if (stream.current) {
 			stream.current.getTracks().forEach((track) => track.stop());
@@ -169,7 +241,112 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 			});
 			mixingContext.current = null;
 		}
+
+		if (webcamStream.current) {
+			webcamStream.current.getTracks().forEach((track) => track.stop());
+			webcamStream.current = null;
+		}
+
+		setCameraPreviewStream(null);
 	}, []);
+	const getWebcamConstraints = useCallback((): MediaStreamConstraints => {
+		const baseVideo = {
+			width: 1280,
+			height: 720,
+			frameRate: 30,
+		};
+
+		return cameraSession.deviceId
+			? {
+					video: {
+						...baseVideo,
+						deviceId: { exact: cameraSession.deviceId },
+					},
+					audio: false,
+				}
+			: {
+					video: baseVideo,
+					audio: false,
+				};
+	}, [cameraSession.deviceId]);
+
+	const ensureWebcamStream = useCallback(async () => {
+		if (webcamStream.current) {
+			return webcamStream.current;
+		}
+
+		const camStream = await navigator.mediaDevices.getUserMedia(getWebcamConstraints());
+		webcamStream.current = camStream;
+		setCameraPreviewStream(cameraSession.previewVisible ? camStream : null);
+		return camStream;
+	}, [cameraSession.previewVisible, getWebcamConstraints]);
+
+	const startWebcamRecording = useCallback(async () => {
+		try {
+			const camStream = await ensureWebcamStream();
+			webcamChunks.current = [];
+
+			const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+				? "video/webm;codecs=vp9"
+				: "video/webm";
+
+			const recorder = new MediaRecorder(camStream, {
+				mimeType,
+				videoBitsPerSecond: WEBCAM_BITRATE,
+			});
+			webcamRecorder.current = recorder;
+			recorder.ondataavailable = (event) => {
+				if (event.data && event.data.size > 0) webcamChunks.current.push(event.data);
+			};
+			recorder.start(RECORDER_TIMESLICE_MS);
+		} catch (error) {
+			console.warn("Failed to start webcam recording:", error);
+			await window.electronAPI.clearCurrentWebcamPath();
+			setCameraSession((prev) => ({ ...prev, enabled: false, previewVisible: false }));
+			setCameraPreviewStream(null);
+			toast.error("Unable to access the selected camera. Recording will continue without webcam.");
+		}
+	}, [ensureWebcamStream]);
+
+	const stopWebcamRecording = useCallback(async () => {
+		const recorder = webcamRecorder.current;
+		const mimeType = recorder?.mimeType ?? "video/webm";
+
+		// Wait for MediaRecorder to fully stop and fire final dataavailable
+		if (recorder?.state === "recording") {
+			await new Promise<void>((resolve) => {
+				recorder.onstop = () => resolve();
+				recorder.stop();
+			});
+		}
+
+		releaseWebcamStream();
+
+		if (webcamChunks.current.length === 0) {
+			webcamRecorder.current = null;
+			await window.electronAPI.clearCurrentWebcamPath();
+			return;
+		}
+
+		const duration = Date.now() - startTime.current;
+		const buggyBlob = new Blob(webcamChunks.current, { type: mimeType });
+		webcamChunks.current = [];
+
+		try {
+			const webcamBlob = await fixWebmDuration(buggyBlob, duration);
+			const arrayBuffer = await webcamBlob.arrayBuffer();
+			const webcamFileName = `${WEBCAM_FILE_PREFIX}${Date.now()}${VIDEO_FILE_EXTENSION}`;
+			const result = await window.electronAPI.storeRecordedVideo(arrayBuffer, webcamFileName);
+			if (result.success && result.path) {
+				await window.electronAPI.setCurrentWebcamPath(result.path);
+			}
+		} catch (error) {
+			console.error("Error saving webcam recording:", error);
+			await window.electronAPI.clearCurrentWebcamPath();
+		}
+
+		webcamRecorder.current = null;
+	}, [releaseWebcamStream]);
 
 	const stopRecording = useRef(() => {
 		if (nativeScreenRecording.current) {
@@ -195,6 +372,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 					finalPath = muxResult?.path ?? result.path;
 				}
 
+				await stopWebcamRecording();
 				await window.electronAPI.setCurrentVideoPath(finalPath);
 				await window.electronAPI.switchToEditor();
 			})();
@@ -206,6 +384,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 			mediaRecorder.current.stop();
 			setRecording(false);
 			window.electronAPI?.setRecordingState(false);
+			// Webcam stop is handled inside recorder.onstop before switchToEditor
 		}
 	});
 
@@ -232,6 +411,39 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		setCountdownDelayState(delay);
 		void window.electronAPI.setCountdownDelay(delay);
 	}, []);
+
+	useEffect(() => {
+		let cancelled = false;
+
+		if (!cameraSession.enabled) {
+			if (webcamRecorder.current?.state !== "recording") {
+				releaseWebcamStream();
+			}
+			return;
+		}
+
+		void ensureWebcamStream()
+			.then((camStream) => {
+				if (cancelled) {
+					return;
+				}
+
+				setCameraPreviewStream(cameraSession.previewVisible ? camStream : null);
+			})
+			.catch((error) => {
+				if (cancelled) {
+					return;
+				}
+
+				console.warn("Failed to prepare camera preview:", error);
+				setCameraSession((prev) => ({ ...prev, enabled: false, previewVisible: false }));
+				setCameraPreviewStream(null);
+			});
+
+		return () => {
+			cancelled = true;
+		};
+	}, [cameraSession.enabled, cameraSession.previewVisible, ensureWebcamStream, releaseWebcamStream]);
 
 	useEffect(() => {
 		let cleanup: (() => void) | undefined;
@@ -382,6 +594,12 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 					startTime.current = Date.now();
 					setRecording(true);
 					window.electronAPI?.setRecordingState(true);
+
+					if (webcamEnabled) {
+						void startWebcamRecording();
+					} else {
+						await window.electronAPI.clearCurrentWebcamPath();
+					}
 
 					return;
 				}
@@ -597,6 +815,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 						await window.electronAPI.setCurrentVideoPath(videoResult.path);
 					}
 
+					await stopWebcamRecording();
 					await window.electronAPI.switchToEditor();
 				} catch (error) {
 					console.error("Error saving recording:", error);
@@ -609,6 +828,12 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 			startTime.current = Date.now();
 			setRecording(true);
 			window.electronAPI?.setRecordingState(true);
+
+			if (webcamEnabled) {
+				void startWebcamRecording();
+			} else {
+				await window.electronAPI.clearCurrentWebcamPath();
+			}
 		} catch (error) {
 			console.error("Failed to start recording:", error);
 			alert(
@@ -664,5 +889,12 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		setSystemAudioEnabled,
 		countdownDelay,
 		setCountdownDelay,
+		webcamEnabled,
+		setWebcamEnabled,
+		cameraSession,
+		setCameraDeviceId,
+		setCameraPreviewVisible,
+		setCameraPreviewMirrored,
+		cameraPreviewStream,
 	};
 }

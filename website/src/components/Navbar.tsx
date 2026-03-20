@@ -101,32 +101,9 @@ export function Navbar() {
 				/>
 
 				{/* Logo */}
-				<a
-					href="#"
-					className="relative z-10 flex items-center gap-2 group"
-				>
-					<div className="w-7 h-7 rounded-lg bg-brand-500 flex items-center justify-center transition-shadow group-hover:shadow-glow-sm">
-						<svg
-							width="14"
-							height="14"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="white"
-							strokeWidth="2.5"
-							strokeLinecap="round"
-							strokeLinejoin="round"
-						>
-							<circle cx="12" cy="12" r="10" />
-							<polygon
-								points="10 8 16 12 10 16 10 8"
-								fill="white"
-								stroke="none"
-							/>
-						</svg>
-					</div>
-					<span className="text-[15px] font-bold tracking-tight">
-						ScreenMint
-					</span>
+				<a href="#" className="relative z-10 flex items-center gap-2 group">
+					<img src="../../../branding/source-assets/" alt="Logo" className="w-8 h-8" />
+					<span className="text-[15px] font-bold tracking-tight">ScreenMint</span>
 				</a>
 
 				{/* Desktop nav */}

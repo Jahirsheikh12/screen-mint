@@ -1,5 +1,16 @@
 import Block from "@uiw/react-color-block";
-import { Crop, Gauge, Palette, Sparkles, Trash2, Upload, X, ZoomIn } from "lucide-react";
+import {
+	Camera,
+	Crop,
+	Gauge,
+	MessageSquare,
+	Palette,
+	Sparkles,
+	Trash2,
+	Upload,
+	X,
+	ZoomIn,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -15,18 +26,22 @@ import { CropControl } from "./CropControl";
 import { loadEditorPreferences, saveEditorPreferences } from "./editorPreferences";
 import { KeyboardShortcutsHelp } from "./KeyboardShortcutsHelp";
 import { SliderControl } from "./SliderControl";
-import type {
-	AnnotationRegion,
-	AnnotationType,
-	CropRegion,
-	FigureData,
-	PlaybackSpeed,
-	ZoomDepth,
-} from "./types";
-import {
-	DEFAULT_CURSOR_CLICK_BOUNCE,
-	DEFAULT_CURSOR_MOTION_BLUR,
-	DEFAULT_CURSOR_SIZE,
+	import type {
+		AnnotationRegion,
+		AnnotationType,
+		BlurData,
+		CameraLayoutRegion,
+		CropRegion,
+		FigureData,
+		PlaybackSpeed,
+		WebcamRegion,
+		ZoomDepth,
+	} from "./types";
+	import {
+		CAMERA_ZOOM_SCALE_DISABLED,
+		DEFAULT_CURSOR_CLICK_BOUNCE,
+		DEFAULT_CURSOR_MOTION_BLUR,
+		DEFAULT_CURSOR_SIZE,
 	DEFAULT_CURSOR_SMOOTHING,
 	DEFAULT_CURSOR_SWAY,
 	DEFAULT_ZOOM_MOTION_BLUR,
@@ -125,7 +140,21 @@ interface SettingsPanelProps {
 	onAnnotationTypeChange?: (id: string, type: AnnotationType) => void;
 	onAnnotationStyleChange?: (id: string, style: Partial<AnnotationRegion["style"]>) => void;
 	onAnnotationFigureDataChange?: (id: string, figureData: FigureData) => void;
+	onAnnotationBlurDataChange?: (id: string, blurData: BlurData) => void;
 	onAnnotationDelete?: (id: string) => void;
+	webcamPath?: string | null;
+	showWebcam?: boolean;
+	onShowWebcamChange?: (show: boolean) => void;
+	mirrorWebcam?: boolean;
+	onMirrorWebcamChange?: (mirror: boolean) => void;
+	webcamRegion?: WebcamRegion;
+	onWebcamRegionChange?: (region: Partial<WebcamRegion>) => void;
+	cameraSizeDuringZoom?: number;
+	onCameraSizeDuringZoomChange?: (scale: number) => void;
+	cameraLayouts?: CameraLayoutRegion[];
+	selectedCameraLayoutId?: string | null;
+	onCameraLayoutChange?: (id: string, region: Partial<CameraLayoutRegion>) => void;
+	cameraSelected?: boolean;
 	selectedSpeedId?: string | null;
 	selectedSpeedValue?: PlaybackSpeed | null;
 	onSpeedChange?: (speed: PlaybackSpeed) => void;
@@ -189,7 +218,21 @@ export function SettingsPanel({
 	onAnnotationTypeChange,
 	onAnnotationStyleChange,
 	onAnnotationFigureDataChange,
+	onAnnotationBlurDataChange,
 	onAnnotationDelete,
+	webcamPath,
+	showWebcam = true,
+	onShowWebcamChange,
+	mirrorWebcam = false,
+	onMirrorWebcamChange,
+	webcamRegion,
+	onWebcamRegionChange,
+	cameraSizeDuringZoom = CAMERA_ZOOM_SCALE_DISABLED,
+	onCameraSizeDuringZoomChange,
+	cameraLayouts = [],
+	selectedCameraLayoutId,
+	onCameraLayoutChange,
+	cameraSelected = false,
 	selectedSpeedId,
 	selectedSpeedValue,
 	onSpeedChange,
@@ -255,9 +298,9 @@ export function SettingsPanel({
 		getBackgroundTabForWallpaper(selected),
 	);
 	const [showCropModal, setShowCropModal] = useState(false);
-	const [activeTab, setActiveTab] = useState<"effects" | "background" | "zoom" | "speed">(
-		"effects",
-	);
+	const [activeTab, setActiveTab] = useState<
+		"effects" | "background" | "zoom" | "speed" | "annotation" | "webcam"
+	>("effects");
 	const cropSnapshotRef = useRef<CropRegion | null>(null);
 
 	useEffect(() => {
@@ -356,46 +399,61 @@ export function SettingsPanel({
 		}
 	};
 
+	const webcamSizeValue = webcamRegion
+		? Math.round(((webcamRegion.size.width + webcamRegion.size.height) / 2) * 10) / 10
+		: 20;
+
+	const handleWebcamSizeSliderChange = (nextSize: number) => {
+		if (!webcamRegion || !onWebcamRegionChange) {
+			return;
+		}
+
+		const width = Math.max(8, Math.min(40, nextSize));
+		const aspectRatio = webcamRegion.size.height / Math.max(webcamRegion.size.width, 0.01);
+		onWebcamRegionChange({
+			size: {
+				width,
+				height: Math.max(8, Math.min(40, width * aspectRatio)),
+			},
+		});
+	};
+
 	// Find selected annotation
 	const selectedAnnotation = selectedAnnotationId
 		? annotationRegions.find((a) => a.id === selectedAnnotationId)
 		: null;
+	const selectedCameraLayout = selectedCameraLayoutId
+		? cameraLayouts.find((layout) => layout.id === selectedCameraLayoutId)
+		: null;
 
-	// If an annotation is selected, show annotation settings instead
-	if (
-		selectedAnnotation &&
-		onAnnotationContentChange &&
-		onAnnotationTypeChange &&
-		onAnnotationStyleChange &&
-		onAnnotationDelete
-	) {
-		return (
-			<AnnotationSettingsPanel
-				annotation={selectedAnnotation}
-				onContentChange={(content) => onAnnotationContentChange(selectedAnnotation.id, content)}
-				onTypeChange={(type) => onAnnotationTypeChange(selectedAnnotation.id, type)}
-				onStyleChange={(style) => onAnnotationStyleChange(selectedAnnotation.id, style)}
-				onFigureDataChange={
-					onAnnotationFigureDataChange
-						? (figureData) => onAnnotationFigureDataChange(selectedAnnotation.id, figureData)
-						: undefined
-				}
-				onDelete={() => onAnnotationDelete(selectedAnnotation.id)}
-			/>
-		);
-	}
+	// Auto-switch to annotation tab when an annotation is selected
+	useEffect(() => {
+		if (selectedAnnotation) {
+			setActiveTab("annotation");
+		}
+	}, [selectedAnnotation]);
+
+	useEffect(() => {
+		if (cameraSelected || selectedCameraLayout) {
+			setActiveTab("webcam");
+		}
+	}, [cameraSelected, selectedCameraLayout]);
 
 	const sidebarTabs = [
 		{ id: "effects" as const, icon: Sparkles, label: tSettings("effects.title") },
 		{ id: "background" as const, icon: Palette, label: tSettings("background.title") },
 		{ id: "zoom" as const, icon: ZoomIn, label: tSettings("zoom.level") },
 		{ id: "speed" as const, icon: Gauge, label: tSettings("speed.playbackSpeed") },
+		{ id: "annotation" as const, icon: MessageSquare, label: "Annotation" },
+		...(webcamPath
+			? [{ id: "webcam" as const, icon: Camera, label: tSettings("webcam.title") }]
+			: []),
 	];
 
 	return (
-		<div className="w-[340px] shrink-0 min-w-0 bg-[#0A0F0D] border border-white/5 rounded-2xl flex flex-row shadow-xl h-full overflow-hidden">
+		<div className="w-[400px] shrink-0 min-w-0 bg-[#0A0F0D] border border-white/5 rounded-2xl flex flex-row shadow-xl h-full overflow-hidden">
 			{/* Sidebar navigation */}
-			<div className="flex flex-col gap-0.5 p-1 border-r border-white/5 bg-white/[0.02]">
+			<div className="flex flex-col gap-1 p-1.5 border-r border-white/5 bg-white/[0.02]">
 				{sidebarTabs.map((tab) => {
 					const isActive = activeTab === tab.id;
 					return (
@@ -405,13 +463,13 @@ export function SettingsPanel({
 							onClick={() => setActiveTab(tab.id)}
 							title={tab.label}
 							className={cn(
-								"flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200",
+								"flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-200",
 								isActive
 									? "bg-[#10B981] text-white shadow-md shadow-[#10B981]/20"
 									: "text-slate-500 hover:text-slate-300 hover:bg-white/5",
 							)}
 						>
-							<tab.icon className="w-4 h-4" />
+							<tab.icon className="w-5 h-5" />
 						</button>
 					);
 				})}
@@ -431,7 +489,7 @@ export function SettingsPanel({
 
 						<div className="flex flex-col gap-1.5">
 							<div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
-								<div className="text-[10px] font-medium text-slate-300">
+								<div className="text-xs font-medium text-slate-300">
 									{tSettings("effects.showCursor")}
 								</div>
 								<Switch
@@ -441,7 +499,7 @@ export function SettingsPanel({
 								/>
 							</div>
 							<div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
-								<div className="text-[10px] font-medium text-slate-300">
+								<div className="text-xs font-medium text-slate-300">
 									{tSettings("effects.loopCursor")}
 								</div>
 								<Switch
@@ -451,7 +509,7 @@ export function SettingsPanel({
 								/>
 							</div>
 							<div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
-								<div className="text-[10px] font-medium text-slate-300">
+								<div className="text-xs font-medium text-slate-300">
 									{tSettings("effects.connectZooms")}
 								</div>
 								<Switch
@@ -461,7 +519,7 @@ export function SettingsPanel({
 								/>
 							</div>
 							<div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
-								<div className="text-[10px] font-medium text-slate-300">
+								<div className="text-xs font-medium text-slate-300">
 									{tSettings("effects.removeBackground")}
 								</div>
 								<Switch
@@ -810,7 +868,7 @@ export function SettingsPanel({
 								</span>
 							)}
 						</div>
-						<div className="flex flex-col gap-1">
+						<div className="grid grid-cols-3 gap-1.5">
 							{ZOOM_DEPTH_OPTIONS.map((option) => {
 								const isActive = selectedZoomDepth === option.depth;
 								return (
@@ -820,7 +878,7 @@ export function SettingsPanel({
 										disabled={!zoomEnabled}
 										onClick={() => onZoomDepthChange?.(option.depth)}
 										className={cn(
-											"h-8 w-full rounded-lg border px-3 text-left shadow-sm transition-all justify-start",
+											"h-9 rounded-lg border shadow-sm transition-all justify-center",
 											"duration-200 ease-out",
 											zoomEnabled ? "opacity-100 cursor-pointer" : "opacity-40 cursor-not-allowed",
 											isActive
@@ -883,7 +941,7 @@ export function SettingsPanel({
 								</span>
 							)}
 						</div>
-						<div className="flex flex-col gap-1">
+						<div className="grid grid-cols-3 gap-1.5">
 							{SPEED_OPTIONS.map((option) => {
 								const isActive = selectedSpeedValue === option.speed;
 								return (
@@ -893,7 +951,7 @@ export function SettingsPanel({
 										disabled={!selectedSpeedId}
 										onClick={() => onSpeedChange?.(option.speed)}
 										className={cn(
-											"h-8 w-full rounded-lg border px-3 text-left shadow-sm transition-all justify-start",
+											"h-9 rounded-lg border shadow-sm transition-all justify-center",
 											"duration-200 ease-out",
 											selectedSpeedId
 												? "opacity-100 cursor-pointer"
@@ -924,6 +982,251 @@ export function SettingsPanel({
 								{tSettings("speed.deleteRegion")}
 							</Button>
 						)}
+					</div>
+				)}
+
+				{/* Annotation tab */}
+				{activeTab === "annotation" && (
+					<div>
+						{selectedAnnotation &&
+						onAnnotationContentChange &&
+						onAnnotationTypeChange &&
+						onAnnotationStyleChange &&
+						onAnnotationDelete ? (
+							<AnnotationSettingsPanel
+								annotation={selectedAnnotation}
+								onContentChange={(content) =>
+									onAnnotationContentChange(selectedAnnotation.id, content)
+								}
+								onTypeChange={(type) => onAnnotationTypeChange(selectedAnnotation.id, type)}
+								onStyleChange={(style) => onAnnotationStyleChange(selectedAnnotation.id, style)}
+								onFigureDataChange={
+									onAnnotationFigureDataChange
+										? (figureData) =>
+												onAnnotationFigureDataChange(selectedAnnotation.id, figureData)
+										: undefined
+								}
+								onBlurDataChange={
+									onAnnotationBlurDataChange
+										? (blurData) => onAnnotationBlurDataChange(selectedAnnotation.id, blurData)
+										: undefined
+								}
+								onDelete={() => onAnnotationDelete(selectedAnnotation.id)}
+								inline
+							/>
+						) : (
+							<div className="flex flex-col items-center justify-center py-8 text-center">
+								<MessageSquare className="w-8 h-8 text-slate-600 mb-3" />
+								<p className="text-sm font-medium text-slate-400">No Annotation Selected</p>
+								<p className="text-xs text-slate-500 mt-1">
+									Select an annotation on the timeline to edit its settings
+								</p>
+							</div>
+						)}
+					</div>
+				)}
+
+				{/* Webcam tab */}
+				{activeTab === "webcam" && webcamPath && webcamRegion && (
+					<div>
+						<div className="flex items-center justify-between mb-3">
+							<span className="text-sm font-medium text-slate-200">
+								{tSettings("webcam.title")}
+							</span>
+							{selectedCameraLayout && (
+								<span className="text-[10px] uppercase tracking-wider font-medium text-[#3b82f6] bg-[#3b82f6]/10 px-2 py-0.5 rounded-full">
+									{tSettings("webcam.layoutBadge")}
+								</span>
+							)}
+						</div>
+
+						<div className="flex flex-col gap-1.5">
+							{selectedCameraLayout && (
+								<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+									<label className="text-xs font-medium text-slate-300 mb-2 block">
+										{tSettings("webcam.cameraLayout")}
+									</label>
+									<div className="grid grid-cols-3 gap-2">
+										{(
+											[
+												["default", tSettings("webcam.defaultMode")],
+												["fullscreen", tSettings("webcam.fullscreenMode")],
+												["hidden", tSettings("webcam.hiddenMode")],
+											] as const
+										).map(([mode, label]) => (
+											<Button
+												key={mode}
+												type="button"
+												onClick={() => onCameraLayoutChange?.(selectedCameraLayout.id, { mode })}
+												className={cn(
+													"h-9 rounded-lg border shadow-sm transition-all justify-center",
+													selectedCameraLayout.mode === mode
+														? "border-[#3b82f6] bg-[#3b82f6] text-white"
+														: "border-white/5 bg-white/5 text-slate-400 hover:bg-white/10",
+												)}
+											>
+												<span className="text-xs font-semibold">{label}</span>
+											</Button>
+										))}
+									</div>
+								</div>
+							)}
+
+							<div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
+								<div className="text-xs font-medium text-slate-300">
+									{tSettings("webcam.showWebcam")}
+								</div>
+								<Switch
+									checked={showWebcam}
+									onCheckedChange={onShowWebcamChange}
+									className="data-[state=checked]:bg-[#10B981] scale-90"
+									/>
+								</div>
+
+								<div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
+									<div className="text-xs font-medium text-slate-300">
+										{tSettings("webcam.mirrorCamera")}
+									</div>
+									<Switch
+										checked={mirrorWebcam}
+										onCheckedChange={onMirrorWebcamChange}
+										className="data-[state=checked]:bg-[#10B981] scale-90"
+									/>
+								</div>
+
+								<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+									<SliderControl
+										label={tSettings("webcam.cameraDuringZoom")}
+										value={cameraSizeDuringZoom}
+										defaultValue={CAMERA_ZOOM_SCALE_DISABLED}
+										min={0.4}
+										max={1}
+										step={0.05}
+										onChange={(v) => onCameraSizeDuringZoomChange?.(v)}
+										formatValue={(v) =>
+											v >= CAMERA_ZOOM_SCALE_DISABLED
+												? tSettings("webcam.sameSize")
+												: `${Math.round(v * 100)}%`
+										}
+										parseInput={(t) => {
+											const normalized = t.trim().toLowerCase();
+											if (
+												normalized === tSettings("webcam.sameSize").trim().toLowerCase() ||
+												normalized === "off"
+											) {
+												return CAMERA_ZOOM_SCALE_DISABLED;
+											}
+											return parseFloat(t.replace(/%$/, "")) / 100;
+										}}
+									/>
+								</div>
+
+								<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+									<label className="text-xs font-medium text-slate-300 mb-2 block">
+										{tSettings("webcam.shape")}
+								</label>
+								<div className="grid grid-cols-2 gap-2">
+									{(["circle", "rectangle"] as const).map((shape) => (
+										<Button
+											key={shape}
+											type="button"
+											onClick={() => onWebcamRegionChange?.({ shape })}
+											className={cn(
+												"h-9 rounded-lg border shadow-sm transition-all justify-center",
+												webcamRegion.shape === shape
+													? "border-[#10B981] bg-[#10B981] text-white"
+													: "border-white/5 bg-white/5 text-slate-400 hover:bg-white/10",
+											)}
+										>
+											<span className="text-xs font-semibold capitalize">{shape}</span>
+										</Button>
+									))}
+								</div>
+							</div>
+
+							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<SliderControl
+									label={tSettings("webcam.opacity")}
+									value={webcamRegion.opacity}
+									defaultValue={1}
+									min={0.1}
+									max={1}
+									step={0.05}
+									onChange={(v) => onWebcamRegionChange?.({ opacity: v })}
+									formatValue={(v) => `${Math.round(v * 100)}%`}
+									parseInput={(t) => parseFloat(t.replace(/%$/, "")) / 100}
+									/>
+								</div>
+
+								<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+									<SliderControl
+										label={tSettings("webcam.size")}
+										value={webcamSizeValue}
+										defaultValue={20}
+										min={8}
+										max={40}
+										step={0.5}
+										onChange={handleWebcamSizeSliderChange}
+										formatValue={(v) => `${v.toFixed(1)}%`}
+										parseInput={(t) => parseFloat(t.replace(/%$/, ""))}
+									/>
+								</div>
+
+								<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+									<SliderControl
+										label={tSettings("webcam.borderWidth")}
+									value={webcamRegion.borderWidth}
+									defaultValue={3}
+									min={0}
+									max={10}
+									step={1}
+									onChange={(v) => onWebcamRegionChange?.({ borderWidth: v })}
+									formatValue={(v) => `${v}px`}
+										parseInput={(t) => parseFloat(t.replace(/px$/, ""))}
+									/>
+								</div>
+
+								{webcamRegion.shape === "rectangle" && (
+									<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+										<SliderControl
+											label={tSettings("webcam.roundness")}
+											value={webcamRegion.borderRadius}
+											defaultValue={12}
+											min={0}
+											max={50}
+											step={1}
+											onChange={(v) => onWebcamRegionChange?.({ borderRadius: v })}
+											formatValue={(v) => `${v}px`}
+											parseInput={(t) => parseFloat(t.replace(/px$/, ""))}
+										/>
+									</div>
+								)}
+
+								<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+									<label className="text-xs font-medium text-slate-300 mb-2 block">
+									{tSettings("webcam.position")}
+								</label>
+								<div className="grid grid-cols-2 gap-2">
+									{[
+										{ label: tSettings("webcam.topLeft"), x: 5, y: 5 },
+										{ label: tSettings("webcam.topRight"), x: 75, y: 5 },
+										{ label: tSettings("webcam.bottomLeft"), x: 5, y: 75 },
+										{ label: tSettings("webcam.bottomRight"), x: 75, y: 75 },
+									].map((preset) => (
+										<Button
+											key={preset.label}
+											type="button"
+											onClick={() =>
+												onWebcamRegionChange?.({ position: { x: preset.x, y: preset.y } })
+											}
+											className="h-8 rounded-lg border border-white/5 bg-white/5 text-slate-400 hover:bg-white/10 text-[10px]"
+										>
+											{preset.label}
+										</Button>
+									))}
+								</div>
+							</div>
+						</div>
 					</div>
 				)}
 			</div>

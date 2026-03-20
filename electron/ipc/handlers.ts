@@ -66,6 +66,7 @@ let selectedSource: SelectedSource | null = null;
 let currentProjectPath: string | null = null;
 let nativeScreenRecordingActive = false;
 let currentVideoPath: string | null = null;
+let currentWebcamPath: string | null = null;
 let nativeCaptureProcess: ChildProcessWithoutNullStreams | null = null;
 let nativeCaptureOutputBuffer = "";
 let nativeCaptureTargetPath: string | null = null;
@@ -3065,6 +3066,20 @@ export function registerIpcHandlers(
 
 	ipcMain.handle("clear-current-video-path", () => {
 		currentVideoPath = null;
+		return { success: true };
+	});
+
+	ipcMain.handle("set-current-webcam-path", (_, path: string) => {
+		currentWebcamPath = path;
+		return { success: true };
+	});
+
+	ipcMain.handle("get-current-webcam-path", () => {
+		return currentWebcamPath ? { success: true, path: currentWebcamPath } : { success: false };
+	});
+
+	ipcMain.handle("clear-current-webcam-path", () => {
+		currentWebcamPath = null;
 		return { success: true };
 	});
 

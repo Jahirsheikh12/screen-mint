@@ -35,7 +35,10 @@
 		"tipCycleForward": "使用 Tab 循环切换重叠项目。",
 		"tipCycleBackward": "使用 Shift+Tab 反向循环切换。",
 		"imageUploadSuccess": "图片上传成功！",
-		"imageUploadError": "请上传 JPG、PNG、GIF 或 WebP 图片文件。"
+		"imageUploadError": "请上传 JPG、PNG、GIF 或 WebP 图片文件。",
+		"blur": "模糊",
+		"blurAmount": "模糊程度",
+		"blurShape": "模糊形状"
 	},
 	"fontStyles": {
 		"classic": "经典",

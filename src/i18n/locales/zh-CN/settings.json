@@ -43,6 +43,28 @@
 		"uploadSuccess": "自定义图片上传成功！",
 		"uploadError": "请上传 JPG 或 JPEG 图片文件。"
 	},
+	"webcam": {
+		"title": "摄像头",
+		"showWebcam": "显示摄像头",
+		"layoutBadge": "布局",
+		"cameraLayout": "摄像头布局",
+		"defaultMode": "默认",
+		"fullscreenMode": "全屏",
+		"hiddenMode": "隐藏",
+		"mirrorCamera": "镜像摄像头",
+		"cameraDuringZoom": "缩放期间摄像头大小",
+		"sameSize": "保持不变",
+		"size": "大小",
+		"shape": "形状",
+		"opacity": "不透明度",
+		"borderWidth": "边框宽度",
+		"roundness": "圆角",
+		"position": "预设位置",
+		"topLeft": "左上",
+		"topRight": "右上",
+		"bottomLeft": "左下",
+		"bottomRight": "右下"
+	},
 	"export": {
 		"mp4": "MP4",
 		"gif": "GIF",

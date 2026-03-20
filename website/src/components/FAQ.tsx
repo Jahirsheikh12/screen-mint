@@ -36,7 +36,7 @@ const faqs = [
 	{
 		question: "macOS says the app can't be opened. What do I do?",
 		answer:
-			'This is macOS Gatekeeper blocking unsigned apps downloaded from the internet. Open Terminal and run: xattr -cr /Applications/ScreenMint.app — this removes the quarantine flag and lets the app launch normally. You can find this command in the Download section above.',
+			"This is macOS Gatekeeper blocking unsigned apps downloaded from the internet. Open Terminal and run: xattr -cr /Applications/ScreenMint.app — this removes the quarantine flag and lets the app launch normally. You can find this command in the Download section above.",
 	},
 	{
 		question: "How do I contribute to the project?",
@@ -166,12 +166,8 @@ export function FAQ() {
 			<div className="max-w-3xl mx-auto">
 				{/* Heading */}
 				<div className="text-center mb-16">
-					<p className="faq-eyebrow section-eyebrow mb-4 will-animate">
-						FAQ
-					</p>
-					<h2 className="faq-headline section-headline will-animate">
-						Questions? Answers.
-					</h2>
+					<p className="faq-eyebrow section-eyebrow mb-4 will-animate">FAQ</p>
+					<h2 className="faq-headline section-headline will-animate">Questions? Answers.</h2>
 				</div>
 
 				{/* FAQ list */}
@@ -182,11 +178,7 @@ export function FAQ() {
 							question={faq.question}
 							answer={faq.answer}
 							isOpen={openIndex === index}
-							onToggle={() =>
-								setOpenIndex(
-									openIndex === index ? null : index,
-								)
-							}
+							onToggle={() => setOpenIndex(openIndex === index ? null : index)}
 						/>
 					))}
 				</div>

@@ -1,10 +1,19 @@
 import { Eye, EyeOff, Languages, Timer } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BsRecordCircle } from "react-icons/bs";
 import { FaRegStopCircle } from "react-icons/fa";
 import { FaFolderOpen } from "react-icons/fa6";
 import { FiMinus, FiX } from "react-icons/fi";
-import { MdMic, MdMicOff, MdMonitor, MdVideoFile, MdVolumeOff, MdVolumeUp } from "react-icons/md";
+import {
+	MdMic,
+	MdMicOff,
+	MdMonitor,
+	MdVideocam,
+	MdVideocamOff,
+	MdVideoFile,
+	MdVolumeOff,
+	MdVolumeUp,
+} from "react-icons/md";
 import { useI18n } from "@/contexts/I18nContext";
 import type { AppLocale } from "@/i18n/config";
 import { SUPPORTED_LOCALES } from "@/i18n/config";
@@ -16,12 +25,22 @@ import { AudioLevelMeter } from "../ui/audio-level-meter";
 import { Button } from "../ui/button";
 import { ContentClamp } from "../ui/content-clamp";
 import {
+	DropdownMenuCheckboxItem,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuRadioGroup,
+	DropdownMenuRadioItem,
+	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import styles from "./LaunchWindow.module.css";
+
+type CameraDeviceOption = {
+	deviceId: string;
+	label: string;
+};
 
 export function LaunchWindow() {
 	const { locale, setLocale } = useI18n();
@@ -40,9 +59,16 @@ export function LaunchWindow() {
 		setSystemAudioEnabled,
 		countdownDelay,
 		setCountdownDelay,
+		webcamEnabled,
+		cameraSession,
+		setCameraDeviceId,
+		setCameraPreviewVisible,
+		setCameraPreviewMirrored,
+		cameraPreviewStream,
 	} = useScreenRecorder();
 	const [recordingStart, setRecordingStart] = useState<number | null>(null);
 	const [elapsed, setElapsed] = useState(0);
+	const [cameraDevices, setCameraDevices] = useState<CameraDeviceOption[]>([]);
 	const showMicControls = microphoneEnabled && !recording;
 	const { devices, selectedDeviceId, setSelectedDeviceId } =
 		useMicrophoneDevices(microphoneEnabled);
@@ -50,6 +76,7 @@ export function LaunchWindow() {
 		enabled: showMicControls,
 		deviceId: microphoneDeviceId,
 	});
+	const cameraPreviewRef = useRef<HTMLVideoElement | null>(null);
 
 	useEffect(() => {
 		if (selectedDeviceId && selectedDeviceId !== "default") {
@@ -86,7 +113,6 @@ export function LaunchWindow() {
 
 	const [selectedSource, setSelectedSource] = useState("Screen");
 	const [hasSelectedSource, setHasSelectedSource] = useState(false);
-	const [recordingsDirectory, setRecordingsDirectory] = useState<string | null>(null);
 	const [hideHudFromCapture, setHideHudFromCapture] = useState(true);
 	const [platform, setPlatform] = useState<string | null>(null);
 
@@ -151,6 +177,63 @@ export function LaunchWindow() {
 		};
 	}, []);
 
+	const refreshCameraDevices = useCallback(async () => {
+		try {
+			const devices = await navigator.mediaDevices.enumerateDevices();
+			const videoInputs = devices
+				.filter((device) => device.kind === "videoinput")
+				.map((device, index) => ({
+					deviceId: device.deviceId,
+					label: device.label.trim() || `${t("recording.cameraLabelFallback")} ${index + 1}`,
+				}));
+			setCameraDevices(videoInputs);
+		} catch (error) {
+			console.error("Failed to enumerate cameras:", error);
+			setCameraDevices([]);
+		}
+	}, [t]);
+
+	useEffect(() => {
+		void refreshCameraDevices();
+
+		const handleDeviceChange = () => {
+			void refreshCameraDevices();
+		};
+
+		navigator.mediaDevices?.addEventListener?.("devicechange", handleDeviceChange);
+		return () => {
+			navigator.mediaDevices?.removeEventListener?.("devicechange", handleDeviceChange);
+		};
+	}, [refreshCameraDevices]);
+
+	useEffect(() => {
+		if (!cameraSession.enabled) {
+			return;
+		}
+
+		void refreshCameraDevices();
+	}, [cameraSession.enabled, refreshCameraDevices]);
+
+	useEffect(() => {
+		const preview = cameraPreviewRef.current;
+		if (!preview) {
+			return;
+		}
+
+		preview.srcObject = cameraPreviewStream;
+		if (cameraPreviewStream) {
+			void preview.play().catch(() => {
+				// Browser autoplay can fail briefly while the stream is attaching.
+			});
+		}
+
+		return () => {
+			if (preview.srcObject === cameraPreviewStream) {
+				preview.srcObject = null;
+			}
+		};
+	}, [cameraPreviewStream]);
+
 	const openSourceSelector = () => {
 		window.electronAPI?.openSourceSelector();
 	};
@@ -162,6 +245,8 @@ export function LaunchWindow() {
 		}
 
 		if (result.success && result.path) {
+			setCameraDeviceId(undefined);
+			await window.electronAPI.clearCurrentWebcamPath();
 			await window.electronAPI.setCurrentVideoPath(result.path);
 			await window.electronAPI.switchToEditor();
 		}
@@ -172,6 +257,8 @@ export function LaunchWindow() {
 		if (result.canceled || !result.success) {
 			return;
 		}
+		setCameraDeviceId(undefined);
+		await window.electronAPI.clearCurrentWebcamPath();
 		await window.electronAPI.switchToEditor();
 	};
 
@@ -203,32 +290,11 @@ export function LaunchWindow() {
 		}
 	};
 
-	const chooseRecordingsDirectory = async () => {
-		const result = await window.electronAPI.chooseRecordingsDirectory();
-		if (result.canceled) {
-			return;
-		}
-		if (result.success && result.path) {
-			setRecordingsDirectory(result.path);
-		}
-	};
-
-	useEffect(() => {
-		const loadRecordingsDirectory = async () => {
-			const result = await window.electronAPI.getRecordingsDirectory();
-			if (result.success) {
-				setRecordingsDirectory(result.path);
-			}
-		};
-
-		void loadRecordingsDirectory();
-	}, []);
-
-	const recordingsDirectoryName = recordingsDirectory
-		? recordingsDirectory.split(/[\\/]/).filter(Boolean).pop() || recordingsDirectory
-		: "recordings";
 	const dividerClass = "mx-1 h-5 w-px shrink-0 bg-white/10";
 	const supportsHudCaptureProtection = platform !== "linux";
+	const selectedCameraLabel =
+		cameraDevices.find((device) => device.deviceId === cameraSession.deviceId)?.label ??
+		(webcamEnabled ? t("recording.cameraOn") : t("recording.cameraOff"));
 
 	const toggleMicrophone = () => {
 		if (!recording) {
@@ -239,6 +305,25 @@ export function LaunchWindow() {
 	return (
 		<div className="flex h-full w-full items-end justify-center bg-transparent px-3 pb-3 pt-2 overflow-hidden">
 			<div className="flex flex-col items-center gap-2 mx-auto overflow-visible">
+				{cameraSession.enabled && cameraSession.previewVisible && cameraPreviewStream && (
+					<div
+						className={`flex items-center gap-2 rounded-2xl border border-[rgba(16,185,129,0.12)] bg-[rgba(10,15,13,0.94)] px-2 py-2 shadow-xl backdrop-blur-xl ${styles.electronNoDrag}`}
+					>
+						<div className="relative h-[84px] w-[140px] overflow-hidden rounded-[18px] border border-white/10 bg-black">
+							<video
+								ref={cameraPreviewRef}
+								autoPlay
+								playsInline
+								muted
+								className="h-full w-full object-cover"
+								style={{
+									transform: cameraSession.previewMirrored ? "scaleX(-1)" : undefined,
+								}}
+							/>
+						</div>
+					</div>
+				)}
+
 				{showMicControls && (
 					<div
 						className={`flex items-center gap-2 rounded-2xl border border-[rgba(16,185,129,0.12)] bg-[rgba(10,15,13,0.94)] px-3 py-2 shadow-xl backdrop-blur-xl ${styles.electronNoDrag}`}
@@ -351,6 +436,73 @@ export function LaunchWindow() {
 								<MdMicOff size={15} className="text-white/35" />
 							)}
 						</Button>
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Button
+									variant="link"
+									size="icon"
+									disabled={recording}
+									title={`${t("recording.selectCamera")}: ${selectedCameraLabel}`}
+									className="text-white/80 hover:bg-white/5 rounded-lg h-8 w-8 transition-colors"
+								>
+									{webcamEnabled ? (
+										<MdVideocam size={15} className="text-[#10B981]" />
+									) : (
+										<MdVideocamOff size={15} className="text-white/35" />
+									)}
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent
+								side="top"
+								align="center"
+								className="min-w-[220px] border-white/10 bg-[rgba(17,28,24,0.97)] text-white/90 backdrop-blur-xl"
+							>
+								<DropdownMenuLabel className="text-xs text-white/60">
+									{t("recording.selectCamera")}
+								</DropdownMenuLabel>
+								<DropdownMenuRadioGroup
+									value={cameraSession.deviceId ?? "__off__"}
+									onValueChange={(value) =>
+										setCameraDeviceId(value === "__off__" ? undefined : value)
+									}
+								>
+									<DropdownMenuRadioItem value="__off__" className="text-xs">
+										{t("recording.cameraOff")}
+									</DropdownMenuRadioItem>
+									{cameraDevices.map((device) => (
+										<DropdownMenuRadioItem
+											key={device.deviceId}
+											value={device.deviceId}
+											className="text-xs"
+										>
+											{device.label}
+										</DropdownMenuRadioItem>
+									))}
+								</DropdownMenuRadioGroup>
+								{cameraDevices.length === 0 && (
+									<DropdownMenuItem disabled className="text-xs text-white/40">
+										{t("recording.noCameraFound")}
+									</DropdownMenuItem>
+								)}
+								<DropdownMenuSeparator className="bg-white/10" />
+								<DropdownMenuCheckboxItem
+									checked={!cameraSession.previewVisible}
+									onCheckedChange={(checked) => setCameraPreviewVisible(!Boolean(checked))}
+									disabled={!cameraSession.enabled}
+									className="text-xs"
+								>
+									{t("recording.hideCameraPreview")}
+								</DropdownMenuCheckboxItem>
+								<DropdownMenuCheckboxItem
+									checked={cameraSession.previewMirrored}
+									onCheckedChange={(checked) => setCameraPreviewMirrored(Boolean(checked))}
+									disabled={!cameraSession.enabled}
+									className="text-xs"
+								>
+									{t("recording.mirrorCameraPreview")}
+								</DropdownMenuCheckboxItem>
+							</DropdownMenuContent>
+						</DropdownMenu>
 					</div>
 
 					<div className={dividerClass} />
@@ -412,24 +564,6 @@ export function LaunchWindow() {
 								</span>
 							</>
 						)}
-					</Button>
-
-					{/* Folder path */}
-					<Button
-						variant="link"
-						size="sm"
-						onClick={chooseRecordingsDirectory}
-						disabled={recording}
-						title={
-							recordingsDirectory
-								? t("recording.recordingFolder", undefined, { path: recordingsDirectory })
-								: t("recording.chooseRecordingsFolder")
-						}
-						className={`text-white/50 hover:text-white/70 hover:bg-transparent px-1 text-[11px] underline decoration-white/30 underline-offset-2 ${styles.electronNoDrag}`}
-					>
-						<ContentClamp truncateLength={18}>
-							{t("recording.folderPath", undefined, { name: recordingsDirectoryName })}
-						</ContentClamp>
 					</Button>
 
 					<div className="ml-auto flex items-center gap-0.5">
