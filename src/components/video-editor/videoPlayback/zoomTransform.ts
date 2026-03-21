@@ -4,6 +4,7 @@ import { MotionBlurFilter } from "pixi-filters/motion-blur";
 const PEAK_VELOCITY_PPS = 2000;
 const MAX_BLUR_PX = 8;
 const VELOCITY_THRESHOLD_PPS = 15;
+const ZOOM_SMOOTHING_RESPONSE = 18;
 
 export interface MotionBlurState {
 	lastFrameTimeMs: number;
@@ -21,6 +22,15 @@ export function createMotionBlurState(): MotionBlurState {
 		prevCamScale: 1,
 		initialized: false,
 	};
+}
+
+export function smoothZoomValue(current: number, target: number, deltaSeconds: number): number {
+	if (!Number.isFinite(deltaSeconds) || deltaSeconds <= 0) {
+		return target;
+	}
+
+	const alpha = 1 - Math.exp(-ZOOM_SMOOTHING_RESPONSE * Math.min(0.1, deltaSeconds));
+	return current + (target - current) * alpha;
 }
 
 interface TransformParams {

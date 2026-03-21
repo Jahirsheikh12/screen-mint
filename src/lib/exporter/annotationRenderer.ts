@@ -1,4 +1,11 @@
-import type { AnnotationRegion, ArrowDirection, BlurData } from "@/components/video-editor/types";
+import type {
+	AnnotationRegion,
+	ArrowDirection,
+	BlurData,
+	CaptionRegion,
+	CaptionSettings,
+} from "@/components/video-editor/types";
+import { createCaptionRenderBlock, hexToRgba } from "@/components/video-editor/captionLayout";
 
 // SVG path data for each arrow direction
 const ARROW_PATHS: Record<ArrowDirection, string[]> = {
@@ -346,4 +353,104 @@ export async function renderAnnotations(
 				break;
 		}
 	}
+}
+
+export function renderCaptions(
+	ctx: CanvasRenderingContext2D,
+	captions: CaptionRegion[],
+	settings: CaptionSettings,
+	canvasWidth: number,
+	canvasHeight: number,
+	currentTimeMs: number,
+): void {
+	const renderBlock = createCaptionRenderBlock(captions, settings, currentTimeMs);
+	if (!renderBlock) return;
+
+	const { style, position } = settings;
+	const scaleFactor = canvasWidth / 1920;
+	const fontSize = Math.max(12, Math.round(style.fontSize * scaleFactor));
+	const padX = Math.round(16 * scaleFactor);
+	const padY = Math.round(8 * scaleFactor);
+	const borderRadius = Math.round(6 * scaleFactor);
+	const wordGap = Math.max(4, Math.round(fontSize * 0.18));
+	const lineGap = Math.max(2, Math.round(fontSize * 0.12));
+	const inactiveColor = hexToRgba(style.color, 0.58);
+
+	ctx.save();
+	ctx.font = `${style.fontWeight} ${fontSize}px ${style.fontFamily}`;
+	ctx.textAlign = "center";
+	ctx.textBaseline = "middle";
+	const lineHeight = fontSize * 1.3;
+	const lineWidths = renderBlock.lines.map((line) => {
+		return line.words.reduce((total, word, index) => {
+			const text = style.textTransform === "uppercase" ? word.text.toUpperCase() : word.text;
+			const next = total + ctx.measureText(text).width;
+			return index === line.words.length - 1 ? next : next + wordGap;
+		}, 0);
+	});
+	const blockHeight =
+		renderBlock.lines.length * lineHeight +
+		Math.max(0, renderBlock.lines.length - 1) * lineGap +
+		padY * 2;
+	const blockWidth = Math.min(canvasWidth * 0.85, Math.max(...lineWidths, 0) + padX * 2);
+
+	// Position
+	const cx = canvasWidth / 2;
+	let cy: number;
+	if (position === "top") {
+		cy = canvasHeight * (settings.safeAreaInset / 100) + blockHeight / 2;
+	} else if (position === "center") {
+		cy = canvasHeight / 2;
+	} else {
+		cy = canvasHeight * (1 - settings.safeAreaInset / 100) - blockHeight / 2;
+	}
+
+	const bx = cx - blockWidth / 2;
+	const by = cy - blockHeight / 2;
+
+	// Background
+	if (style.backgroundOpacity > 0 && style.backgroundColor !== "transparent") {
+		ctx.fillStyle = hexToRgba(style.backgroundColor, style.backgroundOpacity);
+		ctx.beginPath();
+		ctx.roundRect(bx, by, blockWidth, blockHeight, borderRadius);
+		ctx.fill();
+	}
+
+	const outlineWidth = style.outlineWidth * scaleFactor;
+	if (outlineWidth > 0) {
+		ctx.strokeStyle = style.outlineColor;
+		ctx.lineWidth = outlineWidth * 2;
+		ctx.lineJoin = "round";
+	}
+
+	let yCursor = by + padY + lineHeight / 2;
+	for (let lineIndex = 0; lineIndex < renderBlock.lines.length; lineIndex++) {
+		const line = renderBlock.lines[lineIndex];
+		const lineWidth = lineWidths[lineIndex] ?? 0;
+		let xCursor = cx - lineWidth / 2;
+
+		for (const word of line.words) {
+			const text = style.textTransform === "uppercase" ? word.text.toUpperCase() : word.text;
+			const metrics = ctx.measureText(text);
+			const drawX = xCursor + metrics.width / 2;
+			const isHighlighted = settings.animationMode === "active-word" && word.isActive;
+
+			if (outlineWidth > 0) {
+				ctx.strokeText(text, drawX, yCursor);
+			}
+
+			ctx.fillStyle =
+				settings.animationMode === "active-word"
+					? isHighlighted
+						? style.color
+						: inactiveColor
+					: style.color;
+			ctx.fillText(text, drawX, yCursor);
+			xCursor += metrics.width + wordGap;
+		}
+
+		yCursor += lineHeight + lineGap;
+	}
+
+	ctx.restore();
 }

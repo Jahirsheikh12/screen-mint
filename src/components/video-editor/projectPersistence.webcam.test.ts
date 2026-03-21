@@ -52,7 +52,7 @@ describe("webcam project persistence", () => {
 		expect(result.showWebcam).toBe(false);
 		expect(result.mirrorWebcam).toBe(true);
 		expect(result.cameraSizeDuringZoom).toBe(1);
-		expect(result.webcamRegion.position).toEqual({ x: 0, y: 100 });
+		expect(result.webcamRegion.position).toEqual({ x: 0, y: 50 });
 		expect(result.webcamRegion.size).toEqual({ width: 60, height: 50 });
 		expect(result.cameraLayouts).toHaveLength(1);
 		expect(result.cameraLayouts[0]).toMatchObject({
@@ -66,6 +66,25 @@ describe("webcam project persistence", () => {
 				borderWidth: 3,
 			},
 		});
+	});
+
+	it("clamps oversized square webcam regions inside the frame", () => {
+		const result = normalizeProjectEditor({
+			webcamRegion: {
+				position: { x: 65, y: 80 },
+				size: { width: 45, height: 30 },
+				shape: "square",
+				borderRadius: 25,
+				opacity: 1,
+				borderWidth: 3,
+				borderColor: "#fff",
+			},
+		});
+
+		expect(result.webcamRegion.shape).toBe("square");
+		expect(result.webcamRegion.size).toEqual({ width: 45, height: 45 });
+		expect(result.webcamRegion.position).toEqual({ x: 55, y: 55 });
+		expect(result.webcamRegion.borderRadius).toBe(25);
 	});
 
 	it("round-trips webcam editor data through createProjectData", () => {

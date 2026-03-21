@@ -150,6 +150,42 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	clearCurrentWebcamPath: () => {
 		return ipcRenderer.invoke("clear-current-webcam-path");
 	},
+	checkFileAvailable: (filePath: string) => {
+		return ipcRenderer.invoke("check-file-available", filePath);
+	},
+	getCaptionModelStatus: (videoPath?: string) => {
+		return ipcRenderer.invoke("get-caption-model-status", videoPath);
+	},
+	generateCaptions: (request: {
+		videoPath?: string;
+		preferredBackend: "auto" | "whisper.cpp" | "apple-speech";
+		model: "base" | "small" | "medium";
+		language: string;
+		prompt: string;
+		preferredSourceAudio: "microphone" | "mixed";
+	}) => {
+		return ipcRenderer.invoke("generate-captions", request);
+	},
+	cancelCaptionGeneration: () => {
+		return ipcRenderer.invoke("cancel-caption-generation");
+	},
+	exportCaptionsTranscript: (payload: {
+		videoPath?: string;
+		format: "srt" | "vtt" | "txt";
+		track: unknown;
+	}) => {
+		return ipcRenderer.invoke("export-captions-transcript", payload);
+	},
+	onCaptionGenerationProgress: (
+		callback: (progress: { stage: string; percentage: number; message: string }) => void,
+	) => {
+		const listener = (
+			_event: Electron.IpcRendererEvent,
+			progress: { stage: string; percentage: number; message: string },
+		) => callback(progress);
+		ipcRenderer.on("caption-generation-progress", listener);
+		return () => ipcRenderer.removeListener("caption-generation-progress", listener);
+	},
 	saveProjectFile: (projectData: unknown, suggestedName?: string, existingProjectPath?: string) => {
 		return ipcRenderer.invoke("save-project-file", projectData, suggestedName, existingProjectPath);
 	},

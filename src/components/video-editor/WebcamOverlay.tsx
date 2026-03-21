@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react";
 import { Rnd } from "react-rnd";
-import { cn } from "@/lib/utils";
 import type { CameraLayoutMode } from "./types";
 import { toFileUrl } from "./projectPersistence";
 import type { WebcamRegion } from "./types";
+import { getWebcamPixelRect, normalizeWebcamRegion } from "./webcamRegionUtils";
 
 interface WebcamOverlayProps {
 	webcamPath: string;
@@ -34,13 +34,14 @@ export function WebcamOverlay({
 }: WebcamOverlayProps) {
 	const videoRef = useRef<HTMLVideoElement>(null);
 	const isDraggingRef = useRef(false);
+	const normalizedRegion = normalizeWebcamRegion(webcamRegion);
+	const { x, y, width, height } = getWebcamPixelRect(
+		normalizedRegion,
+		containerWidth,
+		containerHeight,
+	);
 
-	const x = (webcamRegion.position.x / 100) * containerWidth;
-	const y = (webcamRegion.position.y / 100) * containerHeight;
-	const width = (webcamRegion.size.width / 100) * containerWidth;
-	const height = (webcamRegion.size.height / 100) * containerHeight;
-
-	const isCircle = webcamRegion.shape === "circle";
+	const isCircle = normalizedRegion.shape === "circle";
 
 	useEffect(() => {
 		const video = videoRef.current;
@@ -53,10 +54,7 @@ export function WebcamOverlay({
 	if (mode === "fullscreen") {
 		return (
 			<div
-				className={cn(
-					"absolute inset-0 overflow-hidden",
-					isSelected && "ring-2 ring-[#10B981] ring-inset",
-				)}
+				className="absolute inset-0 overflow-hidden"
 				style={{ pointerEvents: "auto", zIndex: 850 }}
 				onClick={onClick}
 			>
@@ -92,8 +90,21 @@ export function WebcamOverlay({
 				const yPercent = (position.y / containerHeight) * 100;
 				const widthPercent = (ref.offsetWidth / containerWidth) * 100;
 				const heightPercent = (ref.offsetHeight / containerHeight) * 100;
+				const sidePercent =
+					(Math.max(ref.offsetWidth, ref.offsetHeight) /
+						Math.min(containerWidth, containerHeight)) *
+					100;
 				onPositionChange({ x: xPercent, y: yPercent });
-				onSizeChange({ width: widthPercent, height: heightPercent });
+				onSizeChange({
+					width:
+						normalizedRegion.shape === "circle" || normalizedRegion.shape === "square"
+							? sidePercent
+							: widthPercent,
+					height:
+						normalizedRegion.shape === "circle" || normalizedRegion.shape === "square"
+							? sidePercent
+							: heightPercent,
+				});
 			}}
 			onClick={() => {
 				if (isDraggingRef.current) return;
@@ -101,36 +112,32 @@ export function WebcamOverlay({
 			}}
 			bounds="parent"
 			lockAspectRatio
-			className={cn(
-				"cursor-move transition-all",
-				isSelected && "ring-2 ring-[#10B981] ring-offset-2 ring-offset-transparent",
-			)}
+			className="cursor-move transition-all"
 			style={{
 				zIndex: 900,
 				pointerEvents: "auto",
-				border: isSelected ? "2px solid rgba(16, 185, 129, 0.8)" : "none",
 			}}
 			enableResizing={isSelected}
 			disableDragging={!isSelected}
 		>
-				<div
-					className="w-full h-full overflow-hidden"
-					style={{
-						borderRadius: isCircle ? "50%" : `${webcamRegion.borderRadius}px`,
-						opacity: webcamRegion.opacity,
-						border: `${webcamRegion.borderWidth}px solid ${webcamRegion.borderColor}`,
-						boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
-					}}
-				>
-					<video
-						ref={videoRef}
-						src={toFileUrl(webcamPath)}
-						className="w-full h-full object-cover"
-						style={{ transform: mirror ? "scaleX(-1)" : "none" }}
-						muted
-						playsInline
-					/>
-				</div>
+			<div
+				className="w-full h-full overflow-hidden"
+				style={{
+					borderRadius: isCircle ? "50%" : `${normalizedRegion.borderRadius}px`,
+					opacity: normalizedRegion.opacity,
+					border: `${normalizedRegion.borderWidth}px solid ${normalizedRegion.borderColor}`,
+					boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+				}}
+			>
+				<video
+					ref={videoRef}
+					src={toFileUrl(webcamPath)}
+					className="w-full h-full object-cover"
+					style={{ transform: mirror ? "scaleX(-1)" : "none" }}
+					muted
+					playsInline
+				/>
+			</div>
 		</Rnd>
 	);
 }

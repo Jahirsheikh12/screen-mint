@@ -16,7 +16,7 @@ interface ItemProps {
 	onDelete?: () => void;
 	zoomDepth?: number;
 	speedValue?: number;
-	variant?: "zoom" | "trim" | "annotation" | "speed" | "audio" | "camera";
+	variant?: "zoom" | "trim" | "annotation" | "speed" | "audio" | "camera" | "caption";
 }
 
 // Map zoom depth to multiplier labels
@@ -103,30 +103,35 @@ export default function Item({
 	const isSpeed = variant === "speed";
 	const isAudio = variant === "audio";
 	const isCamera = variant === "camera";
+	const isCaption = variant === "caption";
 
 	const glassClass = isZoom
 		? glassStyles.glassGreen
 		: isTrim
-				? glassStyles.glassRed
-				: isSpeed
-					? glassStyles.glassAmber
-					: isCamera
-						? glassStyles.glassBlue
+			? glassStyles.glassRed
+			: isSpeed
+				? glassStyles.glassAmber
+				: isCamera
+					? glassStyles.glassBlue
 					: isAudio
 						? glassStyles.glassPurple
-						: glassStyles.glassYellow;
+						: isCaption
+							? glassStyles.glassCyan
+							: glassStyles.glassYellow;
 
 	const endCapColor = isZoom
 		? "#10B981"
 		: isTrim
-				? "#ef4444"
-				: isSpeed
-					? "#d97706"
-					: isCamera
-						? "#3b82f6"
+			? "#ef4444"
+			: isSpeed
+				? "#d97706"
+				: isCamera
+					? "#3b82f6"
 					: isAudio
 						? "#a855f7"
-						: "#B4A046";
+						: isCaption
+							? "#06b6d4"
+							: "#B4A046";
 
 	const timeLabel = useMemo(
 		() => `${formatMs(span.start)} – ${formatMs(span.end)}`,

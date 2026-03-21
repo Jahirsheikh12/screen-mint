@@ -2,6 +2,10 @@ import { fixWebmDuration } from "@fix-webm-duration/fix";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { CameraSessionState } from "@/components/video-editor/types";
+import {
+	loadCameraPreferences,
+	saveCameraPreferences,
+} from "@/hooks/cameraPreferences";
 
 const TARGET_FRAME_RATE = 60;
 const TARGET_WIDTH = 3840;
@@ -41,8 +45,6 @@ type ExtendedDisplayVideoConstraints = MediaTrackConstraints & {
 	cursor?: "always" | "motion" | "never";
 };
 
-const WEBCAM_BITRATE = 4_000_000;
-
 type UseScreenRecorderReturn = {
 	recording: boolean;
 	countdownActive: boolean;
@@ -67,6 +69,7 @@ type UseScreenRecorderReturn = {
 };
 
 export function useScreenRecorder(): UseScreenRecorderReturn {
+	const initialCameraPreferences = loadCameraPreferences();
 	const [recording, setRecording] = useState(false);
 	const [starting, setStarting] = useState(false);
 	const [countdownActive, setCountdownActive] = useState(false);
@@ -75,12 +78,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 	const [microphoneDeviceId, setMicrophoneDeviceId] = useState<string | undefined>(undefined);
 	const [systemAudioEnabled, setSystemAudioEnabled] = useState(false);
 	const [countdownDelay, setCountdownDelayState] = useState(3);
-	const [cameraSession, setCameraSession] = useState<CameraSessionState>({
-		enabled: false,
-		deviceId: undefined,
-		previewVisible: true,
-		previewMirrored: true,
-	});
+	const [cameraSession, setCameraSession] = useState<CameraSessionState>(initialCameraPreferences);
 	const [cameraPreviewStream, setCameraPreviewStream] = useState<MediaStream | null>(null);
 	const mediaRecorder = useRef<MediaRecorder | null>(null);
 	const stream = useRef<MediaStream | null>(null);
@@ -98,6 +96,9 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 	const hasPromptedForReselect = useRef(false);
 	const hasShownWgcFallbackToast = useRef(false);
 	const countdownDelayLoaded = useRef(false);
+	const webcamStopInFlight = useRef(false);
+	const hasShownCameraDisconnectToast = useRef(false);
+	const stopWebcamRecordingRef = useRef<() => Promise<void>>(async () => {});
 	const webcamEnabled = cameraSession.enabled;
 
 	const preparePermissions = useCallback(async (options: { startup?: boolean } = {}) => {
@@ -170,20 +171,182 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 	};
 
 	const releaseWebcamStream = useCallback(() => {
-		if (webcamStream.current) {
-			webcamStream.current.getTracks().forEach((track) => track.stop());
-			webcamStream.current = null;
+		const activeStream = webcamStream.current;
+		webcamStream.current = null;
+
+		if (activeStream) {
+			activeStream.getTracks().forEach((track) => {
+				track.onended = null;
+				track.stop();
+			});
 		}
 
 		setCameraPreviewStream(null);
 	}, []);
+
+	const getAvailableCameraDevices = useCallback(async () => {
+		try {
+			const devices = await navigator.mediaDevices.enumerateDevices();
+			return devices.filter((device) => device.kind === "videoinput");
+		} catch {
+			return [];
+		}
+	}, []);
+
+	const getWebcamConstraintCandidates = useCallback((deviceId?: string): MediaTrackConstraints[] => {
+		const deviceConstraint = deviceId ? { deviceId: { exact: deviceId } } : {};
+		const unconstrainedDevice = deviceId ? { deviceId: { ideal: deviceId } } : {};
+
+		return [
+			{
+				...deviceConstraint,
+				width: { ideal: 1920 },
+				height: { ideal: 1080 },
+				frameRate: { ideal: 30, max: 30 },
+			},
+			{
+				...deviceConstraint,
+				width: { ideal: 1280 },
+				height: { ideal: 720 },
+				frameRate: { ideal: 30, max: 30 },
+			},
+			{
+				...unconstrainedDevice,
+				width: { ideal: 1280 },
+				height: { ideal: 720 },
+				frameRate: { ideal: 30, max: 30 },
+			},
+			{
+				...unconstrainedDevice,
+				frameRate: { ideal: 30, max: 30 },
+			},
+			{
+				...unconstrainedDevice,
+			},
+		];
+	}, []);
+
+	const getWebcamRecorderBitrate = useCallback((camStream: MediaStream) => {
+		const settings = camStream.getVideoTracks()[0]?.getSettings();
+		const width = settings?.width ?? 1280;
+		const height = settings?.height ?? 720;
+		const pixels = width * height;
+
+		if (pixels >= 1920 * 1080) {
+			return 7_000_000;
+		}
+
+		if (pixels >= 1280 * 720) {
+			return 5_000_000;
+		}
+
+		return 3_500_000;
+	}, []);
+
+	const handleUnexpectedWebcamEnd = useCallback(() => {
+		if (!cameraSession.enabled || webcamStopInFlight.current) {
+			return;
+		}
+
+		if (!hasShownCameraDisconnectToast.current) {
+			hasShownCameraDisconnectToast.current = true;
+			toast.warning("Camera disconnected. Screen recording will continue without webcam.");
+		}
+
+		void window.electronAPI.clearCurrentWebcamPath();
+
+		if (webcamRecorder.current?.state === "recording") {
+			void (async () => {
+				await stopWebcamRecordingRef.current();
+				setCameraSession((prev) => ({ ...prev, enabled: false }));
+			})();
+			return;
+		}
+
+		releaseWebcamStream();
+		setCameraSession((prev) => ({ ...prev, enabled: false }));
+	}, [cameraSession.enabled, releaseWebcamStream]);
+
+	const attachWebcamTrackLifecycle = useCallback(
+		(camStream: MediaStream) => {
+			const track = camStream.getVideoTracks()[0];
+			if (!track) {
+				return;
+			}
+
+			track.onended = () => {
+				if (webcamStream.current !== camStream) {
+					return;
+				}
+
+				handleUnexpectedWebcamEnd();
+			};
+		},
+		[handleUnexpectedWebcamEnd],
+	);
+
+	const acquireWebcamStream = useCallback(
+		async (preferredDeviceId?: string) => {
+			let lastError: unknown = null;
+			const attemptedDeviceIds = new Set<string | undefined>();
+
+			for (const candidateDeviceId of [preferredDeviceId, undefined]) {
+				if (attemptedDeviceIds.has(candidateDeviceId)) {
+					continue;
+				}
+				attemptedDeviceIds.add(candidateDeviceId);
+
+				for (const video of getWebcamConstraintCandidates(candidateDeviceId)) {
+					try {
+						const camStream = await navigator.mediaDevices.getUserMedia({
+							video,
+							audio: false,
+						});
+						const resolvedDeviceId =
+							camStream.getVideoTracks()[0]?.getSettings().deviceId ?? candidateDeviceId;
+
+						return {
+							stream: camStream,
+							resolvedDeviceId,
+						};
+					} catch (error) {
+						lastError = error;
+					}
+				}
+			}
+
+			const devices = await getAvailableCameraDevices();
+			for (const device of devices) {
+				if (!device.deviceId || attemptedDeviceIds.has(device.deviceId)) {
+					continue;
+				}
+
+				for (const video of getWebcamConstraintCandidates(device.deviceId)) {
+					try {
+						const camStream = await navigator.mediaDevices.getUserMedia({
+							video,
+							audio: false,
+						});
+						return {
+							stream: camStream,
+							resolvedDeviceId: device.deviceId,
+						};
+					} catch (error) {
+						lastError = error;
+					}
+				}
+			}
+
+			throw lastError ?? new Error("No camera is available.");
+		},
+		[getAvailableCameraDevices, getWebcamConstraintCandidates],
+	);
 
 	const setWebcamEnabled = useCallback(
 		(enabled: boolean) => {
 			setCameraSession((prev) => ({
 				...prev,
 				enabled,
-				previewVisible: enabled ? prev.previewVisible : false,
 			}));
 
 			if (!enabled) {
@@ -200,7 +363,6 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 				...prev,
 				deviceId,
 				enabled: Boolean(deviceId),
-				previewVisible: deviceId ? true : prev.previewVisible,
 			}));
 
 			if (webcamRecorder.current?.state !== "recording") {
@@ -249,40 +411,30 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 
 		setCameraPreviewStream(null);
 	}, []);
-	const getWebcamConstraints = useCallback((): MediaStreamConstraints => {
-		const baseVideo = {
-			width: 1280,
-			height: 720,
-			frameRate: 30,
-		};
-
-		return cameraSession.deviceId
-			? {
-					video: {
-						...baseVideo,
-						deviceId: { exact: cameraSession.deviceId },
-					},
-					audio: false,
-				}
-			: {
-					video: baseVideo,
-					audio: false,
-				};
-	}, [cameraSession.deviceId]);
-
 	const ensureWebcamStream = useCallback(async () => {
 		if (webcamStream.current) {
 			return webcamStream.current;
 		}
 
-		const camStream = await navigator.mediaDevices.getUserMedia(getWebcamConstraints());
+		const { stream: camStream, resolvedDeviceId } = await acquireWebcamStream(cameraSession.deviceId);
 		webcamStream.current = camStream;
+		attachWebcamTrackLifecycle(camStream);
 		setCameraPreviewStream(cameraSession.previewVisible ? camStream : null);
+
+		if (resolvedDeviceId && resolvedDeviceId !== cameraSession.deviceId) {
+			setCameraSession((prev) => ({
+				...prev,
+				deviceId: resolvedDeviceId,
+				enabled: true,
+			}));
+		}
+
 		return camStream;
-	}, [cameraSession.previewVisible, getWebcamConstraints]);
+	}, [acquireWebcamStream, attachWebcamTrackLifecycle, cameraSession.deviceId, cameraSession.previewVisible]);
 
 	const startWebcamRecording = useCallback(async () => {
 		try {
+			hasShownCameraDisconnectToast.current = false;
 			const camStream = await ensureWebcamStream();
 			webcamChunks.current = [];
 
@@ -292,7 +444,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 
 			const recorder = new MediaRecorder(camStream, {
 				mimeType,
-				videoBitsPerSecond: WEBCAM_BITRATE,
+				videoBitsPerSecond: getWebcamRecorderBitrate(camStream),
 			});
 			webcamRecorder.current = recorder;
 			recorder.ondataavailable = (event) => {
@@ -302,37 +454,38 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		} catch (error) {
 			console.warn("Failed to start webcam recording:", error);
 			await window.electronAPI.clearCurrentWebcamPath();
-			setCameraSession((prev) => ({ ...prev, enabled: false, previewVisible: false }));
+			setCameraSession((prev) => ({ ...prev, enabled: false }));
 			setCameraPreviewStream(null);
 			toast.error("Unable to access the selected camera. Recording will continue without webcam.");
 		}
-	}, [ensureWebcamStream]);
+	}, [ensureWebcamStream, getWebcamRecorderBitrate]);
 
 	const stopWebcamRecording = useCallback(async () => {
-		const recorder = webcamRecorder.current;
-		const mimeType = recorder?.mimeType ?? "video/webm";
-
-		// Wait for MediaRecorder to fully stop and fire final dataavailable
-		if (recorder?.state === "recording") {
-			await new Promise<void>((resolve) => {
-				recorder.onstop = () => resolve();
-				recorder.stop();
-			});
-		}
-
-		releaseWebcamStream();
-
-		if (webcamChunks.current.length === 0) {
-			webcamRecorder.current = null;
-			await window.electronAPI.clearCurrentWebcamPath();
-			return;
-		}
-
-		const duration = Date.now() - startTime.current;
-		const buggyBlob = new Blob(webcamChunks.current, { type: mimeType });
-		webcamChunks.current = [];
-
+		webcamStopInFlight.current = true;
 		try {
+			const recorder = webcamRecorder.current;
+			const mimeType = recorder?.mimeType ?? "video/webm";
+
+			// Wait for MediaRecorder to fully stop and fire final dataavailable
+			if (recorder?.state === "recording") {
+				await new Promise<void>((resolve) => {
+					recorder.onstop = () => resolve();
+					recorder.stop();
+				});
+			}
+
+			releaseWebcamStream();
+
+			if (webcamChunks.current.length === 0) {
+				webcamRecorder.current = null;
+				await window.electronAPI.clearCurrentWebcamPath();
+				return;
+			}
+
+			const duration = Date.now() - startTime.current;
+			const buggyBlob = new Blob(webcamChunks.current, { type: mimeType });
+			webcamChunks.current = [];
+
 			const webcamBlob = await fixWebmDuration(buggyBlob, duration);
 			const arrayBuffer = await webcamBlob.arrayBuffer();
 			const webcamFileName = `${WEBCAM_FILE_PREFIX}${Date.now()}${VIDEO_FILE_EXTENSION}`;
@@ -343,10 +496,13 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		} catch (error) {
 			console.error("Error saving webcam recording:", error);
 			await window.electronAPI.clearCurrentWebcamPath();
+		} finally {
+			webcamRecorder.current = null;
+			webcamStopInFlight.current = false;
 		}
-
-		webcamRecorder.current = null;
 	}, [releaseWebcamStream]);
+
+	stopWebcamRecordingRef.current = stopWebcamRecording;
 
 	const stopRecording = useRef(() => {
 		if (nativeScreenRecording.current) {
@@ -413,6 +569,10 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 	}, []);
 
 	useEffect(() => {
+		saveCameraPreferences(cameraSession);
+	}, [cameraSession]);
+
+	useEffect(() => {
 		let cancelled = false;
 
 		if (!cameraSession.enabled) {
@@ -436,14 +596,54 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 				}
 
 				console.warn("Failed to prepare camera preview:", error);
-				setCameraSession((prev) => ({ ...prev, enabled: false, previewVisible: false }));
+				setCameraSession((prev) => ({ ...prev, enabled: false }));
 				setCameraPreviewStream(null);
 			});
 
 		return () => {
 			cancelled = true;
 		};
-	}, [cameraSession.enabled, cameraSession.previewVisible, ensureWebcamStream, releaseWebcamStream]);
+	}, [
+		cameraSession.enabled,
+		cameraSession.previewVisible,
+		ensureWebcamStream,
+		releaseWebcamStream,
+	]);
+
+	useEffect(() => {
+		const handleDeviceChange = () => {
+			void (async () => {
+				const devices = await getAvailableCameraDevices();
+
+				if (devices.length === 0) {
+					releaseWebcamStream();
+					setCameraSession((prev) => ({ ...prev, enabled: false, deviceId: undefined }));
+					return;
+				}
+
+				if (cameraSession.deviceId && devices.some((device) => device.deviceId === cameraSession.deviceId)) {
+					return;
+				}
+
+				if (!cameraSession.enabled) {
+					return;
+				}
+
+				const fallbackDeviceId = devices[0]?.deviceId;
+				releaseWebcamStream();
+				setCameraSession((prev) => ({
+					...prev,
+					deviceId: fallbackDeviceId,
+					enabled: Boolean(fallbackDeviceId),
+				}));
+			})();
+		};
+
+		navigator.mediaDevices?.addEventListener?.("devicechange", handleDeviceChange);
+		return () => {
+			navigator.mediaDevices?.removeEventListener?.("devicechange", handleDeviceChange);
+		};
+	}, [cameraSession.deviceId, cameraSession.enabled, getAvailableCameraDevices, releaseWebcamStream]);
 
 	useEffect(() => {
 		let cleanup: (() => void) | undefined;

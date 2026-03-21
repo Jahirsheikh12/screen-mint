@@ -5,8 +5,15 @@ import {
 	type AnnotationRegion,
 	type AudioRegion,
 	type CameraLayoutRegion,
+	type CaptionGenerationOptions,
+	type CaptionRegion,
+	type CaptionSettings,
+	type CaptionTrack,
+	type CaptionWord,
+	DEFAULT_CAPTION_GENERATION_OPTIONS,
 	DEFAULT_CAMERA_LAYOUT_MODE,
 	DEFAULT_CAMERA_SIZE_DURING_ZOOM,
+	DEFAULT_CAPTION_SETTINGS,
 	type CropRegion,
 	DEFAULT_ANNOTATION_POSITION,
 	DEFAULT_ANNOTATION_SIZE,
@@ -28,8 +35,9 @@ import {
 	type WebcamRegion,
 	type ZoomRegion,
 } from "./types";
+import { normalizeWebcamRegion } from "./webcamRegionUtils";
 
-export const PROJECT_VERSION = 1;
+export const PROJECT_VERSION = 3;
 
 export interface ProjectEditorState {
 	wallpaper: string;
@@ -59,6 +67,9 @@ export interface ProjectEditorState {
 	mirrorWebcam: boolean;
 	cameraSizeDuringZoom: number;
 	cameraLayouts: CameraLayoutRegion[];
+	captionTrack: CaptionTrack | null;
+	captionSettings: CaptionSettings;
+	captionGenerationOptions: CaptionGenerationOptions;
 	exportQuality: ExportQuality;
 	exportFormat: ExportFormat;
 	gifFrameRate: GifFrameRate;
@@ -97,6 +108,10 @@ function normalizePartialWebcamRegion(candidate: unknown): Partial<WebcamRegion>
 				x: nextPosition.x ?? DEFAULT_WEBCAM_REGION.position.x,
 				y: nextPosition.y ?? DEFAULT_WEBCAM_REGION.position.y,
 			};
+
+			if (partial.anchor == null) {
+				normalized.anchor = "free";
+			}
 		}
 	}
 
@@ -120,8 +135,22 @@ function normalizePartialWebcamRegion(candidate: unknown): Partial<WebcamRegion>
 		}
 	}
 
-	if (partial.shape === "circle" || partial.shape === "rectangle") {
+	if (partial.shape === "circle" || partial.shape === "rectangle" || partial.shape === "square") {
 		normalized.shape = partial.shape;
+	}
+
+	if (
+		partial.anchor === "top-left" ||
+		partial.anchor === "top-right" ||
+		partial.anchor === "bottom-left" ||
+		partial.anchor === "bottom-right" ||
+		partial.anchor === "free"
+	) {
+		normalized.anchor = partial.anchor;
+	}
+
+	if (isFiniteNumber(partial.marginPct)) {
+		normalized.marginPct = clamp(partial.marginPct, 0, 12);
 	}
 
 	if (isFiniteNumber(partial.borderRadius)) {
@@ -161,7 +190,9 @@ function normalizeCameraLayouts(candidate: unknown): CameraLayoutRegion[] {
 	}
 
 	return candidate
-		.filter((value): value is Partial<CameraLayoutRegion> => Boolean(value && typeof value === "object"))
+		.filter((value): value is Partial<CameraLayoutRegion> =>
+			Boolean(value && typeof value === "object"),
+		)
 		.map((layout, index) => {
 			const startMs = isFiniteNumber(layout.startMs) ? Math.max(0, Math.round(layout.startMs)) : 0;
 			const endMs = isFiniteNumber(layout.endMs)
@@ -266,6 +297,227 @@ export function validateProjectData(candidate: unknown): candidate is EditorProj
 	if (typeof project.videoPath !== "string" || !project.videoPath) return false;
 	if (!project.editor || typeof project.editor !== "object") return false;
 	return true;
+}
+
+function normalizeCaptionRegions(candidate: unknown): CaptionRegion[] {
+	if (!Array.isArray(candidate)) {
+		return [];
+	}
+
+	return candidate
+		.filter((region): region is Partial<CaptionRegion> =>
+			Boolean(
+				region &&
+					typeof region === "object" &&
+					typeof (region as Partial<CaptionRegion>).id === "string",
+			),
+		)
+		.map((region, index) => {
+			const rawStart = isFiniteNumber(region.startMs) ? Math.round(region.startMs) : 0;
+			const rawEnd = isFiniteNumber(region.endMs) ? Math.round(region.endMs) : rawStart + 1000;
+			const startMs = Math.max(0, Math.min(rawStart, rawEnd));
+			const endMs = Math.max(startMs + 1, rawEnd);
+			const text = typeof region.text === "string" ? region.text : "";
+			const words = normalizeCaptionWords(
+				(region as Partial<CaptionRegion>).words,
+				typeof region.id === "string" && region.id.trim().length > 0
+					? region.id
+					: `caption-${index + 1}`,
+				startMs,
+				endMs,
+				text,
+			);
+
+			return {
+				id:
+					typeof region.id === "string" && region.id.trim().length > 0
+						? region.id
+						: `caption-${index + 1}`,
+				startMs,
+				endMs,
+				text,
+				words,
+				source: (region as Partial<CaptionRegion>).source === "manual" ? "manual" : "generated",
+			};
+		});
+}
+
+function normalizeCaptionWords(
+	candidate: unknown,
+	segmentId: string,
+	startMs: number,
+	endMs: number,
+	text: string,
+): CaptionWord[] {
+	if (Array.isArray(candidate)) {
+		return candidate
+			.filter((word): word is Partial<CaptionWord> => Boolean(word && typeof word === "object"))
+			.map((word, index) => {
+				const rawStart = isFiniteNumber(word.startMs) ? Math.round(word.startMs) : startMs;
+				const rawEnd = isFiniteNumber(word.endMs) ? Math.round(word.endMs) : rawStart + 1;
+				const nextStart = Math.max(startMs, Math.min(rawStart, endMs));
+				const nextEnd = Math.max(nextStart + 1, Math.min(rawEnd, endMs));
+				return {
+					id:
+						typeof word.id === "string" && word.id.trim().length > 0
+							? word.id
+							: `${segmentId}-word-${index + 1}`,
+					text: typeof word.text === "string" ? word.text : "",
+					startMs: nextStart,
+					endMs: nextEnd,
+					confidence: isFiniteNumber(word.confidence) ? word.confidence : undefined,
+				};
+			});
+	}
+
+	const tokens = text
+		.split(/\s+/)
+		.map((token) => token.trim())
+		.filter(Boolean);
+	if (tokens.length === 0) {
+		return [];
+	}
+
+	const duration = Math.max(1, endMs - startMs);
+	const step = Math.max(1, Math.round(duration / tokens.length));
+	return tokens.map((token, index) => {
+		const wordStartMs = startMs + index * step;
+		return {
+			id: `${segmentId}-word-${index + 1}`,
+			text: token,
+			startMs: wordStartMs,
+			endMs: index === tokens.length - 1 ? endMs : Math.min(endMs, wordStartMs + step),
+		};
+	});
+}
+
+function normalizeCaptionSettings(candidate: unknown): CaptionSettings {
+	if (!candidate || typeof candidate !== "object") {
+		return {
+			...DEFAULT_CAPTION_SETTINGS,
+			style: { ...DEFAULT_CAPTION_SETTINGS.style },
+		};
+	}
+
+	const settings = candidate as Partial<CaptionSettings>;
+	return {
+		enabled: typeof settings.enabled === "boolean" ? settings.enabled : true,
+		position:
+			settings.position === "top" ||
+			settings.position === "center" ||
+			settings.position === "bottom"
+				? settings.position
+				: "bottom",
+		style: {
+			...DEFAULT_CAPTION_SETTINGS.style,
+			...(settings.style && typeof settings.style === "object" ? settings.style : {}),
+		},
+		animationMode:
+			settings.animationMode === "static" || settings.animationMode === "active-word"
+				? settings.animationMode
+				: DEFAULT_CAPTION_SETTINGS.animationMode,
+		maxLines: isFiniteNumber(settings.maxLines)
+			? clamp(Math.round(settings.maxLines), 1, 4)
+			: DEFAULT_CAPTION_SETTINGS.maxLines,
+		maxWordsPerLine: isFiniteNumber(settings.maxWordsPerLine)
+			? clamp(Math.round(settings.maxWordsPerLine), 1, 12)
+			: DEFAULT_CAPTION_SETTINGS.maxWordsPerLine,
+		safeAreaInset: isFiniteNumber(settings.safeAreaInset)
+			? clamp(settings.safeAreaInset, 2, 20)
+			: DEFAULT_CAPTION_SETTINGS.safeAreaInset,
+		showTranscriptPanel:
+			typeof settings.showTranscriptPanel === "boolean"
+				? settings.showTranscriptPanel
+				: DEFAULT_CAPTION_SETTINGS.showTranscriptPanel,
+	};
+}
+
+function normalizeCaptionTrack(
+	candidate: unknown,
+	legacyRegions: CaptionRegion[],
+): CaptionTrack | null {
+	if (!candidate || typeof candidate !== "object") {
+		if (legacyRegions.length === 0) {
+			return null;
+		}
+
+		return {
+			backend: "whisper.cpp",
+			model: "base",
+			language: "auto",
+			prompt: "",
+			sourceAudio: "mixed",
+			status: "ready",
+			segments: legacyRegions.map((segment) => ({
+				...segment,
+				source: "manual",
+			})),
+		};
+	}
+
+	const track = candidate as Partial<CaptionTrack>;
+	const segments = normalizeCaptionRegions(track.segments);
+	return {
+		backend:
+			track.backend === "apple-speech" || track.backend === "whisper.cpp"
+				? track.backend
+				: "whisper.cpp",
+		model:
+			track.model === "base" || track.model === "small" || track.model === "medium"
+				? track.model
+				: "base",
+		language:
+			typeof track.language === "string" && track.language.trim().length > 0
+				? track.language
+				: "auto",
+		prompt: typeof track.prompt === "string" ? track.prompt : "",
+		sourceAudio: track.sourceAudio === "microphone" ? "microphone" : "mixed",
+		sourceAudioPath:
+			typeof track.sourceAudioPath === "string" && track.sourceAudioPath.trim().length > 0
+				? track.sourceAudioPath
+				: undefined,
+		status:
+			track.status === "idle" ||
+			track.status === "generating" ||
+			track.status === "ready" ||
+			track.status === "error"
+				? track.status
+				: segments.length > 0
+					? "ready"
+					: "idle",
+		error: typeof track.error === "string" ? track.error : undefined,
+		generatedAt: typeof track.generatedAt === "string" ? track.generatedAt : undefined,
+		segments,
+	};
+}
+
+function normalizeCaptionGenerationOptions(candidate: unknown): CaptionGenerationOptions {
+	if (!candidate || typeof candidate !== "object") {
+		return { ...DEFAULT_CAPTION_GENERATION_OPTIONS };
+	}
+
+	const options = candidate as Partial<CaptionGenerationOptions>;
+	return {
+		preferredBackend:
+			options.preferredBackend === "auto" ||
+			options.preferredBackend === "apple-speech" ||
+			options.preferredBackend === "whisper.cpp"
+				? options.preferredBackend
+				: DEFAULT_CAPTION_GENERATION_OPTIONS.preferredBackend,
+		model:
+			options.model === "base" || options.model === "small" || options.model === "medium"
+				? options.model
+				: DEFAULT_CAPTION_GENERATION_OPTIONS.model,
+		language:
+			typeof options.language === "string" && options.language.trim().length > 0
+				? options.language
+				: DEFAULT_CAPTION_GENERATION_OPTIONS.language,
+		prompt: typeof options.prompt === "string" ? options.prompt : "",
+		preferredSourceAudio:
+			options.preferredSourceAudio === "microphone" || options.preferredSourceAudio === "mixed"
+				? options.preferredSourceAudio
+				: DEFAULT_CAPTION_GENERATION_OPTIONS.preferredSourceAudio,
+	};
 }
 
 export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): ProjectEditorState {
@@ -464,6 +716,9 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		? editor.cropRegion.height
 		: DEFAULT_CROP_REGION.height;
 	const normalizedWebcamOverride = normalizePartialWebcamRegion(editor.webcamRegion);
+	const legacyCaptionRegions = normalizeCaptionRegions(
+		(editor as Partial<ProjectEditorState> & { captionRegions?: CaptionRegion[] }).captionRegions,
+	);
 
 	const cropX = clamp(rawCropX, 0, 1);
 	const cropY = clamp(rawCropY, 0, 1);
@@ -528,33 +783,41 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 				? editor.gifFrameRate
 				: 15,
 		gifLoop: typeof editor.gifLoop === "boolean" ? editor.gifLoop : true,
-			gifSizePreset:
-				editor.gifSizePreset === "medium" ||
-				editor.gifSizePreset === "large" ||
-				editor.gifSizePreset === "original"
-					? editor.gifSizePreset
-					: "medium",
-			webcamPath: typeof editor.webcamPath === "string" ? editor.webcamPath : undefined,
-			webcamRegion: {
-				...DEFAULT_WEBCAM_REGION,
-				...normalizedWebcamOverride,
-				position: {
-					...DEFAULT_WEBCAM_REGION.position,
-					...normalizedWebcamOverride?.position,
-				},
-				size: {
-					...DEFAULT_WEBCAM_REGION.size,
-					...normalizedWebcamOverride?.size,
-				},
+		gifSizePreset:
+			editor.gifSizePreset === "medium" ||
+			editor.gifSizePreset === "large" ||
+			editor.gifSizePreset === "original"
+				? editor.gifSizePreset
+				: "medium",
+		webcamPath: typeof editor.webcamPath === "string" ? editor.webcamPath : undefined,
+		webcamRegion: normalizeWebcamRegion({
+			...DEFAULT_WEBCAM_REGION,
+			...normalizedWebcamOverride,
+			position: {
+				...DEFAULT_WEBCAM_REGION.position,
+				...normalizedWebcamOverride?.position,
 			},
-			showWebcam: typeof editor.showWebcam === "boolean" ? editor.showWebcam : true,
-			mirrorWebcam: typeof editor.mirrorWebcam === "boolean" ? editor.mirrorWebcam : false,
-			cameraSizeDuringZoom: isFiniteNumber(editor.cameraSizeDuringZoom)
-				? clamp(editor.cameraSizeDuringZoom, 0.25, 1)
-				: DEFAULT_CAMERA_SIZE_DURING_ZOOM,
-			cameraLayouts: normalizeCameraLayouts(editor.cameraLayouts),
-		};
-	}
+			size: {
+				...DEFAULT_WEBCAM_REGION.size,
+				...normalizedWebcamOverride?.size,
+			},
+		}),
+		showWebcam: typeof editor.showWebcam === "boolean" ? editor.showWebcam : true,
+		mirrorWebcam: typeof editor.mirrorWebcam === "boolean" ? editor.mirrorWebcam : false,
+		cameraSizeDuringZoom: isFiniteNumber(editor.cameraSizeDuringZoom)
+			? clamp(editor.cameraSizeDuringZoom, 0.25, 1)
+			: DEFAULT_CAMERA_SIZE_DURING_ZOOM,
+		cameraLayouts: normalizeCameraLayouts(editor.cameraLayouts),
+		captionTrack: normalizeCaptionTrack(
+			(editor as Partial<ProjectEditorState> & { captionTrack?: CaptionTrack | null }).captionTrack,
+			legacyCaptionRegions,
+		),
+		captionSettings: normalizeCaptionSettings(editor.captionSettings),
+		captionGenerationOptions: normalizeCaptionGenerationOptions(
+			(editor as Partial<ProjectEditorState>).captionGenerationOptions,
+		),
+	};
+}
 
 export function createProjectData(
 	videoPath: string,

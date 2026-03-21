@@ -1,9 +1,11 @@
-	import type {
-		AnnotationRegion,
-		AudioRegion,
-		CameraLayoutRegion,
-		CropRegion,
-		CursorTelemetryPoint,
+import type {
+	AnnotationRegion,
+	AudioRegion,
+	CameraLayoutRegion,
+	CaptionRegion,
+	CaptionSettings,
+	CropRegion,
+	CursorTelemetryPoint,
 	SpeedRegion,
 	TrimRegion,
 	WebcamRegion,
@@ -41,14 +43,16 @@ interface VideoExporterConfig extends ExportConfig {
 	audioRegions?: AudioRegion[];
 	previewWidth?: number;
 	previewHeight?: number;
-		webcamPath?: string | null;
-		webcamRegion?: WebcamRegion;
-		showWebcam?: boolean;
-		mirrorWebcam?: boolean;
-		cameraSizeDuringZoom?: number;
-		cameraLayouts?: CameraLayoutRegion[];
-		onProgress?: (progress: ExportProgress) => void;
-	}
+	webcamPath?: string | null;
+	webcamRegion?: WebcamRegion;
+	showWebcam?: boolean;
+	mirrorWebcam?: boolean;
+	cameraSizeDuringZoom?: number;
+	cameraLayouts?: CameraLayoutRegion[];
+	captionRegions?: CaptionRegion[];
+	captionSettings?: CaptionSettings;
+	onProgress?: (progress: ExportProgress) => void;
+}
 
 export class VideoExporter {
 	private config: VideoExporterConfig;
@@ -107,13 +111,15 @@ export class VideoExporter {
 				cursorMotionBlur: this.config.cursorMotionBlur,
 				cursorClickBounce: this.config.cursorClickBounce,
 				cursorSway: this.config.cursorSway,
-					webcamPath: this.config.webcamPath,
-					webcamRegion: this.config.webcamRegion,
-					showWebcam: this.config.showWebcam,
-					mirrorWebcam: this.config.mirrorWebcam,
-					cameraSizeDuringZoom: this.config.cameraSizeDuringZoom,
-					cameraLayouts: this.config.cameraLayouts,
-				});
+				webcamPath: this.config.webcamPath,
+				webcamRegion: this.config.webcamRegion,
+				showWebcam: this.config.showWebcam,
+				mirrorWebcam: this.config.mirrorWebcam,
+				cameraSizeDuringZoom: this.config.cameraSizeDuringZoom,
+				cameraLayouts: this.config.cameraLayouts,
+				captionRegions: this.config.captionRegions,
+				captionSettings: this.config.captionSettings,
+			});
 			await this.renderer.initialize();
 
 			// Initialize video encoder

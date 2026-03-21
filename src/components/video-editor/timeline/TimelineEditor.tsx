@@ -47,6 +47,7 @@ import type {
 	AnnotationRegion,
 	AudioRegion,
 	CameraLayoutRegion,
+	CaptionRegion,
 	CursorTelemetryPoint,
 	SpeedRegion,
 	TrimRegion,
@@ -65,6 +66,7 @@ const ANNOTATION_ROW_ID = "row-annotation";
 const SPEED_ROW_ID = "row-speed";
 const AUDIO_ROW_ID = "row-audio";
 const CAMERA_ROW_ID = "row-camera";
+const CAPTION_ROW_ID = "row-caption";
 const FALLBACK_RANGE_MS = 1000;
 const TARGET_MARKER_COUNT = 12;
 const SUGGESTION_SPACING_MS = 1800;
@@ -99,6 +101,12 @@ interface TimelineEditorProps {
 	onCameraLayoutDelete?: (id: string) => void;
 	selectedCameraLayoutId?: string | null;
 	onSelectCameraLayout?: (id: string | null) => void;
+	captionRegions?: CaptionRegion[];
+	onCaptionAdded?: (span: Span) => void;
+	onCaptionSpanChange?: (id: string, span: Span) => void;
+	onCaptionDelete?: (id: string) => void;
+	selectedCaptionId?: string | null;
+	onSelectCaption?: (id: string | null) => void;
 	speedRegions?: SpeedRegion[];
 	onSpeedAdded?: (span: Span) => void;
 	onSpeedSpanChange?: (id: string, span: Span) => void;
@@ -128,7 +136,7 @@ interface TimelineRenderItem {
 	label: string;
 	zoomDepth?: number;
 	speedValue?: number;
-	variant: "zoom" | "trim" | "annotation" | "speed" | "audio" | "camera";
+	variant: "zoom" | "trim" | "annotation" | "speed" | "audio" | "camera" | "caption";
 }
 
 const SCALE_CANDIDATES = [
@@ -499,12 +507,16 @@ function Timeline({
 	onAddCameraLayout,
 	onAddSpeed,
 	onAddAudio,
+	onAddCaption,
 	onDeleteZoom,
 	onDeleteTrim,
 	onDeleteAnnotation,
 	onDeleteCameraLayout,
 	onDeleteSpeed,
 	onDeleteAudio,
+	onDeleteCaption,
+	selectedCaptionId,
+	onSelectCaption,
 }: {
 	items: TimelineRenderItem[];
 	videoDurationMs: number;
@@ -516,12 +528,14 @@ function Timeline({
 	onSelectCameraLayout?: (id: string | null) => void;
 	onSelectSpeed?: (id: string | null) => void;
 	onSelectAudio?: (id: string | null) => void;
+	onSelectCaption?: (id: string | null) => void;
 	selectedZoomId: string | null;
 	selectedTrimId?: string | null;
 	selectedAnnotationId?: string | null;
 	selectedCameraLayoutId?: string | null;
 	selectedSpeedId?: string | null;
 	selectedAudioId?: string | null;
+	selectedCaptionId?: string | null;
 	keyframes?: { id: string; time: number }[];
 	onAddZoom?: (clickTimeMs?: number) => void;
 	onAddTrim?: (clickTimeMs?: number) => void;
@@ -529,12 +543,14 @@ function Timeline({
 	onAddCameraLayout?: (clickTimeMs?: number) => void;
 	onAddSpeed?: (clickTimeMs?: number) => void;
 	onAddAudio?: (clickTimeMs?: number) => void;
+	onAddCaption?: (clickTimeMs?: number) => void;
 	onDeleteZoom?: (id: string) => void;
 	onDeleteTrim?: (id: string) => void;
 	onDeleteAnnotation?: (id: string) => void;
 	onDeleteCameraLayout?: (id: string) => void;
 	onDeleteSpeed?: (id: string) => void;
 	onDeleteAudio?: (id: string) => void;
+	onDeleteCaption?: (id: string) => void;
 }) {
 	const { setTimelineRef, style, sidebarWidth, range, pixelsToValue } = useTimelineContext();
 	const localTimelineRef = useRef<HTMLDivElement | null>(null);
@@ -557,6 +573,7 @@ function Timeline({
 			onSelectTrim?.(null);
 			onSelectAnnotation?.(null);
 			onSelectCameraLayout?.(null);
+			onSelectCaption?.(null);
 			onSelectSpeed?.(null);
 			onSelectAudio?.(null);
 
@@ -571,18 +588,19 @@ function Timeline({
 
 			onSeek(timeInSeconds);
 		},
-			[
-				onSeek,
-				onSelectZoom,
-				onSelectTrim,
-				onSelectAnnotation,
-				onSelectCameraLayout,
-				onSelectSpeed,
-				onSelectAudio,
-				videoDurationMs,
-				sidebarWidth,
-				range.start,
-				pixelsToValue,
+		[
+			onSeek,
+			onSelectZoom,
+			onSelectTrim,
+			onSelectAnnotation,
+			onSelectCameraLayout,
+			onSelectCaption,
+			onSelectSpeed,
+			onSelectAudio,
+			videoDurationMs,
+			sidebarWidth,
+			range.start,
+			pixelsToValue,
 		],
 	);
 
@@ -592,6 +610,7 @@ function Timeline({
 	const cameraItems = items.filter((item) => item.rowId === CAMERA_ROW_ID);
 	const speedItems = items.filter((item) => item.rowId === SPEED_ROW_ID);
 	const audioItems = items.filter((item) => item.rowId === AUDIO_ROW_ID);
+	const captionItems = items.filter((item) => item.rowId === CAPTION_ROW_ID);
 
 	return (
 		<div
@@ -657,13 +676,13 @@ function Timeline({
 				))}
 			</Row>
 
-				<Row
-					id={ANNOTATION_ROW_ID}
-					isEmpty={annotationItems.length === 0}
-					hint="Hover to add annotation"
-					onAddEffect={onAddAnnotation}
-					addLabel="Annotation"
-				>
+			<Row
+				id={ANNOTATION_ROW_ID}
+				isEmpty={annotationItems.length === 0}
+				hint="Hover to add annotation"
+				onAddEffect={onAddAnnotation}
+				addLabel="Annotation"
+			>
 				{annotationItems.map((item) => (
 					<Item
 						id={item.id}
@@ -674,41 +693,41 @@ function Timeline({
 						onSelect={() => onSelectAnnotation?.(item.id)}
 						onDelete={() => onDeleteAnnotation?.(item.id)}
 						variant="annotation"
-						>
-							{item.label}
-						</Item>
-					))}
-				</Row>
+					>
+						{item.label}
+					</Item>
+				))}
+			</Row>
 
-				<Row
-					id={CAMERA_ROW_ID}
-					isEmpty={cameraItems.length === 0}
-					hint="Hover to add camera layout"
-					onAddEffect={onAddCameraLayout}
-					addLabel="Camera"
-				>
-					{cameraItems.map((item) => (
-						<Item
-							id={item.id}
-							key={item.id}
-							rowId={item.rowId}
-							span={item.span}
-							isSelected={item.id === selectedCameraLayoutId}
-							onSelect={() => onSelectCameraLayout?.(item.id)}
-							onDelete={() => onDeleteCameraLayout?.(item.id)}
-							variant="camera"
-						>
-							{item.label}
-						</Item>
-					))}
-				</Row>
+			<Row
+				id={CAMERA_ROW_ID}
+				isEmpty={cameraItems.length === 0}
+				hint="Hover to add camera layout"
+				onAddEffect={onAddCameraLayout}
+				addLabel="Camera"
+			>
+				{cameraItems.map((item) => (
+					<Item
+						id={item.id}
+						key={item.id}
+						rowId={item.rowId}
+						span={item.span}
+						isSelected={item.id === selectedCameraLayoutId}
+						onSelect={() => onSelectCameraLayout?.(item.id)}
+						onDelete={() => onDeleteCameraLayout?.(item.id)}
+						variant="camera"
+					>
+						{item.label}
+					</Item>
+				))}
+			</Row>
 
-				<Row
-					id={SPEED_ROW_ID}
-					isEmpty={speedItems.length === 0}
-					hint="Hover to add speed"
-					onAddEffect={onAddSpeed}
-					addLabel="Speed"
+			<Row
+				id={SPEED_ROW_ID}
+				isEmpty={speedItems.length === 0}
+				hint="Hover to add speed"
+				onAddEffect={onAddSpeed}
+				addLabel="Speed"
 			>
 				{speedItems.map((item) => (
 					<Item
@@ -749,6 +768,29 @@ function Timeline({
 					</Item>
 				))}
 			</Row>
+
+			<Row
+				id={CAPTION_ROW_ID}
+				isEmpty={captionItems.length === 0}
+				hint="Hover to add caption"
+				onAddEffect={onAddCaption}
+				addLabel="Caption"
+			>
+				{captionItems.map((item) => (
+					<Item
+						id={item.id}
+						key={item.id}
+						rowId={item.rowId}
+						span={item.span}
+						isSelected={item.id === selectedCaptionId}
+						onSelect={() => onSelectCaption?.(item.id)}
+						onDelete={() => onDeleteCaption?.(item.id)}
+						variant="caption"
+					>
+						{item.label}
+					</Item>
+				))}
+			</Row>
 		</div>
 	);
 }
@@ -783,6 +825,12 @@ export default function TimelineEditor({
 	onCameraLayoutDelete,
 	selectedCameraLayoutId,
 	onSelectCameraLayout,
+	captionRegions = [],
+	onCaptionAdded,
+	onCaptionSpanChange,
+	onCaptionDelete,
+	selectedCaptionId,
+	onSelectCaption,
 	speedRegions = [],
 	onSpeedAdded,
 	onSpeedSpanChange,
@@ -939,6 +987,12 @@ export default function TimelineEditor({
 		onSelectAudio(null);
 	}, [selectedAudioId, onAudioDelete, onSelectAudio]);
 
+	const deleteSelectedCaption = useCallback(() => {
+		if (!selectedCaptionId || !onCaptionDelete || !onSelectCaption) return;
+		onCaptionDelete(selectedCaptionId);
+		onSelectCaption(null);
+	}, [selectedCaptionId, onCaptionDelete, onSelectCaption]);
+
 	useEffect(() => {
 		setRange(createInitialRange(totalMs));
 	}, [totalMs]);
@@ -951,11 +1005,13 @@ export default function TimelineEditor({
 	const speedRegionsRef = useRef(speedRegions);
 	const audioRegionsRef = useRef(audioRegions);
 	const cameraLayoutsRef = useRef(cameraLayouts);
+	const captionRegionsRef = useRef(captionRegions);
 	zoomRegionsRef.current = zoomRegions;
 	trimRegionsRef.current = trimRegions;
 	speedRegionsRef.current = speedRegions;
 	audioRegionsRef.current = audioRegions;
 	cameraLayoutsRef.current = cameraLayouts;
+	captionRegionsRef.current = captionRegions;
 
 	useEffect(() => {
 		if (totalMs === 0 || safeMinDurationMs <= 0) {
@@ -998,54 +1054,67 @@ export default function TimelineEditor({
 			}
 		});
 
-			audioRegionsRef.current.forEach((region) => {
+		audioRegionsRef.current.forEach((region) => {
 			const clampedStart = Math.max(0, Math.min(region.startMs, totalMs));
 			const minEnd = clampedStart + safeMinDurationMs;
 			const clampedEnd = Math.min(totalMs, Math.max(minEnd, region.endMs));
 			const normalizedStart = Math.max(0, Math.min(clampedStart, totalMs - safeMinDurationMs));
 			const normalizedEnd = Math.max(minEnd, Math.min(clampedEnd, totalMs));
 
-				if (normalizedStart !== region.startMs || normalizedEnd !== region.endMs) {
-					onAudioSpanChange?.(region.id, { start: normalizedStart, end: normalizedEnd });
-				}
-			});
+			if (normalizedStart !== region.startMs || normalizedEnd !== region.endMs) {
+				onAudioSpanChange?.(region.id, { start: normalizedStart, end: normalizedEnd });
+			}
+		});
 
-			cameraLayoutsRef.current.forEach((layout) => {
-				const clampedStart = Math.max(0, Math.min(layout.startMs, totalMs));
-				const minEnd = clampedStart + safeMinDurationMs;
-				const clampedEnd = Math.min(totalMs, Math.max(minEnd, layout.endMs));
-				const normalizedStart = Math.max(0, Math.min(clampedStart, totalMs - safeMinDurationMs));
-				const normalizedEnd = Math.max(minEnd, Math.min(clampedEnd, totalMs));
+		cameraLayoutsRef.current.forEach((layout) => {
+			const clampedStart = Math.max(0, Math.min(layout.startMs, totalMs));
+			const minEnd = clampedStart + safeMinDurationMs;
+			const clampedEnd = Math.min(totalMs, Math.max(minEnd, layout.endMs));
+			const normalizedStart = Math.max(0, Math.min(clampedStart, totalMs - safeMinDurationMs));
+			const normalizedEnd = Math.max(minEnd, Math.min(clampedEnd, totalMs));
 
-				if (normalizedStart !== layout.startMs || normalizedEnd !== layout.endMs) {
-					onCameraLayoutSpanChange?.(layout.id, {
-						start: normalizedStart,
-						end: normalizedEnd,
-					});
-				}
-			});
-			// Only re-run when the timeline scale changes, not on every region edit
-		}, [
-			totalMs,
-			safeMinDurationMs,
-			onZoomSpanChange,
-			onTrimSpanChange,
-			onCameraLayoutSpanChange,
-			onSpeedSpanChange,
-			onAudioSpanChange,
-		]);
+			if (normalizedStart !== layout.startMs || normalizedEnd !== layout.endMs) {
+				onCameraLayoutSpanChange?.(layout.id, {
+					start: normalizedStart,
+					end: normalizedEnd,
+				});
+			}
+		});
+		captionRegionsRef.current.forEach((region) => {
+			const clampedStart = Math.max(0, Math.min(region.startMs, totalMs));
+			const minEnd = clampedStart + safeMinDurationMs;
+			const clampedEnd = Math.min(totalMs, Math.max(minEnd, region.endMs));
+			const normalizedStart = Math.max(0, Math.min(clampedStart, totalMs - safeMinDurationMs));
+			const normalizedEnd = Math.max(minEnd, Math.min(clampedEnd, totalMs));
+
+			if (normalizedStart !== region.startMs || normalizedEnd !== region.endMs) {
+				onCaptionSpanChange?.(region.id, { start: normalizedStart, end: normalizedEnd });
+			}
+		});
+		// Only re-run when the timeline scale changes, not on every region edit
+	}, [
+		totalMs,
+		safeMinDurationMs,
+		onZoomSpanChange,
+		onTrimSpanChange,
+		onCameraLayoutSpanChange,
+		onSpeedSpanChange,
+		onAudioSpanChange,
+		onCaptionSpanChange,
+	]);
 
 	const hasOverlap = useCallback(
 		(newSpan: Span, excludeId?: string): boolean => {
 			// Determine which row the item belongs to
 			const isZoomItem = zoomRegions.some((r) => r.id === excludeId);
-				const isTrimItem = trimRegions.some((r) => r.id === excludeId);
-				const isAnnotationItem = annotationRegions.some((r) => r.id === excludeId);
-				const isCameraItem = cameraLayouts.some((r) => r.id === excludeId);
-				const isSpeedItem = speedRegions.some((r) => r.id === excludeId);
-				const isAudioItem = audioRegions.some((r) => r.id === excludeId);
+			const isTrimItem = trimRegions.some((r) => r.id === excludeId);
+			const isAnnotationItem = annotationRegions.some((r) => r.id === excludeId);
+			const isCameraItem = cameraLayouts.some((r) => r.id === excludeId);
+			const isSpeedItem = speedRegions.some((r) => r.id === excludeId);
+			const isAudioItem = audioRegions.some((r) => r.id === excludeId);
+			const isCaptionItem = captionRegions.some((r) => r.id === excludeId);
 
-			if (isAnnotationItem) {
+			if (isAnnotationItem || isCaptionItem) {
 				return false;
 			}
 
@@ -1066,22 +1135,30 @@ export default function TimelineEditor({
 				return checkOverlap(trimRegions);
 			}
 
-				if (isSpeedItem) {
-					return checkOverlap(speedRegions);
-				}
+			if (isSpeedItem) {
+				return checkOverlap(speedRegions);
+			}
 
-				if (isCameraItem) {
-					return checkOverlap(cameraLayouts);
-				}
+			if (isCameraItem) {
+				return checkOverlap(cameraLayouts);
+			}
 
-				if (isAudioItem) {
-					return checkOverlap(audioRegions);
-				}
+			if (isAudioItem) {
+				return checkOverlap(audioRegions);
+			}
 
 			return false;
 		},
-			[zoomRegions, trimRegions, annotationRegions, cameraLayouts, speedRegions, audioRegions],
-		);
+		[
+			zoomRegions,
+			trimRegions,
+			annotationRegions,
+			cameraLayouts,
+			speedRegions,
+			audioRegions,
+			captionRegions,
+		],
+	);
 
 	// Keep newly added timeline regions at the original short default instead of
 	// scaling them with the full recording length.
@@ -1417,6 +1494,29 @@ export default function TimelineEditor({
 		],
 	);
 
+	const handleAddCaption = useCallback(
+		(clickTimeMs?: number) => {
+			if (!videoDuration || videoDuration === 0 || totalMs === 0 || !onCaptionAdded) {
+				return;
+			}
+
+			const defaultDuration = Math.min(defaultRegionDurationMs, totalMs);
+			if (defaultDuration <= 0) {
+				return;
+			}
+
+			// Multiple captions can exist at the same timestamp (like annotations)
+			const startPos = Math.max(
+				0,
+				Math.min(clickTimeMs != null ? Math.round(clickTimeMs) : currentTimeMs, totalMs),
+			);
+			const endPos = Math.min(startPos + defaultDuration, totalMs);
+
+			onCaptionAdded({ start: startPos, end: endPos });
+		},
+		[videoDuration, totalMs, currentTimeMs, onCaptionAdded, defaultRegionDurationMs],
+	);
+
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
@@ -1462,55 +1562,60 @@ export default function TimelineEditor({
 				}
 			}
 			// Delete key or Ctrl+D / Cmd+D
-				if (
-					e.key === "Delete" ||
-					e.key === "Backspace" ||
-					matchesShortcut(e, keyShortcuts.deleteSelected, isMac)
-				) {
-					if (selectedKeyframeId) {
-						deleteSelectedKeyframe();
-					} else if (selectedZoomId) {
-						deleteSelectedZoom();
-					} else if (selectedTrimId) {
-						deleteSelectedTrim();
-					} else if (selectedAnnotationId) {
-						deleteSelectedAnnotation();
-					} else if (selectedCameraLayoutId) {
-						deleteSelectedCameraLayout();
-					} else if (selectedSpeedId) {
-						deleteSelectedSpeed();
-					} else if (selectedAudioId) {
-						deleteSelectedAudio();
-					}
+			if (
+				e.key === "Delete" ||
+				e.key === "Backspace" ||
+				matchesShortcut(e, keyShortcuts.deleteSelected, isMac)
+			) {
+				if (selectedKeyframeId) {
+					deleteSelectedKeyframe();
+				} else if (selectedZoomId) {
+					deleteSelectedZoom();
+				} else if (selectedTrimId) {
+					deleteSelectedTrim();
+				} else if (selectedAnnotationId) {
+					deleteSelectedAnnotation();
+				} else if (selectedCameraLayoutId) {
+					deleteSelectedCameraLayout();
+				} else if (selectedSpeedId) {
+					deleteSelectedSpeed();
+				} else if (selectedAudioId) {
+					deleteSelectedAudio();
+				} else if (selectedCaptionId) {
+					deleteSelectedCaption();
 				}
-			};
+			}
+		};
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [
 		addKeyframe,
-			handleAddZoom,
-			handleAddTrim,
-			handleAddAnnotation,
-			handleAddCameraLayout,
-			handleAddSpeed,
-			deleteSelectedKeyframe,
-			deleteSelectedZoom,
-			deleteSelectedTrim,
-			deleteSelectedAnnotation,
-			deleteSelectedCameraLayout,
-			deleteSelectedSpeed,
-			deleteSelectedAudio,
-			selectedKeyframeId,
-			selectedZoomId,
-			selectedTrimId,
-			selectedAnnotationId,
-			selectedCameraLayoutId,
-			selectedSpeedId,
-			selectedAudioId,
-			annotationRegions,
-			currentTime,
-			onSelectAnnotation,
-			keyShortcuts,
+		handleAddZoom,
+		handleAddTrim,
+		handleAddAnnotation,
+		handleAddCameraLayout,
+		handleAddCaption,
+		handleAddSpeed,
+		deleteSelectedKeyframe,
+		deleteSelectedZoom,
+		deleteSelectedTrim,
+		deleteSelectedAnnotation,
+		deleteSelectedCameraLayout,
+		deleteSelectedSpeed,
+		deleteSelectedAudio,
+		deleteSelectedCaption,
+		selectedKeyframeId,
+		selectedZoomId,
+		selectedTrimId,
+		selectedAnnotationId,
+		selectedCameraLayoutId,
+		selectedCaptionId,
+		selectedSpeedId,
+		selectedAudioId,
+		annotationRegions,
+		currentTime,
+		onSelectAnnotation,
+		keyShortcuts,
 		isMac,
 	]);
 
@@ -1543,7 +1648,7 @@ export default function TimelineEditor({
 			variant: "trim",
 		}));
 
-			const annotations: TimelineRenderItem[] = annotationRegions.map((region) => {
+		const annotations: TimelineRenderItem[] = annotationRegions.map((region) => {
 			let label: string;
 
 			if (region.type === "text") {
@@ -1564,23 +1669,23 @@ export default function TimelineEditor({
 				span: { start: region.startMs, end: region.endMs },
 				label,
 				variant: "annotation",
-				};
-			});
+			};
+		});
 
-			const cameras: TimelineRenderItem[] = cameraLayouts.map((layout, index) => ({
-				id: layout.id,
-				rowId: CAMERA_ROW_ID,
-				span: { start: layout.startMs, end: layout.endMs },
-				label:
-					layout.mode === "fullscreen"
-						? "Fullscreen"
-						: layout.mode === "hidden"
-							? "Hidden"
-							: `Default ${index + 1}`,
-				variant: "camera",
-			}));
+		const cameras: TimelineRenderItem[] = cameraLayouts.map((layout, index) => ({
+			id: layout.id,
+			rowId: CAMERA_ROW_ID,
+			span: { start: layout.startMs, end: layout.endMs },
+			label:
+				layout.mode === "fullscreen"
+					? "Fullscreen"
+					: layout.mode === "hidden"
+						? "Hidden"
+						: `Default ${index + 1}`,
+			variant: "camera",
+		}));
 
-			const speeds: TimelineRenderItem[] = speedRegions.map((region, index) => ({
+		const speeds: TimelineRenderItem[] = speedRegions.map((region, index) => ({
 			id: region.id,
 			rowId: SPEED_ROW_ID,
 			span: { start: region.startMs, end: region.endMs },
@@ -1604,8 +1709,28 @@ export default function TimelineEditor({
 			};
 		});
 
-		return [...zooms, ...trims, ...annotations, ...cameras, ...speeds, ...audios];
-	}, [zoomRegions, trimRegions, annotationRegions, cameraLayouts, speedRegions, audioRegions]);
+		const captions: TimelineRenderItem[] = captionRegions.map((region) => {
+			const preview = region.text.trim() || "Caption";
+			const label = preview.length > 20 ? `${preview.substring(0, 20)}...` : preview;
+			return {
+				id: region.id,
+				rowId: CAPTION_ROW_ID,
+				span: { start: region.startMs, end: region.endMs },
+				label,
+				variant: "caption",
+			};
+		});
+
+		return [...zooms, ...trims, ...annotations, ...cameras, ...speeds, ...audios, ...captions];
+	}, [
+		zoomRegions,
+		trimRegions,
+		annotationRegions,
+		cameraLayouts,
+		speedRegions,
+		audioRegions,
+		captionRegions,
+	]);
 
 	// Flat list of all non-annotation region spans for neighbour-clamping during drag/resize
 	const allRegionSpans = useMemo(() => {
@@ -1632,21 +1757,25 @@ export default function TimelineEditor({
 				onAnnotationSpanChange?.(id, span);
 			} else if (audioRegions.some((r) => r.id === id)) {
 				onAudioSpanChange?.(id, span);
+			} else if (captionRegions.some((r) => r.id === id)) {
+				onCaptionSpanChange?.(id, span);
 			}
 		},
 		[
-				zoomRegions,
-				trimRegions,
-				cameraLayouts,
-				speedRegions,
-				annotationRegions,
-				audioRegions,
-				onZoomSpanChange,
-				onTrimSpanChange,
-				onCameraLayoutSpanChange,
-				onSpeedSpanChange,
-				onAnnotationSpanChange,
-				onAudioSpanChange,
+			zoomRegions,
+			trimRegions,
+			cameraLayouts,
+			speedRegions,
+			annotationRegions,
+			audioRegions,
+			captionRegions,
+			onZoomSpanChange,
+			onTrimSpanChange,
+			onCameraLayoutSpanChange,
+			onSpeedSpanChange,
+			onAnnotationSpanChange,
+			onAudioSpanChange,
+			onCaptionSpanChange,
 		],
 	);
 
@@ -1746,26 +1875,26 @@ export default function TimelineEditor({
 					>
 						<Scissors className="w-4 h-4" />
 					</Button>
-						<Button
-							onClick={() => handleAddAnnotation()}
+					<Button
+						onClick={() => handleAddAnnotation()}
 						variant="ghost"
 						size="icon"
 						className="h-7 w-7 text-slate-400 hover:text-[#B4A046] hover:bg-[#B4A046]/10 transition-all"
 						title="Add Annotation (A)"
-						>
-							<MessageSquare className="w-4 h-4" />
-						</Button>
-						<Button
-							onClick={() => handleAddCameraLayout()}
-							variant="ghost"
-							size="icon"
-							className="h-7 w-7 text-slate-400 hover:text-[#3b82f6] hover:bg-[#3b82f6]/10 transition-all"
-							title="Add Camera Layout"
-						>
-							<Camera className="w-4 h-4" />
-						</Button>
-						<Button
-							onClick={() => handleAddSpeed()}
+					>
+						<MessageSquare className="w-4 h-4" />
+					</Button>
+					<Button
+						onClick={() => handleAddCameraLayout()}
+						variant="ghost"
+						size="icon"
+						className="h-7 w-7 text-slate-400 hover:text-[#3b82f6] hover:bg-[#3b82f6]/10 transition-all"
+						title="Add Camera Layout"
+					>
+						<Camera className="w-4 h-4" />
+					</Button>
+					<Button
+						onClick={() => handleAddSpeed()}
 						variant="ghost"
 						size="icon"
 						className="h-7 w-7 text-slate-400 hover:text-[#d97706] hover:bg-[#d97706]/10 transition-all"
@@ -1886,31 +2015,35 @@ export default function TimelineEditor({
 						videoDurationMs={totalMs}
 						currentTimeMs={currentTimeMs}
 						onSeek={onSeek}
-							onSelectZoom={onSelectZoom}
-							onSelectTrim={onSelectTrim}
-							onSelectAnnotation={onSelectAnnotation}
-							onSelectCameraLayout={onSelectCameraLayout}
-							onSelectSpeed={onSelectSpeed}
-							onSelectAudio={onSelectAudio}
-							selectedZoomId={selectedZoomId}
-							selectedTrimId={selectedTrimId}
-							selectedAnnotationId={selectedAnnotationId}
-							selectedCameraLayoutId={selectedCameraLayoutId}
-							selectedSpeedId={selectedSpeedId}
-							selectedAudioId={selectedAudioId}
-							keyframes={keyframes}
-							onAddZoom={handleAddZoom}
-							onAddTrim={handleAddTrim}
-							onAddAnnotation={handleAddAnnotation}
-							onAddCameraLayout={handleAddCameraLayout}
-							onAddSpeed={handleAddSpeed}
-							onAddAudio={handleAddAudio}
-							onDeleteZoom={onZoomDelete}
-							onDeleteTrim={onTrimDelete}
-							onDeleteAnnotation={onAnnotationDelete}
-							onDeleteCameraLayout={onCameraLayoutDelete}
-							onDeleteSpeed={onSpeedDelete}
-							onDeleteAudio={onAudioDelete}
+						onSelectZoom={onSelectZoom}
+						onSelectTrim={onSelectTrim}
+						onSelectAnnotation={onSelectAnnotation}
+						onSelectCameraLayout={onSelectCameraLayout}
+						onSelectSpeed={onSelectSpeed}
+						onSelectAudio={onSelectAudio}
+						onSelectCaption={onSelectCaption}
+						selectedZoomId={selectedZoomId}
+						selectedTrimId={selectedTrimId}
+						selectedAnnotationId={selectedAnnotationId}
+						selectedCameraLayoutId={selectedCameraLayoutId}
+						selectedSpeedId={selectedSpeedId}
+						selectedAudioId={selectedAudioId}
+						selectedCaptionId={selectedCaptionId}
+						keyframes={keyframes}
+						onAddZoom={handleAddZoom}
+						onAddTrim={handleAddTrim}
+						onAddAnnotation={handleAddAnnotation}
+						onAddCameraLayout={handleAddCameraLayout}
+						onAddSpeed={handleAddSpeed}
+						onAddAudio={handleAddAudio}
+						onAddCaption={handleAddCaption}
+						onDeleteZoom={onZoomDelete}
+						onDeleteTrim={onTrimDelete}
+						onDeleteAnnotation={onAnnotationDelete}
+						onDeleteCameraLayout={onCameraLayoutDelete}
+						onDeleteSpeed={onSpeedDelete}
+						onDeleteAudio={onAudioDelete}
+						onDeleteCaption={onCaptionDelete}
 					/>
 				</TimelineWrapper>
 			</div>

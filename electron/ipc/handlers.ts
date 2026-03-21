@@ -16,6 +16,13 @@ import {
 	shell,
 	systemPreferences,
 } from "electron";
+import {
+	cancelCaptionGeneration,
+	exportCaptionTranscript,
+	generateCaptions,
+	getCaptionModelStatus,
+	isCaptionGenerationCancelled,
+} from "../captions/transcriptionOrchestrator";
 import { RECORDINGS_DIR } from "../main";
 import { closeCountdownWindow, createCountdownWindow, getCountdownWindow } from "../windows";
 
@@ -67,6 +74,7 @@ let currentProjectPath: string | null = null;
 let nativeScreenRecordingActive = false;
 let currentVideoPath: string | null = null;
 let currentWebcamPath: string | null = null;
+let currentMicrophoneAudioPath: string | null = null;
 let nativeCaptureProcess: ChildProcessWithoutNullStreams | null = null;
 let nativeCaptureOutputBuffer = "";
 let nativeCaptureTargetPath: string | null = null;
@@ -135,6 +143,7 @@ export function killWgcCaptureProcess() {
 		wgcSystemAudioPath = null;
 		wgcMicAudioPath = null;
 		wgcPendingVideoPath = null;
+		currentMicrophoneAudioPath = null;
 	}
 }
 
@@ -1050,7 +1059,7 @@ async function muxWgcVideoWithAudio(
 	await moveFileWithOverwrite(mixedOutputPath, videoPath);
 
 	// Clean up audio files
-	for (const audioPath of [systemAudioPath, micAudioPath]) {
+	for (const audioPath of [systemAudioPath]) {
 		if (audioPath) {
 			await fs.rm(audioPath, { force: true }).catch(() => {
 				// Ignore cleanup failures for temporary audio artifacts.
@@ -1172,13 +1181,24 @@ async function mixNativeMacAudioTracks(videoPath: string, microphonePath: string
 	);
 
 	await moveFileWithOverwrite(mixedOutputPath, videoPath);
-	await fs.rm(microphonePath, { force: true });
 }
 
 function emitRecordingInterrupted(reason: string, message: string) {
 	BrowserWindow.getAllWindows().forEach((window) => {
 		if (!window.isDestroyed()) {
 			window.webContents.send("recording-interrupted", { reason, message });
+		}
+	});
+}
+
+function emitCaptionGenerationProgress(progress: {
+	stage: string;
+	percentage: number;
+	message: string;
+}) {
+	BrowserWindow.getAllWindows().forEach((window) => {
+		if (!window.isDestroyed()) {
+			window.webContents.send("caption-generation-progress", progress);
 		}
 	});
 }
@@ -2330,10 +2350,14 @@ export function registerIpcHandlers(
 			if (preferredMicrophonePath) {
 				try {
 					await fs.access(preferredMicrophonePath);
+					currentMicrophoneAudioPath = preferredMicrophonePath;
 					await mixNativeMacAudioTracks(finalVideoPath, preferredMicrophonePath);
 				} catch (error) {
 					console.warn("Failed to mix native macOS microphone audio into capture:", error);
+					currentMicrophoneAudioPath = null;
 				}
+			} else {
+				currentMicrophoneAudioPath = null;
 			}
 
 			return await finalizeStoredVideo(finalVideoPath);
@@ -2391,9 +2415,12 @@ export function registerIpcHandlers(
 
 		try {
 			if (wgcSystemAudioPath || wgcMicAudioPath) {
+				currentMicrophoneAudioPath = wgcMicAudioPath;
 				await muxWgcVideoWithAudio(videoPath, wgcSystemAudioPath, wgcMicAudioPath);
 				wgcSystemAudioPath = null;
 				wgcMicAudioPath = null;
+			} else {
+				currentMicrophoneAudioPath = null;
 			}
 
 			return await finalizeStoredVideo(videoPath);
@@ -2401,6 +2428,7 @@ export function registerIpcHandlers(
 			console.error("Failed to mux WGC recording:", error);
 			wgcSystemAudioPath = null;
 			wgcMicAudioPath = null;
+			currentMicrophoneAudioPath = null;
 			try {
 				return await finalizeStoredVideo(videoPath);
 			} catch {
@@ -2488,6 +2516,7 @@ export function registerIpcHandlers(
 			const recordingsDir = await getRecordingsDir();
 			const videoPath = path.join(recordingsDir, fileName);
 			await fs.writeFile(videoPath, Buffer.from(videoData));
+			currentMicrophoneAudioPath = null;
 			return await finalizeStoredVideo(videoPath);
 		} catch (error) {
 			console.error("Failed to store video:", error);
@@ -3010,6 +3039,7 @@ export function registerIpcHandlers(
 			const content = await fs.readFile(filePath, "utf-8");
 			const project = JSON.parse(content);
 			currentProjectPath = filePath;
+			currentMicrophoneAudioPath = null;
 			if (project && typeof project === "object" && typeof project.videoPath === "string") {
 				currentVideoPath = normalizeVideoSourcePath(project.videoPath) ?? project.videoPath;
 			}
@@ -3037,6 +3067,7 @@ export function registerIpcHandlers(
 
 			const content = await fs.readFile(currentProjectPath, "utf-8");
 			const project = JSON.parse(content);
+			currentMicrophoneAudioPath = null;
 			if (project && typeof project === "object" && typeof project.videoPath === "string") {
 				currentVideoPath = normalizeVideoSourcePath(project.videoPath) ?? project.videoPath;
 			}
@@ -3055,8 +3086,13 @@ export function registerIpcHandlers(
 		}
 	});
 	ipcMain.handle("set-current-video-path", (_, path: string) => {
-		currentVideoPath = normalizeVideoSourcePath(path) ?? path;
+		const normalizedPath = normalizeVideoSourcePath(path) ?? path;
+		const isSameVideoPath = currentVideoPath === normalizedPath;
+		currentVideoPath = normalizedPath;
 		currentProjectPath = null;
+		if (!isSameVideoPath) {
+			currentMicrophoneAudioPath = null;
+		}
 		return { success: true };
 	});
 
@@ -3066,6 +3102,7 @@ export function registerIpcHandlers(
 
 	ipcMain.handle("clear-current-video-path", () => {
 		currentVideoPath = null;
+		currentMicrophoneAudioPath = null;
 		return { success: true };
 	});
 
@@ -3082,6 +3119,152 @@ export function registerIpcHandlers(
 		currentWebcamPath = null;
 		return { success: true };
 	});
+
+	ipcMain.handle("check-file-available", async (_, filePath: string) => {
+		try {
+			const normalizedPath = normalizeVideoSourcePath(filePath);
+			if (!normalizedPath) {
+				return { success: true, exists: false };
+			}
+
+			await fs.access(normalizedPath);
+			return { success: true, exists: true, path: normalizedPath };
+		} catch (error) {
+			return {
+				success: true,
+				exists: false,
+				error: String(error),
+			};
+		}
+	});
+
+	ipcMain.handle("get-caption-model-status", async (_, videoPath?: string) => {
+		try {
+			const targetVideoPath = normalizeVideoSourcePath(videoPath ?? currentVideoPath);
+			if (!targetVideoPath) {
+				return { success: false, message: "No video available for captions." };
+			}
+
+			const status = await getCaptionModelStatus(
+				targetVideoPath,
+				currentMicrophoneAudioPath,
+				getFfmpegBinaryPath(),
+			);
+			return { success: true, status };
+		} catch (error) {
+			console.error("Failed to get caption model status:", error);
+			return {
+				success: false,
+				message: "Failed to get caption model status",
+				error: String(error),
+			};
+		}
+	});
+
+	ipcMain.handle(
+		"generate-captions",
+		async (
+			_,
+			request: {
+				videoPath?: string;
+				preferredBackend: "auto" | "whisper.cpp" | "apple-speech";
+				model: "base" | "small" | "medium";
+				language: string;
+				prompt: string;
+				preferredSourceAudio: "microphone" | "mixed";
+			},
+		) => {
+			try {
+				const targetVideoPath = normalizeVideoSourcePath(request.videoPath ?? currentVideoPath);
+				if (!targetVideoPath) {
+					return { success: false, message: "No video available for transcription." };
+				}
+
+				const track = await generateCaptions(
+					{
+						videoPath: targetVideoPath,
+						preferredBackend: request.preferredBackend,
+						model: request.model,
+						language: request.language,
+						prompt: request.prompt,
+						preferredSourceAudio: request.preferredSourceAudio,
+						microphoneAudioPath: currentMicrophoneAudioPath,
+						ffmpegPath: getFfmpegBinaryPath(),
+					},
+					(progress) => {
+						emitCaptionGenerationProgress(progress);
+					},
+				);
+
+				return { success: true, track };
+			} catch (error) {
+				if (isCaptionGenerationCancelled(error)) {
+					return {
+						success: false,
+						canceled: true,
+						message: "Caption generation cancelled",
+					};
+				}
+
+				console.error("Failed to generate captions:", error);
+				return {
+					success: false,
+					message: "Failed to generate captions",
+					error: String(error),
+				};
+			}
+		},
+	);
+
+	ipcMain.handle("cancel-caption-generation", async () => {
+		cancelCaptionGeneration();
+		return { success: true };
+	});
+
+	ipcMain.handle(
+		"export-captions-transcript",
+		async (
+			_,
+			payload: {
+				videoPath?: string;
+				format: "srt" | "vtt" | "txt";
+				track: import("../../src/components/video-editor/types").CaptionTrack;
+			},
+		) => {
+			try {
+				const targetVideoPath = normalizeVideoSourcePath(payload.videoPath ?? currentVideoPath);
+				if (!targetVideoPath) {
+					return { success: false, message: "No video available for transcript export." };
+				}
+
+				const transcript = await exportCaptionTranscript(
+					targetVideoPath,
+					payload.track,
+					payload.format,
+				);
+				const result = await dialog.showSaveDialog({
+					title: "Export Transcript",
+					defaultPath: path.join(app.getPath("downloads"), transcript.defaultFileName),
+					filters: [{ name: "Transcript", extensions: [payload.format] }],
+					properties: ["createDirectory", "showOverwriteConfirmation"],
+				});
+
+				if (result.canceled || !result.filePath) {
+					return { success: false, canceled: true, message: "Transcript export canceled" };
+				}
+
+				await fs.writeFile(result.filePath, transcript.content, "utf-8");
+				return { success: true, path: result.filePath };
+			} catch (error) {
+				console.error("Failed to export transcript:", error);
+				return {
+					success: false,
+					message: "Failed to export transcript",
+					error: String(error),
+				};
+			}
+		},
+	);
 
 	ipcMain.handle("get-platform", () => {
 		return process.platform;

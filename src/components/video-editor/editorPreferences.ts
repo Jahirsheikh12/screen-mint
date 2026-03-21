@@ -18,6 +18,10 @@ type PersistedEditorControls = Pick<
 	| "padding"
 	| "cropRegion"
 	| "aspectRatio"
+	| "webcamRegion"
+	| "showWebcam"
+	| "mirrorWebcam"
+	| "cameraSizeDuringZoom"
 	| "exportQuality"
 	| "exportFormat"
 	| "gifFrameRate"
@@ -54,6 +58,10 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	padding: DEFAULT_EDITOR_CONTROLS.padding,
 	cropRegion: DEFAULT_EDITOR_CONTROLS.cropRegion,
 	aspectRatio: DEFAULT_EDITOR_CONTROLS.aspectRatio,
+	webcamRegion: DEFAULT_EDITOR_CONTROLS.webcamRegion,
+	showWebcam: DEFAULT_EDITOR_CONTROLS.showWebcam,
+	mirrorWebcam: DEFAULT_EDITOR_CONTROLS.mirrorWebcam,
+	cameraSizeDuringZoom: DEFAULT_EDITOR_CONTROLS.cameraSizeDuringZoom,
 	exportQuality: DEFAULT_EDITOR_CONTROLS.exportQuality,
 	exportFormat: DEFAULT_EDITOR_CONTROLS.exportFormat,
 	gifFrameRate: DEFAULT_EDITOR_CONTROLS.gifFrameRate,
@@ -143,6 +151,10 @@ function normalizeEditorControls(
 		padding: raw.padding ?? fallback.padding,
 		cropRegion: normalizeCropRegion(raw.cropRegion, fallback.cropRegion),
 		aspectRatio: raw.aspectRatio ?? fallback.aspectRatio,
+		webcamRegion: raw.webcamRegion ?? fallback.webcamRegion,
+		showWebcam: raw.showWebcam ?? fallback.showWebcam,
+		mirrorWebcam: raw.mirrorWebcam ?? fallback.mirrorWebcam,
+		cameraSizeDuringZoom: raw.cameraSizeDuringZoom ?? fallback.cameraSizeDuringZoom,
 		exportQuality: raw.exportQuality ?? fallback.exportQuality,
 		exportFormat: raw.exportFormat ?? fallback.exportFormat,
 		gifFrameRate: raw.gifFrameRate ?? fallback.gifFrameRate,
@@ -169,6 +181,10 @@ function normalizeEditorControls(
 		padding: normalized.padding,
 		cropRegion: normalized.cropRegion,
 		aspectRatio: normalized.aspectRatio,
+		webcamRegion: normalized.webcamRegion,
+		showWebcam: normalized.showWebcam,
+		mirrorWebcam: normalized.mirrorWebcam,
+		cameraSizeDuringZoom: normalized.cameraSizeDuringZoom,
 		exportQuality: normalized.exportQuality,
 		exportFormat: normalized.exportFormat,
 		gifFrameRate: normalized.gifFrameRate,

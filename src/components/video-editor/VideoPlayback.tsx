@@ -61,7 +61,9 @@ import {
 	computeZoomTransform,
 	createMotionBlurState,
 	type MotionBlurState,
+	smoothZoomValue,
 } from "./videoPlayback/zoomTransform";
+import { CaptionOverlay } from "./CaptionOverlay";
 import { WebcamOverlay } from "./WebcamOverlay";
 
 type PlaybackAnimationState = {
@@ -72,6 +74,7 @@ type PlaybackAnimationState = {
 	progress: number;
 	x: number;
 	y: number;
+	lastUpdateMs: number | null;
 };
 
 function createPlaybackAnimationState(): PlaybackAnimationState {
@@ -83,6 +86,7 @@ function createPlaybackAnimationState(): PlaybackAnimationState {
 		progress: 0,
 		x: 0,
 		y: 0,
+		lastUpdateMs: null,
 	};
 }
 
@@ -131,7 +135,10 @@ interface VideoPlaybackProps {
 	onWebcamPositionChange?: (position: { x: number; y: number }) => void;
 	onWebcamSizeChange?: (size: { width: number; height: number }) => void;
 	webcamSelected?: boolean;
+	selectedCameraLayoutId?: string | null;
 	onSelectWebcam?: () => void;
+	captionRegions?: import("./types").CaptionRegion[];
+	captionSettings?: import("./types").CaptionSettings;
 }
 
 export interface VideoPlaybackRef {
@@ -183,19 +190,22 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			cursorMotionBlur = DEFAULT_CURSOR_MOTION_BLUR,
 			cursorClickBounce = DEFAULT_CURSOR_CLICK_BOUNCE,
 			cursorSway = DEFAULT_CURSOR_SWAY,
-				webcamPath,
-				webcamRegion,
-				showWebcam = true,
-				mirrorWebcam = false,
-				cameraSizeDuringZoom = 1,
-				cameraLayouts = [],
-				onWebcamPositionChange,
-				onWebcamSizeChange,
-				webcamSelected = false,
-				onSelectWebcam,
-			},
-			ref,
-		) => {
+			webcamPath,
+			webcamRegion,
+			showWebcam = true,
+			mirrorWebcam = false,
+			cameraSizeDuringZoom = 1,
+			cameraLayouts = [],
+			onWebcamPositionChange,
+			onWebcamSizeChange,
+			webcamSelected = false,
+			selectedCameraLayoutId = null,
+			onSelectWebcam,
+			captionRegions = [],
+			captionSettings,
+		},
+		ref,
+	) => {
 		const videoRef = useRef<HTMLVideoElement | null>(null);
 		const containerRef = useRef<HTMLDivElement | null>(null);
 		const appRef = useRef<Application | null>(null);
@@ -243,32 +253,32 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const cursorMotionBlurRef = useRef(cursorMotionBlur);
 		const cursorClickBounceRef = useRef(cursorClickBounce);
 		const cursorSwayRef = useRef(cursorSway);
-			const motionBlurStateRef = useRef<MotionBlurState>(createMotionBlurState());
-			const resolvedCameraState = useMemo(() => {
-				if (!webcamRegion) {
-					return null;
-				}
+		const motionBlurStateRef = useRef<MotionBlurState>(createMotionBlurState());
+		const resolvedCameraState = useMemo(() => {
+			if (!webcamRegion) {
+				return null;
+			}
 
-				return resolveCameraLayoutState({
-					timeMs: Math.round(currentTime * 1000),
-					webcamRegion,
-					showWebcam,
-					mirrorWebcam,
-					cameraLayouts,
-					zoomRegions,
-					connectZooms,
-					cameraSizeDuringZoom,
-				});
-			}, [
-				cameraLayouts,
-				cameraSizeDuringZoom,
-				connectZooms,
-				currentTime,
-				mirrorWebcam,
-				showWebcam,
+			return resolveCameraLayoutState({
+				timeMs: Math.round(currentTime * 1000),
 				webcamRegion,
+				showWebcam,
+				mirrorWebcam,
+				cameraLayouts,
 				zoomRegions,
-			]);
+				connectZooms,
+				cameraSizeDuringZoom,
+			});
+		}, [
+			cameraLayouts,
+			cameraSizeDuringZoom,
+			connectZooms,
+			currentTime,
+			mirrorWebcam,
+			showWebcam,
+			webcamRegion,
+			zoomRegions,
+		]);
 
 		const clampFocusToStage = useCallback((focus: ZoomFocus, depth: ZoomDepth) => {
 			return clampFocusToStageUtil(focus, depth, stageSizeRef.current);
@@ -1020,11 +1030,24 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				const prevScale = state.appliedScale;
 				const prevX = state.x;
 				const prevY = state.y;
+				const nowMs = performance.now();
+				const deltaSeconds =
+					state.lastUpdateMs === null ? 0 : Math.max(0, (nowMs - state.lastUpdateMs) / 1000);
+				state.lastUpdateMs = nowMs;
+				const shouldSmooth = isPlayingRef.current && !isSeekingRef.current;
 
-				state.scale = targetScaleFactor;
-				state.focusX = targetFocus.cx;
-				state.focusY = targetFocus.cy;
-				state.progress = targetProgress;
+				state.scale = shouldSmooth
+					? smoothZoomValue(state.scale, targetScaleFactor, deltaSeconds)
+					: targetScaleFactor;
+				state.focusX = shouldSmooth
+					? smoothZoomValue(state.focusX, targetFocus.cx, deltaSeconds)
+					: targetFocus.cx;
+				state.focusY = shouldSmooth
+					? smoothZoomValue(state.focusY, targetFocus.cy, deltaSeconds)
+					: targetFocus.cy;
+				state.progress = shouldSmooth
+					? smoothZoomValue(state.progress, targetProgress, deltaSeconds)
+					: targetProgress;
 
 				const projectedTransform = computeZoomTransform({
 					stageSize: stageSizeRef.current,
@@ -1295,21 +1318,34 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 								/>
 							));
 						})()}
-							{webcamPath && resolvedCameraState && resolvedCameraState.mode !== "hidden" && (
-								<WebcamOverlay
-									webcamPath={webcamPath}
-									webcamRegion={resolvedCameraState.region}
-									mode={resolvedCameraState.mode}
-									currentTime={currentTime}
-									containerWidth={overlayRef.current?.clientWidth || 800}
-									containerHeight={overlayRef.current?.clientHeight || 600}
-									isSelected={webcamSelected}
-									mirror={resolvedCameraState.mirror}
-									onPositionChange={(position) => onWebcamPositionChange?.(position)}
-									onSizeChange={(size) => onWebcamSizeChange?.(size)}
-									onClick={() => onSelectWebcam?.()}
-								/>
-							)}
+						{webcamPath && resolvedCameraState && resolvedCameraState.mode !== "hidden" && (
+							<WebcamOverlay
+								webcamPath={webcamPath}
+								webcamRegion={resolvedCameraState.region}
+								mode={resolvedCameraState.mode}
+								currentTime={currentTime}
+								containerWidth={overlayRef.current?.clientWidth || 800}
+								containerHeight={overlayRef.current?.clientHeight || 600}
+								isSelected={
+									webcamSelected ||
+									(selectedCameraLayoutId === resolvedCameraState.activeLayoutId &&
+										resolvedCameraState.mode === "default")
+								}
+								mirror={resolvedCameraState.mirror}
+								onPositionChange={(position) => onWebcamPositionChange?.(position)}
+								onSizeChange={(size) => onWebcamSizeChange?.(size)}
+								onClick={() => onSelectWebcam?.()}
+							/>
+						)}
+						{captionSettings && (
+							<CaptionOverlay
+								captionRegions={captionRegions}
+								captionSettings={captionSettings}
+								currentTimeMs={Math.round(currentTime * 1000)}
+								containerWidth={overlayRef.current?.clientWidth || 800}
+								containerHeight={overlayRef.current?.clientHeight || 600}
+							/>
+						)}
 					</div>
 				)}
 				<video

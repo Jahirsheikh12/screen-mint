@@ -1,11 +1,7 @@
-import type {
-	CameraLayoutMode,
-	CameraLayoutRegion,
-	WebcamRegion,
-	ZoomRegion,
-} from "./types";
+import type { CameraLayoutMode, CameraLayoutRegion, WebcamRegion, ZoomRegion } from "./types";
 import { CAMERA_ZOOM_SCALE_DISABLED } from "./types";
 import { findDominantRegion } from "./videoPlayback/zoomRegionUtils";
+import { normalizeWebcamRegion } from "./webcamRegionUtils";
 
 export interface ResolvedCameraLayoutState {
 	mode: CameraLayoutMode;
@@ -25,10 +21,14 @@ export function mergeWebcamRegion(
 	override?: Partial<WebcamRegion>,
 ): WebcamRegion {
 	if (!override) {
-		return { ...baseRegion, position: { ...baseRegion.position }, size: { ...baseRegion.size } };
+		return normalizeWebcamRegion({
+			...baseRegion,
+			position: { ...baseRegion.position },
+			size: { ...baseRegion.size },
+		});
 	}
 
-	return {
+	return normalizeWebcamRegion({
 		...baseRegion,
 		...override,
 		position: {
@@ -39,12 +39,16 @@ export function mergeWebcamRegion(
 			...baseRegion.size,
 			...override.size,
 		},
-	};
+	});
 }
 
 export function scaleWebcamRegion(region: WebcamRegion, scale: number): WebcamRegion {
 	if (!Number.isFinite(scale) || scale <= 0 || Math.abs(scale - 1) < 0.0001) {
-		return { ...region, position: { ...region.position }, size: { ...region.size } };
+		return normalizeWebcamRegion({
+			...region,
+			position: { ...region.position },
+			size: { ...region.size },
+		});
 	}
 
 	const scaledWidth = clampPercent(region.size.width * scale);
@@ -52,7 +56,7 @@ export function scaleWebcamRegion(region: WebcamRegion, scale: number): WebcamRe
 	const deltaX = (region.size.width - scaledWidth) / 2;
 	const deltaY = (region.size.height - scaledHeight) / 2;
 
-	return {
+	return normalizeWebcamRegion({
 		...region,
 		position: {
 			x: clampPercent(region.position.x + deltaX),
@@ -62,7 +66,7 @@ export function scaleWebcamRegion(region: WebcamRegion, scale: number): WebcamRe
 			width: scaledWidth,
 			height: scaledHeight,
 		},
-	};
+	});
 }
 
 export function getActiveCameraLayout(

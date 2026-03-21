@@ -30,6 +30,10 @@ const helpers = [
 		source: "NativeCursorMonitor.swift",
 		output: "screenmint-native-cursor-monitor",
 	},
+	{
+		source: "AppleSpeechTranscriber.swift",
+		output: "screenmint-apple-speech-helper",
+	},
 ];
 
 const swiftcCheck = spawnSync("swiftc", ["--version"], { encoding: "utf8" });

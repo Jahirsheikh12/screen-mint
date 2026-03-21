@@ -5,6 +5,8 @@ import { toFileUrl } from "@/components/video-editor/projectPersistence";
 import type {
 	AnnotationRegion,
 	CameraLayoutRegion,
+	CaptionRegion,
+	CaptionSettings,
 	CropRegion,
 	CursorTelemetryPoint,
 	SpeedRegion,
@@ -29,9 +31,11 @@ import {
 	computeZoomTransform,
 	createMotionBlurState,
 	type MotionBlurState,
+	smoothZoomValue,
 } from "@/components/video-editor/videoPlayback/zoomTransform";
+import { getWebcamPixelRect } from "@/components/video-editor/webcamRegionUtils";
 import { getAssetPath, getRenderableAssetUrl } from "@/lib/assetPath";
-import { renderAnnotations } from "./annotationRenderer";
+import { renderAnnotations, renderCaptions } from "./annotationRenderer";
 
 interface FrameRenderConfig {
 	width: number;
@@ -65,6 +69,8 @@ interface FrameRenderConfig {
 	mirrorWebcam?: boolean;
 	cameraSizeDuringZoom?: number;
 	cameraLayouts?: CameraLayoutRegion[];
+	captionRegions?: CaptionRegion[];
+	captionSettings?: CaptionSettings;
 }
 
 interface AnimationState {
@@ -75,6 +81,7 @@ interface AnimationState {
 	progress: number;
 	x: number;
 	y: number;
+	lastUpdateMs: number | null;
 }
 
 function createAnimationState(): AnimationState {
@@ -86,6 +93,7 @@ function createAnimationState(): AnimationState {
 		progress: 0,
 		x: 0,
 		y: 0,
+		lastUpdateMs: null,
 	};
 }
 
@@ -137,12 +145,12 @@ export class FrameRenderer {
 		canvas.width = this.config.width;
 		canvas.height = this.config.height;
 
-			// Try to set colorSpace if supported (may not be available on all platforms)
-			try {
-				if ("colorSpace" in canvas) {
-					(canvas as HTMLCanvasElement & { colorSpace?: string }).colorSpace = "srgb";
-				}
-			} catch (error) {
+		// Try to set colorSpace if supported (may not be available on all platforms)
+		try {
+			if ("colorSpace" in canvas) {
+				(canvas as HTMLCanvasElement & { colorSpace?: string }).colorSpace = "srgb";
+			}
+		} catch (error) {
 			// Silently ignore colorSpace errors on platforms that don't support it
 			console.warn("[FrameRenderer] colorSpace not supported on this platform:", error);
 		}
@@ -222,8 +230,8 @@ export class FrameRenderer {
 			this.cursorContainer.addChild(this.cursorOverlay.container);
 		}
 
-			// Setup webcam video if available
-			if (this.config.webcamPath) {
+		// Setup webcam video if available
+		if (this.config.webcamPath) {
 			this.webcamVideo = document.createElement("video");
 			const webcamSrc = this.config.webcamPath.startsWith("file://")
 				? this.config.webcamPath
@@ -524,79 +532,97 @@ export class FrameRenderer {
 			);
 		}
 
-			const compositeCtx = this.compositeCtx;
-			const webcamVideo = this.webcamVideo;
-			if (compositeCtx && webcamVideo && this.config.webcamRegion) {
-				const resolvedCameraState = resolveCameraLayoutState({
-					timeMs,
-					webcamRegion: this.config.webcamRegion,
-					showWebcam: this.config.showWebcam ?? true,
-					mirrorWebcam: this.config.mirrorWebcam,
-					cameraLayouts: this.config.cameraLayouts,
-					zoomRegions: this.config.zoomRegions,
-					connectZooms: this.config.connectZooms,
-					cameraSizeDuringZoom: this.config.cameraSizeDuringZoom,
+		// Render captions
+		if (
+			this.compositeCtx &&
+			this.config.captionRegions?.length &&
+			this.config.captionSettings?.enabled
+		) {
+			renderCaptions(
+				this.compositeCtx,
+				this.config.captionRegions,
+				this.config.captionSettings,
+				this.config.width,
+				this.config.height,
+				timeMs,
+			);
+		}
+
+		const compositeCtx = this.compositeCtx;
+		const webcamVideo = this.webcamVideo;
+		if (compositeCtx && webcamVideo && this.config.webcamRegion) {
+			const resolvedCameraState = resolveCameraLayoutState({
+				timeMs,
+				webcamRegion: this.config.webcamRegion,
+				showWebcam: this.config.showWebcam ?? true,
+				mirrorWebcam: this.config.mirrorWebcam,
+				cameraLayouts: this.config.cameraLayouts,
+				zoomRegions: this.config.zoomRegions,
+				connectZooms: this.config.connectZooms,
+				cameraSizeDuringZoom: this.config.cameraSizeDuringZoom,
+			});
+
+			if (resolvedCameraState.mode !== "hidden") {
+				webcamVideo.currentTime = timeMs / 1000;
+				await new Promise<void>((resolve) => {
+					if (webcamVideo.readyState >= 2) {
+						resolve();
+					} else {
+						webcamVideo.addEventListener("seeked", () => resolve(), { once: true });
+					}
 				});
 
-				if (resolvedCameraState.mode !== "hidden") {
-					webcamVideo.currentTime = timeMs / 1000;
-					await new Promise<void>((resolve) => {
-						if (webcamVideo.readyState >= 2) {
-							resolve();
-						} else {
-							webcamVideo.addEventListener("seeked", () => resolve(), { once: true });
-						}
-					});
+				if (resolvedCameraState.mode === "fullscreen") {
+					compositeCtx.save();
+					this.drawWebcamFrame(
+						compositeCtx,
+						webcamVideo,
+						0,
+						0,
+						this.config.width,
+						this.config.height,
+						resolvedCameraState.mirror,
+					);
+					compositeCtx.restore();
+				} else {
+					const region = resolvedCameraState.region;
+					const {
+						x: wx,
+						y: wy,
+						width: ww,
+						height: wh,
+					} = getWebcamPixelRect(region, this.config.width, this.config.height);
 
-					if (resolvedCameraState.mode === "fullscreen") {
-						compositeCtx.save();
-						this.drawWebcamFrame(
-							compositeCtx,
-							webcamVideo,
-							0,
-							0,
-							this.config.width,
-							this.config.height,
-							resolvedCameraState.mirror,
-						);
-						compositeCtx.restore();
+					compositeCtx.save();
+					compositeCtx.globalAlpha = region.opacity;
+					compositeCtx.beginPath();
+					if (region.shape === "circle") {
+						compositeCtx.ellipse(wx + ww / 2, wy + wh / 2, ww / 2, wh / 2, 0, 0, Math.PI * 2);
 					} else {
-						const region = resolvedCameraState.region;
-						const wx = (region.position.x / 100) * this.config.width;
-						const wy = (region.position.y / 100) * this.config.height;
-						const ww = (region.size.width / 100) * this.config.width;
-						const wh = (region.size.height / 100) * this.config.height;
-
-						compositeCtx.save();
-						compositeCtx.globalAlpha = region.opacity;
-						compositeCtx.beginPath();
-						if (region.shape === "circle") {
-							compositeCtx.ellipse(wx + ww / 2, wy + wh / 2, ww / 2, wh / 2, 0, 0, Math.PI * 2);
-						} else {
-							compositeCtx.roundRect(wx, wy, ww, wh, region.borderRadius);
-						}
-						compositeCtx.clip();
-						this.drawWebcamFrame(
-							compositeCtx,
-							webcamVideo,
-							wx,
-							wy,
-							ww,
-							wh,
-							resolvedCameraState.mirror,
-						);
-
-						if (region.borderWidth > 0) {
-							compositeCtx.strokeStyle = region.borderColor;
-							compositeCtx.lineWidth = region.borderWidth;
-							compositeCtx.stroke();
-						}
-
-						compositeCtx.restore();
+						compositeCtx.roundRect(wx, wy, ww, wh, region.borderRadius);
 					}
+					compositeCtx.clip();
+					this.drawWebcamFrame(
+						compositeCtx,
+						webcamVideo,
+						wx,
+						wy,
+						ww,
+						wh,
+						resolvedCameraState.mirror,
+					);
+
+					if (region.borderWidth > 0) {
+						compositeCtx.strokeStyle = region.borderColor;
+						compositeCtx.lineWidth = region.borderWidth;
+						compositeCtx.stroke();
+					}
+
+					compositeCtx.restore();
 				}
 			}
 		}
+	}
 
 	private updateLayout(): void {
 		if (!this.app || !this.videoSprite || !this.maskGraphics || !this.videoContainer) return;
@@ -735,11 +761,14 @@ export class FrameRenderer {
 		const prevScale = state.appliedScale;
 		const prevX = state.x;
 		const prevY = state.y;
+		const deltaSeconds =
+			state.lastUpdateMs === null ? 0 : Math.max(0, (timeMs - state.lastUpdateMs) / 1000);
+		state.lastUpdateMs = timeMs;
 
-		state.scale = targetScaleFactor;
-		state.focusX = targetFocus.cx;
-		state.focusY = targetFocus.cy;
-		state.progress = targetProgress;
+		state.scale = smoothZoomValue(state.scale, targetScaleFactor, deltaSeconds);
+		state.focusX = smoothZoomValue(state.focusX, targetFocus.cx, deltaSeconds);
+		state.focusY = smoothZoomValue(state.focusY, targetFocus.cy, deltaSeconds);
+		state.progress = smoothZoomValue(state.progress, targetProgress, deltaSeconds);
 
 		const projectedTransform = computeZoomTransform({
 			stageSize: this.layoutCache.stageSize,

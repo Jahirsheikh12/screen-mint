@@ -89,6 +89,13 @@ export interface AnnotationSize {
 	height: number;
 }
 
+export type WebcamAnchor =
+	| "top-left"
+	| "top-right"
+	| "bottom-left"
+	| "bottom-right"
+	| "free";
+
 export interface AnnotationTextStyle {
 	color: string;
 	backgroundColor: string;
@@ -154,7 +161,9 @@ export const DEFAULT_FIGURE_DATA: FigureData = {
 export interface WebcamRegion {
 	position: { x: number; y: number }; // percentage 0-100
 	size: { width: number; height: number }; // percentage 0-100
-	shape: "circle" | "rectangle";
+	anchor: WebcamAnchor;
+	marginPct: number;
+	shape: "circle" | "rectangle" | "square";
 	borderRadius: number;
 	opacity: number; // 0-1
 	borderWidth: number;
@@ -162,14 +171,37 @@ export interface WebcamRegion {
 }
 
 export const DEFAULT_WEBCAM_REGION: WebcamRegion = {
-	position: { x: 70, y: 70 },
-	size: { width: 20, height: 20 },
+	position: { x: 78, y: 78 },
+	size: { width: 18, height: 18 },
+	anchor: "bottom-right",
+	marginPct: 4,
 	shape: "circle",
 	borderRadius: 50,
 	opacity: 1,
-	borderWidth: 3,
+	borderWidth: 2,
 	borderColor: "#ffffff",
 };
+
+export function getRecommendedWebcamRegion(aspectRatio?: string): WebcamRegion {
+	const normalized = aspectRatio?.trim().toLowerCase();
+	let size = DEFAULT_WEBCAM_REGION.size.width;
+
+	if (normalized && normalized.includes(":")) {
+		const [rawWidth, rawHeight] = normalized.split(":");
+		const width = Number.parseFloat(rawWidth);
+		const height = Number.parseFloat(rawHeight);
+		if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+			const ratio = width / height;
+			size = ratio <= 1.05 ? 22 : 18;
+		}
+	}
+
+	return {
+		...DEFAULT_WEBCAM_REGION,
+		position: { ...DEFAULT_WEBCAM_REGION.position },
+		size: { width: size, height: size },
+	};
+}
 
 export type CameraLayoutMode = "default" | "fullscreen" | "hidden";
 
@@ -245,6 +277,206 @@ export const ZOOM_DEPTH_SCALES: Record<ZoomDepth, number> = {
 };
 
 export const DEFAULT_ZOOM_DEPTH: ZoomDepth = 3;
+
+// ── Captions ──
+
+export type CaptionStylePreset = "classic" | "boxed" | "karaoke" | "outline" | "neon" | "minimal";
+export type CaptionAnimationMode = "static" | "active-word";
+export type CaptionBackend = "whisper.cpp" | "apple-speech";
+export type CaptionBackendPreference = "auto" | CaptionBackend;
+export type CaptionModel = "base" | "small" | "medium";
+export type CaptionTrackStatus = "idle" | "generating" | "ready" | "error";
+export type CaptionSourceAudio = "microphone" | "mixed";
+
+export interface CaptionStyle {
+	preset: CaptionStylePreset;
+	fontSize: number;
+	fontFamily: string;
+	fontWeight: "normal" | "bold" | "800";
+	color: string;
+	backgroundColor: string;
+	backgroundOpacity: number;
+	outlineColor: string;
+	outlineWidth: number;
+	textTransform: "none" | "uppercase";
+}
+
+export interface CaptionWord {
+	id: string;
+	text: string;
+	startMs: number;
+	endMs: number;
+	confidence?: number;
+}
+
+export interface CaptionSegment {
+	id: string;
+	startMs: number;
+	endMs: number;
+	text: string;
+	words: CaptionWord[];
+	source?: "manual" | "generated";
+}
+
+export type CaptionRegion = CaptionSegment;
+
+export type CaptionPosition = "top" | "center" | "bottom";
+
+export interface CaptionSettings {
+	style: CaptionStyle;
+	position: CaptionPosition;
+	enabled: boolean;
+	animationMode: CaptionAnimationMode;
+	maxLines: number;
+	maxWordsPerLine: number;
+	safeAreaInset: number;
+	showTranscriptPanel: boolean;
+}
+
+export interface CaptionTrack {
+	backend: CaptionBackend;
+	model: CaptionModel;
+	language: string;
+	prompt: string;
+	sourceAudio: CaptionSourceAudio;
+	sourceAudioPath?: string;
+	status: CaptionTrackStatus;
+	error?: string;
+	generatedAt?: string;
+	segments: CaptionSegment[];
+}
+
+export interface CaptionGenerationOptions {
+	preferredBackend: CaptionBackendPreference;
+	model: CaptionModel;
+	language: string;
+	prompt: string;
+	preferredSourceAudio: CaptionSourceAudio;
+}
+
+export interface CaptionGenerationProgress {
+	stage: "bootstrap" | "model" | "audio" | "transcribe" | "align" | "complete";
+	percentage: number;
+	message: string;
+}
+
+export interface CaptionModelStatus {
+	ready: boolean;
+	availableModels: CaptionModel[];
+	downloadedModels: CaptionModel[];
+	availableSourceAudios: CaptionSourceAudio[];
+	availableBackends: CaptionBackend[];
+	recommendedBackend: CaptionBackend;
+	backendMessages: Partial<Record<CaptionBackend, string>>;
+}
+
+export interface CaptionGenerationResult {
+	track: CaptionTrack;
+	progress?: CaptionGenerationProgress;
+}
+
+function getDefaultCaptionFontFamily() {
+	if (typeof navigator !== "undefined" && /mac/i.test(navigator.platform)) {
+		return '"SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif';
+	}
+	return "Inter, system-ui, sans-serif";
+}
+
+export const CAPTION_STYLE_PRESETS: Record<CaptionStylePreset, CaptionStyle> = {
+	classic: {
+		preset: "classic",
+		fontSize: 28,
+		fontFamily: getDefaultCaptionFontFamily(),
+		fontWeight: "bold",
+		color: "#ffffff",
+		backgroundColor: "#000000",
+		backgroundOpacity: 0.7,
+		outlineColor: "#000000",
+		outlineWidth: 0,
+		textTransform: "none",
+	},
+	boxed: {
+		preset: "boxed",
+		fontSize: 26,
+		fontFamily: getDefaultCaptionFontFamily(),
+		fontWeight: "bold",
+		color: "#ffffff",
+		backgroundColor: "#10B981",
+		backgroundOpacity: 0.9,
+		outlineColor: "#000000",
+		outlineWidth: 0,
+		textTransform: "uppercase",
+	},
+	karaoke: {
+		preset: "karaoke",
+		fontSize: 32,
+		fontFamily: getDefaultCaptionFontFamily(),
+		fontWeight: "800",
+		color: "#FFD700",
+		backgroundColor: "#000000",
+		backgroundOpacity: 0.5,
+		outlineColor: "#000000",
+		outlineWidth: 2,
+		textTransform: "uppercase",
+	},
+	outline: {
+		preset: "outline",
+		fontSize: 30,
+		fontFamily: getDefaultCaptionFontFamily(),
+		fontWeight: "bold",
+		color: "#ffffff",
+		backgroundColor: "transparent",
+		backgroundOpacity: 0,
+		outlineColor: "#000000",
+		outlineWidth: 3,
+		textTransform: "none",
+	},
+	neon: {
+		preset: "neon",
+		fontSize: 28,
+		fontFamily: getDefaultCaptionFontFamily(),
+		fontWeight: "800",
+		color: "#00FF88",
+		backgroundColor: "#000000",
+		backgroundOpacity: 0.4,
+		outlineColor: "#00FF88",
+		outlineWidth: 1,
+		textTransform: "uppercase",
+	},
+	minimal: {
+		preset: "minimal",
+		fontSize: 24,
+		fontFamily: getDefaultCaptionFontFamily(),
+		fontWeight: "normal",
+		color: "#ffffff",
+		backgroundColor: "transparent",
+		backgroundOpacity: 0,
+		outlineColor: "#000000",
+		outlineWidth: 1,
+		textTransform: "none",
+	},
+};
+
+export const DEFAULT_CAPTION_STYLE: CaptionStyle = { ...CAPTION_STYLE_PRESETS.classic };
+
+export const DEFAULT_CAPTION_SETTINGS: CaptionSettings = {
+	style: DEFAULT_CAPTION_STYLE,
+	position: "bottom",
+	enabled: false,
+	animationMode: "active-word",
+	maxLines: 2,
+	maxWordsPerLine: 6,
+	safeAreaInset: 8,
+	showTranscriptPanel: true,
+};
+
+export const DEFAULT_CAPTION_GENERATION_OPTIONS: CaptionGenerationOptions = {
+	preferredBackend: "auto",
+	model: "medium",
+	language: "auto",
+	prompt: "",
+	preferredSourceAudio: "microphone",
+};
 
 export function clampFocusToDepth(focus: ZoomFocus, _depth: ZoomDepth): ZoomFocus {
 	return {

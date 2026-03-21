@@ -74,10 +74,10 @@ describe("cameraLayouts", () => {
 		expect(result.mode).toBe("default");
 		expect(result.isZoomScaled).toBe(true);
 		expect(result.scale).toBe(0.5);
-		expect(result.region.size.width).toBeCloseTo(10);
-		expect(result.region.size.height).toBeCloseTo(10);
-		expect(result.region.position.x).toBeCloseTo(75);
-		expect(result.region.position.y).toBeCloseTo(75);
+		expect(result.region.size.width).toBeCloseTo(9);
+		expect(result.region.size.height).toBeCloseTo(9);
+		expect(result.region.position.x).toBeCloseTo(87);
+		expect(result.region.position.y).toBeCloseTo(87);
 	});
 
 	it("applies layout region overrides before zoom scaling", () => {

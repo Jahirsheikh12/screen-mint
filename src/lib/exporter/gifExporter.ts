@@ -1,9 +1,11 @@
 import GIF from "gif.js";
-	import type {
-		AnnotationRegion,
-		CameraLayoutRegion,
-		CropRegion,
-		CursorTelemetryPoint,
+import type {
+	AnnotationRegion,
+	CameraLayoutRegion,
+	CaptionRegion,
+	CaptionSettings,
+	CropRegion,
+	CursorTelemetryPoint,
 	SpeedRegion,
 	TrimRegion,
 	WebcamRegion,
@@ -51,14 +53,16 @@ interface GifExporterConfig {
 	cursorSway?: number;
 	previewWidth?: number;
 	previewHeight?: number;
-		webcamPath?: string | null;
-		webcamRegion?: WebcamRegion;
-		showWebcam?: boolean;
-		mirrorWebcam?: boolean;
-		cameraSizeDuringZoom?: number;
-		cameraLayouts?: CameraLayoutRegion[];
-		onProgress?: (progress: ExportProgress) => void;
-	}
+	webcamPath?: string | null;
+	webcamRegion?: WebcamRegion;
+	showWebcam?: boolean;
+	mirrorWebcam?: boolean;
+	cameraSizeDuringZoom?: number;
+	cameraLayouts?: CameraLayoutRegion[];
+	captionRegions?: CaptionRegion[];
+	captionSettings?: CaptionSettings;
+	onProgress?: (progress: ExportProgress) => void;
+}
 
 /**
  * Calculate output dimensions based on size preset and source dimensions while preserving aspect ratio.
@@ -141,13 +145,15 @@ export class GifExporter {
 				cursorMotionBlur: this.config.cursorMotionBlur,
 				cursorClickBounce: this.config.cursorClickBounce,
 				cursorSway: this.config.cursorSway,
-					webcamPath: this.config.webcamPath,
-					webcamRegion: this.config.webcamRegion,
-					showWebcam: this.config.showWebcam,
-					mirrorWebcam: this.config.mirrorWebcam,
-					cameraSizeDuringZoom: this.config.cameraSizeDuringZoom,
-					cameraLayouts: this.config.cameraLayouts,
-				});
+				webcamPath: this.config.webcamPath,
+				webcamRegion: this.config.webcamRegion,
+				showWebcam: this.config.showWebcam,
+				mirrorWebcam: this.config.mirrorWebcam,
+				cameraSizeDuringZoom: this.config.cameraSizeDuringZoom,
+				cameraLayouts: this.config.cameraLayouts,
+				captionRegions: this.config.captionRegions,
+				captionSettings: this.config.captionSettings,
+			});
 			await this.renderer.initialize();
 
 			// Initialize GIF encoder
