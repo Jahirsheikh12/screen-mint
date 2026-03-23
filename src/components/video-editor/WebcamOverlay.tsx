@@ -1,8 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Rnd } from "react-rnd";
-import type { CameraLayoutMode } from "./types";
 import { toFileUrl } from "./projectPersistence";
-import type { WebcamRegion } from "./types";
+import type { CameraLayoutMode, WebcamRegion } from "./types";
 import { getWebcamPixelRect, normalizeWebcamRegion } from "./webcamRegionUtils";
 
 interface WebcamOverlayProps {

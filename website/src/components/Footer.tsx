@@ -2,7 +2,7 @@ import { CONTRIBUTING_URL, LICENSE_URL, REPO_URL } from "../lib/links";
 
 export function Footer() {
 	return (
-		<footer className="border-t border-white/[0.04] bg-[#1d1d1f]">
+		<footer className="border-t border-white/[0.04] bg-black">
 			<div className="max-w-6xl mx-auto px-6 py-12">
 				<div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
 					{/* Logo & description */}

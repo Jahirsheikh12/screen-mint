@@ -1,315 +1,333 @@
-import { Eye, EyeOff, Languages, Timer } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BsRecordCircle } from "react-icons/bs";
-import { FaRegStopCircle } from "react-icons/fa";
-import { FaFolderOpen } from "react-icons/fa6";
-import { FiMinus, FiX } from "react-icons/fi";
+import { useScopedT } from "@/contexts/I18nContext";
+import type { AfterRecordingAction, HudMode } from "@/hooks/useHudState";
+import { useHudState } from "@/hooks/useHudState";
 import {
-	MdMic,
-	MdMicOff,
-	MdMonitor,
-	MdVideocam,
-	MdVideocamOff,
-	MdVideoFile,
-	MdVolumeOff,
-	MdVolumeUp,
-} from "react-icons/md";
-import { useI18n } from "@/contexts/I18nContext";
-import type { AppLocale } from "@/i18n/config";
-import { SUPPORTED_LOCALES } from "@/i18n/config";
-import { useScopedT } from "../../contexts/I18nContext";
-import { useAudioLevelMeter } from "../../hooks/useAudioLevelMeter";
-import { useMicrophoneDevices } from "../../hooks/useMicrophoneDevices";
-import { useScreenRecorder } from "../../hooks/useScreenRecorder";
-import { AudioLevelMeter } from "../ui/audio-level-meter";
-import { Button } from "../ui/button";
-import { ContentClamp } from "../ui/content-clamp";
-import {
-	DropdownMenuCheckboxItem,
 	DropdownMenu,
+	DropdownMenuCheckboxItem,
 	DropdownMenuContent,
 	DropdownMenuItem,
-	DropdownMenuLabel,
 	DropdownMenuRadioGroup,
 	DropdownMenuRadioItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { HudToolbar } from "./HudToolbar";
 import styles from "./LaunchWindow.module.css";
+import { DeviceTab } from "./tabs/DeviceTab";
+import { DisplayTab } from "./tabs/DisplayTab";
+import { WindowTab } from "./tabs/WindowTab";
 
-type CameraDeviceOption = {
-	deviceId: string;
-	label: string;
-};
+const DROPDOWN_CLASSES =
+	"border-white/[0.08] bg-[rgba(28,28,30,0.97)] text-white/90 backdrop-blur-2xl shadow-xl shadow-black/40";
 
 export function LaunchWindow() {
-	const { locale, setLocale } = useI18n();
+	const hud = useHudState();
 	const t = useScopedT("launch");
 
-	const LOCALE_LABELS: Record<string, string> = { en: "EN", es: "ES", "zh-CN": "中文" };
-	const {
-		recording,
-		countdownActive,
-		toggleRecording,
-		microphoneEnabled,
-		setMicrophoneEnabled,
-		microphoneDeviceId,
-		setMicrophoneDeviceId,
-		systemAudioEnabled,
-		setSystemAudioEnabled,
-		countdownDelay,
-		setCountdownDelay,
-		webcamEnabled,
-		cameraSession,
-		setCameraDeviceId,
-		setCameraPreviewVisible,
-		setCameraPreviewMirrored,
-		cameraPreviewStream,
-	} = useScreenRecorder();
 	const [recordingStart, setRecordingStart] = useState<number | null>(null);
 	const [elapsed, setElapsed] = useState(0);
-	const [cameraDevices, setCameraDevices] = useState<CameraDeviceOption[]>([]);
-	const showMicControls = microphoneEnabled && !recording;
-	const { devices, selectedDeviceId, setSelectedDeviceId } =
-		useMicrophoneDevices(microphoneEnabled);
-	const { level } = useAudioLevelMeter({
-		enabled: showMicControls,
-		deviceId: microphoneDeviceId,
-	});
+	const pausedAtRef = useRef<number | null>(null);
+	const totalPausedRef = useRef(0);
 	const cameraPreviewRef = useRef<HTMLVideoElement | null>(null);
 
+	// Sync mic device id
 	useEffect(() => {
-		if (selectedDeviceId && selectedDeviceId !== "default") {
-			setMicrophoneDeviceId(selectedDeviceId);
+		if (hud.selectedMicDeviceId && hud.selectedMicDeviceId !== "default") {
+			hud.setMicrophoneDeviceId(hud.selectedMicDeviceId);
 		}
-	}, [selectedDeviceId, setMicrophoneDeviceId]);
+	}, [hud.selectedMicDeviceId, hud.setMicrophoneDeviceId]);
 
+	// Auto-open display overlay on launch
+	const hasAutoOpened = useRef(false);
+	useEffect(() => {
+		if (hasAutoOpened.current) return;
+		hasAutoOpened.current = true;
+		hud.setMode("display");
+		hud.resizeHudWindow(true);
+	}, [hud.setMode, hud.resizeHudWindow]);
+
+	// Track pause transitions to accumulate paused duration
+	useEffect(() => {
+		if (!hud.recording) return;
+		if (hud.paused) {
+			pausedAtRef.current = Date.now();
+		} else if (pausedAtRef.current) {
+			totalPausedRef.current += Date.now() - pausedAtRef.current;
+			pausedAtRef.current = null;
+		}
+	}, [hud.paused, hud.recording]);
+
+	// Elapsed timer — freezes while paused
 	useEffect(() => {
 		let timer: NodeJS.Timeout | null = null;
-		if (recording) {
-			if (!recordingStart) setRecordingStart(Date.now());
+		if (hud.recording) {
+			if (!recordingStart) {
+				setRecordingStart(Date.now());
+				totalPausedRef.current = 0;
+				pausedAtRef.current = null;
+			}
 			timer = setInterval(() => {
-				if (recordingStart) {
-					setElapsed(Math.floor((Date.now() - recordingStart) / 1000));
+				if (recordingStart && !hud.paused) {
+					const totalPaused =
+						totalPausedRef.current + (pausedAtRef.current ? Date.now() - pausedAtRef.current : 0);
+					setElapsed(Math.floor((Date.now() - recordingStart - totalPaused) / 1000));
 				}
 			}, 1000);
 		} else {
 			setRecordingStart(null);
 			setElapsed(0);
+			totalPausedRef.current = 0;
+			pausedAtRef.current = null;
 			if (timer) clearInterval(timer);
 		}
 		return () => {
 			if (timer) clearInterval(timer);
 		};
-	}, [recording, recordingStart]);
+	}, [hud.recording, hud.paused, recordingStart]);
 
-	const formatTime = (seconds: number) => {
-		const m = Math.floor(seconds / 60)
-			.toString()
-			.padStart(2, "0");
-		const s = (seconds % 60).toString().padStart(2, "0");
-		return `${m}:${s}`;
-	};
-
-	const [selectedSource, setSelectedSource] = useState("Screen");
-	const [hasSelectedSource, setHasSelectedSource] = useState(false);
-	const [hideHudFromCapture, setHideHudFromCapture] = useState(true);
-	const [platform, setPlatform] = useState<string | null>(null);
-
-	useEffect(() => {
-		const checkSelectedSource = async () => {
-			if (window.electronAPI) {
-				const source = await window.electronAPI.getSelectedSource();
-				if (source) {
-					setSelectedSource(source.name);
-					setHasSelectedSource(true);
-				} else {
-					setSelectedSource("Screen");
-					setHasSelectedSource(false);
-				}
-			}
-		};
-
-		void checkSelectedSource();
-		const interval = setInterval(checkSelectedSource, 500);
-		return () => clearInterval(interval);
-	}, []);
-
-	useEffect(() => {
-		let cancelled = false;
-
-		const loadPlatform = async () => {
-			try {
-				const nextPlatform = await window.electronAPI.getPlatform();
-				if (!cancelled) {
-					setPlatform(nextPlatform);
-				}
-			} catch (error) {
-				console.error("Failed to load platform:", error);
-			}
-		};
-
-		void loadPlatform();
-
-		return () => {
-			cancelled = true;
-		};
-	}, []);
-
-	useEffect(() => {
-		let cancelled = false;
-
-		const loadHudCaptureProtection = async () => {
-			try {
-				const result = await window.electronAPI.getHudOverlayCaptureProtection();
-				if (!cancelled && result.success) {
-					setHideHudFromCapture(result.enabled);
-				}
-			} catch (error) {
-				console.error("Failed to load HUD capture protection state:", error);
-			}
-		};
-
-		void loadHudCaptureProtection();
-
-		return () => {
-			cancelled = true;
-		};
-	}, []);
-
-	const refreshCameraDevices = useCallback(async () => {
-		try {
-			const devices = await navigator.mediaDevices.enumerateDevices();
-			const videoInputs = devices
-				.filter((device) => device.kind === "videoinput")
-				.map((device, index) => ({
-					deviceId: device.deviceId,
-					label: device.label.trim() || `${t("recording.cameraLabelFallback")} ${index + 1}`,
-				}));
-			setCameraDevices(videoInputs);
-		} catch (error) {
-			console.error("Failed to enumerate cameras:", error);
-			setCameraDevices([]);
-		}
-	}, [t]);
-
-	useEffect(() => {
-		void refreshCameraDevices();
-
-		const handleDeviceChange = () => {
-			void refreshCameraDevices();
-		};
-
-		navigator.mediaDevices?.addEventListener?.("devicechange", handleDeviceChange);
-		return () => {
-			navigator.mediaDevices?.removeEventListener?.("devicechange", handleDeviceChange);
-		};
-	}, [refreshCameraDevices]);
-
-	useEffect(() => {
-		if (!cameraSession.enabled) {
-			return;
-		}
-
-		void refreshCameraDevices();
-	}, [cameraSession.enabled, refreshCameraDevices]);
-
+	// Camera preview stream
 	useEffect(() => {
 		const preview = cameraPreviewRef.current;
-		if (!preview) {
-			return;
-		}
+		if (!preview) return;
 
-		preview.srcObject = cameraPreviewStream;
-		if (cameraPreviewStream) {
+		preview.srcObject = hud.cameraPreviewStream;
+		if (hud.cameraPreviewStream) {
 			void preview.play().catch(() => {
-				// Browser autoplay can fail briefly while the stream is attaching.
+				// Autoplay can fail briefly while the stream is attaching.
 			});
 		}
 
 		return () => {
-			if (preview.srcObject === cameraPreviewStream) {
+			if (preview.srcObject === hud.cameraPreviewStream) {
 				preview.srcObject = null;
 			}
 		};
-	}, [cameraPreviewStream]);
+	}, [hud.cameraPreviewStream]);
 
-	const openSourceSelector = () => {
-		window.electronAPI?.openSourceSelector();
-	};
-
-	const openVideoFile = async () => {
-		const result = await window.electronAPI.openVideoFilePicker();
-		if (result.canceled) {
-			return;
+	// Auto-hide overlay when recording starts
+	useEffect(() => {
+		if (hud.recording) {
+			hud.resizeHudWindow(false);
 		}
+	}, [hud.recording, hud.resizeHudWindow]);
+
+	const openVideoFile = useCallback(async () => {
+		const result = await window.electronAPI.openVideoFilePicker();
+		if (result.canceled) return;
 
 		if (result.success && result.path) {
-			setCameraDeviceId(undefined);
+			hud.setCameraDeviceId(undefined);
 			await window.electronAPI.clearCurrentWebcamPath();
 			await window.electronAPI.setCurrentVideoPath(result.path);
 			await window.electronAPI.switchToEditor();
 		}
-	};
+	}, [hud.setCameraDeviceId]);
 
-	const openProjectFile = async () => {
+	const openProjectFile = useCallback(async () => {
 		const result = await window.electronAPI.loadProjectFile();
-		if (result.canceled || !result.success) {
-			return;
-		}
-		setCameraDeviceId(undefined);
+		if (result.canceled || !result.success) return;
+		hud.setCameraDeviceId(undefined);
 		await window.electronAPI.clearCurrentWebcamPath();
 		await window.electronAPI.switchToEditor();
-	};
+	}, [hud.setCameraDeviceId]);
 
-	const sendHudOverlayHide = () => {
+	const sendHudOverlayHide = useCallback(() => {
 		window.electronAPI?.hudOverlayHide?.();
-	};
+	}, []);
 
-	const sendHudOverlayClose = () => {
+	const sendHudOverlayClose = useCallback(() => {
 		window.electronAPI?.hudOverlayClose?.();
-	};
+	}, []);
 
-	const toggleHudCaptureProtection = async () => {
-		const nextValue = !hideHudFromCapture;
+	const handleSelectSource = useCallback(
+		(source: { id: string; name: string; display_id: string }) => {
+			void window.electronAPI.selectSource(source);
+		},
+		[],
+	);
 
-		setHideHudFromCapture(nextValue);
+	const handleDismissOverlay = useCallback(() => {
+		hud.resizeHudWindow(false);
+	}, [hud.resizeHudWindow]);
 
-		try {
-			const result = await window.electronAPI.setHudOverlayCaptureProtection(nextValue);
+	const handleTabClick = useCallback(
+		(tab: HudMode) => {
+			if (hud.recording) return;
 
-			if (!result.success) {
-				setHideHudFromCapture(!nextValue);
+			if (tab === "area") {
+				hud.setMode(tab);
+				hud.resizeHudWindow(false);
+				void window.electronAPI.createAreaOverlay();
+				void (async () => {
+					try {
+						const sources = await window.electronAPI.getSources({
+							types: ["screen"],
+						});
+						if (sources.length > 0) {
+							void window.electronAPI.selectSource(sources[0]);
+						}
+					} catch {
+						// ignore source fetch errors
+					}
+				})();
 				return;
 			}
 
-			setHideHudFromCapture(result.enabled);
-		} catch (error) {
-			console.error("Failed to update HUD capture protection:", error);
-			setHideHudFromCapture(!nextValue);
-		}
-	};
+			if (hud.mode === tab && hud.contentPanelVisible) {
+				hud.resizeHudWindow(false);
+			} else {
+				hud.setMode(tab);
+				hud.resizeHudWindow(true);
+			}
+		},
+		[hud.mode, hud.recording, hud.contentPanelVisible, hud.setMode, hud.resizeHudWindow],
+	);
 
-	const dividerClass = "mx-1 h-5 w-px shrink-0 bg-white/10";
-	const supportsHudCaptureProtection = platform !== "linux";
-	const selectedCameraLabel =
-		cameraDevices.find((device) => device.deviceId === cameraSession.deviceId)?.label ??
-		(webcamEnabled ? t("recording.cameraOn") : t("recording.cameraOff"));
-
-	const toggleMicrophone = () => {
-		if (!recording) {
-			setMicrophoneEnabled(!microphoneEnabled);
-		}
-	};
+	const showOverlay = hud.contentPanelVisible && !hud.recording;
+	const isRecordDisabled = hud.countdownActive || !hud.hasSelectedSource;
 
 	return (
-		<div className="flex h-full w-full items-end justify-center bg-transparent px-3 pb-3 pt-2 overflow-hidden">
-			<div className="flex flex-col items-center gap-2 mx-auto overflow-visible">
-				{cameraSession.enabled && cameraSession.previewVisible && cameraPreviewStream && (
+		<div className="fixed inset-0">
+			{/* Fullscreen overlay backdrop */}
+			{showOverlay && (
+				<div
+					className={`absolute inset-0 flex items-center justify-center ${styles.backdropFade}`}
+					style={{
+						background:
+							"radial-gradient(ellipse at center bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.65) 100%)",
+						paddingBottom: "100px",
+					}}
+					onClick={handleDismissOverlay}
+					onKeyDown={undefined}
+				>
+					{/* Overlay content card */}
 					<div
-						className={`flex items-center gap-2 rounded-2xl border border-[rgba(16,185,129,0.12)] bg-[rgba(10,15,13,0.94)] px-2 py-2 shadow-xl backdrop-blur-xl ${styles.electronNoDrag}`}
+						className={`rounded-2xl border w-full mx-8 ${styles.overlayEnter} ${styles.electronNoDrag}`}
+						style={{
+							maxWidth: hud.mode === "window" ? "800px" : "680px",
+							background:
+								"linear-gradient(180deg, rgba(30,30,32,0.94) 0%, rgba(22,22,24,0.96) 100%)",
+							borderColor: "rgba(255,255,255,0.07)",
+							boxShadow: "0 24px 80px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(255,255,255,0.05)",
+							backdropFilter: "blur(40px) saturate(160%)",
+							WebkitBackdropFilter: "blur(40px) saturate(160%)",
+						}}
+						onClick={(e) => e.stopPropagation()}
+						onKeyDown={undefined}
 					>
-						<div className="relative h-[84px] w-[140px] overflow-hidden rounded-[18px] border border-white/10 bg-black">
+						{/* Tab content */}
+						{hud.mode === "display" && (
+							<DisplayTab disabled={hud.recording} onSelectSource={handleSelectSource} />
+						)}
+						{hud.mode === "window" && (
+							<WindowTab
+								disabled={hud.recording}
+								onSelectSource={handleSelectSource}
+								onFallbackToDisplay={() => {
+									hud.setMode("display");
+								}}
+							/>
+						)}
+						{hud.mode === "device" && <DeviceTab />}
+
+						{/* Divider */}
+						{hud.mode !== "device" && <div className="mx-6 h-px bg-white/[0.05]" />}
+
+						{/* Record button — unified pill with inline dropdown trigger */}
+						<div className="flex justify-center py-5 px-6">
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<button
+										type="button"
+										disabled={isRecordDisabled}
+										className={`flex items-center gap-2.5 rounded-full px-6 py-2.5 text-[13px] font-semibold transition-all ${
+											isRecordDisabled
+												? "bg-red-500/15 text-white/30 cursor-not-allowed"
+												: "bg-red-500 text-white hover:bg-red-600 cursor-pointer shadow-lg shadow-red-500/20"
+										}`}
+									>
+										<BsRecordCircle size={13} />
+										<span>{t("recording.startRecording")}</span>
+										<div
+											className={`h-4 w-px ml-1 ${isRecordDisabled ? "bg-white/[0.08]" : "bg-white/25"}`}
+										/>
+										<ChevronDown size={13} className={isRecordDisabled ? "" : "text-white/70"} />
+									</button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent
+									side="top"
+									align="center"
+									className={`min-w-[240px] ${DROPDOWN_CLASSES}`}
+								>
+									{/* Start recording action at top */}
+									<DropdownMenuItem
+										disabled={isRecordDisabled}
+										onSelect={() => hud.toggleRecording()}
+										className="text-xs font-semibold"
+									>
+										<BsRecordCircle size={12} className="mr-2 text-red-400" />
+										{t("recording.startRecording")}
+									</DropdownMenuItem>
+									<DropdownMenuSeparator className="bg-white/[0.08]" />
+									<DropdownMenuRadioGroup
+										value={hud.hudSettings.afterRecordingAction}
+										onValueChange={(value) =>
+											hud.updateHudSettings({
+												afterRecordingAction: value as AfterRecordingAction,
+											})
+										}
+									>
+										<DropdownMenuRadioItem value="create-project" className="text-xs">
+											{t("afterRecording.createProject")}
+										</DropdownMenuRadioItem>
+										<DropdownMenuRadioItem value="export-clipboard" className="text-xs">
+											{t("afterRecording.exportClipboard")}
+										</DropdownMenuRadioItem>
+										<DropdownMenuRadioItem value="export-share-link" className="text-xs">
+											{t("afterRecording.exportShareLink")}
+										</DropdownMenuRadioItem>
+										<DropdownMenuRadioItem value="export-save-file" className="text-xs">
+											{t("afterRecording.exportSaveFile")}
+										</DropdownMenuRadioItem>
+									</DropdownMenuRadioGroup>
+									<DropdownMenuSeparator className="bg-white/[0.08]" />
+									<DropdownMenuCheckboxItem
+										checked={hud.hudSettings.autoCreateZooms}
+										onCheckedChange={(checked) =>
+											hud.updateHudSettings({
+												autoCreateZooms: Boolean(checked),
+											})
+										}
+										className="text-xs"
+									>
+										{t("afterRecording.autoCreateZooms")}
+									</DropdownMenuCheckboxItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Camera preview — floating above toolbar */}
+			{hud.cameraSession.enabled && hud.cameraSession.previewVisible && hud.cameraPreviewStream && (
+				<div className="fixed bottom-[76px] left-1/2 -translate-x-1/2 mb-3 z-10">
+					<div
+						className={styles.electronNoDrag}
+						style={{
+							borderRadius: 16,
+							border: "1px solid rgba(255,255,255,0.08)",
+							background: "rgba(18,18,20,0.9)",
+							padding: 6,
+							boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+							backdropFilter: "blur(20px)",
+							WebkitBackdropFilter: "blur(20px)",
+						}}
+					>
+						<div className="relative h-[84px] w-[140px] overflow-hidden rounded-[12px] bg-black">
 							<video
 								ref={cameraPreviewRef}
 								autoPlay
@@ -317,326 +335,70 @@ export function LaunchWindow() {
 								muted
 								className="h-full w-full object-cover"
 								style={{
-									transform: cameraSession.previewMirrored ? "scaleX(-1)" : undefined,
+									transform: hud.cameraSession.previewMirrored ? "scaleX(-1)" : undefined,
 								}}
 							/>
 						</div>
 					</div>
-				)}
+				</div>
+			)}
 
-				{showMicControls && (
-					<div
-						className={`flex items-center gap-2 rounded-2xl border border-[rgba(16,185,129,0.12)] bg-[rgba(10,15,13,0.94)] px-3 py-2 shadow-xl backdrop-blur-xl ${styles.electronNoDrag}`}
-					>
-						<select
-							value={microphoneDeviceId || selectedDeviceId}
-							onChange={(event) => {
-								setSelectedDeviceId(event.target.value);
-								setMicrophoneDeviceId(event.target.value);
-							}}
-							className={`max-w-[230px] rounded-lg border border-[rgba(16,185,129,0.12)] bg-[#111C18] px-3 py-1 text-xs text-slate-100 outline-none ${styles.micSelect}`}
-						>
-							{devices.map((device) => (
-								<option key={device.deviceId} value={device.deviceId}>
-									{device.label}
-								</option>
-							))}
-						</select>
-						<AudioLevelMeter level={level} className="w-24" />
-					</div>
-				)}
-
-				{/* Main HUD bar — entire bar is draggable, interactive elements opt out */}
+			{/* Bottom toolbar */}
+			<div
+				className={`fixed bottom-3 left-1/2 -translate-x-1/2 px-4 z-20 transition-all duration-300 ${hud.recording ? "max-w-[380px]" : "max-w-[720px]"} w-full`}
+			>
 				<div
-					className={styles.hudBar}
+					className={`${styles.hudBar} ${hud.recording ? styles.recordingGlow : ""}`}
 					style={{
-						borderRadius: 20,
-						background: "linear-gradient(135deg, rgba(17,28,24,0.97) 0%, rgba(10,15,13,0.96) 100%)",
-						backdropFilter: "blur(20px) saturate(140%)",
-						WebkitBackdropFilter: "blur(20px) saturate(140%)",
-						border: "1px solid rgba(16,185,129,0.12)",
-						boxShadow: "0 4px 24px rgba(0,0,0,0.3), 0 0 0 0.5px rgba(16,185,129,0.08)",
-						minHeight: 48,
-						display: "inline-flex",
-						alignItems: "center",
-						gap: 6,
-						padding: "8px 14px",
-						maxWidth: "100%",
+						borderRadius: 14,
+						background: hud.recording
+							? "linear-gradient(180deg, rgba(30,18,18,0.88) 0%, rgba(22,16,16,0.92) 100%)"
+							: "linear-gradient(180deg, rgba(28,28,30,0.82) 0%, rgba(20,20,22,0.88) 100%)",
+						backdropFilter: "blur(40px) saturate(180%)",
+						WebkitBackdropFilter: "blur(40px) saturate(180%)",
+						border: hud.recording
+							? "1px solid rgba(239,68,68,0.12)"
+							: "1px solid rgba(255,255,255,0.07)",
+						boxShadow: hud.recording
+							? undefined
+							: "0 8px 40px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(255,255,255,0.04)",
 					}}
 				>
-					{/* Source selector */}
-					<Button
-						variant="link"
-						size="sm"
-						className={`gap-1.5 text-white/80 bg-transparent hover:bg-transparent px-0 text-xs ${styles.electronNoDrag}`}
-						onClick={openSourceSelector}
-						disabled={recording}
-						title={selectedSource}
-					>
-						<MdMonitor size={14} className="text-white/60" />
-						<ContentClamp truncateLength={6}>{selectedSource}</ContentClamp>
-					</Button>
-
-					<div className={dividerClass} />
-
-					{/* Audio controls */}
-					<div className={`flex items-center gap-0.5 ${styles.electronNoDrag}`}>
-						{supportsHudCaptureProtection && (
-							<Button
-								variant="link"
-								size="icon"
-								onClick={() => void toggleHudCaptureProtection()}
-								title={
-									hideHudFromCapture
-										? t("recording.showHudInVideo")
-										: t("recording.hideHudFromVideo")
-								}
-								className="text-white/80 hover:bg-white/5 rounded-lg h-8 w-8 transition-colors"
-							>
-								{hideHudFromCapture ? (
-									<EyeOff size={15} className="text-white/35" />
-								) : (
-									<Eye size={15} className="text-[#10B981]" />
-								)}
-							</Button>
-						)}
-						<Button
-							variant="link"
-							size="icon"
-							onClick={() => !recording && setSystemAudioEnabled(!systemAudioEnabled)}
-							disabled={recording}
-							title={
-								systemAudioEnabled
-									? t("recording.disableSystemAudio")
-									: t("recording.enableSystemAudio")
-							}
-							className="text-white/80 hover:bg-white/5 rounded-lg h-8 w-8 transition-colors"
-						>
-							{systemAudioEnabled ? (
-								<MdVolumeUp size={15} className="text-[#10B981]" />
-							) : (
-								<MdVolumeOff size={15} className="text-white/35" />
-							)}
-						</Button>
-						<Button
-							variant="link"
-							size="icon"
-							onClick={toggleMicrophone}
-							disabled={recording}
-							title={
-								microphoneEnabled
-									? t("recording.disableMicrophone")
-									: t("recording.enableMicrophone")
-							}
-							className="text-white/80 hover:bg-white/5 rounded-lg h-8 w-8 transition-colors"
-						>
-							{microphoneEnabled ? (
-								<MdMic size={15} className="text-[#10B981]" />
-							) : (
-								<MdMicOff size={15} className="text-white/35" />
-							)}
-						</Button>
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button
-									variant="link"
-									size="icon"
-									disabled={recording}
-									title={`${t("recording.selectCamera")}: ${selectedCameraLabel}`}
-									className="text-white/80 hover:bg-white/5 rounded-lg h-8 w-8 transition-colors"
-								>
-									{webcamEnabled ? (
-										<MdVideocam size={15} className="text-[#10B981]" />
-									) : (
-										<MdVideocamOff size={15} className="text-white/35" />
-									)}
-								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent
-								side="top"
-								align="center"
-								className="min-w-[220px] border-white/10 bg-[rgba(17,28,24,0.97)] text-white/90 backdrop-blur-xl"
-							>
-								<DropdownMenuLabel className="text-xs text-white/60">
-									{t("recording.selectCamera")}
-								</DropdownMenuLabel>
-								<DropdownMenuRadioGroup
-									value={cameraSession.deviceId ?? "__off__"}
-									onValueChange={(value) =>
-										setCameraDeviceId(value === "__off__" ? undefined : value)
-									}
-								>
-									<DropdownMenuRadioItem value="__off__" className="text-xs">
-										{t("recording.cameraOff")}
-									</DropdownMenuRadioItem>
-									{cameraDevices.map((device) => (
-										<DropdownMenuRadioItem
-											key={device.deviceId}
-											value={device.deviceId}
-											className="text-xs"
-										>
-											{device.label}
-										</DropdownMenuRadioItem>
-									))}
-								</DropdownMenuRadioGroup>
-								{cameraDevices.length === 0 && (
-									<DropdownMenuItem disabled className="text-xs text-white/40">
-										{t("recording.noCameraFound")}
-									</DropdownMenuItem>
-								)}
-								<DropdownMenuSeparator className="bg-white/10" />
-								<DropdownMenuCheckboxItem
-									checked={!cameraSession.previewVisible}
-									onCheckedChange={(checked) => setCameraPreviewVisible(!Boolean(checked))}
-									disabled={!cameraSession.enabled}
-									className="text-xs"
-								>
-									{t("recording.hideCameraPreview")}
-								</DropdownMenuCheckboxItem>
-								<DropdownMenuCheckboxItem
-									checked={cameraSession.previewMirrored}
-									onCheckedChange={(checked) => setCameraPreviewMirrored(Boolean(checked))}
-									disabled={!cameraSession.enabled}
-									className="text-xs"
-								>
-									{t("recording.mirrorCameraPreview")}
-								</DropdownMenuCheckboxItem>
-							</DropdownMenuContent>
-						</DropdownMenu>
-					</div>
-
-					<div className={dividerClass} />
-
-					{/* Countdown delay */}
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button
-								variant="link"
-								size="sm"
-								disabled={recording || countdownActive}
-								title={t("recording.countdownDelay")}
-								className={`gap-1 px-1.5 text-xs text-white/70 hover:bg-white/5 rounded-lg ${styles.electronNoDrag}`}
-							>
-								<Timer size={14} />
-								<span>{countdownDelay > 0 ? `${countdownDelay}s` : t("recording.noDelay")}</span>
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent
-							side="top"
-							align="center"
-							className="min-w-[80px] max-h-none overflow-visible border-white/10 bg-[rgba(17,28,24,0.97)] text-white/90 backdrop-blur-xl"
-						>
-							{[0, 3, 5, 10].map((delay) => (
-								<DropdownMenuItem
-									key={delay}
-									onSelect={() => setCountdownDelay(delay)}
-									className={`cursor-pointer text-xs ${
-										countdownDelay === delay ? "font-medium text-white" : "text-white/60"
-									}`}
-								>
-									{delay === 0 ? t("recording.noDelay") : `${delay}s`}
-								</DropdownMenuItem>
-							))}
-						</DropdownMenuContent>
-					</DropdownMenu>
-
-					{/* Record button */}
-					<Button
-						variant="link"
-						size="sm"
-						onClick={hasSelectedSource ? toggleRecording : openSourceSelector}
-						disabled={countdownActive || (!hasSelectedSource && !recording)}
-						className={`gap-1.5 text-white bg-transparent hover:bg-white/5 rounded-lg px-2 text-xs ${styles.electronNoDrag}`}
-					>
-						{recording ? (
-							<>
-								<FaRegStopCircle size={14} className="text-red-400" />
-								<span className="text-red-400 font-medium tabular-nums">{formatTime(elapsed)}</span>
-							</>
-						) : (
-							<>
-								<BsRecordCircle
-									size={14}
-									className={hasSelectedSource ? "text-white/85" : "text-white/35"}
-								/>
-								<span className={hasSelectedSource ? "text-white/80" : "text-white/35"}>
-									{t("recording.record")}
-								</span>
-							</>
-						)}
-					</Button>
-
-					<div className="ml-auto flex items-center gap-0.5">
-						<div className={dividerClass} />
-						<Button
-							variant="link"
-							size="icon"
-							onClick={openVideoFile}
-							disabled={recording}
-							title={t("recording.openVideoFile")}
-							className={`text-white/50 hover:text-white/70 hover:bg-white/5 rounded-lg h-8 w-8 transition-colors ${styles.electronNoDrag}`}
-						>
-							<MdVideoFile size={15} />
-						</Button>
-						<Button
-							variant="link"
-							size="icon"
-							onClick={openProjectFile}
-							disabled={recording}
-							title={t("recording.openProject")}
-							className={`text-white/50 hover:text-white/70 hover:bg-white/5 rounded-lg h-8 w-8 transition-colors ${styles.electronNoDrag}`}
-						>
-							<FaFolderOpen size={14} />
-						</Button>
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button
-									variant="link"
-									size="icon"
-									title="Language"
-									className={`text-white/50 hover:text-white/70 hover:bg-white/5 rounded-lg h-8 w-8 transition-colors ${styles.electronNoDrag}`}
-								>
-									<Languages size={14} />
-								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent
-								side="top"
-								align="end"
-								className="min-w-[90px] bg-[rgba(17,28,24,0.97)] border-white/10 text-white/90 backdrop-blur-xl"
-							>
-								{SUPPORTED_LOCALES.map((code) => (
-									<DropdownMenuItem
-										key={code}
-										onSelect={() => setLocale(code as AppLocale)}
-										className={`text-xs cursor-pointer ${
-											locale === code ? "text-white font-medium" : "text-white/60"
-										}`}
-									>
-										{LOCALE_LABELS[code] ?? code}
-									</DropdownMenuItem>
-								))}
-							</DropdownMenuContent>
-						</DropdownMenu>
-						<div className={dividerClass} />
-						<Button
-							variant="link"
-							size="icon"
-							onClick={sendHudOverlayHide}
-							title={t("recording.hideHud")}
-							className={`text-white/50 hover:text-white/70 hover:bg-white/5 rounded-lg h-8 w-8 transition-colors ${styles.electronNoDrag}`}
-						>
-							<FiMinus size={15} />
-						</Button>
-						<Button
-							variant="link"
-							size="icon"
-							onClick={sendHudOverlayClose}
-							title={t("recording.closeApp")}
-							className={`text-white/50 hover:text-white/70 hover:bg-white/5 rounded-lg h-8 w-8 transition-colors ${styles.electronNoDrag}`}
-						>
-							<FiX size={15} />
-						</Button>
-					</div>
+					<HudToolbar
+						mode={hud.mode}
+						onTabClick={handleTabClick}
+						recording={hud.recording}
+						paused={hud.paused}
+						elapsed={elapsed}
+						onToggleRecording={hud.toggleRecording}
+						onTogglePause={hud.togglePause}
+						microphoneEnabled={hud.microphoneEnabled}
+						setMicrophoneEnabled={hud.setMicrophoneEnabled}
+						microphoneDeviceId={hud.microphoneDeviceId}
+						setMicrophoneDeviceId={hud.setMicrophoneDeviceId}
+						systemAudioEnabled={hud.systemAudioEnabled}
+						setSystemAudioEnabled={hud.setSystemAudioEnabled}
+						webcamEnabled={hud.webcamEnabled}
+						cameraSession={hud.cameraSession}
+						setCameraDeviceId={hud.setCameraDeviceId}
+						setCameraPreviewVisible={hud.setCameraPreviewVisible}
+						setCameraPreviewMirrored={hud.setCameraPreviewMirrored}
+						cameraDevices={hud.cameraDevices}
+						showMicControls={hud.showMicControls}
+						micDevices={hud.micDevices}
+						selectedMicDeviceId={hud.selectedMicDeviceId}
+						setSelectedMicDeviceId={hud.setSelectedMicDeviceId}
+						audioLevel={hud.audioLevel}
+						onOpenVideoFile={openVideoFile}
+						onOpenProject={openProjectFile}
+						onHide={sendHudOverlayHide}
+						onClose={sendHudOverlayClose}
+						hudSettings={hud.hudSettings}
+						platform={hud.platform}
+						countdownDelay={hud.countdownDelay}
+						setCountdownDelay={hud.setCountdownDelay}
+						onUpdateSettings={hud.updateHudSettings}
+					/>
 				</div>
 			</div>
 		</div>

@@ -2,10 +2,7 @@ import { fixWebmDuration } from "@fix-webm-duration/fix";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { CameraSessionState } from "@/components/video-editor/types";
-import {
-	loadCameraPreferences,
-	saveCameraPreferences,
-} from "@/hooks/cameraPreferences";
+import { loadCameraPreferences, saveCameraPreferences } from "@/hooks/cameraPreferences";
 
 const TARGET_FRAME_RATE = 60;
 const TARGET_WIDTH = 3840;
@@ -47,8 +44,10 @@ type ExtendedDisplayVideoConstraints = MediaTrackConstraints & {
 
 type UseScreenRecorderReturn = {
 	recording: boolean;
+	paused: boolean;
 	countdownActive: boolean;
 	toggleRecording: () => void;
+	togglePause: () => void;
 	preparePermissions: (options?: { startup?: boolean }) => Promise<boolean>;
 	isMacOS: boolean;
 	microphoneEnabled: boolean;
@@ -71,6 +70,7 @@ type UseScreenRecorderReturn = {
 export function useScreenRecorder(): UseScreenRecorderReturn {
 	const initialCameraPreferences = loadCameraPreferences();
 	const [recording, setRecording] = useState(false);
+	const [paused, setPaused] = useState(false);
 	const [starting, setStarting] = useState(false);
 	const [countdownActive, setCountdownActive] = useState(false);
 	const [isMacOS, setIsMacOS] = useState(false);
@@ -193,38 +193,41 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		}
 	}, []);
 
-	const getWebcamConstraintCandidates = useCallback((deviceId?: string): MediaTrackConstraints[] => {
-		const deviceConstraint = deviceId ? { deviceId: { exact: deviceId } } : {};
-		const unconstrainedDevice = deviceId ? { deviceId: { ideal: deviceId } } : {};
+	const getWebcamConstraintCandidates = useCallback(
+		(deviceId?: string): MediaTrackConstraints[] => {
+			const deviceConstraint = deviceId ? { deviceId: { exact: deviceId } } : {};
+			const unconstrainedDevice = deviceId ? { deviceId: { ideal: deviceId } } : {};
 
-		return [
-			{
-				...deviceConstraint,
-				width: { ideal: 1920 },
-				height: { ideal: 1080 },
-				frameRate: { ideal: 30, max: 30 },
-			},
-			{
-				...deviceConstraint,
-				width: { ideal: 1280 },
-				height: { ideal: 720 },
-				frameRate: { ideal: 30, max: 30 },
-			},
-			{
-				...unconstrainedDevice,
-				width: { ideal: 1280 },
-				height: { ideal: 720 },
-				frameRate: { ideal: 30, max: 30 },
-			},
-			{
-				...unconstrainedDevice,
-				frameRate: { ideal: 30, max: 30 },
-			},
-			{
-				...unconstrainedDevice,
-			},
-		];
-	}, []);
+			return [
+				{
+					...deviceConstraint,
+					width: { ideal: 1920 },
+					height: { ideal: 1080 },
+					frameRate: { ideal: 30, max: 30 },
+				},
+				{
+					...deviceConstraint,
+					width: { ideal: 1280 },
+					height: { ideal: 720 },
+					frameRate: { ideal: 30, max: 30 },
+				},
+				{
+					...unconstrainedDevice,
+					width: { ideal: 1280 },
+					height: { ideal: 720 },
+					frameRate: { ideal: 30, max: 30 },
+				},
+				{
+					...unconstrainedDevice,
+					frameRate: { ideal: 30, max: 30 },
+				},
+				{
+					...unconstrainedDevice,
+				},
+			];
+		},
+		[],
+	);
 
 	const getWebcamRecorderBitrate = useCallback((camStream: MediaStream) => {
 		const settings = camStream.getVideoTracks()[0]?.getSettings();
@@ -416,7 +419,9 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 			return webcamStream.current;
 		}
 
-		const { stream: camStream, resolvedDeviceId } = await acquireWebcamStream(cameraSession.deviceId);
+		const { stream: camStream, resolvedDeviceId } = await acquireWebcamStream(
+			cameraSession.deviceId,
+		);
 		webcamStream.current = camStream;
 		attachWebcamTrackLifecycle(camStream);
 		setCameraPreviewStream(cameraSession.previewVisible ? camStream : null);
@@ -430,7 +435,12 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		}
 
 		return camStream;
-	}, [acquireWebcamStream, attachWebcamTrackLifecycle, cameraSession.deviceId, cameraSession.previewVisible]);
+	}, [
+		acquireWebcamStream,
+		attachWebcamTrackLifecycle,
+		cameraSession.deviceId,
+		cameraSession.previewVisible,
+	]);
 
 	const startWebcamRecording = useCallback(async () => {
 		try {
@@ -508,6 +518,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		if (nativeScreenRecording.current) {
 			nativeScreenRecording.current = false;
 			setRecording(false);
+			setPaused(false);
 
 			void (async () => {
 				const isWgc = wgcRecording.current;
@@ -535,10 +546,11 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 			return;
 		}
 
-		if (mediaRecorder.current?.state === "recording") {
+		if (mediaRecorder.current?.state === "recording" || mediaRecorder.current?.state === "paused") {
 			cleanupCapturedMedia();
 			mediaRecorder.current.stop();
 			setRecording(false);
+			setPaused(false);
 			window.electronAPI?.setRecordingState(false);
 			// Webcam stop is handled inside recorder.onstop before switchToEditor
 		}
@@ -621,7 +633,10 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 					return;
 				}
 
-				if (cameraSession.deviceId && devices.some((device) => device.deviceId === cameraSession.deviceId)) {
+				if (
+					cameraSession.deviceId &&
+					devices.some((device) => device.deviceId === cameraSession.deviceId)
+				) {
 					return;
 				}
 
@@ -643,7 +658,12 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		return () => {
 			navigator.mediaDevices?.removeEventListener?.("devicechange", handleDeviceChange);
 		};
-	}, [cameraSession.deviceId, cameraSession.enabled, getAvailableCameraDevices, releaseWebcamStream]);
+	}, [
+		cameraSession.deviceId,
+		cameraSession.enabled,
+		getAvailableCameraDevices,
+		releaseWebcamStream,
+	]);
 
 	useEffect(() => {
 		let cleanup: (() => void) | undefined;
@@ -661,6 +681,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		const removeRecordingInterruptedListener = window.electronAPI?.onRecordingInterrupted?.(
 			(state) => {
 				setRecording(false);
+				setPaused(false);
 				nativeScreenRecording.current = false;
 				cleanupCapturedMedia();
 				void window.electronAPI.setRecordingState(false);
@@ -1049,6 +1070,28 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		}
 	};
 
+	const togglePause = useCallback(() => {
+		if (!recording) return;
+
+		// Browser-based MediaRecorder pause/resume
+		if (mediaRecorder.current && !nativeScreenRecording.current) {
+			if (mediaRecorder.current.state === "recording") {
+				mediaRecorder.current.pause();
+				// Also pause webcam recorder if active
+				if (webcamRecorder.current?.state === "recording") {
+					webcamRecorder.current.pause();
+				}
+				setPaused(true);
+			} else if (mediaRecorder.current.state === "paused") {
+				mediaRecorder.current.resume();
+				if (webcamRecorder.current?.state === "paused") {
+					webcamRecorder.current.resume();
+				}
+				setPaused(false);
+			}
+		}
+	}, [recording]);
+
 	const toggleRecording = async () => {
 		if (starting || countdownActive) {
 			return;
@@ -1077,8 +1120,10 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 
 	return {
 		recording,
+		paused,
 		countdownActive,
 		toggleRecording,
+		togglePause,
 		preparePermissions,
 		isMacOS,
 		microphoneEnabled,

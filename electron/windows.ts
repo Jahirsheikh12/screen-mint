@@ -20,6 +20,8 @@ let hudOverlayWindow: BrowserWindow | null = null;
 let hudOverlayHiddenFromCapture = true;
 let hudOverlayCaptureProtectionLoaded = false;
 let countdownWindow: BrowserWindow | null = null;
+let areaOverlayWindow: BrowserWindow | null = null;
+let highlightOverlayWindow: BrowserWindow | null = null;
 
 const HUD_OVERLAY_SETTINGS_FILE = path.join(app.getPath("userData"), "hud-overlay-settings.json");
 
@@ -107,8 +109,8 @@ export function createHudOverlayWindow(): BrowserWindow {
 	const primaryDisplay = getScreen().getPrimaryDisplay();
 	const { workArea } = primaryDisplay;
 
-	const windowWidth = 660;
-	const windowHeight = 170;
+	const windowWidth = 980;
+	const windowHeight = 400;
 
 	const x = Math.floor(workArea.x + (workArea.width - windowWidth) / 2);
 	const y = Math.floor(workArea.y + workArea.height - windowHeight - 5);
@@ -116,10 +118,6 @@ export function createHudOverlayWindow(): BrowserWindow {
 	const win = new BrowserWindow({
 		width: windowWidth,
 		height: windowHeight,
-		minWidth: windowWidth,
-		maxWidth: windowWidth,
-		minHeight: windowHeight,
-		maxHeight: windowHeight,
 		x: x,
 		y: y,
 		frame: false,
@@ -330,3 +328,155 @@ export function closeCountdownWindow(): void {
 		countdownWindow = null;
 	}
 }
+
+export function getHudOverlayWindow(): BrowserWindow | null {
+	return hudOverlayWindow;
+}
+
+export function createAreaOverlayWindow(): BrowserWindow {
+	if (areaOverlayWindow && !areaOverlayWindow.isDestroyed()) {
+		areaOverlayWindow.focus();
+		return areaOverlayWindow;
+	}
+
+	const primaryDisplay = getScreen().getPrimaryDisplay();
+	const { width, height } = primaryDisplay.workAreaSize;
+
+	const win = new BrowserWindow({
+		width,
+		height,
+		x: 0,
+		y: 0,
+		frame: false,
+		transparent: true,
+		resizable: false,
+		alwaysOnTop: true,
+		skipTaskbar: true,
+		hasShadow: false,
+		focusable: true,
+		show: false,
+		webPreferences: {
+			preload: path.join(__dirname, "preload.mjs"),
+			nodeIntegration: false,
+			contextIsolation: true,
+		},
+	});
+
+	areaOverlayWindow = win;
+
+	win.webContents.on("did-finish-load", () => {
+		if (!win.isDestroyed()) {
+			win.show();
+		}
+	});
+
+	win.on("closed", () => {
+		if (areaOverlayWindow === win) {
+			areaOverlayWindow = null;
+		}
+	});
+
+	if (VITE_DEV_SERVER_URL) {
+		win.loadURL(VITE_DEV_SERVER_URL + "?windowType=area-overlay");
+	} else {
+		win.loadFile(path.join(RENDERER_DIST, "index.html"), {
+			query: { windowType: "area-overlay" },
+		});
+	}
+
+	return win;
+}
+
+export function closeAreaOverlayWindow(): void {
+	if (areaOverlayWindow && !areaOverlayWindow.isDestroyed()) {
+		areaOverlayWindow.close();
+		areaOverlayWindow = null;
+	}
+}
+
+export function createHighlightOverlayWindow(rect: {
+	x: number;
+	y: number;
+	width: number;
+	height: number;
+}): BrowserWindow {
+	closeHighlightOverlayWindow();
+
+	const borderWidth = 3;
+	const win = new BrowserWindow({
+		x: rect.x - borderWidth,
+		y: rect.y - borderWidth,
+		width: rect.width + borderWidth * 2,
+		height: rect.height + borderWidth * 2,
+		frame: false,
+		transparent: true,
+		resizable: false,
+		alwaysOnTop: true,
+		skipTaskbar: true,
+		hasShadow: false,
+		focusable: false,
+		show: true,
+		webPreferences: {
+			nodeIntegration: false,
+			contextIsolation: true,
+		},
+	});
+
+	win.setIgnoreMouseEvents(true);
+	win.setVisibleOnAllWorkspaces(true);
+
+	// Render a colored border using inline HTML
+	win.loadURL(
+		`data:text/html,<html><body style="margin:0;padding:0;background:transparent;overflow:hidden;"><div style="position:fixed;inset:0;border:${borderWidth}px solid rgba(16,185,129,0.6);border-radius:4px;pointer-events:none;"></div></body></html>`,
+	);
+
+	highlightOverlayWindow = win;
+
+	win.on("closed", () => {
+		if (highlightOverlayWindow === win) {
+			highlightOverlayWindow = null;
+		}
+	});
+
+	return win;
+}
+
+export function closeHighlightOverlayWindow(): void {
+	if (highlightOverlayWindow && !highlightOverlayWindow.isDestroyed()) {
+		highlightOverlayWindow.close();
+		highlightOverlayWindow = null;
+	}
+}
+
+// Resize HUD window — toggle between slim toolbar and fullscreen overlay
+let hudOriginalBounds: Electron.Rectangle | null = null;
+
+ipcMain.handle("resize-hud-window", (_event, contentVisible: boolean) => {
+	if (!hudOverlayWindow || hudOverlayWindow.isDestroyed()) return;
+
+	const primaryDisplay = getScreen().getPrimaryDisplay();
+	const { workArea } = primaryDisplay;
+
+	if (contentVisible) {
+		// Save current bounds before expanding to fullscreen
+		hudOriginalBounds = hudOverlayWindow.getBounds();
+		hudOverlayWindow.setBounds({
+			x: workArea.x,
+			y: workArea.y,
+			width: workArea.width,
+			height: workArea.height,
+		});
+	} else {
+		// Restore to slim toolbar size
+		if (hudOriginalBounds) {
+			hudOverlayWindow.setBounds(hudOriginalBounds);
+			hudOriginalBounds = null;
+		} else {
+			const slimWidth = 980;
+			const slimHeight = 400;
+			const x = Math.floor(workArea.x + (workArea.width - slimWidth) / 2);
+			const y = Math.floor(workArea.y + workArea.height - slimHeight - 5);
+			hudOverlayWindow.setBounds({ x, y, width: slimWidth, height: slimHeight });
+		}
+	}
+});

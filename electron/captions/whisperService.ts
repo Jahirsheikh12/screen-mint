@@ -1,12 +1,16 @@
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { execFile, spawn } from "node:child_process";
 import { existsSync } from "node:fs";
-import { createRequire } from "node:module";
 import fs from "node:fs/promises";
+import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { app } from "electron";
+import {
+	type CaptionTranscriptFormat,
+	formatCaptionTrack,
+} from "../../src/components/video-editor/captionTranscript";
 import type {
 	CaptionGenerationOptions,
 	CaptionGenerationProgress,
@@ -16,17 +20,13 @@ import type {
 	CaptionTrack,
 	CaptionWord,
 } from "../../src/components/video-editor/types";
-import {
-	formatCaptionTrack,
-	type CaptionTranscriptFormat,
-} from "../../src/components/video-editor/captionTranscript";
 import { ffmpegOutputHasAudioStream } from "../../src/lib/captions/ffmpegAudioDetection";
 import {
-	VAD_MODEL_FILE_NAME,
 	buildSpeechExtractionArgs,
 	buildWhisperCliArgs,
 	getFallbackCaptionModel,
 	normalizeCaptionLanguage,
+	VAD_MODEL_FILE_NAME,
 } from "../../src/lib/captions/transcriptionConfig";
 import { buildCaptionSegmentsFromWords } from "./captionSegmentation";
 

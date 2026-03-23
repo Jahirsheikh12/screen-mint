@@ -16,6 +16,8 @@
 		"countdownDelay": "Countdown delay",
 		"noDelay": "No delay",
 		"record": "Record",
+		"startRecording": "Start recording",
+		"stopRecording": "Stop",
 		"recordingFolder": "Recording folder: {{path}}",
 		"chooseRecordingsFolder": "Choose recordings folder",
 		"folderPath": "Path: /{{name}}/",
@@ -24,7 +26,69 @@
 		"hideHudFromVideo": "Hide HUD from recording",
 		"showHudInVideo": "Show HUD in recording",
 		"hideHud": "Hide HUD",
-		"closeApp": "Close App"
+		"closeApp": "Close App",
+		"noCamera": "No camera",
+		"noMicrophone": "No microphone",
+		"noSystemAudio": "No system audio",
+		"systemAudio": "System audio",
+		"microphone": "Microphone"
+	},
+	"tabs": {
+		"display": "Display",
+		"window": "Window",
+		"area": "Area",
+		"device": "Device"
+	},
+	"display": {
+		"primaryDisplay": "Primary Display",
+		"selectDisplay": "Select a display to record",
+		"resolution": "{{width}} x {{height}}",
+		"refreshRate": "{{rate}} Hz",
+		"fps": "{{fps}} FPS"
+	},
+	"window": {
+		"selectWindow": "Select a window to record",
+		"noWindows": "No windows to select",
+		"recordEntireDisplay": "Record entire display",
+		"loadingWindows": "Loading windows..."
+	},
+	"area": {
+		"selectArea": "Select area",
+		"areaSize": "{{width}} x {{height}}",
+		"aspectRatio": "Aspect ratio",
+		"any": "Any",
+		"presets": "Presets",
+		"custom": "Custom",
+		"position": "Position"
+	},
+	"device": {
+		"noIosDevices": "No USB connected iOS devices",
+		"noIpadDevices": "No USB connected iPadOS devices",
+		"howToRecord": "How to record iOS or iPadOS device?"
+	},
+	"settings": {
+		"hideDesktopIcons": "Hide desktop icons in recorded video",
+		"hideDockIcon": "Hide ScreenMint dock icon while recording",
+		"highlightArea": "Highlight recorded area during recording",
+		"openQuickShare": "Open quick share widget after recording",
+		"speakerNotes": "Show speaker notes",
+		"recordingCountdown": "Recording countdown",
+		"advanced": "Advanced",
+		"hideHudFromCapture": "Hide HUD from capture",
+		"recordingQuality": "Recording quality",
+		"qualityAuto": "Auto",
+		"qualityHigh": "High",
+		"qualityMedium": "Medium",
+		"fps": "Frame rate",
+		"hardwareAcceleration": "Hardware acceleration"
+	},
+	"afterRecording": {
+		"afterRecording": "After recording",
+		"createProject": "Create project",
+		"exportClipboard": "Export and copy to clipboard",
+		"exportShareLink": "Export and create shareable link",
+		"exportSaveFile": "Export and save to file",
+		"autoCreateZooms": "Automatically create zooms"
 	},
 	"sourceSelector": {
 		"loadingSources": "Loading sources...",

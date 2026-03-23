@@ -68,7 +68,7 @@ export function DemoSection() {
 				0.35,
 			);
 
-			// Before layer clips away
+			// Before layer clips away with a wipe
 			tl.fromTo(
 				".demo-before",
 				{ clipPath: "inset(0 0 0 0)" },
@@ -82,6 +82,14 @@ export function DemoSection() {
 
 			// Polished layer border glow
 			tl.fromTo(".demo-after-border", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 0.6);
+
+			// Scale effect on polished result
+			tl.fromTo(
+				".demo-polished-content",
+				{ scale: 1 },
+				{ scale: 1.02, duration: 0.4, ease: "power1.out" },
+				0.6,
+			);
 		}, sectionRef);
 
 		return () => ctx.revert();
@@ -93,10 +101,19 @@ export function DemoSection() {
 			id="how-it-works"
 			className="relative min-h-screen flex items-center justify-center px-6"
 		>
-			<div className="max-w-5xl w-full mx-auto">
+			{/* Background gradient */}
+			<div
+				className="absolute inset-0 pointer-events-none"
+				style={{
+					background:
+						"radial-gradient(ellipse 70% 50% at 50% 40%, rgba(16, 185, 129, 0.03) 0%, transparent 60%)",
+				}}
+			/>
+
+			<div className="max-w-5xl w-full mx-auto relative z-10">
 				{/* Heading */}
 				<div className="text-center mb-16">
-					<p className="demo-eyebrow section-eyebrow mb-4 will-animate">How it works</p>
+					<p className="demo-eyebrow section-eyebrow mb-5 will-animate">How it works</p>
 					<h2 className="demo-headline section-headline mb-4 will-animate">
 						From raw to{" "}
 						<span className="bg-gradient-to-r from-brand-300 to-brand-500 bg-clip-text text-transparent">
@@ -109,10 +126,10 @@ export function DemoSection() {
 				{/* Before / After container */}
 				<div
 					ref={containerRef}
-					className="relative rounded-2xl overflow-hidden border border-white/[0.06]"
+					className="relative rounded-2xl overflow-hidden border border-white/[0.06] shadow-[0_30px_100px_rgba(0,0,0,0.6)]"
 				>
 					{/* After (polished) layer */}
-					<div className="aspect-video bg-[#0a0a0a] flex items-center justify-center relative">
+					<div className="demo-polished-content aspect-video bg-[#0a0a0a] flex items-center justify-center relative">
 						<div
 							className="absolute inset-0"
 							style={{
@@ -122,11 +139,11 @@ export function DemoSection() {
 						/>
 
 						<div className="relative text-center z-10">
-							<div className="demo-label-polished flex flex-col items-center gap-3">
-								<div className="w-14 h-14 rounded-2xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center">
+							<div className="demo-label-polished flex flex-col items-center gap-4">
+								<div className="w-16 h-16 rounded-2xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center shadow-[0_0_40px_rgba(16,185,129,0.15)]">
 									<svg
-										width="24"
-										height="24"
+										width="28"
+										height="28"
 										viewBox="0 0 24 24"
 										fill="none"
 										stroke="#10B981"
@@ -138,10 +155,10 @@ export function DemoSection() {
 									</svg>
 								</div>
 								<div>
-									<div className="text-xl md:text-2xl font-bold text-[#f5f5f7]/80 mb-1">
+									<div className="text-xl md:text-3xl font-bold text-[#f5f5f7]/80 mb-2">
 										Polished Output
 									</div>
-									<p className="text-[#86868b] text-sm">
+									<p className="text-white/25 text-sm md:text-base">
 										Auto-zoom, cursor effects, custom background applied
 									</p>
 								</div>
@@ -149,24 +166,24 @@ export function DemoSection() {
 						</div>
 
 						{/* Green glow border */}
-						<div className="demo-after-border absolute inset-0 rounded-2xl border border-brand-500/20 pointer-events-none" />
+						<div className="demo-after-border absolute inset-0 rounded-2xl border border-brand-500/20 pointer-events-none shadow-[inset_0_0_60px_rgba(16,185,129,0.05)]" />
 					</div>
 
 					{/* Before (raw) layer */}
 					<div className="demo-before absolute inset-0 bg-[#0a0a0a] flex items-center justify-center">
 						<div className="text-center">
-							<div className="demo-label-raw flex flex-col items-center gap-3">
-								<div className="w-14 h-14 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
+							<div className="demo-label-raw flex flex-col items-center gap-4">
+								<div className="w-16 h-16 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
 									<svg
-										width="24"
-										height="24"
+										width="28"
+										height="28"
 										viewBox="0 0 24 24"
 										fill="none"
 										stroke="white"
 										strokeWidth="2"
 										strokeLinecap="round"
 										strokeLinejoin="round"
-										opacity="0.3"
+										opacity="0.2"
 									>
 										<rect x="2" y="3" width="20" height="14" rx="2" />
 										<line x1="8" y1="21" x2="16" y2="21" />
@@ -174,17 +191,19 @@ export function DemoSection() {
 									</svg>
 								</div>
 								<div>
-									<div className="text-xl md:text-2xl font-bold text-[#f5f5f7]/40 mb-1">
+									<div className="text-xl md:text-3xl font-bold text-[#f5f5f7]/30 mb-2">
 										Raw Recording
 									</div>
-									<p className="text-[#86868b]/50 text-sm">Plain screen capture, no effects</p>
+									<p className="text-white/15 text-sm md:text-base">
+										Plain screen capture, no effects
+									</p>
 								</div>
 							</div>
 						</div>
 					</div>
 
 					{/* Scrub progress bar */}
-					<div className="absolute bottom-0 left-0 right-0 h-1 bg-white/[0.06]">
+					<div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/[0.04]">
 						<div
 							ref={progressRef}
 							className="h-full origin-left"

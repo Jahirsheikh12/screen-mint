@@ -254,4 +254,26 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		ipcRenderer.on("countdown-tick", listener);
 		return () => ipcRenderer.removeListener("countdown-tick", listener);
 	},
+	// HUD settings
+	getHudSettings: () => ipcRenderer.invoke("get-hud-settings"),
+	setHudSettings: (settings: Record<string, unknown>) =>
+		ipcRenderer.invoke("set-hud-settings", settings),
+	// Display info
+	getDisplayInfo: () => ipcRenderer.invoke("get-display-info"),
+	// Area overlay
+	createAreaOverlay: () => ipcRenderer.invoke("create-area-overlay"),
+	closeAreaOverlay: () => ipcRenderer.invoke("close-area-overlay"),
+	// Desktop icons (macOS)
+	hideDesktopIcons: () => ipcRenderer.invoke("hide-desktop-icons"),
+	showDesktopIcons: () => ipcRenderer.invoke("show-desktop-icons"),
+	// Dock icon (macOS)
+	hideDockIcon: () => ipcRenderer.invoke("hide-dock-icon"),
+	showDockIcon: () => ipcRenderer.invoke("show-dock-icon"),
+	// Highlight overlay
+	createHighlightOverlay: (rect: { x: number; y: number; width: number; height: number }) =>
+		ipcRenderer.invoke("create-highlight-overlay", rect),
+	closeHighlightOverlay: () => ipcRenderer.invoke("close-highlight-overlay"),
+	// Resize HUD
+	resizeHudWindow: (contentVisible: boolean) =>
+		ipcRenderer.invoke("resize-hud-window", contentVisible),
 });

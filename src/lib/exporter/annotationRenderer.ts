@@ -1,3 +1,4 @@
+import { createCaptionRenderBlock, hexToRgba } from "@/components/video-editor/captionLayout";
 import type {
 	AnnotationRegion,
 	ArrowDirection,
@@ -5,7 +6,6 @@ import type {
 	CaptionRegion,
 	CaptionSettings,
 } from "@/components/video-editor/types";
-import { createCaptionRenderBlock, hexToRgba } from "@/components/video-editor/captionLayout";
 
 // SVG path data for each arrow direction
 const ARROW_PATHS: Record<ArrowDirection, string[]> = {

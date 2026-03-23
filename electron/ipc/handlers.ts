@@ -24,7 +24,15 @@ import {
 	isCaptionGenerationCancelled,
 } from "../captions/transcriptionOrchestrator";
 import { RECORDINGS_DIR } from "../main";
-import { closeCountdownWindow, createCountdownWindow, getCountdownWindow } from "../windows";
+import {
+	closeAreaOverlayWindow,
+	closeCountdownWindow,
+	closeHighlightOverlayWindow,
+	createAreaOverlayWindow,
+	createCountdownWindow,
+	createHighlightOverlayWindow,
+	getCountdownWindow,
+} from "../windows";
 
 const execFileAsync = promisify(execFile);
 const nodeRequire = createRequire(import.meta.url);
@@ -36,6 +44,7 @@ const APP_NAME_ALIASES = ["screenmint"];
 const SHORTCUTS_FILE = path.join(app.getPath("userData"), "shortcuts.json");
 const RECORDINGS_SETTINGS_FILE = path.join(app.getPath("userData"), "recordings-settings.json");
 const COUNTDOWN_SETTINGS_FILE = path.join(app.getPath("userData"), "countdown-settings.json");
+const HUD_SETTINGS_FILE = path.join(app.getPath("userData"), "hud-overlay-settings-full.json");
 const AUTO_RECORDING_PREFIX = "recording-";
 const AUTO_RECORDING_RETENTION_COUNT = 20;
 const AUTO_RECORDING_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
@@ -3386,6 +3395,134 @@ export function registerIpcHandlers(
 			countdownTimer = null;
 		}
 		closeCountdownWindow();
+		return { success: true };
+	});
+
+	// ---------------------------------------------------------------------------
+	// HUD settings (full settings object)
+	// ---------------------------------------------------------------------------
+	ipcMain.handle("get-hud-settings", async () => {
+		try {
+			const content = await fs.readFile(HUD_SETTINGS_FILE, "utf-8");
+			const parsed = JSON.parse(content) as Record<string, unknown>;
+			return { success: true, settings: parsed };
+		} catch {
+			return { success: true, settings: null };
+		}
+	});
+
+	ipcMain.handle("set-hud-settings", async (_, settings: Record<string, unknown>) => {
+		try {
+			await fs.writeFile(HUD_SETTINGS_FILE, JSON.stringify(settings, null, 2), "utf-8");
+			return { success: true };
+		} catch (error) {
+			console.error("Failed to save HUD settings:", error);
+			return { success: false, error: String(error) };
+		}
+	});
+
+	// ---------------------------------------------------------------------------
+	// Display info
+	// ---------------------------------------------------------------------------
+	ipcMain.handle("get-display-info", () => {
+		const electronScreen = nodeRequire("electron").screen as typeof import("electron").screen;
+		const displays = electronScreen.getAllDisplays();
+		return {
+			success: true,
+			displays: displays.map((d) => ({
+				id: d.id,
+				label: d.label || `Display ${d.id}`,
+				width: d.size.width,
+				height: d.size.height,
+				refreshRate: d.displayFrequency || 60,
+			})),
+		};
+	});
+
+	// ---------------------------------------------------------------------------
+	// Area overlay
+	// ---------------------------------------------------------------------------
+	ipcMain.handle("create-area-overlay", () => {
+		createAreaOverlayWindow();
+		return { success: true };
+	});
+
+	ipcMain.handle("close-area-overlay", () => {
+		closeAreaOverlayWindow();
+		return { success: true };
+	});
+
+	// ---------------------------------------------------------------------------
+	// Desktop icons (macOS only)
+	// ---------------------------------------------------------------------------
+	ipcMain.handle("hide-desktop-icons", async () => {
+		if (process.platform !== "darwin") {
+			return { success: false, error: "Only supported on macOS" };
+		}
+		try {
+			await execFileAsync("defaults", [
+				"write",
+				"com.apple.finder",
+				"CreateDesktop",
+				"-bool",
+				"false",
+			]);
+			await execFileAsync("killall", ["Finder"]);
+			return { success: true };
+		} catch (error) {
+			return { success: false, error: String(error) };
+		}
+	});
+
+	ipcMain.handle("show-desktop-icons", async () => {
+		if (process.platform !== "darwin") {
+			return { success: false, error: "Only supported on macOS" };
+		}
+		try {
+			await execFileAsync("defaults", [
+				"write",
+				"com.apple.finder",
+				"CreateDesktop",
+				"-bool",
+				"true",
+			]);
+			await execFileAsync("killall", ["Finder"]);
+			return { success: true };
+		} catch (error) {
+			return { success: false, error: String(error) };
+		}
+	});
+
+	// ---------------------------------------------------------------------------
+	// Dock icon (macOS only)
+	// ---------------------------------------------------------------------------
+	ipcMain.handle("hide-dock-icon", () => {
+		if (process.platform === "darwin") {
+			app.dock?.hide?.();
+		}
+		return { success: true };
+	});
+
+	ipcMain.handle("show-dock-icon", () => {
+		if (process.platform === "darwin") {
+			void app.dock?.show?.();
+		}
+		return { success: true };
+	});
+
+	// ---------------------------------------------------------------------------
+	// Highlight overlay
+	// ---------------------------------------------------------------------------
+	ipcMain.handle(
+		"create-highlight-overlay",
+		(_, rect: { x: number; y: number; width: number; height: number }) => {
+			createHighlightOverlayWindow(rect);
+			return { success: true };
+		},
+	);
+
+	ipcMain.handle("close-highlight-overlay", () => {
+		closeHighlightOverlayWindow();
 		return { success: true };
 	});
 }

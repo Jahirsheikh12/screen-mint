@@ -17,120 +17,114 @@ export function Hero() {
 		const ctx = gsap.context(() => {
 			const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
 
-			tl.fromTo(badgeRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.7 }, 0);
+			tl.fromTo(
+				badgeRef.current,
+				{ opacity: 0, y: 20 },
+				{ opacity: 1, y: 0, duration: 0.8 },
+				0.1,
+			);
 
 			if (headlineRef.current) {
-				const words = headlineRef.current.querySelectorAll(".word");
+				const lines = headlineRef.current.querySelectorAll(".hero-line");
 				tl.fromTo(
-					words,
-					{ opacity: 0, y: 40, rotateX: -15 },
+					lines,
+					{ opacity: 0, y: 60 },
 					{
 						opacity: 1,
 						y: 0,
-						rotateX: 0,
-						duration: 0.8,
-						stagger: 0.05,
+						duration: 1,
+						stagger: 0.1,
+						ease: "power3.out",
 					},
-					0.15,
+					0.2,
 				);
 			}
 
-			tl.fromTo(subRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.7 }, 0.45);
+			tl.fromTo(
+				subRef.current,
+				{ opacity: 0, y: 20 },
+				{ opacity: 1, y: 0, duration: 0.8 },
+				0.55,
+			);
 
-			tl.fromTo(ctaRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.7 }, 0.6);
+			tl.fromTo(
+				ctaRef.current,
+				{ opacity: 0, y: 20 },
+				{ opacity: 1, y: 0, duration: 0.8 },
+				0.7,
+			);
 
 			tl.fromTo(
 				screenshotRef.current,
-				{ opacity: 0, y: 80, scale: 0.92 },
+				{ opacity: 0, y: 120, scale: 0.92 },
 				{
 					opacity: 1,
 					y: 0,
 					scale: 1,
-					duration: 1.2,
+					duration: 1.4,
 					ease: "power2.out",
 				},
-				0.7,
+				0.8,
 			);
-
-			// Parallax screenshot on scroll
-			gsap.to(screenshotRef.current, {
-				y: -80,
-				ease: "none",
-				scrollTrigger: {
-					trigger: sectionRef.current,
-					start: "top top",
-					end: "bottom top",
-					scrub: true,
-				},
-			});
 		}, sectionRef);
 
 		return () => ctx.revert();
 	}, []);
 
-	const headline = "Screen recordings that look incredible";
-
 	return (
 		<section
 			ref={sectionRef}
-			className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-32 pb-24 overflow-hidden"
-			style={{ background: "linear-gradient(180deg, #000000 0%, #1d1d1f 100%)" }}
+			className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-36 pb-12 overflow-hidden"
 		>
-			{/* Subtle ambient glow */}
+			{/* Single subtle top glow */}
 			<div
-				className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[1000px] h-[700px] rounded-full pointer-events-none"
+				className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] pointer-events-none"
 				style={{
 					background:
-						"radial-gradient(ellipse at center, rgba(16, 185, 129, 0.06) 0%, transparent 65%)",
+						"radial-gradient(ellipse at center, rgba(16, 185, 129, 0.05) 0%, transparent 70%)",
+					filter: "blur(80px)",
 				}}
 			/>
 
-			<div className="relative z-10 max-w-[980px] mx-auto text-center">
+			<div className="relative z-10 max-w-[900px] mx-auto text-center">
 				{/* Badge */}
-				<div ref={badgeRef} className="mb-6 will-animate">
-					<span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/[0.08] bg-white/[0.03] text-[13px] text-white/50 backdrop-blur-sm">
+				<div ref={badgeRef} className="mb-8 will-animate">
+					<span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/[0.06] bg-white/[0.02] text-[12px] text-white/40 tracking-wide">
 						<span className="w-1.5 h-1.5 rounded-full bg-brand-500 pulse-ring" />
 						Free &amp; Open Source
 					</span>
 				</div>
 
 				{/* Headline */}
-				<h1
-					ref={headlineRef}
-					className="text-[clamp(2.75rem,6.5vw,5.5rem)] font-bold tracking-[-0.04em] leading-[1.05] mb-6"
-					style={{ perspective: "1000px" }}
-				>
-					{headline.split(" ").map((word, i) => (
-						<span key={i} className="word inline-block mr-[0.2em] will-animate">
-							{word === "incredible" ? (
-								<span className="bg-gradient-to-r from-brand-300 via-brand-400 to-brand-500 bg-clip-text text-transparent">
-									{word}
-								</span>
-							) : (
-								word
-							)}
+				<h1 ref={headlineRef} className="mb-7">
+					<span className="hero-line block text-[clamp(2.75rem,7vw,5.5rem)] font-bold tracking-[-0.04em] leading-[1.02] will-animate">
+						Screen recordings
+					</span>
+					<span className="hero-line block text-[clamp(2.75rem,7vw,5.5rem)] font-bold tracking-[-0.04em] leading-[1.02] will-animate">
+						that look{" "}
+						<span className="bg-gradient-to-r from-brand-400 to-brand-600 bg-clip-text text-transparent">
+							incredible
 						</span>
-					))}
+					</span>
 				</h1>
 
-				{/* Sub */}
+				{/* Subtitle */}
 				<p
 					ref={subRef}
-					className="text-[17px] md:text-[21px] text-[#86868b] max-w-2xl mx-auto mb-10 leading-relaxed will-animate"
+					className="text-[16px] md:text-[19px] text-white/30 max-w-[540px] mx-auto mb-10 leading-relaxed will-animate"
 				>
-					Auto-zoom, cursor effects, custom backgrounds, annotations, and a full timeline editor.
-					Record once, polish to perfection.
+					Auto-zoom, cursor effects, custom backgrounds, and a full timeline editor. Record once, polish to perfection.
 				</p>
 
 				{/* CTAs */}
 				<div ref={ctaRef} className="flex items-center justify-center gap-4 flex-wrap will-animate">
 					<a
 						href="#download"
-						className="group inline-flex items-center gap-2.5 px-8 py-4 rounded-full bg-brand-500 text-white font-semibold text-[15px] hover:bg-brand-400 active:scale-[0.97] transition-all duration-300 shadow-[0_0_30px_rgba(16,185,129,0.2)]"
+						className="magnetic-btn group inline-flex items-center gap-2.5 px-8 py-4 rounded-full bg-white text-black font-semibold text-[15px] transition-all duration-300 hover:bg-white/90"
 					>
 						<svg
-							width="18"
-							height="18"
+							width="16"
+							height="16"
 							viewBox="0 0 24 24"
 							fill="none"
 							stroke="currentColor"
@@ -143,15 +137,15 @@ export function Hero() {
 							<polyline points="7 10 12 15 17 10" />
 							<line x1="12" y1="15" x2="12" y2="3" />
 						</svg>
-						Download for Free
+						Download Free
 					</a>
 					<a
 						href={REPO_URL}
 						target="_blank"
 						rel="noopener noreferrer"
-						className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full border border-white/[0.12] text-white/70 font-medium text-[15px] hover:border-white/25 hover:text-white hover:bg-white/[0.04] transition-all duration-300"
+						className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full border border-white/[0.1] text-white/50 font-medium text-[15px] hover:border-white/20 hover:text-white/80 transition-all duration-300"
 					>
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
 							<path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
 						</svg>
 						Star on GitHub
@@ -162,23 +156,26 @@ export function Hero() {
 			{/* App screenshot */}
 			<div
 				ref={screenshotRef}
-				className="relative z-10 mt-20 w-full max-w-5xl mx-auto will-animate"
+				className="relative z-10 mt-16 w-full max-w-[1100px] mx-auto will-animate"
 			>
-				<div className="relative rounded-2xl overflow-hidden border border-white/[0.08] shadow-2xl shadow-black/60">
+				<div className="relative rounded-xl overflow-hidden border border-white/[0.06] shadow-[0_30px_100px_rgba(0,0,0,0.8)]">
+					<div className="flex items-center gap-2 px-4 py-2.5 bg-black border-b border-white/[0.04]">
+						<div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]/80" />
+						<div className="w-2.5 h-2.5 rounded-full bg-[#febc2e]/80" />
+						<div className="w-2.5 h-2.5 rounded-full bg-[#28c840]/80" />
+						<span className="ml-3 text-[10px] text-white/15 font-mono tracking-wide">ScreenMint</span>
+					</div>
 					<img
 						src="/images/preview.png"
-						alt="ScreenMint editor with auto-zoom, cursor effects, and custom backgrounds"
+						alt="ScreenMint editor"
 						className="w-full h-auto block"
 						loading="eager"
 					/>
 				</div>
 
-				{/* Bottom fade */}
 				<div
 					className="absolute inset-x-0 bottom-0 h-40 pointer-events-none"
-					style={{
-						background: "linear-gradient(to top, #1d1d1f, transparent)",
-					}}
+					style={{ background: "linear-gradient(to top, #000000, transparent)" }}
 				/>
 			</div>
 		</section>

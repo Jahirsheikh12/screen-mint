@@ -55,9 +55,7 @@ export function normalizeWebcamRegion(region: WebcamRegion): WebcamRegion {
 	const marginPct = clamp(region.marginPct, 0, 12);
 	const anchor = region.anchor ?? "free";
 	const anchoredPosition =
-		anchor === "free"
-			? region.position
-			: resolveAnchoredPosition(anchor, size, marginPct);
+		anchor === "free" ? region.position : resolveAnchoredPosition(anchor, size, marginPct);
 	const position = clampWebcamPosition(anchoredPosition, size);
 
 	return {
@@ -78,8 +76,7 @@ export function getWebcamPixelRect(
 	containerHeight: number,
 ) {
 	const normalizedRegion = normalizeWebcamRegion(region);
-	const marginPx =
-		(normalizedRegion.marginPct / 100) * Math.min(containerWidth, containerHeight);
+	const marginPx = (normalizedRegion.marginPct / 100) * Math.min(containerWidth, containerHeight);
 
 	if (normalizedRegion.shape === "circle" || normalizedRegion.shape === "square") {
 		const sidePx = (normalizedRegion.size.width / 100) * Math.min(containerWidth, containerHeight);

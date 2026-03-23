@@ -20,7 +20,8 @@ export function normalizeCameraPreferences(candidate: unknown): CameraPreference
 
 	return {
 		enabled: typeof raw.enabled === "boolean" ? raw.enabled : DEFAULT_CAMERA_PREFERENCES.enabled,
-		deviceId: typeof raw.deviceId === "string" && raw.deviceId.trim().length > 0 ? raw.deviceId : undefined,
+		deviceId:
+			typeof raw.deviceId === "string" && raw.deviceId.trim().length > 0 ? raw.deviceId : undefined,
 		previewVisible:
 			typeof raw.previewVisible === "boolean"
 				? raw.previewVisible

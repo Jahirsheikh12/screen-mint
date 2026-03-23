@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { CountdownOverlay } from "./components/countdown/CountdownOverlay";
+import { AreaSelectionOverlay } from "./components/launch/AreaSelectionOverlay";
 import { LaunchWindow } from "./components/launch/LaunchWindow";
 import { SourceSelector } from "./components/launch/SourceSelector";
 import { ShortcutsConfigDialog } from "./components/video-editor/ShortcutsConfigDialog";
@@ -7,6 +8,58 @@ import VideoEditor from "./components/video-editor/VideoEditor";
 import { useI18n } from "./contexts/I18nContext";
 import { ShortcutsProvider } from "./contexts/ShortcutsContext";
 import { loadAllCustomFonts } from "./lib/customFonts";
+
+function AppLoadingScreen({ label }: { label: string }) {
+	return (
+		<div className="flex h-full w-full items-center justify-center bg-[#0a0a0b] text-white">
+			<div
+				className="flex flex-col items-center gap-5"
+				style={{ animation: "app-loading-enter 0.6s cubic-bezier(0.16,1,0.3,1) both" }}
+			>
+				<div className="relative" style={{ animation: "app-icon-float 3s ease-in-out infinite" }}>
+					<img
+						src="/app-icons/screenmint-128.png"
+						alt="ScreenMint"
+						className="h-16 w-16 rounded-2xl"
+						style={{
+							filter: "drop-shadow(0 0 24px rgba(16,185,129,0.15))",
+						}}
+					/>
+				</div>
+				<div className="flex flex-col items-center gap-2">
+					<h1 className="text-lg font-semibold tracking-tight text-white/90">ScreenMint</h1>
+					<p className="text-[13px] text-white/35">{label}</p>
+				</div>
+				{/* Minimal loading bar */}
+				<div className="w-24 h-[2px] rounded-full bg-white/[0.06] overflow-hidden mt-1">
+					<div
+						className="h-full rounded-full bg-white/20"
+						style={{
+							animation: "app-loading-bar 1.5s ease-in-out infinite",
+						}}
+					/>
+				</div>
+			</div>
+			<style>
+				{`
+					@keyframes app-loading-enter {
+						from { opacity: 0; transform: translateY(12px) scale(0.96); }
+						to { opacity: 1; transform: translateY(0) scale(1); }
+					}
+					@keyframes app-icon-float {
+						0%, 100% { transform: translateY(0); }
+						50% { transform: translateY(-4px); }
+					}
+					@keyframes app-loading-bar {
+						0% { width: 0%; margin-left: 0%; }
+						50% { width: 60%; margin-left: 20%; }
+						100% { width: 0%; margin-left: 100%; }
+					}
+				`}
+			</style>
+		</div>
+	);
+}
 
 export default function App() {
 	const [windowType, setWindowType] = useState("");
@@ -17,7 +70,12 @@ export default function App() {
 		const type = params.get("windowType") || "";
 		setWindowType(type);
 
-		if (type === "hud-overlay" || type === "source-selector" || type === "countdown") {
+		if (
+			type === "hud-overlay" ||
+			type === "source-selector" ||
+			type === "countdown" ||
+			type === "area-overlay"
+		) {
 			document.body.style.background = "transparent";
 			document.documentElement.style.background = "transparent";
 			document.getElementById("root")?.style.setProperty("background", "transparent");
@@ -48,6 +106,8 @@ export default function App() {
 			return <SourceSelector />;
 		case "countdown":
 			return <CountdownOverlay />;
+		case "area-overlay":
+			return <AreaSelectionOverlay />;
 		case "editor":
 			return (
 				<ShortcutsProvider>
@@ -56,24 +116,6 @@ export default function App() {
 				</ShortcutsProvider>
 			);
 		default:
-			return (
-				<div className="flex h-full w-full items-center justify-center bg-slate-950 text-white">
-					<div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 px-6 py-5 shadow-2xl shadow-black/30 backdrop-blur-xl">
-						<img
-							src="/app-icons/screenmint-128.png"
-							alt={t("app.name", "ScreenMint")}
-							className="h-12 w-12 rounded-xl"
-						/>
-						<div>
-							<h1 className="text-xl font-semibold tracking-tight">
-								{t("app.name", "ScreenMint")}
-							</h1>
-							<p className="text-sm text-white/65">
-								{t("app.subtitle", "Screen recording and editing")}
-							</p>
-						</div>
-					</div>
-				</div>
-			);
+			return <AppLoadingScreen label={t("app.subtitle", "Screen recording and editing")} />;
 	}
 }

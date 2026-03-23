@@ -89,12 +89,7 @@ export interface AnnotationSize {
 	height: number;
 }
 
-export type WebcamAnchor =
-	| "top-left"
-	| "top-right"
-	| "bottom-left"
-	| "bottom-right"
-	| "free";
+export type WebcamAnchor = "top-left" | "top-right" | "bottom-left" | "bottom-right" | "free";
 
 export interface AnnotationTextStyle {
 	color: string;

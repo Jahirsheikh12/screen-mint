@@ -233,6 +233,44 @@ declare global {
 			startCountdown: (seconds: number) => Promise<{ success: boolean; cancelled?: boolean }>;
 			cancelCountdown: () => Promise<{ success: boolean }>;
 			onCountdownTick: (callback: (seconds: number) => void) => () => void;
+			/** HUD settings */
+			getHudSettings: () => Promise<{
+				success: boolean;
+				settings: Record<string, unknown> | null;
+			}>;
+			setHudSettings: (
+				settings: Record<string, unknown>,
+			) => Promise<{ success: boolean; error?: string }>;
+			/** Display info */
+			getDisplayInfo: () => Promise<{
+				success: boolean;
+				displays: Array<{
+					id: number;
+					label: string;
+					width: number;
+					height: number;
+					refreshRate: number;
+				}>;
+			}>;
+			/** Area overlay */
+			createAreaOverlay: () => Promise<{ success: boolean }>;
+			closeAreaOverlay: () => Promise<{ success: boolean }>;
+			/** Desktop icons (macOS) */
+			hideDesktopIcons: () => Promise<{ success: boolean; error?: string }>;
+			showDesktopIcons: () => Promise<{ success: boolean; error?: string }>;
+			/** Dock icon (macOS) */
+			hideDockIcon: () => Promise<{ success: boolean }>;
+			showDockIcon: () => Promise<{ success: boolean }>;
+			/** Highlight overlay */
+			createHighlightOverlay: (rect: {
+				x: number;
+				y: number;
+				width: number;
+				height: number;
+			}) => Promise<{ success: boolean }>;
+			closeHighlightOverlay: () => Promise<{ success: boolean }>;
+			/** Resize HUD window */
+			resizeHudWindow: (contentVisible: boolean) => Promise<void>;
 		};
 	}
 

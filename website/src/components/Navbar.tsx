@@ -92,10 +92,10 @@ export function Navbar() {
 					className="absolute inset-0 pointer-events-none"
 					style={{
 						opacity: 1,
-						background: "rgba(29, 29, 31, 0.8)",
-						backdropFilter: "blur(24px) saturate(180%)",
-						WebkitBackdropFilter: "blur(24px) saturate(180%)",
-						border: "1px solid rgba(255, 255, 255, 0.06)",
+						background: "rgba(0, 0, 0, 0.6)",
+						backdropFilter: "blur(40px) saturate(180%)",
+						WebkitBackdropFilter: "blur(40px) saturate(180%)",
+						border: "1px solid rgba(255, 255, 255, 0.08)",
 						borderRadius: 999,
 					}}
 				/>
@@ -199,10 +199,10 @@ export function Navbar() {
 				<div
 					className="md:hidden absolute top-20 left-4 right-4 rounded-2xl px-5 py-4 space-y-1"
 					style={{
-						background: "rgba(29, 29, 31, 0.95)",
-						backdropFilter: "blur(24px)",
-						WebkitBackdropFilter: "blur(24px)",
-						border: "1px solid rgba(255, 255, 255, 0.06)",
+						background: "rgba(0, 0, 0, 0.85)",
+						backdropFilter: "blur(40px) saturate(180%)",
+						WebkitBackdropFilter: "blur(40px) saturate(180%)",
+						border: "1px solid rgba(255, 255, 255, 0.08)",
 					}}
 				>
 					<a

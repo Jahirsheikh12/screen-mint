@@ -22,6 +22,7 @@ import { getAssetPath, getRenderableAssetUrl } from "@/lib/assetPath";
 import { DEFAULT_WALLPAPER_PATH, DEFAULT_WALLPAPER_RELATIVE_PATH } from "@/lib/wallpapers";
 import { type AspectRatio, formatAspectRatioForCSS } from "@/utils/aspectRatioUtils";
 import { AnnotationOverlay } from "./AnnotationOverlay";
+import { CaptionOverlay } from "./CaptionOverlay";
 import { resolveCameraLayoutState } from "./cameraLayouts";
 import {
 	type AnnotationRegion,
@@ -63,7 +64,6 @@ import {
 	type MotionBlurState,
 	smoothZoomValue,
 } from "./videoPlayback/zoomTransform";
-import { CaptionOverlay } from "./CaptionOverlay";
 import { WebcamOverlay } from "./WebcamOverlay";
 
 type PlaybackAnimationState = {

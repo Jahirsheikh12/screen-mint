@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
-	VAD_MODEL_FILE_NAME,
 	buildSpeechExtractionArgs,
 	buildWhisperCliArgs,
 	getFallbackCaptionModel,
 	normalizeCaptionLanguage,
+	VAD_MODEL_FILE_NAME,
 } from "./transcriptionConfig";
 
 describe("transcriptionConfig", () => {

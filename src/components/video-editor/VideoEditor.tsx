@@ -46,45 +46,45 @@ import {
 	type AnnotationRegion,
 	type AudioRegion,
 	type BlurData,
+	CAPTION_STYLE_PRESETS,
 	type CameraLayoutRegion,
 	type CaptionGenerationOptions,
 	type CaptionGenerationProgress,
+	type CaptionModelStatus,
 	type CaptionRegion,
 	type CaptionSettings,
 	type CaptionStylePreset,
 	type CaptionTrack,
-	type CaptionModelStatus,
-	CAPTION_STYLE_PRESETS,
 	type CropRegion,
 	type CursorTelemetryPoint,
-	DEFAULT_CAMERA_SIZE_DURING_ZOOM,
-	DEFAULT_CAPTION_GENERATION_OPTIONS,
-	DEFAULT_CAPTION_SETTINGS,
 	clampFocusToDepth,
 	DEFAULT_ANNOTATION_POSITION,
 	DEFAULT_ANNOTATION_SIZE,
 	DEFAULT_ANNOTATION_STYLE,
 	DEFAULT_BLUR_DATA,
+	DEFAULT_CAMERA_SIZE_DURING_ZOOM,
+	DEFAULT_CAPTION_GENERATION_OPTIONS,
+	DEFAULT_CAPTION_SETTINGS,
 	DEFAULT_FIGURE_DATA,
 	DEFAULT_PLAYBACK_SPEED,
 	DEFAULT_ZOOM_DEPTH,
 	type FigureData,
+	getRecommendedWebcamRegion,
 	type PlaybackSpeed,
 	type SpeedRegion,
 	type TrimRegion,
 	type WebcamRegion,
-	getRecommendedWebcamRegion,
 	type ZoomDepth,
 	type ZoomFocus,
 	type ZoomRegion,
 } from "./types";
 import VideoPlayback, { VideoPlaybackRef } from "./VideoPlayback";
-import { normalizeWebcamRegion } from "./webcamRegionUtils";
 import {
 	buildLoopedCursorTelemetry,
 	getDisplayedTimelineWindowMs,
 } from "./videoPlayback/cursorLoopTelemetry";
 import { findDominantRegion } from "./videoPlayback/zoomRegionUtils";
+import { normalizeWebcamRegion } from "./webcamRegionUtils";
 
 const LOOP_CURSOR_END_WINDOW_MS = 670;
 
@@ -453,110 +453,115 @@ export default function VideoEditor() {
 		applyHistorySnapshot(next);
 	}, [applyHistorySnapshot, buildHistorySnapshot, cloneSnapshot]);
 
-	const applyLoadedProject = useCallback(async (candidate: unknown, path?: string | null) => {
-		if (!validateProjectData(candidate)) {
-			return false;
-		}
+	const applyLoadedProject = useCallback(
+		async (candidate: unknown, path?: string | null) => {
+			if (!validateProjectData(candidate)) {
+				return false;
+			}
 
-		const project = candidate;
-		const sourcePath = fromFileUrl(project.videoPath);
-		const normalizedEditor = normalizeProjectEditor(project.editor);
+			const project = candidate;
+			const sourcePath = fromFileUrl(project.videoPath);
+			const normalizedEditor = normalizeProjectEditor(project.editor);
 
-		try {
-			videoPlaybackRef.current?.pause();
-		} catch {
-			// no-op
-		}
-		setIsPlaying(false);
-		setCurrentTime(0);
-		setDuration(0);
+			try {
+				videoPlaybackRef.current?.pause();
+			} catch {
+				// no-op
+			}
+			setIsPlaying(false);
+			setCurrentTime(0);
+			setDuration(0);
 
-		setError(null);
-		setVideoSourcePath(sourcePath);
-		setVideoPath(toFileUrl(sourcePath));
-		setCurrentProjectPath(path ?? null);
+			setError(null);
+			setVideoSourcePath(sourcePath);
+			setVideoPath(toFileUrl(sourcePath));
+			setCurrentProjectPath(path ?? null);
 
-		setWallpaper(normalizedEditor.wallpaper);
-		setShadowIntensity(normalizedEditor.shadowIntensity);
-		setBackgroundBlur(normalizedEditor.backgroundBlur);
-		setZoomMotionBlur(normalizedEditor.zoomMotionBlur);
-		setConnectZooms(normalizedEditor.connectZooms);
-		setShowCursor(normalizedEditor.showCursor);
-		setLoopCursor(normalizedEditor.loopCursor);
-		setCursorSize(normalizedEditor.cursorSize);
-		setCursorSmoothing(normalizedEditor.cursorSmoothing);
-		setCursorMotionBlur(normalizedEditor.cursorMotionBlur);
-		setCursorClickBounce(normalizedEditor.cursorClickBounce);
-		setCursorSway(normalizedEditor.cursorSway);
-		setBorderRadius(normalizedEditor.borderRadius);
-		setPadding(normalizedEditor.padding);
-		setCropRegion(normalizedEditor.cropRegion);
-		setZoomRegions(normalizedEditor.zoomRegions);
-		setTrimRegions(normalizedEditor.trimRegions);
-		setSpeedRegions(normalizedEditor.speedRegions);
-		setAnnotationRegions(normalizedEditor.annotationRegions);
-		setAudioRegions(normalizedEditor.audioRegions);
-		setWebcamPath(normalizedEditor.webcamPath ?? null);
-		await syncWebcamAvailability(normalizedEditor.webcamPath ?? null, { quiet: false });
-		setWebcamRegion({ ...normalizedEditor.webcamRegion });
-		setShowWebcam(normalizedEditor.showWebcam);
-		setMirrorWebcam(normalizedEditor.mirrorWebcam);
-		setCameraSizeDuringZoom(normalizedEditor.cameraSizeDuringZoom);
-		setCameraLayouts(normalizedEditor.cameraLayouts);
-		setCaptionTrack(normalizedEditor.captionTrack);
-		setCaptionSettings(normalizedEditor.captionSettings);
-		setCaptionGenerationOptions(normalizedEditor.captionGenerationOptions);
-		setAspectRatio(normalizedEditor.aspectRatio);
-		setExportQuality(normalizedEditor.exportQuality);
-		setExportFormat(normalizedEditor.exportFormat);
-		setGifFrameRate(normalizedEditor.gifFrameRate);
-		setGifLoop(normalizedEditor.gifLoop);
-		setGifSizePreset(normalizedEditor.gifSizePreset);
+			setWallpaper(normalizedEditor.wallpaper);
+			setShadowIntensity(normalizedEditor.shadowIntensity);
+			setBackgroundBlur(normalizedEditor.backgroundBlur);
+			setZoomMotionBlur(normalizedEditor.zoomMotionBlur);
+			setConnectZooms(normalizedEditor.connectZooms);
+			setShowCursor(normalizedEditor.showCursor);
+			setLoopCursor(normalizedEditor.loopCursor);
+			setCursorSize(normalizedEditor.cursorSize);
+			setCursorSmoothing(normalizedEditor.cursorSmoothing);
+			setCursorMotionBlur(normalizedEditor.cursorMotionBlur);
+			setCursorClickBounce(normalizedEditor.cursorClickBounce);
+			setCursorSway(normalizedEditor.cursorSway);
+			setBorderRadius(normalizedEditor.borderRadius);
+			setPadding(normalizedEditor.padding);
+			setCropRegion(normalizedEditor.cropRegion);
+			setZoomRegions(normalizedEditor.zoomRegions);
+			setTrimRegions(normalizedEditor.trimRegions);
+			setSpeedRegions(normalizedEditor.speedRegions);
+			setAnnotationRegions(normalizedEditor.annotationRegions);
+			setAudioRegions(normalizedEditor.audioRegions);
+			setWebcamPath(normalizedEditor.webcamPath ?? null);
+			await syncWebcamAvailability(normalizedEditor.webcamPath ?? null, { quiet: false });
+			setWebcamRegion({ ...normalizedEditor.webcamRegion });
+			setShowWebcam(normalizedEditor.showWebcam);
+			setMirrorWebcam(normalizedEditor.mirrorWebcam);
+			setCameraSizeDuringZoom(normalizedEditor.cameraSizeDuringZoom);
+			setCameraLayouts(normalizedEditor.cameraLayouts);
+			setCaptionTrack(normalizedEditor.captionTrack);
+			setCaptionSettings(normalizedEditor.captionSettings);
+			setCaptionGenerationOptions(normalizedEditor.captionGenerationOptions);
+			setAspectRatio(normalizedEditor.aspectRatio);
+			setExportQuality(normalizedEditor.exportQuality);
+			setExportFormat(normalizedEditor.exportFormat);
+			setGifFrameRate(normalizedEditor.gifFrameRate);
+			setGifLoop(normalizedEditor.gifLoop);
+			setGifSizePreset(normalizedEditor.gifSizePreset);
 
-		setSelectedZoomId(null);
-		setSelectedTrimId(null);
-		setSelectedSpeedId(null);
-		setSelectedAnnotationId(null);
-		setSelectedAudioId(null);
-		setSelectedCameraLayoutId(null);
-		setWebcamSelected(false);
-		setSelectedCaptionId(null);
+			setSelectedZoomId(null);
+			setSelectedTrimId(null);
+			setSelectedSpeedId(null);
+			setSelectedAnnotationId(null);
+			setSelectedAudioId(null);
+			setSelectedCameraLayoutId(null);
+			setWebcamSelected(false);
+			setSelectedCaptionId(null);
 
-		nextZoomIdRef.current = deriveNextId(
-			"zoom",
-			normalizedEditor.zoomRegions.map((region) => region.id),
-		);
-		nextTrimIdRef.current = deriveNextId(
-			"trim",
-			normalizedEditor.trimRegions.map((region) => region.id),
-		);
-		nextSpeedIdRef.current = deriveNextId(
-			"speed",
-			normalizedEditor.speedRegions.map((region) => region.id),
-		);
-		nextAudioIdRef.current = deriveNextId(
-			"audio",
-			normalizedEditor.audioRegions.map((region) => region.id),
-		);
-		nextCameraLayoutIdRef.current = deriveNextId(
-			"camera-layout",
-			normalizedEditor.cameraLayouts.map((layout) => layout.id),
-		);
-		nextCaptionIdRef.current = deriveNextId(
-			"caption",
-			(normalizedEditor.captionTrack?.segments ?? []).map((region) => region.id),
-		);
-		nextAnnotationIdRef.current = deriveNextId(
-			"annotation",
-			normalizedEditor.annotationRegions.map((region) => region.id),
-		);
-		nextAnnotationZIndexRef.current =
-			normalizedEditor.annotationRegions.reduce((max, region) => Math.max(max, region.zIndex), 0) +
-			1;
+			nextZoomIdRef.current = deriveNextId(
+				"zoom",
+				normalizedEditor.zoomRegions.map((region) => region.id),
+			);
+			nextTrimIdRef.current = deriveNextId(
+				"trim",
+				normalizedEditor.trimRegions.map((region) => region.id),
+			);
+			nextSpeedIdRef.current = deriveNextId(
+				"speed",
+				normalizedEditor.speedRegions.map((region) => region.id),
+			);
+			nextAudioIdRef.current = deriveNextId(
+				"audio",
+				normalizedEditor.audioRegions.map((region) => region.id),
+			);
+			nextCameraLayoutIdRef.current = deriveNextId(
+				"camera-layout",
+				normalizedEditor.cameraLayouts.map((layout) => layout.id),
+			);
+			nextCaptionIdRef.current = deriveNextId(
+				"caption",
+				(normalizedEditor.captionTrack?.segments ?? []).map((region) => region.id),
+			);
+			nextAnnotationIdRef.current = deriveNextId(
+				"annotation",
+				normalizedEditor.annotationRegions.map((region) => region.id),
+			);
+			nextAnnotationZIndexRef.current =
+				normalizedEditor.annotationRegions.reduce(
+					(max, region) => Math.max(max, region.zIndex),
+					0,
+				) + 1;
 
-		setLastSavedSnapshot(JSON.stringify(createProjectData(sourcePath, normalizedEditor)));
-		return true;
-	}, [syncWebcamAvailability]);
+			setLastSavedSnapshot(JSON.stringify(createProjectData(sourcePath, normalizedEditor)));
+			return true;
+		},
+		[syncWebcamAvailability],
+	);
 
 	const currentProjectSnapshot = useMemo(() => {
 		const sourcePath = videoSourcePath ?? (videoPath ? fromFileUrl(videoPath) : null);
@@ -2871,24 +2876,84 @@ export default function VideoEditor() {
 
 	if (loading) {
 		return (
-			<div className="flex items-center justify-center h-screen bg-background">
-				<div className="text-foreground">Loading video...</div>
+			<div className="flex flex-col items-center justify-center h-screen bg-[#0a0a0b]">
+				<div
+					className="flex flex-col items-center gap-5"
+					style={{
+						animation: "editor-loading-enter 0.5s cubic-bezier(0.16,1,0.3,1) both",
+					}}
+				>
+					{/* Pulsing ring loader */}
+					<div className="relative flex items-center justify-center w-14 h-14">
+						<div
+							className="absolute inset-0 rounded-full border-2 border-white/[0.06]"
+							style={{
+								animation: "editor-ring-pulse 2s ease-in-out infinite",
+							}}
+						/>
+						<div
+							className="absolute inset-0 rounded-full border-2 border-transparent border-t-white/30"
+							style={{
+								animation: "editor-ring-spin 1s linear infinite",
+							}}
+						/>
+						<img
+							src="/app-icons/screenmint-64.png"
+							alt="ScreenMint"
+							className="h-8 w-8 rounded-lg"
+						/>
+					</div>
+					<div className="flex flex-col items-center gap-1.5">
+						<span className="text-[13px] font-medium text-white/70">
+							Preparing your video
+						</span>
+						<span className="text-[11px] text-white/25">This will only take a moment</span>
+					</div>
+				</div>
+				<style>
+					{`
+						@keyframes editor-loading-enter {
+							from { opacity: 0; transform: scale(0.95); }
+							to { opacity: 1; transform: scale(1); }
+						}
+						@keyframes editor-ring-spin {
+							to { transform: rotate(360deg); }
+						}
+						@keyframes editor-ring-pulse {
+							0%, 100% { transform: scale(1); opacity: 0.5; }
+							50% { transform: scale(1.08); opacity: 1; }
+						}
+					`}
+				</style>
 			</div>
 		);
 	}
 	if (error) {
 		return (
-			<div className="flex items-center justify-center h-screen bg-background">
-				<div className="flex flex-col items-center gap-3">
-					<div className="text-destructive">{error}</div>
+			<div className="flex items-center justify-center h-screen bg-[#0a0a0b]">
+				<div
+					className="flex flex-col items-center gap-4"
+					style={{
+						animation: "editor-loading-enter 0.5s cubic-bezier(0.16,1,0.3,1) both",
+					}}
+				>
+					<div className="text-red-400/80 text-sm">{error}</div>
 					<button
 						type="button"
 						onClick={handleLoadProject}
-						className="px-3 py-1.5 rounded-md bg-[#10B981] text-white text-sm hover:bg-[#10B981]/90"
+						className="px-4 py-2 rounded-lg bg-white/[0.08] text-white/70 text-[13px] font-medium hover:bg-white/[0.12] hover:text-white/90 transition-all border border-white/[0.06]"
 					>
 						Load Project File
 					</button>
 				</div>
+				<style>
+					{`
+						@keyframes editor-loading-enter {
+							from { opacity: 0; transform: scale(0.95); }
+							to { opacity: 1; transform: scale(1); }
+						}
+					`}
+				</style>
 			</div>
 		);
 	}
@@ -2942,9 +3007,7 @@ export default function VideoEditor() {
 											<div className="font-semibold text-amber-50">
 												{t("settings.webcam.missingTitle", "Webcam source missing")}
 											</div>
-											<div className="mt-1 truncate text-amber-100/80">
-												{missingWebcamPath}
-											</div>
+											<div className="mt-1 truncate text-amber-100/80">{missingWebcamPath}</div>
 										</div>
 										<div className="flex shrink-0 items-center gap-2">
 											<button

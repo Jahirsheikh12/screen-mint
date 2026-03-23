@@ -6,9 +6,9 @@ import {
 	scaleWebcamRegion,
 } from "./cameraLayouts";
 import {
+	type CameraLayoutRegion,
 	DEFAULT_CAMERA_SIZE_DURING_ZOOM,
 	DEFAULT_WEBCAM_REGION,
-	type CameraLayoutRegion,
 } from "./types";
 
 describe("cameraLayouts", () => {

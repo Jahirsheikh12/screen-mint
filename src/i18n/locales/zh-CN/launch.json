@@ -7,6 +7,8 @@
 		"countdownDelay": "倒计时延迟",
 		"noDelay": "无延迟",
 		"record": "录制",
+		"startRecording": "开始录制",
+		"stopRecording": "停止",
 		"recordingFolder": "录制文件夹：{{path}}",
 		"chooseRecordingsFolder": "选择录制文件夹",
 		"folderPath": "路径：/{{name}}/",
@@ -24,7 +26,69 @@
 		"cameraLabelFallback": "摄像头",
 		"noCameraFound": "未找到摄像头",
 		"hideCameraPreview": "隐藏摄像头预览",
-		"mirrorCameraPreview": "镜像摄像头预览"
+		"mirrorCameraPreview": "镜像摄像头预览",
+		"noCamera": "无摄像头",
+		"noMicrophone": "无麦克风",
+		"noSystemAudio": "无系统音频",
+		"systemAudio": "系统音频",
+		"microphone": "麦克风"
+	},
+	"tabs": {
+		"display": "显示器",
+		"window": "窗口",
+		"area": "区域",
+		"device": "设备"
+	},
+	"display": {
+		"primaryDisplay": "主显示器",
+		"selectDisplay": "选择要录制的显示器",
+		"resolution": "{{width}} x {{height}}",
+		"refreshRate": "{{rate}} Hz",
+		"fps": "{{fps}} FPS"
+	},
+	"window": {
+		"selectWindow": "选择要录制的窗口",
+		"noWindows": "没有可选的窗口",
+		"recordEntireDisplay": "录制整个显示器",
+		"loadingWindows": "加载窗口中..."
+	},
+	"area": {
+		"selectArea": "选择区域",
+		"areaSize": "{{width}} x {{height}}",
+		"aspectRatio": "纵横比",
+		"any": "任意",
+		"presets": "预设",
+		"custom": "自定义",
+		"position": "位置"
+	},
+	"device": {
+		"noIosDevices": "没有通过 USB 连接的 iOS 设备",
+		"noIpadDevices": "没有通过 USB 连接的 iPadOS 设备",
+		"howToRecord": "如何录制 iOS 或 iPadOS 设备？"
+	},
+	"settings": {
+		"hideDesktopIcons": "在录制视频中隐藏桌面图标",
+		"hideDockIcon": "录制时隐藏 ScreenMint Dock 图标",
+		"highlightArea": "录制时高亮显示录制区域",
+		"openQuickShare": "录制后打开快速分享小工具",
+		"speakerNotes": "显示演讲者备注",
+		"recordingCountdown": "录制倒计时",
+		"advanced": "高级",
+		"hideHudFromCapture": "在捕获中隐藏 HUD",
+		"recordingQuality": "录制质量",
+		"qualityAuto": "自动",
+		"qualityHigh": "高",
+		"qualityMedium": "中",
+		"fps": "帧率",
+		"hardwareAcceleration": "硬件加速"
+	},
+	"afterRecording": {
+		"afterRecording": "录制后",
+		"createProject": "创建项目",
+		"exportClipboard": "导出并复制到剪贴板",
+		"exportShareLink": "导出并创建分享链接",
+		"exportSaveFile": "导出并保存到文件",
+		"autoCreateZooms": "自动创建缩放"
 	},
 	"sourceSelector": {
 		"loadingSources": "正在加载源...",

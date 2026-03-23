@@ -1,10 +1,15 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export function CountdownOverlay() {
 	const [countdown, setCountdown] = useState<number | null>(null);
+	const initialCountRef = useRef<number | null>(null);
+	const [fading, setFading] = useState(false);
 
 	useEffect(() => {
 		const cleanup = window.electronAPI.onCountdownTick((seconds: number) => {
+			if (initialCountRef.current === null) {
+				initialCountRef.current = seconds;
+			}
 			setCountdown(seconds);
 		});
 
@@ -29,6 +34,14 @@ export function CountdownOverlay() {
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [handleKeyDown]);
 
+	// Trigger fade-out when countdown reaches 1 (ring will animate to empty)
+	useEffect(() => {
+		if (countdown === 1) {
+			const timer = setTimeout(() => setFading(true), 800);
+			return () => clearTimeout(timer);
+		}
+	}, [countdown]);
+
 	if (countdown === null) {
 		return null;
 	}
@@ -38,16 +51,21 @@ export function CountdownOverlay() {
 	const strokeWidth = 4;
 	const radius = (size - strokeWidth) / 2;
 	const circumference = 2 * Math.PI * radius;
-	// Assume max countdown is 5 seconds; deplete ring as countdown progresses
-	const maxCount = 5;
-	const progress = countdown / maxCount;
-	const dashOffset = circumference * (1 - progress);
+
+	const initialCount = initialCountRef.current ?? countdown;
+	// Progress depletes: countdown=3 → 66%, countdown=2 → 33%, countdown=1 → 0%
+	const progress = (countdown - 1) / initialCount;
+	const dashOffset = circumference * (1 - Math.max(0, progress));
 
 	return (
 		<div
 			className="fixed inset-0 flex items-center justify-center select-none cursor-pointer"
 			onClick={handleCancel}
 			onKeyDown={(e) => e.key === "Escape" && handleCancel()}
+			style={{
+				opacity: fading ? 0 : 1,
+				transition: "opacity 200ms ease-out",
+			}}
 		>
 			<div
 				className="relative flex items-center justify-center rounded-3xl"
@@ -83,7 +101,7 @@ export function CountdownOverlay() {
 						strokeLinecap="round"
 						strokeDasharray={circumference}
 						strokeDashoffset={dashOffset}
-						style={{ transition: "stroke-dashoffset 0.9s linear" }}
+						style={{ transition: "stroke-dashoffset 1s linear" }}
 					/>
 				</svg>
 				<span

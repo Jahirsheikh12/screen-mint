@@ -16,6 +16,8 @@
 		"countdownDelay": "Retraso de cuenta regresiva",
 		"noDelay": "Sin retraso",
 		"record": "Grabar",
+		"startRecording": "Iniciar grabación",
+		"stopRecording": "Detener",
 		"recordingFolder": "Carpeta de grabaciones: {{path}}",
 		"chooseRecordingsFolder": "Elegir carpeta de grabaciones",
 		"folderPath": "Ruta: /{{name}}/",
@@ -24,7 +26,69 @@
 		"hideHudFromVideo": "Ocultar HUD en la grabación",
 		"showHudInVideo": "Mostrar HUD en la grabación",
 		"hideHud": "Ocultar HUD",
-		"closeApp": "Cerrar aplicación"
+		"closeApp": "Cerrar aplicación",
+		"noCamera": "Sin cámara",
+		"noMicrophone": "Sin micrófono",
+		"noSystemAudio": "Sin audio del sistema",
+		"systemAudio": "Audio del sistema",
+		"microphone": "Micrófono"
+	},
+	"tabs": {
+		"display": "Pantalla",
+		"window": "Ventana",
+		"area": "Área",
+		"device": "Dispositivo"
+	},
+	"display": {
+		"primaryDisplay": "Pantalla principal",
+		"selectDisplay": "Selecciona una pantalla para grabar",
+		"resolution": "{{width}} x {{height}}",
+		"refreshRate": "{{rate}} Hz",
+		"fps": "{{fps}} FPS"
+	},
+	"window": {
+		"selectWindow": "Selecciona una ventana para grabar",
+		"noWindows": "No hay ventanas para seleccionar",
+		"recordEntireDisplay": "Grabar toda la pantalla",
+		"loadingWindows": "Cargando ventanas..."
+	},
+	"area": {
+		"selectArea": "Seleccionar área",
+		"areaSize": "{{width}} x {{height}}",
+		"aspectRatio": "Relación de aspecto",
+		"any": "Cualquiera",
+		"presets": "Preajustes",
+		"custom": "Personalizado",
+		"position": "Posición"
+	},
+	"device": {
+		"noIosDevices": "No hay dispositivos iOS conectados por USB",
+		"noIpadDevices": "No hay dispositivos iPadOS conectados por USB",
+		"howToRecord": "¿Cómo grabar un dispositivo iOS o iPadOS?"
+	},
+	"settings": {
+		"hideDesktopIcons": "Ocultar iconos del escritorio en el video grabado",
+		"hideDockIcon": "Ocultar icono del dock de ScreenMint mientras graba",
+		"highlightArea": "Resaltar área grabada durante la grabación",
+		"openQuickShare": "Abrir widget de compartir rápido después de grabar",
+		"speakerNotes": "Mostrar notas del orador",
+		"recordingCountdown": "Cuenta regresiva de grabación",
+		"advanced": "Avanzado",
+		"hideHudFromCapture": "Ocultar HUD de la captura",
+		"recordingQuality": "Calidad de grabación",
+		"qualityAuto": "Automática",
+		"qualityHigh": "Alta",
+		"qualityMedium": "Media",
+		"fps": "Tasa de fotogramas",
+		"hardwareAcceleration": "Aceleración por hardware"
+	},
+	"afterRecording": {
+		"afterRecording": "Después de grabar",
+		"createProject": "Crear proyecto",
+		"exportClipboard": "Exportar y copiar al portapapeles",
+		"exportShareLink": "Exportar y crear enlace para compartir",
+		"exportSaveFile": "Exportar y guardar en archivo",
+		"autoCreateZooms": "Crear zooms automáticamente"
 	},
 	"sourceSelector": {
 		"loadingSources": "Cargando fuentes...",
