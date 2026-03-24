@@ -1,4 +1,5 @@
 import { Languages } from "lucide-react";
+import { BsRecordCircle } from "react-icons/bs";
 import { FaPause, FaPlay, FaRegStopCircle } from "react-icons/fa";
 import { FaFolderOpen } from "react-icons/fa6";
 import { FiMinus, FiRotateCcw, FiTrash2, FiX } from "react-icons/fi";
@@ -76,6 +77,9 @@ type HudToolbarProps = {
 	setCountdownDelay: (delay: number) => void;
 	onUpdateSettings: (update: Partial<HudSettings>) => void;
 	actionBusy: boolean;
+	showQuickRecord: boolean;
+	quickRecordDisabled: boolean;
+	onQuickRecord: () => void;
 };
 
 const MODE_ICONS: Record<HudMode, React.ComponentType<{ size?: number; className?: string }>> = {
@@ -129,6 +133,9 @@ export function HudToolbar({
 	setCountdownDelay,
 	onUpdateSettings,
 	actionBusy,
+	showQuickRecord,
+	quickRecordDisabled,
+	onQuickRecord,
 }: HudToolbarProps) {
 	const { locale, setLocale } = useI18n();
 	const t = useScopedT("launch");
@@ -278,6 +285,26 @@ export function HudToolbar({
 			</div>
 
 			<div className="h-4 w-px bg-white/[0.06] mx-0.5" />
+
+			{showQuickRecord && (
+				<>
+					<button
+						type="button"
+						onClick={onQuickRecord}
+						disabled={quickRecordDisabled}
+						className={`${ND} flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-semibold transition-all ${
+							quickRecordDisabled
+								? "cursor-not-allowed bg-red-500/15 text-white/30"
+								: "cursor-pointer bg-red-500 text-white shadow-lg shadow-red-500/20 hover:bg-red-600"
+						}`}
+					>
+						<BsRecordCircle size={12} />
+						<span>{t("recording.startRecording")}</span>
+					</button>
+
+					<div className="h-4 w-px bg-white/[0.06] mx-0.5" />
+				</>
+			)}
 
 			{/* Media controls */}
 			<div className={`${ND} flex items-center`}>

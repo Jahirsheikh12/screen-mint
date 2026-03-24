@@ -115,25 +115,13 @@ export function LaunchWindow() {
 	}, [hud.recording, hud.resizeHudWindow]);
 
 	useEffect(() => {
-		if (
-			hud.hudSettings.highlightArea &&
-			hud.recording &&
-			!hud.paused &&
-			hud.sessionState.captureMode === "area" &&
-			hud.selectedArea
-		) {
+		if (hud.selectedArea && (hud.mode === "area" || hud.sessionState.captureMode === "area")) {
 			void window.electronAPI.createHighlightOverlay(hud.selectedArea.bounds);
 			return;
 		}
 
 		void window.electronAPI.closeHighlightOverlay();
-	}, [
-		hud.hudSettings.highlightArea,
-		hud.paused,
-		hud.recording,
-		hud.selectedArea,
-		hud.sessionState.captureMode,
-	]);
+	}, [hud.mode, hud.selectedArea, hud.sessionState.captureMode]);
 
 	const openVideoFile = useCallback(async () => {
 		const result = await window.electronAPI.openVideoFilePicker();
@@ -217,6 +205,7 @@ export function LaunchWindow() {
 	);
 
 	const showOverlay = hud.contentPanelVisible && !hud.recording;
+	const showAreaQuickRecord = !hud.recording && hud.mode === "area" && hud.hasSelectedArea;
 	const isRecordDisabled =
 		hud.countdownActive ||
 		hud.recordingBusy ||
@@ -380,7 +369,11 @@ export function LaunchWindow() {
 			{/* Bottom toolbar */}
 			<div
 				className={`fixed bottom-3 left-1/2 -translate-x-1/2 z-20 w-full transition-all duration-300 ${
-					hud.recording ? "max-w-[520px] px-2" : "max-w-[720px] px-4"
+					hud.recording
+						? "max-w-[520px] px-2"
+						: showAreaQuickRecord
+							? "max-w-[820px] px-4"
+							: "max-w-[720px] px-4"
 				}`}
 			>
 				<div
@@ -437,6 +430,9 @@ export function LaunchWindow() {
 						setCountdownDelay={hud.setCountdownDelay}
 						onUpdateSettings={hud.updateHudSettings}
 						actionBusy={hud.recordingBusy}
+						showQuickRecord={showAreaQuickRecord}
+						quickRecordDisabled={isRecordDisabled}
+						onQuickRecord={hud.toggleRecording}
 					/>
 				</div>
 			</div>

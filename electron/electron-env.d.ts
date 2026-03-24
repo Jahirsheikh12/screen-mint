@@ -41,6 +41,9 @@ declare global {
 			) => Promise<{ success: boolean; area?: SelectedArea | null }>;
 			getSelectedArea: () => Promise<{ success: boolean; area?: SelectedArea | null }>;
 			clearSelectedArea: () => Promise<{ success: boolean }>;
+			onSelectedAreaChanged: (
+				callback: (state: { area: SelectedArea | null }) => void,
+			) => () => void;
 			startNativeScreenRecording: (
 				source: SelectedCaptureSource,
 				options?: {

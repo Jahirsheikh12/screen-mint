@@ -86,6 +86,16 @@ type WindowBounds = {
 
 let selectedSource: SelectedSource | null = null;
 let selectedArea: SelectedArea | null = null;
+
+function notifySelectedAreaChanged(): void {
+	const payload = { area: selectedArea };
+
+	for (const window of BrowserWindow.getAllWindows()) {
+		if (!window.isDestroyed()) {
+			window.webContents.send("selected-area-changed", payload);
+		}
+	}
+}
 let currentProjectPath: string | null = null;
 let nativeScreenRecordingActive = false;
 let currentVideoPath: string | null = null;
@@ -2286,6 +2296,7 @@ export function registerIpcHandlers(
 		if (!getSelectedAreaForSource(source)) {
 			selectedArea = null;
 		}
+		notifySelectedAreaChanged();
 		stopWindowBoundsCapture();
 		const sourceSelectorWin = getSourceSelectorWindow();
 		if (sourceSelectorWin) {
@@ -2300,6 +2311,7 @@ export function registerIpcHandlers(
 
 	ipcMain.handle("set-selected-area", (_, area: SelectedArea | null) => {
 		selectedArea = area;
+		notifySelectedAreaChanged();
 		return { success: true, area: selectedArea };
 	});
 
@@ -2309,6 +2321,7 @@ export function registerIpcHandlers(
 
 	ipcMain.handle("clear-selected-area", () => {
 		selectedArea = null;
+		notifySelectedAreaChanged();
 		return { success: true };
 	});
 

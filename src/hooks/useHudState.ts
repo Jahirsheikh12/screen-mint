@@ -45,6 +45,28 @@ export type CameraDeviceOption = {
 	label: string;
 };
 
+function selectedAreasEqual(left: SelectedArea | null, right: SelectedArea | null): boolean {
+	if (left === right) {
+		return true;
+	}
+
+	if (!left || !right) {
+		return false;
+	}
+
+	return (
+		left.displayId === right.displayId &&
+		left.bounds.x === right.bounds.x &&
+		left.bounds.y === right.bounds.y &&
+		left.bounds.width === right.bounds.width &&
+		left.bounds.height === right.bounds.height &&
+		left.normalizedBounds.x === right.normalizedBounds.x &&
+		left.normalizedBounds.y === right.normalizedBounds.y &&
+		left.normalizedBounds.width === right.normalizedBounds.width &&
+		left.normalizedBounds.height === right.normalizedBounds.height
+	);
+}
+
 export function useHudState() {
 	const screenRecorder = useScreenRecorder();
 	const [mode, setMode] = useState<HudMode>("display");
@@ -123,13 +145,24 @@ export function useHudState() {
 		const checkSelectedArea = async () => {
 			const result = await window.electronAPI.getSelectedArea();
 			if (result.success) {
-				setSelectedAreaState(result.area ?? null);
+				setSelectedAreaState((current) => {
+					const next = result.area ?? null;
+					return selectedAreasEqual(current, next) ? current : next;
+				});
 			}
 		};
 
 		void checkSelectedArea();
 		const interval = setInterval(checkSelectedArea, 500);
 		return () => clearInterval(interval);
+	}, []);
+
+	useEffect(() => {
+		const unsubscribe = window.electronAPI.onSelectedAreaChanged(({ area }) => {
+			setSelectedAreaState((current) => (selectedAreasEqual(current, area) ? current : area));
+		});
+
+		return () => unsubscribe();
 	}, []);
 
 	// Refresh camera devices

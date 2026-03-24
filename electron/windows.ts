@@ -69,6 +69,12 @@ function getScreen() {
 	return nodeRequire("electron").screen as typeof import("electron").screen;
 }
 
+function pinOverlayWindow(win: BrowserWindow, allowFullscreenVisibility = true): void {
+	win.setAlwaysOnTop(true, "screen-saver");
+	win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: allowFullscreenVisibility });
+	win.moveTop();
+}
+
 ipcMain.on("hud-overlay-hide", () => {
 	if (hudOverlayWindow && !hudOverlayWindow.isDestroyed()) {
 		hudOverlayWindow.minimize();
@@ -134,6 +140,8 @@ export function createHudOverlayWindow(): BrowserWindow {
 			backgroundThrottling: false,
 		},
 	});
+
+	pinOverlayWindow(win);
 
 	if (isHudOverlayCaptureProtectionSupported()) {
 		win.setContentProtection(hudOverlayHiddenFromCapture);
@@ -292,8 +300,7 @@ export function createCountdownWindow(): BrowserWindow {
 	});
 
 	countdownWindow = win;
-
-	win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+	pinOverlayWindow(win);
 
 	win.webContents.on("did-finish-load", () => {
 		if (!win.isDestroyed()) {
@@ -380,7 +387,7 @@ export function createAreaOverlayWindow(displayId?: number): BrowserWindow {
 	});
 
 	areaOverlayWindow = win;
-	win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+	pinOverlayWindow(win);
 
 	win.webContents.on("did-finish-load", () => {
 		if (!win.isDestroyed()) {
@@ -441,7 +448,7 @@ export function createHighlightOverlayWindow(rect: {
 	});
 
 	win.setIgnoreMouseEvents(true);
-	win.setVisibleOnAllWorkspaces(true);
+	pinOverlayWindow(win);
 
 	// Render a colored border using inline HTML
 	win.loadURL(

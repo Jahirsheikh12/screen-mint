@@ -134,6 +134,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		ipcRenderer.on("cursor-state-changed", listener);
 		return () => ipcRenderer.removeListener("cursor-state-changed", listener);
 	},
+	onSelectedAreaChanged: (callback: (state: { area: SelectedArea | null }) => void) => {
+		const listener = (_event: Electron.IpcRendererEvent, payload: { area: SelectedArea | null }) =>
+			callback(payload);
+		ipcRenderer.on("selected-area-changed", listener);
+		return () => ipcRenderer.removeListener("selected-area-changed", listener);
+	},
 	openExternalUrl: (url: string) => {
 		return ipcRenderer.invoke("open-external-url", url);
 	},
