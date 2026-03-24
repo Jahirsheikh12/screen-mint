@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { SelectedArea } from "@/lib/recording/session";
 import { useAudioLevelMeter } from "./useAudioLevelMeter";
 import { useMicrophoneDevices } from "./useMicrophoneDevices";
 import { useScreenRecorder } from "./useScreenRecorder";
@@ -51,6 +52,7 @@ export function useHudState() {
 	const [platform, setPlatform] = useState<string | null>(null);
 	const [selectedSource, setSelectedSource] = useState("Screen");
 	const [hasSelectedSource, setHasSelectedSource] = useState(false);
+	const [selectedArea, setSelectedAreaState] = useState<SelectedArea | null>(null);
 	const [cameraDevices, setCameraDevices] = useState<CameraDeviceOption[]>([]);
 	const [contentPanelVisible, setContentPanelVisible] = useState(false);
 	const settingsLoaded = useRef(false);
@@ -117,6 +119,19 @@ export function useHudState() {
 		return () => clearInterval(interval);
 	}, []);
 
+	useEffect(() => {
+		const checkSelectedArea = async () => {
+			const result = await window.electronAPI.getSelectedArea();
+			if (result.success) {
+				setSelectedAreaState(result.area ?? null);
+			}
+		};
+
+		void checkSelectedArea();
+		const interval = setInterval(checkSelectedArea, 500);
+		return () => clearInterval(interval);
+	}, []);
+
 	// Refresh camera devices
 	const refreshCameraDevices = useCallback(async () => {
 		try {
@@ -156,6 +171,18 @@ export function useHudState() {
 		});
 	}, []);
 
+	const setSelectedArea = useCallback(async (area: SelectedArea | null) => {
+		const result = await window.electronAPI.setSelectedArea(area);
+		if (result.success) {
+			setSelectedAreaState(result.area ?? null);
+		}
+	}, []);
+
+	const clearSelectedArea = useCallback(async () => {
+		await window.electronAPI.clearSelectedArea();
+		setSelectedAreaState(null);
+	}, []);
+
 	// Toggle overlay: expands/shrinks the HUD window via IPC
 	const resizeHudWindow = useCallback((contentVisible: boolean) => {
 		setContentPanelVisible(contentVisible);
@@ -173,6 +200,10 @@ export function useHudState() {
 		platform,
 		selectedSource,
 		hasSelectedSource,
+		selectedArea,
+		hasSelectedArea: selectedArea != null,
+		setSelectedArea,
+		clearSelectedArea,
 		cameraDevices,
 		contentPanelVisible,
 		setContentPanelVisible,

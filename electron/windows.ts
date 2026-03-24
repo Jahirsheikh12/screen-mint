@@ -333,20 +333,37 @@ export function getHudOverlayWindow(): BrowserWindow | null {
 	return hudOverlayWindow;
 }
 
-export function createAreaOverlayWindow(): BrowserWindow {
+export function createAreaOverlayWindow(displayId?: number): BrowserWindow {
+	const targetDisplay =
+		(typeof displayId === "number"
+			? getScreen()
+					.getAllDisplays()
+					.find((display) => display.id === displayId)
+			: null) ?? getScreen().getPrimaryDisplay();
+
 	if (areaOverlayWindow && !areaOverlayWindow.isDestroyed()) {
-		areaOverlayWindow.focus();
-		return areaOverlayWindow;
+		const bounds = areaOverlayWindow.getBounds();
+		if (
+			bounds.x === targetDisplay.bounds.x &&
+			bounds.y === targetDisplay.bounds.y &&
+			bounds.width === targetDisplay.bounds.width &&
+			bounds.height === targetDisplay.bounds.height
+		) {
+			areaOverlayWindow.focus();
+			return areaOverlayWindow;
+		}
+
+		areaOverlayWindow.close();
+		areaOverlayWindow = null;
 	}
 
-	const primaryDisplay = getScreen().getPrimaryDisplay();
-	const { width, height } = primaryDisplay.workAreaSize;
+	const { bounds } = targetDisplay;
 
 	const win = new BrowserWindow({
-		width,
-		height,
-		x: 0,
-		y: 0,
+		width: bounds.width,
+		height: bounds.height,
+		x: bounds.x,
+		y: bounds.y,
 		frame: false,
 		transparent: true,
 		resizable: false,
@@ -363,6 +380,7 @@ export function createAreaOverlayWindow(): BrowserWindow {
 	});
 
 	areaOverlayWindow = win;
+	win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
 
 	win.webContents.on("did-finish-load", () => {
 		if (!win.isDestroyed()) {

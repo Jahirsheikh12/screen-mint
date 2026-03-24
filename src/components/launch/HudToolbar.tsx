@@ -1,7 +1,7 @@
 import { Languages } from "lucide-react";
 import { FaPause, FaPlay, FaRegStopCircle } from "react-icons/fa";
 import { FaFolderOpen } from "react-icons/fa6";
-import { FiMinus, FiX } from "react-icons/fi";
+import { FiMinus, FiRotateCcw, FiTrash2, FiX } from "react-icons/fi";
 import {
 	MdCropFree,
 	MdDevices,
@@ -42,6 +42,8 @@ type HudToolbarProps = {
 	elapsed: number;
 	onToggleRecording: () => void;
 	onTogglePause: () => void;
+	onRetakeRecording: () => void;
+	onDeleteRecording: () => void;
 	microphoneEnabled: boolean;
 	setMicrophoneEnabled: (enabled: boolean) => void;
 	microphoneDeviceId: string | undefined;
@@ -73,6 +75,7 @@ type HudToolbarProps = {
 	countdownDelay: number;
 	setCountdownDelay: (delay: number) => void;
 	onUpdateSettings: (update: Partial<HudSettings>) => void;
+	actionBusy: boolean;
 };
 
 const MODE_ICONS: Record<HudMode, React.ComponentType<{ size?: number; className?: string }>> = {
@@ -97,6 +100,8 @@ export function HudToolbar({
 	elapsed,
 	onToggleRecording,
 	onTogglePause,
+	onRetakeRecording,
+	onDeleteRecording,
 	microphoneEnabled,
 	setMicrophoneEnabled,
 	microphoneDeviceId,
@@ -123,6 +128,7 @@ export function HudToolbar({
 	countdownDelay,
 	setCountdownDelay,
 	onUpdateSettings,
+	actionBusy,
 }: HudToolbarProps) {
 	const { locale, setLocale } = useI18n();
 	const t = useScopedT("launch");
@@ -145,13 +151,16 @@ export function HudToolbar({
 					display: "flex",
 					alignItems: "center",
 					justifyContent: "center",
-					gap: 10,
-					padding: "8px 14px",
+					flexWrap: "wrap",
+					gap: 8,
+					rowGap: 8,
+					padding: "8px 10px",
 					minHeight: 48,
+					width: "100%",
 				}}
 			>
 				{/* Recording indicator + timer */}
-				<div className="flex items-center gap-2.5">
+				<div className="flex shrink-0 items-center gap-2.5">
 					<div
 						className={`h-[9px] w-[9px] rounded-full ${paused ? "bg-yellow-500" : "bg-red-500"} ${paused ? "" : styles.recordingPulse}`}
 					/>
@@ -160,41 +169,63 @@ export function HudToolbar({
 					</span>
 				</div>
 
-				<div className="h-4 w-px bg-white/[0.08]" />
+				<div className="flex min-w-0 flex-wrap items-center justify-center gap-2">
+					{/* Pause / Resume button */}
+					<button
+						type="button"
+						onClick={onTogglePause}
+						disabled={actionBusy}
+						className={`${ND} flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-medium transition-all ${
+							paused
+								? "border border-yellow-500/[0.15] bg-yellow-500/[0.12] text-yellow-400 hover:bg-yellow-500/[0.2]"
+								: "border border-white/[0.06] bg-white/[0.06] text-white/60 hover:bg-white/[0.1] hover:text-white/80"
+						} ${actionBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+					>
+						{paused ? <FaPlay size={9} /> : <FaPause size={9} />}
+						<span>{paused ? t("recording.resumeRecording") : t("recording.pauseRecording")}</span>
+					</button>
 
-				{/* Pause / Resume button */}
-				<button
-					type="button"
-					onClick={onTogglePause}
-					className={`${ND} flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium transition-all cursor-pointer ${
-						paused
-							? "bg-yellow-500/[0.12] text-yellow-400 hover:bg-yellow-500/[0.2] border border-yellow-500/[0.15]"
-							: "bg-white/[0.06] text-white/60 hover:bg-white/[0.1] hover:text-white/80 border border-white/[0.06]"
-					}`}
-				>
-					{paused ? <FaPlay size={9} /> : <FaPause size={9} />}
-					<span>{paused ? "Resume" : "Pause"}</span>
-				</button>
+					<button
+						type="button"
+						onClick={onRetakeRecording}
+						disabled={actionBusy}
+						className={`${ND} flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.06] px-2.5 py-1.5 text-[11px] font-medium text-white/70 transition-all hover:bg-white/[0.1] hover:text-white ${actionBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+					>
+						<FiRotateCcw size={10} />
+						<span>{t("recording.retakeRecording")}</span>
+					</button>
 
-				{/* Stop button */}
-				<button
-					type="button"
-					onClick={onToggleRecording}
-					className={`${ND} flex items-center gap-1.5 rounded-full bg-red-500/[0.1] px-3 py-1.5 text-[11px] font-medium text-red-400 transition-all hover:bg-red-500/[0.18] border border-red-500/[0.12] cursor-pointer`}
-				>
-					<FaRegStopCircle size={10} />
-					<span>{t("recording.stopRecording")}</span>
-				</button>
+					<button
+						type="button"
+						onClick={onDeleteRecording}
+						disabled={actionBusy}
+						className={`${ND} flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.04] px-2.5 py-1.5 text-[11px] font-medium text-white/55 transition-all hover:bg-white/[0.08] hover:text-white/75 ${actionBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+					>
+						<FiTrash2 size={10} />
+						<span>{t("recording.deleteRecording")}</span>
+					</button>
 
-				{/* Minimize */}
-				<button
-					type="button"
-					onClick={onHide}
-					title={t("recording.hideHud")}
-					className={`${ND} flex items-center justify-center rounded-md p-1.5 text-white/20 hover:text-white/45 hover:bg-white/[0.06] transition-colors cursor-pointer`}
-				>
-					<FiMinus size={13} />
-				</button>
+					{/* Stop button */}
+					<button
+						type="button"
+						onClick={onToggleRecording}
+						disabled={actionBusy}
+						className={`${ND} flex items-center gap-1.5 rounded-full border border-red-500/[0.12] bg-red-500/[0.1] px-2.5 py-1.5 text-[11px] font-medium text-red-400 transition-all hover:bg-red-500/[0.18] ${actionBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+					>
+						<FaRegStopCircle size={10} />
+						<span>{t("recording.stopRecording")}</span>
+					</button>
+
+					{/* Minimize */}
+					<button
+						type="button"
+						onClick={onHide}
+						title={t("recording.hideHud")}
+						className={`${ND} flex items-center justify-center rounded-md p-1.5 text-white/20 transition-colors hover:bg-white/[0.06] hover:text-white/45 cursor-pointer`}
+					>
+						<FiMinus size={13} />
+					</button>
+				</div>
 			</div>
 		);
 	}

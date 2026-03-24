@@ -114,6 +114,27 @@ export function LaunchWindow() {
 		}
 	}, [hud.recording, hud.resizeHudWindow]);
 
+	useEffect(() => {
+		if (
+			hud.hudSettings.highlightArea &&
+			hud.recording &&
+			!hud.paused &&
+			hud.sessionState.captureMode === "area" &&
+			hud.selectedArea
+		) {
+			void window.electronAPI.createHighlightOverlay(hud.selectedArea.bounds);
+			return;
+		}
+
+		void window.electronAPI.closeHighlightOverlay();
+	}, [
+		hud.hudSettings.highlightArea,
+		hud.paused,
+		hud.recording,
+		hud.selectedArea,
+		hud.sessionState.captureMode,
+	]);
+
 	const openVideoFile = useCallback(async () => {
 		const result = await window.electronAPI.openVideoFilePicker();
 		if (result.canceled) return;
@@ -158,17 +179,26 @@ export function LaunchWindow() {
 			if (hud.recording) return;
 
 			if (tab === "area") {
-				hud.setMode(tab);
-				hud.resizeHudWindow(false);
-				void window.electronAPI.createAreaOverlay();
 				void (async () => {
+					hud.setMode(tab);
+					hud.resizeHudWindow(false);
 					try {
-						const sources = await window.electronAPI.getSources({
-							types: ["screen"],
-						});
-						if (sources.length > 0) {
-							void window.electronAPI.selectSource(sources[0]);
+						let selectedSource = await window.electronAPI.getSelectedSource();
+						if (!selectedSource?.id?.startsWith("screen:")) {
+							const sources = await window.electronAPI.getSources({
+								types: ["screen"],
+							});
+							if (sources.length === 0) {
+								return;
+							}
+							selectedSource = sources[0];
+							await window.electronAPI.selectSource(selectedSource);
 						}
+
+						const displayId = Number(selectedSource.display_id);
+						await window.electronAPI.createAreaOverlay(
+							Number.isFinite(displayId) ? displayId : undefined,
+						);
 					} catch {
 						// ignore source fetch errors
 					}
@@ -187,7 +217,11 @@ export function LaunchWindow() {
 	);
 
 	const showOverlay = hud.contentPanelVisible && !hud.recording;
-	const isRecordDisabled = hud.countdownActive || !hud.hasSelectedSource;
+	const isRecordDisabled =
+		hud.countdownActive ||
+		hud.recordingBusy ||
+		!hud.hasSelectedSource ||
+		(hud.mode === "area" && !hud.hasSelectedArea);
 
 	return (
 		<div className="fixed inset-0">
@@ -345,7 +379,9 @@ export function LaunchWindow() {
 
 			{/* Bottom toolbar */}
 			<div
-				className={`fixed bottom-3 left-1/2 -translate-x-1/2 px-4 z-20 transition-all duration-300 ${hud.recording ? "max-w-[380px]" : "max-w-[720px]"} w-full`}
+				className={`fixed bottom-3 left-1/2 -translate-x-1/2 z-20 w-full transition-all duration-300 ${
+					hud.recording ? "max-w-[520px] px-2" : "max-w-[720px] px-4"
+				}`}
 			>
 				<div
 					className={`${styles.hudBar} ${hud.recording ? styles.recordingGlow : ""}`}
@@ -372,6 +408,8 @@ export function LaunchWindow() {
 						elapsed={elapsed}
 						onToggleRecording={hud.toggleRecording}
 						onTogglePause={hud.togglePause}
+						onRetakeRecording={hud.retakeRecording}
+						onDeleteRecording={hud.deleteRecording}
 						microphoneEnabled={hud.microphoneEnabled}
 						setMicrophoneEnabled={hud.setMicrophoneEnabled}
 						microphoneDeviceId={hud.microphoneDeviceId}
@@ -398,6 +436,7 @@ export function LaunchWindow() {
 						countdownDelay={hud.countdownDelay}
 						setCountdownDelay={hud.setCountdownDelay}
 						onUpdateSettings={hud.updateHudSettings}
+						actionBusy={hud.recordingBusy}
 					/>
 				</div>
 			</div>

@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
+import type { SelectedArea } from "../src/lib/recording/session";
 
 contextBridge.exposeInMainWorld("electronAPI", {
 	hudOverlayHide: () => {
@@ -28,19 +29,29 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	openSourceSelector: () => {
 		return ipcRenderer.invoke("open-source-selector");
 	},
-	selectSource: (source: any) => {
+	selectSource: (source: SelectedCaptureSource) => {
 		return ipcRenderer.invoke("select-source", source);
 	},
 	getSelectedSource: () => {
 		return ipcRenderer.invoke("get-selected-source");
 	},
+	setSelectedArea: (area: SelectedArea | null) => {
+		return ipcRenderer.invoke("set-selected-area", area);
+	},
+	getSelectedArea: () => {
+		return ipcRenderer.invoke("get-selected-area");
+	},
+	clearSelectedArea: () => {
+		return ipcRenderer.invoke("clear-selected-area");
+	},
 	startNativeScreenRecording: (
-		source: any,
+		source: SelectedCaptureSource,
 		options?: {
 			capturesSystemAudio?: boolean;
 			capturesMicrophone?: boolean;
 			microphoneDeviceId?: string;
 			microphoneLabel?: string;
+			selectedArea?: unknown;
 		},
 	) => {
 		return ipcRenderer.invoke("start-native-screen-recording", source, options);
@@ -48,7 +59,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	stopNativeScreenRecording: () => {
 		return ipcRenderer.invoke("stop-native-screen-recording");
 	},
-	startFfmpegRecording: (source: any) => {
+	startFfmpegRecording: (source: SelectedCaptureSource) => {
 		return ipcRenderer.invoke("start-ffmpeg-recording", source);
 	},
 	stopFfmpegRecording: () => {
@@ -57,8 +68,26 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	storeRecordedVideo: (videoData: ArrayBuffer, fileName: string) => {
 		return ipcRenderer.invoke("store-recorded-video", videoData, fileName);
 	},
+	storeRecordedVideoSegment: (videoData: ArrayBuffer, fileName: string) => {
+		return ipcRenderer.invoke("store-recorded-video", videoData, fileName, false);
+	},
 	getRecordedVideoPath: () => {
 		return ipcRenderer.invoke("get-recorded-video-path");
+	},
+	finalizeRecordingSession: (payload: {
+		videoSegments: Array<{ path: string; durationMs: number }>;
+		webcamSegments?: Array<{ path: string; durationMs: number }>;
+		microphoneSegments?: Array<{ path: string; durationMs: number }>;
+		selectedArea?: unknown;
+	}) => {
+		return ipcRenderer.invoke("finalize-recording-session", payload);
+	},
+	discardRecordingArtifacts: (payload: {
+		paths: string[];
+		clearCurrentVideo?: boolean;
+		clearCurrentWebcam?: boolean;
+	}) => {
+		return ipcRenderer.invoke("discard-recording-artifacts", payload);
 	},
 	setRecordingState: (recording: boolean) => {
 		return ipcRenderer.invoke("set-recording-state", recording);
@@ -261,7 +290,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	// Display info
 	getDisplayInfo: () => ipcRenderer.invoke("get-display-info"),
 	// Area overlay
-	createAreaOverlay: () => ipcRenderer.invoke("create-area-overlay"),
+	createAreaOverlay: (displayId?: number) => ipcRenderer.invoke("create-area-overlay", displayId),
 	closeAreaOverlay: () => ipcRenderer.invoke("close-area-overlay"),
 	// Desktop icons (macOS)
 	hideDesktopIcons: () => ipcRenderer.invoke("hide-desktop-icons"),

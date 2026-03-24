@@ -4,6 +4,7 @@ import { constants as fsConstants } from "node:fs";
 
 import fs from "node:fs/promises";
 import { createRequire } from "node:module";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
@@ -16,6 +17,10 @@ import {
 	shell,
 	systemPreferences,
 } from "electron";
+import type {
+	SelectedArea,
+	CursorTelemetrySample as SessionCursorTelemetrySample,
+} from "../../src/lib/recording/session";
 import {
 	cancelCaptionGeneration,
 	exportCaptionTranscript,
@@ -69,6 +74,7 @@ type NativeMacRecordingOptions = {
 	capturesMicrophone?: boolean;
 	microphoneDeviceId?: string;
 	microphoneLabel?: string;
+	selectedArea?: SelectedArea;
 };
 
 type WindowBounds = {
@@ -79,6 +85,7 @@ type WindowBounds = {
 };
 
 let selectedSource: SelectedSource | null = null;
+let selectedArea: SelectedArea | null = null;
 let currentProjectPath: string | null = null;
 let nativeScreenRecordingActive = false;
 let currentVideoPath: string | null = null;
@@ -117,6 +124,11 @@ type SystemCursorAsset = {
 	hotspotY: number;
 	width: number;
 	height: number;
+};
+
+type RecordingSegmentPayload = {
+	path: string;
+	durationMs: number;
 };
 
 type CursorVisualType =
@@ -681,6 +693,19 @@ function getDisplayBoundsForSource(source: SelectedSource) {
 	}
 
 	return getScreen().getPrimaryDisplay().bounds;
+}
+
+function getSelectedAreaForSource(source?: SelectedSource | null): SelectedArea | null {
+	if (!source?.id?.startsWith("screen:") || !selectedArea) {
+		return null;
+	}
+
+	const sourceDisplayId = Number(source.display_id);
+	if (!Number.isFinite(sourceDisplayId) || sourceDisplayId !== selectedArea.displayId) {
+		return null;
+	}
+
+	return selectedArea;
 }
 
 function parseXwininfoBounds(stdout: string): WindowBounds | null {
@@ -1396,11 +1421,191 @@ async function moveFileWithOverwrite(sourcePath: string, destinationPath: string
 	}
 }
 
+async function discardRecordingArtifacts(paths: Array<string | null | undefined>) {
+	await Promise.all(
+		paths
+			.filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0)
+			.flatMap((filePath) => [
+				fs.rm(filePath, { force: true }).catch(() => undefined),
+				fs.rm(getTelemetryPathForVideo(filePath), { force: true }).catch(() => undefined),
+			]),
+	);
+}
+
+async function concatenateMediaSegments(
+	segmentPaths: string[],
+	outputPath: string,
+	extraArgs: string[] = [],
+) {
+	if (segmentPaths.length === 0) {
+		throw new Error("No segment paths were provided");
+	}
+
+	if (segmentPaths.length === 1) {
+		return segmentPaths[0];
+	}
+
+	const ffmpegPath = getFfmpegBinaryPath();
+	const listPath = path.join(
+		os.tmpdir(),
+		`screenmint-concat-${Date.now()}-${Math.random().toString(36).slice(2)}.txt`,
+	);
+	await fs.writeFile(
+		listPath,
+		segmentPaths.map((segmentPath) => `file '${segmentPath.replace(/'/g, "'\\''")}'`).join("\n"),
+		"utf-8",
+	);
+
+	try {
+		await execFileAsync(
+			ffmpegPath,
+			["-y", "-f", "concat", "-safe", "0", "-i", listPath, ...extraArgs, outputPath],
+			{ timeout: 120000, maxBuffer: 10 * 1024 * 1024 },
+		);
+		return outputPath;
+	} finally {
+		await fs.rm(listPath, { force: true }).catch(() => undefined);
+	}
+}
+
+async function cropVideoToArea(videoPath: string, area: SelectedArea, outputPath: string) {
+	const ffmpegPath = getFfmpegBinaryPath();
+	const { x, y, width, height } = area.normalizedBounds;
+	const cropFilter = `crop=iw*${width}:ih*${height}:iw*${x}:ih*${y}`;
+
+	await execFileAsync(
+		ffmpegPath,
+		[
+			"-y",
+			"-i",
+			videoPath,
+			"-vf",
+			cropFilter,
+			"-c:v",
+			"libx264",
+			"-preset",
+			"veryfast",
+			"-pix_fmt",
+			"yuv420p",
+			"-c:a",
+			"aac",
+			"-movflags",
+			"+faststart",
+			outputPath,
+		],
+		{ timeout: 120000, maxBuffer: 10 * 1024 * 1024 },
+	);
+
+	return outputPath;
+}
+
 function isTrustedProjectPath(filePath?: string | null) {
 	if (!filePath || !currentProjectPath) {
 		return false;
 	}
 	return normalizePath(filePath) === normalizePath(currentProjectPath);
+}
+
+async function finalizeRecordingSession(payload: {
+	videoSegments: RecordingSegmentPayload[];
+	webcamSegments?: RecordingSegmentPayload[];
+	microphoneSegments?: RecordingSegmentPayload[];
+	selectedArea?: SelectedArea | null;
+}) {
+	const recordingsDir = await getRecordingsDir();
+	const normalizedVideoSegments = payload.videoSegments.filter(
+		(segment) => typeof segment.path === "string" && segment.path.trim().length > 0,
+	);
+
+	if (normalizedVideoSegments.length === 0) {
+		throw new Error("No recording segments are available to finalize");
+	}
+
+	const videoSegmentPaths = normalizedVideoSegments.map((segment) => segment.path);
+	const finalVideoPathBase =
+		videoSegmentPaths.length === 1
+			? videoSegmentPaths[0]
+			: path.join(recordingsDir, `recording-${Date.now()}-merged.mp4`);
+	const mergedVideoPath = await concatenateMediaSegments(videoSegmentPaths, finalVideoPathBase, [
+		"-c",
+		"copy",
+	]);
+
+	let finalVideoPath = mergedVideoPath;
+	if (payload.selectedArea) {
+		const croppedOutputPath = path.join(recordingsDir, `recording-${Date.now()}-area.mp4`);
+		finalVideoPath = await cropVideoToArea(
+			mergedVideoPath,
+			payload.selectedArea,
+			croppedOutputPath,
+		);
+		if (mergedVideoPath !== videoSegmentPaths[0]) {
+			await fs.rm(mergedVideoPath, { force: true }).catch(() => undefined);
+		}
+	}
+
+	const mergedCursorSamples = (
+		await Promise.all(
+			normalizedVideoSegments.map(async (segment) => ({
+				durationMs: segment.durationMs,
+				samples: await readCursorTelemetrySamples(segment.path),
+			})),
+		)
+	).flatMap((entry, entryIndex, entries) => {
+		const offsetMs = entries
+			.slice(0, entryIndex)
+			.reduce((total, candidate) => total + Math.max(0, candidate.durationMs), 0);
+		return entry.samples.map((sample) => ({
+			...sample,
+			timeMs: Math.max(0, sample.timeMs + offsetMs),
+		}));
+	});
+
+	await writeCursorTelemetrySamples(finalVideoPath, mergedCursorSamples);
+
+	const webcamSegmentPaths =
+		payload.webcamSegments
+			?.filter((segment) => typeof segment.path === "string" && segment.path.trim().length > 0)
+			.map((segment) => segment.path) ?? [];
+
+	if (webcamSegmentPaths.length > 0) {
+		const webcamOutputPath =
+			webcamSegmentPaths.length === 1
+				? webcamSegmentPaths[0]
+				: path.join(recordingsDir, `webcam-${Date.now()}-merged.webm`);
+		const finalWebcamPath = await concatenateMediaSegments(webcamSegmentPaths, webcamOutputPath, [
+			"-c",
+			"copy",
+		]);
+		currentWebcamPath = finalWebcamPath;
+	} else {
+		currentWebcamPath = null;
+	}
+
+	const microphoneSegmentPaths =
+		payload.microphoneSegments
+			?.filter((segment) => typeof segment.path === "string" && segment.path.trim().length > 0)
+			.map((segment) => segment.path) ?? [];
+
+	if (microphoneSegmentPaths.length > 0) {
+		const microphoneOutputPath = path.join(recordingsDir, `recording-${Date.now()}-mic.m4a`);
+		currentMicrophoneAudioPath = await concatenateMediaSegments(
+			microphoneSegmentPaths,
+			microphoneOutputPath,
+			["-c:a", "aac"],
+		);
+	} else {
+		currentMicrophoneAudioPath = null;
+	}
+
+	const filesToDiscard = [
+		...videoSegmentPaths.filter((segmentPath) => segmentPath !== finalVideoPath),
+		...webcamSegmentPaths.filter((segmentPath) => segmentPath !== currentWebcamPath),
+		...microphoneSegmentPaths.filter((segmentPath) => segmentPath !== currentMicrophoneAudioPath),
+	];
+	await discardRecordingArtifacts(filesToDiscard);
+
+	return await finalizeStoredVideo(finalVideoPath);
 }
 
 const CURSOR_TELEMETRY_VERSION = 2;
@@ -1595,6 +1800,17 @@ function getNormalizedCursorPoint() {
 		? { x: linuxCursorCache.x, y: linuxCursorCache.y }
 		: fallbackCursor;
 
+	const areaBounds = getSelectedAreaForSource(selectedSource)?.bounds;
+	if (areaBounds) {
+		const width = Math.max(1, areaBounds.width);
+		const height = Math.max(1, areaBounds.height);
+
+		return {
+			cx: clamp((cursor.x - areaBounds.x) / width, 0, 1),
+			cy: clamp((cursor.y - areaBounds.y) / height, 0, 1),
+		};
+	}
+
 	const windowBounds = selectedSource?.id?.startsWith("window:") ? selectedWindowBounds : null;
 	if (windowBounds) {
 		const width = Math.max(1, windowBounds.width);
@@ -1681,6 +1897,36 @@ async function persistPendingCursorTelemetry(videoPath: string) {
 	pendingCursorSamples = [];
 }
 
+async function readCursorTelemetrySamples(
+	videoPath: string,
+): Promise<SessionCursorTelemetrySample[]> {
+	try {
+		const telemetryPath = getTelemetryPathForVideo(videoPath);
+		const content = await fs.readFile(telemetryPath, "utf-8");
+		const parsed = JSON.parse(content) as { samples?: SessionCursorTelemetrySample[] };
+		return Array.isArray(parsed?.samples) ? parsed.samples : [];
+	} catch {
+		return [];
+	}
+}
+
+async function writeCursorTelemetrySamples(
+	videoPath: string,
+	samples: SessionCursorTelemetrySample[],
+) {
+	const telemetryPath = getTelemetryPathForVideo(videoPath);
+	if (samples.length === 0) {
+		await fs.rm(telemetryPath, { force: true });
+		return;
+	}
+
+	await fs.writeFile(
+		telemetryPath,
+		JSON.stringify({ version: CURSOR_TELEMETRY_VERSION, samples }, null, 2),
+		"utf-8",
+	);
+}
+
 function snapshotCursorTelemetryForPersistence() {
 	if (activeCursorSamples.length === 0) {
 		return;
@@ -1698,11 +1944,21 @@ function snapshotCursorTelemetryForPersistence() {
 	];
 }
 
-async function finalizeStoredVideo(videoPath: string) {
+async function persistCapturedTelemetryForVideo(videoPath: string) {
 	snapshotCursorTelemetryForPersistence();
+	await persistPendingCursorTelemetry(videoPath);
+
+	return {
+		success: true,
+		path: videoPath,
+		message: "Video stored successfully",
+	};
+}
+
+async function finalizeStoredVideo(videoPath: string) {
 	currentVideoPath = videoPath;
 	currentProjectPath = null;
-	await persistPendingCursorTelemetry(videoPath);
+	await persistCapturedTelemetryForVideo(videoPath);
 	if (isAutoRecordingPath(videoPath)) {
 		await pruneAutoRecordings([videoPath]);
 	}
@@ -2027,6 +2283,9 @@ export function registerIpcHandlers(
 
 	ipcMain.handle("select-source", (_, source: SelectedSource) => {
 		selectedSource = source;
+		if (!getSelectedAreaForSource(source)) {
+			selectedArea = null;
+		}
 		stopWindowBoundsCapture();
 		const sourceSelectorWin = getSourceSelectorWindow();
 		if (sourceSelectorWin) {
@@ -2037,6 +2296,20 @@ export function registerIpcHandlers(
 
 	ipcMain.handle("get-selected-source", () => {
 		return selectedSource;
+	});
+
+	ipcMain.handle("set-selected-area", (_, area: SelectedArea | null) => {
+		selectedArea = area;
+		return { success: true, area: selectedArea };
+	});
+
+	ipcMain.handle("get-selected-area", () => {
+		return { success: true, area: selectedArea };
+	});
+
+	ipcMain.handle("clear-selected-area", () => {
+		selectedArea = null;
+		return { success: true };
 	});
 
 	ipcMain.handle("open-source-selector", () => {
@@ -2091,6 +2364,9 @@ export function registerIpcHandlers(
 						outputPath,
 						fps: 60,
 					};
+					if (options?.selectedArea) {
+						config.area = options.selectedArea;
+					}
 
 					if (options?.capturesSystemAudio) {
 						const audioPath = path.join(recordingsDir, `recording-${timestamp}.system.wav`);
@@ -2209,6 +2485,9 @@ export function registerIpcHandlers(
 					capturesSystemAudio,
 					capturesMicrophone,
 				};
+				if (options?.selectedArea) {
+					config.area = options.selectedArea;
+				}
 
 				if (options?.microphoneDeviceId) {
 					config.microphoneDeviceId = options.microphoneDeviceId;
@@ -2359,17 +2638,18 @@ export function registerIpcHandlers(
 			if (preferredMicrophonePath) {
 				try {
 					await fs.access(preferredMicrophonePath);
-					currentMicrophoneAudioPath = preferredMicrophonePath;
 					await mixNativeMacAudioTracks(finalVideoPath, preferredMicrophonePath);
 				} catch (error) {
 					console.warn("Failed to mix native macOS microphone audio into capture:", error);
-					currentMicrophoneAudioPath = null;
 				}
-			} else {
-				currentMicrophoneAudioPath = null;
 			}
 
-			return await finalizeStoredVideo(finalVideoPath);
+			await persistCapturedTelemetryForVideo(finalVideoPath);
+			return {
+				success: true,
+				path: finalVideoPath,
+				microphonePath: preferredMicrophonePath ?? undefined,
+			};
 		} catch (error) {
 			console.error("Failed to stop native ScreenCaptureKit recording:", error);
 			const fallbackPath = nativeCaptureTargetPath;
@@ -2387,7 +2667,8 @@ export function registerIpcHandlers(
 						"[stop-native-screen-recording] Recovering with fallback path:",
 						fallbackPath,
 					);
-					return await finalizeStoredVideo(fallbackPath);
+					await persistCapturedTelemetryForVideo(fallbackPath);
+					return { success: true, path: fallbackPath };
 				} catch {
 					// File doesn't exist or isn't accessible
 				}
@@ -2424,22 +2705,21 @@ export function registerIpcHandlers(
 
 		try {
 			if (wgcSystemAudioPath || wgcMicAudioPath) {
-				currentMicrophoneAudioPath = wgcMicAudioPath;
 				await muxWgcVideoWithAudio(videoPath, wgcSystemAudioPath, wgcMicAudioPath);
-				wgcSystemAudioPath = null;
-				wgcMicAudioPath = null;
-			} else {
-				currentMicrophoneAudioPath = null;
 			}
 
-			return await finalizeStoredVideo(videoPath);
+			const microphonePath = wgcMicAudioPath ?? undefined;
+			wgcSystemAudioPath = null;
+			wgcMicAudioPath = null;
+			await persistCapturedTelemetryForVideo(videoPath);
+			return { success: true, path: videoPath, microphonePath };
 		} catch (error) {
 			console.error("Failed to mux WGC recording:", error);
 			wgcSystemAudioPath = null;
 			wgcMicAudioPath = null;
-			currentMicrophoneAudioPath = null;
 			try {
-				return await finalizeStoredVideo(videoPath);
+				await persistCapturedTelemetryForVideo(videoPath);
+				return { success: true, path: videoPath };
 			} catch {
 				return { success: false, message: "Failed to mux WGC recording", error: String(error) };
 			}
@@ -2520,22 +2800,29 @@ export function registerIpcHandlers(
 		}
 	});
 
-	ipcMain.handle("store-recorded-video", async (_, videoData: ArrayBuffer, fileName: string) => {
-		try {
-			const recordingsDir = await getRecordingsDir();
-			const videoPath = path.join(recordingsDir, fileName);
-			await fs.writeFile(videoPath, Buffer.from(videoData));
-			currentMicrophoneAudioPath = null;
-			return await finalizeStoredVideo(videoPath);
-		} catch (error) {
-			console.error("Failed to store video:", error);
-			return {
-				success: false,
-				message: "Failed to store video",
-				error: String(error),
-			};
-		}
-	});
+	ipcMain.handle(
+		"store-recorded-video",
+		async (_, videoData: ArrayBuffer, fileName: string, finalize = true) => {
+			try {
+				const recordingsDir = await getRecordingsDir();
+				const videoPath = path.join(recordingsDir, fileName);
+				await fs.writeFile(videoPath, Buffer.from(videoData));
+				if (!finalize) {
+					await persistCapturedTelemetryForVideo(videoPath);
+					return { success: true, path: videoPath };
+				}
+				currentMicrophoneAudioPath = null;
+				return await finalizeStoredVideo(videoPath);
+			} catch (error) {
+				console.error("Failed to store video:", error);
+				return {
+					success: false,
+					message: "Failed to store video",
+					error: String(error),
+				};
+			}
+		},
+	);
 
 	ipcMain.handle("get-recorded-video-path", async () => {
 		try {
@@ -2556,6 +2843,52 @@ export function registerIpcHandlers(
 			return { success: false, message: "Failed to get video path", error: String(error) };
 		}
 	});
+
+	ipcMain.handle(
+		"finalize-recording-session",
+		async (
+			_,
+			payload: {
+				videoSegments: RecordingSegmentPayload[];
+				webcamSegments?: RecordingSegmentPayload[];
+				microphoneSegments?: RecordingSegmentPayload[];
+				selectedArea?: SelectedArea | null;
+			},
+		) => {
+			try {
+				return await finalizeRecordingSession(payload);
+			} catch (error) {
+				console.error("Failed to finalize recording session:", error);
+				return {
+					success: false,
+					message: "Failed to finalize recording session",
+					error: String(error),
+				};
+			}
+		},
+	);
+
+	ipcMain.handle(
+		"discard-recording-artifacts",
+		async (
+			_,
+			payload: {
+				paths: string[];
+				clearCurrentVideo?: boolean;
+				clearCurrentWebcam?: boolean;
+			},
+		) => {
+			await discardRecordingArtifacts(payload.paths);
+			if (payload.clearCurrentVideo) {
+				currentVideoPath = null;
+				currentMicrophoneAudioPath = null;
+			}
+			if (payload.clearCurrentWebcam) {
+				currentWebcamPath = null;
+			}
+			return { success: true };
+		},
+	);
 
 	ipcMain.handle("set-recording-state", (_, recording: boolean) => {
 		if (recording) {
@@ -3432,6 +3765,8 @@ export function registerIpcHandlers(
 			displays: displays.map((d) => ({
 				id: d.id,
 				label: d.label || `Display ${d.id}`,
+				x: d.bounds.x,
+				y: d.bounds.y,
 				width: d.size.width,
 				height: d.size.height,
 				refreshRate: d.displayFrequency || 60,
@@ -3442,8 +3777,8 @@ export function registerIpcHandlers(
 	// ---------------------------------------------------------------------------
 	// Area overlay
 	// ---------------------------------------------------------------------------
-	ipcMain.handle("create-area-overlay", () => {
-		createAreaOverlayWindow();
+	ipcMain.handle("create-area-overlay", (_, displayId?: number) => {
+		createAreaOverlayWindow(displayId);
 		return { success: true };
 	});
 

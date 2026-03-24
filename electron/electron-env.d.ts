@@ -4,6 +4,7 @@ import type {
 	CaptionModelStatus,
 	CaptionTrack,
 } from "../src/components/video-editor/types";
+import type { SelectedArea } from "../src/lib/recording/session";
 
 declare global {
 	namespace NodeJS {
@@ -33,25 +34,38 @@ declare global {
 			getSources: (opts: Electron.SourcesOptions) => Promise<ProcessedDesktopSource[]>;
 			switchToEditor: () => Promise<void>;
 			openSourceSelector: () => Promise<void>;
-			selectSource: (source: any) => Promise<any>;
-			getSelectedSource: () => Promise<any>;
+			selectSource: (source: SelectedCaptureSource) => Promise<SelectedCaptureSource>;
+			getSelectedSource: () => Promise<SelectedCaptureSource | null>;
+			setSelectedArea: (
+				area: SelectedArea | null,
+			) => Promise<{ success: boolean; area?: SelectedArea | null }>;
+			getSelectedArea: () => Promise<{ success: boolean; area?: SelectedArea | null }>;
+			clearSelectedArea: () => Promise<{ success: boolean }>;
 			startNativeScreenRecording: (
-				source: any,
+				source: SelectedCaptureSource,
 				options?: {
 					capturesSystemAudio?: boolean;
 					capturesMicrophone?: boolean;
 					microphoneDeviceId?: string;
 					microphoneLabel?: string;
+					selectedArea?: SelectedArea;
 				},
-			) => Promise<{ success: boolean; path?: string; message?: string; error?: string }>;
+			) => Promise<{
+				success: boolean;
+				path?: string;
+				message?: string;
+				error?: string;
+				microphonePath?: string;
+			}>;
 			stopNativeScreenRecording: () => Promise<{
 				success: boolean;
 				path?: string;
 				message?: string;
 				error?: string;
+				microphonePath?: string;
 			}>;
 			startFfmpegRecording: (
-				source: any,
+				source: SelectedCaptureSource,
 			) => Promise<{ success: boolean; path?: string; message?: string; error?: string }>;
 			stopFfmpegRecording: () => Promise<{
 				success: boolean;
@@ -63,7 +77,22 @@ declare global {
 				videoData: ArrayBuffer,
 				fileName: string,
 			) => Promise<{ success: boolean; path?: string; message?: string }>;
+			storeRecordedVideoSegment: (
+				videoData: ArrayBuffer,
+				fileName: string,
+			) => Promise<{ success: boolean; path?: string; message?: string }>;
 			getRecordedVideoPath: () => Promise<{ success: boolean; path?: string; message?: string }>;
+			finalizeRecordingSession: (payload: {
+				videoSegments: Array<{ path: string; durationMs: number }>;
+				webcamSegments?: Array<{ path: string; durationMs: number }>;
+				microphoneSegments?: Array<{ path: string; durationMs: number }>;
+				selectedArea?: SelectedArea | null;
+			}) => Promise<{ success: boolean; path?: string; message?: string; error?: string }>;
+			discardRecordingArtifacts: (payload: {
+				paths: string[];
+				clearCurrentVideo?: boolean;
+				clearCurrentWebcam?: boolean;
+			}) => Promise<{ success: boolean }>;
 			readLocalFile: (
 				filePath: string,
 			) => Promise<{ success: boolean; data?: Uint8Array; error?: string }>;
@@ -224,6 +253,7 @@ declare global {
 				path?: string;
 				message?: string;
 				error?: string;
+				microphonePath?: string;
 			}>;
 			/** Hide the OS cursor before browser capture starts. */
 			hideOsCursor: () => Promise<{ success: boolean }>;
@@ -247,13 +277,15 @@ declare global {
 				displays: Array<{
 					id: number;
 					label: string;
+					x: number;
+					y: number;
 					width: number;
 					height: number;
 					refreshRate: number;
 				}>;
 			}>;
 			/** Area overlay */
-			createAreaOverlay: () => Promise<{ success: boolean }>;
+			createAreaOverlay: (displayId?: number) => Promise<{ success: boolean }>;
 			closeAreaOverlay: () => Promise<{ success: boolean }>;
 			/** Desktop icons (macOS) */
 			hideDesktopIcons: () => Promise<{ success: boolean; error?: string }>;
@@ -285,6 +317,9 @@ declare global {
 		appName?: string;
 		windowTitle?: string;
 	}
+
+	type SelectedCaptureSource = Pick<ProcessedDesktopSource, "id" | "name" | "display_id"> &
+		Partial<ProcessedDesktopSource>;
 
 	interface CursorTelemetryPoint {
 		timeMs: number;
