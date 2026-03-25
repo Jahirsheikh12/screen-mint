@@ -16,7 +16,9 @@ interface ItemProps {
 	onDelete?: () => void;
 	zoomDepth?: number;
 	speedValue?: number;
-	variant?: "zoom" | "trim" | "annotation" | "speed" | "audio" | "camera" | "caption";
+	variant?: "zoom" | "trim" | "annotation" | "speed" | "audio" | "camera" | "caption" | "clip";
+	clipDuration?: string;
+	clipSpeed?: string;
 }
 
 // Map zoom depth to multiplier labels
@@ -49,6 +51,8 @@ export default function Item({
 	zoomDepth = 1,
 	speedValue,
 	variant = "zoom",
+	clipDuration,
+	clipSpeed,
 	children,
 }: ItemProps) {
 	const { setNodeRef, attributes, listeners, itemStyle, itemContentStyle } = useItem({
@@ -104,34 +108,39 @@ export default function Item({
 	const isAudio = variant === "audio";
 	const isCamera = variant === "camera";
 	const isCaption = variant === "caption";
+	const isClip = variant === "clip";
 
-	const glassClass = isZoom
-		? glassStyles.glassGreen
-		: isTrim
-			? glassStyles.glassRed
-			: isSpeed
-				? glassStyles.glassAmber
-				: isCamera
-					? glassStyles.glassBlue
-					: isAudio
-						? glassStyles.glassPurple
-						: isCaption
-							? glassStyles.glassCyan
-							: glassStyles.glassYellow;
+	const glassClass = isClip
+		? glassStyles.glassClip
+		: isZoom
+			? glassStyles.glassGreen
+			: isTrim
+				? glassStyles.glassRed
+				: isSpeed
+					? glassStyles.glassAmber
+					: isCamera
+						? glassStyles.glassBlue
+						: isAudio
+							? glassStyles.glassPurple
+							: isCaption
+								? glassStyles.glassCyan
+								: glassStyles.glassYellow;
 
-	const endCapColor = isZoom
-		? "#10B981"
-		: isTrim
-			? "#ef4444"
-			: isSpeed
-				? "#d97706"
-				: isCamera
-					? "#3b82f6"
-					: isAudio
-						? "#a855f7"
-						: isCaption
-							? "#06b6d4"
-							: "#B4A046";
+	const endCapColor = isClip
+		? "#f59e0b"
+		: isZoom
+			? "#10B981"
+			: isTrim
+				? "#ef4444"
+				: isSpeed
+					? "#d97706"
+					: isCamera
+						? "#3b82f6"
+						: isAudio
+							? "#a855f7"
+							: isCaption
+								? "#06b6d4"
+								: "#B4A046";
 
 	const timeLabel = useMemo(
 		() => `${formatMs(span.start)} – ${formatMs(span.end)}`,
@@ -185,7 +194,7 @@ export default function Item({
 						"w-full h-full overflow-hidden flex items-center justify-center gap-1.5 cursor-grab active:cursor-grabbing relative",
 						isSelected && glassStyles.selected,
 					)}
-					style={{ height: 40, color: "#fff", minWidth: 24 }}
+					style={{ height: isClip ? 44 : 40, color: "#fff", minWidth: 24 }}
 					onClick={(event) => {
 						event.stopPropagation();
 						onSelect?.();
@@ -215,58 +224,72 @@ export default function Item({
 					/>
 					{/* Content */}
 					<div className="relative z-10 flex flex-col items-center justify-center text-white/90 opacity-80 group-hover:opacity-100 transition-opacity select-none overflow-hidden">
-						<div className="flex items-center gap-1.5">
-							{isZoom ? (
-								<>
-									<ZoomIn className="w-3.5 h-3.5 shrink-0" />
-									<span className="text-[11px] font-semibold tracking-tight whitespace-nowrap">
-										{ZOOM_LABELS[zoomDepth] || `${zoomDepth}×`}
-									</span>
-								</>
-							) : isTrim ? (
-								<>
-									<Scissors className="w-3.5 h-3.5 shrink-0" />
-									<span className="text-[11px] font-semibold tracking-tight whitespace-nowrap">
-										Trim
-									</span>
-								</>
-							) : isSpeed ? (
-								<>
-									<Gauge className="w-3.5 h-3.5 shrink-0" />
-									<span className="text-[11px] font-semibold tracking-tight whitespace-nowrap">
-										{speedValue !== undefined ? `${speedValue}×` : "Speed"}
-									</span>
-								</>
-							) : isAudio ? (
-								<>
-									<Music className="w-3.5 h-3.5 shrink-0" />
-									<span className="text-[11px] font-semibold tracking-tight truncate max-w-full">
-										{children}
-									</span>
-								</>
-							) : isCamera ? (
-								<>
-									<Camera className="w-3.5 h-3.5 shrink-0" />
-									<span className="text-[11px] font-semibold tracking-tight whitespace-nowrap">
-										{children}
-									</span>
-								</>
-							) : (
-								<>
-									<MessageSquare className="w-3.5 h-3.5 shrink-0" />
-									<span className="text-[11px] font-semibold tracking-tight whitespace-nowrap">
-										{children}
-									</span>
-								</>
-							)}
-						</div>
-						<span
-							className={`text-[9px] tabular-nums tracking-tight whitespace-nowrap transition-opacity ${
-								isSelected ? "opacity-60" : "opacity-0 group-hover:opacity-40"
-							}`}
-						>
-							{timeLabel}
-						</span>
+						{isClip ? (
+							<div className="flex items-center gap-2">
+								<span className="text-[11px] text-white/40 font-medium">Clip</span>
+								<span className="text-[12px] font-semibold tracking-tight whitespace-nowrap">
+									{clipDuration || ""}
+								</span>
+								<span className="text-[11px] text-white/50 whitespace-nowrap">
+									{clipSpeed ? `⏱ ${clipSpeed}` : ""}
+								</span>
+							</div>
+						) : (
+							<>
+								<div className="flex items-center gap-1.5">
+									{isZoom ? (
+										<>
+											<ZoomIn className="w-3.5 h-3.5 shrink-0" />
+											<span className="text-[11px] font-semibold tracking-tight whitespace-nowrap">
+												{ZOOM_LABELS[zoomDepth] || `${zoomDepth}×`}
+											</span>
+										</>
+									) : isTrim ? (
+										<>
+											<Scissors className="w-3.5 h-3.5 shrink-0" />
+											<span className="text-[11px] font-semibold tracking-tight whitespace-nowrap">
+												Trim
+											</span>
+										</>
+									) : isSpeed ? (
+										<>
+											<Gauge className="w-3.5 h-3.5 shrink-0" />
+											<span className="text-[11px] font-semibold tracking-tight whitespace-nowrap">
+												{speedValue !== undefined ? `${speedValue}×` : "Speed"}
+											</span>
+										</>
+									) : isAudio ? (
+										<>
+											<Music className="w-3.5 h-3.5 shrink-0" />
+											<span className="text-[11px] font-semibold tracking-tight truncate max-w-full">
+												{children}
+											</span>
+										</>
+									) : isCamera ? (
+										<>
+											<Camera className="w-3.5 h-3.5 shrink-0" />
+											<span className="text-[11px] font-semibold tracking-tight whitespace-nowrap">
+												{children}
+											</span>
+										</>
+									) : (
+										<>
+											<MessageSquare className="w-3.5 h-3.5 shrink-0" />
+											<span className="text-[11px] font-semibold tracking-tight whitespace-nowrap">
+												{children}
+											</span>
+										</>
+									)}
+								</div>
+								<span
+									className={`text-[9px] tabular-nums tracking-tight whitespace-nowrap transition-opacity ${
+										isSelected ? "opacity-60" : "opacity-0 group-hover:opacity-40"
+									}`}
+								>
+									{timeLabel}
+								</span>
+							</>
+						)}
 					</div>
 				</div>
 			</div>

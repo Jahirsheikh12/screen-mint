@@ -1,13 +1,30 @@
 import type { Span } from "dnd-timeline";
-import { Download, FolderOpen, Languages } from "lucide-react";
+import {
+	ChevronDown,
+	Download,
+	FolderOpen,
+	Keyboard,
+	Languages,
+	Redo2,
+	Save,
+	Sparkles,
+	SplitSquareHorizontal,
+	Trash2,
+	Undo2,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { toast } from "sonner";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Toaster } from "@/components/ui/sonner";
 import { useI18n } from "@/contexts/I18nContext";
+import { type AppLocale, SUPPORTED_LOCALES } from "@/i18n/config";
 import { useShortcuts } from "@/contexts/ShortcutsContext";
-import type { AppLocale } from "@/i18n/config";
-import { SUPPORTED_LOCALES } from "@/i18n/config";
 import { getAssetPath } from "@/lib/assetPath";
 import {
 	calculateOutputDimensions,
@@ -27,7 +44,6 @@ import { type AspectRatio, getAspectRatioValue } from "@/utils/aspectRatioUtils"
 import { ExportDialog } from "./ExportDialog";
 import { ExportSettingsDialog } from "./ExportSettingsDialog";
 import { loadEditorPreferences, saveEditorPreferences } from "./editorPreferences";
-import PlaybackControls from "./PlaybackControls";
 import {
 	createProjectData,
 	deriveNextId,
@@ -129,12 +145,12 @@ function LanguageSwitcher() {
 		<button
 			type="button"
 			onClick={() => setLocale(next)}
-			className="inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-white/90 transition hover:bg-white/8 hover:text-white cursor-pointer"
+			className="inline-flex h-8 items-center gap-1.5 rounded-md px-2 text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
 			title={t("common.app.language", "Language")}
 			aria-label={t("common.app.language", "Language")}
 		>
 			<Languages className="h-4 w-4" />
-			<span className="text-xs font-normal">{labels[locale] ?? locale.toUpperCase()}</span>
+			<span className="text-xs font-medium">{labels[locale] ?? locale.toUpperCase()}</span>
 		</button>
 	);
 }
@@ -166,6 +182,24 @@ export default function VideoEditor() {
 		initialEditorPreferences.cursorClickBounce,
 	);
 	const [cursorSway, setCursorSway] = useState(initialEditorPreferences.cursorSway);
+	const [cursorStyle, setCursorStyle] = useState(initialEditorPreferences.cursorStyle);
+	const [cursorColor, setCursorColor] = useState(initialEditorPreferences.cursorColor);
+	const [cursorOpacity, setCursorOpacity] = useState(initialEditorPreferences.cursorOpacity);
+	const [clickHighlightColor, setClickHighlightColor] = useState(
+		initialEditorPreferences.clickHighlightColor,
+	);
+	const [clickHighlightSize, setClickHighlightSize] = useState(
+		initialEditorPreferences.clickHighlightSize,
+	);
+	const [clickHighlightOpacity, setClickHighlightOpacity] = useState(
+		initialEditorPreferences.clickHighlightOpacity,
+	);
+	const [cursorTrailLength, setCursorTrailLength] = useState(
+		initialEditorPreferences.cursorTrailLength,
+	);
+	const [cursorTrailOpacity, setCursorTrailOpacity] = useState(
+		initialEditorPreferences.cursorTrailOpacity,
+	);
 	const [borderRadius, setBorderRadius] = useState(initialEditorPreferences.borderRadius);
 	const [padding, setPadding] = useState(initialEditorPreferences.padding);
 	const [cropRegion, setCropRegion] = useState<CropRegion>(initialEditorPreferences.cropRegion);
@@ -489,6 +523,14 @@ export default function VideoEditor() {
 			setCursorMotionBlur(normalizedEditor.cursorMotionBlur);
 			setCursorClickBounce(normalizedEditor.cursorClickBounce);
 			setCursorSway(normalizedEditor.cursorSway);
+			setCursorStyle(normalizedEditor.cursorStyle);
+			setCursorColor(normalizedEditor.cursorColor);
+			setCursorOpacity(normalizedEditor.cursorOpacity);
+			setClickHighlightColor(normalizedEditor.clickHighlightColor);
+			setClickHighlightSize(normalizedEditor.clickHighlightSize);
+			setClickHighlightOpacity(normalizedEditor.clickHighlightOpacity);
+			setCursorTrailLength(normalizedEditor.cursorTrailLength);
+			setCursorTrailOpacity(normalizedEditor.cursorTrailOpacity);
 			setBorderRadius(normalizedEditor.borderRadius);
 			setPadding(normalizedEditor.padding);
 			setCropRegion(normalizedEditor.cropRegion);
@@ -582,6 +624,14 @@ export default function VideoEditor() {
 				cursorMotionBlur,
 				cursorClickBounce,
 				cursorSway,
+				cursorStyle,
+				cursorColor,
+				cursorOpacity,
+				clickHighlightColor,
+				clickHighlightSize,
+				clickHighlightOpacity,
+				cursorTrailLength,
+				cursorTrailOpacity,
 				borderRadius,
 				padding,
 				cropRegion,
@@ -622,6 +672,14 @@ export default function VideoEditor() {
 		cursorMotionBlur,
 		cursorClickBounce,
 		cursorSway,
+		cursorStyle,
+		cursorColor,
+		cursorOpacity,
+		clickHighlightColor,
+		clickHighlightSize,
+		clickHighlightOpacity,
+		cursorTrailLength,
+		cursorTrailOpacity,
 		borderRadius,
 		padding,
 		cropRegion,
@@ -764,6 +822,14 @@ export default function VideoEditor() {
 			cursorMotionBlur,
 			cursorClickBounce,
 			cursorSway,
+			cursorStyle,
+			cursorColor,
+			cursorOpacity,
+			clickHighlightColor,
+			clickHighlightSize,
+			clickHighlightOpacity,
+			cursorTrailLength,
+			cursorTrailOpacity,
 			borderRadius,
 			padding,
 			cropRegion,
@@ -791,6 +857,14 @@ export default function VideoEditor() {
 		cursorMotionBlur,
 		cursorClickBounce,
 		cursorSway,
+		cursorStyle,
+		cursorColor,
+		cursorOpacity,
+		clickHighlightColor,
+		clickHighlightSize,
+		clickHighlightOpacity,
+		cursorTrailLength,
+		cursorTrailOpacity,
 		borderRadius,
 		padding,
 		cropRegion,
@@ -832,6 +906,14 @@ export default function VideoEditor() {
 				cursorMotionBlur,
 				cursorClickBounce,
 				cursorSway,
+				cursorStyle,
+				cursorColor,
+				cursorOpacity,
+				clickHighlightColor,
+				clickHighlightSize,
+				clickHighlightOpacity,
+				cursorTrailLength,
+				cursorTrailOpacity,
 				borderRadius,
 				padding,
 				cropRegion,
@@ -902,6 +984,14 @@ export default function VideoEditor() {
 			cursorMotionBlur,
 			cursorClickBounce,
 			cursorSway,
+			cursorStyle,
+			cursorColor,
+			cursorOpacity,
+			clickHighlightColor,
+			clickHighlightSize,
+			clickHighlightOpacity,
+			cursorTrailLength,
+			cursorTrailOpacity,
 			borderRadius,
 			padding,
 			cropRegion,
@@ -2904,9 +2994,7 @@ export default function VideoEditor() {
 						/>
 					</div>
 					<div className="flex flex-col items-center gap-1.5">
-						<span className="text-[13px] font-medium text-white/70">
-							Preparing your video
-						</span>
+						<span className="text-[13px] font-medium text-white/70">Preparing your video</span>
 						<span className="text-[11px] text-white/25">This will only take a moment</span>
 					</div>
 				</div>
@@ -2959,37 +3047,153 @@ export default function VideoEditor() {
 	}
 
 	return (
-		<div className="flex flex-col h-screen bg-[#0A0F0D] text-slate-200 overflow-hidden selection:bg-[#10B981]/30">
+		<div className="flex flex-col h-screen bg-[#0c0c0f] text-slate-200 overflow-hidden selection:bg-[#10b981]/30">
+			{/* Header Bar - matches Screen Studio reference */}
 			<div
-				className="relative h-10 flex-shrink-0 bg-[#0A0F0D]/80 backdrop-blur-md border-b border-white/5 flex items-center justify-center px-6 z-50"
+				className="relative h-11 flex-shrink-0 bg-[#111114] border-b border-white/5 flex items-center px-4 z-50"
 				style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
 			>
-				<span className="text-sm font-semibold tracking-tight text-white/90">ScreenMint</span>
+				{/* Left: macOS traffic lights spacer + action icons */}
 				<div
-					className="absolute right-4 flex items-center gap-1"
+					className="flex items-center gap-0.5 ml-[72px]"
 					style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
 				>
-					<LanguageSwitcher />
 					<button
 						type="button"
-						onClick={() => void openRecordingsFolder()}
-						className="inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-white/90 transition hover:bg-white/8 hover:text-white cursor-pointer"
-						title={t("common.app.manageRecordings", "Open recordings folder")}
-						aria-label={t("common.app.manageRecordings", "Open recordings folder")}
+						onClick={() => void handleSaveProject()}
+						className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
+						title="Save Project"
 					>
-						<FolderOpen className="h-4 w-4" />
-						<span className="text-xs font-normal">
-							{t("common.app.manageRecordings", "Manage recordings")}
-						</span>
+						<Save className="h-4 w-4" />
 					</button>
 					<button
 						type="button"
+						onClick={() => void openRecordingsFolder()}
+						className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
+						title="Open Recordings Folder"
+					>
+						<FolderOpen className="h-4 w-4" />
+					</button>
+					<button
+						type="button"
+						className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
+						title="Keyboard Shortcuts"
+						onClick={() => {
+							/* TODO: open shortcuts dialog */
+						}}
+					>
+						<Keyboard className="h-4 w-4" />
+					</button>
+					<button
+						type="button"
+						className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-red-400/80 hover:text-white cursor-pointer"
+						title="Delete Project"
+						onClick={() => {
+							/* TODO: delete project confirmation */
+						}}
+					>
+						<Trash2 className="h-4 w-4" />
+					</button>
+				</div>
+
+				{/* Center: Project filename */}
+				<div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+					<span className="text-[13px] font-medium text-white/60 truncate max-w-[400px]">
+						{currentProjectPath
+							? currentProjectPath
+									.split(/[\\/]/)
+									.pop()
+									?.replace(/\.[^.]+$/, "") || "Untitled"
+							: videoSourcePath
+								? videoSourcePath
+										.split(/[\\/]/)
+										.pop()
+										?.replace(/\.[^.]+$/, "") || "Untitled"
+								: "ScreenMint"}
+					</span>
+				</div>
+
+				{/* Right: Undo/Redo, Presets, Layout, Settings, Export */}
+				<div
+					className="ml-auto flex items-center gap-0.5"
+					style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
+				>
+					{/* Undo / Redo */}
+					<button
+						type="button"
+						onClick={handleUndo}
+						className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/8 hover:text-white cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+						title="Undo (⌘Z)"
+						disabled={historyPastRef.current.length === 0}
+					>
+						<Undo2 className="h-4 w-4" />
+					</button>
+					<button
+						type="button"
+						onClick={handleRedo}
+						className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/8 hover:text-white cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+						title="Redo (⌘⇧Z)"
+						disabled={historyFutureRef.current.length === 0}
+					>
+						<Redo2 className="h-4 w-4" />
+					</button>
+
+					<div className="w-[1px] h-5 bg-white/10 mx-1" />
+
+					{/* Presets dropdown */}
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<button
+								type="button"
+								className="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-slate-300 transition hover:bg-white/8 hover:text-white cursor-pointer"
+							>
+								<Sparkles className="h-3.5 w-3.5" />
+								<span className="text-xs font-medium">Presets</span>
+								<ChevronDown className="h-3 w-3 text-slate-500" />
+							</button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="end" className="bg-[#1a1a1a] border-white/10 min-w-[160px]">
+							<DropdownMenuItem className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer">
+								Default
+							</DropdownMenuItem>
+							<DropdownMenuItem className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer">
+								Cinematic
+							</DropdownMenuItem>
+							<DropdownMenuItem className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer">
+								Tutorial
+							</DropdownMenuItem>
+							<DropdownMenuItem className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer">
+								Minimal
+							</DropdownMenuItem>
+							<DropdownMenuItem className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer">
+								Social Media
+							</DropdownMenuItem>
+						</DropdownMenuContent>
+					</DropdownMenu>
+
+					{/* Layout toggle */}
+					<button
+						type="button"
+						className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
+						title="Toggle Layout"
+					>
+						<SplitSquareHorizontal className="h-4 w-4" />
+					</button>
+
+					{/* Language Switcher */}
+					<LanguageSwitcher />
+
+					<div className="w-[1px] h-5 bg-white/10 mx-1" />
+
+					{/* Export button - emerald */}
+					<button
+						type="button"
 						onClick={() => setShowExportSettings(true)}
-						className="inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-white font-medium transition bg-[#10B981]/90 hover:bg-[#10B981] cursor-pointer"
+						className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-white font-semibold text-xs transition bg-[#10b981] hover:bg-[#059669] cursor-pointer shadow-lg shadow-emerald-500/20"
 						title="Export"
 					>
 						<Download className="h-3.5 w-3.5" />
-						<span className="text-xs">Export</span>
+						<span>Export</span>
 					</button>
 				</div>
 			</div>
@@ -3106,25 +3310,6 @@ export default function VideoEditor() {
 									/>
 								</div>
 							</div>
-							<div
-								className="w-full flex justify-center items-center"
-								style={{
-									height: "48px",
-									flexShrink: 0,
-									padding: "6px 12px",
-									margin: "6px 0 6px 0",
-								}}
-							>
-								<div style={{ width: "100%", maxWidth: "700px" }}>
-									<PlaybackControls
-										isPlaying={isPlaying}
-										currentTime={currentTime}
-										duration={duration}
-										onTogglePlayPause={togglePlayPause}
-										onSeek={handleSeek}
-									/>
-								</div>
-							</div>
 						</div>
 
 						{/* Right section: settings sidebar */}
@@ -3161,6 +3346,22 @@ export default function VideoEditor() {
 							onCursorClickBounceChange={setCursorClickBounce}
 							cursorSway={cursorSway}
 							onCursorSwayChange={setCursorSway}
+							cursorStyle={cursorStyle}
+							onCursorStyleChange={setCursorStyle}
+							cursorColor={cursorColor}
+							onCursorColorChange={setCursorColor}
+							cursorOpacity={cursorOpacity}
+							onCursorOpacityChange={setCursorOpacity}
+							clickHighlightColor={clickHighlightColor}
+							onClickHighlightColorChange={setClickHighlightColor}
+							clickHighlightSize={clickHighlightSize}
+							onClickHighlightSizeChange={setClickHighlightSize}
+							clickHighlightOpacity={clickHighlightOpacity}
+							onClickHighlightOpacityChange={setClickHighlightOpacity}
+							cursorTrailLength={cursorTrailLength}
+							onCursorTrailLengthChange={setCursorTrailLength}
+							cursorTrailOpacity={cursorTrailOpacity}
+							onCursorTrailOpacityChange={setCursorTrailOpacity}
 							borderRadius={borderRadius}
 							onBorderRadiusChange={setBorderRadius}
 							padding={padding}
@@ -3229,13 +3430,13 @@ export default function VideoEditor() {
 					</div>
 				</Panel>
 
-				<PanelResizeHandle className="h-3 bg-[#0A0F0D]/80 hover:bg-[#0A0F0D] transition-colors flex items-center justify-center mx-4">
+				<PanelResizeHandle className="h-3 bg-[#0c0c0f]/80 hover:bg-[#0c0c0f] transition-colors flex items-center justify-center mx-4">
 					<div className="w-8 h-1 bg-white/20 rounded-full"></div>
 				</PanelResizeHandle>
 
 				{/* Full-width Timeline section */}
 				<Panel defaultSize={35} minSize={15}>
-					<div className="h-full min-h-0 mx-4 mb-4 bg-[#0A0F0D] rounded-2xl border border-white/5 shadow-lg overflow-hidden flex flex-col">
+					<div className="h-full min-h-0 mx-4 mb-4 bg-[#0c0c0f] rounded-2xl border border-white/5 shadow-lg overflow-hidden flex flex-col">
 						<TimelineEditor
 							videoDuration={duration}
 							currentTime={currentTime}
@@ -3286,6 +3487,11 @@ export default function VideoEditor() {
 							onSelectCaption={setSelectedCaptionId}
 							aspectRatio={aspectRatio}
 							onAspectRatioChange={setAspectRatio}
+							isPlaying={isPlaying}
+							onTogglePlayPause={togglePlayPause}
+							onSkipBack={() => handleSeek(Math.max(0, currentTime - 5))}
+							onSkipForward={() => handleSeek(Math.min(duration, currentTime + 5))}
+							playbackSpeed={DEFAULT_PLAYBACK_SPEED}
 						/>
 					</div>
 				</Panel>

@@ -5,12 +5,18 @@ import {
 	Check,
 	ChevronDown,
 	Gauge,
+	Layers,
 	MessageSquare,
 	Music,
+	Pause,
+	Play,
 	Plus,
 	Scissors,
+	SkipBack,
+	SkipForward,
 	WandSparkles,
 	ZoomIn,
+	ZoomOut,
 } from "lucide-react";
 import {
 	type KeyboardEvent as ReactKeyboardEvent,
@@ -28,6 +34,7 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useShortcuts } from "@/contexts/ShortcutsContext";
@@ -39,10 +46,8 @@ import {
 	getAspectRatioLabel,
 	isCustomAspectRatio,
 } from "@/utils/aspectRatioUtils";
-import { formatShortcut } from "@/utils/platformUtils";
 import { loadEditorPreferences, saveEditorPreferences } from "../editorPreferences";
 import { toFileUrl } from "../projectPersistence";
-import { TutorialHelp } from "../TutorialHelp";
 import type {
 	AnnotationRegion,
 	AudioRegion,
@@ -60,6 +65,7 @@ import Row from "./Row";
 import TimelineWrapper from "./TimelineWrapper";
 import { detectInteractionCandidates, normalizeCursorTelemetry } from "./zoomSuggestionUtils";
 
+const CLIP_ROW_ID = "row-clip";
 const ZOOM_ROW_ID = "row-zoom";
 const TRIM_ROW_ID = "row-trim";
 const ANNOTATION_ROW_ID = "row-annotation";
@@ -68,6 +74,20 @@ const AUDIO_ROW_ID = "row-audio";
 const CAMERA_ROW_ID = "row-camera";
 const CAPTION_ROW_ID = "row-caption";
 const FALLBACK_RANGE_MS = 1000;
+
+type AdditionalLayerType = "annotation" | "camera" | "speed" | "audio" | "caption";
+
+const ADDITIONAL_LAYER_OPTIONS: {
+	type: AdditionalLayerType;
+	label: string;
+	icon: typeof Camera;
+}[] = [
+	{ type: "annotation", label: "Annotation", icon: MessageSquare },
+	{ type: "camera", label: "Camera", icon: Camera },
+	{ type: "speed", label: "Speed", icon: Gauge },
+	{ type: "audio", label: "Audio", icon: Music },
+	{ type: "caption", label: "Caption", icon: MessageSquare },
+];
 const TARGET_MARKER_COUNT = 12;
 const SUGGESTION_SPACING_MS = 1800;
 
@@ -121,6 +141,11 @@ interface TimelineEditorProps {
 	onSelectAudio?: (id: string | null) => void;
 	aspectRatio: AspectRatio;
 	onAspectRatioChange: (aspectRatio: AspectRatio) => void;
+	isPlaying?: boolean;
+	onTogglePlayPause?: () => void;
+	onSkipForward?: () => void;
+	onSkipBack?: () => void;
+	playbackSpeed?: number;
 }
 
 interface TimelineScaleConfig {
@@ -136,7 +161,9 @@ interface TimelineRenderItem {
 	label: string;
 	zoomDepth?: number;
 	speedValue?: number;
-	variant: "zoom" | "trim" | "annotation" | "speed" | "audio" | "camera" | "caption";
+	variant: "zoom" | "trim" | "annotation" | "speed" | "audio" | "camera" | "caption" | "clip";
+	clipDuration?: string;
+	clipSpeed?: string;
 }
 
 const SCALE_CANDIDATES = [
@@ -334,24 +361,25 @@ function PlaybackCursor({
 			className="absolute top-0 bottom-0 z-50 group/cursor"
 			style={{
 				[sideProperty === "right" ? "marginRight" : "marginLeft"]: `${sidebarWidth - 1}px`,
-				pointerEvents: "none", // Allow clicks to pass through to timeline, but we'll enable pointer events on the handle
+				pointerEvents: "none",
 			}}
 		>
 			<div
-				className="absolute top-0 bottom-0 w-[2px] bg-[#10B981] shadow-[0_0_10px_rgba(16,185,129,0.5)] cursor-ew-resize pointer-events-auto hover:shadow-[0_0_15px_rgba(16,185,129,0.7)] transition-shadow"
+				className="absolute top-0 bottom-0 w-[1.5px] bg-[#10b981] shadow-[0_0_8px_rgba(16,185,129,0.4)] cursor-ew-resize pointer-events-auto hover:shadow-[0_0_12px_rgba(16,185,129,0.6)] transition-shadow"
 				style={{
 					[sideProperty]: `${offset}px`,
 				}}
 				onMouseDown={(e) => {
-					e.stopPropagation(); // Prevent timeline click
+					e.stopPropagation();
 					setIsDragging(true);
 				}}
 			>
+				{/* Blue circle head */}
 				<div
-					className="absolute -top-1 left-1/2 -translate-x-1/2 hover:scale-125 transition-transform"
-					style={{ width: "16px", height: "16px" }}
+					className="absolute -top-1.5 left-1/2 -translate-x-1/2 hover:scale-125 transition-transform"
+					style={{ width: "14px", height: "14px" }}
 				>
-					<div className="w-3 h-3 mx-auto mt-[2px] bg-[#10B981] rotate-45 rounded-sm shadow-lg border border-white/20" />
+					<div className="w-3 h-3 mx-auto mt-[1px] bg-[#10b981] rounded-full shadow-lg border-2 border-[#34d399]" />
 				</div>
 				{isDragging && (
 					<div className="absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded bg-black/80 text-[10px] text-white/90 font-medium tabular-nums whitespace-nowrap border border-white/10 shadow-lg pointer-events-none">
@@ -433,7 +461,7 @@ function TimelineAxis({
 
 	return (
 		<div
-			className="h-8 bg-[#0A0F0D] border-b border-white/5 relative overflow-hidden select-none"
+			className="h-8 bg-[#0c0c0f] border-b border-white/5 relative overflow-hidden select-none"
 			style={{
 				[sideProperty === "right" ? "marginRight" : "marginLeft"]: `${sidebarWidth}px`,
 			}}
@@ -470,7 +498,7 @@ function TimelineAxis({
 							<span
 								className={cn(
 									"text-[10px] font-medium tabular-nums tracking-tight",
-									marker.time === currentTimeMs ? "text-[#10B981]" : "text-slate-500",
+									marker.time === currentTimeMs ? "text-[#34d399]" : "text-slate-500",
 								)}
 							>
 								{marker.label}
@@ -517,6 +545,9 @@ function Timeline({
 	onDeleteCaption,
 	selectedCaptionId,
 	onSelectCaption,
+	visibleLayers,
+	selectedClip,
+	onSelectClip,
 }: {
 	items: TimelineRenderItem[];
 	videoDurationMs: number;
@@ -551,9 +582,15 @@ function Timeline({
 	onDeleteSpeed?: (id: string) => void;
 	onDeleteAudio?: (id: string) => void;
 	onDeleteCaption?: (id: string) => void;
+	visibleLayers: Set<AdditionalLayerType>;
+	selectedClip: boolean;
+	onSelectClip?: (selected: boolean) => void;
 }) {
-	const { setTimelineRef, style, sidebarWidth, range, pixelsToValue } = useTimelineContext();
+	const { setTimelineRef, style, sidebarWidth, direction, range, pixelsToValue } =
+		useTimelineContext();
+	const sideProperty = direction === "rtl" ? "right" : "left";
 	const localTimelineRef = useRef<HTMLDivElement | null>(null);
+	const [ghostX, setGhostX] = useState<number | null>(null);
 
 	const setRefs = useCallback(
 		(node: HTMLDivElement | null) => {
@@ -563,12 +600,28 @@ function Timeline({
 		[setTimelineRef],
 	);
 
+	const handleTimelineMouseMove = useCallback(
+		(e: React.MouseEvent) => {
+			if (!localTimelineRef.current) return;
+			const rect = localTimelineRef.current.getBoundingClientRect();
+			const x = e.clientX - rect.left - sidebarWidth;
+			if (x >= 0) {
+				setGhostX(x);
+			} else {
+				setGhostX(null);
+			}
+		},
+		[sidebarWidth],
+	);
+
+	const handleTimelineMouseLeave = useCallback(() => {
+		setGhostX(null);
+	}, []);
+
 	const handleTimelineClick = useCallback(
 		(e: React.MouseEvent<HTMLDivElement>) => {
 			if (!onSeek || videoDurationMs <= 0) return;
 
-			// Only clear selection if clicking on empty space (not on items)
-			// This is handled by event propagation - items stop propagation
 			onSelectZoom?.(null);
 			onSelectTrim?.(null);
 			onSelectAnnotation?.(null);
@@ -576,6 +629,7 @@ function Timeline({
 			onSelectCaption?.(null);
 			onSelectSpeed?.(null);
 			onSelectAudio?.(null);
+			onSelectClip?.(false);
 
 			const rect = e.currentTarget.getBoundingClientRect();
 			const clickX = e.clientX - rect.left - sidebarWidth;
@@ -597,6 +651,7 @@ function Timeline({
 			onSelectCaption,
 			onSelectSpeed,
 			onSelectAudio,
+			onSelectClip,
 			videoDurationMs,
 			sidebarWidth,
 			range.start,
@@ -604,6 +659,7 @@ function Timeline({
 		],
 	);
 
+	const clipItems = items.filter((item) => item.rowId === CLIP_ROW_ID);
 	const zoomItems = items.filter((item) => item.rowId === ZOOM_ROW_ID);
 	const trimItems = items.filter((item) => item.rowId === TRIM_ROW_ID);
 	const annotationItems = items.filter((item) => item.rowId === ANNOTATION_ROW_ID);
@@ -615,11 +671,12 @@ function Timeline({
 	return (
 		<div
 			ref={setRefs}
-			style={style}
-			className="select-none bg-[#0A0F0D] min-h-[140px] relative cursor-pointer group"
+			style={{ ...style, height: "auto" }}
+			className="select-none bg-[#0c0c0f] min-h-[120px] relative cursor-pointer group"
 			onClick={handleTimelineClick}
+			onMouseMove={handleTimelineMouseMove}
+			onMouseLeave={handleTimelineMouseLeave}
 		>
-			<div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px)] bg-[length:20px_100%] pointer-events-none" />
 			<TimelineAxis videoDurationMs={videoDurationMs} currentTimeMs={currentTimeMs} />
 			<PlaybackCursor
 				currentTimeMs={currentTimeMs}
@@ -628,13 +685,50 @@ function Timeline({
 				timelineRef={localTimelineRef}
 				keyframes={keyframes}
 			/>
+			{/* Ghost playhead - follows cursor */}
+			{ghostX !== null && (
+				<div
+					className="absolute top-0 bottom-0 z-40 pointer-events-none"
+					style={{
+						[sideProperty === "right" ? "marginRight" : "marginLeft"]: `${sidebarWidth}px`,
+					}}
+				>
+					<div
+						className="absolute top-0 bottom-0 w-[1px] bg-white/15"
+						style={{
+							[sideProperty]: `${ghostX}px`,
+						}}
+					/>
+				</div>
+			)}
 
+			{/* Clip Layer - always visible */}
+			<Row id={CLIP_ROW_ID} isEmpty={clipItems.length === 0} hint="" variant="clip">
+				{clipItems.map((item) => (
+					<Item
+						id={item.id}
+						key={item.id}
+						rowId={item.rowId}
+						span={item.span}
+						isSelected={selectedClip}
+						onSelect={() => onSelectClip?.(true)}
+						variant="clip"
+						clipDuration={item.clipDuration}
+						clipSpeed={item.clipSpeed}
+					>
+						{item.label}
+					</Item>
+				))}
+			</Row>
+
+			{/* Zoom Layer - always visible */}
 			<Row
 				id={ZOOM_ROW_ID}
 				isEmpty={zoomItems.length === 0}
-				hint="Hover to add zoom"
+				hint="Click or drag to add zoom on cursor"
 				onAddEffect={onAddZoom}
 				addLabel="Zoom"
+				variant="zoom"
 			>
 				{zoomItems.map((item) => (
 					<Item
@@ -653,144 +747,158 @@ function Timeline({
 				))}
 			</Row>
 
-			<Row
-				id={TRIM_ROW_ID}
-				isEmpty={trimItems.length === 0}
-				hint="Hover to add trim"
-				onAddEffect={onAddTrim}
-				addLabel="Trim"
-			>
-				{trimItems.map((item) => (
-					<Item
-						id={item.id}
-						key={item.id}
-						rowId={item.rowId}
-						span={item.span}
-						isSelected={item.id === selectedTrimId}
-						onSelect={() => onSelectTrim?.(item.id)}
-						onDelete={() => onDeleteTrim?.(item.id)}
-						variant="trim"
-					>
-						{item.label}
-					</Item>
-				))}
-			</Row>
+			{/* Trim Layer - shown if has items (backward compat) */}
+			{trimItems.length > 0 && (
+				<Row
+					id={TRIM_ROW_ID}
+					isEmpty={trimItems.length === 0}
+					hint="Hover to add trim"
+					onAddEffect={onAddTrim}
+					addLabel="Trim"
+				>
+					{trimItems.map((item) => (
+						<Item
+							id={item.id}
+							key={item.id}
+							rowId={item.rowId}
+							span={item.span}
+							isSelected={item.id === selectedTrimId}
+							onSelect={() => onSelectTrim?.(item.id)}
+							onDelete={() => onDeleteTrim?.(item.id)}
+							variant="trim"
+						>
+							{item.label}
+						</Item>
+					))}
+				</Row>
+			)}
 
-			<Row
-				id={ANNOTATION_ROW_ID}
-				isEmpty={annotationItems.length === 0}
-				hint="Hover to add annotation"
-				onAddEffect={onAddAnnotation}
-				addLabel="Annotation"
-			>
-				{annotationItems.map((item) => (
-					<Item
-						id={item.id}
-						key={item.id}
-						rowId={item.rowId}
-						span={item.span}
-						isSelected={item.id === selectedAnnotationId}
-						onSelect={() => onSelectAnnotation?.(item.id)}
-						onDelete={() => onDeleteAnnotation?.(item.id)}
-						variant="annotation"
-					>
-						{item.label}
-					</Item>
-				))}
-			</Row>
+			{/* Additional layers - only shown when added */}
+			{visibleLayers.has("annotation") && (
+				<Row
+					id={ANNOTATION_ROW_ID}
+					isEmpty={annotationItems.length === 0}
+					hint="Hover to add annotation"
+					onAddEffect={onAddAnnotation}
+					addLabel="Annotation"
+				>
+					{annotationItems.map((item) => (
+						<Item
+							id={item.id}
+							key={item.id}
+							rowId={item.rowId}
+							span={item.span}
+							isSelected={item.id === selectedAnnotationId}
+							onSelect={() => onSelectAnnotation?.(item.id)}
+							onDelete={() => onDeleteAnnotation?.(item.id)}
+							variant="annotation"
+						>
+							{item.label}
+						</Item>
+					))}
+				</Row>
+			)}
 
-			<Row
-				id={CAMERA_ROW_ID}
-				isEmpty={cameraItems.length === 0}
-				hint="Hover to add camera layout"
-				onAddEffect={onAddCameraLayout}
-				addLabel="Camera"
-			>
-				{cameraItems.map((item) => (
-					<Item
-						id={item.id}
-						key={item.id}
-						rowId={item.rowId}
-						span={item.span}
-						isSelected={item.id === selectedCameraLayoutId}
-						onSelect={() => onSelectCameraLayout?.(item.id)}
-						onDelete={() => onDeleteCameraLayout?.(item.id)}
-						variant="camera"
-					>
-						{item.label}
-					</Item>
-				))}
-			</Row>
+			{visibleLayers.has("camera") && (
+				<Row
+					id={CAMERA_ROW_ID}
+					isEmpty={cameraItems.length === 0}
+					hint="Hover to add camera layout"
+					onAddEffect={onAddCameraLayout}
+					addLabel="Camera"
+				>
+					{cameraItems.map((item) => (
+						<Item
+							id={item.id}
+							key={item.id}
+							rowId={item.rowId}
+							span={item.span}
+							isSelected={item.id === selectedCameraLayoutId}
+							onSelect={() => onSelectCameraLayout?.(item.id)}
+							onDelete={() => onDeleteCameraLayout?.(item.id)}
+							variant="camera"
+						>
+							{item.label}
+						</Item>
+					))}
+				</Row>
+			)}
 
-			<Row
-				id={SPEED_ROW_ID}
-				isEmpty={speedItems.length === 0}
-				hint="Hover to add speed"
-				onAddEffect={onAddSpeed}
-				addLabel="Speed"
-			>
-				{speedItems.map((item) => (
-					<Item
-						id={item.id}
-						key={item.id}
-						rowId={item.rowId}
-						span={item.span}
-						isSelected={item.id === selectedSpeedId}
-						onSelect={() => onSelectSpeed?.(item.id)}
-						onDelete={() => onDeleteSpeed?.(item.id)}
-						variant="speed"
-						speedValue={item.speedValue}
-					>
-						{item.label}
-					</Item>
-				))}
-			</Row>
+			{visibleLayers.has("speed") && (
+				<Row
+					id={SPEED_ROW_ID}
+					isEmpty={speedItems.length === 0}
+					hint="Hover to add speed"
+					onAddEffect={onAddSpeed}
+					addLabel="Speed"
+				>
+					{speedItems.map((item) => (
+						<Item
+							id={item.id}
+							key={item.id}
+							rowId={item.rowId}
+							span={item.span}
+							isSelected={item.id === selectedSpeedId}
+							onSelect={() => onSelectSpeed?.(item.id)}
+							onDelete={() => onDeleteSpeed?.(item.id)}
+							variant="speed"
+							speedValue={item.speedValue}
+						>
+							{item.label}
+						</Item>
+					))}
+				</Row>
+			)}
 
-			<Row
-				id={AUDIO_ROW_ID}
-				isEmpty={audioItems.length === 0}
-				hint="Hover to add audio"
-				onAddEffect={onAddAudio}
-				addLabel="Audio"
-			>
-				{audioItems.map((item) => (
-					<Item
-						id={item.id}
-						key={item.id}
-						rowId={item.rowId}
-						span={item.span}
-						isSelected={item.id === selectedAudioId}
-						onSelect={() => onSelectAudio?.(item.id)}
-						onDelete={() => onDeleteAudio?.(item.id)}
-						variant="audio"
-					>
-						{item.label}
-					</Item>
-				))}
-			</Row>
+			{visibleLayers.has("audio") && (
+				<Row
+					id={AUDIO_ROW_ID}
+					isEmpty={audioItems.length === 0}
+					hint="Hover to add audio"
+					onAddEffect={onAddAudio}
+					addLabel="Audio"
+				>
+					{audioItems.map((item) => (
+						<Item
+							id={item.id}
+							key={item.id}
+							rowId={item.rowId}
+							span={item.span}
+							isSelected={item.id === selectedAudioId}
+							onSelect={() => onSelectAudio?.(item.id)}
+							onDelete={() => onDeleteAudio?.(item.id)}
+							variant="audio"
+						>
+							{item.label}
+						</Item>
+					))}
+				</Row>
+			)}
 
-			<Row
-				id={CAPTION_ROW_ID}
-				isEmpty={captionItems.length === 0}
-				hint="Hover to add caption"
-				onAddEffect={onAddCaption}
-				addLabel="Caption"
-			>
-				{captionItems.map((item) => (
-					<Item
-						id={item.id}
-						key={item.id}
-						rowId={item.rowId}
-						span={item.span}
-						isSelected={item.id === selectedCaptionId}
-						onSelect={() => onSelectCaption?.(item.id)}
-						onDelete={() => onDeleteCaption?.(item.id)}
-						variant="caption"
-					>
-						{item.label}
-					</Item>
-				))}
-			</Row>
+			{visibleLayers.has("caption") && (
+				<Row
+					id={CAPTION_ROW_ID}
+					isEmpty={captionItems.length === 0}
+					hint="Hover to add caption"
+					onAddEffect={onAddCaption}
+					addLabel="Caption"
+				>
+					{captionItems.map((item) => (
+						<Item
+							id={item.id}
+							key={item.id}
+							rowId={item.rowId}
+							span={item.span}
+							isSelected={item.id === selectedCaptionId}
+							onSelect={() => onSelectCaption?.(item.id)}
+							onDelete={() => onDeleteCaption?.(item.id)}
+							variant="caption"
+						>
+							{item.label}
+						</Item>
+					))}
+				</Row>
+			)}
 		</div>
 	);
 }
@@ -845,6 +953,11 @@ export default function TimelineEditor({
 	onSelectAudio,
 	aspectRatio,
 	onAspectRatioChange,
+	isPlaying = false,
+	onTogglePlayPause,
+	onSkipForward,
+	onSkipBack,
+	playbackSpeed = 1,
 }: TimelineEditorProps) {
 	const initialEditorPreferences = useMemo(() => loadEditorPreferences(), []);
 	const totalMs = useMemo(() => Math.max(0, Math.round(videoDuration * 1000)), [videoDuration]);
@@ -867,12 +980,68 @@ export default function TimelineEditor({
 	const [customAspectHeight, setCustomAspectHeight] = useState(
 		initialEditorPreferences.customAspectHeight,
 	);
-	const [scrollLabels, setScrollLabels] = useState({
-		pan: "Shift + Ctrl + Scroll",
-		zoom: "Ctrl + Scroll",
-	});
+	const [visibleLayers, setVisibleLayers] = useState<Set<AdditionalLayerType>>(new Set());
+	const [selectedClip, setSelectedClip] = useState(false);
+	const [timelineZoomLevel, setTimelineZoomLevel] = useState(1);
 	const timelineContainerRef = useRef<HTMLDivElement>(null);
 	const { shortcuts: keyShortcuts, isMac } = useShortcuts();
+
+	// Auto-show layers when they have items
+	useEffect(() => {
+		setVisibleLayers((prev) => {
+			const next = new Set(prev);
+			if (annotationRegions.length > 0) next.add("annotation");
+			if (cameraLayouts.length > 0) next.add("camera");
+			if (speedRegions.length > 0) next.add("speed");
+			if (audioRegions.length > 0) next.add("audio");
+			if (captionRegions.length > 0) next.add("caption");
+			return next;
+		});
+	}, [
+		annotationRegions.length,
+		cameraLayouts.length,
+		speedRegions.length,
+		audioRegions.length,
+		captionRegions.length,
+	]);
+
+	const toggleLayer = useCallback((layer: AdditionalLayerType) => {
+		setVisibleLayers((prev) => {
+			const next = new Set(prev);
+			if (next.has(layer)) {
+				next.delete(layer);
+			} else {
+				next.add(layer);
+			}
+			return next;
+		});
+	}, []);
+
+	const visibleLayerCount = 2 + visibleLayers.size + (trimRegions.length > 0 ? 1 : 0);
+
+	const handleTimelineZoomIn = useCallback(() => {
+		setRange((prev) => {
+			const center = (prev.start + prev.end) / 2;
+			const halfSpan = (prev.end - prev.start) / 4;
+			return {
+				start: Math.max(0, center - halfSpan),
+				end: Math.min(totalMs, center + halfSpan),
+			};
+		});
+		setTimelineZoomLevel((prev) => Math.min(prev * 2, 32));
+	}, [totalMs]);
+
+	const handleTimelineZoomOut = useCallback(() => {
+		setRange((prev) => {
+			const center = (prev.start + prev.end) / 2;
+			const halfSpan = prev.end - prev.start;
+			return {
+				start: Math.max(0, center - halfSpan),
+				end: Math.min(totalMs, center + halfSpan),
+			};
+		});
+		setTimelineZoomLevel((prev) => Math.max(prev / 2, 0.25));
+	}, [totalMs]);
 
 	useEffect(() => {
 		if (aspectRatio === "native") {
@@ -913,14 +1082,6 @@ export default function TimelineEditor({
 		},
 		[applyCustomAspectRatio],
 	);
-
-	useEffect(() => {
-		formatShortcut(["shift", "mod", "Scroll"]).then((pan) => {
-			formatShortcut(["mod", "Scroll"]).then((zoom) => {
-				setScrollLabels({ pan, zoom });
-			});
-		});
-	}, []);
 
 	// Add keyframe at current playhead position
 	const addKeyframe = useCallback(() => {
@@ -1251,13 +1412,13 @@ export default function TimelineEditor({
 
 		let addedCount = 0;
 
-		sortedCandidates.forEach((candidate) => {
+		for (const candidate of sortedCandidates) {
 			const tooCloseToAccepted = acceptedCenters.some(
 				(center) => Math.abs(center - candidate.centerTimeMs) < SUGGESTION_SPACING_MS,
 			);
 
 			if (tooCloseToAccepted) {
-				return;
+				continue;
 			}
 
 			const centeredStart = Math.round(candidate.centerTimeMs - defaultDuration / 2);
@@ -1268,14 +1429,14 @@ export default function TimelineEditor({
 			);
 
 			if (hasOverlap) {
-				return;
+				continue;
 			}
 
 			reservedSpans.push({ start: candidateStart, end: candidateEnd });
 			acceptedCenters.push(candidate.centerTimeMs);
 			onZoomSuggested({ start: candidateStart, end: candidateEnd }, candidate.focus);
 			addedCount += 1;
-		});
+		}
 
 		if (addedCount === 0) {
 			toast.info("No auto-zoom slots available", {
@@ -1630,7 +1791,31 @@ export default function TimelineEditor({
 		};
 	}, [range, totalMs]);
 
+	const clipDurationLabel = useMemo(() => {
+		const s = totalMs / 1000;
+		if (s < 60) return `${Math.round(s * 10) / 10}s`;
+		const min = Math.floor(s / 60);
+		const sec = Math.round(s % 60);
+		return `${min}m ${sec}s`;
+	}, [totalMs]);
+
 	const timelineItems = useMemo<TimelineRenderItem[]>(() => {
+		// Clip item - represents the entire video
+		const clip: TimelineRenderItem[] =
+			totalMs > 0
+				? [
+						{
+							id: "clip-main",
+							rowId: CLIP_ROW_ID,
+							span: { start: 0, end: totalMs },
+							label: "Clip",
+							variant: "clip",
+							clipDuration: clipDurationLabel,
+							clipSpeed: `${playbackSpeed}x`,
+						},
+					]
+				: [];
+
 		const zooms: TimelineRenderItem[] = zoomRegions.map((region, index) => ({
 			id: region.id,
 			rowId: ZOOM_ROW_ID,
@@ -1721,8 +1906,20 @@ export default function TimelineEditor({
 			};
 		});
 
-		return [...zooms, ...trims, ...annotations, ...cameras, ...speeds, ...audios, ...captions];
+		return [
+			...clip,
+			...zooms,
+			...trims,
+			...annotations,
+			...cameras,
+			...speeds,
+			...audios,
+			...captions,
+		];
 	}, [
+		totalMs,
+		clipDurationLabel,
+		playbackSpeed,
 		zoomRegions,
 		trimRegions,
 		annotationRegions,
@@ -1845,74 +2042,169 @@ export default function TimelineEditor({
 	}
 
 	return (
-		<div className="flex-1 min-h-0 flex flex-col bg-[#0A0F0D] overflow-auto">
-			<div className="flex items-center gap-2 px-4 py-2 border-b border-white/5 bg-[#0A0F0D]">
-				<div className="flex items-center gap-1">
-					<Button
-						onClick={() => handleAddZoom()}
-						variant="ghost"
-						size="icon"
-						className="h-7 w-7 text-slate-400 hover:text-[#10B981] hover:bg-[#10B981]/10 transition-all"
-						title="Add Zoom (Z)"
-					>
-						<ZoomIn className="w-4 h-4" />
-					</Button>
+		<div className="flex-1 min-h-0 flex flex-col bg-[#0c0c0f] overflow-auto">
+			{/* Transport Controls Bar */}
+			<div className="relative flex items-center px-3 py-1.5 border-b border-white/5 bg-[#111114]">
+				{/* Left: Layer visibility */}
+				<div className="flex items-center z-10">
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button
+								variant="ghost"
+								size="sm"
+								className="h-8 px-2.5 text-xs text-slate-300 hover:text-white hover:bg-white/10 transition-all gap-1.5"
+							>
+								<Layers className="w-3.5 h-3.5" />
+								<span className="font-medium">
+									{visibleLayerCount} visible timeline{visibleLayerCount !== 1 ? "s" : ""}
+								</span>
+								<ChevronDown className="w-3 h-3 text-slate-500" />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent
+							align="start"
+							className="bg-[#1a1a1a] border-white/10 min-w-[180px]"
+						>
+							<DropdownMenuItem disabled className="text-slate-500 text-xs">
+								<Check className="w-3 h-3 mr-1.5" /> Clip
+							</DropdownMenuItem>
+							<DropdownMenuItem disabled className="text-slate-500 text-xs">
+								<Check className="w-3 h-3 mr-1.5" /> Zoom
+							</DropdownMenuItem>
+							<DropdownMenuSeparator className="bg-white/10" />
+							{ADDITIONAL_LAYER_OPTIONS.map((opt) => (
+								<DropdownMenuItem
+									key={opt.type}
+									onClick={() => toggleLayer(opt.type)}
+									className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer flex items-center gap-1.5"
+								>
+									{visibleLayers.has(opt.type) ? (
+										<Check className="w-3 h-3 text-[#10B981]" />
+									) : (
+										<Plus className="w-3 h-3 text-slate-500" />
+									)}
+									<opt.icon className="w-3.5 h-3.5" />
+									{opt.label}
+								</DropdownMenuItem>
+							))}
+						</DropdownMenuContent>
+					</DropdownMenu>
+				</div>
+
+				{/* Center: Play controls only - absolutely centered */}
+				<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+					<div className="flex items-center gap-0.5 pointer-events-auto">
+						<Button
+							onClick={onSkipBack}
+							variant="ghost"
+							size="icon"
+							className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+							title="Skip Back"
+						>
+							<SkipBack className="w-4 h-4" />
+						</Button>
+						<Button
+							onClick={onTogglePlayPause}
+							variant="ghost"
+							size="icon"
+							className={cn(
+								"h-8 w-8 transition-all",
+								isPlaying
+									? "text-white hover:text-white/80 hover:bg-white/10"
+									: "text-slate-400 hover:text-white hover:bg-white/10",
+							)}
+							title={isPlaying ? "Pause" : "Play"}
+						>
+							{isPlaying ? (
+								<Pause className="w-4 h-4 fill-current" />
+							) : (
+								<Play className="w-4 h-4 fill-current" />
+							)}
+						</Button>
+						<Button
+							onClick={onSkipForward}
+							variant="ghost"
+							size="icon"
+							className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+							title="Skip Forward"
+						>
+							<SkipForward className="w-4 h-4" />
+						</Button>
+					</div>
+				</div>
+
+				{/* Right: Cut, Zoom, Speed, Zoom slider, Aspect ratio */}
+				<div className="ml-auto flex items-center gap-0.5 z-10">
 					<Button
 						onClick={handleSuggestZooms}
 						variant="ghost"
 						size="icon"
-						className="h-7 w-7 text-slate-400 hover:text-[#10B981] hover:bg-[#10B981]/10 transition-all"
-						title="Suggest Zooms from Cursor"
+						className="h-8 w-8 text-amber-400/80 hover:text-amber-300 hover:bg-amber-400/10 transition-all"
+						title="Auto Zoom (suggest zooms from cursor telemetry)"
 					>
 						<WandSparkles className="w-4 h-4" />
 					</Button>
+
 					<Button
 						onClick={() => handleAddTrim()}
 						variant="ghost"
 						size="icon"
-						className="h-7 w-7 text-slate-400 hover:text-[#ef4444] hover:bg-[#ef4444]/10 transition-all"
-						title="Add Trim (T)"
+						className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+						title="Cut / Trim"
 					>
 						<Scissors className="w-4 h-4" />
 					</Button>
+
+					<div className="w-[1px] h-5 bg-white/10 mx-1" />
+
 					<Button
-						onClick={() => handleAddAnnotation()}
+						onClick={handleTimelineZoomIn}
 						variant="ghost"
 						size="icon"
-						className="h-7 w-7 text-slate-400 hover:text-[#B4A046] hover:bg-[#B4A046]/10 transition-all"
-						title="Add Annotation (A)"
+						className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+						title="Zoom In Timeline"
 					>
-						<MessageSquare className="w-4 h-4" />
+						<ZoomIn className="w-4 h-4" />
 					</Button>
 					<Button
-						onClick={() => handleAddCameraLayout()}
+						onClick={handleTimelineZoomOut}
 						variant="ghost"
 						size="icon"
-						className="h-7 w-7 text-slate-400 hover:text-[#3b82f6] hover:bg-[#3b82f6]/10 transition-all"
-						title="Add Camera Layout"
+						className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+						title="Zoom Out Timeline"
 					>
-						<Camera className="w-4 h-4" />
+						<ZoomOut className="w-4 h-4" />
 					</Button>
-					<Button
-						onClick={() => handleAddSpeed()}
-						variant="ghost"
-						size="icon"
-						className="h-7 w-7 text-slate-400 hover:text-[#d97706] hover:bg-[#d97706]/10 transition-all"
-						title="Add Speed (S)"
-					>
-						<Gauge className="w-4 h-4" />
-					</Button>
-					<Button
-						onClick={() => handleAddAudio()}
-						variant="ghost"
-						size="icon"
-						className="h-7 w-7 text-slate-400 hover:text-[#a855f7] hover:bg-[#a855f7]/10 transition-all"
-						title="Add Audio"
-					>
-						<Music className="w-4 h-4" />
-					</Button>
-				</div>
-				<div className="flex items-center gap-2">
+
+					<div className="w-[1px] h-5 bg-white/10 mx-1" />
+
+					<span className="text-[11px] text-slate-400 font-medium tabular-nums px-1">
+						{playbackSpeed}x
+					</span>
+
+					<div className="w-[1px] h-5 bg-white/10 mx-1" />
+
+					<input
+						type="range"
+						min="0.25"
+						max="8"
+						step="0.25"
+						value={timelineZoomLevel}
+						onChange={(e) => {
+							const newZoom = Number.parseFloat(e.target.value);
+							const center = (range.start + range.end) / 2;
+							const newHalfSpan = totalMs / newZoom / 2;
+							setRange({
+								start: Math.max(0, center - newHalfSpan),
+								end: Math.min(totalMs, center + newHalfSpan),
+							});
+							setTimelineZoomLevel(newZoom);
+						}}
+						className="w-20 h-1 accent-white/60 cursor-pointer"
+						title="Timeline Zoom"
+					/>
+
+					<div className="w-[1px] h-5 bg-white/10 mx-1" />
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button
@@ -1971,24 +2263,13 @@ export default function TimelineEditor({
 							</div>
 						</DropdownMenuContent>
 					</DropdownMenu>
-					<div className="w-[1px] h-4 bg-white/10" />
-					<TutorialHelp />
-				</div>
-				<div className="flex-1" />
-				<div className="flex items-center gap-2 text-[10px] text-slate-500 font-medium">
-					<span className="flex items-center gap-1">
-						<kbd className="px-1 py-0.5 bg-white/5 border border-white/10 rounded text-[#10B981] font-sans">
-							{scrollLabels.zoom}
-						</kbd>
-						<span>Zoom</span>
-					</span>
-					<span className="text-slate-600">|</span>
-					<span>Scroll to pan</span>
 				</div>
 			</div>
+
+			{/* Timeline Area */}
 			<div
 				ref={timelineContainerRef}
-				className="flex-1 min-h-0 overflow-auto bg-[#0A0F0D] relative"
+				className="flex-1 min-h-0 overflow-auto bg-[#0c0c0f] relative timeline-scrollbar"
 				onClick={() => setSelectedKeyframeId(null)}
 				onWheel={handleTimelineWheel}
 			>
@@ -2044,8 +2325,54 @@ export default function TimelineEditor({
 						onDeleteSpeed={onSpeedDelete}
 						onDeleteAudio={onAudioDelete}
 						onDeleteCaption={onCaptionDelete}
+						visibleLayers={visibleLayers}
+						selectedClip={selectedClip}
+						onSelectClip={setSelectedClip}
 					/>
 				</TimelineWrapper>
+			</div>
+
+			{/* Add Layer Button */}
+			<div className="flex items-center px-3 py-1 border-t border-white/5 bg-[#111114]">
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button
+							variant="ghost"
+							size="sm"
+							className="h-7 px-2.5 text-[11px] text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-all gap-1"
+						>
+							<Plus className="w-3 h-3" />
+							Add Layer
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="start" className="bg-[#1a1a1a] border-white/10 min-w-[160px]">
+						{ADDITIONAL_LAYER_OPTIONS.map((opt) => (
+							<DropdownMenuItem
+								key={opt.type}
+								onClick={() => {
+									toggleLayer(opt.type);
+									// Auto-add an item when showing the layer
+									if (!visibleLayers.has(opt.type)) {
+										if (opt.type === "annotation") handleAddAnnotation();
+										else if (opt.type === "camera") handleAddCameraLayout();
+										else if (opt.type === "speed") handleAddSpeed();
+										else if (opt.type === "audio") handleAddAudio();
+										else if (opt.type === "caption") handleAddCaption();
+									}
+								}}
+								className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer flex items-center gap-2"
+							>
+								<opt.icon className="w-3.5 h-3.5" />
+								{opt.label}
+								{visibleLayers.has(opt.type) && (
+									<Check className="w-3 h-3 text-[#10B981] ml-auto" />
+								)}
+							</DropdownMenuItem>
+						))}
+					</DropdownMenuContent>
+				</DropdownMenu>
+				<div className="flex-1" />
+				<span className="text-[10px] text-slate-600 font-medium">Scroll to pan</span>
 			</div>
 		</div>
 	);

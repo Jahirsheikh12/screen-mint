@@ -102,8 +102,15 @@ export function Navbar() {
 
 				{/* Logo */}
 				<a href="#" className="relative z-10 flex items-center gap-2 group">
-					<img src="../../../branding/source-assets/" alt="Logo" className="w-8 h-8" />
-					<span className="text-[15px] font-bold tracking-tight">ScreenMint</span>
+					<span className="flex h-9 w-9 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.03] shadow-[0_8px_24px_rgba(0,0,0,0.28)] transition-colors duration-300 group-hover:bg-white/[0.06]">
+						<img
+							src="/images/screenmint-logo.svg"
+							alt="ScreenMint logo"
+							className="h-6 w-6 object-contain"
+							loading="eager"
+						/>
+					</span>
+					<span className="text-[15px] font-bold tracking-tight text-white/90">ScreenMint</span>
 				</a>
 
 				{/* Desktop nav */}

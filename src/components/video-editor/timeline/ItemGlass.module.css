@@ -194,6 +194,92 @@
 	z-index: 10;
 }
 
+.glassClip {
+	position: relative;
+	border-radius: 10px;
+	-corner-smoothing: antialiased;
+	background: linear-gradient(180deg, rgba(245, 158, 11, 0.35) 0%, rgba(217, 119, 6, 0.25) 100%);
+	border: 1px solid rgba(245, 158, 11, 0.4);
+	box-shadow: 0 2px 16px 0 rgba(245, 158, 11, 0.15) inset;
+	margin: 2px 0;
+	backdrop-filter: blur(4px);
+	-webkit-backdrop-filter: blur(4px);
+	transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glassClip:hover {
+	background: linear-gradient(180deg, rgba(245, 158, 11, 0.45) 0%, rgba(217, 119, 6, 0.35) 100%);
+	border-color: rgba(245, 158, 11, 0.6);
+	box-shadow: 0 4px 24px 0 rgba(245, 158, 11, 0.25) inset;
+}
+
+.glassClip.selected {
+	background: linear-gradient(180deg, rgba(245, 158, 11, 0.5) 0%, rgba(217, 119, 6, 0.4) 100%);
+	border-color: #f59e0b;
+	box-shadow:
+		0 0 0 1px #f59e0b,
+		0 4px 24px 0 rgba(245, 158, 11, 0.3) inset;
+	z-index: 10;
+}
+
+.glassZoomTrack {
+	position: relative;
+	border-radius: 10px;
+	-corner-smoothing: antialiased;
+	background: linear-gradient(180deg, rgba(67, 56, 202, 0.2) 0%, rgba(49, 46, 129, 0.15) 100%);
+	border: 1px solid rgba(99, 102, 241, 0.2);
+	box-shadow: 0 2px 12px 0 rgba(67, 56, 202, 0.1) inset;
+	margin: 2px 0;
+	backdrop-filter: blur(4px);
+	-webkit-backdrop-filter: blur(4px);
+	transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glassZoomTrack:hover {
+	background: linear-gradient(180deg, rgba(67, 56, 202, 0.3) 0%, rgba(49, 46, 129, 0.2) 100%);
+	border-color: rgba(99, 102, 241, 0.35);
+	box-shadow: 0 4px 20px 0 rgba(67, 56, 202, 0.2) inset;
+}
+
+.glassZoomTrack.selected {
+	background: linear-gradient(180deg, rgba(67, 56, 202, 0.35) 0%, rgba(49, 46, 129, 0.25) 100%);
+	border-color: #6366f1;
+	box-shadow:
+		0 0 0 1px #6366f1,
+		0 4px 20px 0 rgba(67, 56, 202, 0.3) inset;
+	z-index: 10;
+}
+
+.clipTrimHandle {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 8px;
+	cursor: col-resize;
+	z-index: 20;
+	opacity: 0;
+	transition: opacity 0.2s;
+}
+
+.glassClip:hover .clipTrimHandle,
+.glassClip.selected .clipTrimHandle {
+	opacity: 1;
+}
+
+.clipTrimHandle.left {
+	left: 0;
+	border-top-left-radius: 9px;
+	border-bottom-left-radius: 9px;
+	background: linear-gradient(90deg, rgba(245, 158, 11, 0.8) 0%, transparent 100%);
+}
+
+.clipTrimHandle.right {
+	right: 0;
+	border-top-right-radius: 9px;
+	border-bottom-right-radius: 9px;
+	background: linear-gradient(270deg, rgba(245, 158, 11, 0.8) 0%, transparent 100%);
+}
+
 .zoomEndCap {
 	position: absolute;
 	top: 0;
@@ -220,7 +306,11 @@
 .glassBlue:hover .zoomEndCap,
 .glassBlue.selected .zoomEndCap,
 .glassCyan:hover .zoomEndCap,
-.glassCyan.selected .zoomEndCap {
+.glassCyan.selected .zoomEndCap,
+.glassClip:hover .zoomEndCap,
+.glassClip.selected .zoomEndCap,
+.glassZoomTrack:hover .zoomEndCap,
+.glassZoomTrack.selected .zoomEndCap {
 	opacity: 1;
 }
 

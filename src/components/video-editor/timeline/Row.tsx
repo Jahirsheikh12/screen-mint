@@ -11,6 +11,7 @@ interface RowProps extends RowDefinition {
 	labelColor?: string;
 	onAddEffect?: (clickTimeMs?: number) => void;
 	addLabel?: string;
+	variant?: "default" | "clip" | "zoom";
 }
 
 export default function Row({
@@ -22,6 +23,7 @@ export default function Row({
 	labelColor = "#666",
 	onAddEffect,
 	addLabel,
+	variant = "default",
 }: RowProps) {
 	const { setNodeRef, rowWrapperStyle, rowStyle } = useRow({ id });
 	const { sidebarWidth, range, pixelsToValue } = useTimelineContext();
@@ -66,11 +68,18 @@ export default function Row({
 		[onAddEffect, sidebarWidth, range.start, pixelsToValue],
 	);
 
+	const bgClass =
+		variant === "zoom"
+			? "border-b border-[#1a1a2e] bg-[#12121f] relative group/row"
+			: variant === "clip"
+				? "border-b border-[#1a1810] bg-[#141210] relative group/row"
+				: "border-b border-[#18181b] bg-[#141416] relative group/row";
+
 	return (
 		<div
 			ref={rowRef}
-			className="border-b border-[#18181b] bg-[#18181b] relative group/row"
-			style={{ ...rowWrapperStyle, minHeight: 48, marginBottom: 4 }}
+			className={bgClass}
+			style={{ ...rowWrapperStyle, minHeight: variant === "clip" ? 52 : 48, marginBottom: 2 }}
 			onMouseEnter={() => setIsHovered(true)}
 			onMouseLeave={() => setIsHovered(false)}
 			onMouseMove={handleMouseMove}
@@ -85,7 +94,11 @@ export default function Row({
 			)}
 			{isEmpty && hint && !isHovered && (
 				<div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-10">
-					<span className="text-[11px] text-white/15 font-medium">{hint}</span>
+					<span
+						className={`text-[11px] font-medium ${variant === "zoom" ? "text-indigo-400/30" : "text-white/15"}`}
+					>
+						{hint}
+					</span>
 				</div>
 			)}
 			{/* "+" hover card - hidden when hovering over an existing item */}

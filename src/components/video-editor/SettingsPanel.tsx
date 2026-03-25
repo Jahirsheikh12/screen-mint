@@ -7,6 +7,7 @@ import {
 	Gauge,
 	Loader2,
 	MessageSquare,
+	MousePointer2,
 	Palette,
 	Sparkles,
 	Trash2,
@@ -42,6 +43,7 @@ import type {
 	CaptionStyle,
 	CaptionStylePreset,
 	CropRegion,
+	CursorStyle,
 	FigureData,
 	PlaybackSpeed,
 	WebcamRegion,
@@ -50,12 +52,20 @@ import type {
 import {
 	CAMERA_ZOOM_SCALE_DISABLED,
 	CAPTION_STYLE_PRESETS,
+	CURSOR_STYLE_OPTIONS,
 	DEFAULT_CAPTION_GENERATION_OPTIONS,
+	DEFAULT_CLICK_HIGHLIGHT_COLOR,
+	DEFAULT_CLICK_HIGHLIGHT_OPACITY,
+	DEFAULT_CLICK_HIGHLIGHT_SIZE,
 	DEFAULT_CURSOR_CLICK_BOUNCE,
+	DEFAULT_CURSOR_COLOR,
 	DEFAULT_CURSOR_MOTION_BLUR,
+	DEFAULT_CURSOR_OPACITY,
 	DEFAULT_CURSOR_SIZE,
 	DEFAULT_CURSOR_SMOOTHING,
 	DEFAULT_CURSOR_SWAY,
+	DEFAULT_CURSOR_TRAIL_LENGTH,
+	DEFAULT_CURSOR_TRAIL_OPACITY,
 	DEFAULT_ZOOM_MOTION_BLUR,
 	SPEED_OPTIONS,
 } from "./types";
@@ -137,6 +147,22 @@ interface SettingsPanelProps {
 	onCursorClickBounceChange?: (amount: number) => void;
 	cursorSway?: number;
 	onCursorSwayChange?: (amount: number) => void;
+	cursorStyle?: CursorStyle;
+	onCursorStyleChange?: (style: CursorStyle) => void;
+	cursorColor?: string;
+	onCursorColorChange?: (color: string) => void;
+	cursorOpacity?: number;
+	onCursorOpacityChange?: (opacity: number) => void;
+	clickHighlightColor?: string;
+	onClickHighlightColorChange?: (color: string) => void;
+	clickHighlightSize?: number;
+	onClickHighlightSizeChange?: (size: number) => void;
+	clickHighlightOpacity?: number;
+	onClickHighlightOpacityChange?: (opacity: number) => void;
+	cursorTrailLength?: number;
+	onCursorTrailLengthChange?: (length: number) => void;
+	cursorTrailOpacity?: number;
+	onCursorTrailOpacityChange?: (opacity: number) => void;
 	borderRadius?: number;
 	onBorderRadiusChange?: (radius: number) => void;
 	padding?: number;
@@ -241,6 +267,22 @@ export function SettingsPanel({
 	onCursorClickBounceChange,
 	cursorSway = DEFAULT_CURSOR_SWAY,
 	onCursorSwayChange,
+	cursorStyle = "default",
+	onCursorStyleChange,
+	cursorColor = DEFAULT_CURSOR_COLOR,
+	onCursorColorChange,
+	cursorOpacity = DEFAULT_CURSOR_OPACITY,
+	onCursorOpacityChange,
+	clickHighlightColor = DEFAULT_CLICK_HIGHLIGHT_COLOR,
+	onClickHighlightColorChange,
+	clickHighlightSize = DEFAULT_CLICK_HIGHLIGHT_SIZE,
+	onClickHighlightSizeChange,
+	clickHighlightOpacity = DEFAULT_CLICK_HIGHLIGHT_OPACITY,
+	onClickHighlightOpacityChange,
+	cursorTrailLength = DEFAULT_CURSOR_TRAIL_LENGTH,
+	onCursorTrailLengthChange,
+	cursorTrailOpacity = DEFAULT_CURSOR_TRAIL_OPACITY,
+	onCursorTrailOpacityChange,
 	borderRadius = 12.5,
 	onBorderRadiusChange,
 	padding = 50,
@@ -372,7 +414,7 @@ export function SettingsPanel({
 	const [showCropModal, setShowCropModal] = useState(false);
 	const [showAdvancedWebcam, setShowAdvancedWebcam] = useState(false);
 	const [activeTab, setActiveTab] = useState<
-		"effects" | "background" | "zoom" | "speed" | "annotation" | "webcam" | "captions"
+		"effects" | "cursor" | "background" | "zoom" | "speed" | "annotation" | "webcam" | "captions"
 	>("effects");
 	const cropSnapshotRef = useRef<CropRegion | null>(null);
 
@@ -517,6 +559,7 @@ export function SettingsPanel({
 
 	const sidebarTabs = [
 		{ id: "effects" as const, icon: Sparkles, label: tSettings("effects.title") },
+		{ id: "cursor" as const, icon: MousePointer2, label: "Cursor" },
 		{ id: "background" as const, icon: Palette, label: tSettings("background.title") },
 		{ id: "zoom" as const, icon: ZoomIn, label: tSettings("zoom.level") },
 		{ id: "speed" as const, icon: Gauge, label: tSettings("speed.playbackSpeed") },
@@ -565,26 +608,6 @@ export function SettingsPanel({
 						</div>
 
 						<div className="flex flex-col gap-1.5">
-							<div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
-								<div className="text-xs font-medium text-slate-300">
-									{tSettings("effects.showCursor")}
-								</div>
-								<Switch
-									checked={showCursor}
-									onCheckedChange={onShowCursorChange}
-									className="data-[state=checked]:bg-[#10B981] scale-90"
-								/>
-							</div>
-							<div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
-								<div className="text-xs font-medium text-slate-300">
-									{tSettings("effects.loopCursor")}
-								</div>
-								<Switch
-									checked={loopCursor}
-									onCheckedChange={onLoopCursorChange}
-									className="data-[state=checked]:bg-[#10B981] scale-90"
-								/>
-							</div>
 							<div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
 								<div className="text-xs font-medium text-slate-300">
 									{tSettings("effects.connectZooms")}
@@ -642,77 +665,6 @@ export function SettingsPanel({
 							</div>
 							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
 								<SliderControl
-									label={tSettings("effects.cursorSize")}
-									value={cursorSize}
-									defaultValue={DEFAULT_CURSOR_SIZE}
-									min={0.5}
-									max={10}
-									step={0.05}
-									onChange={(v) => onCursorSizeChange?.(v)}
-									formatValue={(v) => `${v.toFixed(2)}×`}
-									parseInput={(t) => parseFloat(t.replace(/×$/, ""))}
-								/>
-							</div>
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
-								<SliderControl
-									label={tSettings("effects.cursorSmoothing")}
-									value={cursorSmoothing}
-									defaultValue={DEFAULT_CURSOR_SMOOTHING}
-									min={0}
-									max={2}
-									step={0.01}
-									onChange={(v) => onCursorSmoothingChange?.(v)}
-									formatValue={(v) => (v <= 0 ? "Off" : v.toFixed(2))}
-									parseInput={(t) => parseFloat(t)}
-								/>
-							</div>
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
-								<SliderControl
-									label={tSettings("effects.cursorMotionBlur")}
-									value={cursorMotionBlur}
-									defaultValue={DEFAULT_CURSOR_MOTION_BLUR}
-									min={0}
-									max={2}
-									step={0.05}
-									onChange={(v) => onCursorMotionBlurChange?.(v)}
-									formatValue={(v) => `${v.toFixed(2)}×`}
-									parseInput={(t) => parseFloat(t.replace(/×$/, ""))}
-								/>
-							</div>
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
-								<SliderControl
-									label={tSettings("effects.cursorClickBounce")}
-									value={cursorClickBounce}
-									defaultValue={DEFAULT_CURSOR_CLICK_BOUNCE}
-									min={0}
-									max={5}
-									step={0.05}
-									onChange={(v) => onCursorClickBounceChange?.(v)}
-									formatValue={(v) => `${v.toFixed(2)}×`}
-									parseInput={(t) => parseFloat(t.replace(/×$/, ""))}
-								/>
-							</div>
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
-								<SliderControl
-									label={tSettings("effects.cursorSway")}
-									value={toCursorSwaySliderValue(cursorSway)}
-									defaultValue={toCursorSwaySliderValue(DEFAULT_CURSOR_SWAY)}
-									min={0}
-									max={toCursorSwaySliderValue(2)}
-									step={toCursorSwaySliderValue(0.05)}
-									onChange={(v) => onCursorSwayChange?.(fromCursorSwaySliderValue(v))}
-									formatValue={(v) => (v <= 0 ? "Off" : `${v.toFixed(2)}×`)}
-									parseInput={(t) => {
-										const normalized = t.trim().toLowerCase();
-										if (normalized === "off") {
-											return 0;
-										}
-										return parseFloat(t.replace(/×$/, ""));
-									}}
-								/>
-							</div>
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
-								<SliderControl
 									label={tSettings("effects.shadow")}
 									value={shadowIntensity}
 									defaultValue={0}
@@ -760,6 +712,284 @@ export function SettingsPanel({
 							<Crop className="w-3 h-3" />
 							{tSettings("crop.title")}
 						</Button>
+					</div>
+				)}
+
+				{/* Cursor tab */}
+				{activeTab === "cursor" && (
+					<div>
+						<div className="flex items-center justify-between mb-3">
+							<span className="text-sm font-medium text-slate-200">Cursor</span>
+						</div>
+
+						<div className="flex flex-col gap-1.5">
+							{/* Show / Loop toggles */}
+							<div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
+								<div className="text-xs font-medium text-slate-300">
+									{tSettings("effects.showCursor")}
+								</div>
+								<Switch
+									checked={showCursor}
+									onCheckedChange={onShowCursorChange}
+									className="data-[state=checked]:bg-[#10B981] scale-90"
+								/>
+							</div>
+							<div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
+								<div className="text-xs font-medium text-slate-300">
+									{tSettings("effects.loopCursor")}
+								</div>
+								<Switch
+									checked={loopCursor}
+									onCheckedChange={onLoopCursorChange}
+									className="data-[state=checked]:bg-[#10B981] scale-90"
+								/>
+							</div>
+
+							{/* Cursor Style */}
+							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<div className="text-xs font-medium text-slate-300 mb-2">Style</div>
+								<div className="grid grid-cols-5 gap-1">
+									{CURSOR_STYLE_OPTIONS.map((opt) => (
+										<button
+											key={opt.value}
+											type="button"
+											onClick={() => onCursorStyleChange?.(opt.value)}
+											className={cn(
+												"px-1.5 py-1.5 rounded-md text-[10px] font-medium transition-all cursor-pointer",
+												cursorStyle === opt.value
+													? "bg-[#10B981] text-white shadow-sm"
+													: "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200",
+											)}
+										>
+											{opt.label}
+										</button>
+									))}
+								</div>
+							</div>
+
+							{/* Cursor Color */}
+							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<div className="text-xs font-medium text-slate-300 mb-2">Cursor Color</div>
+								<div className="flex items-center gap-2">
+									<input
+										type="color"
+										value={cursorColor}
+										onChange={(e) => onCursorColorChange?.(e.target.value)}
+										className="w-7 h-7 rounded-md border border-white/10 cursor-pointer bg-transparent"
+									/>
+									<input
+										type="text"
+										value={cursorColor}
+										onChange={(e) => onCursorColorChange?.(e.target.value)}
+										className="flex-1 h-7 rounded-md border border-white/10 bg-black/20 px-2 text-xs text-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-[#10B981]"
+									/>
+									<button
+										type="button"
+										onClick={() => onCursorColorChange?.(DEFAULT_CURSOR_COLOR)}
+										className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+									>
+										Reset
+									</button>
+								</div>
+							</div>
+
+							{/* Cursor Opacity */}
+							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<SliderControl
+									label="Cursor Opacity"
+									value={cursorOpacity}
+									defaultValue={DEFAULT_CURSOR_OPACITY}
+									min={0.1}
+									max={1}
+									step={0.05}
+									onChange={(v) => onCursorOpacityChange?.(v)}
+									formatValue={(v) => `${Math.round(v * 100)}%`}
+									parseInput={(t) => parseFloat(t.replace(/%$/, "")) / 100}
+								/>
+							</div>
+
+							{/* Cursor Size */}
+							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<SliderControl
+									label={tSettings("effects.cursorSize")}
+									value={cursorSize}
+									defaultValue={DEFAULT_CURSOR_SIZE}
+									min={0.5}
+									max={10}
+									step={0.05}
+									onChange={(v) => onCursorSizeChange?.(v)}
+									formatValue={(v) => `${v.toFixed(2)}×`}
+									parseInput={(t) => parseFloat(t.replace(/×$/, ""))}
+								/>
+							</div>
+
+							{/* Section: Motion */}
+							<div className="mt-2 mb-1">
+								<span className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">
+									Motion
+								</span>
+							</div>
+
+							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<SliderControl
+									label={tSettings("effects.cursorSmoothing")}
+									value={cursorSmoothing}
+									defaultValue={DEFAULT_CURSOR_SMOOTHING}
+									min={0}
+									max={2}
+									step={0.01}
+									onChange={(v) => onCursorSmoothingChange?.(v)}
+									formatValue={(v) => (v <= 0 ? "Off" : v.toFixed(2))}
+									parseInput={(t) => parseFloat(t)}
+								/>
+							</div>
+
+							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<SliderControl
+									label={tSettings("effects.cursorMotionBlur")}
+									value={cursorMotionBlur}
+									defaultValue={DEFAULT_CURSOR_MOTION_BLUR}
+									min={0}
+									max={2}
+									step={0.05}
+									onChange={(v) => onCursorMotionBlurChange?.(v)}
+									formatValue={(v) => `${v.toFixed(2)}×`}
+									parseInput={(t) => parseFloat(t.replace(/×$/, ""))}
+								/>
+							</div>
+
+							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<SliderControl
+									label={tSettings("effects.cursorSway")}
+									value={toCursorSwaySliderValue(cursorSway)}
+									defaultValue={toCursorSwaySliderValue(DEFAULT_CURSOR_SWAY)}
+									min={0}
+									max={toCursorSwaySliderValue(2)}
+									step={toCursorSwaySliderValue(0.05)}
+									onChange={(v) => onCursorSwayChange?.(fromCursorSwaySliderValue(v))}
+									formatValue={(v) => (v <= 0 ? "Off" : `${v.toFixed(2)}×`)}
+									parseInput={(t) => {
+										const normalized = t.trim().toLowerCase();
+										if (normalized === "off") {
+											return 0;
+										}
+										return parseFloat(t.replace(/×$/, ""));
+									}}
+								/>
+							</div>
+
+							{/* Trail */}
+							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<SliderControl
+									label="Trail Length"
+									value={cursorTrailLength}
+									defaultValue={DEFAULT_CURSOR_TRAIL_LENGTH}
+									min={0}
+									max={20}
+									step={1}
+									onChange={(v) => onCursorTrailLengthChange?.(v)}
+									formatValue={(v) => (v <= 0 ? "Off" : `${v}`)}
+									parseInput={(t) => {
+										if (t.trim().toLowerCase() === "off") return 0;
+										return parseInt(t, 10);
+									}}
+								/>
+							</div>
+
+							{cursorTrailLength > 0 && (
+								<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+									<SliderControl
+										label="Trail Opacity"
+										value={cursorTrailOpacity}
+										defaultValue={DEFAULT_CURSOR_TRAIL_OPACITY}
+										min={0.05}
+										max={1}
+										step={0.05}
+										onChange={(v) => onCursorTrailOpacityChange?.(v)}
+										formatValue={(v) => `${Math.round(v * 100)}%`}
+										parseInput={(t) => parseFloat(t.replace(/%$/, "")) / 100}
+									/>
+								</div>
+							)}
+
+							{/* Section: Click Effects */}
+							<div className="mt-2 mb-1">
+								<span className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">
+									Click Effects
+								</span>
+							</div>
+
+							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<SliderControl
+									label={tSettings("effects.cursorClickBounce")}
+									value={cursorClickBounce}
+									defaultValue={DEFAULT_CURSOR_CLICK_BOUNCE}
+									min={0}
+									max={5}
+									step={0.05}
+									onChange={(v) => onCursorClickBounceChange?.(v)}
+									formatValue={(v) => `${v.toFixed(2)}×`}
+									parseInput={(t) => parseFloat(t.replace(/×$/, ""))}
+								/>
+							</div>
+
+							{/* Click Highlight Color */}
+							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<div className="text-xs font-medium text-slate-300 mb-2">Click Highlight Color</div>
+								<div className="flex items-center gap-2">
+									<input
+										type="color"
+										value={clickHighlightColor}
+										onChange={(e) => onClickHighlightColorChange?.(e.target.value)}
+										className="w-7 h-7 rounded-md border border-white/10 cursor-pointer bg-transparent"
+									/>
+									<input
+										type="text"
+										value={clickHighlightColor}
+										onChange={(e) => onClickHighlightColorChange?.(e.target.value)}
+										className="flex-1 h-7 rounded-md border border-white/10 bg-black/20 px-2 text-xs text-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-[#10B981]"
+									/>
+									<button
+										type="button"
+										onClick={() => onClickHighlightColorChange?.(DEFAULT_CLICK_HIGHLIGHT_COLOR)}
+										className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+									>
+										Reset
+									</button>
+								</div>
+							</div>
+
+							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<SliderControl
+									label="Click Highlight Size"
+									value={clickHighlightSize}
+									defaultValue={DEFAULT_CLICK_HIGHLIGHT_SIZE}
+									min={0}
+									max={3}
+									step={0.1}
+									onChange={(v) => onClickHighlightSizeChange?.(v)}
+									formatValue={(v) => (v <= 0 ? "Off" : `${v.toFixed(1)}×`)}
+									parseInput={(t) => {
+										if (t.trim().toLowerCase() === "off") return 0;
+										return parseFloat(t.replace(/×$/, ""));
+									}}
+								/>
+							</div>
+
+							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<SliderControl
+									label="Click Highlight Opacity"
+									value={clickHighlightOpacity}
+									defaultValue={DEFAULT_CLICK_HIGHLIGHT_OPACITY}
+									min={0}
+									max={1}
+									step={0.05}
+									onChange={(v) => onClickHighlightOpacityChange?.(v)}
+									formatValue={(v) => `${Math.round(v * 100)}%`}
+									parseInput={(t) => parseFloat(t.replace(/%$/, "")) / 100}
+								/>
+							</div>
+						</div>
 					</div>
 				)}
 

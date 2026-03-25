@@ -20,11 +20,20 @@ import {
 	DEFAULT_CAPTION_GENERATION_OPTIONS,
 	DEFAULT_CAPTION_SETTINGS,
 	DEFAULT_CROP_REGION,
+	DEFAULT_CLICK_HIGHLIGHT_COLOR,
+	DEFAULT_CLICK_HIGHLIGHT_OPACITY,
+	DEFAULT_CLICK_HIGHLIGHT_SIZE,
 	DEFAULT_CURSOR_CLICK_BOUNCE,
+	DEFAULT_CURSOR_COLOR,
 	DEFAULT_CURSOR_MOTION_BLUR,
+	DEFAULT_CURSOR_OPACITY,
 	DEFAULT_CURSOR_SIZE,
 	DEFAULT_CURSOR_SMOOTHING,
+	DEFAULT_CURSOR_STYLE,
 	DEFAULT_CURSOR_SWAY,
+	DEFAULT_CURSOR_TRAIL_LENGTH,
+	DEFAULT_CURSOR_TRAIL_OPACITY,
+	type CursorStyle,
 	DEFAULT_FIGURE_DATA,
 	DEFAULT_PLAYBACK_SPEED,
 	DEFAULT_WEBCAM_REGION,
@@ -52,6 +61,14 @@ export interface ProjectEditorState {
 	cursorMotionBlur: number;
 	cursorClickBounce: number;
 	cursorSway: number;
+	cursorStyle: import("./types").CursorStyle;
+	cursorColor: string;
+	cursorOpacity: number;
+	clickHighlightColor: string;
+	clickHighlightSize: number;
+	clickHighlightOpacity: number;
+	cursorTrailLength: number;
+	cursorTrailOpacity: number;
 	borderRadius: number;
 	padding: number;
 	cropRegion: CropRegion;
@@ -748,6 +765,31 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		cursorSway: isFiniteNumber((editor as Partial<ProjectEditorState>).cursorSway)
 			? clamp((editor as Partial<ProjectEditorState>).cursorSway as number, 0, 2)
 			: DEFAULT_CURSOR_SWAY,
+		cursorStyle:
+			typeof editor.cursorStyle === "string" &&
+			["default", "dot", "crosshair", "circle", "ring"].includes(editor.cursorStyle)
+				? (editor.cursorStyle as CursorStyle)
+				: DEFAULT_CURSOR_STYLE,
+		cursorColor: typeof editor.cursorColor === "string" ? editor.cursorColor : DEFAULT_CURSOR_COLOR,
+		cursorOpacity: isFiniteNumber(editor.cursorOpacity)
+			? clamp(editor.cursorOpacity, 0, 1)
+			: DEFAULT_CURSOR_OPACITY,
+		clickHighlightColor:
+			typeof editor.clickHighlightColor === "string"
+				? editor.clickHighlightColor
+				: DEFAULT_CLICK_HIGHLIGHT_COLOR,
+		clickHighlightSize: isFiniteNumber(editor.clickHighlightSize)
+			? clamp(editor.clickHighlightSize, 0, 3)
+			: DEFAULT_CLICK_HIGHLIGHT_SIZE,
+		clickHighlightOpacity: isFiniteNumber(editor.clickHighlightOpacity)
+			? clamp(editor.clickHighlightOpacity, 0, 1)
+			: DEFAULT_CLICK_HIGHLIGHT_OPACITY,
+		cursorTrailLength: isFiniteNumber(editor.cursorTrailLength)
+			? clamp(editor.cursorTrailLength, 0, 20)
+			: DEFAULT_CURSOR_TRAIL_LENGTH,
+		cursorTrailOpacity: isFiniteNumber(editor.cursorTrailOpacity)
+			? clamp(editor.cursorTrailOpacity, 0, 1)
+			: DEFAULT_CURSOR_TRAIL_OPACITY,
 		borderRadius: typeof editor.borderRadius === "number" ? editor.borderRadius : 12.5,
 		padding: isFiniteNumber(editor.padding) ? clamp(editor.padding, 0, 100) : 50,
 		cropRegion: {

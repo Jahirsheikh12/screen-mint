@@ -14,6 +14,14 @@ type PersistedEditorControls = Pick<
 	| "cursorMotionBlur"
 	| "cursorClickBounce"
 	| "cursorSway"
+	| "cursorStyle"
+	| "cursorColor"
+	| "cursorOpacity"
+	| "clickHighlightColor"
+	| "clickHighlightSize"
+	| "clickHighlightOpacity"
+	| "cursorTrailLength"
+	| "cursorTrailOpacity"
 	| "borderRadius"
 	| "padding"
 	| "cropRegion"
@@ -54,6 +62,14 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	cursorMotionBlur: DEFAULT_EDITOR_CONTROLS.cursorMotionBlur,
 	cursorClickBounce: DEFAULT_EDITOR_CONTROLS.cursorClickBounce,
 	cursorSway: DEFAULT_EDITOR_CONTROLS.cursorSway,
+	cursorStyle: DEFAULT_EDITOR_CONTROLS.cursorStyle,
+	cursorColor: DEFAULT_EDITOR_CONTROLS.cursorColor,
+	cursorOpacity: DEFAULT_EDITOR_CONTROLS.cursorOpacity,
+	clickHighlightColor: DEFAULT_EDITOR_CONTROLS.clickHighlightColor,
+	clickHighlightSize: DEFAULT_EDITOR_CONTROLS.clickHighlightSize,
+	clickHighlightOpacity: DEFAULT_EDITOR_CONTROLS.clickHighlightOpacity,
+	cursorTrailLength: DEFAULT_EDITOR_CONTROLS.cursorTrailLength,
+	cursorTrailOpacity: DEFAULT_EDITOR_CONTROLS.cursorTrailOpacity,
 	borderRadius: DEFAULT_EDITOR_CONTROLS.borderRadius,
 	padding: DEFAULT_EDITOR_CONTROLS.padding,
 	cropRegion: DEFAULT_EDITOR_CONTROLS.cropRegion,
@@ -147,6 +163,14 @@ function normalizeEditorControls(
 		cursorMotionBlur: raw.cursorMotionBlur ?? fallback.cursorMotionBlur,
 		cursorClickBounce: raw.cursorClickBounce ?? fallback.cursorClickBounce,
 		cursorSway: raw.cursorSway ?? fallback.cursorSway,
+		cursorStyle: raw.cursorStyle ?? fallback.cursorStyle,
+		cursorColor: raw.cursorColor ?? fallback.cursorColor,
+		cursorOpacity: raw.cursorOpacity ?? fallback.cursorOpacity,
+		clickHighlightColor: raw.clickHighlightColor ?? fallback.clickHighlightColor,
+		clickHighlightSize: raw.clickHighlightSize ?? fallback.clickHighlightSize,
+		clickHighlightOpacity: raw.clickHighlightOpacity ?? fallback.clickHighlightOpacity,
+		cursorTrailLength: raw.cursorTrailLength ?? fallback.cursorTrailLength,
+		cursorTrailOpacity: raw.cursorTrailOpacity ?? fallback.cursorTrailOpacity,
 		borderRadius: raw.borderRadius ?? fallback.borderRadius,
 		padding: raw.padding ?? fallback.padding,
 		cropRegion: normalizeCropRegion(raw.cropRegion, fallback.cropRegion),
@@ -177,6 +201,14 @@ function normalizeEditorControls(
 		cursorMotionBlur: normalized.cursorMotionBlur,
 		cursorClickBounce: normalized.cursorClickBounce,
 		cursorSway: normalized.cursorSway,
+		cursorStyle: normalized.cursorStyle,
+		cursorColor: normalized.cursorColor,
+		cursorOpacity: normalized.cursorOpacity,
+		clickHighlightColor: normalized.clickHighlightColor,
+		clickHighlightSize: normalized.clickHighlightSize,
+		clickHighlightOpacity: normalized.clickHighlightOpacity,
+		cursorTrailLength: normalized.cursorTrailLength,
+		cursorTrailOpacity: normalized.cursorTrailOpacity,
 		borderRadius: normalized.borderRadius,
 		padding: normalized.padding,
 		cropRegion: normalized.cropRegion,

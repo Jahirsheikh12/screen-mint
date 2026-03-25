@@ -30,6 +30,8 @@ export interface CursorTelemetryPoint {
 		| "not-allowed";
 }
 
+export type CursorStyle = "default" | "dot" | "crosshair" | "circle" | "ring";
+
 export interface CursorVisualSettings {
 	size: number;
 	smoothing: number;
@@ -38,11 +40,27 @@ export interface CursorVisualSettings {
 	sway: number;
 }
 
+export const CURSOR_STYLE_OPTIONS: { value: CursorStyle; label: string }[] = [
+	{ value: "default", label: "Default" },
+	{ value: "dot", label: "Dot" },
+	{ value: "crosshair", label: "Crosshair" },
+	{ value: "circle", label: "Circle" },
+	{ value: "ring", label: "Ring" },
+];
+
 export const DEFAULT_CURSOR_SIZE = 3.0;
 export const DEFAULT_CURSOR_SMOOTHING = 0.67;
 export const DEFAULT_CURSOR_MOTION_BLUR = 0.35;
 export const DEFAULT_CURSOR_CLICK_BOUNCE = 2.5;
 export const DEFAULT_CURSOR_SWAY = 0.25;
+export const DEFAULT_CURSOR_STYLE: CursorStyle = "default";
+export const DEFAULT_CURSOR_COLOR = "#FFFFFF";
+export const DEFAULT_CURSOR_OPACITY = 1.0;
+export const DEFAULT_CLICK_HIGHLIGHT_COLOR = "#10b981";
+export const DEFAULT_CLICK_HIGHLIGHT_SIZE = 1.0;
+export const DEFAULT_CLICK_HIGHLIGHT_OPACITY = 0.5;
+export const DEFAULT_CURSOR_TRAIL_LENGTH = 0;
+export const DEFAULT_CURSOR_TRAIL_OPACITY = 0.3;
 export const DEFAULT_ZOOM_MOTION_BLUR = 0.35;
 
 export interface TrimRegion {

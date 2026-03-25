@@ -109,6 +109,37 @@
 		display: none; /* Chrome, Safari, Opera */
 	}
 
+	/* Themed scrollbar for timeline area */
+	.timeline-scrollbar::-webkit-scrollbar {
+		width: 6px;
+		height: 6px;
+	}
+
+	.timeline-scrollbar::-webkit-scrollbar-track {
+		background: rgba(16, 185, 129, 0.05);
+		border-radius: 3px;
+	}
+
+	.timeline-scrollbar::-webkit-scrollbar-thumb {
+		background: rgba(16, 185, 129, 0.25);
+		border-radius: 3px;
+		transition: background 0.2s;
+	}
+
+	.timeline-scrollbar::-webkit-scrollbar-thumb:hover {
+		background: rgba(16, 185, 129, 0.4);
+	}
+
+	.timeline-scrollbar::-webkit-scrollbar-corner {
+		background: transparent;
+	}
+
+	/* Firefox themed scrollbar */
+	.timeline-scrollbar {
+		scrollbar-width: thin;
+		scrollbar-color: rgba(16, 185, 129, 0.25) rgba(16, 185, 129, 0.05);
+	}
+
 	/* Smooth playback scrubber */
 	input[type="range"] {
 		-webkit-appearance: none;
