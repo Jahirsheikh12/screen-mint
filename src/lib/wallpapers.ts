@@ -5,6 +5,15 @@ export interface BuiltInWallpaper {
 	publicPath: string;
 }
 
+function createBuiltInWallpaper(id: string, label: string, fileName: string): BuiltInWallpaper {
+	return {
+		id,
+		label,
+		relativePath: `wallpapers/${fileName}`,
+		publicPath: `/wallpapers/${fileName}`,
+	};
+}
+
 const REMOVED_BUILT_IN_WALLPAPERS: Array<Pick<BuiltInWallpaper, "relativePath" | "publicPath">> = [
 	{ relativePath: "wallpapers/wallpaper1.jpg", publicPath: "/wallpapers/wallpaper1.jpg" },
 	{ relativePath: "wallpapers/wallpaper2.jpg", publicPath: "/wallpapers/wallpaper2.jpg" },
@@ -32,72 +41,51 @@ const REMOVED_BUILT_IN_WALLPAPERS: Array<Pick<BuiltInWallpaper, "relativePath" |
 ];
 
 export const BUILT_IN_WALLPAPERS: BuiltInWallpaper[] = [
-	{
-		id: "green-blue-waves",
-		label: "Green Blue Waves",
-		relativePath: "wallpapers/green-blue-waves.jpg",
-		publicPath: "/wallpapers/green-blue-waves.jpg",
-	},
-	{
-		id: "black-liquid",
-		label: "Black Liquid",
-		relativePath: "wallpapers/black-liquid.jpg",
-		publicPath: "/wallpapers/black-liquid.jpg",
-	},
-	{
-		id: "anime-camper-valley",
-		label: "Anime Camper Valley",
-		relativePath: "wallpapers/anime-camper-valley.png",
-		publicPath: "/wallpapers/anime-camper-valley.png",
-	},
-	{
-		id: "green-liquid",
-		label: "Green Liquid",
-		relativePath: "wallpapers/green-liquid.jpg",
-		publicPath: "/wallpapers/green-liquid.jpg",
-	},
-	{
-		id: "multicolor-ribbons",
-		label: "Multicolor Ribbons",
-		relativePath: "wallpapers/multicolor-ribbons.jpg",
-		publicPath: "/wallpapers/multicolor-ribbons.jpg",
-	},
-	{
-		id: "pink-curves",
-		label: "Pink Curves",
-		relativePath: "wallpapers/pink-curves.jpg",
-		publicPath: "/wallpapers/pink-curves.jpg",
-	},
-	{
-		id: "gray-liquid-glass",
-		label: "Gray Liquid Glass",
-		relativePath: "wallpapers/gray-liquid-glass.jpg",
-		publicPath: "/wallpapers/gray-liquid-glass.jpg",
-	},
-	{
-		id: "sunset-mountains",
-		label: "Sunset Mountains",
-		relativePath: "wallpapers/sunset-mountains.webp",
-		publicPath: "/wallpapers/sunset-mountains.webp",
-	},
-	{
-		id: "purple-folds",
-		label: "Purple Folds",
-		relativePath: "wallpapers/purple-folds.jpg",
-		publicPath: "/wallpapers/purple-folds.jpg",
-	},
-	{
-		id: "red-distortion",
-		label: "Red Distortion",
-		relativePath: "wallpapers/red-distortion.jpg",
-		publicPath: "/wallpapers/red-distortion.jpg",
-	},
-	{
-		id: "topography-lines",
-		label: "Topography Lines",
-		relativePath: "wallpapers/topography-lines.jpg",
-		publicPath: "/wallpapers/topography-lines.jpg",
-	},
+	createBuiltInWallpaper("green-blue-waves", "Green Blue Waves", "green-blue-waves.jpg"),
+	createBuiltInWallpaper("black-liquid", "Black Liquid", "black-liquid.jpg"),
+	createBuiltInWallpaper("anime-camper-valley", "Anime Camper Valley", "anime-camper-valley.png"),
+	createBuiltInWallpaper("green-liquid", "Green Liquid", "green-liquid.jpg"),
+	createBuiltInWallpaper("multicolor-ribbons", "Multicolor Ribbons", "multicolor-ribbons.jpg"),
+	createBuiltInWallpaper("pink-curves", "Pink Curves", "pink-curves.jpg"),
+	createBuiltInWallpaper("gray-liquid-glass", "Gray Liquid Glass", "gray-liquid-glass.jpg"),
+	createBuiltInWallpaper("sunset-mountains", "Sunset Mountains", "sunset-mountains.webp"),
+	createBuiltInWallpaper("purple-folds", "Purple Folds", "purple-folds.jpg"),
+	createBuiltInWallpaper("red-distortion", "Red Distortion", "red-distortion.jpg"),
+	createBuiltInWallpaper("topography-lines", "Topography Lines", "topography-lines.jpg"),
+	createBuiltInWallpaper("colorful-feathers", "Colorful Feathers", "colorful-feathers.jpg"),
+	createBuiltInWallpaper("blue-abstract", "Blue Abstract", "blue-abstract.jpg"),
+	createBuiltInWallpaper("fabric-ribbon", "Fabric Ribbon", "fabric-ribbon.png"),
+	createBuiltInWallpaper("pixel-orbs", "Pixel Orbs", "pixel-orbs.jpg"),
+	createBuiltInWallpaper("geometric-gradients", "Geometric Gradients", "geometric-gradients.jpg"),
+	createBuiltInWallpaper("green-abstract", "Green Abstract", "green-abstract.jpg"),
+	createBuiltInWallpaper("yellow-bubbles", "Yellow Bubbles", "yellow-bubbles.png"),
+	createBuiltInWallpaper(
+		"macbook-air-gradient",
+		"MacBook Air Gradient",
+		"macbook-air-gradient.jpg",
+	),
+	createBuiltInWallpaper("mojave-solar-blue", "Mojave Solar Blue", "mojave-solar-blue.jpg"),
+	createBuiltInWallpaper("mojave-solar-dawn", "Mojave Solar Dawn", "mojave-solar-dawn.jpg"),
+	createBuiltInWallpaper(
+		"sequoia-icons-orange",
+		"Sequoia Icons Orange",
+		"sequoia-icons-orange.jpg",
+	),
+	createBuiltInWallpaper("sequoia-icons-pink", "Sequoia Icons Pink", "sequoia-icons-pink.jpg"),
+	createBuiltInWallpaper("sequoia-icons-blue", "Sequoia Icons Blue", "sequoia-icons-blue.jpg"),
+	createBuiltInWallpaper("sequoia-icons-lime", "Sequoia Icons Lime", "sequoia-icons-lime.jpg"),
+	createBuiltInWallpaper("lion-autumn-mist", "Lion Autumn Mist", "lion-autumn-mist.jpg"),
+	createBuiltInWallpaper("lion-twilight-fuji", "Lion Twilight Fuji", "lion-twilight-fuji.jpg"),
+	createBuiltInWallpaper("mountain-lion-leaf", "Mountain Lion Leaf", "mountain-lion-leaf.jpg"),
+	createBuiltInWallpaper("mountain-lion-snow", "Mountain Lion Snow", "mountain-lion-snow.jpg"),
+	createBuiltInWallpaper("pink-abstract", "Pink Abstract", "pink-abstract.jpg"),
+	createBuiltInWallpaper("pink-wine-hands", "Pink Wine Hands", "pink-wine-hands.jpg"),
+	createBuiltInWallpaper("purple-abstract", "Purple Abstract", "purple-abstract.jpg"),
+	createBuiltInWallpaper("red-abstract", "Red Abstract", "red-abstract.jpg"),
+	createBuiltInWallpaper("tomb-raider-climb", "Tomb Raider Climb", "tomb-raider-climb.jpg"),
+	createBuiltInWallpaper("forest-green-path", "Forest Green Path", "forest-green-path.jpg"),
+	createBuiltInWallpaper("vector-wave-blur", "Vector Wave Blur", "vector-wave-blur.jpg"),
+	createBuiltInWallpaper("winter-mountain", "Winter Mountain", "winter-mountain.jpg"),
 ];
 
 export const WALLPAPER_PATHS = BUILT_IN_WALLPAPERS.map((wallpaper) => wallpaper.publicPath);
