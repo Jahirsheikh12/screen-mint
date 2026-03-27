@@ -352,6 +352,111 @@ const ZOOM_DEPTH_OPTIONS: Array<{ depth: ZoomDepth; label: string }> = [
 	{ depth: 6, label: "5×" },
 ];
 
+function SettingsSection({
+	title,
+	description,
+	children,
+	className,
+	accentColor = "emerald",
+}: {
+	title: string;
+	description?: string;
+	children: React.ReactNode;
+	className?: string;
+	accentColor?: "emerald" | "amber" | "blue" | "red";
+}) {
+	const accentMap = {
+		emerald: "from-emerald-500/20 to-transparent border-emerald-500/15",
+		amber: "from-amber-500/20 to-transparent border-amber-500/15",
+		blue: "from-blue-500/20 to-transparent border-blue-500/15",
+		red: "from-red-500/20 to-transparent border-red-500/15",
+	};
+	const dotMap = {
+		emerald: "bg-emerald-400",
+		amber: "bg-amber-400",
+		blue: "bg-blue-400",
+		red: "bg-red-400",
+	};
+	return (
+		<div className={cn("mb-4 last:mb-2", className)}>
+			<div
+				className={cn(
+					"mb-2.5 px-2.5 py-2 rounded-lg bg-gradient-to-r border",
+					accentMap[accentColor],
+				)}
+			>
+				<div className="flex items-center gap-1.5">
+					<div className={cn("w-1 h-1 rounded-full", dotMap[accentColor])} />
+					<h3 className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-300">
+						{title}
+					</h3>
+				</div>
+				{description && (
+					<p className="text-[10px] text-slate-500 mt-0.5 ml-2.5 leading-relaxed">{description}</p>
+				)}
+			</div>
+			<div className="flex flex-col gap-1.5">{children}</div>
+		</div>
+	);
+}
+
+function TabContent({ children, className }: { children: React.ReactNode; className?: string }) {
+	return (
+		<div
+			className={cn(
+				"pb-4 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out fill-mode-both",
+				className,
+			)}
+		>
+			{children}
+		</div>
+	);
+}
+
+function TabHeader({
+	title,
+	description,
+	badge,
+	badgeColor = "emerald",
+	trailing,
+}: {
+	title: string;
+	description?: string;
+	badge?: string;
+	badgeColor?: "emerald" | "amber" | "blue";
+	trailing?: React.ReactNode;
+}) {
+	const badgeColorMap = {
+		emerald: "text-[#10B981] bg-[#10B981]/10",
+		amber: "text-[#d97706] bg-[#d97706]/10",
+		blue: "text-[#3b82f6] bg-[#3b82f6]/10",
+	};
+	return (
+		<div className="mb-4">
+			<div className="flex items-center justify-between">
+				<div className="flex items-center gap-2">
+					<span className="text-sm font-semibold text-slate-100 tracking-tight">{title}</span>
+					{badge && (
+						<span
+							className={cn(
+								"text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full",
+								badgeColorMap[badgeColor],
+							)}
+						>
+							{badge}
+						</span>
+					)}
+				</div>
+				{trailing}
+			</div>
+			{description && (
+				<p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{description}</p>
+			)}
+			<div className="h-px bg-gradient-to-r from-white/10 via-white/5 to-transparent mt-3" />
+		</div>
+	);
+}
+
 export default function SettingsPanel({
 	selected,
 	onWallpaperChange,
@@ -877,47 +982,77 @@ export default function SettingsPanel({
 			: []),
 	];
 
+	const tabGroups = [
+		{ ids: ["effects", "cursor", "keyboard"], label: "Capture" },
+		{ ids: ["background", "zoom", "speed"], label: "Canvas" },
+		{ ids: ["audio", "annotation", "captions", "webcam"], label: "Overlay" },
+	];
+
 	return (
-		<div className="w-[400px] shrink-0 min-w-0 bg-[#0A0F0D] border border-white/5 rounded-2xl flex flex-row shadow-xl h-full overflow-hidden">
+		<div className="w-[400px] shrink-0 min-w-0 bg-[#0A0F0D] border border-white/[0.06] rounded-2xl flex flex-row shadow-2xl shadow-black/40 h-full overflow-hidden">
 			{/* Sidebar navigation */}
-			<div className="flex flex-col gap-1 p-1.5 border-r border-white/5 bg-white/[0.02]">
-				{sidebarTabs.map((tab) => {
-					const isActive = activeTab === tab.id;
-					return (
-						<button
-							key={tab.id}
-							type="button"
-							onClick={() => setActiveTab(tab.id)}
-							title={tab.label}
-							className={cn(
-								"flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-200",
-								isActive
-									? "bg-[#10B981] text-white shadow-md shadow-[#10B981]/20"
-									: "text-slate-500 hover:text-slate-300 hover:bg-white/5",
-							)}
-						>
-							<tab.icon className="w-5 h-5" />
-						</button>
-					);
-				})}
+			<div className="flex flex-col gap-0.5 p-1.5 border-r border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-transparent">
+				{tabGroups.map((group, groupIndex) => (
+					<div key={group.label}>
+						{groupIndex > 0 && (
+							<div className="mx-2 my-1.5 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+						)}
+						{sidebarTabs
+							.filter((tab) => group.ids.includes(tab.id))
+							.map((tab) => {
+								const isActive = activeTab === tab.id;
+								return (
+									<button
+										key={tab.id}
+										type="button"
+										onClick={() => setActiveTab(tab.id)}
+										title={tab.label}
+										className={cn(
+											"relative flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-300 ease-out group",
+											isActive
+												? "bg-gradient-to-br from-[#10B981] to-[#059669] text-white shadow-lg shadow-[#10B981]/25 scale-105"
+												: "text-slate-500 hover:text-slate-200 hover:bg-white/[0.06] hover:scale-105 active:scale-95",
+										)}
+									>
+										<tab.icon
+											className={cn(
+												"w-[18px] h-[18px] transition-transform duration-300",
+												isActive && "drop-shadow-sm",
+											)}
+										/>
+										{isActive && (
+											<div className="absolute inset-0 rounded-lg bg-[#10B981]/10 animate-pulse pointer-events-none" />
+										)}
+									</button>
+								);
+							})}
+					</div>
+				))}
 			</div>
 
 			{/* Content area */}
 			<div className="flex-1 min-w-0 overflow-y-auto custom-scrollbar p-3 pb-0">
 				{/* Effects tab */}
 				{activeTab === "effects" && (
-					<div>
-						<div className="flex items-center justify-between mb-3">
-							<span className="text-sm font-medium text-slate-200">
-								{tSettings("effects.title")}
-							</span>
-							<KeyboardShortcutsHelp />
-						</div>
+					<TabContent>
+						<TabHeader
+							title={tSettings("effects.title")}
+							description="Control visual effects, transitions, and frame properties"
+							trailing={<KeyboardShortcutsHelp />}
+						/>
 
-						<div className="flex flex-col gap-1.5">
-							<div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
-								<div className="text-xs font-medium text-slate-300">
-									{tSettings("effects.connectZooms")}
+						<SettingsSection
+							title="Transitions"
+							description="How zoom transitions connect and blend together"
+						>
+							<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+								<div>
+									<div className="text-xs font-medium text-slate-300">
+										{tSettings("effects.connectZooms")}
+									</div>
+									<div className="text-[10px] text-slate-500 mt-0.5">
+										Smoothly link adjacent zoom regions
+									</div>
 								</div>
 								<Switch
 									checked={connectZooms}
@@ -925,9 +1060,14 @@ export default function SettingsPanel({
 									className="data-[state=checked]:bg-[#10B981] scale-90"
 								/>
 							</div>
-							<div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
-								<div className="text-xs font-medium text-slate-300">
-									{tSettings("effects.removeBackground")}
+							<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+								<div>
+									<div className="text-xs font-medium text-slate-300">
+										{tSettings("effects.removeBackground")}
+									</div>
+									<div className="text-[10px] text-slate-500 mt-0.5">
+										Strip background for native aspect ratio
+									</div>
 								</div>
 								<Switch
 									checked={aspectRatio === "native" && padding === 0}
@@ -944,7 +1084,13 @@ export default function SettingsPanel({
 									className="data-[state=checked]:bg-[#10B981] scale-90"
 								/>
 							</div>
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+						</SettingsSection>
+
+						<SettingsSection
+							title="Visual Effects"
+							description="Fine-tune blur, shadow, and motion effects"
+						>
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label={tSettings("effects.backgroundBlur")}
 									value={backgroundBlur}
@@ -957,7 +1103,7 @@ export default function SettingsPanel({
 									parseInput={(t) => parseFloat(t.replace(/px$/, ""))}
 								/>
 							</div>
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label={tSettings("effects.zoomMotionBlur")}
 									value={zoomMotionBlur}
@@ -970,7 +1116,7 @@ export default function SettingsPanel({
 									parseInput={(t) => parseFloat(t.replace(/×$/, ""))}
 								/>
 							</div>
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label={tSettings("effects.shadow")}
 									value={shadowIntensity}
@@ -983,7 +1129,13 @@ export default function SettingsPanel({
 									parseInput={(t) => parseFloat(t.replace(/%$/, "")) / 100}
 								/>
 							</div>
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+						</SettingsSection>
+
+						<SettingsSection
+							title="Frame"
+							description="Adjust the recording frame shape and spacing"
+						>
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label={tSettings("effects.roundness")}
 									value={borderRadius}
@@ -996,7 +1148,7 @@ export default function SettingsPanel({
 									parseInput={(t) => parseFloat(t.replace(/px$/, ""))}
 								/>
 							</div>
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label={tSettings("effects.padding")}
 									value={padding}
@@ -1009,33 +1161,38 @@ export default function SettingsPanel({
 									parseInput={(t) => parseFloat(t.replace(/%$/, ""))}
 								/>
 							</div>
-						</div>
-
-						<Button
-							onClick={handleCropToggle}
-							variant="outline"
-							className="w-full mt-2 gap-1.5 bg-white/5 text-slate-200 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-white text-[10px] h-8 transition-all"
-						>
-							<Crop className="w-3 h-3" />
-							{tSettings("crop.title")}
-						</Button>
-					</div>
+							<Button
+								onClick={handleCropToggle}
+								variant="outline"
+								className="w-full gap-2 bg-white/[0.04] text-slate-200 border-white/[0.08] hover:bg-[#10B981]/10 hover:border-[#10B981]/30 hover:text-[#10B981] text-[10px] h-9 rounded-xl transition-all duration-200"
+							>
+								<Crop className="w-3.5 h-3.5" />
+								{tSettings("crop.title")}
+							</Button>
+						</SettingsSection>
+					</TabContent>
 				)}
 
 				{/* Cursor tab */}
 				{activeTab === "cursor" && (
-					<div>
-						<div className="flex items-center justify-between mb-3">
-							<span className="text-sm font-medium text-slate-200">
-								{tSettings("cursor.title")}
-							</span>
-						</div>
+					<TabContent>
+						<TabHeader
+							title={tSettings("cursor.title")}
+							description="Customize cursor appearance, motion, and click effects"
+						/>
 
-						<div className="flex flex-col gap-1.5">
-							{/* Show / Loop toggles */}
-							<div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
-								<div className="text-xs font-medium text-slate-300">
-									{tSettings("effects.showCursor")}
+						<SettingsSection
+							title="Visibility"
+							description="Toggle cursor display in your recording"
+						>
+							<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+								<div>
+									<div className="text-xs font-medium text-slate-300">
+										{tSettings("effects.showCursor")}
+									</div>
+									<div className="text-[10px] text-slate-500 mt-0.5">
+										Display cursor in the final export
+									</div>
 								</div>
 								<Switch
 									checked={showCursor}
@@ -1043,9 +1200,14 @@ export default function SettingsPanel({
 									className="data-[state=checked]:bg-[#10B981] scale-90"
 								/>
 							</div>
-							<div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
-								<div className="text-xs font-medium text-slate-300">
-									{tSettings("effects.loopCursor")}
+							<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+								<div>
+									<div className="text-xs font-medium text-slate-300">
+										{tSettings("effects.loopCursor")}
+									</div>
+									<div className="text-[10px] text-slate-500 mt-0.5">
+										Loop cursor from last position to first
+									</div>
 								</div>
 								<Switch
 									checked={loopCursor}
@@ -1053,8 +1215,10 @@ export default function SettingsPanel({
 									className="data-[state=checked]:bg-[#10B981] scale-90"
 								/>
 							</div>
+						</SettingsSection>
 
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+						<SettingsSection title="Appearance" description="Customize how your cursor looks">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<div className="text-xs font-medium text-slate-300 mb-2">
 									{tSettings("cursor.pack")}
 								</div>
@@ -1065,10 +1229,10 @@ export default function SettingsPanel({
 											type="button"
 											onClick={() => onCursorPackChange?.(opt.value)}
 											className={cn(
-												"px-2 py-1.5 rounded-md text-[10px] font-medium transition-all cursor-pointer",
+												"px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all duration-200 cursor-pointer",
 												cursorPack === opt.value
-													? "bg-[#10B981] text-white shadow-sm"
-													: "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200",
+													? "bg-gradient-to-r from-[#10B981] to-[#059669] text-white shadow-sm shadow-[#10B981]/20"
+													: "bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200 border border-white/[0.04]",
 											)}
 										>
 											{opt.label}
@@ -1077,8 +1241,7 @@ export default function SettingsPanel({
 								</div>
 							</div>
 
-							{/* Cursor Style */}
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<div className="text-xs font-medium text-slate-300 mb-2">Style</div>
 								<div className="grid grid-cols-5 gap-1">
 									{CURSOR_STYLE_OPTIONS.map((opt) => (
@@ -1087,10 +1250,10 @@ export default function SettingsPanel({
 											type="button"
 											onClick={() => onCursorStyleChange?.(opt.value)}
 											className={cn(
-												"px-1.5 py-1.5 rounded-md text-[10px] font-medium transition-all cursor-pointer",
+												"px-1.5 py-1.5 rounded-lg text-[10px] font-medium transition-all duration-200 cursor-pointer",
 												cursorStyle === opt.value
-													? "bg-[#10B981] text-white shadow-sm"
-													: "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200",
+													? "bg-gradient-to-r from-[#10B981] to-[#059669] text-white shadow-sm shadow-[#10B981]/20"
+													: "bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200 border border-white/[0.04]",
 											)}
 										>
 											{opt.label}
@@ -1099,34 +1262,32 @@ export default function SettingsPanel({
 								</div>
 							</div>
 
-							{/* Cursor Color */}
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<div className="text-xs font-medium text-slate-300 mb-2">Cursor Color</div>
 								<div className="flex items-center gap-2">
 									<input
 										type="color"
 										value={cursorColor}
 										onChange={(e) => onCursorColorChange?.(e.target.value)}
-										className="w-7 h-7 rounded-md border border-white/10 cursor-pointer bg-transparent"
+										className="w-7 h-7 rounded-lg border border-white/10 cursor-pointer bg-transparent"
 									/>
 									<input
 										type="text"
 										value={cursorColor}
 										onChange={(e) => onCursorColorChange?.(e.target.value)}
-										className="flex-1 h-7 rounded-md border border-white/10 bg-black/20 px-2 text-xs text-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-[#10B981]"
+										className="flex-1 h-7 rounded-lg border border-white/[0.08] bg-black/20 px-2 text-xs text-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-[#10B981]/50 transition-shadow duration-200"
 									/>
 									<button
 										type="button"
 										onClick={() => onCursorColorChange?.(DEFAULT_CURSOR_COLOR)}
-										className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+										className="text-[10px] text-slate-500 hover:text-[#10B981] transition-colors duration-200 cursor-pointer"
 									>
 										Reset
 									</button>
 								</div>
 							</div>
 
-							{/* Cursor Opacity */}
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label="Cursor Opacity"
 									value={cursorOpacity}
@@ -1140,8 +1301,7 @@ export default function SettingsPanel({
 								/>
 							</div>
 
-							{/* Cursor Size */}
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label={tSettings("effects.cursorSize")}
 									value={cursorSize}
@@ -1154,15 +1314,13 @@ export default function SettingsPanel({
 									parseInput={(t) => parseFloat(t.replace(/×$/, ""))}
 								/>
 							</div>
+						</SettingsSection>
 
-							{/* Section: Motion */}
-							<div className="mt-2 mb-1">
-								<span className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">
-									Motion
-								</span>
-							</div>
-
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+						<SettingsSection
+							title="Motion"
+							description="Control cursor movement smoothness and trails"
+						>
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label={tSettings("effects.cursorSmoothing")}
 									value={cursorSmoothing}
@@ -1176,7 +1334,7 @@ export default function SettingsPanel({
 								/>
 							</div>
 
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label={tSettings("effects.cursorMotionBlur")}
 									value={cursorMotionBlur}
@@ -1190,7 +1348,7 @@ export default function SettingsPanel({
 								/>
 							</div>
 
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label={tSettings("effects.cursorSway")}
 									value={toCursorSwaySliderValue(cursorSway)}
@@ -1210,8 +1368,7 @@ export default function SettingsPanel({
 								/>
 							</div>
 
-							{/* Trail */}
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label="Trail Length"
 									value={cursorTrailLength}
@@ -1229,7 +1386,7 @@ export default function SettingsPanel({
 							</div>
 
 							{cursorTrailLength > 0 && (
-								<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200 animate-in fade-in slide-in-from-top-1 duration-200">
 									<SliderControl
 										label="Trail Opacity"
 										value={cursorTrailOpacity}
@@ -1243,15 +1400,14 @@ export default function SettingsPanel({
 									/>
 								</div>
 							)}
+						</SettingsSection>
 
-							{/* Section: Click Effects */}
-							<div className="mt-2 mb-1">
-								<span className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">
-									Click Effects
-								</span>
-							</div>
-
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+						<SettingsSection
+							title="Click Effects"
+							description="Visual feedback when clicking"
+							accentColor="amber"
+						>
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label={tSettings("effects.cursorClickBounce")}
 									value={cursorClickBounce}
@@ -1265,33 +1421,32 @@ export default function SettingsPanel({
 								/>
 							</div>
 
-							{/* Click Highlight Color */}
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<div className="text-xs font-medium text-slate-300 mb-2">Click Highlight Color</div>
 								<div className="flex items-center gap-2">
 									<input
 										type="color"
 										value={clickHighlightColor}
 										onChange={(e) => onClickHighlightColorChange?.(e.target.value)}
-										className="w-7 h-7 rounded-md border border-white/10 cursor-pointer bg-transparent"
+										className="w-7 h-7 rounded-lg border border-white/10 cursor-pointer bg-transparent"
 									/>
 									<input
 										type="text"
 										value={clickHighlightColor}
 										onChange={(e) => onClickHighlightColorChange?.(e.target.value)}
-										className="flex-1 h-7 rounded-md border border-white/10 bg-black/20 px-2 text-xs text-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-[#10B981]"
+										className="flex-1 h-7 rounded-lg border border-white/[0.08] bg-black/20 px-2 text-xs text-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-[#10B981]/50 transition-shadow duration-200"
 									/>
 									<button
 										type="button"
 										onClick={() => onClickHighlightColorChange?.(DEFAULT_CLICK_HIGHLIGHT_COLOR)}
-										className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+										className="text-[10px] text-slate-500 hover:text-[#10B981] transition-colors duration-200 cursor-pointer"
 									>
 										Reset
 									</button>
 								</div>
 							</div>
 
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label="Click Highlight Size"
 									value={clickHighlightSize}
@@ -1308,7 +1463,7 @@ export default function SettingsPanel({
 								/>
 							</div>
 
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label="Click Highlight Opacity"
 									value={clickHighlightOpacity}
@@ -1321,22 +1476,29 @@ export default function SettingsPanel({
 									parseInput={(t) => parseFloat(t.replace(/%$/, "")) / 100}
 								/>
 							</div>
-						</div>
-					</div>
+						</SettingsSection>
+					</TabContent>
 				)}
 
 				{activeTab === "keyboard" && (
-					<div>
-						<div className="flex items-center justify-between mb-3">
-							<span className="text-sm font-medium text-slate-200">
-								{tSettings("keyboard.title")}
-							</span>
-						</div>
+					<TabContent>
+						<TabHeader
+							title={tSettings("keyboard.title")}
+							description="Show keyboard shortcuts used during recording"
+						/>
 
-						<div className="flex flex-col gap-1.5">
-							<div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
-								<div className="text-xs font-medium text-slate-300">
-									{tSettings("keyboard.showShortcuts")}
+						<SettingsSection
+							title="Display"
+							description="Toggle keyboard shortcut overlay visibility"
+						>
+							<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+								<div>
+									<div className="text-xs font-medium text-slate-300">
+										{tSettings("keyboard.showShortcuts")}
+									</div>
+									<div className="text-[10px] text-slate-500 mt-0.5">
+										Overlay shortcut keys in the video
+									</div>
 								</div>
 								<Switch
 									checked={showKeyboardShortcuts}
@@ -1344,8 +1506,13 @@ export default function SettingsPanel({
 									className="data-[state=checked]:bg-[#10B981] scale-90"
 								/>
 							</div>
+						</SettingsSection>
 
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+						<SettingsSection
+							title="Layout"
+							description="Position and style of the shortcut display"
+						>
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<div className="text-xs font-medium text-slate-300 mb-2">
 									{tSettings("keyboard.position")}
 								</div>
@@ -1356,10 +1523,10 @@ export default function SettingsPanel({
 											type="button"
 											onClick={() => onKeyboardShortcutPositionChange?.(option.value)}
 											className={cn(
-												"px-2 py-1.5 rounded-md text-[10px] font-medium transition-all cursor-pointer",
+												"px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all duration-200 cursor-pointer",
 												keyboardShortcutPosition === option.value
-													? "bg-[#10B981] text-white shadow-sm"
-													: "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200",
+													? "bg-gradient-to-r from-[#10B981] to-[#059669] text-white shadow-sm shadow-[#10B981]/20"
+													: "bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200 border border-white/[0.04]",
 											)}
 										>
 											{tSettings(`keyboard.positions.${option.value}`)}
@@ -1368,7 +1535,7 @@ export default function SettingsPanel({
 								</div>
 							</div>
 
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<div className="text-xs font-medium text-slate-300 mb-2">
 									{tSettings("keyboard.theme")}
 								</div>
@@ -1379,10 +1546,10 @@ export default function SettingsPanel({
 											type="button"
 											onClick={() => onKeyboardShortcutThemeChange?.(option.value)}
 											className={cn(
-												"px-2 py-1.5 rounded-md text-[10px] font-medium transition-all cursor-pointer",
+												"px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all duration-200 cursor-pointer",
 												keyboardShortcutTheme === option.value
-													? "bg-[#10B981] text-white shadow-sm"
-													: "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200",
+													? "bg-gradient-to-r from-[#10B981] to-[#059669] text-white shadow-sm shadow-[#10B981]/20"
+													: "bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200 border border-white/[0.04]",
 											)}
 										>
 											{tSettings(`keyboard.themes.${option.value}`)}
@@ -1390,8 +1557,10 @@ export default function SettingsPanel({
 									))}
 								</div>
 							</div>
+						</SettingsSection>
 
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+						<SettingsSection title="Appearance" description="Fine-tune size, opacity, and timing">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label={tSettings("keyboard.scale")}
 									value={keyboardShortcutScale}
@@ -1405,7 +1574,7 @@ export default function SettingsPanel({
 								/>
 							</div>
 
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label={tSettings("keyboard.opacity")}
 									value={keyboardShortcutOpacity}
@@ -1419,7 +1588,7 @@ export default function SettingsPanel({
 								/>
 							</div>
 
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label={tSettings("keyboard.displayDuration")}
 									value={keyboardShortcutDisplayMs}
@@ -1433,7 +1602,7 @@ export default function SettingsPanel({
 								/>
 							</div>
 
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label={tSettings("keyboard.maxVisible")}
 									value={keyboardShortcutMaxVisible}
@@ -1441,46 +1610,43 @@ export default function SettingsPanel({
 									min={1}
 									max={3}
 									step={1}
-									onChange={(value) =>
-										onKeyboardShortcutMaxVisibleChange?.(Math.round(value))
-									}
+									onChange={(value) => onKeyboardShortcutMaxVisibleChange?.(Math.round(value))}
 									formatValue={(value) => `${Math.round(value)}`}
 									parseInput={(text) => parseInt(text, 10)}
 								/>
 							</div>
-						</div>
-					</div>
+						</SettingsSection>
+					</TabContent>
 				)}
 
 				{/* Background tab */}
 				{activeTab === "background" && (
-					<div>
-						<div className="flex items-center justify-between mb-3">
-							<span className="text-sm font-medium text-slate-200">
-								{tSettings("background.title")}
-							</span>
-						</div>
+					<TabContent>
+						<TabHeader
+							title={tSettings("background.title")}
+							description="Set the backdrop behind your recording canvas"
+						/>
 						<Tabs
 							value={backgroundTab}
 							onValueChange={(value) => setBackgroundTab(value as BackgroundTab)}
 							className="w-full"
 						>
-							<TabsList className="mb-2 bg-white/5 border border-white/5 p-0.5 w-full grid grid-cols-3 h-7 rounded-lg">
+							<TabsList className="mb-3 bg-white/[0.04] border border-white/[0.06] p-0.5 w-full grid grid-cols-3 h-8 rounded-xl">
 								<TabsTrigger
 									value="image"
-									className="data-[state=active]:bg-[#10B981] data-[state=active]:text-white text-slate-400 text-[10px] py-1 rounded-md transition-all"
+									className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#10B981] data-[state=active]:to-[#059669] data-[state=active]:text-white data-[state=active]:shadow-sm text-slate-400 text-[10px] font-medium py-1 rounded-lg transition-all duration-200"
 								>
 									{tSettings("background.image")}
 								</TabsTrigger>
 								<TabsTrigger
 									value="color"
-									className="data-[state=active]:bg-[#10B981] data-[state=active]:text-white text-slate-400 text-[10px] py-1 rounded-md transition-all"
+									className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#10B981] data-[state=active]:to-[#059669] data-[state=active]:text-white data-[state=active]:shadow-sm text-slate-400 text-[10px] font-medium py-1 rounded-lg transition-all duration-200"
 								>
 									{tSettings("background.color")}
 								</TabsTrigger>
 								<TabsTrigger
 									value="gradient"
-									className="data-[state=active]:bg-[#10B981] data-[state=active]:text-white text-slate-400 text-[10px] py-1 rounded-md transition-all"
+									className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#10B981] data-[state=active]:to-[#059669] data-[state=active]:text-white data-[state=active]:shadow-sm text-slate-400 text-[10px] font-medium py-1 rounded-lg transition-all duration-200"
 								>
 									{tSettings("background.gradient")}
 								</TabsTrigger>
@@ -1498,7 +1664,7 @@ export default function SettingsPanel({
 									<Button
 										onClick={() => fileInputRef.current?.click()}
 										variant="outline"
-										className="w-full gap-2 bg-white/5 text-slate-200 border-white/10 hover:bg-[#10B981] hover:text-white hover:border-[#10B981] transition-all h-7 text-[10px]"
+										className="w-full gap-2 bg-white/[0.04] text-slate-200 border-white/[0.08] hover:bg-[#10B981]/15 hover:text-[#10B981] hover:border-[#10B981]/30 transition-all duration-200 h-8 text-[10px] rounded-xl"
 									>
 										<Upload className="w-3 h-3" />
 										{tSettings("background.uploadCustom")}
@@ -1511,7 +1677,7 @@ export default function SettingsPanel({
 												<div
 													key={`custom-${idx}`}
 													className={cn(
-														"aspect-square w-9 h-9 rounded-md border-2 overflow-hidden cursor-pointer transition-all duration-200 relative group shadow-sm",
+														"aspect-square w-9 h-9 rounded-lg border-2 overflow-hidden cursor-pointer transition-all duration-200 relative group shadow-sm hover:scale-105",
 														isSelected
 															? "border-[#10B981] ring-1 ring-[#10B981]/30"
 															: "border-white/10 hover:border-[#10B981]/40 opacity-80 hover:opacity-100 bg-white/5",
@@ -1559,7 +1725,7 @@ export default function SettingsPanel({
 												<div
 													key={wallpaperValue}
 													className={cn(
-														"aspect-square w-9 h-9 rounded-md border-2 overflow-hidden cursor-pointer transition-all duration-200 shadow-sm",
+														"aspect-square w-9 h-9 rounded-lg border-2 overflow-hidden cursor-pointer transition-all duration-200 shadow-sm hover:scale-105",
 														isSelected
 															? "border-[#10B981] ring-1 ring-[#10B981]/30"
 															: "border-white/10 hover:border-[#10B981]/40 opacity-80 hover:opacity-100 bg-white/5",
@@ -1602,7 +1768,7 @@ export default function SettingsPanel({
 											<div
 												key={g}
 												className={cn(
-													"aspect-square w-9 h-9 rounded-md border-2 overflow-hidden cursor-pointer transition-all duration-200 shadow-sm",
+													"aspect-square w-9 h-9 rounded-lg border-2 overflow-hidden cursor-pointer transition-all duration-200 shadow-sm hover:scale-105",
 													gradient === g
 														? "border-[#10B981] ring-1 ring-[#10B981]/30"
 														: "border-white/10 hover:border-[#10B981]/40 opacity-80 hover:opacity-100 bg-white/5",
@@ -1620,150 +1786,171 @@ export default function SettingsPanel({
 								</TabsContent>
 							</div>
 						</Tabs>
-					</div>
+					</TabContent>
 				)}
 
 				{/* Zoom tab */}
 				{activeTab === "zoom" && (
-					<div>
-						<div className="flex items-center justify-between mb-3">
-							<span className="text-sm font-medium text-slate-200">{tSettings("zoom.level")}</span>
-							{zoomEnabled && selectedZoomDepth && (
-								<span className="text-[10px] uppercase tracking-wider font-medium text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded-full">
-									{ZOOM_DEPTH_OPTIONS.find((o) => o.depth === selectedZoomDepth)?.label}
-								</span>
+					<TabContent>
+						<TabHeader
+							title={tSettings("zoom.level")}
+							description="Choose magnification level for zoom regions"
+							badge={
+								zoomEnabled && selectedZoomDepth
+									? ZOOM_DEPTH_OPTIONS.find((o) => o.depth === selectedZoomDepth)?.label
+									: undefined
+							}
+						/>
+
+						<SettingsSection
+							title="Zoom Depth"
+							description="Select how much to magnify the zoomed area"
+						>
+							<div className="grid grid-cols-3 gap-1.5">
+								{ZOOM_DEPTH_OPTIONS.map((option) => {
+									const isActive = selectedZoomDepth === option.depth;
+									return (
+										<Button
+											key={option.depth}
+											type="button"
+											disabled={!zoomEnabled}
+											onClick={() => onZoomDepthChange?.(option.depth)}
+											className={cn(
+												"h-10 rounded-xl border shadow-sm transition-all justify-center",
+												"duration-200 ease-out",
+												zoomEnabled
+													? "opacity-100 cursor-pointer"
+													: "opacity-40 cursor-not-allowed",
+												isActive
+													? "border-[#10B981] bg-gradient-to-br from-[#10B981] to-[#059669] text-white shadow-lg shadow-[#10B981]/25"
+													: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:border-white/[0.1] hover:text-slate-200",
+											)}
+										>
+											<span className="text-xs font-semibold">{option.label}</span>
+										</Button>
+									);
+								})}
+							</div>
+							{!zoomEnabled && (
+								<div className="flex items-center justify-center py-3 px-4 rounded-xl bg-white/[0.02] border border-dashed border-white/[0.08]">
+									<p className="text-[10px] text-slate-500 text-center">
+										{tSettings("zoom.selectRegion")}
+									</p>
+								</div>
 							)}
-						</div>
-						<div className="grid grid-cols-3 gap-1.5">
-							{ZOOM_DEPTH_OPTIONS.map((option) => {
-								const isActive = selectedZoomDepth === option.depth;
-								return (
-									<Button
-										key={option.depth}
-										type="button"
-										disabled={!zoomEnabled}
-										onClick={() => onZoomDepthChange?.(option.depth)}
-										className={cn(
-											"h-9 rounded-lg border shadow-sm transition-all justify-center",
-											"duration-200 ease-out",
-											zoomEnabled ? "opacity-100 cursor-pointer" : "opacity-40 cursor-not-allowed",
-											isActive
-												? "border-[#10B981] bg-[#10B981] text-white shadow-[#10B981]/20"
-												: "border-white/5 bg-white/5 text-slate-400 hover:bg-white/10 hover:border-white/10 hover:text-slate-200",
-										)}
-									>
-										<span className="text-xs font-semibold">{option.label}</span>
-									</Button>
-								);
-							})}
-						</div>
-						{!zoomEnabled && (
-							<p className="text-[10px] text-slate-500 mt-2 text-center">
-								{tSettings("zoom.selectRegion")}
-							</p>
-						)}
-						{zoomEnabled && (
-							<Button
-								onClick={handleDeleteClick}
-								variant="destructive"
-								size="sm"
-								className="mt-2 w-full gap-2 bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 transition-all h-8 text-xs"
-							>
-								<Trash2 className="w-3 h-3" />
-								{tSettings("zoom.deleteZoom")}
-							</Button>
-						)}
+							{zoomEnabled && (
+								<Button
+									onClick={handleDeleteClick}
+									variant="destructive"
+									size="sm"
+									className="w-full gap-2 bg-red-500/8 text-red-400 border border-red-500/15 hover:bg-red-500/15 hover:border-red-500/25 transition-all duration-200 h-9 text-xs rounded-xl"
+								>
+									<Trash2 className="w-3.5 h-3.5" />
+									{tSettings("zoom.deleteZoom")}
+								</Button>
+							)}
+						</SettingsSection>
 
 						{trimEnabled && (
-							<div className="mt-4 pt-4 border-t border-white/5">
-								<span className="text-sm font-medium text-slate-200 mb-3 block">
-									{tSettings("trim.deleteRegion")}
-								</span>
+							<SettingsSection
+								title="Trim Region"
+								description="Remove the selected trim region from the timeline"
+								accentColor="red"
+							>
 								<Button
 									onClick={handleTrimDeleteClick}
 									variant="destructive"
 									size="sm"
-									className="w-full gap-2 bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 transition-all h-8 text-xs"
+									className="w-full gap-2 bg-red-500/8 text-red-400 border border-red-500/15 hover:bg-red-500/15 hover:border-red-500/25 transition-all duration-200 h-9 text-xs rounded-xl"
 								>
-									<Trash2 className="w-3 h-3" />
+									<Trash2 className="w-3.5 h-3.5" />
 									{tSettings("trim.deleteRegion")}
 								</Button>
-							</div>
+							</SettingsSection>
 						)}
-					</div>
+					</TabContent>
 				)}
 
 				{/* Speed tab */}
 				{activeTab === "speed" && (
-					<div>
-						<div className="flex items-center justify-between mb-3">
-							<span className="text-sm font-medium text-slate-200">
-								{tSettings("speed.playbackSpeed")}
-							</span>
-							{selectedSpeedId && selectedSpeedValue && (
-								<span className="text-[10px] uppercase tracking-wider font-medium text-[#d97706] bg-[#d97706]/10 px-2 py-0.5 rounded-full">
-									{SPEED_OPTIONS.find((o) => o.speed === selectedSpeedValue)?.label ??
-										`${selectedSpeedValue}×`}
-								</span>
+					<TabContent>
+						<TabHeader
+							title={tSettings("speed.playbackSpeed")}
+							description="Adjust playback speed for selected timeline regions"
+							badge={
+								selectedSpeedId && selectedSpeedValue
+									? (SPEED_OPTIONS.find((o) => o.speed === selectedSpeedValue)?.label ??
+										`${selectedSpeedValue}×`)
+									: undefined
+							}
+							badgeColor="amber"
+						/>
+
+						<SettingsSection
+							title="Speed Presets"
+							description="Choose a speed multiplier for the selected region"
+							accentColor="amber"
+						>
+							<div className="grid grid-cols-3 gap-1.5">
+								{SPEED_OPTIONS.map((option) => {
+									const isActive = selectedSpeedValue === option.speed;
+									return (
+										<Button
+											key={option.speed}
+											type="button"
+											disabled={!selectedSpeedId}
+											onClick={() => onSpeedChange?.(option.speed)}
+											className={cn(
+												"h-10 rounded-xl border shadow-sm transition-all justify-center",
+												"duration-200 ease-out",
+												selectedSpeedId
+													? "opacity-100 cursor-pointer"
+													: "opacity-40 cursor-not-allowed",
+												isActive
+													? "border-[#d97706] bg-gradient-to-br from-[#d97706] to-[#b45309] text-white shadow-lg shadow-[#d97706]/25"
+													: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:border-white/[0.1] hover:text-slate-200",
+											)}
+										>
+											<span className="text-xs font-semibold">{option.label}</span>
+										</Button>
+									);
+								})}
+							</div>
+							{!selectedSpeedId && (
+								<div className="flex items-center justify-center py-3 px-4 rounded-xl bg-white/[0.02] border border-dashed border-white/[0.08]">
+									<p className="text-[10px] text-slate-500 text-center">
+										{tSettings("speed.selectRegion")}
+									</p>
+								</div>
 							)}
-						</div>
-						<div className="grid grid-cols-3 gap-1.5">
-							{SPEED_OPTIONS.map((option) => {
-								const isActive = selectedSpeedValue === option.speed;
-								return (
-									<Button
-										key={option.speed}
-										type="button"
-										disabled={!selectedSpeedId}
-										onClick={() => onSpeedChange?.(option.speed)}
-										className={cn(
-											"h-9 rounded-lg border shadow-sm transition-all justify-center",
-											"duration-200 ease-out",
-											selectedSpeedId
-												? "opacity-100 cursor-pointer"
-												: "opacity-40 cursor-not-allowed",
-											isActive
-												? "border-[#d97706] bg-[#d97706] text-white shadow-[#d97706]/20"
-												: "border-white/5 bg-white/5 text-slate-400 hover:bg-white/10 hover:border-white/10 hover:text-slate-200",
-										)}
-									>
-										<span className="text-xs font-semibold">{option.label}</span>
-									</Button>
-								);
-							})}
-						</div>
-						{!selectedSpeedId && (
-							<p className="text-[10px] text-slate-500 mt-2 text-center">
-								{tSettings("speed.selectRegion")}
-							</p>
-						)}
-						{selectedSpeedId && (
-							<Button
-								onClick={() => selectedSpeedId && onSpeedDelete?.(selectedSpeedId)}
-								variant="destructive"
-								size="sm"
-								className="mt-2 w-full gap-2 bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 transition-all h-8 text-xs"
-							>
-								<Trash2 className="w-3 h-3" />
-								{tSettings("speed.deleteRegion")}
-							</Button>
-						)}
-					</div>
+							{selectedSpeedId && (
+								<Button
+									onClick={() => selectedSpeedId && onSpeedDelete?.(selectedSpeedId)}
+									variant="destructive"
+									size="sm"
+									className="w-full gap-2 bg-red-500/8 text-red-400 border border-red-500/15 hover:bg-red-500/15 hover:border-red-500/25 transition-all duration-200 h-9 text-xs rounded-xl"
+								>
+									<Trash2 className="w-3.5 h-3.5" />
+									{tSettings("speed.deleteRegion")}
+								</Button>
+							)}
+						</SettingsSection>
+					</TabContent>
 				)}
 
 				{activeTab === "audio" && (
-					<div>
-						<div className="flex items-center justify-between mb-3">
-							<span className="text-sm font-medium text-slate-200">
-								{tSettings("audio.title", "Background Audio")}
-							</span>
-							<span className="text-[10px] uppercase tracking-wider font-medium text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded-full">
-								{tSettings("audio.subtleMix", "Subtle Mix")}
-							</span>
-						</div>
+					<TabContent>
+						<TabHeader
+							title={tSettings("audio.title", "Background Audio")}
+							description="Add background music to polish your recording"
+							badge={tSettings("audio.subtleMix", "Subtle Mix")}
+						/>
 
-						<div className="flex flex-col gap-1.5">
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+						<SettingsSection
+							title="Audio Source"
+							description="Upload your own track or browse the built-in library"
+						>
+							<div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
 								<p className="text-[11px] text-slate-400 leading-relaxed">
 									{tSettings(
 										"audio.subtitle",
@@ -1774,21 +1961,26 @@ export default function SettingsPanel({
 									<Button
 										type="button"
 										onClick={() => void handleImportAudio()}
-										className="w-full gap-2 bg-white/5 text-slate-200 border border-white/10 hover:bg-white/10 hover:border-white/20"
+										className="w-full gap-2 bg-white/[0.04] text-slate-200 border border-white/[0.08] hover:bg-[#10B981]/10 hover:text-[#10B981] hover:border-[#10B981]/30 transition-all duration-200 rounded-xl"
 									>
 										<Upload className="h-3.5 w-3.5" />
 										{tSettings("audio.upload", "Upload audio")}
 									</Button>
 								</div>
 							</div>
+						</SettingsSection>
 
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
-								<div className="text-xs font-medium text-slate-300 mb-2">
-									{tSettings("audio.library", "Built-in Library")}
-								</div>
-								{Object.entries(builtInTracksByMood).map(([mood, tracks]) => (
-									<div key={mood} className="mb-3 last:mb-0">
-										<div className="text-[10px] uppercase tracking-wider text-slate-500 mb-1.5">
+						<SettingsSection
+							title="Built-in Library"
+							description="Curated tracks organized by mood"
+						>
+							<div className="rounded-xl bg-white/[0.04] border border-white/[0.06] overflow-hidden">
+								{Object.entries(builtInTracksByMood).map(([mood, tracks], moodIndex) => (
+									<div
+										key={mood}
+										className={cn("p-2.5", moodIndex > 0 && "border-t border-white/[0.04]")}
+									>
+										<div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-2">
 											{tSettings(`audio.moods.${mood}`, mood)}
 										</div>
 										<div className="space-y-1.5">
@@ -1800,10 +1992,10 @@ export default function SettingsPanel({
 														type="button"
 														onClick={() => void handleSelectBuiltInTrack(track.id)}
 														className={cn(
-															"w-full rounded-lg border px-2.5 py-2 text-left transition-all",
+															"w-full rounded-xl border px-2.5 py-2 text-left transition-all duration-200",
 															isSelected
-																? "border-[#10B981]/40 bg-[#10B981]/10"
-																: "border-white/8 bg-black/10 hover:bg-white/5 hover:border-white/15",
+																? "border-[#10B981]/40 bg-[#10B981]/10 shadow-sm shadow-[#10B981]/10"
+																: "border-white/[0.06] bg-black/10 hover:bg-white/[0.04] hover:border-white/[0.1]",
 														)}
 													>
 														<div className="flex items-center justify-between gap-3">
@@ -1815,10 +2007,10 @@ export default function SettingsPanel({
 																		void handleToggleBuiltInPreview(track.id);
 																	}}
 																	className={cn(
-																		"flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors",
+																		"flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-all duration-200",
 																		playingBuiltInTrackId === track.id
-																			? "border-[#10B981]/40 bg-[#10B981]/15 text-[#10B981]"
-																			: "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-slate-100",
+																			? "border-[#10B981]/40 bg-[#10B981]/15 text-[#10B981] shadow-sm shadow-[#10B981]/20"
+																			: "border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-slate-100",
 																	)}
 																	aria-label={
 																		playingBuiltInTrackId === track.id
@@ -1847,7 +2039,7 @@ export default function SettingsPanel({
 																	</div>
 																</div>
 															</div>
-															<div className="text-[10px] text-slate-500">
+															<div className="text-[10px] text-slate-500 font-mono">
 																{Math.round(track.defaultVolume * 100)}%
 															</div>
 														</div>
@@ -1858,209 +2050,226 @@ export default function SettingsPanel({
 									</div>
 								))}
 							</div>
+						</SettingsSection>
 
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
-								<div className="text-xs font-medium text-slate-300 mb-2">
-									{tSettings("audio.selectedRegion", "Selected Region")}
-								</div>
-								{selectedAudio ? (
-									<div className="space-y-2">
-										<div className="rounded-lg bg-black/10 border border-white/5 px-2.5 py-2">
-											<div className="text-xs font-medium text-slate-200">
-												{getAudioRegionDisplayName(selectedAudio)}
+						<SettingsSection
+							title="Selected Region"
+							description="Adjust properties for the selected audio region"
+							accentColor="amber"
+						>
+							{selectedAudio ? (
+								<>
+									<div className="rounded-xl bg-white/[0.04] border border-white/[0.06] px-3 py-2.5">
+										<div className="text-xs font-medium text-slate-200">
+											{getAudioRegionDisplayName(selectedAudio)}
+										</div>
+										<div className="mt-0.5 text-[10px] text-slate-500">
+											{selectedAudio.sourceType === "built-in"
+												? tSettings("audio.builtIn", "Built-in")
+												: tSettings("audio.uploaded", "Uploaded")}
+										</div>
+									</div>
+
+									<div className="grid grid-cols-2 gap-1.5">
+										<Button
+											type="button"
+											onClick={() => void handleReplaceBuiltInAudio()}
+											disabled={!selectedBuiltInTrack}
+											className="gap-1.5 bg-white/[0.04] text-slate-200 border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/[0.12] rounded-xl text-[10px] transition-all duration-200"
+										>
+											<Music className="h-3 w-3" />
+											{tSettings("audio.replaceBuiltIn", "Replace selected")}
+										</Button>
+										<Button
+											type="button"
+											onClick={() => void handleReplaceWithUploadedAudio()}
+											className="gap-1.5 bg-white/[0.04] text-slate-200 border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/[0.12] rounded-xl text-[10px] transition-all duration-200"
+										>
+											<Upload className="h-3 w-3" />
+											{tSettings("audio.replaceUpload", "Replace with file")}
+										</Button>
+									</div>
+
+									{missingAudioPath && (
+										<div className="rounded-xl border border-amber-400/20 bg-amber-400/10 px-3 py-2.5 text-[11px] text-amber-100">
+											<div className="font-semibold text-amber-50">
+												{tSettings("audio.missingTitle", "Audio source missing")}
 											</div>
-											<div className="mt-0.5 text-[10px] text-slate-500">
-												{selectedAudio.sourceType === "built-in"
-													? tSettings("audio.builtIn", "Built-in")
-													: tSettings("audio.uploaded", "Uploaded")}
+											<div className="mt-1 truncate text-amber-100/80">{missingAudioPath}</div>
+											<div className="mt-2 flex gap-2">
+												<Button
+													type="button"
+													onClick={() => void onRelinkMissingAudio?.()}
+													className="flex-1 bg-amber-300/20 text-amber-50 hover:bg-amber-300/30 rounded-xl"
+												>
+													{tSettings("audio.relink", "Relink audio")}
+												</Button>
+												<Button
+													type="button"
+													onClick={() => onRemoveMissingAudio?.()}
+													className="flex-1 bg-white/7 text-slate-100 hover:bg-white/12 rounded-xl"
+												>
+													{tSettings("audio.remove", "Remove")}
+												</Button>
 											</div>
 										</div>
+									)}
 
-										<div className="grid grid-cols-2 gap-2">
-											<Button
-												type="button"
-												onClick={() => void handleReplaceBuiltInAudio()}
-												disabled={!selectedBuiltInTrack}
-												className="gap-2 bg-white/5 text-slate-200 border border-white/10 hover:bg-white/10 hover:border-white/20"
-											>
-												<Music className="h-3.5 w-3.5" />
-												{tSettings("audio.replaceBuiltIn", "Replace selected")}
-											</Button>
-											<Button
-												type="button"
-												onClick={() => void handleReplaceWithUploadedAudio()}
-												className="gap-2 bg-white/5 text-slate-200 border border-white/10 hover:bg-white/10 hover:border-white/20"
-											>
-												<Upload className="h-3.5 w-3.5" />
-												{tSettings("audio.replaceUpload", "Replace with file")}
-											</Button>
-										</div>
-
-										{missingAudioPath && (
-											<div className="rounded-lg border border-amber-400/20 bg-amber-400/10 px-3 py-2.5 text-[11px] text-amber-100">
-												<div className="font-semibold text-amber-50">
-													{tSettings("audio.missingTitle", "Audio source missing")}
-												</div>
-												<div className="mt-1 truncate text-amber-100/80">{missingAudioPath}</div>
-												<div className="mt-2 flex gap-2">
-													<Button
-														type="button"
-														onClick={() => void onRelinkMissingAudio?.()}
-														className="flex-1 bg-amber-300/20 text-amber-50 hover:bg-amber-300/30"
-													>
-														{tSettings("audio.relink", "Relink audio")}
-													</Button>
-													<Button
-														type="button"
-														onClick={() => onRemoveMissingAudio?.()}
-														className="flex-1 bg-white/7 text-slate-100 hover:bg-white/12"
-													>
-														{tSettings("audio.remove", "Remove")}
-													</Button>
-												</div>
-											</div>
-										)}
-
-										<div className="flex items-center justify-between p-2 rounded-lg bg-black/10 border border-white/5">
+									<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+										<div>
 											<div className="text-xs font-medium text-slate-300">
 												{tSettings("audio.loop", "Loop audio")}
 											</div>
-											<Switch
-												checked={selectedAudio.loop}
-												onCheckedChange={(checked) =>
-													onAudioLoopChange?.(selectedAudio.id, checked)
-												}
-												className="data-[state=checked]:bg-[#10B981] scale-90"
-											/>
+											<div className="text-[10px] text-slate-500 mt-0.5">
+												Repeat audio when it ends
+											</div>
 										</div>
-
-										<div className="p-2 rounded-lg bg-black/10 border border-white/5">
-											<SliderControl
-												label={tSettings("audio.volume", "Volume")}
-												value={selectedAudio.volume}
-												defaultValue={DEFAULT_AUDIO_REGION_VOLUME}
-												min={0}
-												max={1}
-												step={0.01}
-												onChange={(value) => onAudioVolumeChange?.(selectedAudio.id, value)}
-												formatValue={(value) => `${Math.round(value * 100)}%`}
-												parseInput={(text) => parseFloat(text.replace(/%$/, "")) / 100}
-											/>
-										</div>
-										<div className="p-2 rounded-lg bg-black/10 border border-white/5">
-											<SliderControl
-												label={tSettings("audio.fadeIn", "Fade In")}
-												value={selectedAudio.fadeInMs}
-												defaultValue={DEFAULT_AUDIO_FADE_IN_MS}
-												min={0}
-												max={3000}
-												step={50}
-												onChange={(value) =>
-													onAudioFadeChange?.(selectedAudio.id, { fadeInMs: value })
-												}
-												formatValue={(value) => `${Math.round(value)}ms`}
-												parseInput={(text) => parseFloat(text.replace(/ms$/, ""))}
-											/>
-										</div>
-										<div className="p-2 rounded-lg bg-black/10 border border-white/5">
-											<SliderControl
-												label={tSettings("audio.fadeOut", "Fade Out")}
-												value={selectedAudio.fadeOutMs}
-												defaultValue={DEFAULT_AUDIO_FADE_OUT_MS}
-												min={0}
-												max={3000}
-												step={50}
-												onChange={(value) =>
-													onAudioFadeChange?.(selectedAudio.id, { fadeOutMs: value })
-												}
-												formatValue={(value) => `${Math.round(value)}ms`}
-												parseInput={(text) => parseFloat(text.replace(/ms$/, ""))}
-											/>
-										</div>
-										<Button
-											type="button"
-											onClick={() => onAudioDelete?.(selectedAudio.id)}
-											variant="destructive"
-											size="sm"
-											className="w-full gap-2 bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 transition-all h-8 text-xs"
-										>
-											<Trash2 className="h-3 w-3" />
-											{tSettings("audio.deleteRegion", "Delete Audio Region")}
-										</Button>
+										<Switch
+											checked={selectedAudio.loop}
+											onCheckedChange={(checked) => onAudioLoopChange?.(selectedAudio.id, checked)}
+											className="data-[state=checked]:bg-[#10B981] scale-90"
+										/>
 									</div>
-								) : (
-									<p className="text-[10px] text-slate-500 text-center py-2">
+
+									<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+										<SliderControl
+											label={tSettings("audio.volume", "Volume")}
+											value={selectedAudio.volume}
+											defaultValue={DEFAULT_AUDIO_REGION_VOLUME}
+											min={0}
+											max={1}
+											step={0.01}
+											onChange={(value) => onAudioVolumeChange?.(selectedAudio.id, value)}
+											formatValue={(value) => `${Math.round(value * 100)}%`}
+											parseInput={(text) => parseFloat(text.replace(/%$/, "")) / 100}
+										/>
+									</div>
+									<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+										<SliderControl
+											label={tSettings("audio.fadeIn", "Fade In")}
+											value={selectedAudio.fadeInMs}
+											defaultValue={DEFAULT_AUDIO_FADE_IN_MS}
+											min={0}
+											max={3000}
+											step={50}
+											onChange={(value) =>
+												onAudioFadeChange?.(selectedAudio.id, { fadeInMs: value })
+											}
+											formatValue={(value) => `${Math.round(value)}ms`}
+											parseInput={(text) => parseFloat(text.replace(/ms$/, ""))}
+										/>
+									</div>
+									<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+										<SliderControl
+											label={tSettings("audio.fadeOut", "Fade Out")}
+											value={selectedAudio.fadeOutMs}
+											defaultValue={DEFAULT_AUDIO_FADE_OUT_MS}
+											min={0}
+											max={3000}
+											step={50}
+											onChange={(value) =>
+												onAudioFadeChange?.(selectedAudio.id, { fadeOutMs: value })
+											}
+											formatValue={(value) => `${Math.round(value)}ms`}
+											parseInput={(text) => parseFloat(text.replace(/ms$/, ""))}
+										/>
+									</div>
+									<Button
+										type="button"
+										onClick={() => onAudioDelete?.(selectedAudio.id)}
+										variant="destructive"
+										size="sm"
+										className="w-full gap-2 bg-red-500/8 text-red-400 border border-red-500/15 hover:bg-red-500/15 hover:border-red-500/25 transition-all duration-200 h-9 text-xs rounded-xl"
+									>
+										<Trash2 className="h-3.5 w-3.5" />
+										{tSettings("audio.deleteRegion", "Delete Audio Region")}
+									</Button>
+								</>
+							) : (
+								<div className="flex items-center justify-center py-4 px-4 rounded-xl bg-white/[0.02] border border-dashed border-white/[0.08]">
+									<p className="text-[10px] text-slate-500 text-center">
 										{tSettings(
 											"audio.empty",
 											"Choose a built-in track or upload your own file, then add it at the playhead.",
 										)}
 									</p>
-								)}
-							</div>
-						</div>
-					</div>
+								</div>
+							)}
+						</SettingsSection>
+					</TabContent>
 				)}
 
 				{/* Annotation tab */}
 				{activeTab === "annotation" && (
-					<div>
+					<TabContent>
 						{selectedAnnotation &&
 						onAnnotationContentChange &&
 						onAnnotationTypeChange &&
 						onAnnotationStyleChange &&
 						onAnnotationDelete ? (
-							<AnnotationSettingsPanel
-								annotation={selectedAnnotation}
-								onContentChange={(content) =>
-									onAnnotationContentChange(selectedAnnotation.id, content)
-								}
-								onTypeChange={(type) => onAnnotationTypeChange(selectedAnnotation.id, type)}
-								onStyleChange={(style) => onAnnotationStyleChange(selectedAnnotation.id, style)}
-								onFigureDataChange={
-									onAnnotationFigureDataChange
-										? (figureData) =>
-												onAnnotationFigureDataChange(selectedAnnotation.id, figureData)
-										: undefined
-								}
-								onBlurDataChange={
-									onAnnotationBlurDataChange
-										? (blurData) => onAnnotationBlurDataChange(selectedAnnotation.id, blurData)
-										: undefined
-								}
-								onDelete={() => onAnnotationDelete(selectedAnnotation.id)}
-								inline
-							/>
+							<>
+								<TabHeader
+									title="Annotation"
+									description="Edit the selected annotation's content and style"
+								/>
+								<AnnotationSettingsPanel
+									annotation={selectedAnnotation}
+									onContentChange={(content) =>
+										onAnnotationContentChange(selectedAnnotation.id, content)
+									}
+									onTypeChange={(type) => onAnnotationTypeChange(selectedAnnotation.id, type)}
+									onStyleChange={(style) => onAnnotationStyleChange(selectedAnnotation.id, style)}
+									onFigureDataChange={
+										onAnnotationFigureDataChange
+											? (figureData) =>
+													onAnnotationFigureDataChange(selectedAnnotation.id, figureData)
+											: undefined
+									}
+									onBlurDataChange={
+										onAnnotationBlurDataChange
+											? (blurData) => onAnnotationBlurDataChange(selectedAnnotation.id, blurData)
+											: undefined
+									}
+									onDelete={() => onAnnotationDelete(selectedAnnotation.id)}
+									inline
+								/>
+							</>
 						) : (
-							<div className="flex flex-col items-center justify-center py-8 text-center">
-								<MessageSquare className="w-8 h-8 text-slate-600 mb-3" />
+							<div className="flex flex-col items-center justify-center py-12 text-center">
+								<div className="w-14 h-14 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-4">
+									<MessageSquare className="w-7 h-7 text-slate-600" />
+								</div>
 								<p className="text-sm font-medium text-slate-400">No Annotation Selected</p>
-								<p className="text-xs text-slate-500 mt-1">
+								<p className="text-[11px] text-slate-500 mt-1.5 max-w-[200px] leading-relaxed">
 									Select an annotation on the timeline to edit its settings
 								</p>
 							</div>
 						)}
-					</div>
+					</TabContent>
 				)}
 
 				{/* Captions tab */}
 				{activeTab === "captions" && captionSettings && (
-					<div>
-						<div className="flex items-center justify-between mb-3">
-							<span className="text-sm font-medium text-slate-200">
-								{t("editor.captions.title", "Captions")}
-							</span>
-							{captionRegions.length > 0 && (
-								<span className="text-[10px] uppercase tracking-wider font-medium text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded-full">
-									{captionRegions.length} caption{captionRegions.length !== 1 ? "s" : ""}
-								</span>
-							)}
-						</div>
+					<TabContent>
+						<TabHeader
+							title={t("editor.captions.title", "Captions")}
+							description="Generate and style captions from your recording audio"
+							badge={
+								captionRegions.length > 0
+									? `${captionRegions.length} caption${captionRegions.length !== 1 ? "s" : ""}`
+									: undefined
+							}
+						/>
 
-						<div className="flex flex-col gap-1.5">
-							{/* Enable/Disable */}
-							<div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
-								<div className="text-xs font-medium text-slate-300">
-									{t("editor.captions.showCaptions", "Show Captions")}
+						<SettingsSection title="Display" description="Toggle caption visibility in your export">
+							<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+								<div>
+									<div className="text-xs font-medium text-slate-300">
+										{t("editor.captions.showCaptions", "Show Captions")}
+									</div>
+									<div className="text-[10px] text-slate-500 mt-0.5">
+										Overlay captions on the video
+									</div>
 								</div>
 								<Switch
 									checked={captionSettings.enabled}
@@ -2068,8 +2277,13 @@ export default function SettingsPanel({
 									className="data-[state=checked]:bg-[#10B981] scale-90"
 								/>
 							</div>
+						</SettingsSection>
 
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5 space-y-2">
+						<SettingsSection
+							title="Transcription"
+							description="Generate captions from your recording audio"
+						>
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] space-y-2">
 								<div className="flex items-center justify-between">
 									<div>
 										<div className="text-xs font-medium text-slate-300">
@@ -2235,7 +2449,7 @@ export default function SettingsPanel({
 										type="button"
 										onClick={() => onCaptionExport?.("srt")}
 										disabled={captionRegions.length === 0}
-										className="h-8 rounded-lg border border-white/5 bg-white/5 text-[10px] text-slate-300"
+										className="h-8 rounded-xl border border-white/[0.06] bg-white/[0.04] text-[10px] text-slate-300 hover:bg-white/[0.08] transition-colors duration-200"
 									>
 										{t("editor.captions.exportSrt", "Export SRT")}
 									</Button>
@@ -2243,7 +2457,7 @@ export default function SettingsPanel({
 										type="button"
 										onClick={() => onCaptionExport?.("vtt")}
 										disabled={captionRegions.length === 0}
-										className="h-8 rounded-lg border border-white/5 bg-white/5 text-[10px] text-slate-300"
+										className="h-8 rounded-xl border border-white/[0.06] bg-white/[0.04] text-[10px] text-slate-300 hover:bg-white/[0.08] transition-colors duration-200"
 									>
 										{t("editor.captions.exportVtt", "Export VTT")}
 									</Button>
@@ -2251,15 +2465,16 @@ export default function SettingsPanel({
 										type="button"
 										onClick={() => onCaptionExport?.("txt")}
 										disabled={captionRegions.length === 0}
-										className="h-8 rounded-lg border border-white/5 bg-white/5 text-[10px] text-slate-300"
+										className="h-8 rounded-xl border border-white/[0.06] bg-white/[0.04] text-[10px] text-slate-300 hover:bg-white/[0.08] transition-colors duration-200"
 									>
 										{t("editor.captions.exportTxt", "Export TXT")}
 									</Button>
 								</div>
 							</div>
+						</SettingsSection>
 
-							{/* Style presets */}
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+						<SettingsSection title="Styling" description="Customize caption appearance and layout">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<label className="text-xs font-medium text-slate-300 mb-2 block">
 									{t("editor.captions.stylePreset", "Style Preset")}
 								</label>
@@ -2270,10 +2485,10 @@ export default function SettingsPanel({
 											type="button"
 											onClick={() => onCaptionStylePresetChange?.(preset)}
 											className={cn(
-												"h-8 rounded-lg border shadow-sm transition-all justify-center",
+												"h-8 rounded-lg border shadow-sm transition-all duration-200 justify-center",
 												captionSettings.style.preset === preset
-													? "border-[#10B981] bg-[#10B981] text-white"
-													: "border-white/5 bg-white/5 text-slate-400 hover:bg-white/10",
+													? "border-[#10B981] bg-gradient-to-r from-[#10B981] to-[#059669] text-white shadow-sm shadow-[#10B981]/20"
+													: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08]",
 											)}
 										>
 											<span className="text-[10px] font-semibold capitalize">{preset}</span>
@@ -2282,22 +2497,21 @@ export default function SettingsPanel({
 								</div>
 							</div>
 
-							{/* Position */}
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<label className="text-xs font-medium text-slate-300 mb-2 block">
 									{t("editor.captions.position", "Position")}
 								</label>
-								<div className="grid grid-cols-3 gap-2">
+								<div className="grid grid-cols-3 gap-1.5">
 									{(["top", "center", "bottom"] as const).map((pos) => (
 										<Button
 											key={pos}
 											type="button"
 											onClick={() => onCaptionSettingsChange?.({ position: pos })}
 											className={cn(
-												"h-8 rounded-lg border shadow-sm transition-all justify-center",
+												"h-8 rounded-lg border shadow-sm transition-all duration-200 justify-center",
 												captionSettings.position === pos
-													? "border-[#10B981] bg-[#10B981] text-white"
-													: "border-white/5 bg-white/5 text-slate-400 hover:bg-white/10",
+													? "border-[#10B981] bg-gradient-to-r from-[#10B981] to-[#059669] text-white shadow-sm shadow-[#10B981]/20"
+													: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08]",
 											)}
 										>
 											<span className="text-[10px] font-semibold capitalize">{pos}</span>
@@ -2306,8 +2520,7 @@ export default function SettingsPanel({
 								</div>
 							</div>
 
-							{/* Font size */}
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label={t("editor.captions.fontSize", "Font Size")}
 									value={captionSettings.style.fontSize}
@@ -2321,8 +2534,7 @@ export default function SettingsPanel({
 								/>
 							</div>
 
-							{/* Text color */}
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<label className="text-xs font-medium text-slate-300 mb-2 block">
 									{t("editor.captions.textColor", "Text Color")}
 								</label>
@@ -2342,8 +2554,7 @@ export default function SettingsPanel({
 								/>
 							</div>
 
-							{/* Background opacity */}
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label={t("editor.captions.backgroundOpacity", "Background Opacity")}
 									value={captionSettings.style.backgroundOpacity}
@@ -2357,8 +2568,7 @@ export default function SettingsPanel({
 								/>
 							</div>
 
-							{/* Outline width */}
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label={t("editor.captions.outlineWidth", "Outline Width")}
 									value={captionSettings.style.outlineWidth}
@@ -2372,7 +2582,7 @@ export default function SettingsPanel({
 								/>
 							</div>
 
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label={t("editor.captions.wordsPerLine", "Words Per Line")}
 									value={captionSettings.maxWordsPerLine}
@@ -2386,7 +2596,7 @@ export default function SettingsPanel({
 								/>
 							</div>
 
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label={t("editor.captions.safeArea", "Safe Area")}
 									value={captionSettings.safeAreaInset}
@@ -2399,37 +2609,39 @@ export default function SettingsPanel({
 									parseInput={(t) => parseFloat(t.replace(/%$/, ""))}
 								/>
 							</div>
+						</SettingsSection>
 
-							{/* Caption list */}
-							{captionRegions.length > 0 && (
-								<div className="p-2 rounded-lg bg-white/5 border border-white/5">
-									<div className="flex items-center justify-between mb-2">
+						{/* Caption list */}
+						{captionRegions.length > 0 && (
+							<SettingsSection title="Caption List" description="Edit individual caption segments">
+								<div className="rounded-xl bg-white/[0.04] border border-white/[0.06] overflow-hidden">
+									<div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.04]">
 										<label className="text-xs font-medium text-slate-300">
 											{t("editor.captions.title", "Captions")} ({captionRegions.length})
 										</label>
 										<Button
 											type="button"
 											onClick={onDeleteAllCaptions}
-											className="h-6 px-2 rounded border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 text-[10px]"
+											className="h-6 px-2 rounded-lg border border-red-500/20 bg-red-500/8 text-red-400 hover:bg-red-500/15 text-[10px] transition-colors duration-200"
 										>
 											<Trash2 className="w-3 h-3 mr-1" />
 											{t("editor.captions.clearAll", "Clear All")}
 										</Button>
 									</div>
-									<div className="flex flex-col gap-1 max-h-48 overflow-y-auto custom-scrollbar">
+									<div className="flex flex-col gap-0.5 max-h-48 overflow-y-auto custom-scrollbar p-1.5">
 										{captionRegions.map((caption) => (
 											<div
 												key={caption.id}
 												onClick={() => onSelectCaption?.(caption.id)}
 												className={cn(
-													"flex items-start gap-2 p-1.5 rounded-md border cursor-pointer transition-all",
+													"flex items-start gap-2 p-2 rounded-xl border cursor-pointer transition-all duration-200",
 													selectedCaptionId === caption.id
-														? "border-[#10B981] bg-[#10B981]/10"
-														: "border-white/5 bg-white/[0.02] hover:bg-white/5",
+														? "border-[#10B981]/30 bg-[#10B981]/8 shadow-sm shadow-[#10B981]/10"
+														: "border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/[0.08]",
 												)}
 											>
 												<div className="flex-1 min-w-0">
-													<div className="text-[10px] text-slate-500 mb-1">
+													<div className="text-[10px] text-slate-500 mb-1 font-mono">
 														{(caption.startMs / 1000).toFixed(2)}s -{" "}
 														{(caption.endMs / 1000).toFixed(2)}s
 													</div>
@@ -2447,7 +2659,7 @@ export default function SettingsPanel({
 																event.stopPropagation();
 																onCaptionSplit?.(caption.id);
 															}}
-															className="h-6 px-2 rounded border border-white/5 bg-white/5 text-[10px] text-slate-300"
+															className="h-6 px-2 rounded-lg border border-white/[0.06] bg-white/[0.04] text-[10px] text-slate-300 hover:bg-white/[0.08] transition-colors duration-200"
 														>
 															{t("editor.captions.split", "Split")}
 														</Button>
@@ -2457,7 +2669,7 @@ export default function SettingsPanel({
 																event.stopPropagation();
 																onCaptionMergeNext?.(caption.id);
 															}}
-															className="h-6 px-2 rounded border border-white/5 bg-white/5 text-[10px] text-slate-300"
+															className="h-6 px-2 rounded-lg border border-white/[0.06] bg-white/[0.04] text-[10px] text-slate-300 hover:bg-white/[0.08] transition-colors duration-200"
 														>
 															{t("editor.captions.mergeNext", "Merge Next")}
 														</Button>
@@ -2469,7 +2681,7 @@ export default function SettingsPanel({
 														e.stopPropagation();
 														onCaptionDelete?.(caption.id);
 													}}
-													className="shrink-0 p-0.5 text-slate-500 hover:text-red-400 transition-colors"
+													className="shrink-0 p-1 text-slate-500 hover:text-red-400 transition-colors duration-200 rounded-md hover:bg-red-500/10"
 												>
 													<X className="w-3 h-3" />
 												</button>
@@ -2477,79 +2689,79 @@ export default function SettingsPanel({
 										))}
 									</div>
 								</div>
-							)}
-						</div>
-					</div>
+							</SettingsSection>
+						)}
+					</TabContent>
 				)}
 
 				{/* Webcam tab */}
 				{activeTab === "webcam" && webcamPath && webcamRegion && (
-					<div>
-						<div className="flex items-center justify-between mb-3">
-							<span className="text-sm font-medium text-slate-200">
-								{tSettings("webcam.title")}
-							</span>
-							<div className="flex items-center gap-2">
-								{selectedCameraLayout && (
-									<span className="text-[10px] uppercase tracking-wider font-medium text-[#3b82f6] bg-[#3b82f6]/10 px-2 py-0.5 rounded-full">
-										{tSettings("webcam.layoutBadge")}
-									</span>
-								)}
+					<TabContent>
+						<TabHeader
+							title={tSettings("webcam.title")}
+							description="Configure your webcam overlay display"
+							badge={selectedCameraLayout ? tSettings("webcam.layoutBadge") : undefined}
+							badgeColor="blue"
+							trailing={
 								<Button
 									type="button"
 									onClick={() => setShowAdvancedWebcam((prev) => !prev)}
-									className="h-7 rounded-lg border border-white/10 bg-white/5 px-2 text-[10px] font-semibold text-slate-300 hover:bg-white/10"
+									className="h-7 rounded-xl border border-white/[0.08] bg-white/[0.04] px-2.5 text-[10px] font-semibold text-slate-300 hover:bg-white/[0.08] transition-all duration-200"
 								>
 									{showAdvancedWebcam
 										? tSettings("webcam.hideAdvanced")
 										: tSettings("webcam.showAdvanced")}
 								</Button>
-							</div>
-						</div>
+							}
+						/>
 
-						<div className="flex flex-col gap-1.5">
-							{webcamMissing && (
-								<div className="rounded-xl border border-amber-400/25 bg-amber-400/10 p-3 text-xs text-amber-100">
-									<div className="flex items-start gap-2">
-										<AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
-										<div className="min-w-0">
-											<div className="font-semibold text-amber-50">
-												{tSettings("webcam.missingTitle")}
+						{webcamMissing && (
+							<div className="rounded-xl border border-amber-400/25 bg-amber-400/10 p-3 text-xs text-amber-100 mb-4">
+								<div className="flex items-start gap-2">
+									<AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
+									<div className="min-w-0">
+										<div className="font-semibold text-amber-50">
+											{tSettings("webcam.missingTitle")}
+										</div>
+										<div className="mt-1 text-amber-100/80">
+											{tSettings("webcam.missingDescription")}
+										</div>
+										{missingWebcamPath && (
+											<div className="mt-2 truncate rounded-lg bg-black/20 px-2 py-1 font-mono text-[10px] text-amber-50/80">
+												{missingWebcamPath}
 											</div>
-											<div className="mt-1 text-amber-100/80">
-												{tSettings("webcam.missingDescription")}
-											</div>
-											{missingWebcamPath && (
-												<div className="mt-2 truncate rounded-md bg-black/20 px-2 py-1 font-mono text-[10px] text-amber-50/80">
-													{missingWebcamPath}
-												</div>
-											)}
-											<div className="mt-3 grid grid-cols-2 gap-2">
-												<Button
-													type="button"
-													onClick={onRelinkMissingWebcam}
-													className="h-8 rounded-lg border border-amber-300/30 bg-amber-300/15 text-[10px] font-semibold text-amber-50 hover:bg-amber-300/25"
-												>
-													{tSettings("webcam.relink")}
-												</Button>
-												<Button
-													type="button"
-													onClick={onRemoveMissingWebcam}
-													className="h-8 rounded-lg border border-white/10 bg-white/5 text-[10px] font-semibold text-slate-200 hover:bg-white/10"
-												>
-													{tSettings("webcam.remove")}
-												</Button>
-											</div>
+										)}
+										<div className="mt-3 grid grid-cols-2 gap-2">
+											<Button
+												type="button"
+												onClick={onRelinkMissingWebcam}
+												className="h-8 rounded-xl border border-amber-300/30 bg-amber-300/15 text-[10px] font-semibold text-amber-50 hover:bg-amber-300/25 transition-colors duration-200"
+											>
+												{tSettings("webcam.relink")}
+											</Button>
+											<Button
+												type="button"
+												onClick={onRemoveMissingWebcam}
+												className="h-8 rounded-xl border border-white/10 bg-white/[0.04] text-[10px] font-semibold text-slate-200 hover:bg-white/[0.08] transition-colors duration-200"
+											>
+												{tSettings("webcam.remove")}
+											</Button>
 										</div>
 									</div>
 								</div>
-							)}
+							</div>
+						)}
 
-							<div className="grid grid-cols-2 gap-2">
+						<SettingsSection
+							title="Display"
+							description="Show or hide your webcam overlay"
+							accentColor="blue"
+						>
+							<div className="grid grid-cols-2 gap-1.5">
 								<Button
 									type="button"
 									onClick={onResetRecommendedWebcam}
-									className="h-8 rounded-lg border border-[#10B981]/30 bg-[#10B981]/12 text-[10px] font-semibold text-[#9ff0c8] hover:bg-[#10B981]/20"
+									className="h-8 rounded-xl border border-[#10B981]/25 bg-[#10B981]/10 text-[10px] font-semibold text-[#9ff0c8] hover:bg-[#10B981]/18 transition-colors duration-200"
 								>
 									{tSettings("webcam.resetRecommended")}
 								</Button>
@@ -2557,23 +2769,23 @@ export default function SettingsPanel({
 									<Button
 										type="button"
 										onClick={onResetSelectedCameraLayout}
-										className="h-8 rounded-lg border border-[#3b82f6]/30 bg-[#3b82f6]/12 text-[10px] font-semibold text-[#a9c7ff] hover:bg-[#3b82f6]/20"
+										className="h-8 rounded-xl border border-[#3b82f6]/25 bg-[#3b82f6]/10 text-[10px] font-semibold text-[#a9c7ff] hover:bg-[#3b82f6]/18 transition-colors duration-200"
 									>
 										{tSettings("webcam.resetLayout")}
 									</Button>
 								) : (
-									<div className="h-8 rounded-lg border border-white/5 bg-white/[0.03] px-2 text-[10px] font-medium text-slate-500 flex items-center justify-center">
+									<div className="h-8 rounded-xl border border-white/[0.06] bg-white/[0.02] px-2 text-[10px] font-medium text-slate-500 flex items-center justify-center">
 										{tSettings("webcam.recommendedDefaults")}
 									</div>
 								)}
 							</div>
 
 							{selectedCameraLayout && (
-								<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 									<label className="text-xs font-medium text-slate-300 mb-2 block">
 										{tSettings("webcam.cameraLayout")}
 									</label>
-									<div className="grid grid-cols-3 gap-2">
+									<div className="grid grid-cols-3 gap-1.5">
 										{(
 											[
 												["default", tSettings("webcam.defaultMode")],
@@ -2586,10 +2798,10 @@ export default function SettingsPanel({
 												type="button"
 												onClick={() => onCameraLayoutChange?.(selectedCameraLayout.id, { mode })}
 												className={cn(
-													"h-9 rounded-lg border shadow-sm transition-all justify-center",
+													"h-9 rounded-lg border shadow-sm transition-all duration-200 justify-center",
 													selectedCameraLayout.mode === mode
-														? "border-[#3b82f6] bg-[#3b82f6] text-white"
-														: "border-white/5 bg-white/5 text-slate-400 hover:bg-white/10",
+														? "border-[#3b82f6] bg-gradient-to-r from-[#3b82f6] to-[#2563eb] text-white shadow-sm shadow-[#3b82f6]/20"
+														: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08]",
 												)}
 											>
 												<span className="text-xs font-semibold">{label}</span>
@@ -2599,9 +2811,14 @@ export default function SettingsPanel({
 								</div>
 							)}
 
-							<div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
-								<div className="text-xs font-medium text-slate-300">
-									{tSettings("webcam.showWebcam")}
+							<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+								<div>
+									<div className="text-xs font-medium text-slate-300">
+										{tSettings("webcam.showWebcam")}
+									</div>
+									<div className="text-[10px] text-slate-500 mt-0.5">
+										Display webcam in the export
+									</div>
 								</div>
 								<Switch
 									checked={showWebcam}
@@ -2610,9 +2827,14 @@ export default function SettingsPanel({
 								/>
 							</div>
 
-							<div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
-								<div className="text-xs font-medium text-slate-300">
-									{tSettings("webcam.mirrorCamera")}
+							<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+								<div>
+									<div className="text-xs font-medium text-slate-300">
+										{tSettings("webcam.mirrorCamera")}
+									</div>
+									<div className="text-[10px] text-slate-500 mt-0.5">
+										Horizontally flip the webcam feed
+									</div>
 								</div>
 								<Switch
 									checked={mirrorWebcam}
@@ -2620,8 +2842,61 @@ export default function SettingsPanel({
 									className="data-[state=checked]:bg-[#10B981] scale-90"
 								/>
 							</div>
+						</SettingsSection>
 
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+						<SettingsSection
+							title="Position & Size"
+							description="Place and resize your webcam on the canvas"
+							accentColor="blue"
+						>
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+								<label className="text-xs font-medium text-slate-300 mb-2 block">
+									{tSettings("webcam.position")}
+								</label>
+								<div className="grid grid-cols-2 gap-1.5">
+									{[
+										{ label: tSettings("webcam.topLeft"), anchor: "top-left" as const },
+										{ label: tSettings("webcam.topRight"), anchor: "top-right" as const },
+										{ label: tSettings("webcam.bottomLeft"), anchor: "bottom-left" as const },
+										{ label: tSettings("webcam.bottomRight"), anchor: "bottom-right" as const },
+									].map((preset) => (
+										<Button
+											key={preset.label}
+											type="button"
+											onClick={() =>
+												onWebcamRegionChange?.({
+													anchor: preset.anchor,
+													marginPct: 4,
+												})
+											}
+											className={cn(
+												"h-8 rounded-lg border text-[10px] transition-all duration-200",
+												webcamRegion.anchor === preset.anchor
+													? "border-[#10B981]/40 bg-[#10B981]/10 text-[#a7f3d0] shadow-sm shadow-[#10B981]/10"
+													: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08]",
+											)}
+										>
+											{preset.label}
+										</Button>
+									))}
+								</div>
+							</div>
+
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+								<SliderControl
+									label={tSettings("webcam.size")}
+									value={webcamSizeValue}
+									defaultValue={18}
+									min={8}
+									max={40}
+									step={0.5}
+									onChange={handleWebcamSizeSliderChange}
+									formatValue={(v) => `${v.toFixed(1)}%`}
+									parseInput={(t) => parseFloat(t.replace(/%$/, ""))}
+								/>
+							</div>
+
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label={tSettings("webcam.cameraDuringZoom")}
 									value={cameraSizeDuringZoom}
@@ -2647,22 +2922,14 @@ export default function SettingsPanel({
 									}}
 								/>
 							</div>
+						</SettingsSection>
 
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
-								<SliderControl
-									label={tSettings("webcam.size")}
-									value={webcamSizeValue}
-									defaultValue={18}
-									min={8}
-									max={40}
-									step={0.5}
-									onChange={handleWebcamSizeSliderChange}
-									formatValue={(v) => `${v.toFixed(1)}%`}
-									parseInput={(t) => parseFloat(t.replace(/%$/, ""))}
-								/>
-							</div>
-
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+						<SettingsSection
+							title="Appearance"
+							description="Customize border, shape, and style"
+							accentColor="blue"
+						>
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label={tSettings("webcam.borderWidth")}
 									value={webcamRegion.borderWidth}
@@ -2677,7 +2944,7 @@ export default function SettingsPanel({
 							</div>
 
 							{(webcamRegion.shape === "rectangle" || webcamRegion.shape === "square") && (
-								<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 									<SliderControl
 										label={tSettings("webcam.roundness")}
 										value={webcamRegion.borderRadius}
@@ -2691,150 +2958,154 @@ export default function SettingsPanel({
 									/>
 								</div>
 							)}
+						</SettingsSection>
 
-							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
-								<label className="text-xs font-medium text-slate-300 mb-2 block">
-									{tSettings("webcam.position")}
-								</label>
-								<div className="grid grid-cols-2 gap-2">
-									{[
-										{ label: tSettings("webcam.topLeft"), anchor: "top-left" as const },
-										{ label: tSettings("webcam.topRight"), anchor: "top-right" as const },
-										{ label: tSettings("webcam.bottomLeft"), anchor: "bottom-left" as const },
-										{ label: tSettings("webcam.bottomRight"), anchor: "bottom-right" as const },
-									].map((preset) => (
-										<Button
-											key={preset.label}
-											type="button"
-											onClick={() =>
-												onWebcamRegionChange?.({
-													anchor: preset.anchor,
-													marginPct: 4,
-												})
-											}
-											className={cn(
-												"h-8 rounded-lg border text-[10px] transition-colors",
-												webcamRegion.anchor === preset.anchor
-													? "border-[#10B981]/40 bg-[#10B981]/12 text-[#a7f3d0]"
-													: "border-white/5 bg-white/5 text-slate-400 hover:bg-white/10",
-											)}
-										>
-											{preset.label}
-										</Button>
-									))}
+						{showAdvancedWebcam && (
+							<SettingsSection
+								title="Advanced"
+								description="Fine-tune shape, opacity, and additional border settings"
+								accentColor="blue"
+								className="animate-in fade-in slide-in-from-top-2 duration-200"
+							>
+								<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+									<label className="text-xs font-medium text-slate-300 mb-2 block">
+										{tSettings("webcam.shape")}
+									</label>
+									<div className="grid grid-cols-3 gap-1.5">
+										{(["circle", "square", "rectangle"] as const).map((shape) => (
+											<Button
+												key={shape}
+												type="button"
+												onClick={() => onWebcamRegionChange?.({ shape })}
+												className={cn(
+													"h-9 rounded-lg border shadow-sm transition-all duration-200 justify-center",
+													webcamRegion.shape === shape
+														? "border-[#3b82f6] bg-gradient-to-r from-[#3b82f6] to-[#2563eb] text-white shadow-sm shadow-[#3b82f6]/20"
+														: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08]",
+												)}
+											>
+												<span className="text-xs font-semibold capitalize">{shape}</span>
+											</Button>
+										))}
+									</div>
 								</div>
-							</div>
 
-							{showAdvancedWebcam && (
-								<>
-									<div className="p-2 rounded-lg bg-white/5 border border-white/5">
-										<label className="text-xs font-medium text-slate-300 mb-2 block">
-											{tSettings("webcam.shape")}
-										</label>
-										<div className="grid grid-cols-3 gap-2">
-											{(["circle", "square", "rectangle"] as const).map((shape) => (
-												<Button
-													key={shape}
-													type="button"
-													onClick={() => onWebcamRegionChange?.({ shape })}
-													className={cn(
-														"h-9 rounded-lg border shadow-sm transition-all justify-center",
-														webcamRegion.shape === shape
-															? "border-[#10B981] bg-[#10B981] text-white"
-															: "border-white/5 bg-white/5 text-slate-400 hover:bg-white/10",
-													)}
-												>
-													<span className="text-xs font-semibold capitalize">{shape}</span>
-												</Button>
-											))}
-										</div>
-									</div>
+								<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+									<SliderControl
+										label={tSettings("webcam.opacity")}
+										value={webcamRegion.opacity}
+										defaultValue={1}
+										min={0.1}
+										max={1}
+										step={0.05}
+										onChange={(v) => onWebcamRegionChange?.({ opacity: v })}
+										formatValue={(v) => `${Math.round(v * 100)}%`}
+										parseInput={(t) => parseFloat(t.replace(/%$/, "")) / 100}
+									/>
+								</div>
 
-									<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+									<SliderControl
+										label={tSettings("webcam.borderWidth")}
+										value={webcamRegion.borderWidth}
+										defaultValue={2}
+										min={0}
+										max={10}
+										step={1}
+										onChange={(v) => onWebcamRegionChange?.({ borderWidth: v })}
+										formatValue={(v) => `${v}px`}
+										parseInput={(t) => parseFloat(t.replace(/px$/, ""))}
+									/>
+								</div>
+
+								{(webcamRegion.shape === "rectangle" || webcamRegion.shape === "square") && (
+									<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 										<SliderControl
-											label={tSettings("webcam.opacity")}
-											value={webcamRegion.opacity}
-											defaultValue={1}
-											min={0.1}
-											max={1}
-											step={0.05}
-											onChange={(v) => onWebcamRegionChange?.({ opacity: v })}
-											formatValue={(v) => `${Math.round(v * 100)}%`}
-											parseInput={(t) => parseFloat(t.replace(/%$/, "")) / 100}
-										/>
-									</div>
-
-									<div className="p-2 rounded-lg bg-white/5 border border-white/5">
-										<SliderControl
-											label={tSettings("webcam.borderWidth")}
-											value={webcamRegion.borderWidth}
-											defaultValue={2}
+											label={tSettings("webcam.roundness")}
+											value={webcamRegion.borderRadius}
+											defaultValue={12}
 											min={0}
-											max={10}
+											max={50}
 											step={1}
-											onChange={(v) => onWebcamRegionChange?.({ borderWidth: v })}
+											onChange={(v) => onWebcamRegionChange?.({ borderRadius: v })}
 											formatValue={(v) => `${v}px`}
 											parseInput={(t) => parseFloat(t.replace(/px$/, ""))}
 										/>
 									</div>
-
-									{(webcamRegion.shape === "rectangle" || webcamRegion.shape === "square") && (
-										<div className="p-2 rounded-lg bg-white/5 border border-white/5">
-											<SliderControl
-												label={tSettings("webcam.roundness")}
-												value={webcamRegion.borderRadius}
-												defaultValue={12}
-												min={0}
-												max={50}
-												step={1}
-												onChange={(v) => onWebcamRegionChange?.({ borderRadius: v })}
-												formatValue={(v) => `${v}px`}
-												parseInput={(t) => parseFloat(t.replace(/px$/, ""))}
-											/>
-										</div>
-									)}
-								</>
-							)}
-						</div>
-					</div>
+								)}
+							</SettingsSection>
+						)}
+					</TabContent>
 				)}
 			</div>
 
 			{showCropModal && cropRegion && onCropChange && (
 				<>
+					{/* Backdrop */}
 					<div
-						className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 animate-in fade-in duration-200"
+						className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 opacity-100 duration-300 ease-out animate-in fade-in"
 						onClick={handleCropCancel}
 					/>
-					<div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[60] bg-[#0A0F0D] rounded-2xl shadow-2xl border border-white/10 p-8 w-[90vw] max-w-5xl max-h-[90vh] overflow-auto animate-in zoom-in-95 duration-200">
-						<div className="flex items-center justify-between mb-6">
-							<div>
-								<span className="text-xl font-bold text-slate-200">{tSettings("crop.title")}</span>
-								<p className="text-sm text-slate-400 mt-2">{tSettings("crop.instruction")}</p>
+
+					{/* Dialog */}
+					<div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none">
+						<div className="pointer-events-auto w-[90vw] max-w-5xl max-h-[90vh] bg-[#0A0F0D] rounded-2xl shadow-2xl shadow-black/60 border border-white/[0.08] overflow-hidden opacity-100 scale-100 translate-y-0 duration-300 ease-out animate-in fade-in zoom-in-95 slide-in-from-bottom-3">
+							{/* Top accent line */}
+							<div className="h-[2px] bg-gradient-to-r from-transparent via-[#10B981] to-transparent" />
+
+							<div className="p-8 overflow-auto max-h-[calc(90vh-2px)]">
+								{/* Header */}
+								<div className="flex items-center justify-between mb-6">
+									<div className="flex items-center gap-3">
+										<div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#10B981]/20 to-[#059669]/10 border border-[#10B981]/20 flex items-center justify-center">
+											<Crop className="w-5 h-5 text-[#10B981]" />
+										</div>
+										<div>
+											<h2 className="text-[15px] font-semibold text-white tracking-tight">
+												{tSettings("crop.title")}
+											</h2>
+											<p className="text-[11px] text-slate-500 mt-0.5">
+												{tSettings("crop.instruction")}
+											</p>
+										</div>
+									</div>
+									<button
+										type="button"
+										onClick={handleCropCancel}
+										className="rounded-xl p-2 text-white/40 hover:text-white hover:bg-white/[0.06] transition-all duration-200 active:scale-95"
+									>
+										<X className="w-4 h-4" />
+									</button>
+								</div>
+
+								{/* Crop area */}
+								<div className="rounded-xl border border-white/[0.06] overflow-hidden bg-black/20">
+									<CropControl
+										videoElement={videoElement || null}
+										cropRegion={cropRegion}
+										onCropChange={onCropChange}
+										aspectRatio={aspectRatio}
+									/>
+								</div>
+
+								{/* Footer */}
+								<div className="h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent mt-6 mb-5" />
+								<div className="flex items-center justify-between">
+									<Button
+										variant="outline"
+										onClick={handleCropCancel}
+										className="h-10 px-5 text-xs font-medium bg-white/[0.03] border-white/[0.08] text-slate-400 hover:bg-white/[0.06] hover:text-slate-200 hover:border-white/[0.12] rounded-xl transition-all duration-200"
+									>
+										Cancel
+									</Button>
+									<Button
+										onClick={() => setShowCropModal(false)}
+										className="h-10 px-6 text-xs font-semibold bg-gradient-to-r from-[#10B981] to-[#059669] text-white rounded-xl shadow-lg shadow-[#10B981]/20 hover:shadow-[#10B981]/30 hover:scale-[1.01] active:scale-[0.98] transition-all duration-200 border border-[#10B981]/30"
+									>
+										{t("common.actions.done")}
+									</Button>
+								</div>
 							</div>
-							<Button
-								variant="ghost"
-								size="icon"
-								onClick={handleCropCancel}
-								className="hover:bg-white/10 text-slate-400 hover:text-white"
-							>
-								<X className="w-5 h-5" />
-							</Button>
-						</div>
-						<CropControl
-							videoElement={videoElement || null}
-							cropRegion={cropRegion}
-							onCropChange={onCropChange}
-							aspectRatio={aspectRatio}
-						/>
-						<div className="mt-6 flex justify-end">
-							<Button
-								onClick={() => setShowCropModal(false)}
-								size="lg"
-								className="bg-[#10B981] hover:bg-[#10B981]/90 text-white"
-							>
-								{t("common.actions.done")}
-							</Button>
 						</div>
 					</div>
 				</>

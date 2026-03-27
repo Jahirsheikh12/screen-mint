@@ -1,4 +1,4 @@
-import { Download, Film, FolderOpen, Image, Save, X } from "lucide-react";
+import { Download, Film, FolderOpen, Image, Save, Sparkles, X, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -25,6 +25,13 @@ interface ExportSettingsDialogProps {
 	onLoadProject: () => void;
 	onExport: () => void;
 }
+
+const QUALITY_DESCRIPTIONS: Record<ExportQuality, string> = {
+	medium: "Smaller file size, faster export",
+	good: "Balanced quality and size",
+	high: "Best quality, larger file",
+	source: "Lossless, original resolution",
+};
 
 export function ExportSettingsDialog({
 	isOpen,
@@ -58,7 +65,7 @@ export function ExportSettingsDialog({
 			const timer = setTimeout(() => {
 				setIsVisible(false);
 				setIsClosing(false);
-			}, 200);
+			}, 250);
 			prevIsOpenRef.current = isOpen;
 			return () => clearTimeout(timer);
 		}
@@ -71,225 +78,251 @@ export function ExportSettingsDialog({
 		<>
 			{/* Backdrop */}
 			<div
-				className={`fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm transition-opacity duration-200 ${isClosing ? "opacity-0" : "animate-in fade-in-0 duration-200"}`}
+				className={cn(
+					"fixed inset-0 z-[9999] bg-black/70 backdrop-blur-md transition-all",
+					isClosing
+						? "opacity-0 duration-250 ease-in"
+						: "opacity-100 duration-300 ease-out animate-in fade-in",
+				)}
 				onClick={onClose}
 			/>
 
 			{/* Dialog */}
 			<div
-				className={`fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[10000] bg-[#0A0F0D] rounded-2xl shadow-2xl border border-white/10 p-6 w-[90vw] max-w-md transition-all duration-200 ${isClosing ? "opacity-0 scale-95" : "animate-in zoom-in-95 fade-in-0 duration-200"}`}
+				className={cn(
+					"fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none",
+				)}
 			>
-				{/* Header */}
-				<div className="flex items-center justify-between mb-5">
-					<h2 className="text-base font-semibold text-white">
-						{tSettings("export.title", "Export")}
-					</h2>
-					<button
-						type="button"
-						onClick={onClose}
-						className="rounded-lg p-1.5 text-white/50 hover:text-white hover:bg-white/5 transition-colors"
-					>
-						<X className="w-4 h-4" />
-					</button>
-				</div>
-
-				{/* Format selector */}
-				<div className="flex items-center gap-2 mb-4">
-					<button
-						type="button"
-						onClick={() => onExportFormatChange("mp4")}
-						className={cn(
-							"flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg border transition-all text-xs font-medium",
-							exportFormat === "mp4"
-								? "bg-[#10B981]/10 border-[#10B981]/50 text-white"
-								: "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-slate-200",
-						)}
-					>
-						<Film className="w-3.5 h-3.5" />
-						{tSettings("export.mp4")}
-					</button>
-					<button
-						type="button"
-						onClick={() => onExportFormatChange("gif")}
-						className={cn(
-							"flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg border transition-all text-xs font-medium",
-							exportFormat === "gif"
-								? "bg-[#10B981]/10 border-[#10B981]/50 text-white"
-								: "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-slate-200",
-						)}
-					>
-						<Image className="w-3.5 h-3.5" />
-						{tSettings("export.gif")}
-					</button>
-				</div>
-
-				{/* MP4 quality */}
-				{exportFormat === "mp4" && (
-					<div className="mb-4">
-						<div className="text-[10px] uppercase tracking-wider text-white/40 mb-2 font-medium">
-							Quality
-						</div>
-						<div className="grid h-8 w-full grid-cols-4 rounded-lg border border-white/5 bg-white/5 p-0.5">
-							<button
-								type="button"
-								onClick={() => onExportQualityChange("medium")}
-								className={cn(
-									"rounded-md transition-all text-[11px] font-medium",
-									exportQuality === "medium"
-										? "bg-white text-black"
-										: "text-slate-400 hover:text-slate-200",
-								)}
-							>
-								{tSettings("export.quality.low")}
-							</button>
-							<button
-								type="button"
-								onClick={() => onExportQualityChange("good")}
-								className={cn(
-									"rounded-md transition-all text-[11px] font-medium",
-									exportQuality === "good"
-										? "bg-white text-black"
-										: "text-slate-400 hover:text-slate-200",
-								)}
-							>
-								{tSettings("export.quality.medium")}
-							</button>
-							<button
-								type="button"
-								onClick={() => onExportQualityChange("high")}
-								className={cn(
-									"rounded-md transition-all text-[11px] font-medium",
-									exportQuality === "high"
-										? "bg-white text-black"
-										: "text-slate-400 hover:text-slate-200",
-								)}
-							>
-								{tSettings("export.quality.high")}
-							</button>
-							<button
-								type="button"
-								onClick={() => onExportQualityChange("source")}
-								className={cn(
-									"rounded-md transition-all text-[11px] font-medium",
-									exportQuality === "source"
-										? "bg-white text-black"
-										: "text-slate-400 hover:text-slate-200",
-								)}
-							>
-								{tSettings("export.quality.original")}
-							</button>
-						</div>
-					</div>
-				)}
-
-				{/* GIF settings */}
-				{exportFormat === "gif" && (
-					<div className="mb-4 space-y-3">
-						<div className="flex items-center gap-2">
-							<div className="flex-1">
-								<div className="text-[10px] uppercase tracking-wider text-white/40 mb-1.5 font-medium">
-									Frame Rate
-								</div>
-								<div className="bg-white/5 border border-white/5 p-0.5 grid grid-cols-4 h-8 rounded-lg">
-									{GIF_FRAME_RATES.map((rate) => (
-										<button
-											type="button"
-											key={rate.value}
-											onClick={() => onGifFrameRateChange(rate.value)}
-											className={cn(
-												"rounded-md transition-all text-[11px] font-medium",
-												gifFrameRate === rate.value
-													? "bg-white text-black"
-													: "text-slate-400 hover:text-slate-200",
-											)}
-										>
-											{rate.value}
-										</button>
-									))}
-								</div>
-							</div>
-							<div className="flex-1">
-								<div className="text-[10px] uppercase tracking-wider text-white/40 mb-1.5 font-medium">
-									Size
-								</div>
-								<div className="bg-white/5 border border-white/5 p-0.5 grid grid-cols-3 h-8 rounded-lg">
-									{Object.entries(GIF_SIZE_PRESETS).map(([key]) => (
-										<button
-											type="button"
-											key={key}
-											onClick={() => onGifSizePresetChange(key as GifSizePreset)}
-											className={cn(
-												"rounded-md transition-all text-[11px] font-medium",
-												gifSizePreset === key
-													? "bg-white text-black"
-													: "text-slate-400 hover:text-slate-200",
-											)}
-										>
-											{key === "original" ? "Orig" : key.charAt(0).toUpperCase() + key.slice(1, 3)}
-										</button>
-									))}
-								</div>
-							</div>
-						</div>
-						<div className="flex items-center justify-between">
-							<span className="text-[11px] text-slate-500">
-								{gifOutputDimensions.width} × {gifOutputDimensions.height}px
-							</span>
-							<div className="flex items-center gap-2">
-								<span className="text-[11px] text-slate-400">{tSettings("export.loop")}</span>
-								<Switch
-									checked={gifLoop}
-									onCheckedChange={onGifLoopChange}
-									className="data-[state=checked]:bg-[#10B981] scale-80"
-								/>
-							</div>
-						</div>
-					</div>
-				)}
-
-				{/* Project buttons */}
-				<div className="grid grid-cols-2 gap-2 mb-4">
-					<Button
-						type="button"
-						variant="outline"
-						onClick={() => {
-							onLoadProject();
-							onClose();
-						}}
-						className="h-9 text-[11px] font-medium gap-1.5 bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
-					>
-						<FolderOpen className="w-3.5 h-3.5" />
-						{tSettings("export.loadProject")}
-					</Button>
-					<Button
-						type="button"
-						variant="outline"
-						onClick={() => {
-							onSaveProject();
-							onClose();
-						}}
-						className="h-9 text-[11px] font-medium gap-1.5 bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
-					>
-						<Save className="w-3.5 h-3.5" />
-						{tSettings("export.saveProject")}
-					</Button>
-				</div>
-
-				{/* Export button */}
-				<Button
-					type="button"
-					size="lg"
-					onClick={() => {
-						onExport();
-						onClose();
-					}}
-					className="w-full py-5 text-sm font-semibold flex items-center justify-center gap-2 bg-[#10B981] text-white rounded-xl shadow-lg shadow-[#10B981]/20 hover:bg-[#10B981]/90 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+				<div
+					className={cn(
+						"pointer-events-auto w-[90vw] max-w-[440px] bg-[#0A0F0D] rounded-2xl shadow-2xl shadow-black/60 border border-white/[0.08] overflow-hidden transition-all",
+						isClosing
+							? "opacity-0 scale-95 translate-y-2 duration-200 ease-in"
+							: "opacity-100 scale-100 translate-y-0 duration-300 ease-out animate-in fade-in zoom-in-95 slide-in-from-bottom-3",
+					)}
 				>
-					<Download className="w-4 h-4" />
-					{tSettings("export.exportVideo", undefined, {
-						format: exportFormat === "gif" ? "GIF" : "Video",
-					})}
-				</Button>
+					{/* Top accent line */}
+					<div className="h-[2px] bg-gradient-to-r from-transparent via-[#10B981] to-transparent" />
+
+					<div className="p-6">
+						{/* Header */}
+						<div className="flex items-center justify-between mb-6">
+							<div className="flex items-center gap-3">
+								<div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#10B981]/20 to-[#059669]/10 border border-[#10B981]/20 flex items-center justify-center">
+									<Download className="w-4.5 h-4.5 text-[#10B981]" />
+								</div>
+								<div>
+									<h2 className="text-[15px] font-semibold text-white tracking-tight">
+										{tSettings("export.title", "Export")}
+									</h2>
+									<p className="text-[11px] text-slate-500 mt-0.5">
+										Configure your export settings
+									</p>
+								</div>
+							</div>
+							<button
+								type="button"
+								onClick={onClose}
+								className="rounded-xl p-2 text-white/40 hover:text-white hover:bg-white/[0.06] transition-all duration-200 active:scale-95"
+							>
+								<X className="w-4 h-4" />
+							</button>
+						</div>
+
+						{/* Format selector */}
+						<div className="mb-5">
+							<div className="text-[10px] uppercase tracking-[0.1em] text-slate-500 font-semibold mb-2 flex items-center gap-1.5">
+								<div className="w-1 h-1 rounded-full bg-[#10B981]" />
+								Format
+							</div>
+							<div className="flex items-center gap-2">
+								<button
+									type="button"
+									onClick={() => onExportFormatChange("mp4")}
+									className={cn(
+										"flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 transition-all duration-200",
+										exportFormat === "mp4"
+											? "bg-gradient-to-br from-[#10B981]/15 to-[#10B981]/5 border-[#10B981]/40 text-white shadow-lg shadow-[#10B981]/10"
+											: "bg-white/[0.03] border-white/[0.06] text-slate-400 hover:bg-white/[0.06] hover:border-white/[0.1] hover:text-slate-200",
+									)}
+								>
+									<Film className="w-4 h-4" />
+									<span className="text-xs font-semibold">{tSettings("export.mp4")}</span>
+									{exportFormat === "mp4" && <Sparkles className="w-3 h-3 text-[#10B981] ml-0.5" />}
+								</button>
+								<button
+									type="button"
+									onClick={() => onExportFormatChange("gif")}
+									className={cn(
+										"flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 transition-all duration-200",
+										exportFormat === "gif"
+											? "bg-gradient-to-br from-[#10B981]/15 to-[#10B981]/5 border-[#10B981]/40 text-white shadow-lg shadow-[#10B981]/10"
+											: "bg-white/[0.03] border-white/[0.06] text-slate-400 hover:bg-white/[0.06] hover:border-white/[0.1] hover:text-slate-200",
+									)}
+								>
+									<Image className="w-4 h-4" />
+									<span className="text-xs font-semibold">{tSettings("export.gif")}</span>
+									{exportFormat === "gif" && <Sparkles className="w-3 h-3 text-[#10B981] ml-0.5" />}
+								</button>
+							</div>
+						</div>
+
+						{/* MP4 quality */}
+						{exportFormat === "mp4" && (
+							<div className="mb-5 animate-in fade-in slide-in-from-top-1 duration-200">
+								<div className="text-[10px] uppercase tracking-[0.1em] text-slate-500 font-semibold mb-2 flex items-center gap-1.5">
+									<div className="w-1 h-1 rounded-full bg-[#10B981]" />
+									Quality
+								</div>
+								<div className="grid h-10 w-full grid-cols-4 rounded-xl border border-white/[0.06] bg-white/[0.03] p-1 gap-1">
+									{(
+										[
+											["medium", tSettings("export.quality.low")],
+											["good", tSettings("export.quality.medium")],
+											["high", tSettings("export.quality.high")],
+											["source", tSettings("export.quality.original")],
+										] as const
+									).map(([quality, label]) => (
+										<button
+											type="button"
+											key={quality}
+											onClick={() => onExportQualityChange(quality)}
+											className={cn(
+												"rounded-lg transition-all duration-200 text-[11px] font-semibold",
+												exportQuality === quality
+													? "bg-gradient-to-b from-white to-white/90 text-[#0A0F0D] shadow-sm"
+													: "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]",
+											)}
+										>
+											{label}
+										</button>
+									))}
+								</div>
+								<p className="text-[10px] text-slate-500 mt-1.5 ml-0.5 transition-all duration-200">
+									{QUALITY_DESCRIPTIONS[exportQuality]}
+								</p>
+							</div>
+						)}
+
+						{/* GIF settings */}
+						{exportFormat === "gif" && (
+							<div className="mb-5 space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
+								<div>
+									<div className="text-[10px] uppercase tracking-[0.1em] text-slate-500 font-semibold mb-2 flex items-center gap-1.5">
+										<div className="w-1 h-1 rounded-full bg-[#10B981]" />
+										Frame Rate
+									</div>
+									<div className="grid h-10 w-full grid-cols-4 rounded-xl border border-white/[0.06] bg-white/[0.03] p-1 gap-1">
+										{GIF_FRAME_RATES.map((rate) => (
+											<button
+												type="button"
+												key={rate.value}
+												onClick={() => onGifFrameRateChange(rate.value)}
+												className={cn(
+													"rounded-lg transition-all duration-200 text-[11px] font-semibold",
+													gifFrameRate === rate.value
+														? "bg-gradient-to-b from-white to-white/90 text-[#0A0F0D] shadow-sm"
+														: "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]",
+												)}
+											>
+												{rate.value} fps
+											</button>
+										))}
+									</div>
+								</div>
+
+								<div>
+									<div className="text-[10px] uppercase tracking-[0.1em] text-slate-500 font-semibold mb-2 flex items-center gap-1.5">
+										<div className="w-1 h-1 rounded-full bg-[#10B981]" />
+										Size
+									</div>
+									<div className="grid h-10 w-full grid-cols-3 rounded-xl border border-white/[0.06] bg-white/[0.03] p-1 gap-1">
+										{Object.entries(GIF_SIZE_PRESETS).map(([key]) => (
+											<button
+												type="button"
+												key={key}
+												onClick={() => onGifSizePresetChange(key as GifSizePreset)}
+												className={cn(
+													"rounded-lg transition-all duration-200 text-[11px] font-semibold",
+													gifSizePreset === key
+														? "bg-gradient-to-b from-white to-white/90 text-[#0A0F0D] shadow-sm"
+														: "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]",
+												)}
+											>
+												{key === "original"
+													? "Original"
+													: key.charAt(0).toUpperCase() + key.slice(1)}
+											</button>
+										))}
+									</div>
+								</div>
+
+								<div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+									<div>
+										<span className="text-xs text-slate-300 font-medium">
+											{tSettings("export.loop")}
+										</span>
+										<span className="text-[10px] text-slate-500 block mt-0.5">
+											{gifOutputDimensions.width} × {gifOutputDimensions.height}px
+										</span>
+									</div>
+									<Switch
+										checked={gifLoop}
+										onCheckedChange={onGifLoopChange}
+										className="data-[state=checked]:bg-[#10B981] scale-90"
+									/>
+								</div>
+							</div>
+						)}
+
+						{/* Divider */}
+						<div className="h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent mb-5" />
+
+						{/* Project buttons */}
+						<div className="grid grid-cols-2 gap-2 mb-5">
+							<Button
+								type="button"
+								variant="outline"
+								onClick={() => {
+									onLoadProject();
+									onClose();
+								}}
+								className="h-10 text-[11px] font-medium gap-2 bg-white/[0.03] border-white/[0.08] text-slate-400 hover:bg-white/[0.06] hover:text-slate-200 hover:border-white/[0.12] rounded-xl transition-all duration-200"
+							>
+								<FolderOpen className="w-3.5 h-3.5" />
+								{tSettings("export.loadProject")}
+							</Button>
+							<Button
+								type="button"
+								variant="outline"
+								onClick={() => {
+									onSaveProject();
+									onClose();
+								}}
+								className="h-10 text-[11px] font-medium gap-2 bg-white/[0.03] border-white/[0.08] text-slate-400 hover:bg-white/[0.06] hover:text-slate-200 hover:border-white/[0.12] rounded-xl transition-all duration-200"
+							>
+								<Save className="w-3.5 h-3.5" />
+								{tSettings("export.saveProject")}
+							</Button>
+						</div>
+
+						{/* Export button */}
+						<Button
+							type="button"
+							size="lg"
+							onClick={() => {
+								onExport();
+								onClose();
+							}}
+							className="w-full h-12 text-sm font-semibold flex items-center justify-center gap-2.5 bg-gradient-to-r from-[#10B981] to-[#059669] text-white rounded-xl shadow-xl shadow-[#10B981]/20 hover:shadow-[#10B981]/30 hover:scale-[1.01] active:scale-[0.98] transition-all duration-200 border border-[#10B981]/30"
+						>
+							<Zap className="w-4 h-4" />
+							{tSettings("export.exportVideo", undefined, {
+								format: exportFormat === "gif" ? "GIF" : "Video",
+							})}
+						</Button>
+					</div>
+				</div>
 			</div>
 		</>
 	);
