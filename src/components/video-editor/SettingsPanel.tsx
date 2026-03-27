@@ -5,10 +5,14 @@ import {
 	Captions,
 	Crop,
 	Gauge,
+	Keyboard,
 	Loader2,
 	MessageSquare,
 	MousePointer2,
+	Music,
 	Palette,
+	Pause,
+	Play,
 	Sparkles,
 	Trash2,
 	Upload,
@@ -21,11 +25,17 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getAssetPath, getRenderableAssetUrl } from "@/lib/assetPath";
+import { type BackgroundMusicMood, BUILT_IN_BACKGROUND_MUSIC } from "@/lib/backgroundMusic";
 import { cn } from "@/lib/utils";
 import { BUILT_IN_WALLPAPERS, WALLPAPER_PATHS, WALLPAPER_RELATIVE_PATHS } from "@/lib/wallpapers";
 import { type AspectRatio } from "@/utils/aspectRatioUtils";
 import { useI18n, useScopedT } from "../../contexts/I18nContext";
 import { AnnotationSettingsPanel } from "./AnnotationSettingsPanel";
+import {
+	getAudioRegionDisplayName,
+	loadAudioSelectionDurationMs,
+	resolveAudioSourceUrl,
+} from "./audioRegionUtils";
 import { CropControl } from "./CropControl";
 import { loadEditorPreferences, saveEditorPreferences } from "./editorPreferences";
 import { KeyboardShortcutsHelp } from "./KeyboardShortcutsHelp";
@@ -33,6 +43,8 @@ import { SliderControl } from "./SliderControl";
 import type {
 	AnnotationRegion,
 	AnnotationType,
+	AudioRegion,
+	AudioTrackSelection,
 	BlurData,
 	CameraLayoutRegion,
 	CaptionGenerationOptions,
@@ -46,6 +58,8 @@ import type {
 	CursorPack,
 	CursorStyle,
 	FigureData,
+	KeyboardShortcutPosition,
+	KeyboardShortcutTheme,
 	PlaybackSpeed,
 	WebcamRegion,
 	ZoomDepth,
@@ -55,6 +69,9 @@ import {
 	CAPTION_STYLE_PRESETS,
 	CURSOR_PACK_OPTIONS,
 	CURSOR_STYLE_OPTIONS,
+	DEFAULT_AUDIO_FADE_IN_MS,
+	DEFAULT_AUDIO_FADE_OUT_MS,
+	DEFAULT_AUDIO_REGION_VOLUME,
 	DEFAULT_CAPTION_GENERATION_OPTIONS,
 	DEFAULT_CLICK_HIGHLIGHT_COLOR,
 	DEFAULT_CLICK_HIGHLIGHT_OPACITY,
@@ -68,7 +85,15 @@ import {
 	DEFAULT_CURSOR_SWAY,
 	DEFAULT_CURSOR_TRAIL_LENGTH,
 	DEFAULT_CURSOR_TRAIL_OPACITY,
+	DEFAULT_KEYBOARD_SHORTCUT_DISPLAY_MS,
+	DEFAULT_KEYBOARD_SHORTCUT_MAX_VISIBLE,
+	DEFAULT_KEYBOARD_SHORTCUT_OPACITY,
+	DEFAULT_KEYBOARD_SHORTCUT_POSITION,
+	DEFAULT_KEYBOARD_SHORTCUT_SCALE,
+	DEFAULT_KEYBOARD_SHORTCUT_THEME,
 	DEFAULT_ZOOM_MOTION_BLUR,
+	KEYBOARD_SHORTCUT_POSITION_OPTIONS,
+	KEYBOARD_SHORTCUT_THEME_OPTIONS,
 	SPEED_OPTIONS,
 } from "./types";
 import { fromCursorSwaySliderValue, toCursorSwaySliderValue } from "./videoPlayback/cursorSway";
@@ -129,6 +154,17 @@ function isHexWallpaper(value: string): boolean {
 	return /^#(?:[0-9a-f]{3}){1,2}$/i.test(value);
 }
 
+function formatAudioDuration(durationMs?: number) {
+	if (!durationMs || durationMs <= 0) {
+		return "--:--";
+	}
+
+	const seconds = Math.max(1, Math.round(durationMs / 1000));
+	const minutes = Math.floor(seconds / 60);
+	const remainingSeconds = seconds % 60;
+	return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+}
+
 function getBackgroundTabForWallpaper(value: string): BackgroundTab {
 	if (
 		GRADIENTS.includes(value) ||
@@ -143,6 +179,29 @@ function getBackgroundTabForWallpaper(value: string): BackgroundTab {
 	}
 
 	return "image";
+}
+
+function groupBuiltInTracksByMood() {
+	return BUILT_IN_BACKGROUND_MUSIC.reduce<
+		Record<BackgroundMusicMood, typeof BUILT_IN_BACKGROUND_MUSIC>
+	>(
+		(acc, track) => {
+			if (!acc[track.mood]) {
+				acc[track.mood] = [];
+			}
+
+			acc[track.mood].push(track);
+			return acc;
+		},
+		{
+			"upbeat-tech": [],
+			"calm-ambient": [],
+			"crisp-minimal": [],
+			"warm-corporate": [],
+			"punchy-motion": [],
+			"studio-focus": [],
+		},
+	);
 }
 
 interface SettingsPanelProps {
@@ -194,6 +253,20 @@ interface SettingsPanelProps {
 	onCursorTrailLengthChange?: (length: number) => void;
 	cursorTrailOpacity?: number;
 	onCursorTrailOpacityChange?: (opacity: number) => void;
+	showKeyboardShortcuts?: boolean;
+	onShowKeyboardShortcutsChange?: (enabled: boolean) => void;
+	keyboardShortcutPosition?: KeyboardShortcutPosition;
+	onKeyboardShortcutPositionChange?: (position: KeyboardShortcutPosition) => void;
+	keyboardShortcutTheme?: KeyboardShortcutTheme;
+	onKeyboardShortcutThemeChange?: (theme: KeyboardShortcutTheme) => void;
+	keyboardShortcutScale?: number;
+	onKeyboardShortcutScaleChange?: (scale: number) => void;
+	keyboardShortcutOpacity?: number;
+	onKeyboardShortcutOpacityChange?: (opacity: number) => void;
+	keyboardShortcutDisplayMs?: number;
+	onKeyboardShortcutDisplayMsChange?: (durationMs: number) => void;
+	keyboardShortcutMaxVisible?: number;
+	onKeyboardShortcutMaxVisibleChange?: (count: number) => void;
 	borderRadius?: number;
 	onBorderRadiusChange?: (radius: number) => void;
 	padding?: number;
@@ -234,6 +307,20 @@ interface SettingsPanelProps {
 	selectedSpeedValue?: PlaybackSpeed | null;
 	onSpeedChange?: (speed: PlaybackSpeed) => void;
 	onSpeedDelete?: (id: string) => void;
+	audioRegions?: AudioRegion[];
+	selectedAudioId?: string | null;
+	onAudioAddAtPlayhead?: (selection: AudioTrackSelection) => void | Promise<void>;
+	onReplaceSelectedAudio?: (selection: AudioTrackSelection) => void | Promise<void>;
+	onAudioVolumeChange?: (id: string, volume: number) => void;
+	onAudioFadeChange?: (
+		id: string,
+		updates: Partial<Pick<AudioRegion, "fadeInMs" | "fadeOutMs">>,
+	) => void;
+	onAudioLoopChange?: (id: string, loop: boolean) => void;
+	onAudioDelete?: (id: string) => void;
+	missingAudioPath?: string | null;
+	onRelinkMissingAudio?: () => void;
+	onRemoveMissingAudio?: () => void;
 	captionRegions?: CaptionRegion[];
 	captionGenerationOptions?: CaptionGenerationOptions;
 	captionGenerationProgress?: CaptionGenerationProgress | null;
@@ -314,6 +401,20 @@ export default function SettingsPanel({
 	onCursorTrailLengthChange,
 	cursorTrailOpacity = DEFAULT_CURSOR_TRAIL_OPACITY,
 	onCursorTrailOpacityChange,
+	showKeyboardShortcuts = false,
+	onShowKeyboardShortcutsChange,
+	keyboardShortcutPosition = DEFAULT_KEYBOARD_SHORTCUT_POSITION,
+	onKeyboardShortcutPositionChange,
+	keyboardShortcutTheme = DEFAULT_KEYBOARD_SHORTCUT_THEME,
+	onKeyboardShortcutThemeChange,
+	keyboardShortcutScale = DEFAULT_KEYBOARD_SHORTCUT_SCALE,
+	onKeyboardShortcutScaleChange,
+	keyboardShortcutOpacity = DEFAULT_KEYBOARD_SHORTCUT_OPACITY,
+	onKeyboardShortcutOpacityChange,
+	keyboardShortcutDisplayMs = DEFAULT_KEYBOARD_SHORTCUT_DISPLAY_MS,
+	onKeyboardShortcutDisplayMsChange,
+	keyboardShortcutMaxVisible = DEFAULT_KEYBOARD_SHORTCUT_MAX_VISIBLE,
+	onKeyboardShortcutMaxVisibleChange,
 	borderRadius = 12.5,
 	onBorderRadiusChange,
 	padding = 0,
@@ -354,6 +455,17 @@ export default function SettingsPanel({
 	selectedSpeedValue,
 	onSpeedChange,
 	onSpeedDelete,
+	audioRegions = [],
+	selectedAudioId,
+	onAudioAddAtPlayhead,
+	onReplaceSelectedAudio,
+	onAudioVolumeChange,
+	onAudioFadeChange,
+	onAudioLoopChange,
+	onAudioDelete,
+	missingAudioPath,
+	onRelinkMissingAudio,
+	onRemoveMissingAudio,
 	captionRegions = [],
 	captionGenerationOptions,
 	captionGenerationProgress,
@@ -445,9 +557,30 @@ export default function SettingsPanel({
 	const [showCropModal, setShowCropModal] = useState(false);
 	const [showAdvancedWebcam, setShowAdvancedWebcam] = useState(false);
 	const [activeTab, setActiveTab] = useState<
-		"effects" | "cursor" | "background" | "zoom" | "speed" | "annotation" | "webcam" | "captions"
+		| "effects"
+		| "cursor"
+		| "keyboard"
+		| "background"
+		| "zoom"
+		| "speed"
+		| "audio"
+		| "annotation"
+		| "webcam"
+		| "captions"
 	>("effects");
 	const cropSnapshotRef = useRef<CropRegion | null>(null);
+	const selectedAudio = selectedAudioId
+		? (audioRegions.find((region) => region.id === selectedAudioId) ?? null)
+		: null;
+	const builtInTracksByMood = useMemo(() => groupBuiltInTracksByMood(), []);
+	const [selectedBuiltInTrackId, setSelectedBuiltInTrackId] = useState<string | null>(
+		BUILT_IN_BACKGROUND_MUSIC[0]?.id ?? null,
+	);
+	const selectedBuiltInTrack =
+		BUILT_IN_BACKGROUND_MUSIC.find((track) => track.id === selectedBuiltInTrackId) ?? null;
+	const [builtInTrackDurations, setBuiltInTrackDurations] = useState<Record<string, number>>({});
+	const [playingBuiltInTrackId, setPlayingBuiltInTrackId] = useState<string | null>(null);
+	const builtInPreviewAudioRef = useRef<HTMLAudioElement | null>(null);
 
 	useEffect(() => {
 		setBackgroundTab(getBackgroundTabForWallpaper(selected));
@@ -588,17 +721,155 @@ export default function SettingsPanel({
 	}, [selectedAnnotation]);
 
 	useEffect(() => {
+		if (selectedAudio) {
+			setActiveTab("audio");
+		}
+	}, [selectedAudio]);
+
+	useEffect(() => {
 		if (cameraSelected || selectedCameraLayout) {
 			setActiveTab("webcam");
 		}
 	}, [cameraSelected, selectedCameraLayout]);
 
+	useEffect(() => {
+		if (selectedAudio?.sourceType === "built-in" && selectedAudio.assetId) {
+			setSelectedBuiltInTrackId(selectedAudio.assetId);
+		}
+	}, [selectedAudio]);
+
+	useEffect(() => {
+		let cancelled = false;
+
+		void (async () => {
+			const durations = await Promise.all(
+				BUILT_IN_BACKGROUND_MUSIC.map(async (track) => [
+					track.id,
+					await loadAudioSelectionDurationMs({
+						sourceType: "built-in",
+						assetId: track.id,
+					}),
+				]),
+			);
+			if (!cancelled) {
+				setBuiltInTrackDurations(Object.fromEntries(durations));
+			}
+		})();
+
+		return () => {
+			cancelled = true;
+		};
+	}, []);
+
+	const handleSelectBuiltInTrack = async (trackId: string) => {
+		setSelectedBuiltInTrackId(trackId);
+		await onAudioAddAtPlayhead?.({
+			sourceType: "built-in",
+			assetId: trackId,
+			loop: true,
+		});
+	};
+
+	const handleToggleBuiltInPreview = async (trackId: string) => {
+		const currentAudio = builtInPreviewAudioRef.current;
+		if (currentAudio && playingBuiltInTrackId === trackId && !currentAudio.paused) {
+			currentAudio.pause();
+			setPlayingBuiltInTrackId(null);
+			return;
+		}
+
+		const sourceUrl = await resolveAudioSourceUrl({
+			sourceType: "built-in",
+			assetId: trackId,
+		});
+		if (!sourceUrl) {
+			return;
+		}
+
+		let audio = builtInPreviewAudioRef.current;
+		if (!audio) {
+			audio = new Audio();
+			audio.preload = "auto";
+			audio.onended = () => setPlayingBuiltInTrackId(null);
+			builtInPreviewAudioRef.current = audio;
+		}
+
+		if (audio.src !== sourceUrl) {
+			audio.pause();
+			audio.src = sourceUrl;
+		}
+
+		audio.currentTime = 0;
+		try {
+			await audio.play();
+			setPlayingBuiltInTrackId(trackId);
+		} catch {
+			setPlayingBuiltInTrackId(null);
+		}
+	};
+
+	const handleReplaceBuiltInAudio = async () => {
+		if (!selectedBuiltInTrackId || !selectedAudio) {
+			return;
+		}
+
+		await onReplaceSelectedAudio?.({
+			sourceType: "built-in",
+			assetId: selectedBuiltInTrackId,
+			loop: true,
+		});
+	};
+
+	const handleImportAudio = async () => {
+		const result = await window.electronAPI.openAudioFilePicker();
+		if (result.canceled || !result.success || !result.path) {
+			return;
+		}
+
+		const selection: AudioTrackSelection = {
+			sourceType: "file",
+			audioPath: result.path,
+			loop: false,
+		};
+
+		await onAudioAddAtPlayhead?.(selection);
+	};
+
+	const handleReplaceWithUploadedAudio = async () => {
+		if (!selectedAudio) {
+			return;
+		}
+
+		const result = await window.electronAPI.openAudioFilePicker();
+		if (result.canceled || !result.success || !result.path) {
+			return;
+		}
+
+		await onReplaceSelectedAudio?.({
+			sourceType: "file",
+			audioPath: result.path,
+			loop: selectedAudio.loop,
+		});
+	};
+
+	useEffect(() => {
+		return () => {
+			const audio = builtInPreviewAudioRef.current;
+			if (audio) {
+				audio.pause();
+				audio.src = "";
+			}
+		};
+	}, []);
+
 	const sidebarTabs = [
 		{ id: "effects" as const, icon: Sparkles, label: tSettings("effects.title") },
 		{ id: "cursor" as const, icon: MousePointer2, label: "Cursor" },
+		{ id: "keyboard" as const, icon: Keyboard, label: tSettings("keyboard.title") },
 		{ id: "background" as const, icon: Palette, label: tSettings("background.title") },
 		{ id: "zoom" as const, icon: ZoomIn, label: tSettings("zoom.level") },
 		{ id: "speed" as const, icon: Gauge, label: tSettings("speed.playbackSpeed") },
+		{ id: "audio" as const, icon: Music, label: tSettings("audio.title", "Audio") },
 		{ id: "annotation" as const, icon: MessageSquare, label: "Annotation" },
 		{ id: "captions" as const, icon: Captions, label: "Captions" },
 		...(webcamPath
@@ -1054,6 +1325,133 @@ export default function SettingsPanel({
 					</div>
 				)}
 
+				{activeTab === "keyboard" && (
+					<div>
+						<div className="flex items-center justify-between mb-3">
+							<span className="text-sm font-medium text-slate-200">
+								{tSettings("keyboard.title")}
+							</span>
+						</div>
+
+						<div className="flex flex-col gap-1.5">
+							<div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
+								<div className="text-xs font-medium text-slate-300">
+									{tSettings("keyboard.showShortcuts")}
+								</div>
+								<Switch
+									checked={showKeyboardShortcuts}
+									onCheckedChange={onShowKeyboardShortcutsChange}
+									className="data-[state=checked]:bg-[#10B981] scale-90"
+								/>
+							</div>
+
+							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<div className="text-xs font-medium text-slate-300 mb-2">
+									{tSettings("keyboard.position")}
+								</div>
+								<div className="grid grid-cols-2 gap-1">
+									{KEYBOARD_SHORTCUT_POSITION_OPTIONS.map((option) => (
+										<button
+											key={option.value}
+											type="button"
+											onClick={() => onKeyboardShortcutPositionChange?.(option.value)}
+											className={cn(
+												"px-2 py-1.5 rounded-md text-[10px] font-medium transition-all cursor-pointer",
+												keyboardShortcutPosition === option.value
+													? "bg-[#10B981] text-white shadow-sm"
+													: "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200",
+											)}
+										>
+											{tSettings(`keyboard.positions.${option.value}`)}
+										</button>
+									))}
+								</div>
+							</div>
+
+							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<div className="text-xs font-medium text-slate-300 mb-2">
+									{tSettings("keyboard.theme")}
+								</div>
+								<div className="grid grid-cols-3 gap-1">
+									{KEYBOARD_SHORTCUT_THEME_OPTIONS.map((option) => (
+										<button
+											key={option.value}
+											type="button"
+											onClick={() => onKeyboardShortcutThemeChange?.(option.value)}
+											className={cn(
+												"px-2 py-1.5 rounded-md text-[10px] font-medium transition-all cursor-pointer",
+												keyboardShortcutTheme === option.value
+													? "bg-[#10B981] text-white shadow-sm"
+													: "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200",
+											)}
+										>
+											{tSettings(`keyboard.themes.${option.value}`)}
+										</button>
+									))}
+								</div>
+							</div>
+
+							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<SliderControl
+									label={tSettings("keyboard.scale")}
+									value={keyboardShortcutScale}
+									defaultValue={DEFAULT_KEYBOARD_SHORTCUT_SCALE}
+									min={0.5}
+									max={2}
+									step={0.05}
+									onChange={(value) => onKeyboardShortcutScaleChange?.(value)}
+									formatValue={(value) => `${value.toFixed(2)}×`}
+									parseInput={(text) => parseFloat(text.replace(/×$/, ""))}
+								/>
+							</div>
+
+							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<SliderControl
+									label={tSettings("keyboard.opacity")}
+									value={keyboardShortcutOpacity}
+									defaultValue={DEFAULT_KEYBOARD_SHORTCUT_OPACITY}
+									min={0.05}
+									max={1}
+									step={0.05}
+									onChange={(value) => onKeyboardShortcutOpacityChange?.(value)}
+									formatValue={(value) => `${Math.round(value * 100)}%`}
+									parseInput={(text) => parseFloat(text.replace(/%$/, "")) / 100}
+								/>
+							</div>
+
+							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<SliderControl
+									label={tSettings("keyboard.displayDuration")}
+									value={keyboardShortcutDisplayMs}
+									defaultValue={DEFAULT_KEYBOARD_SHORTCUT_DISPLAY_MS}
+									min={250}
+									max={4000}
+									step={50}
+									onChange={(value) => onKeyboardShortcutDisplayMsChange?.(value)}
+									formatValue={(value) => `${Math.round(value)}ms`}
+									parseInput={(text) => parseFloat(text.replace(/ms$/, ""))}
+								/>
+							</div>
+
+							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<SliderControl
+									label={tSettings("keyboard.maxVisible")}
+									value={keyboardShortcutMaxVisible}
+									defaultValue={DEFAULT_KEYBOARD_SHORTCUT_MAX_VISIBLE}
+									min={1}
+									max={3}
+									step={1}
+									onChange={(value) =>
+										onKeyboardShortcutMaxVisibleChange?.(Math.round(value))
+									}
+									formatValue={(value) => `${Math.round(value)}`}
+									parseInput={(text) => parseInt(text, 10)}
+								/>
+							</div>
+						</div>
+					</div>
+				)}
+
 				{/* Background tab */}
 				{activeTab === "background" && (
 					<div>
@@ -1350,6 +1748,256 @@ export default function SettingsPanel({
 								{tSettings("speed.deleteRegion")}
 							</Button>
 						)}
+					</div>
+				)}
+
+				{activeTab === "audio" && (
+					<div>
+						<div className="flex items-center justify-between mb-3">
+							<span className="text-sm font-medium text-slate-200">
+								{tSettings("audio.title", "Background Audio")}
+							</span>
+							<span className="text-[10px] uppercase tracking-wider font-medium text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded-full">
+								{tSettings("audio.subtleMix", "Subtle Mix")}
+							</span>
+						</div>
+
+						<div className="flex flex-col gap-1.5">
+							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<p className="text-[11px] text-slate-400 leading-relaxed">
+									{tSettings(
+										"audio.subtitle",
+										"Keep your voice clear and add a subtle music bed for polished demos.",
+									)}
+								</p>
+								<div className="mt-3 flex gap-2">
+									<Button
+										type="button"
+										onClick={() => void handleImportAudio()}
+										className="w-full gap-2 bg-white/5 text-slate-200 border border-white/10 hover:bg-white/10 hover:border-white/20"
+									>
+										<Upload className="h-3.5 w-3.5" />
+										{tSettings("audio.upload", "Upload audio")}
+									</Button>
+								</div>
+							</div>
+
+							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<div className="text-xs font-medium text-slate-300 mb-2">
+									{tSettings("audio.library", "Built-in Library")}
+								</div>
+								{Object.entries(builtInTracksByMood).map(([mood, tracks]) => (
+									<div key={mood} className="mb-3 last:mb-0">
+										<div className="text-[10px] uppercase tracking-wider text-slate-500 mb-1.5">
+											{tSettings(`audio.moods.${mood}`, mood)}
+										</div>
+										<div className="space-y-1.5">
+											{tracks.map((track) => {
+												const isSelected = track.id === selectedBuiltInTrackId;
+												return (
+													<button
+														key={track.id}
+														type="button"
+														onClick={() => void handleSelectBuiltInTrack(track.id)}
+														className={cn(
+															"w-full rounded-lg border px-2.5 py-2 text-left transition-all",
+															isSelected
+																? "border-[#10B981]/40 bg-[#10B981]/10"
+																: "border-white/8 bg-black/10 hover:bg-white/5 hover:border-white/15",
+														)}
+													>
+														<div className="flex items-center justify-between gap-3">
+															<div className="flex min-w-0 items-center gap-2">
+																<button
+																	type="button"
+																	onClick={(event) => {
+																		event.stopPropagation();
+																		void handleToggleBuiltInPreview(track.id);
+																	}}
+																	className={cn(
+																		"flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors",
+																		playingBuiltInTrackId === track.id
+																			? "border-[#10B981]/40 bg-[#10B981]/15 text-[#10B981]"
+																			: "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-slate-100",
+																	)}
+																	aria-label={
+																		playingBuiltInTrackId === track.id
+																			? "Pause preview"
+																			: "Play preview"
+																	}
+																>
+																	{playingBuiltInTrackId === track.id ? (
+																		<Pause className="h-3.5 w-3.5" />
+																	) : (
+																		<Play className="h-3.5 w-3.5 fill-current" />
+																	)}
+																</button>
+																<div className="min-w-0">
+																	<div className="truncate text-xs font-medium text-slate-200">
+																		{track.label}
+																	</div>
+																	<div className="mt-0.5 flex items-center gap-2 text-[10px] text-slate-500">
+																		<span>
+																			{formatAudioDuration(builtInTrackDurations[track.id])}
+																		</span>
+																		<span className="text-white/15">•</span>
+																		<span>
+																			{tSettings(`audio.moods.${track.mood}`, track.mood)}
+																		</span>
+																	</div>
+																</div>
+															</div>
+															<div className="text-[10px] text-slate-500">
+																{Math.round(track.defaultVolume * 100)}%
+															</div>
+														</div>
+													</button>
+												);
+											})}
+										</div>
+									</div>
+								))}
+							</div>
+
+							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<div className="text-xs font-medium text-slate-300 mb-2">
+									{tSettings("audio.selectedRegion", "Selected Region")}
+								</div>
+								{selectedAudio ? (
+									<div className="space-y-2">
+										<div className="rounded-lg bg-black/10 border border-white/5 px-2.5 py-2">
+											<div className="text-xs font-medium text-slate-200">
+												{getAudioRegionDisplayName(selectedAudio)}
+											</div>
+											<div className="mt-0.5 text-[10px] text-slate-500">
+												{selectedAudio.sourceType === "built-in"
+													? tSettings("audio.builtIn", "Built-in")
+													: tSettings("audio.uploaded", "Uploaded")}
+											</div>
+										</div>
+
+										<div className="grid grid-cols-2 gap-2">
+											<Button
+												type="button"
+												onClick={() => void handleReplaceBuiltInAudio()}
+												disabled={!selectedBuiltInTrack}
+												className="gap-2 bg-white/5 text-slate-200 border border-white/10 hover:bg-white/10 hover:border-white/20"
+											>
+												<Music className="h-3.5 w-3.5" />
+												{tSettings("audio.replaceBuiltIn", "Replace selected")}
+											</Button>
+											<Button
+												type="button"
+												onClick={() => void handleReplaceWithUploadedAudio()}
+												className="gap-2 bg-white/5 text-slate-200 border border-white/10 hover:bg-white/10 hover:border-white/20"
+											>
+												<Upload className="h-3.5 w-3.5" />
+												{tSettings("audio.replaceUpload", "Replace with file")}
+											</Button>
+										</div>
+
+										{missingAudioPath && (
+											<div className="rounded-lg border border-amber-400/20 bg-amber-400/10 px-3 py-2.5 text-[11px] text-amber-100">
+												<div className="font-semibold text-amber-50">
+													{tSettings("audio.missingTitle", "Audio source missing")}
+												</div>
+												<div className="mt-1 truncate text-amber-100/80">{missingAudioPath}</div>
+												<div className="mt-2 flex gap-2">
+													<Button
+														type="button"
+														onClick={() => void onRelinkMissingAudio?.()}
+														className="flex-1 bg-amber-300/20 text-amber-50 hover:bg-amber-300/30"
+													>
+														{tSettings("audio.relink", "Relink audio")}
+													</Button>
+													<Button
+														type="button"
+														onClick={() => onRemoveMissingAudio?.()}
+														className="flex-1 bg-white/7 text-slate-100 hover:bg-white/12"
+													>
+														{tSettings("audio.remove", "Remove")}
+													</Button>
+												</div>
+											</div>
+										)}
+
+										<div className="flex items-center justify-between p-2 rounded-lg bg-black/10 border border-white/5">
+											<div className="text-xs font-medium text-slate-300">
+												{tSettings("audio.loop", "Loop audio")}
+											</div>
+											<Switch
+												checked={selectedAudio.loop}
+												onCheckedChange={(checked) =>
+													onAudioLoopChange?.(selectedAudio.id, checked)
+												}
+												className="data-[state=checked]:bg-[#10B981] scale-90"
+											/>
+										</div>
+
+										<div className="p-2 rounded-lg bg-black/10 border border-white/5">
+											<SliderControl
+												label={tSettings("audio.volume", "Volume")}
+												value={selectedAudio.volume}
+												defaultValue={DEFAULT_AUDIO_REGION_VOLUME}
+												min={0}
+												max={1}
+												step={0.01}
+												onChange={(value) => onAudioVolumeChange?.(selectedAudio.id, value)}
+												formatValue={(value) => `${Math.round(value * 100)}%`}
+												parseInput={(text) => parseFloat(text.replace(/%$/, "")) / 100}
+											/>
+										</div>
+										<div className="p-2 rounded-lg bg-black/10 border border-white/5">
+											<SliderControl
+												label={tSettings("audio.fadeIn", "Fade In")}
+												value={selectedAudio.fadeInMs}
+												defaultValue={DEFAULT_AUDIO_FADE_IN_MS}
+												min={0}
+												max={3000}
+												step={50}
+												onChange={(value) =>
+													onAudioFadeChange?.(selectedAudio.id, { fadeInMs: value })
+												}
+												formatValue={(value) => `${Math.round(value)}ms`}
+												parseInput={(text) => parseFloat(text.replace(/ms$/, ""))}
+											/>
+										</div>
+										<div className="p-2 rounded-lg bg-black/10 border border-white/5">
+											<SliderControl
+												label={tSettings("audio.fadeOut", "Fade Out")}
+												value={selectedAudio.fadeOutMs}
+												defaultValue={DEFAULT_AUDIO_FADE_OUT_MS}
+												min={0}
+												max={3000}
+												step={50}
+												onChange={(value) =>
+													onAudioFadeChange?.(selectedAudio.id, { fadeOutMs: value })
+												}
+												formatValue={(value) => `${Math.round(value)}ms`}
+												parseInput={(text) => parseFloat(text.replace(/ms$/, ""))}
+											/>
+										</div>
+										<Button
+											type="button"
+											onClick={() => onAudioDelete?.(selectedAudio.id)}
+											variant="destructive"
+											size="sm"
+											className="w-full gap-2 bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 transition-all h-8 text-xs"
+										>
+											<Trash2 className="h-3 w-3" />
+											{tSettings("audio.deleteRegion", "Delete Audio Region")}
+										</Button>
+									</div>
+								) : (
+									<p className="text-[10px] text-slate-500 text-center py-2">
+										{tSettings(
+											"audio.empty",
+											"Choose a built-in track or upload your own file, then add it at the playhead.",
+										)}
+									</p>
+								)}
+							</div>
+						</div>
 					</div>
 				)}
 

@@ -10,6 +10,9 @@ import type {
 	CropRegion,
 	CursorPack,
 	CursorTelemetryPoint,
+	KeyboardShortcutCallout,
+	KeyboardShortcutPosition,
+	KeyboardShortcutTheme,
 	SpeedRegion,
 	WebcamRegion,
 	ZoomRegion,
@@ -25,6 +28,7 @@ import {
 	PixiCursorOverlay,
 	preloadCursorAssets,
 } from "@/components/video-editor/videoPlayback/cursorRenderer";
+import { renderKeyboardShortcutCalloutsCanvas } from "@/components/video-editor/keyboardShortcuts";
 import { findDominantRegion } from "@/components/video-editor/videoPlayback/zoomRegionUtils";
 import {
 	applyZoomTransform,
@@ -58,6 +62,13 @@ interface FrameRenderConfig {
 	previewWidth?: number;
 	previewHeight?: number;
 	cursorTelemetry?: CursorTelemetryPoint[];
+	keyboardShortcutCallouts?: KeyboardShortcutCallout[];
+	showKeyboardShortcuts?: boolean;
+	keyboardShortcutPosition?: KeyboardShortcutPosition;
+	keyboardShortcutTheme?: KeyboardShortcutTheme;
+	keyboardShortcutScale?: number;
+	keyboardShortcutOpacity?: number;
+	keyboardShortcutMaxVisible?: number;
 	showCursor?: boolean;
 	cursorSize?: number;
 	cursorSmoothing?: number;
@@ -561,6 +572,27 @@ export class FrameRenderer {
 				this.config.width,
 				this.config.height,
 				timeMs,
+			);
+		}
+
+		if (
+			this.compositeCtx &&
+			this.config.showKeyboardShortcuts &&
+			this.config.keyboardShortcutCallouts?.length
+		) {
+			renderKeyboardShortcutCalloutsCanvas(
+				this.compositeCtx,
+				this.config.keyboardShortcutCallouts,
+				timeMs,
+				this.config.width,
+				this.config.height,
+				{
+					position: this.config.keyboardShortcutPosition ?? "bottom-center",
+					theme: this.config.keyboardShortcutTheme ?? "dark",
+					scale: this.config.keyboardShortcutScale ?? 1,
+					opacity: this.config.keyboardShortcutOpacity ?? 1,
+					maxVisible: this.config.keyboardShortcutMaxVisible ?? 1,
+				},
 			);
 		}
 

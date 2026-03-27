@@ -7,6 +7,9 @@ import type {
 	CropRegion,
 	CursorPack,
 	CursorTelemetryPoint,
+	KeyboardShortcutCallout,
+	KeyboardShortcutPosition,
+	KeyboardShortcutTheme,
 	SpeedRegion,
 	TrimRegion,
 	WebcamRegion,
@@ -46,6 +49,13 @@ interface GifExporterConfig {
 	cropRegion: CropRegion;
 	annotationRegions?: AnnotationRegion[];
 	cursorTelemetry?: CursorTelemetryPoint[];
+	keyboardShortcutCallouts?: KeyboardShortcutCallout[];
+	showKeyboardShortcuts?: boolean;
+	keyboardShortcutPosition?: KeyboardShortcutPosition;
+	keyboardShortcutTheme?: KeyboardShortcutTheme;
+	keyboardShortcutScale?: number;
+	keyboardShortcutOpacity?: number;
+	keyboardShortcutMaxVisible?: number;
 	showCursor?: boolean;
 	cursorSize?: number;
 	cursorSmoothing?: number;
@@ -141,6 +151,13 @@ export class GifExporter {
 				previewWidth: this.config.previewWidth,
 				previewHeight: this.config.previewHeight,
 				cursorTelemetry: this.config.cursorTelemetry,
+				keyboardShortcutCallouts: this.config.keyboardShortcutCallouts,
+				showKeyboardShortcuts: this.config.showKeyboardShortcuts,
+				keyboardShortcutPosition: this.config.keyboardShortcutPosition,
+				keyboardShortcutTheme: this.config.keyboardShortcutTheme,
+				keyboardShortcutScale: this.config.keyboardShortcutScale,
+				keyboardShortcutOpacity: this.config.keyboardShortcutOpacity,
+				keyboardShortcutMaxVisible: this.config.keyboardShortcutMaxVisible,
 				showCursor: this.config.showCursor,
 				cursorSize: this.config.cursorSize,
 				cursorSmoothing: this.config.cursorSmoothing,

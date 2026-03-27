@@ -46,11 +46,12 @@ import {
 	getAspectRatioLabel,
 	isCustomAspectRatio,
 } from "@/utils/aspectRatioUtils";
+import { getAudioRegionDisplayName, loadAudioSelectionDurationMs } from "../audioRegionUtils";
 import { loadEditorPreferences, saveEditorPreferences } from "../editorPreferences";
-import { toFileUrl } from "../projectPersistence";
 import type {
 	AnnotationRegion,
 	AudioRegion,
+	AudioTrackSelection,
 	CameraLayoutRegion,
 	CaptionRegion,
 	CursorTelemetryPoint,
@@ -134,7 +135,7 @@ interface TimelineEditorProps {
 	selectedSpeedId?: string | null;
 	onSelectSpeed?: (id: string | null) => void;
 	audioRegions?: AudioRegion[];
-	onAudioAdded?: (span: Span, audioPath: string) => void;
+	onAudioAdded?: (selection: AudioTrackSelection, clickTimeMs?: number) => void | Promise<void>;
 	onAudioSpanChange?: (id: string, span: Span) => void;
 	onAudioDelete?: (id: string) => void;
 	selectedAudioId?: string | null;
@@ -1540,20 +1541,14 @@ export default function TimelineEditor({
 				return;
 			}
 
-			const result = await (window as any).electronAPI.openAudioFilePicker();
+			const result = await window.electronAPI.openAudioFilePicker();
 			if (!result?.success || !result.path) {
 				return;
 			}
 
-			// Load the audio file to get its full duration
-			const audioDurationMs = await new Promise<number>((resolve) => {
-				const audio = new Audio(toFileUrl(result.path));
-				audio.addEventListener("loadedmetadata", () => {
-					resolve(Math.round(audio.duration * 1000));
-				});
-				audio.addEventListener("error", () => {
-					resolve(0);
-				});
+			const audioDurationMs = await loadAudioSelectionDurationMs({
+				sourceType: "file",
+				audioPath: result.path,
 			});
 
 			if (audioDurationMs <= 0) {
@@ -1563,30 +1558,16 @@ export default function TimelineEditor({
 				return;
 			}
 
-			const startPos = Math.max(
-				0,
-				Math.min(clickTimeMs != null ? Math.round(clickTimeMs) : currentTimeMs, totalMs),
+			await onAudioAdded(
+				{
+					sourceType: "file",
+					audioPath: result.path,
+					durationMs: audioDurationMs,
+				},
+				clickTimeMs,
 			);
-			const sorted = [...audioRegions].sort((a, b) => a.startMs - b.startMs);
-			const nextRegion = sorted.find((region) => region.startMs > startPos);
-			const gapToNext = nextRegion ? nextRegion.startMs - startPos : totalMs - startPos;
-
-			const isOverlapping = sorted.some(
-				(region) => startPos >= region.startMs && startPos < region.endMs,
-			);
-			if (isOverlapping || gapToNext <= 0) {
-				toast.error("Cannot place audio here", {
-					description:
-						"Audio region already exists at this location or not enough space available.",
-				});
-				return;
-			}
-
-			// Use full audio duration, but clamp to available gap and video length
-			const actualDuration = Math.min(audioDurationMs, gapToNext, totalMs - startPos);
-			onAudioAdded({ start: startPos, end: startPos + actualDuration }, result.path);
 		},
-		[videoDuration, totalMs, currentTimeMs, audioRegions, onAudioAdded],
+		[videoDuration, totalMs, onAudioAdded],
 	);
 
 	const handleAddAnnotation = useCallback(
@@ -1754,8 +1735,6 @@ export default function TimelineEditor({
 		handleAddZoom,
 		handleAddTrim,
 		handleAddAnnotation,
-		handleAddCameraLayout,
-		handleAddCaption,
 		handleAddSpeed,
 		deleteSelectedKeyframe,
 		deleteSelectedZoom,
@@ -1880,16 +1859,11 @@ export default function TimelineEditor({
 		}));
 
 		const audios: TimelineRenderItem[] = audioRegions.map((region) => {
-			const fileName =
-				region.audioPath
-					.split(/[\\/]/)
-					.pop()
-					?.replace(/\.[^.]+$/, "") || "Audio";
 			return {
 				id: region.id,
 				rowId: AUDIO_ROW_ID,
 				span: { start: region.startMs, end: region.endMs },
-				label: fileName,
+				label: getAudioRegionDisplayName(region),
 				variant: "audio",
 			};
 		});

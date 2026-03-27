@@ -1,5 +1,9 @@
 import { WebDemuxer } from "web-demuxer";
-import { toFileUrl } from "@/components/video-editor/projectPersistence";
+import {
+	getAudioPlaybackOffsetSeconds,
+	getAudioRegionFadeMultiplier,
+	resolveAudioSourceUrl,
+} from "@/components/video-editor/audioRegionUtils";
 import type { AudioRegion, SpeedRegion, TrimRegion } from "@/components/video-editor/types";
 import type { VideoMuxer } from "./muxer";
 
@@ -206,12 +210,17 @@ export class AudioProcessor {
 
 		for (const region of audioRegions) {
 			const audioEl = document.createElement("audio");
-			audioEl.src = toFileUrl(region.audioPath);
+			const sourceUrl = await resolveAudioSourceUrl(region);
+			if (!sourceUrl) {
+				console.warn("[AudioProcessor] Failed to resolve audio region:", region);
+				continue;
+			}
+			audioEl.src = sourceUrl;
 			audioEl.preload = "auto";
 			try {
 				await this.waitForLoadedMetadata(audioEl);
 			} catch {
-				console.warn("[AudioProcessor] Failed to load audio region:", region.audioPath);
+				console.warn("[AudioProcessor] Failed to load audio region:", region);
 				continue;
 			}
 			if (this.cancelled) throw new Error("Export cancelled");
@@ -287,12 +296,24 @@ export class AudioProcessor {
 					for (const entry of audioRegionElements) {
 						const { media: audioEl, region } = entry;
 						const isInRegion = currentTimeMs >= region.startMs && currentTimeMs < region.endMs;
+						entry.gainNode.gain.value = Math.max(
+							0,
+							Math.min(1, region.volume * getAudioRegionFadeMultiplier(region, currentTimeMs)),
+						);
 
 						if (isInRegion) {
-							const audioOffset = (currentTimeMs - region.startMs) / 1000;
-							if (audioEl.paused) {
+							const audioOffset = getAudioPlaybackOffsetSeconds(
+								region,
+								currentTimeMs,
+								audioEl.duration,
+							);
+							const hasPlayableContent =
+								region.loop || audioOffset < Math.max(0, audioEl.duration - 0.05);
+							if (audioEl.paused && hasPlayableContent) {
 								audioEl.currentTime = audioOffset;
-								audioEl.play().catch(() => {});
+								audioEl.play().catch(() => {
+									// Preview playback may be blocked; export continues with the current mix state.
+								});
 							} else if (Math.abs(audioEl.currentTime - audioOffset) > 0.3) {
 								audioEl.currentTime = audioOffset;
 							}

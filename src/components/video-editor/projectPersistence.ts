@@ -4,6 +4,7 @@ import { ASPECT_RATIOS, type AspectRatio, isCustomAspectRatio } from "@/utils/as
 import {
 	type AnnotationRegion,
 	type AudioRegion,
+	type AudioSourceType,
 	type CameraLayoutRegion,
 	type CaptionGenerationOptions,
 	type CaptionRegion,
@@ -16,6 +17,9 @@ import {
 	DEFAULT_ANNOTATION_POSITION,
 	DEFAULT_ANNOTATION_SIZE,
 	DEFAULT_ANNOTATION_STYLE,
+	DEFAULT_AUDIO_FADE_IN_MS,
+	DEFAULT_AUDIO_FADE_OUT_MS,
+	DEFAULT_AUDIO_REGION_VOLUME,
 	DEFAULT_BLUR_DATA,
 	DEFAULT_CAMERA_LAYOUT_MODE,
 	DEFAULT_CAMERA_SIZE_DURING_ZOOM,
@@ -37,10 +41,19 @@ import {
 	DEFAULT_CURSOR_TRAIL_LENGTH,
 	DEFAULT_CURSOR_TRAIL_OPACITY,
 	DEFAULT_FIGURE_DATA,
+	DEFAULT_KEYBOARD_SHORTCUT_DISPLAY_MS,
+	DEFAULT_KEYBOARD_SHORTCUT_MAX_VISIBLE,
+	DEFAULT_KEYBOARD_SHORTCUT_OPACITY,
+	DEFAULT_KEYBOARD_SHORTCUT_POSITION,
+	DEFAULT_KEYBOARD_SHORTCUT_SCALE,
+	DEFAULT_KEYBOARD_SHORTCUT_THEME,
 	DEFAULT_PLAYBACK_SPEED,
+	DEFAULT_SHOW_KEYBOARD_SHORTCUTS,
 	DEFAULT_WEBCAM_REGION,
 	DEFAULT_ZOOM_DEPTH,
 	DEFAULT_ZOOM_MOTION_BLUR,
+	type KeyboardShortcutPosition,
+	type KeyboardShortcutTheme,
 	type SpeedRegion,
 	type TrimRegion,
 	type WebcamRegion,
@@ -48,7 +61,7 @@ import {
 } from "./types";
 import { normalizeWebcamRegion } from "./webcamRegionUtils";
 
-export const PROJECT_VERSION = 4;
+export const PROJECT_VERSION = 5;
 
 export interface ProjectEditorState {
 	wallpaper: string;
@@ -72,6 +85,13 @@ export interface ProjectEditorState {
 	clickHighlightOpacity: number;
 	cursorTrailLength: number;
 	cursorTrailOpacity: number;
+	showKeyboardShortcuts: boolean;
+	keyboardShortcutPosition: KeyboardShortcutPosition;
+	keyboardShortcutTheme: KeyboardShortcutTheme;
+	keyboardShortcutScale: number;
+	keyboardShortcutOpacity: number;
+	keyboardShortcutDisplayMs: number;
+	keyboardShortcutMaxVisible: number;
 	borderRadius: number;
 	padding: number;
 	cropRegion: CropRegion;
@@ -712,13 +732,41 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 					const rawEnd = isFiniteNumber(region.endMs) ? Math.round(region.endMs) : rawStart + 1000;
 					const startMs = Math.max(0, Math.min(rawStart, rawEnd));
 					const endMs = Math.max(startMs + 1, rawEnd);
+					const normalizedSourceType: AudioSourceType =
+						region.sourceType === "built-in"
+							? "built-in"
+							: region.sourceType === "file"
+								? "file"
+								: typeof region.assetId === "string" && region.assetId.trim().length > 0
+									? "built-in"
+									: "file";
+					const normalizedAssetId =
+						typeof region.assetId === "string" && region.assetId.trim().length > 0
+							? region.assetId
+							: undefined;
+					const normalizedAudioPath =
+						typeof region.audioPath === "string" && region.audioPath.trim().length > 0
+							? region.audioPath
+							: undefined;
 
 					return {
 						id: region.id,
 						startMs,
 						endMs,
-						audioPath: typeof region.audioPath === "string" ? region.audioPath : "",
-						volume: isFiniteNumber(region.volume) ? clamp(region.volume, 0, 1) : 1,
+						sourceType: normalizedSourceType,
+						assetId: normalizedSourceType === "built-in" ? normalizedAssetId : undefined,
+						audioPath: normalizedSourceType === "file" ? normalizedAudioPath : undefined,
+						volume: isFiniteNumber(region.volume)
+							? clamp(region.volume, 0, 1)
+							: DEFAULT_AUDIO_REGION_VOLUME,
+						fadeInMs: isFiniteNumber(region.fadeInMs)
+							? clamp(region.fadeInMs, 0, 10_000)
+							: DEFAULT_AUDIO_FADE_IN_MS,
+						fadeOutMs: isFiniteNumber(region.fadeOutMs)
+							? clamp(region.fadeOutMs, 0, 10_000)
+							: DEFAULT_AUDIO_FADE_OUT_MS,
+						loop:
+							typeof region.loop === "boolean" ? region.loop : normalizedSourceType === "built-in",
 					};
 				})
 		: [];
@@ -818,6 +866,37 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		cursorTrailOpacity: isFiniteNumber(editor.cursorTrailOpacity)
 			? clamp(editor.cursorTrailOpacity, 0, 1)
 			: DEFAULT_CURSOR_TRAIL_OPACITY,
+		showKeyboardShortcuts:
+			typeof editor.showKeyboardShortcuts === "boolean"
+				? editor.showKeyboardShortcuts
+				: DEFAULT_SHOW_KEYBOARD_SHORTCUTS,
+		keyboardShortcutPosition:
+			editor.keyboardShortcutPosition === "top-left" ||
+			editor.keyboardShortcutPosition === "top-center" ||
+			editor.keyboardShortcutPosition === "top-right" ||
+			editor.keyboardShortcutPosition === "bottom-left" ||
+			editor.keyboardShortcutPosition === "bottom-center" ||
+			editor.keyboardShortcutPosition === "bottom-right"
+				? editor.keyboardShortcutPosition
+				: DEFAULT_KEYBOARD_SHORTCUT_POSITION,
+		keyboardShortcutTheme:
+			editor.keyboardShortcutTheme === "dark" ||
+			editor.keyboardShortcutTheme === "light" ||
+			editor.keyboardShortcutTheme === "glass"
+				? editor.keyboardShortcutTheme
+				: DEFAULT_KEYBOARD_SHORTCUT_THEME,
+		keyboardShortcutScale: isFiniteNumber(editor.keyboardShortcutScale)
+			? clamp(editor.keyboardShortcutScale, 0.5, 2)
+			: DEFAULT_KEYBOARD_SHORTCUT_SCALE,
+		keyboardShortcutOpacity: isFiniteNumber(editor.keyboardShortcutOpacity)
+			? clamp(editor.keyboardShortcutOpacity, 0, 1)
+			: DEFAULT_KEYBOARD_SHORTCUT_OPACITY,
+		keyboardShortcutDisplayMs: isFiniteNumber(editor.keyboardShortcutDisplayMs)
+			? clamp(editor.keyboardShortcutDisplayMs, 250, 4000)
+			: DEFAULT_KEYBOARD_SHORTCUT_DISPLAY_MS,
+		keyboardShortcutMaxVisible: isFiniteNumber(editor.keyboardShortcutMaxVisible)
+			? clamp(Math.round(editor.keyboardShortcutMaxVisible), 1, 3)
+			: DEFAULT_KEYBOARD_SHORTCUT_MAX_VISIBLE,
 		borderRadius: typeof editor.borderRadius === "number" ? editor.borderRadius : 12.5,
 		padding: normalizedPadding,
 		cropRegion: {

@@ -113,6 +113,13 @@ declare global {
 				message?: string;
 				error?: string;
 			}>;
+			getKeyboardTelemetry: (videoPath?: string) => Promise<{
+				success: boolean;
+				platform: KeyboardTelemetryPlatform;
+				samples: KeyboardTelemetrySample[];
+				message?: string;
+				error?: string;
+			}>;
 			getSystemCursorAssets: () => Promise<{
 				success: boolean;
 				cursors: Record<string, SystemCursorAsset>;
@@ -365,6 +372,8 @@ declare global {
 	type SelectedCaptureSource = Pick<ProcessedDesktopSource, "id" | "name" | "display_id"> &
 		Partial<ProcessedDesktopSource>;
 
+	type KeyboardTelemetryPlatform = "darwin" | "win32" | "linux";
+
 	interface CursorTelemetryPoint {
 		timeMs: number;
 		cx: number;
@@ -393,6 +402,17 @@ declare global {
 			| "zoom-in"
 			| "zoom-out"
 			| "screenshot-selection";
+	}
+
+	interface KeyboardTelemetrySample {
+		timeMs: number;
+		type: "keydown" | "keyup";
+		key: string;
+		keycode: number;
+		altKey: boolean;
+		ctrlKey: boolean;
+		metaKey: boolean;
+		shiftKey: boolean;
 	}
 
 	interface SystemCursorAsset {

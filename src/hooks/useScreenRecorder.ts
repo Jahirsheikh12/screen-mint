@@ -3,6 +3,7 @@ import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { CameraSessionState } from "@/components/video-editor/types";
 import { loadCameraPreferences, saveCameraPreferences } from "@/hooks/cameraPreferences";
+import { playAppAudioCue, preloadAppAudioCues } from "@/lib/appAudio";
 import { buildNativeRecordingOptions } from "@/lib/recording/nativeConfig";
 import type { AfterRecordingAction, PostRecordingContext } from "@/lib/recording/postRecording";
 import {
@@ -134,6 +135,10 @@ export function useScreenRecorder(
 	useEffect(() => {
 		sessionRef.current = sessionState;
 	}, [sessionState]);
+
+	useEffect(() => {
+		preloadAppAudioCues();
+	}, []);
 
 	const preparePermissions = useCallback(async (options: { startup?: boolean } = {}) => {
 		const platform = await window.electronAPI.getPlatform();
@@ -751,6 +756,7 @@ export function useScreenRecorder(
 
 		const removeRecordingInterruptedListener = window.electronAPI?.onRecordingInterrupted?.(
 			(state) => {
+				playAppAudioCue("recording-error");
 				nativeScreenRecording.current = false;
 				wgcRecording.current = false;
 				cleanupCapturedMedia();
@@ -822,6 +828,10 @@ export function useScreenRecorder(
 			const permissionsReady = await preparePermissions();
 			if (!permissionsReady) {
 				return;
+			}
+
+			if (!isResumingNative) {
+				playAppAudioCue("recording-start");
 			}
 
 			const platform = await window.electronAPI.getPlatform();
@@ -1220,6 +1230,7 @@ export function useScreenRecorder(
 				await window.electronAPI.clearCurrentWebcamPath();
 			}
 		} catch (error) {
+			playAppAudioCue("recording-error");
 			console.error("Failed to start recording:", error);
 			alert(
 				error instanceof Error
@@ -1341,12 +1352,14 @@ export function useScreenRecorder(
 			pendingActionRef.current = "stop";
 
 			if (nativeScreenRecording.current) {
+				await playAppAudioCue("recording-stop");
 				await stopActiveNativeSegment(false);
 				await finalizeSessionRef.current("stop");
 				return;
 			}
 
 			if (sessionRef.current.phase === "paused" && mediaRecorder.current == null) {
+				await playAppAudioCue("recording-stop");
 				await finalizeSessionRef.current("stop");
 				return;
 			}
@@ -1356,11 +1369,13 @@ export function useScreenRecorder(
 				mediaRecorder.current?.state === "paused"
 			) {
 				browserSessionStopPending.current = true;
+				await playAppAudioCue("recording-stop");
 				cleanupCapturedMedia();
 				await window.electronAPI.setRecordingState(false);
 				mediaRecorder.current.stop();
 			}
 		})().catch((error) => {
+			playAppAudioCue("recording-error");
 			console.error("Failed to stop recording session:", error);
 		});
 	};
@@ -1441,6 +1456,7 @@ export function useScreenRecorder(
 				mediaRecorder.current.stop();
 			}
 		})().catch((error) => {
+			playAppAudioCue("recording-error");
 			console.error("Failed to retake recording:", error);
 		});
 	}, [cleanupCapturedMedia, handleDiscardAction, recording, starting, stopActiveNativeSegment]);
@@ -1475,6 +1491,7 @@ export function useScreenRecorder(
 				mediaRecorder.current.stop();
 			}
 		})().catch((error) => {
+			playAppAudioCue("recording-error");
 			console.error("Failed to delete recording:", error);
 		});
 	}, [cleanupCapturedMedia, handleDiscardAction, recording, starting, stopActiveNativeSegment]);

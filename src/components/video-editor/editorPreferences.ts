@@ -23,6 +23,13 @@ type PersistedEditorControls = Pick<
 	| "clickHighlightOpacity"
 	| "cursorTrailLength"
 	| "cursorTrailOpacity"
+	| "showKeyboardShortcuts"
+	| "keyboardShortcutPosition"
+	| "keyboardShortcutTheme"
+	| "keyboardShortcutScale"
+	| "keyboardShortcutOpacity"
+	| "keyboardShortcutDisplayMs"
+	| "keyboardShortcutMaxVisible"
 	| "borderRadius"
 	| "padding"
 	| "cropRegion"
@@ -82,6 +89,13 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	clickHighlightOpacity: DEFAULT_EDITOR_CONTROLS.clickHighlightOpacity,
 	cursorTrailLength: DEFAULT_EDITOR_CONTROLS.cursorTrailLength,
 	cursorTrailOpacity: DEFAULT_EDITOR_CONTROLS.cursorTrailOpacity,
+	showKeyboardShortcuts: DEFAULT_EDITOR_CONTROLS.showKeyboardShortcuts,
+	keyboardShortcutPosition: DEFAULT_EDITOR_CONTROLS.keyboardShortcutPosition,
+	keyboardShortcutTheme: DEFAULT_EDITOR_CONTROLS.keyboardShortcutTheme,
+	keyboardShortcutScale: DEFAULT_EDITOR_CONTROLS.keyboardShortcutScale,
+	keyboardShortcutOpacity: DEFAULT_EDITOR_CONTROLS.keyboardShortcutOpacity,
+	keyboardShortcutDisplayMs: DEFAULT_EDITOR_CONTROLS.keyboardShortcutDisplayMs,
+	keyboardShortcutMaxVisible: DEFAULT_EDITOR_CONTROLS.keyboardShortcutMaxVisible,
 	borderRadius: DEFAULT_EDITOR_CONTROLS.borderRadius,
 	padding: DEFAULT_EDITOR_CONTROLS.padding,
 	cropRegion: DEFAULT_EDITOR_CONTROLS.cropRegion,
@@ -200,6 +214,16 @@ function normalizeEditorControls(
 		clickHighlightOpacity: raw.clickHighlightOpacity ?? fallback.clickHighlightOpacity,
 		cursorTrailLength: raw.cursorTrailLength ?? fallback.cursorTrailLength,
 		cursorTrailOpacity: raw.cursorTrailOpacity ?? fallback.cursorTrailOpacity,
+		showKeyboardShortcuts: raw.showKeyboardShortcuts ?? fallback.showKeyboardShortcuts,
+		keyboardShortcutPosition:
+			raw.keyboardShortcutPosition ?? fallback.keyboardShortcutPosition,
+		keyboardShortcutTheme: raw.keyboardShortcutTheme ?? fallback.keyboardShortcutTheme,
+		keyboardShortcutScale: raw.keyboardShortcutScale ?? fallback.keyboardShortcutScale,
+		keyboardShortcutOpacity: raw.keyboardShortcutOpacity ?? fallback.keyboardShortcutOpacity,
+		keyboardShortcutDisplayMs:
+			raw.keyboardShortcutDisplayMs ?? fallback.keyboardShortcutDisplayMs,
+		keyboardShortcutMaxVisible:
+			raw.keyboardShortcutMaxVisible ?? fallback.keyboardShortcutMaxVisible,
 		borderRadius: raw.borderRadius ?? fallback.borderRadius,
 		padding: candidatePadding,
 		cropRegion: normalizeCropRegion(raw.cropRegion, fallback.cropRegion),
@@ -239,6 +263,13 @@ function normalizeEditorControls(
 		clickHighlightOpacity: normalized.clickHighlightOpacity,
 		cursorTrailLength: normalized.cursorTrailLength,
 		cursorTrailOpacity: normalized.cursorTrailOpacity,
+		showKeyboardShortcuts: normalized.showKeyboardShortcuts,
+		keyboardShortcutPosition: normalized.keyboardShortcutPosition,
+		keyboardShortcutTheme: normalized.keyboardShortcutTheme,
+		keyboardShortcutScale: normalized.keyboardShortcutScale,
+		keyboardShortcutOpacity: normalized.keyboardShortcutOpacity,
+		keyboardShortcutDisplayMs: normalized.keyboardShortcutDisplayMs,
+		keyboardShortcutMaxVisible: normalized.keyboardShortcutMaxVisible,
 		borderRadius: normalized.borderRadius,
 		padding: normalized.padding,
 		cropRegion: normalized.cropRegion,

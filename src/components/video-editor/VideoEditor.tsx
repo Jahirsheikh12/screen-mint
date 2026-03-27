@@ -35,6 +35,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { useShortcuts } from "@/contexts/ShortcutsContext";
 import { type AppLocale, SUPPORTED_LOCALES } from "@/i18n/config";
+import { getBackgroundMusicAssetById } from "@/lib/backgroundMusic";
 import {
 	calculateOutputDimensions,
 	type ExportFormat,
@@ -50,6 +51,13 @@ import {
 import type { PostRecordingContext } from "@/lib/recording/postRecording";
 import { matchesShortcut } from "@/lib/shortcuts";
 import { type AspectRatio, getAspectRatioValue } from "@/utils/aspectRatioUtils";
+import {
+	getAudioPlaybackOffsetSeconds,
+	getAudioRegionFadeMultiplier,
+	isFileAudioSource,
+	loadAudioSelectionDurationMs,
+	resolveAudioSourceUrl,
+} from "./audioRegionUtils";
 import { ExportDialog } from "./ExportDialog";
 import { ExportSettingsDialog } from "./ExportSettingsDialog";
 import {
@@ -68,6 +76,7 @@ import {
 } from "./projectPersistence";
 import { QuickShareDialog } from "./QuickShareDialog";
 import SettingsPanel from "./SettingsPanel";
+import { deriveKeyboardShortcutCallouts } from "./keyboardShortcuts";
 import TimelineEditor from "./timeline/TimelineEditor";
 import {
 	detectInteractionCandidates,
@@ -76,6 +85,7 @@ import {
 import {
 	type AnnotationRegion,
 	type AudioRegion,
+	type AudioTrackSelection,
 	type BlurData,
 	CAPTION_STYLE_PRESETS,
 	type CameraLayoutRegion,
@@ -87,11 +97,16 @@ import {
 	type CaptionStylePreset,
 	type CaptionTrack,
 	type CropRegion,
+	type KeyboardPlatform,
+	type KeyboardTelemetrySample,
 	type CursorTelemetryPoint,
 	clampFocusToDepth,
 	DEFAULT_ANNOTATION_POSITION,
 	DEFAULT_ANNOTATION_SIZE,
 	DEFAULT_ANNOTATION_STYLE,
+	DEFAULT_AUDIO_FADE_IN_MS,
+	DEFAULT_AUDIO_FADE_OUT_MS,
+	DEFAULT_AUDIO_REGION_VOLUME,
 	DEFAULT_BLUR_DATA,
 	DEFAULT_CAMERA_SIZE_DURING_ZOOM,
 	DEFAULT_CAPTION_GENERATION_OPTIONS,
@@ -216,11 +231,35 @@ export default function VideoEditor() {
 	const [cursorTrailOpacity, setCursorTrailOpacity] = useState(
 		initialEditorPreferences.cursorTrailOpacity,
 	);
+	const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(
+		initialEditorPreferences.showKeyboardShortcuts,
+	);
+	const [keyboardShortcutPosition, setKeyboardShortcutPosition] = useState(
+		initialEditorPreferences.keyboardShortcutPosition,
+	);
+	const [keyboardShortcutTheme, setKeyboardShortcutTheme] = useState(
+		initialEditorPreferences.keyboardShortcutTheme,
+	);
+	const [keyboardShortcutScale, setKeyboardShortcutScale] = useState(
+		initialEditorPreferences.keyboardShortcutScale,
+	);
+	const [keyboardShortcutOpacity, setKeyboardShortcutOpacity] = useState(
+		initialEditorPreferences.keyboardShortcutOpacity,
+	);
+	const [keyboardShortcutDisplayMs, setKeyboardShortcutDisplayMs] = useState(
+		initialEditorPreferences.keyboardShortcutDisplayMs,
+	);
+	const [keyboardShortcutMaxVisible, setKeyboardShortcutMaxVisible] = useState(
+		initialEditorPreferences.keyboardShortcutMaxVisible,
+	);
 	const [borderRadius, setBorderRadius] = useState(initialEditorPreferences.borderRadius);
 	const [padding, setPadding] = useState(initialEditorPreferences.padding);
 	const [cropRegion, setCropRegion] = useState<CropRegion>(initialEditorPreferences.cropRegion);
 	const [zoomRegions, setZoomRegions] = useState<ZoomRegion[]>([]);
 	const [cursorTelemetry, setCursorTelemetry] = useState<CursorTelemetryPoint[]>([]);
+	const [keyboardTelemetry, setKeyboardTelemetry] = useState<KeyboardTelemetrySample[]>([]);
+	const [keyboardTelemetryPlatform, setKeyboardTelemetryPlatform] =
+		useState<KeyboardPlatform>("win32");
 	const [selectedZoomId, setSelectedZoomId] = useState<string | null>(null);
 	const [trimRegions, setTrimRegions] = useState<TrimRegion[]>([]);
 	const [selectedTrimId, setSelectedTrimId] = useState<string | null>(null);
@@ -244,6 +283,10 @@ export default function VideoEditor() {
 	const [isTranscribing, setIsTranscribing] = useState(false);
 	const [webcamPath, setWebcamPath] = useState<string | null>(null);
 	const [missingWebcamPath, setMissingWebcamPath] = useState<string | null>(null);
+	const [missingAudioPathsById, setMissingAudioPathsById] = useState<Record<string, string>>({});
+	const [resolvedAudioSourceUrls, setResolvedAudioSourceUrls] = useState<Record<string, string>>(
+		{},
+	);
 	const [webcamRegion, setWebcamRegion] = useState<WebcamRegion>({
 		...initialEditorPreferences.webcamRegion,
 		position: { ...initialEditorPreferences.webcamRegion.position },
@@ -312,8 +355,13 @@ export default function VideoEditor() {
 	const pendingExportSaveRef = useRef<PendingExportSave | null>(null);
 	const webcamAvailabilityRequestRef = useRef(0);
 	const notifiedMissingWebcamPathRef = useRef<string | null>(null);
+	const audioAvailabilityRequestRef = useRef(0);
 	const handledPostRecordingContextRef = useRef<string | null>(null);
 	const resolvedWebcamPath = missingWebcamPath ? null : webcamPath;
+	const selectedAudioRegion = selectedAudioId
+		? (audioRegions.find((region) => region.id === selectedAudioId) ?? null)
+		: null;
+	const missingSelectedAudioPath = selectedAudioId ? missingAudioPathsById[selectedAudioId] : null;
 
 	const clearWebcamState = useCallback(() => {
 		setWebcamPath(null);
@@ -391,6 +439,13 @@ export default function VideoEditor() {
 				clickHighlightOpacity,
 				cursorTrailLength,
 				cursorTrailOpacity,
+				showKeyboardShortcuts,
+				keyboardShortcutPosition,
+				keyboardShortcutTheme,
+				keyboardShortcutScale,
+				keyboardShortcutOpacity,
+				keyboardShortcutDisplayMs,
+				keyboardShortcutMaxVisible,
 				borderRadius,
 				padding,
 				cropRegion,
@@ -427,6 +482,13 @@ export default function VideoEditor() {
 			clickHighlightOpacity,
 			cursorTrailLength,
 			cursorTrailOpacity,
+			showKeyboardShortcuts,
+			keyboardShortcutPosition,
+			keyboardShortcutTheme,
+			keyboardShortcutScale,
+			keyboardShortcutOpacity,
+			keyboardShortcutDisplayMs,
+			keyboardShortcutMaxVisible,
 			borderRadius,
 			padding,
 			cropRegion,
@@ -469,6 +531,13 @@ export default function VideoEditor() {
 			setClickHighlightOpacity(controls.clickHighlightOpacity);
 			setCursorTrailLength(controls.cursorTrailLength);
 			setCursorTrailOpacity(controls.cursorTrailOpacity);
+			setShowKeyboardShortcuts(controls.showKeyboardShortcuts);
+			setKeyboardShortcutPosition(controls.keyboardShortcutPosition);
+			setKeyboardShortcutTheme(controls.keyboardShortcutTheme);
+			setKeyboardShortcutScale(controls.keyboardShortcutScale);
+			setKeyboardShortcutOpacity(controls.keyboardShortcutOpacity);
+			setKeyboardShortcutDisplayMs(controls.keyboardShortcutDisplayMs);
+			setKeyboardShortcutMaxVisible(controls.keyboardShortcutMaxVisible);
 			setBorderRadius(controls.borderRadius);
 			setPadding(controls.padding);
 			setCropRegion(controls.cropRegion);
@@ -529,6 +598,28 @@ export default function VideoEditor() {
 		},
 		[],
 	);
+
+	const syncAudioAvailability = useCallback(async (regions: AudioRegion[]) => {
+		const requestId = ++audioAvailabilityRequestRef.current;
+		const nextMissingEntries = await Promise.all(
+			regions
+				.filter((region) => isFileAudioSource(region) && region.audioPath)
+				.map(async (region) => {
+					const result = await window.electronAPI.checkFileAvailable(region.audioPath ?? "");
+					return result.success && result.exists
+						? null
+						: ([region.id, region.audioPath ?? ""] as const);
+				}),
+		);
+
+		if (requestId !== audioAvailabilityRequestRef.current) {
+			return;
+		}
+
+		setMissingAudioPathsById(
+			Object.fromEntries(nextMissingEntries.filter(Boolean) as Array<[string, string]>),
+		);
+	}, []);
 
 	const cloneSnapshot = useCallback((snapshot: EditorHistorySnapshot): EditorHistorySnapshot => {
 		return {
@@ -790,6 +881,13 @@ export default function VideoEditor() {
 				clickHighlightOpacity,
 				cursorTrailLength,
 				cursorTrailOpacity,
+				showKeyboardShortcuts,
+				keyboardShortcutPosition,
+				keyboardShortcutTheme,
+				keyboardShortcutScale,
+				keyboardShortcutOpacity,
+				keyboardShortcutDisplayMs,
+				keyboardShortcutMaxVisible,
 				borderRadius,
 				padding,
 				cropRegion,
@@ -839,6 +937,13 @@ export default function VideoEditor() {
 		clickHighlightOpacity,
 		cursorTrailLength,
 		cursorTrailOpacity,
+		showKeyboardShortcuts,
+		keyboardShortcutPosition,
+		keyboardShortcutTheme,
+		keyboardShortcutScale,
+		keyboardShortcutOpacity,
+		keyboardShortcutDisplayMs,
+		keyboardShortcutMaxVisible,
 		borderRadius,
 		padding,
 		cropRegion,
@@ -997,6 +1102,13 @@ export default function VideoEditor() {
 			clickHighlightOpacity,
 			cursorTrailLength,
 			cursorTrailOpacity,
+			showKeyboardShortcuts,
+			keyboardShortcutPosition,
+			keyboardShortcutTheme,
+			keyboardShortcutScale,
+			keyboardShortcutOpacity,
+			keyboardShortcutDisplayMs,
+			keyboardShortcutMaxVisible,
 			borderRadius,
 			padding,
 			cropRegion,
@@ -1035,6 +1147,13 @@ export default function VideoEditor() {
 		clickHighlightOpacity,
 		cursorTrailLength,
 		cursorTrailOpacity,
+		showKeyboardShortcuts,
+		keyboardShortcutPosition,
+		keyboardShortcutTheme,
+		keyboardShortcutScale,
+		keyboardShortcutOpacity,
+		keyboardShortcutDisplayMs,
+		keyboardShortcutMaxVisible,
 		borderRadius,
 		padding,
 		cropRegion,
@@ -1087,6 +1206,13 @@ export default function VideoEditor() {
 				clickHighlightOpacity,
 				cursorTrailLength,
 				cursorTrailOpacity,
+				showKeyboardShortcuts,
+				keyboardShortcutPosition,
+				keyboardShortcutTheme,
+				keyboardShortcutScale,
+				keyboardShortcutOpacity,
+				keyboardShortcutDisplayMs,
+				keyboardShortcutMaxVisible,
 				borderRadius,
 				padding,
 				cropRegion,
@@ -1166,6 +1292,13 @@ export default function VideoEditor() {
 			clickHighlightOpacity,
 			cursorTrailLength,
 			cursorTrailOpacity,
+			showKeyboardShortcuts,
+			keyboardShortcutPosition,
+			keyboardShortcutTheme,
+			keyboardShortcutScale,
+			keyboardShortcutOpacity,
+			keyboardShortcutDisplayMs,
+			keyboardShortcutMaxVisible,
 			borderRadius,
 			padding,
 			cropRegion,
@@ -1290,6 +1423,40 @@ export default function VideoEditor() {
 		};
 	}, [videoPath]);
 
+	useEffect(() => {
+		let mounted = true;
+
+		async function loadKeyboardTelemetry() {
+			if (!videoPath) {
+				if (mounted) {
+					setKeyboardTelemetry([]);
+					setKeyboardTelemetryPlatform("win32");
+				}
+				return;
+			}
+
+			try {
+				const result = await window.electronAPI.getKeyboardTelemetry(fromFileUrl(videoPath));
+				if (mounted) {
+					setKeyboardTelemetry(result.success ? result.samples : []);
+					setKeyboardTelemetryPlatform(result.platform);
+				}
+			} catch (telemetryError) {
+				console.warn("Unable to load keyboard telemetry:", telemetryError);
+				if (mounted) {
+					setKeyboardTelemetry([]);
+					setKeyboardTelemetryPlatform("win32");
+				}
+			}
+		}
+
+		void loadKeyboardTelemetry();
+
+		return () => {
+			mounted = false;
+		};
+	}, [videoPath]);
+
 	const normalizedCursorTelemetry = useMemo(() => {
 		if (cursorTelemetry.length === 0) {
 			return [] as CursorTelemetryPoint[];
@@ -1301,6 +1468,16 @@ export default function VideoEditor() {
 			totalMs > 0 ? totalMs : Number.MAX_SAFE_INTEGER,
 		);
 	}, [cursorTelemetry, duration]);
+
+	const keyboardShortcutCallouts = useMemo(
+		() =>
+			deriveKeyboardShortcutCallouts(
+				keyboardTelemetry,
+				keyboardTelemetryPlatform,
+				keyboardShortcutDisplayMs,
+			),
+		[keyboardTelemetry, keyboardTelemetryPlatform, keyboardShortcutDisplayMs],
+	);
 
 	const displayedTimelineWindow = useMemo(() => {
 		const totalMs = Math.max(0, Math.round(duration * 1000));
@@ -1728,23 +1905,162 @@ export default function VideoEditor() {
 		}
 	}, []);
 
-	const handleAudioAdded = useCallback((span: Span, audioPath: string) => {
-		const id = `audio-${nextAudioIdRef.current++}`;
-		const newRegion: AudioRegion = {
-			id,
-			startMs: Math.round(span.start),
-			endMs: Math.round(span.end),
-			audioPath,
-			volume: 1,
-		};
-		setAudioRegions((prev) => [...prev, newRegion]);
-		setSelectedAudioId(id);
-		setSelectedZoomId(null);
-		setSelectedTrimId(null);
-		setSelectedAnnotationId(null);
-		setSelectedSpeedId(null);
-		setSelectedCameraLayoutId(null);
-		setWebcamSelected(false);
+	const handleAudioAdded = useCallback(
+		async (selection: AudioTrackSelection, clickTimeMs?: number) => {
+			const totalMs = Math.max(0, Math.round(duration * 1000));
+			if (totalMs === 0) {
+				return;
+			}
+
+			const resolvedDurationMs =
+				selection.durationMs && selection.durationMs > 0
+					? selection.durationMs
+					: await loadAudioSelectionDurationMs(selection);
+			if (resolvedDurationMs <= 0) {
+				toast.error("Could not read audio file", {
+					description: "The selected audio could not be loaded.",
+				});
+				return;
+			}
+
+			const startPos = Math.max(
+				0,
+				Math.min(
+					clickTimeMs != null ? Math.round(clickTimeMs) : Math.round(currentTime * 1000),
+					totalMs,
+				),
+			);
+			const sorted = [...audioRegions].sort((a, b) => a.startMs - b.startMs);
+			const nextRegion = sorted.find((region) => region.startMs > startPos);
+			const gapToNext = nextRegion ? nextRegion.startMs - startPos : totalMs - startPos;
+			const isOverlapping = sorted.some(
+				(region) => startPos >= region.startMs && startPos < region.endMs,
+			);
+
+			if (isOverlapping || gapToNext <= 0) {
+				toast.error("Cannot place audio here", {
+					description:
+						"Audio region already exists at this location or not enough space available.",
+				});
+				return;
+			}
+
+			const shouldLoop = selection.loop ?? selection.sourceType === "built-in";
+			const actualDuration = shouldLoop
+				? Math.min(gapToNext, totalMs - startPos)
+				: Math.min(resolvedDurationMs, gapToNext, totalMs - startPos);
+			if (actualDuration <= 0) {
+				toast.error("Cannot place audio here", {
+					description: "There is no room left at the current playhead position.",
+				});
+				return;
+			}
+
+			const builtInAsset =
+				selection.sourceType === "built-in" ? getBackgroundMusicAssetById(selection.assetId) : null;
+			const id = `audio-${nextAudioIdRef.current++}`;
+			const newRegion: AudioRegion = {
+				id,
+				startMs: startPos,
+				endMs: startPos + actualDuration,
+				sourceType: selection.sourceType,
+				assetId: selection.sourceType === "built-in" ? selection.assetId : undefined,
+				audioPath: selection.sourceType === "file" ? selection.audioPath : undefined,
+				volume:
+					selection.defaultVolume ?? builtInAsset?.defaultVolume ?? DEFAULT_AUDIO_REGION_VOLUME,
+				fadeInMs: DEFAULT_AUDIO_FADE_IN_MS,
+				fadeOutMs: DEFAULT_AUDIO_FADE_OUT_MS,
+				loop: shouldLoop,
+			};
+
+			setAudioRegions((prev) => [...prev, newRegion]);
+			setSelectedAudioId(id);
+			setSelectedZoomId(null);
+			setSelectedTrimId(null);
+			setSelectedAnnotationId(null);
+			setSelectedSpeedId(null);
+			setSelectedCameraLayoutId(null);
+			setWebcamSelected(false);
+		},
+		[audioRegions, currentTime, duration],
+	);
+
+	const handleReplaceSelectedAudioSource = useCallback(
+		async (selection: AudioTrackSelection) => {
+			if (!selectedAudioRegion) {
+				await handleAudioAdded(selection);
+				return;
+			}
+
+			const resolvedDurationMs =
+				selection.durationMs && selection.durationMs > 0
+					? selection.durationMs
+					: await loadAudioSelectionDurationMs(selection);
+			if (resolvedDurationMs <= 0) {
+				toast.error("Could not read audio file", {
+					description: "The selected audio could not be loaded.",
+				});
+				return;
+			}
+
+			setAudioRegions((prev) =>
+				prev.map((region) => {
+					if (region.id !== selectedAudioRegion.id) {
+						return region;
+					}
+
+					return {
+						...region,
+						sourceType: selection.sourceType,
+						assetId: selection.sourceType === "built-in" ? selection.assetId : undefined,
+						audioPath: selection.sourceType === "file" ? selection.audioPath : undefined,
+						endMs:
+							(selection.loop ?? selection.sourceType === "built-in")
+								? region.endMs
+								: Math.min(region.endMs, region.startMs + resolvedDurationMs),
+						loop: selection.loop ?? selection.sourceType === "built-in",
+					};
+				}),
+			);
+		},
+		[handleAudioAdded, selectedAudioRegion],
+	);
+
+	const handleAudioVolumeChange = useCallback((id: string, volume: number) => {
+		setAudioRegions((prev) =>
+			prev.map((region) =>
+				region.id === id ? { ...region, volume: Math.max(0, Math.min(1, volume)) } : region,
+			),
+		);
+	}, []);
+
+	const handleAudioFadeChange = useCallback(
+		(id: string, updates: Partial<Pick<AudioRegion, "fadeInMs" | "fadeOutMs">>) => {
+			setAudioRegions((prev) =>
+				prev.map((region) =>
+					region.id === id
+						? {
+								...region,
+								fadeInMs:
+									typeof updates.fadeInMs === "number"
+										? Math.max(0, Math.round(updates.fadeInMs))
+										: region.fadeInMs,
+								fadeOutMs:
+									typeof updates.fadeOutMs === "number"
+										? Math.max(0, Math.round(updates.fadeOutMs))
+										: region.fadeOutMs,
+							}
+						: region,
+				),
+			);
+		},
+		[],
+	);
+
+	const handleAudioLoopChange = useCallback((id: string, loop: boolean) => {
+		setAudioRegions((prev) =>
+			prev.map((region) => (region.id === id ? { ...region, loop } : region)),
+		);
 	}, []);
 
 	const handleAudioSpanChange = useCallback((id: string, span: Span) => {
@@ -1770,6 +2086,48 @@ export default function VideoEditor() {
 		},
 		[selectedAudioId],
 	);
+
+	const handleRelinkMissingAudio = useCallback(async () => {
+		if (!selectedAudioRegion || selectedAudioRegion.sourceType !== "file") {
+			return;
+		}
+
+		const result = await window.electronAPI.openAudioFilePicker();
+		if (result.canceled || !result.success || !result.path) {
+			return;
+		}
+
+		const resolvedDurationMs = await loadAudioSelectionDurationMs({
+			sourceType: "file",
+			audioPath: result.path,
+		});
+		if (resolvedDurationMs <= 0) {
+			toast.error("Selected audio file is not accessible.");
+			return;
+		}
+
+		setAudioRegions((prev) =>
+			prev.map((region) =>
+				region.id === selectedAudioRegion.id
+					? {
+							...region,
+							audioPath: result.path,
+							endMs: Math.min(region.endMs, region.startMs + resolvedDurationMs),
+						}
+					: region,
+			),
+		);
+		toast.success("Audio source relinked.");
+	}, [selectedAudioRegion]);
+
+	const handleRemoveMissingAudio = useCallback(() => {
+		if (!selectedAudioRegion) {
+			return;
+		}
+
+		setAudioRegions((prev) => prev.filter((region) => region.id !== selectedAudioRegion.id));
+		toast.success("Audio removed from this project.");
+	}, [selectedAudioRegion]);
 
 	const handleSpeedChange = useCallback(
 		(speed: PlaybackSpeed) => {
@@ -2609,6 +2967,37 @@ export default function VideoEditor() {
 		}
 	}, [selectedAudioId, audioRegions]);
 
+	useEffect(() => {
+		void syncAudioAvailability(audioRegions);
+	}, [audioRegions, syncAudioAvailability]);
+
+	useEffect(() => {
+		let cancelled = false;
+
+		void (async () => {
+			const entries = await Promise.all(
+				audioRegions.map(
+					async (region) => [region.id, await resolveAudioSourceUrl(region)] as const,
+				),
+			);
+			if (cancelled) {
+				return;
+			}
+
+			setResolvedAudioSourceUrls(
+				Object.fromEntries(
+					entries.filter(
+						(entry): entry is readonly [string, string] => typeof entry[1] === "string",
+					),
+				),
+			);
+		})();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [audioRegions]);
+
 	// Audio playback sync: manage Audio elements that play in sync with video
 	const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
 
@@ -2633,8 +3022,12 @@ export default function VideoEditor() {
 				audio.preload = "auto";
 				existing.set(region.id, audio);
 			}
-			const expectedSrc = toFileUrl(region.audioPath);
+
+			const expectedSrc = missingAudioPathsById[region.id]
+				? ""
+				: (resolvedAudioSourceUrls[region.id] ?? "");
 			if (audio.src !== expectedSrc) {
+				audio.pause();
 				audio.src = expectedSrc;
 			}
 			audio.volume = Math.max(0, Math.min(1, region.volume));
@@ -2647,7 +3040,7 @@ export default function VideoEditor() {
 			}
 			existing.clear();
 		};
-	}, [audioRegions]);
+	}, [audioRegions, missingAudioPathsById, resolvedAudioSourceUrls]);
 
 	// Sync audio playback with video currentTime and isPlaying state
 	useEffect(() => {
@@ -2657,14 +3050,19 @@ export default function VideoEditor() {
 
 			const currentTimeMs = currentTime * 1000;
 			const isInRegion = currentTimeMs >= region.startMs && currentTimeMs < region.endMs;
+			audio.volume = Math.max(
+				0,
+				Math.min(1, region.volume * getAudioRegionFadeMultiplier(region, currentTimeMs)),
+			);
 
-			if (isPlaying && isInRegion) {
-				const audioOffset = (currentTimeMs - region.startMs) / 1000;
+			if (isPlaying && isInRegion && !missingAudioPathsById[region.id] && audio.src) {
+				const audioOffset = getAudioPlaybackOffsetSeconds(region, currentTimeMs, audio.duration);
 				// Only seek if significantly out of sync (> 200ms)
 				if (Math.abs(audio.currentTime - audioOffset) > 0.2) {
 					audio.currentTime = audioOffset;
 				}
-				if (audio.paused) {
+				const hasPlayableContent = region.loop || audioOffset < Math.max(0, audio.duration - 0.05);
+				if (audio.paused && hasPlayableContent) {
 					audio.play().catch(() => undefined);
 				}
 			} else {
@@ -2673,7 +3071,7 @@ export default function VideoEditor() {
 				}
 			}
 		}
-	}, [isPlaying, currentTime, audioRegions]);
+	}, [currentTime, audioRegions, isPlaying, missingAudioPathsById]);
 
 	const showExportSuccessToast = useCallback((filePath: string) => {
 		toast.success(`Exported successfully to ${filePath}`, {
@@ -2797,13 +3195,20 @@ export default function VideoEditor() {
 						annotationRegions,
 						zoomRegions: effectiveZoomRegions,
 						cursorTelemetry: effectiveCursorTelemetry,
+						keyboardShortcutCallouts,
 						showCursor,
+						showKeyboardShortcuts,
 						cursorSize,
 						cursorSmoothing,
 						cursorMotionBlur,
 						cursorClickBounce,
 						cursorSway,
 						cursorPack,
+						keyboardShortcutPosition,
+						keyboardShortcutTheme,
+						keyboardShortcutScale,
+						keyboardShortcutOpacity,
+						keyboardShortcutMaxVisible,
 						previewWidth,
 						previewHeight,
 						webcamPath: resolvedWebcamPath,
@@ -2954,13 +3359,20 @@ export default function VideoEditor() {
 						annotationRegions,
 						zoomRegions: effectiveZoomRegions,
 						cursorTelemetry: effectiveCursorTelemetry,
+						keyboardShortcutCallouts,
 						showCursor,
+						showKeyboardShortcuts,
 						cursorSize,
 						cursorSmoothing,
 						cursorMotionBlur,
 						cursorClickBounce,
 						cursorSway,
 						cursorPack,
+						keyboardShortcutPosition,
+						keyboardShortcutTheme,
+						keyboardShortcutScale,
+						keyboardShortcutOpacity,
+						keyboardShortcutMaxVisible,
 						audioRegions,
 						previewWidth,
 						previewHeight,
@@ -3043,13 +3455,20 @@ export default function VideoEditor() {
 			zoomMotionBlur,
 			connectZooms,
 			showCursor,
+			showKeyboardShortcuts,
 			effectiveCursorTelemetry,
+			keyboardShortcutCallouts,
 			cursorSize,
 			cursorSmoothing,
 			cursorMotionBlur,
 			cursorClickBounce,
 			cursorSway,
 			cursorPack,
+			keyboardShortcutPosition,
+			keyboardShortcutTheme,
+			keyboardShortcutScale,
+			keyboardShortcutOpacity,
+			keyboardShortcutMaxVisible,
 			audioRegions,
 			borderRadius,
 			padding,
@@ -3657,6 +4076,13 @@ export default function VideoEditor() {
 									onAnnotationPositionChange={handleAnnotationPositionChange}
 									onAnnotationSizeChange={handleAnnotationSizeChange}
 									cursorTelemetry={effectiveCursorTelemetry}
+									keyboardShortcutCallouts={keyboardShortcutCallouts}
+									showKeyboardShortcuts={showKeyboardShortcuts}
+									keyboardShortcutPosition={keyboardShortcutPosition}
+									keyboardShortcutTheme={keyboardShortcutTheme}
+									keyboardShortcutScale={keyboardShortcutScale}
+									keyboardShortcutOpacity={keyboardShortcutOpacity}
+									keyboardShortcutMaxVisible={keyboardShortcutMaxVisible}
 									showCursor={showCursor}
 									cursorSize={cursorSize}
 									cursorSmoothing={cursorSmoothing}
@@ -3733,6 +4159,20 @@ export default function VideoEditor() {
 							onCursorTrailLengthChange={setCursorTrailLength}
 							cursorTrailOpacity={cursorTrailOpacity}
 							onCursorTrailOpacityChange={setCursorTrailOpacity}
+							showKeyboardShortcuts={showKeyboardShortcuts}
+							onShowKeyboardShortcutsChange={setShowKeyboardShortcuts}
+							keyboardShortcutPosition={keyboardShortcutPosition}
+							onKeyboardShortcutPositionChange={setKeyboardShortcutPosition}
+							keyboardShortcutTheme={keyboardShortcutTheme}
+							onKeyboardShortcutThemeChange={setKeyboardShortcutTheme}
+							keyboardShortcutScale={keyboardShortcutScale}
+							onKeyboardShortcutScaleChange={setKeyboardShortcutScale}
+							keyboardShortcutOpacity={keyboardShortcutOpacity}
+							onKeyboardShortcutOpacityChange={setKeyboardShortcutOpacity}
+							keyboardShortcutDisplayMs={keyboardShortcutDisplayMs}
+							onKeyboardShortcutDisplayMsChange={setKeyboardShortcutDisplayMs}
+							keyboardShortcutMaxVisible={keyboardShortcutMaxVisible}
+							onKeyboardShortcutMaxVisibleChange={setKeyboardShortcutMaxVisible}
 							borderRadius={borderRadius}
 							onBorderRadiusChange={setBorderRadius}
 							padding={padding}
@@ -3777,6 +4217,17 @@ export default function VideoEditor() {
 							}
 							onSpeedChange={handleSpeedChange}
 							onSpeedDelete={handleSpeedDelete}
+							audioRegions={audioRegions}
+							selectedAudioId={selectedAudioId}
+							onAudioAddAtPlayhead={handleAudioAdded}
+							onReplaceSelectedAudio={handleReplaceSelectedAudioSource}
+							onAudioVolumeChange={handleAudioVolumeChange}
+							onAudioFadeChange={handleAudioFadeChange}
+							onAudioLoopChange={handleAudioLoopChange}
+							onAudioDelete={handleAudioDelete}
+							missingAudioPath={missingSelectedAudioPath}
+							onRelinkMissingAudio={handleRelinkMissingAudio}
+							onRemoveMissingAudio={handleRemoveMissingAudio}
 							captionRegions={captionRegions}
 							captionGenerationOptions={captionGenerationOptions}
 							captionGenerationProgress={captionGenerationProgress}

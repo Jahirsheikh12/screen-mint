@@ -39,6 +39,38 @@ export interface CursorTelemetryPoint {
 	cursorType?: CursorType;
 }
 
+export type KeyboardTelemetryEventType = "keydown" | "keyup";
+export type KeyboardPlatform = "darwin" | "win32" | "linux";
+
+export interface KeyboardTelemetrySample {
+	timeMs: number;
+	type: KeyboardTelemetryEventType;
+	key: string;
+	keycode: number;
+	altKey: boolean;
+	ctrlKey: boolean;
+	metaKey: boolean;
+	shiftKey: boolean;
+}
+
+export type KeyboardShortcutPosition =
+	| "top-left"
+	| "top-center"
+	| "top-right"
+	| "bottom-left"
+	| "bottom-center"
+	| "bottom-right";
+export type KeyboardShortcutTheme = "dark" | "light" | "glass";
+
+export interface KeyboardShortcutCallout {
+	id: string;
+	startMs: number;
+	endMs: number;
+	keys: string[];
+	labels: string[];
+	platform: KeyboardPlatform;
+}
+
 export type CursorStyle = "default" | "dot" | "crosshair" | "circle" | "ring";
 export type CursorPack = "classic" | "custom";
 
@@ -95,6 +127,34 @@ export const DEFAULT_CLICK_HIGHLIGHT_OPACITY = 0.5;
 export const DEFAULT_CURSOR_TRAIL_LENGTH = 0;
 export const DEFAULT_CURSOR_TRAIL_OPACITY = 0.3;
 export const DEFAULT_ZOOM_MOTION_BLUR = 0.35;
+export const DEFAULT_SHOW_KEYBOARD_SHORTCUTS = false;
+export const DEFAULT_KEYBOARD_SHORTCUT_POSITION: KeyboardShortcutPosition = "bottom-center";
+export const DEFAULT_KEYBOARD_SHORTCUT_THEME: KeyboardShortcutTheme = "dark";
+export const DEFAULT_KEYBOARD_SHORTCUT_SCALE = 1;
+export const DEFAULT_KEYBOARD_SHORTCUT_OPACITY = 1;
+export const DEFAULT_KEYBOARD_SHORTCUT_DISPLAY_MS = 1350;
+export const DEFAULT_KEYBOARD_SHORTCUT_MAX_VISIBLE = 1;
+
+export const KEYBOARD_SHORTCUT_POSITION_OPTIONS: Array<{
+	value: KeyboardShortcutPosition;
+	label: string;
+}> = [
+	{ value: "top-left", label: "Top Left" },
+	{ value: "top-center", label: "Top Center" },
+	{ value: "top-right", label: "Top Right" },
+	{ value: "bottom-left", label: "Bottom Left" },
+	{ value: "bottom-center", label: "Bottom Center" },
+	{ value: "bottom-right", label: "Bottom Right" },
+];
+
+export const KEYBOARD_SHORTCUT_THEME_OPTIONS: Array<{
+	value: KeyboardShortcutTheme;
+	label: string;
+}> = [
+	{ value: "dark", label: "Dark" },
+	{ value: "light", label: "Light" },
+	{ value: "glass", label: "Glass" },
+];
 
 export interface TrimRegion {
 	id: string;
@@ -284,13 +344,33 @@ export const DEFAULT_CROP_REGION: CropRegion = {
 	height: 1,
 };
 
-export interface AudioRegion {
+export type AudioSourceType = "built-in" | "file";
+
+export interface AudioRegionSource {
+	sourceType: AudioSourceType;
+	assetId?: string;
+	audioPath?: string;
+}
+
+export interface AudioTrackSelection extends AudioRegionSource {
+	durationMs?: number;
+	defaultVolume?: number;
+	loop?: boolean;
+}
+
+export interface AudioRegion extends AudioRegionSource {
 	id: string;
 	startMs: number;
 	endMs: number;
-	audioPath: string;
 	volume: number;
+	fadeInMs: number;
+	fadeOutMs: number;
+	loop: boolean;
 }
+
+export const DEFAULT_AUDIO_REGION_VOLUME = 0.18;
+export const DEFAULT_AUDIO_FADE_IN_MS = 250;
+export const DEFAULT_AUDIO_FADE_OUT_MS = 600;
 
 export type PlaybackSpeed = 0.25 | 0.5 | 0.75 | 1.25 | 1.5 | 1.75 | 2;
 

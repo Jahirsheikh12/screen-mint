@@ -1,6 +1,11 @@
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { fromFileUrl, normalizeProjectEditor, toFileUrl } from "./projectPersistence";
+import {
+	DEFAULT_AUDIO_FADE_IN_MS,
+	DEFAULT_AUDIO_FADE_OUT_MS,
+	DEFAULT_AUDIO_REGION_VOLUME,
+} from "./types";
 
 describe("Audio path handling", () => {
 	describe("toFileUrl produces valid file:// URLs for audio paths", () => {
@@ -62,7 +67,7 @@ describe("Audio region normalization", () => {
 				audioRegions: [
 					{ id: "audio-1", startMs: 0, endMs: 1000, audioPath: "/test.mp3", volume: 5 },
 				],
-			} as any);
+			});
 			expect(result.audioRegions[0].volume).toBe(1);
 		});
 
@@ -71,7 +76,7 @@ describe("Audio region normalization", () => {
 				audioRegions: [
 					{ id: "audio-1", startMs: 0, endMs: 1000, audioPath: "/test.mp3", volume: -0.5 },
 				],
-			} as any);
+			});
 			expect(result.audioRegions[0].volume).toBe(0);
 		});
 
@@ -82,7 +87,7 @@ describe("Audio region normalization", () => {
 						audioRegions: [
 							{ id: "audio-1", startMs: 0, endMs: 1000, audioPath: "/test.mp3", volume },
 						],
-					} as any);
+					});
 					expect(result.audioRegions[0].volume).toBeCloseTo(volume, 10);
 				}),
 			);
@@ -93,15 +98,15 @@ describe("Audio region normalization", () => {
 				audioRegions: [
 					{ id: "audio-1", startMs: 0, endMs: 1000, audioPath: "/test.mp3", volume: NaN },
 				],
-			} as any);
-			expect(result.audioRegions[0].volume).toBe(1);
+			});
+			expect(result.audioRegions[0].volume).toBe(DEFAULT_AUDIO_REGION_VOLUME);
 		});
 
-		it("should default to 1 when volume is undefined", () => {
+		it("should default to the subtle mix volume when volume is undefined", () => {
 			const result = normalizeProjectEditor({
 				audioRegions: [{ id: "audio-1", startMs: 0, endMs: 1000, audioPath: "/test.mp3" }],
-			} as any);
-			expect(result.audioRegions[0].volume).toBe(1);
+			});
+			expect(result.audioRegions[0].volume).toBe(DEFAULT_AUDIO_REGION_VOLUME);
 		});
 	});
 
@@ -111,7 +116,7 @@ describe("Audio region normalization", () => {
 				audioRegions: [
 					{ id: "audio-1", startMs: -500, endMs: 1000, audioPath: "/test.mp3", volume: 1 },
 				],
-			} as any);
+			});
 			expect(result.audioRegions[0].startMs).toBe(0);
 		});
 
@@ -120,7 +125,7 @@ describe("Audio region normalization", () => {
 				audioRegions: [
 					{ id: "audio-1", startMs: 1000, endMs: 500, audioPath: "/test.mp3", volume: 1 },
 				],
-			} as any);
+			});
 			expect(result.audioRegions[0].endMs).toBeGreaterThan(result.audioRegions[0].startMs);
 		});
 
@@ -129,7 +134,7 @@ describe("Audio region normalization", () => {
 				audioRegions: [
 					{ id: "audio-1", startMs: 1000, endMs: 1000, audioPath: "/test.mp3", volume: 1 },
 				],
-			} as any);
+			});
 			expect(result.audioRegions[0].endMs).toBeGreaterThan(result.audioRegions[0].startMs);
 		});
 
@@ -144,7 +149,7 @@ describe("Audio region normalization", () => {
 							audioRegions: [
 								{ id: "audio-1", startMs, endMs, audioPath: "/test.mp3", volume: 0.5 },
 							],
-						} as any);
+						});
 						expect(result.audioRegions[0].startMs).toBe(startMs);
 						expect(result.audioRegions[0].endMs).toBe(endMs);
 					},
@@ -159,15 +164,17 @@ describe("Audio region normalization", () => {
 				audioRegions: [
 					{ id: "audio-1", startMs: 0, endMs: 1000, audioPath: "/Users/music/song.mp3", volume: 1 },
 				],
-			} as any);
+			});
 			expect(result.audioRegions[0].audioPath).toBe("/Users/music/song.mp3");
+			expect(result.audioRegions[0].sourceType).toBe("file");
 		});
 
-		it("should default to empty string for missing audioPath", () => {
+		it("should leave audioPath undefined for missing file-backed audio", () => {
 			const result = normalizeProjectEditor({
 				audioRegions: [{ id: "audio-1", startMs: 0, endMs: 1000, volume: 1 }],
-			} as any);
-			expect(result.audioRegions[0].audioPath).toBe("");
+			});
+			expect(result.audioRegions[0].audioPath).toBeUndefined();
+			expect(result.audioRegions[0].sourceType).toBe("file");
 		});
 
 		it("should filter out regions without a valid id", () => {
@@ -176,25 +183,64 @@ describe("Audio region normalization", () => {
 					{ startMs: 0, endMs: 1000, audioPath: "/test.mp3", volume: 1 },
 					{ id: "audio-1", startMs: 0, endMs: 1000, audioPath: "/test.mp3", volume: 1 },
 				],
-			} as any);
+			});
 			expect(result.audioRegions).toHaveLength(1);
 			expect(result.audioRegions[0].id).toBe("audio-1");
 		});
 	});
 
+	describe("source-aware migration defaults", () => {
+		it("migrates legacy file-only regions to file sources with fade defaults", () => {
+			const result = normalizeProjectEditor({
+				audioRegions: [{ id: "audio-1", startMs: 0, endMs: 1000, audioPath: "/test.mp3" }],
+			});
+			expect(result.audioRegions[0]).toMatchObject({
+				sourceType: "file",
+				audioPath: "/test.mp3",
+				fadeInMs: DEFAULT_AUDIO_FADE_IN_MS,
+				fadeOutMs: DEFAULT_AUDIO_FADE_OUT_MS,
+				loop: false,
+			});
+		});
+
+		it("preserves built-in audio sources", () => {
+			const result = normalizeProjectEditor({
+				audioRegions: [
+					{
+						id: "audio-1",
+						startMs: 0,
+						endMs: 1000,
+						sourceType: "built-in",
+						assetId: "soft-horizon",
+						volume: 0.25,
+					},
+				],
+			});
+			expect(result.audioRegions[0]).toMatchObject({
+				sourceType: "built-in",
+				assetId: "soft-horizon",
+				audioPath: undefined,
+				volume: 0.25,
+				fadeInMs: DEFAULT_AUDIO_FADE_IN_MS,
+				fadeOutMs: DEFAULT_AUDIO_FADE_OUT_MS,
+				loop: true,
+			});
+		});
+	});
+
 	describe("empty or missing audioRegions", () => {
 		it("should return empty array when audioRegions is undefined", () => {
-			const result = normalizeProjectEditor({} as any);
+			const result = normalizeProjectEditor({});
 			expect(result.audioRegions).toEqual([]);
 		});
 
 		it("should return empty array when audioRegions is not an array", () => {
-			const result = normalizeProjectEditor({ audioRegions: "invalid" } as any);
+			const result = normalizeProjectEditor({ audioRegions: "invalid" });
 			expect(result.audioRegions).toEqual([]);
 		});
 
 		it("should return empty array when audioRegions is null", () => {
-			const result = normalizeProjectEditor({ audioRegions: null } as any);
+			const result = normalizeProjectEditor({ audioRegions: null });
 			expect(result.audioRegions).toEqual([]);
 		});
 	});

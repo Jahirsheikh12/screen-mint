@@ -259,6 +259,10 @@ function getTelemetryPathForVideo(videoPath: string) {
 	return `${videoPath}.cursor.json`;
 }
 
+function getKeyboardTelemetryPathForVideo(videoPath: string) {
+	return `${videoPath}.keyboard.json`;
+}
+
 async function loadRecordingsDirectorySetting() {
 	if (recordingsDirLoaded) {
 		return;
@@ -398,7 +402,10 @@ async function pruneAutoRecordings(exemptPaths: string[] = []) {
 
 		try {
 			await fs.rm(entry.filePath, { force: true });
-			await fs.rm(getTelemetryPathForVideo(entry.filePath), { force: true });
+			await Promise.all([
+				fs.rm(getTelemetryPathForVideo(entry.filePath), { force: true }),
+				fs.rm(getKeyboardTelemetryPathForVideo(entry.filePath), { force: true }),
+			]);
 		} catch (error) {
 			console.warn("Failed to prune old auto recording:", entry.filePath, error);
 		}
@@ -1495,6 +1502,7 @@ async function discardRecordingArtifacts(paths: Array<string | null | undefined>
 			.flatMap((filePath) => [
 				fs.rm(filePath, { force: true }).catch(() => undefined),
 				fs.rm(getTelemetryPathForVideo(filePath), { force: true }).catch(() => undefined),
+				fs.rm(getKeyboardTelemetryPathForVideo(filePath), { force: true }).catch(() => undefined),
 			]),
 	);
 }
@@ -1676,8 +1684,10 @@ async function finalizeRecordingSession(payload: {
 }
 
 const CURSOR_TELEMETRY_VERSION = 2;
+const KEYBOARD_TELEMETRY_VERSION = 1;
 const CURSOR_SAMPLE_INTERVAL_MS = 33;
 const MAX_CURSOR_SAMPLES = 60 * 60 * 30; // 1 hour @ 30Hz
+const MAX_KEYBOARD_SAMPLES = 60 * 60 * 20; // 1 hour @ ~20 keyboard events/sec average
 
 type CursorInteractionType =
 	| "move"
@@ -1687,12 +1697,26 @@ type CursorInteractionType =
 	| "middle-click"
 	| "mouseup";
 
+type KeyboardTelemetryEventType = "keydown" | "keyup";
+type KeyboardTelemetryPlatform = "darwin" | "win32" | "linux";
+
 interface CursorTelemetryPoint {
 	timeMs: number;
 	cx: number;
 	cy: number;
 	interactionType?: CursorInteractionType;
 	cursorType?: CursorVisualType;
+}
+
+interface KeyboardTelemetryPoint {
+	timeMs: number;
+	type: KeyboardTelemetryEventType;
+	key: string;
+	keycode: number;
+	altKey: boolean;
+	ctrlKey: boolean;
+	metaKey: boolean;
+	shiftKey: boolean;
 }
 
 type HookMouseEvent = {
@@ -1712,18 +1736,56 @@ type HookMouseEvent = {
 	};
 };
 
+type HookKeyboardEvent = {
+	keycode?: unknown;
+	rawcode?: unknown;
+	altKey?: unknown;
+	ctrlKey?: unknown;
+	metaKey?: unknown;
+	shiftKey?: unknown;
+	data?: {
+		keycode?: unknown;
+		rawcode?: unknown;
+		altKey?: unknown;
+		ctrlKey?: unknown;
+		metaKey?: unknown;
+		shiftKey?: unknown;
+	};
+};
+
+type UiohookEventMap = {
+	mousedown: HookMouseEvent;
+	mouseup: HookMouseEvent;
+	mousemove: HookMouseEvent;
+	keydown: HookKeyboardEvent;
+	keyup: HookKeyboardEvent;
+};
+
 type UiohookModule = {
-	on: (eventName: string, listener: (event: HookMouseEvent) => void) => void;
+	on: <TEventName extends keyof UiohookEventMap>(
+		eventName: TEventName,
+		listener: (event: UiohookEventMap[TEventName]) => void,
+	) => void;
 	start: () => void;
-	off?: (eventName: string, listener: (event: HookMouseEvent) => void) => void;
-	removeListener?: (eventName: string, listener: (event: HookMouseEvent) => void) => void;
+	off?: <TEventName extends keyof UiohookEventMap>(
+		eventName: TEventName,
+		listener: (event: UiohookEventMap[TEventName]) => void,
+	) => void;
+	removeListener?: <TEventName extends keyof UiohookEventMap>(
+		eventName: TEventName,
+		listener: (event: UiohookEventMap[TEventName]) => void,
+	) => void;
 	stop?: () => void;
 };
+
+type UiohookKeyExports = Record<string, number>;
 
 let cursorCaptureInterval: NodeJS.Timeout | null = null;
 let cursorCaptureStartTimeMs = 0;
 let activeCursorSamples: CursorTelemetryPoint[] = [];
 let pendingCursorSamples: CursorTelemetryPoint[] = [];
+let activeKeyboardSamples: KeyboardTelemetryPoint[] = [];
+let pendingKeyboardSamples: KeyboardTelemetryPoint[] = [];
 let isCursorCaptureActive = false;
 let interactionCaptureCleanup: (() => void) | null = null;
 let hasLoggedInteractionHookFailure = false;
@@ -1731,6 +1793,9 @@ let lastLeftClick: { timeMs: number; cx: number; cy: number } | null = null;
 let linuxCursorScreenPoint: { x: number; y: number; updatedAt: number } | null = null;
 let selectedWindowBounds: WindowBounds | null = null;
 let windowBoundsCaptureInterval: NodeJS.Timeout | null = null;
+let keyboardCapturePlatform: KeyboardTelemetryPlatform =
+	process.platform === "darwin" ? "darwin" : process.platform === "linux" ? "linux" : "win32";
+let uiohookKeyNameByCode: Map<number, string> | null = null;
 
 function normalizeHookMouseButton(rawButton: unknown): 1 | 2 | 3 {
 	if (typeof rawButton !== "number" || !Number.isFinite(rawButton)) {
@@ -1758,6 +1823,165 @@ function getHookMouseButton(event: HookMouseEvent | null | undefined): 1 | 2 | 3
 
 function clamp(value: number, min: number, max: number) {
 	return Math.min(max, Math.max(min, value));
+}
+
+function normalizeKeyboardPlatform(rawPlatform: unknown): KeyboardTelemetryPlatform {
+	if (rawPlatform === "darwin" || rawPlatform === "linux") {
+		return rawPlatform;
+	}
+
+	return "win32";
+}
+
+function loadUiohookKeyExports(): UiohookKeyExports | null {
+	const moduleExports = nodeRequire("uiohook-napi") as {
+		UiohookKey?: UiohookKeyExports;
+		default?: unknown;
+	};
+
+	if (moduleExports.UiohookKey) {
+		return moduleExports.UiohookKey;
+	}
+
+	if (typeof moduleExports.default === "object" && moduleExports.default !== null) {
+		const wrappedExports = moduleExports.default as { UiohookKey?: unknown };
+		if (
+			typeof wrappedExports.UiohookKey === "object" &&
+			wrappedExports.UiohookKey !== null
+		) {
+			return wrappedExports.UiohookKey as UiohookKeyExports;
+		}
+
+		if (
+			Object.values(moduleExports.default).every(
+				(value) => typeof value === "number" && Number.isFinite(value),
+			)
+		) {
+			return moduleExports.default as UiohookKeyExports;
+		}
+	}
+
+	return null;
+}
+
+function normalizeCapturedKeyboardKeyName(name: string) {
+	switch (name) {
+		case "Ctrl":
+		case "CtrlRight":
+			return "ctrl";
+		case "Alt":
+		case "AltRight":
+			return "alt";
+		case "Shift":
+		case "ShiftRight":
+			return "shift";
+		case "Meta":
+		case "MetaRight":
+			return "meta";
+		case "ArrowLeft":
+			return "arrowleft";
+		case "ArrowRight":
+			return "arrowright";
+		case "ArrowUp":
+			return "arrowup";
+		case "ArrowDown":
+			return "arrowdown";
+		case "PageUp":
+			return "pageup";
+		case "PageDown":
+			return "pagedown";
+		case "Backspace":
+			return "backspace";
+		case "CapsLock":
+			return "capslock";
+		case "Escape":
+			return "escape";
+		case "Space":
+			return "space";
+		case "Enter":
+			return "enter";
+		case "Tab":
+			return "tab";
+		case "Delete":
+			return "delete";
+		case "Insert":
+			return "insert";
+		default:
+			return name.trim().toLowerCase();
+	}
+}
+
+function getUiohookKeyNameByCode() {
+	if (uiohookKeyNameByCode) {
+		return uiohookKeyNameByCode;
+	}
+
+	const keyExports = loadUiohookKeyExports();
+	const nextMap = new Map<number, string>();
+
+	if (keyExports) {
+		for (const [name, value] of Object.entries(keyExports)) {
+			if (/^\d+$/.test(name)) {
+				continue;
+			}
+
+			if (typeof value === "number" && Number.isFinite(value)) {
+				nextMap.set(value, normalizeCapturedKeyboardKeyName(name));
+			}
+		}
+	}
+
+	uiohookKeyNameByCode = nextMap;
+	return nextMap;
+}
+
+function getHookKeyboardKeycode(event: HookKeyboardEvent | null | undefined) {
+	const rawKeycode = event?.keycode ?? event?.data?.keycode;
+	return typeof rawKeycode === "number" && Number.isFinite(rawKeycode)
+		? Math.round(rawKeycode)
+		: null;
+}
+
+function getHookKeyboardModifier(
+	event: HookKeyboardEvent | null | undefined,
+	modifier: "altKey" | "ctrlKey" | "metaKey" | "shiftKey",
+) {
+	return Boolean(event?.[modifier] ?? event?.data?.[modifier]);
+}
+
+function getHookKeyboardKey(event: HookKeyboardEvent | null | undefined) {
+	const keycode = getHookKeyboardKeycode(event);
+	if (keycode == null) {
+		return null;
+	}
+
+	return getUiohookKeyNameByCode().get(keycode) ?? `keycode-${keycode}`;
+}
+
+function pushKeyboardSample(
+	timeMs: number,
+	type: KeyboardTelemetryEventType,
+	key: string,
+	keycode: number,
+	modifiers: Pick<
+		KeyboardTelemetryPoint,
+		"altKey" | "ctrlKey" | "metaKey" | "shiftKey"
+	>,
+) {
+	activeKeyboardSamples.push({
+		timeMs: Math.max(0, timeMs),
+		type,
+		key,
+		keycode,
+		altKey: modifiers.altKey,
+		ctrlKey: modifiers.ctrlKey,
+		metaKey: modifiers.metaKey,
+		shiftKey: modifiers.shiftKey,
+	});
+
+	if (activeKeyboardSamples.length > MAX_KEYBOARD_SAMPLES) {
+		activeKeyboardSamples.shift();
+	}
 }
 
 function stopCursorCapture() {
@@ -1964,6 +2188,26 @@ async function persistPendingCursorTelemetry(videoPath: string) {
 	pendingCursorSamples = [];
 }
 
+async function persistPendingKeyboardTelemetry(videoPath: string) {
+	const telemetryPath = getKeyboardTelemetryPathForVideo(videoPath);
+	if (pendingKeyboardSamples.length > 0) {
+		await fs.writeFile(
+			telemetryPath,
+			JSON.stringify(
+				{
+					version: KEYBOARD_TELEMETRY_VERSION,
+					platform: keyboardCapturePlatform,
+					samples: pendingKeyboardSamples,
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+	}
+	pendingKeyboardSamples = [];
+}
+
 async function readCursorTelemetrySamples(
 	videoPath: string,
 ): Promise<SessionCursorTelemetrySample[]> {
@@ -2011,9 +2255,30 @@ function snapshotCursorTelemetryForPersistence() {
 	];
 }
 
+function snapshotKeyboardTelemetryForPersistence() {
+	if (activeKeyboardSamples.length === 0) {
+		return;
+	}
+
+	if (pendingKeyboardSamples.length === 0) {
+		pendingKeyboardSamples = [...activeKeyboardSamples];
+		return;
+	}
+
+	const lastPendingTimeMs = pendingKeyboardSamples[pendingKeyboardSamples.length - 1]?.timeMs ?? -1;
+	pendingKeyboardSamples = [
+		...pendingKeyboardSamples,
+		...activeKeyboardSamples.filter((sample) => sample.timeMs > lastPendingTimeMs),
+	];
+}
+
 async function persistCapturedTelemetryForVideo(videoPath: string) {
 	snapshotCursorTelemetryForPersistence();
-	await persistPendingCursorTelemetry(videoPath);
+	snapshotKeyboardTelemetryForPersistence();
+	await Promise.all([
+		persistPendingCursorTelemetry(videoPath),
+		persistPendingKeyboardTelemetry(videoPath),
+	]);
 
 	return {
 		success: true,
@@ -2126,9 +2391,51 @@ async function startInteractionCapture() {
 			linuxCursorScreenPoint = { x: point.x, y: point.y, updatedAt: Date.now() };
 		};
 
+		const onKeyDown = (event: HookKeyboardEvent) => {
+			if (!isCursorCaptureActive) {
+				return;
+			}
+
+			const keycode = getHookKeyboardKeycode(event);
+			const key = getHookKeyboardKey(event);
+			if (keycode == null || !key) {
+				return;
+			}
+
+			const timeMs = Date.now() - cursorCaptureStartTimeMs;
+			pushKeyboardSample(timeMs, "keydown", key, keycode, {
+				altKey: getHookKeyboardModifier(event, "altKey"),
+				ctrlKey: getHookKeyboardModifier(event, "ctrlKey"),
+				metaKey: getHookKeyboardModifier(event, "metaKey"),
+				shiftKey: getHookKeyboardModifier(event, "shiftKey"),
+			});
+		};
+
+		const onKeyUp = (event: HookKeyboardEvent) => {
+			if (!isCursorCaptureActive) {
+				return;
+			}
+
+			const keycode = getHookKeyboardKeycode(event);
+			const key = getHookKeyboardKey(event);
+			if (keycode == null || !key) {
+				return;
+			}
+
+			const timeMs = Date.now() - cursorCaptureStartTimeMs;
+			pushKeyboardSample(timeMs, "keyup", key, keycode, {
+				altKey: getHookKeyboardModifier(event, "altKey"),
+				ctrlKey: getHookKeyboardModifier(event, "ctrlKey"),
+				metaKey: getHookKeyboardModifier(event, "metaKey"),
+				shiftKey: getHookKeyboardModifier(event, "shiftKey"),
+			});
+		};
+
 		hook.on("mousedown", onMouseDown);
 		hook.on("mouseup", onMouseUp);
 		hook.on("mousemove", onMouseMove);
+		hook.on("keydown", onKeyDown);
+		hook.on("keyup", onKeyUp);
 
 		hook.start();
 
@@ -2138,10 +2445,14 @@ async function startInteractionCapture() {
 					hook.off("mousedown", onMouseDown);
 					hook.off("mouseup", onMouseUp);
 					hook.off("mousemove", onMouseMove);
+					hook.off("keydown", onKeyDown);
+					hook.off("keyup", onKeyUp);
 				} else if (typeof hook.removeListener === "function") {
 					hook.removeListener("mousedown", onMouseDown);
 					hook.removeListener("mouseup", onMouseUp);
 					hook.removeListener("mousemove", onMouseMove);
+					hook.removeListener("keydown", onKeyDown);
+					hook.removeListener("keyup", onKeyUp);
 				}
 			} catch {
 				// ignore listener cleanup errors
@@ -3001,6 +3312,9 @@ export function registerIpcHandlers(
 			isCursorCaptureActive = true;
 			activeCursorSamples = [];
 			pendingCursorSamples = [];
+			activeKeyboardSamples = [];
+			pendingKeyboardSamples = [];
+			keyboardCapturePlatform = normalizeKeyboardPlatform(process.platform);
 			cursorCaptureStartTimeMs = Date.now();
 			linuxCursorScreenPoint = null;
 			lastLeftClick = null;
@@ -3015,7 +3329,9 @@ export function registerIpcHandlers(
 			stopNativeCursorMonitor();
 			linuxCursorScreenPoint = null;
 			snapshotCursorTelemetryForPersistence();
+			snapshotKeyboardTelemetryForPersistence();
 			activeCursorSamples = [];
+			activeKeyboardSamples = [];
 		}
 
 		const source = selectedSource || { name: "Screen" };
@@ -3094,6 +3410,73 @@ export function registerIpcHandlers(
 				success: false,
 				message: "Failed to load cursor telemetry",
 				error: String(error),
+				samples: [],
+			};
+		}
+	});
+
+	ipcMain.handle("get-keyboard-telemetry", async (_, videoPath?: string) => {
+		const targetVideoPath = normalizeVideoSourcePath(videoPath ?? currentVideoPath);
+		if (!targetVideoPath) {
+			return {
+				success: true,
+				platform: normalizeKeyboardPlatform(process.platform),
+				samples: [],
+			};
+		}
+
+		const telemetryPath = getKeyboardTelemetryPathForVideo(targetVideoPath);
+		try {
+			const content = await fs.readFile(telemetryPath, "utf-8");
+			const parsed = JSON.parse(content);
+			const rawSamples = Array.isArray(parsed?.samples) ? parsed.samples : [];
+
+			const samples: KeyboardTelemetryPoint[] = rawSamples
+				.filter((sample: unknown) => Boolean(sample && typeof sample === "object"))
+				.map((sample: unknown) => {
+					const point = sample as Partial<KeyboardTelemetryPoint>;
+					return {
+						timeMs:
+							typeof point.timeMs === "number" && Number.isFinite(point.timeMs)
+								? Math.max(0, point.timeMs)
+								: 0,
+						type: point.type === "keyup" ? "keyup" : "keydown",
+						key: typeof point.key === "string" ? point.key.trim().toLowerCase() : "unknown",
+						keycode:
+							typeof point.keycode === "number" && Number.isFinite(point.keycode)
+								? Math.round(point.keycode)
+								: 0,
+						altKey: Boolean(point.altKey),
+						ctrlKey: Boolean(point.ctrlKey),
+						metaKey: Boolean(point.metaKey),
+						shiftKey: Boolean(point.shiftKey),
+					};
+				})
+				.sort(
+					(a: KeyboardTelemetryPoint, b: KeyboardTelemetryPoint) => a.timeMs - b.timeMs,
+				);
+
+			return {
+				success: true,
+				platform: normalizeKeyboardPlatform(parsed?.platform),
+				samples,
+			};
+		} catch (error) {
+			const nodeError = error as NodeJS.ErrnoException;
+			if (nodeError.code === "ENOENT") {
+				return {
+					success: true,
+					platform: normalizeKeyboardPlatform(process.platform),
+					samples: [],
+				};
+			}
+
+			console.error("Failed to load keyboard telemetry:", error);
+			return {
+				success: false,
+				message: "Failed to load keyboard telemetry",
+				error: String(error),
+				platform: normalizeKeyboardPlatform(process.platform),
 				samples: [],
 			};
 		}
@@ -3421,6 +3804,10 @@ export function registerIpcHandlers(
 						continue;
 					}
 
+					await Promise.all([
+						fs.rm(getTelemetryPathForVideo(normalizedCandidate), { force: true }),
+						fs.rm(getKeyboardTelemetryPathForVideo(normalizedCandidate), { force: true }),
+					]);
 					deletedPaths.push(normalizedCandidate);
 					if (
 						currentProjectPath &&

@@ -12,6 +12,39 @@
 		"selectRegion": "Selecciona una región de velocidad para ajustar",
 		"deleteRegion": "Eliminar región de velocidad"
 	},
+	"audio": {
+		"title": "Audio de fondo",
+		"subtitle": "Mantén tu voz clara y agrega una base musical sutil para demos pulidas.",
+		"subtleMix": "Mezcla sutil",
+		"upload": "Subir audio",
+		"replaceUpload": "Reemplazar con archivo",
+		"replaceBuiltIn": "Reemplazar seleccionado",
+		"addAtPlayhead": "Agregar en el cabezal",
+		"builtIn": "Incluido",
+		"uploaded": "Subido",
+		"previewUnavailable": "La vista previa no está disponible ahora mismo.",
+		"library": "Biblioteca integrada",
+		"selectedRegion": "Región seleccionada",
+		"selectRegion": "Selecciona una región de audio para ajustarla.",
+		"missingTitle": "Falta la fuente de audio",
+		"relink": "Volver a enlazar audio",
+		"remove": "Eliminar",
+		"volume": "Volumen",
+		"loop": "Repetir audio",
+		"loopRecommended": "El bucle funciona mejor",
+		"fadeIn": "Entrada gradual",
+		"fadeOut": "Salida gradual",
+		"deleteRegion": "Eliminar región de audio",
+		"empty": "Elige una pista integrada o sube tu propio archivo y agrégalo en el cabezal.",
+		"moods": {
+			"upbeat-tech": "Tecnológico dinámico",
+			"calm-ambient": "Ambiental tranquilo",
+			"crisp-minimal": "Minimalista nítido",
+			"warm-corporate": "Corporativo cálido",
+			"punchy-motion": "Movimiento enérgico",
+			"studio-focus": "Enfoque de estudio"
+		}
+	},
 	"effects": {
 		"title": "Efectos de video",
 		"showCursor": "Mostrar cursor",
@@ -47,6 +80,29 @@
 	"cursor": {
 		"title": "Cursor",
 		"pack": "Paquete de cursor"
+	},
+	"keyboard": {
+		"title": "Teclado",
+		"showShortcuts": "Mostrar atajos de teclado",
+		"position": "Posición",
+		"theme": "Tema",
+		"scale": "Escala",
+		"opacity": "Opacidad",
+		"displayDuration": "Duración en pantalla",
+		"maxVisible": "Máximo visible",
+		"positions": {
+			"top-left": "Arriba izquierda",
+			"top-center": "Arriba centro",
+			"top-right": "Arriba derecha",
+			"bottom-left": "Abajo izquierda",
+			"bottom-center": "Abajo centro",
+			"bottom-right": "Abajo derecha"
+		},
+		"themes": {
+			"dark": "Oscuro",
+			"light": "Claro",
+			"glass": "Cristal"
+		}
 	},
 	"webcam": {
 		"title": "Cámara web",

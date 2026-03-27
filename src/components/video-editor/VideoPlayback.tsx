@@ -27,17 +27,26 @@ import {
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import { AnnotationOverlay } from "./AnnotationOverlay";
 import { CaptionOverlay } from "./CaptionOverlay";
+import { KeyboardShortcutOverlay } from "./KeyboardShortcutOverlay";
 import { resolveCameraLayoutState } from "./cameraLayouts";
 import {
 	type AnnotationRegion,
 	type CameraLayoutRegion,
 	type CursorPack,
+	type KeyboardShortcutCallout,
+	type KeyboardShortcutPosition,
+	type KeyboardShortcutTheme,
 	type CursorTelemetryPoint,
 	DEFAULT_CURSOR_CLICK_BOUNCE,
 	DEFAULT_CURSOR_MOTION_BLUR,
 	DEFAULT_CURSOR_SIZE,
 	DEFAULT_CURSOR_SMOOTHING,
 	DEFAULT_CURSOR_SWAY,
+	DEFAULT_KEYBOARD_SHORTCUT_MAX_VISIBLE,
+	DEFAULT_KEYBOARD_SHORTCUT_OPACITY,
+	DEFAULT_KEYBOARD_SHORTCUT_POSITION,
+	DEFAULT_KEYBOARD_SHORTCUT_SCALE,
+	DEFAULT_KEYBOARD_SHORTCUT_THEME,
 	type SpeedRegion,
 	type TrimRegion,
 	ZOOM_DEPTH_SCALES,
@@ -125,6 +134,13 @@ interface VideoPlaybackProps {
 	onAnnotationPositionChange?: (id: string, position: { x: number; y: number }) => void;
 	onAnnotationSizeChange?: (id: string, size: { width: number; height: number }) => void;
 	cursorTelemetry?: CursorTelemetryPoint[];
+	keyboardShortcutCallouts?: KeyboardShortcutCallout[];
+	showKeyboardShortcuts?: boolean;
+	keyboardShortcutPosition?: KeyboardShortcutPosition;
+	keyboardShortcutTheme?: KeyboardShortcutTheme;
+	keyboardShortcutScale?: number;
+	keyboardShortcutOpacity?: number;
+	keyboardShortcutMaxVisible?: number;
 	showCursor?: boolean;
 	cursorSize?: number;
 	cursorSmoothing?: number;
@@ -190,6 +206,13 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			onAnnotationPositionChange,
 			onAnnotationSizeChange,
 			cursorTelemetry = [],
+			keyboardShortcutCallouts = [],
+			showKeyboardShortcuts = false,
+			keyboardShortcutPosition = DEFAULT_KEYBOARD_SHORTCUT_POSITION,
+			keyboardShortcutTheme = DEFAULT_KEYBOARD_SHORTCUT_THEME,
+			keyboardShortcutScale = DEFAULT_KEYBOARD_SHORTCUT_SCALE,
+			keyboardShortcutOpacity = DEFAULT_KEYBOARD_SHORTCUT_OPACITY,
+			keyboardShortcutMaxVisible = DEFAULT_KEYBOARD_SHORTCUT_MAX_VISIBLE,
 			showCursor = false,
 			cursorSize = DEFAULT_CURSOR_SIZE,
 			cursorSmoothing = DEFAULT_CURSOR_SMOOTHING,
@@ -1404,6 +1427,18 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 								currentTimeMs={Math.round(currentTime * 1000)}
 								containerWidth={overlayRef.current?.clientWidth || 800}
 								containerHeight={overlayRef.current?.clientHeight || 600}
+							/>
+						)}
+						{showKeyboardShortcuts && (
+							<KeyboardShortcutOverlay
+								callouts={keyboardShortcutCallouts}
+								position={keyboardShortcutPosition}
+								theme={keyboardShortcutTheme}
+								scale={keyboardShortcutScale}
+								opacity={keyboardShortcutOpacity}
+								maxVisible={keyboardShortcutMaxVisible}
+								currentTimeMs={Math.round(currentTime * 1000)}
+								containerWidth={overlayRef.current?.clientWidth || 800}
 							/>
 						)}
 					</div>

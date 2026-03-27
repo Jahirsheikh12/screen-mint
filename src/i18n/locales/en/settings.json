@@ -12,6 +12,39 @@
 		"selectRegion": "Select a speed region to adjust",
 		"deleteRegion": "Delete Speed Region"
 	},
+	"audio": {
+		"title": "Background Audio",
+		"subtitle": "Keep your voice clear and add a subtle music bed for polished demos.",
+		"subtleMix": "Subtle Mix",
+		"upload": "Upload Audio",
+		"replaceUpload": "Replace with File",
+		"replaceBuiltIn": "Replace Selected",
+		"addAtPlayhead": "Add at Playhead",
+		"builtIn": "Built-in",
+		"uploaded": "Uploaded",
+		"previewUnavailable": "Preview unavailable right now.",
+		"library": "Built-in Library",
+		"selectedRegion": "Selected Region",
+		"selectRegion": "Select an audio region to adjust it.",
+		"missingTitle": "Audio source missing",
+		"relink": "Relink Audio",
+		"remove": "Remove",
+		"volume": "Volume",
+		"loop": "Loop audio",
+		"loopRecommended": "Loop works best",
+		"fadeIn": "Fade In",
+		"fadeOut": "Fade Out",
+		"deleteRegion": "Delete Audio Region",
+		"empty": "Choose a built-in track or upload your own file, then add it at the playhead.",
+		"moods": {
+			"upbeat-tech": "Upbeat Tech",
+			"calm-ambient": "Calm Ambient",
+			"crisp-minimal": "Crisp Minimal",
+			"warm-corporate": "Warm Corporate",
+			"punchy-motion": "Punchy Motion",
+			"studio-focus": "Studio Focus"
+		}
+	},
 	"effects": {
 		"title": "Video Effects",
 		"showCursor": "Show Cursor",
@@ -47,6 +80,29 @@
 	"cursor": {
 		"title": "Cursor",
 		"pack": "Cursor Pack"
+	},
+	"keyboard": {
+		"title": "Keyboard",
+		"showShortcuts": "Show keyboard shortcuts",
+		"position": "Position",
+		"theme": "Theme",
+		"scale": "Scale",
+		"opacity": "Opacity",
+		"displayDuration": "Display Duration",
+		"maxVisible": "Max Visible",
+		"positions": {
+			"top-left": "Top Left",
+			"top-center": "Top Center",
+			"top-right": "Top Right",
+			"bottom-left": "Bottom Left",
+			"bottom-center": "Bottom Center",
+			"bottom-right": "Bottom Right"
+		},
+		"themes": {
+			"dark": "Dark",
+			"light": "Light",
+			"glass": "Glass"
+		}
 	},
 	"webcam": {
 		"title": "Webcam",

@@ -101,6 +101,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	getCursorTelemetry: (videoPath?: string) => {
 		return ipcRenderer.invoke("get-cursor-telemetry", videoPath);
 	},
+	getKeyboardTelemetry: (videoPath?: string) => {
+		return ipcRenderer.invoke("get-keyboard-telemetry", videoPath);
+	},
 	getSystemCursorAssets: () => {
 		return ipcRenderer.invoke("get-system-cursor-assets");
 	},

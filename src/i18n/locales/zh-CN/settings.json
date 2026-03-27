@@ -12,6 +12,39 @@
 		"selectRegion": "选择变速区域以调整",
 		"deleteRegion": "删除变速区域"
 	},
+	"audio": {
+		"title": "背景音频",
+		"subtitle": "保持讲解清晰，同时加上一层轻柔的背景音乐，让演示更精致。",
+		"subtleMix": "轻柔混音",
+		"upload": "上传音频",
+		"replaceUpload": "用文件替换",
+		"replaceBuiltIn": "替换所选片段",
+		"addAtPlayhead": "在播放头处添加",
+		"builtIn": "内置",
+		"uploaded": "已上传",
+		"previewUnavailable": "暂时无法预览。",
+		"library": "内置音乐库",
+		"selectedRegion": "已选片段",
+		"selectRegion": "选择一个音频片段以进行调整。",
+		"missingTitle": "音频源丢失",
+		"relink": "重新关联音频",
+		"remove": "移除",
+		"volume": "音量",
+		"loop": "循环音频",
+		"loopRecommended": "建议开启循环",
+		"fadeIn": "淡入",
+		"fadeOut": "淡出",
+		"deleteRegion": "删除音频片段",
+		"empty": "选择一首内置曲目或上传你自己的文件，然后在播放头处添加。",
+		"moods": {
+			"upbeat-tech": "活力科技",
+			"calm-ambient": "平静氛围",
+			"crisp-minimal": "清爽极简",
+			"warm-corporate": "温暖商务",
+			"punchy-motion": "动感节奏",
+			"studio-focus": "专注工作室"
+		}
+	},
 	"effects": {
 		"title": "视频效果",
 		"showCursor": "显示光标",
@@ -47,6 +80,29 @@
 	"cursor": {
 		"title": "光标",
 		"pack": "光标主题"
+	},
+	"keyboard": {
+		"title": "键盘",
+		"showShortcuts": "显示键盘快捷键",
+		"position": "位置",
+		"theme": "主题",
+		"scale": "缩放",
+		"opacity": "不透明度",
+		"displayDuration": "显示时长",
+		"maxVisible": "最多显示",
+		"positions": {
+			"top-left": "左上",
+			"top-center": "上方居中",
+			"top-right": "右上",
+			"bottom-left": "左下",
+			"bottom-center": "下方居中",
+			"bottom-right": "右下"
+		},
+		"themes": {
+			"dark": "深色",
+			"light": "浅色",
+			"glass": "玻璃"
+		}
 	},
 	"webcam": {
 		"title": "摄像头",

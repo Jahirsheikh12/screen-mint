@@ -109,6 +109,33 @@ describe("editorPreferences", () => {
 		});
 	});
 
+	it("loads keyboard shortcut overlay preferences", () => {
+		vi.stubGlobal(
+			"localStorage",
+			createStorageMock({
+				[EDITOR_PREFERENCES_STORAGE_KEY]: JSON.stringify({
+					showKeyboardShortcuts: true,
+					keyboardShortcutPosition: "top-right",
+					keyboardShortcutTheme: "glass",
+					keyboardShortcutScale: 1.25,
+					keyboardShortcutOpacity: 0.75,
+					keyboardShortcutDisplayMs: 1700,
+					keyboardShortcutMaxVisible: 3,
+				}),
+			}),
+		);
+
+		expect(loadEditorPreferences()).toMatchObject({
+			showKeyboardShortcuts: true,
+			keyboardShortcutPosition: "top-right",
+			keyboardShortcutTheme: "glass",
+			keyboardShortcutScale: 1.25,
+			keyboardShortcutOpacity: 0.75,
+			keyboardShortcutDisplayMs: 1700,
+			keyboardShortcutMaxVisible: 3,
+		});
+	});
+
 	it("falls back removed built-in wallpaper paths in stored preferences", () => {
 		vi.stubGlobal(
 			"localStorage",
