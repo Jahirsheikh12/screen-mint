@@ -1,6 +1,12 @@
 import { Assets, BlurFilter, Container, Graphics, Sprite, Texture } from "pixi.js";
 import { MotionBlurFilter } from "pixi-filters/motion-blur";
-import type { CursorTelemetryPoint } from "../types";
+import type { CursorPack, CursorTelemetryPoint, CursorType } from "../types";
+import {
+	CURSOR_ASSET_SAMPLE_SIZE,
+	type CursorAssetDefinition,
+	cursorAssetPacks,
+	SUPPORTED_CURSOR_KEYS,
+} from "./cursorAssetPacks";
 import { computeCursorSwayRotation } from "./cursorSway";
 import {
 	createSpringState,
@@ -8,9 +14,8 @@ import {
 	resetSpringState,
 	stepSpringValue,
 } from "./motionSmoothing";
-import { UPLOADED_CURSOR_SAMPLE_SIZE, uploadedCursorAssets } from "./uploadedCursorAssets";
 
-type CursorAssetKey = NonNullable<CursorTelemetryPoint["cursorType"]>;
+type CursorAssetKey = CursorType;
 
 type LoadedCursorAsset = {
 	texture: Texture;
@@ -20,6 +25,11 @@ type LoadedCursorAsset = {
 	anchorY: number;
 };
 
+type LoadedCursorAssets = {
+	packs: Record<CursorPack, Partial<Record<CursorAssetKey, LoadedCursorAsset>>>;
+	system: Partial<Record<CursorAssetKey, LoadedCursorAsset>>;
+};
+
 export interface CursorViewportRect {
 	x: number;
 	y: number;
@@ -27,26 +37,16 @@ export interface CursorViewportRect {
 	height: number;
 }
 
-/**
- * Configuration for cursor rendering.
- */
 export interface CursorRenderConfig {
-	/** Base cursor height in pixels (at reference width of 1920px) */
 	dotRadius: number;
-	/** Cursor fill color (hex number for PixiJS) */
 	dotColor: number;
-	/** Cursor opacity (0–1) */
 	dotAlpha: number;
-	/** Unused, kept for interface compatibility */
 	trailLength: number;
-	/** Smoothing factor for cursor interpolation (0–1, lower = smoother/slower) */
 	smoothingFactor: number;
-	/** Directional cursor motion blur amount. */
 	motionBlur: number;
-	/** Click bounce multiplier. */
 	clickBounce: number;
-	/** Cursor sway multiplier. */
 	sway: number;
+	cursorPack: CursorPack;
 }
 
 export const DEFAULT_CURSOR_CONFIG: CursorRenderConfig = {
@@ -58,6 +58,7 @@ export const DEFAULT_CURSOR_CONFIG: CursorRenderConfig = {
 	motionBlur: 0,
 	clickBounce: 1,
 	sway: 0,
+	cursorPack: "classic",
 };
 
 const REFERENCE_WIDTH = 1920;
@@ -77,18 +78,10 @@ const CURSOR_SHADOW_BLUR = 3;
 const CURSOR_SHADOW_PADDING = 12;
 
 let cursorAssetsPromise: Promise<void> | null = null;
-let loadedCursorAssets: Partial<Record<CursorAssetKey, LoadedCursorAsset>> = {};
-const SUPPORTED_CURSOR_KEYS: CursorAssetKey[] = [
-	"arrow",
-	"text",
-	"pointer",
-	"crosshair",
-	"open-hand",
-	"closed-hand",
-	"resize-ew",
-	"resize-ns",
-	"not-allowed",
-];
+let loadedCursorAssets: LoadedCursorAssets = {
+	packs: { classic: {}, custom: {} },
+	system: {},
+};
 
 function loadImage(dataUrl: string) {
 	return new Promise<HTMLImageElement>((resolve, reject) => {
@@ -118,12 +111,6 @@ function getNormalizedAnchor(
 	};
 }
 
-/**
- * Loads an SVG at `sampleSize × sampleSize`, crops the trim region out of it,
- * and returns a PNG data-URL of the cropped result. This is required because
- * SVG files have their own natural pixel size (e.g. 32×32) which does not
- * match the 1024-sample coordinate space used by the trim measurements.
- */
 async function rasterizeAndCropSvg(
 	url: string,
 	sampleSize: number,
@@ -134,14 +121,12 @@ async function rasterizeAndCropSvg(
 ): Promise<{ dataUrl: string; width: number; height: number }> {
 	const img = await loadImage(url);
 
-	// Draw at full sample size
 	const srcCanvas = document.createElement("canvas");
 	srcCanvas.width = sampleSize;
 	srcCanvas.height = sampleSize;
 	const srcCtx = srcCanvas.getContext("2d")!;
 	srcCtx.drawImage(img, 0, 0, sampleSize, sampleSize);
 
-	// Crop to trim bounds
 	const dstCanvas = document.createElement("canvas");
 	dstCanvas.width = trimWidth;
 	dstCanvas.height = trimHeight;
@@ -155,24 +140,101 @@ async function rasterizeAndCropSvg(
 	};
 }
 
-function getCursorAsset(key: CursorAssetKey): LoadedCursorAsset {
-	const asset = loadedCursorAssets[key];
-	if (!asset) {
-		throw new Error(`Missing cursor asset for ${key}`);
-	}
-
-	return asset;
+function getCursorPackOrder(cursorPack: CursorPack): CursorPack[] {
+	return cursorPack === "classic" ? ["classic"] : [cursorPack, "classic"];
 }
 
-function getAvailableCursorKeys(): CursorAssetKey[] {
-	const loadedKeys = Object.keys(loadedCursorAssets) as CursorAssetKey[];
+function getCursorAsset(
+	key: CursorAssetKey,
+	cursorPack: CursorPack = "classic",
+): LoadedCursorAsset {
+	for (const pack of getCursorPackOrder(cursorPack)) {
+		const packAsset = loadedCursorAssets.packs[pack][key];
+		if (packAsset) {
+			return packAsset;
+		}
+	}
+
+	const systemAsset = loadedCursorAssets.system[key];
+	if (systemAsset) {
+		return systemAsset;
+	}
+
+	for (const fallbackPack of getCursorPackOrder(cursorPack)) {
+		const fallbackArrow = loadedCursorAssets.packs[fallbackPack].arrow;
+		if (fallbackArrow) {
+			return fallbackArrow;
+		}
+	}
+
+	if (loadedCursorAssets.system.arrow) {
+		return loadedCursorAssets.system.arrow;
+	}
+
+	throw new Error(`Missing cursor asset for ${key}`);
+}
+
+function getAvailableCursorKeys(cursorPack: CursorPack = "classic"): CursorAssetKey[] {
+	const loadedKeys = SUPPORTED_CURSOR_KEYS.filter((key) => {
+		try {
+			getCursorAsset(key, cursorPack);
+			return true;
+		} catch {
+			return false;
+		}
+	});
 	return loadedKeys.length > 0 ? loadedKeys : ["arrow"];
+}
+
+async function loadCursorAssetFromDefinition(
+	definition: CursorAssetDefinition,
+): Promise<LoadedCursorAsset> {
+	let finalUrl: string;
+	let width: number;
+	let height: number;
+	let normalizedAnchor: { x: number; y: number };
+
+	if (definition.trim) {
+		const { trim, fallbackAnchor } = definition;
+		const rasterized = await rasterizeAndCropSvg(
+			definition.url,
+			CURSOR_ASSET_SAMPLE_SIZE,
+			trim.x,
+			trim.y,
+			trim.width,
+			trim.height,
+		);
+		finalUrl = rasterized.dataUrl;
+		width = rasterized.width;
+		height = rasterized.height;
+		normalizedAnchor = {
+			x: clamp((fallbackAnchor.x * trim.width) / width, 0, 1),
+			y: clamp((fallbackAnchor.y * trim.height) / height, 0, 1),
+		};
+	} else {
+		finalUrl = definition.url;
+		const img = await loadImage(finalUrl);
+		width = img.naturalWidth;
+		height = img.naturalHeight;
+		normalizedAnchor = definition.fallbackAnchor;
+	}
+
+	await Assets.load(finalUrl);
+	const image = await loadImage(finalUrl);
+	const texture = Texture.from(finalUrl);
+
+	return {
+		texture,
+		image,
+		aspectRatio: height > 0 ? width / height : 1,
+		anchorX: normalizedAnchor.x,
+		anchorY: normalizedAnchor.y,
+	};
 }
 
 export async function preloadCursorAssets() {
 	if (!cursorAssetsPromise) {
 		cursorAssetsPromise = (async () => {
-			const isLinux = typeof navigator !== "undefined" && /linux/i.test(navigator.platform);
 			let systemCursors: Record<string, SystemCursorAsset> = {};
 
 			try {
@@ -184,91 +246,56 @@ export async function preloadCursorAssets() {
 				console.warn("[CursorRenderer] Failed to fetch system cursor assets:", error);
 			}
 
-			const entries = await Promise.all(
-				SUPPORTED_CURSOR_KEYS.map(async (key) => {
-					const systemAsset = systemCursors[key];
-					const uploadedAsset = uploadedCursorAssets[key];
-					const assetUrl = isLinux
-						? uploadedAsset?.url
-						: (uploadedAsset?.url ?? systemAsset?.dataUrl);
+			const nextLoadedAssets: LoadedCursorAssets = {
+				packs: { classic: {}, custom: {} },
+				system: {},
+			};
 
-					if (!assetUrl) {
-						console.warn(`[CursorRenderer] No cursor image for: ${key}`);
-						return null;
+			for (const pack of Object.keys(cursorAssetPacks) as CursorPack[]) {
+				for (const key of SUPPORTED_CURSOR_KEYS) {
+					const definition = cursorAssetPacks[pack][key];
+					if (!definition) {
+						continue;
 					}
 
 					try {
-						let finalUrl: string;
-						let width: number;
-						let height: number;
-						let normalizedAnchor: { x: number; y: number };
-
-						if (uploadedAsset) {
-							const { trim, fallbackAnchor } = uploadedAsset;
-							const rasterized = await rasterizeAndCropSvg(
-								assetUrl,
-								UPLOADED_CURSOR_SAMPLE_SIZE,
-								trim.x,
-								trim.y,
-								trim.width,
-								trim.height,
-							);
-							finalUrl = rasterized.dataUrl;
-							width = rasterized.width;
-							height = rasterized.height;
-							normalizedAnchor = {
-								x: clamp((fallbackAnchor.x * trim.width) / width, 0, 1),
-								y: clamp((fallbackAnchor.y * trim.height) / height, 0, 1),
-							};
-						} else {
-							finalUrl = assetUrl;
-							const img = await loadImage(finalUrl);
-							width = img.naturalWidth;
-							height = img.naturalHeight;
-							normalizedAnchor = getNormalizedAnchor(systemAsset, {
-								x: 0,
-								y: 0,
-							});
-						}
-
-						await Assets.load(finalUrl);
-						const image = await loadImage(finalUrl);
-						const texture = Texture.from(finalUrl);
-
-						return [
-							key,
-							{
-								texture,
-								image,
-								aspectRatio: height > 0 ? width / height : 1,
-								anchorX: normalizedAnchor.x,
-								anchorY: normalizedAnchor.y,
-							} satisfies LoadedCursorAsset,
-						] as const;
+						nextLoadedAssets.packs[pack][key] = await loadCursorAssetFromDefinition(definition);
 					} catch (error) {
-						console.warn(`[CursorRenderer] Failed to load cursor image for: ${key}`, error);
-						return null;
+						console.warn(`[CursorRenderer] Failed to load ${pack} cursor image for: ${key}`, error);
 					}
-				}),
-			);
-
-			loadedCursorAssets = Object.fromEntries(
-				entries.filter(Boolean).map((entry) => entry!),
-			) as Partial<Record<CursorAssetKey, LoadedCursorAsset>>;
-
-			if (!loadedCursorAssets.arrow) {
-				throw new Error("Failed to initialize the fallback arrow cursor asset");
+				}
 			}
+
+			for (const key of SUPPORTED_CURSOR_KEYS) {
+				const systemAsset = systemCursors[key];
+				if (!systemAsset?.dataUrl) {
+					continue;
+				}
+
+				try {
+					await Assets.load(systemAsset.dataUrl);
+					const image = await loadImage(systemAsset.dataUrl);
+					const anchor = getNormalizedAnchor(systemAsset, { x: 0, y: 0 });
+					nextLoadedAssets.system[key] = {
+						texture: Texture.from(systemAsset.dataUrl),
+						image,
+						aspectRatio: image.naturalHeight > 0 ? image.naturalWidth / image.naturalHeight : 1,
+						anchorX: anchor.x,
+						anchorY: anchor.y,
+					};
+				} catch (error) {
+					console.warn(`[CursorRenderer] Failed to load system cursor image for: ${key}`, error);
+				}
+			}
+
+			loadedCursorAssets = nextLoadedAssets;
+			getCursorAsset("arrow", "classic");
 		})();
 	}
 
 	return cursorAssetsPromise;
 }
 
-/**
- * Interpolates cursor position from telemetry samples at a given time.
- * Uses linear interpolation between the two nearest samples.
- */
 export function interpolateCursorPosition(
 	samples: CursorTelemetryPoint[],
 	timeMs: number,
@@ -347,7 +374,6 @@ function findLatestInteractionSample(samples: CursorTelemetryPoint[], timeMs: nu
 }
 
 function findLatestStableCursorType(samples: CursorTelemetryPoint[], timeMs: number) {
-	// Binary search to find position at timeMs, then scan backwards
 	let lo = 0;
 	let hi = samples.length - 1;
 	while (lo < hi) {
@@ -359,8 +385,6 @@ function findLatestStableCursorType(samples: CursorTelemetryPoint[], timeMs: num
 		}
 	}
 
-	// Scan backwards from the position to find a sample with cursorType
-	// Skip click events only (not mouseup) to avoid transient re-type during clicks
 	for (let index = lo; index >= 0; index -= 1) {
 		const sample = samples[index];
 		if (sample.timeMs > timeMs) {
@@ -432,9 +456,6 @@ function getCursorVisualState(samples: CursorTelemetryPoint[], timeMs: number) {
 	};
 }
 
-/**
- * Manages a smoothed cursor state that chases the interpolated target.
- */
 export class SmoothedCursorState {
 	public x = 0.5;
 	public y = 0.5;
@@ -545,8 +566,8 @@ export class PixiCursorOverlay {
 		this.cursorShadowSprites = {};
 		this.cursorShadowFilters = {};
 		this.cursorSprites = {};
-		for (const key of getAvailableCursorKeys()) {
-			const asset = getCursorAsset(key);
+		for (const key of getAvailableCursorKeys(this.config.cursorPack)) {
+			const asset = getCursorAsset(key, this.config.cursorPack);
 			const shadowSprite = new Sprite(asset.texture);
 			shadowSprite.anchor.set(asset.anchorX, asset.anchorY);
 			shadowSprite.visible = false;
@@ -650,8 +671,10 @@ export class PixiCursorOverlay {
 			samples,
 			timeMs,
 		);
-		const spriteKey = (cursorType in this.cursorSprites ? cursorType : "arrow") as CursorAssetKey;
-		const asset = getCursorAsset(spriteKey);
+		const spriteKey = (
+			cursorType && cursorType in this.cursorSprites ? cursorType : "arrow"
+		) as CursorAssetKey;
+		const asset = getCursorAsset(spriteKey, this.config.cursorPack);
 		const shadowSprite = this.cursorShadowSprites[spriteKey] ?? this.cursorShadowSprites.arrow!;
 		const sprite = this.cursorSprites[spriteKey] ?? this.cursorSprites.arrow!;
 		const bounceScale = Math.max(
@@ -804,10 +827,8 @@ export function drawCursorOnCanvas(
 	const py = viewport.y + smoothedState.y * viewport.height;
 	const h = config.dotRadius * getCursorViewportScale(viewport);
 	const { cursorType, clickBounceProgress } = getCursorVisualState(samples, timeMs);
-	const spriteKey = (
-		cursorType && loadedCursorAssets[cursorType] ? cursorType : "arrow"
-	) as CursorAssetKey;
-	const asset = getCursorAsset(spriteKey);
+	const spriteKey = cursorType ? cursorType : "arrow";
+	const asset = getCursorAsset(spriteKey, config.cursorPack);
 	const bounceScale = Math.max(
 		0.72,
 		1 - Math.sin(clickBounceProgress * Math.PI) * (0.08 * config.clickBounce),

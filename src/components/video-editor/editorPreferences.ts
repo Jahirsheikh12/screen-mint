@@ -15,6 +15,7 @@ type PersistedEditorControls = Pick<
 	| "cursorClickBounce"
 	| "cursorSway"
 	| "cursorStyle"
+	| "cursorPack"
 	| "cursorColor"
 	| "cursorOpacity"
 	| "clickHighlightColor"
@@ -39,10 +40,20 @@ type PersistedEditorControls = Pick<
 
 type PartialEditorControls = Partial<PersistedEditorControls>;
 
+export type EditorWorkspaceLayout = "default" | "preview-focus" | "timeline-focus";
+
+export interface EditorPreset {
+	id: string;
+	name: string;
+	controls: PersistedEditorControls;
+}
+
 export interface EditorPreferences extends PersistedEditorControls {
 	customAspectWidth: string;
 	customAspectHeight: string;
 	customWallpapers: string[];
+	workspaceLayout: EditorWorkspaceLayout;
+	presets: EditorPreset[];
 }
 
 export const EDITOR_PREFERENCES_STORAGE_KEY = "screenmint.editor.preferences";
@@ -63,6 +74,7 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	cursorClickBounce: DEFAULT_EDITOR_CONTROLS.cursorClickBounce,
 	cursorSway: DEFAULT_EDITOR_CONTROLS.cursorSway,
 	cursorStyle: DEFAULT_EDITOR_CONTROLS.cursorStyle,
+	cursorPack: DEFAULT_EDITOR_CONTROLS.cursorPack,
 	cursorColor: DEFAULT_EDITOR_CONTROLS.cursorColor,
 	cursorOpacity: DEFAULT_EDITOR_CONTROLS.cursorOpacity,
 	clickHighlightColor: DEFAULT_EDITOR_CONTROLS.clickHighlightColor,
@@ -86,6 +98,8 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	customAspectWidth: "16",
 	customAspectHeight: "9",
 	customWallpapers: [],
+	workspaceLayout: "default",
+	presets: [],
 };
 
 function normalizePositiveIntegerString(value: unknown, fallback: string): string {
@@ -146,10 +160,24 @@ function normalizeCustomWallpapers(value: unknown, fallback: string[]): string[]
 	);
 }
 
+function normalizeWorkspaceLayout(
+	value: unknown,
+	fallback: EditorWorkspaceLayout,
+): EditorWorkspaceLayout {
+	return value === "preview-focus" || value === "timeline-focus" || value === "default"
+		? value
+		: fallback;
+}
+
 function normalizeEditorControls(
 	raw: Partial<EditorPreferences>,
 	fallback: EditorPreferences,
 ): PersistedEditorControls {
+	const candidateAspectRatio = raw.aspectRatio ?? fallback.aspectRatio;
+	const candidatePadding =
+		raw.padding ??
+		(raw.aspectRatio === "native" && raw.padding == null ? undefined : fallback.padding);
+
 	const candidate: PartialEditorControls = {
 		wallpaper: raw.wallpaper ?? fallback.wallpaper,
 		shadowIntensity: raw.shadowIntensity ?? fallback.shadowIntensity,
@@ -164,6 +192,7 @@ function normalizeEditorControls(
 		cursorClickBounce: raw.cursorClickBounce ?? fallback.cursorClickBounce,
 		cursorSway: raw.cursorSway ?? fallback.cursorSway,
 		cursorStyle: raw.cursorStyle ?? fallback.cursorStyle,
+		cursorPack: raw.cursorPack ?? fallback.cursorPack,
 		cursorColor: raw.cursorColor ?? fallback.cursorColor,
 		cursorOpacity: raw.cursorOpacity ?? fallback.cursorOpacity,
 		clickHighlightColor: raw.clickHighlightColor ?? fallback.clickHighlightColor,
@@ -172,9 +201,9 @@ function normalizeEditorControls(
 		cursorTrailLength: raw.cursorTrailLength ?? fallback.cursorTrailLength,
 		cursorTrailOpacity: raw.cursorTrailOpacity ?? fallback.cursorTrailOpacity,
 		borderRadius: raw.borderRadius ?? fallback.borderRadius,
-		padding: raw.padding ?? fallback.padding,
+		padding: candidatePadding,
 		cropRegion: normalizeCropRegion(raw.cropRegion, fallback.cropRegion),
-		aspectRatio: raw.aspectRatio ?? fallback.aspectRatio,
+		aspectRatio: candidateAspectRatio,
 		webcamRegion: raw.webcamRegion ?? fallback.webcamRegion,
 		showWebcam: raw.showWebcam ?? fallback.showWebcam,
 		mirrorWebcam: raw.mirrorWebcam ?? fallback.mirrorWebcam,
@@ -202,6 +231,7 @@ function normalizeEditorControls(
 		cursorClickBounce: normalized.cursorClickBounce,
 		cursorSway: normalized.cursorSway,
 		cursorStyle: normalized.cursorStyle,
+		cursorPack: normalized.cursorPack,
 		cursorColor: normalized.cursorColor,
 		cursorOpacity: normalized.cursorOpacity,
 		clickHighlightColor: normalized.clickHighlightColor,
@@ -243,7 +273,37 @@ export function normalizeEditorPreferences(
 			fallback.customAspectHeight,
 		),
 		customWallpapers: normalizeCustomWallpapers(raw.customWallpapers, fallback.customWallpapers),
+		workspaceLayout: normalizeWorkspaceLayout(raw.workspaceLayout, fallback.workspaceLayout),
+		presets: normalizePresets(raw.presets, fallback),
 	};
+}
+
+function normalizePresets(value: unknown, fallback: EditorPreferences): EditorPreset[] {
+	if (!Array.isArray(value)) {
+		return fallback.presets;
+	}
+
+	return value
+		.filter((item): item is Partial<EditorPreset> => Boolean(item && typeof item === "object"))
+		.map((item, index) => {
+			const name =
+				typeof item.name === "string" && item.name.trim().length > 0
+					? item.name.trim()
+					: `Preset ${index + 1}`;
+			const id =
+				typeof item.id === "string" && item.id.trim().length > 0
+					? item.id.trim()
+					: `preset-${index + 1}`;
+
+			return {
+				id,
+				name,
+				controls: normalizeEditorControls(
+					(item.controls as Partial<EditorPreferences>) ?? {},
+					fallback,
+				),
+			};
+		});
 }
 
 export function loadEditorPreferences(): EditorPreferences {

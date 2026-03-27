@@ -5,6 +5,7 @@ import type {
 	CaptionRegion,
 	CaptionSettings,
 	CropRegion,
+	CursorPack,
 	CursorTelemetryPoint,
 	SpeedRegion,
 	TrimRegion,
@@ -40,6 +41,7 @@ interface VideoExporterConfig extends ExportConfig {
 	cursorMotionBlur?: number;
 	cursorClickBounce?: number;
 	cursorSway?: number;
+	cursorPack?: CursorPack;
 	audioRegions?: AudioRegion[];
 	previewWidth?: number;
 	previewHeight?: number;
@@ -111,6 +113,7 @@ export class VideoExporter {
 				cursorMotionBlur: this.config.cursorMotionBlur,
 				cursorClickBounce: this.config.cursorClickBounce,
 				cursorSway: this.config.cursorSway,
+				cursorPack: this.config.cursorPack,
 				webcamPath: this.config.webcamPath,
 				webcamRegion: this.config.webcamRegion,
 				showWebcam: this.config.showWebcam,

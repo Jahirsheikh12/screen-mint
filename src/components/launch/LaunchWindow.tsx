@@ -107,21 +107,25 @@ export function LaunchWindow() {
 		};
 	}, [hud.cameraPreviewStream]);
 
-	// Auto-hide overlay when recording starts
+	// Auto-hide overlay when recording or countdown starts
 	useEffect(() => {
-		if (hud.recording) {
+		if (hud.recording || hud.countdownActive) {
 			hud.resizeHudWindow(false);
 		}
-	}, [hud.recording, hud.resizeHudWindow]);
+	}, [hud.recording, hud.countdownActive, hud.resizeHudWindow]);
 
 	useEffect(() => {
-		if (hud.selectedArea && (hud.mode === "area" || hud.sessionState.captureMode === "area")) {
+		if (
+			hud.hudSettings.highlightArea &&
+			hud.selectedArea &&
+			(hud.mode === "area" || hud.sessionState.captureMode === "area")
+		) {
 			void window.electronAPI.createHighlightOverlay(hud.selectedArea.bounds);
 			return;
 		}
 
 		void window.electronAPI.closeHighlightOverlay();
-	}, [hud.mode, hud.selectedArea, hud.sessionState.captureMode]);
+	}, [hud.hudSettings.highlightArea, hud.mode, hud.selectedArea, hud.sessionState.captureMode]);
 
 	const openVideoFile = useCallback(async () => {
 		const result = await window.electronAPI.openVideoFilePicker();
@@ -204,7 +208,52 @@ export function LaunchWindow() {
 		[hud.mode, hud.recording, hud.contentPanelVisible, hud.setMode, hud.resizeHudWindow],
 	);
 
-	const showOverlay = hud.contentPanelVisible && !hud.recording;
+	const shouldShowOverlay = hud.contentPanelVisible && !hud.recording && !hud.countdownActive;
+	// Immediately suppress overlay during recording/countdown — no useEffect delay
+	const forceHideOverlay = hud.recording || hud.countdownActive;
+
+	// Track overlay mount/unmount with exit animation (user-initiated dismiss only)
+	const [overlayMounted, setOverlayMounted] = useState(false);
+	const [overlayExiting, setOverlayExiting] = useState(false);
+	const exitTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+	useEffect(() => {
+		if (forceHideOverlay) {
+			// Clean up animation state — visual hide is handled by showOverlay below
+			if (exitTimeoutRef.current) {
+				clearTimeout(exitTimeoutRef.current);
+				exitTimeoutRef.current = null;
+			}
+			setOverlayMounted(false);
+			setOverlayExiting(false);
+			return;
+		}
+
+		if (shouldShowOverlay) {
+			if (exitTimeoutRef.current) {
+				clearTimeout(exitTimeoutRef.current);
+				exitTimeoutRef.current = null;
+			}
+			setOverlayExiting(false);
+			setOverlayMounted(true);
+		} else if (overlayMounted) {
+			setOverlayExiting(true);
+			exitTimeoutRef.current = setTimeout(() => {
+				setOverlayMounted(false);
+				setOverlayExiting(false);
+				exitTimeoutRef.current = null;
+			}, 180);
+		}
+		return () => {
+			if (exitTimeoutRef.current) {
+				clearTimeout(exitTimeoutRef.current);
+				exitTimeoutRef.current = null;
+			}
+		};
+	}, [shouldShowOverlay, forceHideOverlay, overlayMounted]);
+
+	// Key fix: forceHideOverlay bypasses overlayMounted — no 1-frame flicker
+	const showOverlay = !forceHideOverlay && overlayMounted;
 	const showAreaQuickRecord = !hud.recording && hud.mode === "area" && hud.hasSelectedArea;
 	const isRecordDisabled =
 		hud.countdownActive ||
@@ -217,7 +266,7 @@ export function LaunchWindow() {
 			{/* Fullscreen overlay backdrop */}
 			{showOverlay && (
 				<div
-					className={`absolute inset-0 flex items-center justify-center ${styles.backdropFade}`}
+					className={`absolute inset-0 flex items-center justify-center ${overlayExiting ? styles.backdropFadeOut : styles.backdropFade}`}
 					style={{
 						background:
 							"radial-gradient(ellipse at center bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.65) 100%)",
@@ -228,7 +277,7 @@ export function LaunchWindow() {
 				>
 					{/* Overlay content card */}
 					<div
-						className={`rounded-2xl border w-full mx-8 ${styles.overlayEnter} ${styles.electronNoDrag}`}
+						className={`rounded-2xl border w-full mx-8 ${overlayExiting ? styles.overlayExit : styles.overlayEnter} ${styles.electronNoDrag}`}
 						style={{
 							maxWidth: hud.mode === "window" ? "800px" : "680px",
 							background:
@@ -367,17 +416,9 @@ export function LaunchWindow() {
 			)}
 
 			{/* Bottom toolbar */}
-			<div
-				className={`fixed bottom-3 left-1/2 -translate-x-1/2 z-20 w-full transition-all duration-300 ${
-					hud.recording
-						? "max-w-[520px] px-2"
-						: showAreaQuickRecord
-							? "max-w-[820px] px-4"
-							: "max-w-[720px] px-4"
-				}`}
-			>
+			<div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-20 flex justify-center">
 				<div
-					className={`${styles.hudBar} ${hud.recording ? styles.recordingGlow : ""}`}
+					className={`${styles.hudBar} ${hud.recording ? styles.recordingGlow : ""} w-fit`}
 					style={{
 						borderRadius: 14,
 						background: hud.recording

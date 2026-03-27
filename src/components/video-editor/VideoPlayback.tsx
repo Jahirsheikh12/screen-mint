@@ -19,14 +19,19 @@ import {
 	useState,
 } from "react";
 import { getAssetPath, getRenderableAssetUrl } from "@/lib/assetPath";
-import { DEFAULT_WALLPAPER_PATH, DEFAULT_WALLPAPER_RELATIVE_PATH } from "@/lib/wallpapers";
-import { type AspectRatio, formatAspectRatioForCSS } from "@/utils/aspectRatioUtils";
+import {
+	DEFAULT_WALLPAPER_PATH,
+	DEFAULT_WALLPAPER_RELATIVE_PATH,
+	normalizeWallpaperSelection,
+} from "@/lib/wallpapers";
+import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import { AnnotationOverlay } from "./AnnotationOverlay";
 import { CaptionOverlay } from "./CaptionOverlay";
 import { resolveCameraLayoutState } from "./cameraLayouts";
 import {
 	type AnnotationRegion,
 	type CameraLayoutRegion,
+	type CursorPack,
 	type CursorTelemetryPoint,
 	DEFAULT_CURSOR_CLICK_BOUNCE,
 	DEFAULT_CURSOR_MOTION_BLUR,
@@ -126,6 +131,7 @@ interface VideoPlaybackProps {
 	cursorMotionBlur?: number;
 	cursorClickBounce?: number;
 	cursorSway?: number;
+	cursorPack?: CursorPack;
 	webcamPath?: string | null;
 	webcamRegion?: import("./types").WebcamRegion;
 	showWebcam?: boolean;
@@ -173,11 +179,11 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			zoomMotionBlur = 0,
 			connectZooms = true,
 			borderRadius = 0,
-			padding = 50,
+			padding = 0,
 			cropRegion,
 			trimRegions = [],
 			speedRegions = [],
-			aspectRatio,
+			aspectRatio: _aspectRatio,
 			annotationRegions = [],
 			selectedAnnotationId,
 			onSelectAnnotation,
@@ -190,6 +196,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			cursorMotionBlur = DEFAULT_CURSOR_MOTION_BLUR,
 			cursorClickBounce = DEFAULT_CURSOR_CLICK_BOUNCE,
 			cursorSway = DEFAULT_CURSOR_SWAY,
+			cursorPack = "classic",
 			webcamPath,
 			webcamRegion,
 			showWebcam = true,
@@ -253,6 +260,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const cursorMotionBlurRef = useRef(cursorMotionBlur);
 		const cursorClickBounceRef = useRef(cursorClickBounce);
 		const cursorSwayRef = useRef(cursorSway);
+		const cursorPackRef = useRef(cursorPack);
 		const motionBlurStateRef = useRef<MotionBlurState>(createMotionBlurState());
 		const resolvedCameraState = useMemo(() => {
 			if (!webcamRegion) {
@@ -519,7 +527,9 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			isDraggingFocusRef.current = false;
 			try {
 				event.currentTarget.releasePointerCapture(event.pointerId);
-			} catch {}
+			} catch {
+				// Pointer capture may already be released if the interaction was interrupted.
+			}
 		};
 
 		const handleOverlayPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -591,6 +601,10 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		}, [cursorSway]);
 
 		useEffect(() => {
+			cursorPackRef.current = cursorPack;
+		}, [cursorPack]);
+
+		useEffect(() => {
 			if (!pixiReady || !videoReady) return;
 
 			const app = appRef.current;
@@ -655,14 +669,16 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				requestAnimationFrame(() => {
 					const finalApp = appRef.current;
 					if (wasPlaying && video) {
-						video.play().catch(() => {});
+						video.play().catch(() => {
+							// Playback can be blocked transiently while the preview resets.
+						});
 					}
 					if (tickerWasStarted && finalApp?.ticker) {
 						finalApp.ticker.start();
 					}
 				});
 			});
-		}, [pixiReady, videoReady, layoutVideoContent, cropRegion]);
+		}, [pixiReady, videoReady, layoutVideoContent]);
 
 		useEffect(() => {
 			if (!pixiReady || !videoReady) return;
@@ -767,6 +783,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 						motionBlur: cursorMotionBlurRef.current,
 						clickBounce: cursorClickBounceRef.current,
 						sway: cursorSwayRef.current,
+						cursorPack: cursorPackRef.current,
 					});
 					cursorOverlayRef.current = cursorOverlay;
 					cursorContainer.addChild(cursorOverlay.container);
@@ -805,6 +822,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		useEffect(() => {
 			const video = videoRef.current;
 			if (!video) return;
+			void videoPath;
 			video.pause();
 			video.currentTime = 0;
 			allowPlaybackRef.current = false;
@@ -915,7 +933,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 
 				videoSpriteRef.current = null;
 			};
-		}, [pixiReady, videoReady, onTimeUpdate, updateOverlayForRegion]);
+		}, [pixiReady, videoReady, onPlayStateChange, onTimeUpdate, layoutVideoContent]);
 
 		useEffect(() => {
 			if (!pixiReady || !videoReady) return;
@@ -1109,7 +1127,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					app.ticker.remove(ticker);
 				}
 			};
-		}, [pixiReady, videoReady, clampFocusToStage]);
+		}, [pixiReady, videoReady]);
 
 		useEffect(() => {
 			const overlay = cursorOverlayRef.current;
@@ -1124,6 +1142,57 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			overlay.setSway(cursorSway);
 			overlay.reset();
 		}, [cursorSize, cursorSmoothing, cursorMotionBlur, cursorClickBounce, cursorSway]);
+
+		useEffect(() => {
+			const cursorContainer = cursorContainerRef.current;
+			if (!cursorContainer) {
+				return;
+			}
+
+			let cancelled = false;
+
+			(async () => {
+				try {
+					await preloadCursorAssets();
+				} catch (error) {
+					console.warn(
+						"Native cursor assets are unavailable in preview; continuing without cursor overlay.",
+						error,
+					);
+					if (!cancelled && cursorOverlayRef.current) {
+						cursorOverlayRef.current.destroy();
+						cursorOverlayRef.current = null;
+					}
+					return;
+				}
+
+				if (cancelled || !cursorContainerRef.current) {
+					return;
+				}
+
+				if (cursorOverlayRef.current) {
+					cursorOverlayRef.current.destroy();
+				}
+
+				const cursorOverlay = new PixiCursorOverlay({
+					dotRadius: DEFAULT_CURSOR_CONFIG.dotRadius * cursorSizeRef.current,
+					smoothingFactor: cursorSmoothingRef.current,
+					motionBlur: cursorMotionBlurRef.current,
+					clickBounce: cursorClickBounceRef.current,
+					sway: cursorSwayRef.current,
+					cursorPack,
+				});
+				cursorOverlayRef.current = cursorOverlay;
+				cursorContainerRef.current.addChild(cursorOverlay.container);
+				cursorOverlay.reset();
+			})().catch((error) => {
+				console.warn("Failed to rebuild cursor overlay for the selected pack:", error);
+			});
+
+			return () => {
+				cancelled = true;
+			};
+		}, [cursorPack]);
 
 		const handleLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
 			const video = e.currentTarget;
@@ -1157,41 +1226,50 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		useEffect(() => {
 			let mounted = true;
 			(async () => {
+				const resolvedDefaultWallpaper = await getRenderableAssetUrl(
+					await getAssetPath(DEFAULT_WALLPAPER_RELATIVE_PATH),
+				);
+
 				try {
-					if (!wallpaper) {
-						const def = await getAssetPath(DEFAULT_WALLPAPER_RELATIVE_PATH);
-						if (mounted) setResolvedWallpaper(def);
+					const selectedWallpaper = wallpaper
+						? normalizeWallpaperSelection(wallpaper)
+						: DEFAULT_WALLPAPER_PATH;
+
+					if (!selectedWallpaper) {
+						if (mounted) setResolvedWallpaper(resolvedDefaultWallpaper);
 						return;
 					}
 
 					if (
-						wallpaper.startsWith("#") ||
-						wallpaper.startsWith("linear-gradient") ||
-						wallpaper.startsWith("radial-gradient")
+						selectedWallpaper.startsWith("#") ||
+						selectedWallpaper.startsWith("linear-gradient") ||
+						selectedWallpaper.startsWith("radial-gradient")
 					) {
-						if (mounted) setResolvedWallpaper(wallpaper);
+						if (mounted) setResolvedWallpaper(selectedWallpaper);
 						return;
 					}
 
 					// If it's a data URL (custom uploaded image), use as-is
-					if (wallpaper.startsWith("data:")) {
-						if (mounted) setResolvedWallpaper(wallpaper);
+					if (selectedWallpaper.startsWith("data:")) {
+						if (mounted) setResolvedWallpaper(selectedWallpaper);
 						return;
 					}
 
 					if (
-						wallpaper.startsWith("http") ||
-						wallpaper.startsWith("file://") ||
-						wallpaper.startsWith("/")
+						selectedWallpaper.startsWith("http") ||
+						selectedWallpaper.startsWith("file://") ||
+						selectedWallpaper.startsWith("/")
 					) {
-						const renderable = await getRenderableAssetUrl(wallpaper);
+						const renderable = await getRenderableAssetUrl(selectedWallpaper);
 						if (mounted) setResolvedWallpaper(renderable);
 						return;
 					}
-					const p = await getRenderableAssetUrl(await getAssetPath(wallpaper.replace(/^\//, "")));
+					const p = await getRenderableAssetUrl(
+						await getAssetPath(selectedWallpaper.replace(/^\//, "")),
+					);
 					if (mounted) setResolvedWallpaper(p);
-				} catch (err) {
-					if (mounted) setResolvedWallpaper(wallpaper || DEFAULT_WALLPAPER_PATH);
+				} catch {
+					if (mounted) setResolvedWallpaper(resolvedDefaultWallpaper);
 				}
 			})();
 			return () => {
@@ -1219,26 +1297,8 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			? { backgroundImage: `url(${resolvedWallpaper || ""})` }
 			: { background: resolvedWallpaper || "" };
 
-		const nativeAspectRatio = (() => {
-			const locked = lockedVideoDimensionsRef.current;
-			if (locked && locked.height > 0) {
-				return locked.width / locked.height;
-			}
-			const video = videoRef.current;
-			if (video && video.videoHeight > 0) {
-				return video.videoWidth / video.videoHeight;
-			}
-			return 16 / 9;
-		})();
-
 		return (
-			<div
-				className="relative rounded-sm overflow-hidden"
-				style={{
-					width: "100%",
-					aspectRatio: formatAspectRatioForCSS(aspectRatio, nativeAspectRatio),
-				}}
-			>
+			<div className="relative overflow-hidden w-full h-full">
 				{/* Background layer */}
 				<div
 					className="absolute inset-0 bg-cover bg-center"
@@ -1363,7 +1423,11 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 						const mediaError = videoEl.error;
 						const code = mediaError?.code ?? "unknown";
 						const msg = mediaError?.message ?? "";
-						console.error("Video load error:", { code, message: msg, src: videoEl.src });
+						console.error("Video load error:", {
+							code,
+							message: msg,
+							src: videoEl.src,
+						});
 						onError(
 							`Failed to load video (error ${code}${msg ? `: ${msg}` : ""}). Source: ${videoEl.src}`,
 						);

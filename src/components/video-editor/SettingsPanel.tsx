@@ -43,6 +43,7 @@ import type {
 	CaptionStyle,
 	CaptionStylePreset,
 	CropRegion,
+	CursorPack,
 	CursorStyle,
 	FigureData,
 	PlaybackSpeed,
@@ -52,6 +53,7 @@ import type {
 import {
 	CAMERA_ZOOM_SCALE_DISABLED,
 	CAPTION_STYLE_PRESETS,
+	CURSOR_PACK_OPTIONS,
 	CURSOR_STYLE_OPTIONS,
 	DEFAULT_CAPTION_GENERATION_OPTIONS,
 	DEFAULT_CLICK_HIGHLIGHT_COLOR,
@@ -72,30 +74,53 @@ import {
 import { fromCursorSwaySliderValue, toCursorSwaySliderValue } from "./videoPlayback/cursorSway";
 
 const GRADIENTS = [
-	"linear-gradient( 111.6deg,  rgba(114,167,232,1) 9.4%, rgba(253,129,82,1) 43.9%, rgba(253,129,82,1) 54.8%, rgba(249,202,86,1) 86.3% )",
-	"linear-gradient(120deg, #d4fc79 0%, #96e6a1 100%)",
-	"radial-gradient( circle farthest-corner at 3.2% 49.6%,  rgba(80,12,139,0.87) 0%, rgba(161,10,144,0.72) 83.6% )",
-	"linear-gradient( 111.6deg,  rgba(0,56,68,1) 0%, rgba(163,217,185,1) 51.5%, rgba(231, 148, 6, 1) 88.6% )",
-	"linear-gradient( 107.7deg,  rgba(235,230,44,0.55) 8.4%, rgba(252,152,15,1) 90.3% )",
-	"linear-gradient( 91deg,  rgba(72,154,78,1) 5.2%, rgba(251,206,70,1) 95.9% )",
-	"radial-gradient( circle farthest-corner at 10% 20%,  rgba(2,37,78,1) 0%, rgba(4,56,126,1) 19.7%, rgba(85,245,221,1) 100.2% )",
-	"linear-gradient( 109.6deg,  rgba(15,2,2,1) 11.2%, rgba(36,163,190,1) 91.1% )",
-	"linear-gradient(135deg, #FBC8B4, #2447B1)",
-	"linear-gradient(109.6deg, #F635A6, #36D860)",
-	"linear-gradient(90deg, #FF0101, #4DFF01)",
-	"linear-gradient(315deg, #EC0101, #5044A9)",
-	"linear-gradient(45deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%)",
-	"linear-gradient(to top, #a18cd1 0%, #fbc2eb 100%)",
-	"linear-gradient(to right, #ff8177 0%, #ff867a 0%, #ff8c7f 21%, #f99185 52%, #cf556c 78%, #b12a5b 100%)",
-	"linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%)",
-	"linear-gradient(to right, #4facfe 0%, #00f2fe 100%)",
-	"linear-gradient(to top, #fcc5e4 0%, #fda34b 15%, #ff7882 35%, #c8699e 52%, #7046aa 71%, #0c1db8 87%, #020f75 100%)",
-	"linear-gradient(to right, #fa709a 0%, #fee140 100%)",
-	"linear-gradient(to top, #30cfd0 0%, #330867 100%)",
-	"linear-gradient(to top, #c471f5 0%, #fa71cd 100%)",
-	"linear-gradient(to right, #f78ca0 0%, #f9748f 19%, #fd868c 60%, #fe9a8b 100%)",
-	"linear-gradient(to top, #48c6ef 0%, #6f86d6 100%)",
-	"linear-gradient(to right, #0acffe 0%, #495aff 100%)",
+	"linear-gradient(135deg, #03045e 0%, #0077b6 42%, #90e0ef 100%)",
+	"linear-gradient(135deg, #0b090a 0%, #161a1d 38%, #e5383b 100%)",
+	"linear-gradient(145deg, #14213d 0%, #fca311 52%, #ffe8b6 100%)",
+	"linear-gradient(135deg, #081c15 0%, #1b4332 44%, #95d5b2 100%)",
+	"linear-gradient(140deg, #2b2d42 0%, #8d99ae 48%, #edf2f4 100%)",
+	"linear-gradient(135deg, #240046 0%, #7b2cbf 45%, #c77dff 100%)",
+	"linear-gradient(130deg, #3d0000 0%, #9d0208 44%, #ffba08 100%)",
+	"linear-gradient(145deg, #001219 0%, #005f73 42%, #ee9b00 100%)",
+	"linear-gradient(135deg, #111827 0%, #1f2937 40%, #f59e0b 100%)",
+	"linear-gradient(150deg, #1a1a40 0%, #4c1d95 42%, #f472b6 100%)",
+	"radial-gradient(circle at 20% 20%, #fefae0 0%, #dda15e 42%, #6b705c 100%)",
+	"radial-gradient(circle at 50% 25%, #f8f9fa 0%, #cdb4db 40%, #5a189a 100%)",
+	"radial-gradient(circle at 78% 18%, #f1faee 0%, #a8dadc 40%, #1d3557 100%)",
+	"radial-gradient(circle at 28% 30%, #fff1e6 0%, #ff7f51 42%, #7b2d26 100%)",
+	"radial-gradient(circle at 65% 32%, #fff7ed 0%, #fb7185 38%, #7c2d12 100%)",
+	"linear-gradient(135deg, #023047 0%, #219ebc 46%, #ffb703 100%)",
+	"linear-gradient(135deg, #0f0c29 0%, #302b63 44%, #f27121 100%)",
+	"linear-gradient(145deg, #2f3e46 0%, #52796f 40%, #cad2c5 100%)",
+	"linear-gradient(130deg, #1b263b 0%, #415a77 44%, #e0e1dd 100%)",
+	"linear-gradient(140deg, #10002b 0%, #5a189a 46%, #ff6d00 100%)",
+	"linear-gradient(135deg, #2d033b 0%, #810ca8 42%, #e5b8f4 100%)",
+	"linear-gradient(145deg, #1f2421 0%, #216869 42%, #9cc5a1 100%)",
+	"linear-gradient(135deg, #3c096c 0%, #7b2cbf 44%, #ff8500 100%)",
+	"linear-gradient(140deg, #0d1b2a 0%, #1b263b 42%, #778da9 100%)",
+	"linear-gradient(135deg, #3a5a40 0%, #588157 40%, #dad7cd 100%)",
+	"linear-gradient(145deg, #2b2d42 0%, #ef233c 42%, #ffd166 100%)",
+	"linear-gradient(135deg, #001d3d 0%, #003566 40%, #ffc300 100%)",
+	"linear-gradient(135deg, #0a1128 0%, #1282a2 46%, #f0f3bd 100%)",
+	"linear-gradient(145deg, #2d00f7 0%, #6a00f4 38%, #ff8500 100%)",
+	"linear-gradient(135deg, #004b23 0%, #38b000 42%, #ccff33 100%)",
+	"linear-gradient(140deg, #590d22 0%, #a4133c 44%, #ffccd5 100%)",
+	"linear-gradient(145deg, #14281d 0%, #355834 40%, #c2c5aa 100%)",
+	"linear-gradient(135deg, #03071e 0%, #6a040f 44%, #faa307 100%)",
+	"linear-gradient(150deg, #1d3557 0%, #457b9d 40%, #f1faee 100%)",
+	"linear-gradient(135deg, #22577a 0%, #38a3a5 42%, #c7f9cc 100%)",
+	"linear-gradient(145deg, #3c1642 0%, #086375 40%, #f5dd90 100%)",
+	"linear-gradient(140deg, #2f1847 0%, #624763 38%, #f9c784 100%)",
+	"radial-gradient(circle at 22% 24%, #fff8e7 0%, #ffd166 36%, #118ab2 100%)",
+	"radial-gradient(circle at 72% 20%, #f8f9ff 0%, #b8c0ff 40%, #7209b7 100%)",
+	"radial-gradient(circle at 30% 70%, #fef2f2 0%, #fda4af 34%, #7f1d1d 100%)",
+	"radial-gradient(circle at 80% 32%, #f1fff8 0%, #95d5b2 38%, #081c15 100%)",
+	"radial-gradient(circle at 46% 18%, #fff7f0 0%, #ffb4a2 40%, #6d6875 100%)",
+	"linear-gradient(135deg, #283618 0%, #606c38 40%, #fefae0 100%)",
+	"linear-gradient(145deg, #1e1e24 0%, #92140c 42%, #ffcf99 100%)",
+	"linear-gradient(135deg, #001524 0%, #15616d 44%, #ffecd1 100%)",
+	"linear-gradient(140deg, #0d1321 0%, #1d2d44 42%, #f0ebd8 100%)",
+	"linear-gradient(145deg, #201e1f 0%, #4f5d75 40%, #ef8354 100%)",
 ];
 
 type BackgroundTab = "image" | "color" | "gradient";
@@ -105,7 +130,11 @@ function isHexWallpaper(value: string): boolean {
 }
 
 function getBackgroundTabForWallpaper(value: string): BackgroundTab {
-	if (GRADIENTS.includes(value)) {
+	if (
+		GRADIENTS.includes(value) ||
+		value.startsWith("linear-gradient") ||
+		value.startsWith("radial-gradient")
+	) {
 		return "gradient";
 	}
 
@@ -149,6 +178,8 @@ interface SettingsPanelProps {
 	onCursorSwayChange?: (amount: number) => void;
 	cursorStyle?: CursorStyle;
 	onCursorStyleChange?: (style: CursorStyle) => void;
+	cursorPack?: CursorPack;
+	onCursorPackChange?: (pack: CursorPack) => void;
 	cursorColor?: string;
 	onCursorColorChange?: (color: string) => void;
 	cursorOpacity?: number;
@@ -225,8 +256,6 @@ interface SettingsPanelProps {
 	onCancelCaptionGeneration?: () => void;
 }
 
-export default SettingsPanel;
-
 const ZOOM_DEPTH_OPTIONS: Array<{ depth: ZoomDepth; label: string }> = [
 	{ depth: 1, label: "1.25×" },
 	{ depth: 2, label: "1.5×" },
@@ -236,7 +265,7 @@ const ZOOM_DEPTH_OPTIONS: Array<{ depth: ZoomDepth; label: string }> = [
 	{ depth: 6, label: "5×" },
 ];
 
-export function SettingsPanel({
+export default function SettingsPanel({
 	selected,
 	onWallpaperChange,
 	selectedZoomDepth,
@@ -269,6 +298,8 @@ export function SettingsPanel({
 	onCursorSwayChange,
 	cursorStyle = "default",
 	onCursorStyleChange,
+	cursorPack = "classic",
+	onCursorPackChange,
 	cursorColor = DEFAULT_CURSOR_COLOR,
 	onCursorColorChange,
 	cursorOpacity = DEFAULT_CURSOR_OPACITY,
@@ -285,7 +316,7 @@ export function SettingsPanel({
 	onCursorTrailOpacityChange,
 	borderRadius = 12.5,
 	onBorderRadiusChange,
-	padding = 50,
+	padding = 0,
 	onPaddingChange,
 	cropRegion,
 	onCropChange,
@@ -473,9 +504,14 @@ export function SettingsPanel({
 
 		const file = files[0];
 
-		// Validate file type - only allow JPG/JPEG
-		const validTypes = ["image/jpeg", "image/jpg"];
-		if (!validTypes.includes(file.type)) {
+		const normalizedType = file.type.toLowerCase();
+		const normalizedName = file.name.toLowerCase();
+		const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+		const validExtensions = [".jpg", ".jpeg", ".png", ".webp"];
+		const hasValidExtension = validExtensions.some((extension) =>
+			normalizedName.endsWith(extension),
+		);
+		if (!(validTypes.includes(normalizedType) || (!normalizedType && hasValidExtension))) {
 			toast.error(tSettings("background.uploadError"), {
 				description: tSettings("background.uploadErrorDescription"),
 			});
@@ -693,7 +729,7 @@ export function SettingsPanel({
 								<SliderControl
 									label={tSettings("effects.padding")}
 									value={padding}
-									defaultValue={50}
+									defaultValue={0}
 									min={0}
 									max={100}
 									step={1}
@@ -719,7 +755,9 @@ export function SettingsPanel({
 				{activeTab === "cursor" && (
 					<div>
 						<div className="flex items-center justify-between mb-3">
-							<span className="text-sm font-medium text-slate-200">Cursor</span>
+							<span className="text-sm font-medium text-slate-200">
+								{tSettings("cursor.title")}
+							</span>
 						</div>
 
 						<div className="flex flex-col gap-1.5">
@@ -743,6 +781,29 @@ export function SettingsPanel({
 									onCheckedChange={onLoopCursorChange}
 									className="data-[state=checked]:bg-[#10B981] scale-90"
 								/>
+							</div>
+
+							<div className="p-2 rounded-lg bg-white/5 border border-white/5">
+								<div className="text-xs font-medium text-slate-300 mb-2">
+									{tSettings("cursor.pack")}
+								</div>
+								<div className="grid grid-cols-2 gap-1">
+									{CURSOR_PACK_OPTIONS.map((opt) => (
+										<button
+											key={opt.value}
+											type="button"
+											onClick={() => onCursorPackChange?.(opt.value)}
+											className={cn(
+												"px-2 py-1.5 rounded-md text-[10px] font-medium transition-all cursor-pointer",
+												cursorPack === opt.value
+													? "bg-[#10B981] text-white shadow-sm"
+													: "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200",
+											)}
+										>
+											{opt.label}
+										</button>
+									))}
+								</div>
 							</div>
 
 							{/* Cursor Style */}
@@ -1033,7 +1094,7 @@ export function SettingsPanel({
 										type="file"
 										ref={fileInputRef}
 										onChange={handleImageUpload}
-										accept=".jpg,.jpeg,image/jpeg"
+										accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
 										className="hidden"
 									/>
 									<Button

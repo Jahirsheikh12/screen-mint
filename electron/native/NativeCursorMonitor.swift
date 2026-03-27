@@ -10,7 +10,7 @@ func knownCursorCandidates() -> [(String, NSCursor)] {
 		("arrow", .arrow),
 		("text", .iBeam),
 		("pointer", .pointingHand),
-		("pointer", .dragCopy),
+		("copy", .dragCopy),
 		("pointer", .dragLink),
 		("pointer", .contextualMenu),
 		("crosshair", .crosshair),
@@ -300,6 +300,27 @@ func accessibilityCursorMatch() -> String? {
 		.map { metadataString(for: $0) }
 		.filter { !$0.isEmpty }
 		.joined(separator: " ")
+	if metadata.contains("zoom in") {
+		return "zoom-in"
+	}
+	if metadata.contains("zoom out") {
+		return "zoom-out"
+	}
+	if metadata.contains("screenshot") || metadata.contains("screen shot") || metadata.contains("capture") {
+		return "screenshot-selection"
+	}
+	if metadata.contains("copy") {
+		return "copy"
+	}
+	if metadata.contains("help") {
+		return "help"
+	}
+	if metadata.contains("move") || metadata.contains("drag") {
+		return "move"
+	}
+	if metadata.contains("diagonal") || metadata.contains("north east south west") {
+		return "resize-nesw"
+	}
 	if metadata.contains("crosshair") || metadata.contains("cross hair") || metadata.contains("precision") || metadata.contains("crop") {
 		return "crosshair"
 	}
@@ -372,6 +393,7 @@ func exportCursorImages() {
 		("arrow", .arrow),
 		("text", .iBeam),
 		("pointer", .pointingHand),
+		("copy", .dragCopy),
 		("crosshair", .crosshair),
 		("open-hand", .openHand),
 		("closed-hand", .closedHand),
@@ -433,4 +455,3 @@ DispatchQueue.global(qos: .utility).async {
 }
 
 RunLoop.main.run()
-

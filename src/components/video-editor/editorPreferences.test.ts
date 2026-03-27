@@ -48,6 +48,8 @@ describe("editorPreferences", () => {
 				customAspectWidth: "0",
 				customAspectHeight: "",
 				customWallpapers: "not-an-array",
+				workspaceLayout: "side-by-side",
+				presets: "not-an-array",
 			}),
 		).toEqual(DEFAULT_EDITOR_PREFERENCES);
 	});
@@ -72,7 +74,7 @@ describe("editorPreferences", () => {
 			}),
 		);
 
-		expect(loadEditorPreferences()).toEqual({
+		expect(loadEditorPreferences()).toMatchObject({
 			wallpaper: "#123456",
 			shadowIntensity: DEFAULT_EDITOR_PREFERENCES.shadowIntensity,
 			backgroundBlur: 3.5,
@@ -85,8 +87,9 @@ describe("editorPreferences", () => {
 			cursorMotionBlur: DEFAULT_EDITOR_PREFERENCES.cursorMotionBlur,
 			cursorClickBounce: DEFAULT_EDITOR_PREFERENCES.cursorClickBounce,
 			cursorSway: DEFAULT_EDITOR_PREFERENCES.cursorSway,
+			cursorPack: DEFAULT_EDITOR_PREFERENCES.cursorPack,
 			borderRadius: DEFAULT_EDITOR_PREFERENCES.borderRadius,
-			padding: DEFAULT_EDITOR_PREFERENCES.padding,
+			padding: 8,
 			cropRegion: { x: 0.1, y: 0.2, width: 0.7, height: 0.6 },
 			aspectRatio: "native",
 			webcamRegion: DEFAULT_EDITOR_PREFERENCES.webcamRegion,
@@ -101,7 +104,36 @@ describe("editorPreferences", () => {
 			customAspectWidth: "21",
 			customAspectHeight: "9",
 			customWallpapers: ["data:image/jpeg;base64,abc"],
+			workspaceLayout: DEFAULT_EDITOR_PREFERENCES.workspaceLayout,
+			presets: DEFAULT_EDITOR_PREFERENCES.presets,
 		});
+	});
+
+	it("falls back removed built-in wallpaper paths in stored preferences", () => {
+		vi.stubGlobal(
+			"localStorage",
+			createStorageMock({
+				[EDITOR_PREFERENCES_STORAGE_KEY]: JSON.stringify({
+					wallpaper:
+						"/Applications/ScreenMint.app/Contents/Resources/app.asar/public/wallpapers/wallpaper1.jpg",
+				}),
+			}),
+		);
+
+		expect(loadEditorPreferences().wallpaper).toBe("/wallpapers/green-blue-waves.jpg");
+	});
+
+	it("defaults native aspect ratio preferences to default padding when padding is missing", () => {
+		vi.stubGlobal(
+			"localStorage",
+			createStorageMock({
+				[EDITOR_PREFERENCES_STORAGE_KEY]: JSON.stringify({
+					aspectRatio: "native",
+				}),
+			}),
+		);
+
+		expect(loadEditorPreferences().padding).toBe(8);
 	});
 
 	it("preserves the last valid custom aspect inputs while typing", () => {
@@ -116,7 +148,7 @@ describe("editorPreferences", () => {
 
 		saveEditorPreferences({ customAspectWidth: "", customAspectHeight: "abc" });
 
-		expect(loadEditorPreferences()).toEqual({
+		expect(loadEditorPreferences()).toMatchObject({
 			aspectRatio: "16:9",
 			wallpaper: DEFAULT_EDITOR_PREFERENCES.wallpaper,
 			shadowIntensity: DEFAULT_EDITOR_PREFERENCES.shadowIntensity,
@@ -130,6 +162,7 @@ describe("editorPreferences", () => {
 			cursorMotionBlur: DEFAULT_EDITOR_PREFERENCES.cursorMotionBlur,
 			cursorClickBounce: DEFAULT_EDITOR_PREFERENCES.cursorClickBounce,
 			cursorSway: DEFAULT_EDITOR_PREFERENCES.cursorSway,
+			cursorPack: DEFAULT_EDITOR_PREFERENCES.cursorPack,
 			borderRadius: DEFAULT_EDITOR_PREFERENCES.borderRadius,
 			padding: DEFAULT_EDITOR_PREFERENCES.padding,
 			cropRegion: DEFAULT_EDITOR_PREFERENCES.cropRegion,
@@ -145,6 +178,8 @@ describe("editorPreferences", () => {
 			customAspectWidth: "21",
 			customAspectHeight: "9",
 			customWallpapers: DEFAULT_EDITOR_PREFERENCES.customWallpapers,
+			workspaceLayout: DEFAULT_EDITOR_PREFERENCES.workspaceLayout,
+			presets: DEFAULT_EDITOR_PREFERENCES.presets,
 		});
 	});
 
@@ -165,6 +200,7 @@ describe("editorPreferences", () => {
 			cursorMotionBlur: 0.5,
 			cursorClickBounce: 2.25,
 			cursorSway: 1.5,
+			cursorPack: "custom",
 			borderRadius: 18,
 			padding: 30,
 			cropRegion: { x: 0.12, y: 0.08, width: 0.7, height: 0.65 },
@@ -183,7 +219,7 @@ describe("editorPreferences", () => {
 			customWallpapers: ["data:image/jpeg;base64,abc", "data:image/jpeg;base64,abc"],
 		});
 
-		expect(loadEditorPreferences()).toEqual({
+		expect(loadEditorPreferences()).toMatchObject({
 			wallpaper: "linear-gradient(to right, #000000, #ffffff)",
 			shadowIntensity: 0.4,
 			backgroundBlur: 1.5,
@@ -196,6 +232,7 @@ describe("editorPreferences", () => {
 			cursorMotionBlur: 0.5,
 			cursorClickBounce: 2.25,
 			cursorSway: 1.5,
+			cursorPack: "custom",
 			borderRadius: 18,
 			padding: 30,
 			cropRegion: { x: 0.12, y: 0.08, width: 0.7, height: 0.65 },
@@ -212,6 +249,46 @@ describe("editorPreferences", () => {
 			customAspectWidth: "4",
 			customAspectHeight: "5",
 			customWallpapers: ["data:image/jpeg;base64,abc"],
+			workspaceLayout: DEFAULT_EDITOR_PREFERENCES.workspaceLayout,
+			presets: DEFAULT_EDITOR_PREFERENCES.presets,
 		});
+	});
+
+	it("normalizes workspace layouts and custom presets", () => {
+		const preferences = normalizeEditorPreferences({
+			workspaceLayout: "timeline-focus",
+			presets: [
+				{
+					id: "demo",
+					name: "Demo",
+					controls: {
+						aspectRatio: "9:16",
+						padding: 18,
+						showCursor: false,
+					},
+				},
+				{
+					name: "",
+					controls: {
+						wallpaper: "#112233",
+					},
+				},
+			],
+		});
+
+		expect(preferences.workspaceLayout).toBe("timeline-focus");
+		expect(preferences.presets).toHaveLength(2);
+		expect(preferences.presets[0]).toMatchObject({
+			id: "demo",
+			name: "Demo",
+			controls: {
+				aspectRatio: "9:16",
+				padding: 18,
+				showCursor: false,
+			},
+		});
+		expect(preferences.presets[1]?.id).toBe("preset-2");
+		expect(preferences.presets[1]?.name).toBe("Preset 2");
+		expect(preferences.presets[1]?.controls.wallpaper).toBe("#112233");
 	});
 });

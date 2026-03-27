@@ -26,6 +26,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	switchToEditor: () => {
 		return ipcRenderer.invoke("switch-to-editor");
 	},
+	switchToHud: () => {
+		return ipcRenderer.invoke("switch-to-hud");
+	},
 	openSourceSelector: () => {
 		return ipcRenderer.invoke("open-source-selector");
 	},
@@ -161,6 +164,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	saveExportedVideo: (videoData: ArrayBuffer, fileName: string) => {
 		return ipcRenderer.invoke("save-exported-video", videoData, fileName);
 	},
+	saveExportedVideoToRecordings: (videoData: ArrayBuffer, fileName: string) => {
+		return ipcRenderer.invoke("save-exported-video-to-recordings", videoData, fileName);
+	},
 	openVideoFilePicker: () => {
 		return ipcRenderer.invoke("open-video-file-picker");
 	},
@@ -254,6 +260,25 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	openRecordingsFolder: () => {
 		return ipcRenderer.invoke("open-recordings-folder");
 	},
+	copyTextToClipboard: (text: string) => {
+		return ipcRenderer.invoke("copy-text-to-clipboard", text);
+	},
+	deleteProjectAndMedia: (payload: {
+		projectPath?: string | null;
+		videoPath?: string | null;
+		webcamPath?: string | null;
+	}) => {
+		return ipcRenderer.invoke("delete-project-and-media", payload);
+	},
+	getPostRecordingContext: () => {
+		return ipcRenderer.invoke("get-post-recording-context");
+	},
+	setPostRecordingContext: (context: unknown) => {
+		return ipcRenderer.invoke("set-post-recording-context", context);
+	},
+	clearPostRecordingContext: () => {
+		return ipcRenderer.invoke("clear-post-recording-context");
+	},
 	getRecordingsDirectory: () => {
 		return ipcRenderer.invoke("get-recordings-directory");
 	},
@@ -293,6 +318,17 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	getHudSettings: () => ipcRenderer.invoke("get-hud-settings"),
 	setHudSettings: (settings: Record<string, unknown>) =>
 		ipcRenderer.invoke("set-hud-settings", settings),
+	openSpeakerNotesWindow: (payload: { text: string }) =>
+		ipcRenderer.invoke("open-speaker-notes-window", payload),
+	updateSpeakerNotesWindow: (payload: { text: string }) =>
+		ipcRenderer.invoke("update-speaker-notes-window", payload),
+	closeSpeakerNotesWindow: () => ipcRenderer.invoke("close-speaker-notes-window"),
+	onSpeakerNotesUpdated: (callback: (payload: { text: string }) => void) => {
+		const listener = (_event: Electron.IpcRendererEvent, payload: { text: string }) =>
+			callback(payload);
+		ipcRenderer.on("speaker-notes-updated", listener);
+		return () => ipcRenderer.removeListener("speaker-notes-updated", listener);
+	},
 	// Display info
 	getDisplayInfo: () => ipcRenderer.invoke("get-display-info"),
 	// Area overlay

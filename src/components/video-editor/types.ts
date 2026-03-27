@@ -13,24 +13,34 @@ export interface ZoomRegion {
 	focus: ZoomFocus;
 }
 
+export type CursorType =
+	| "arrow"
+	| "text"
+	| "pointer"
+	| "crosshair"
+	| "open-hand"
+	| "closed-hand"
+	| "resize-ew"
+	| "resize-ns"
+	| "resize-nesw"
+	| "not-allowed"
+	| "copy"
+	| "help"
+	| "move"
+	| "zoom-in"
+	| "zoom-out"
+	| "screenshot-selection";
+
 export interface CursorTelemetryPoint {
 	timeMs: number;
 	cx: number;
 	cy: number;
 	interactionType?: "move" | "click" | "double-click" | "right-click" | "middle-click" | "mouseup";
-	cursorType?:
-		| "arrow"
-		| "text"
-		| "pointer"
-		| "crosshair"
-		| "open-hand"
-		| "closed-hand"
-		| "resize-ew"
-		| "resize-ns"
-		| "not-allowed";
+	cursorType?: CursorType;
 }
 
 export type CursorStyle = "default" | "dot" | "crosshair" | "circle" | "ring";
+export type CursorPack = "classic" | "custom";
 
 export interface CursorVisualSettings {
 	size: number;
@@ -47,6 +57,28 @@ export const CURSOR_STYLE_OPTIONS: { value: CursorStyle; label: string }[] = [
 	{ value: "circle", label: "Circle" },
 	{ value: "ring", label: "Ring" },
 ];
+export const CURSOR_PACK_OPTIONS: { value: CursorPack; label: string }[] = [
+	{ value: "classic", label: "Classic" },
+	{ value: "custom", label: "Custom" },
+];
+export const CURSOR_TYPE_VALUES: CursorType[] = [
+	"arrow",
+	"text",
+	"pointer",
+	"crosshair",
+	"open-hand",
+	"closed-hand",
+	"resize-ew",
+	"resize-ns",
+	"resize-nesw",
+	"not-allowed",
+	"copy",
+	"help",
+	"move",
+	"zoom-in",
+	"zoom-out",
+	"screenshot-selection",
+];
 
 export const DEFAULT_CURSOR_SIZE = 3.0;
 export const DEFAULT_CURSOR_SMOOTHING = 0.67;
@@ -54,6 +86,7 @@ export const DEFAULT_CURSOR_MOTION_BLUR = 0.35;
 export const DEFAULT_CURSOR_CLICK_BOUNCE = 2.5;
 export const DEFAULT_CURSOR_SWAY = 0.25;
 export const DEFAULT_CURSOR_STYLE: CursorStyle = "default";
+export const DEFAULT_CURSOR_PACK: CursorPack = "classic";
 export const DEFAULT_CURSOR_COLOR = "#FFFFFF";
 export const DEFAULT_CURSOR_OPACITY = 1.0;
 export const DEFAULT_CLICK_HIGHLIGHT_COLOR = "#10b981";

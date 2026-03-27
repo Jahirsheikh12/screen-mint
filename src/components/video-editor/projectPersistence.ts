@@ -1,5 +1,5 @@
 import type { ExportFormat, ExportQuality, GifFrameRate, GifSizePreset } from "@/lib/exporter";
-import { WALLPAPER_PATHS } from "@/lib/wallpapers";
+import { normalizeWallpaperSelection, WALLPAPER_PATHS } from "@/lib/wallpapers";
 import { ASPECT_RATIOS, type AspectRatio, isCustomAspectRatio } from "@/utils/aspectRatioUtils";
 import {
 	type AnnotationRegion,
@@ -11,6 +11,8 @@ import {
 	type CaptionTrack,
 	type CaptionWord,
 	type CropRegion,
+	type CursorPack,
+	type CursorStyle,
 	DEFAULT_ANNOTATION_POSITION,
 	DEFAULT_ANNOTATION_SIZE,
 	DEFAULT_ANNOTATION_STYLE,
@@ -19,21 +21,21 @@ import {
 	DEFAULT_CAMERA_SIZE_DURING_ZOOM,
 	DEFAULT_CAPTION_GENERATION_OPTIONS,
 	DEFAULT_CAPTION_SETTINGS,
-	DEFAULT_CROP_REGION,
 	DEFAULT_CLICK_HIGHLIGHT_COLOR,
 	DEFAULT_CLICK_HIGHLIGHT_OPACITY,
 	DEFAULT_CLICK_HIGHLIGHT_SIZE,
+	DEFAULT_CROP_REGION,
 	DEFAULT_CURSOR_CLICK_BOUNCE,
 	DEFAULT_CURSOR_COLOR,
 	DEFAULT_CURSOR_MOTION_BLUR,
 	DEFAULT_CURSOR_OPACITY,
+	DEFAULT_CURSOR_PACK,
 	DEFAULT_CURSOR_SIZE,
 	DEFAULT_CURSOR_SMOOTHING,
 	DEFAULT_CURSOR_STYLE,
 	DEFAULT_CURSOR_SWAY,
 	DEFAULT_CURSOR_TRAIL_LENGTH,
 	DEFAULT_CURSOR_TRAIL_OPACITY,
-	type CursorStyle,
 	DEFAULT_FIGURE_DATA,
 	DEFAULT_PLAYBACK_SPEED,
 	DEFAULT_WEBCAM_REGION,
@@ -46,7 +48,7 @@ import {
 } from "./types";
 import { normalizeWebcamRegion } from "./webcamRegionUtils";
 
-export const PROJECT_VERSION = 3;
+export const PROJECT_VERSION = 4;
 
 export interface ProjectEditorState {
 	wallpaper: string;
@@ -62,6 +64,7 @@ export interface ProjectEditorState {
 	cursorClickBounce: number;
 	cursorSway: number;
 	cursorStyle: import("./types").CursorStyle;
+	cursorPack: CursorPack;
 	cursorColor: string;
 	cursorOpacity: number;
 	clickHighlightColor: string;
@@ -741,9 +744,30 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 	const cropY = clamp(rawCropY, 0, 1);
 	const cropWidth = clamp(rawCropWidth, 0.01, 1 - cropX);
 	const cropHeight = clamp(rawCropHeight, 0.01, 1 - cropY);
+	const hasFullFrameCrop =
+		cropX === DEFAULT_CROP_REGION.x &&
+		cropY === DEFAULT_CROP_REGION.y &&
+		cropWidth === DEFAULT_CROP_REGION.width &&
+		cropHeight === DEFAULT_CROP_REGION.height;
+	const normalizedAspectRatio: AspectRatio =
+		typeof editor.aspectRatio === "string" &&
+		(validAspectRatios.has(editor.aspectRatio as AspectRatio) ||
+			isCustomAspectRatio(editor.aspectRatio))
+			? (editor.aspectRatio as AspectRatio)
+			: "16:9";
+	const rawPadding = isFiniteNumber(editor.padding) ? clamp(editor.padding, 0, 100) : 8;
+	const normalizedPadding =
+		hasFullFrameCrop &&
+		(normalizedAspectRatio === "native" || normalizedAspectRatio === "16:9") &&
+		rawPadding === 50
+			? 0
+			: rawPadding;
 
 	return {
-		wallpaper: typeof editor.wallpaper === "string" ? editor.wallpaper : WALLPAPER_PATHS[0],
+		wallpaper:
+			typeof editor.wallpaper === "string"
+				? normalizeWallpaperSelection(editor.wallpaper)
+				: WALLPAPER_PATHS[0],
 		shadowIntensity: typeof editor.shadowIntensity === "number" ? editor.shadowIntensity : 0.67,
 		backgroundBlur: normalizedBackgroundBlur,
 		zoomMotionBlur: normalizedZoomMotionBlur,
@@ -770,6 +794,10 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 			["default", "dot", "crosshair", "circle", "ring"].includes(editor.cursorStyle)
 				? (editor.cursorStyle as CursorStyle)
 				: DEFAULT_CURSOR_STYLE,
+		cursorPack:
+			editor.cursorPack === "custom" || editor.cursorPack === "classic"
+				? editor.cursorPack
+				: DEFAULT_CURSOR_PACK,
 		cursorColor: typeof editor.cursorColor === "string" ? editor.cursorColor : DEFAULT_CURSOR_COLOR,
 		cursorOpacity: isFiniteNumber(editor.cursorOpacity)
 			? clamp(editor.cursorOpacity, 0, 1)
@@ -791,7 +819,7 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 			? clamp(editor.cursorTrailOpacity, 0, 1)
 			: DEFAULT_CURSOR_TRAIL_OPACITY,
 		borderRadius: typeof editor.borderRadius === "number" ? editor.borderRadius : 12.5,
-		padding: isFiniteNumber(editor.padding) ? clamp(editor.padding, 0, 100) : 50,
+		padding: normalizedPadding,
 		cropRegion: {
 			x: cropX,
 			y: cropY,
@@ -803,12 +831,7 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		speedRegions: normalizedSpeedRegions,
 		annotationRegions: normalizedAnnotationRegions,
 		audioRegions: normalizedAudioRegions,
-		aspectRatio:
-			typeof editor.aspectRatio === "string" &&
-			(validAspectRatios.has(editor.aspectRatio as AspectRatio) ||
-				isCustomAspectRatio(editor.aspectRatio))
-				? (editor.aspectRatio as AspectRatio)
-				: "16:9",
+		aspectRatio: normalizedAspectRatio,
 		exportQuality:
 			editor.exportQuality === "medium" ||
 			editor.exportQuality === "good" ||

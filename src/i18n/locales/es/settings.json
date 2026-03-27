@@ -41,7 +41,12 @@
 		"gradient": "Degradado",
 		"uploadCustom": "Subir personalizado",
 		"uploadSuccess": "¡Imagen personalizada subida exitosamente!",
-		"uploadError": "Por favor sube un archivo de imagen JPG o JPEG."
+		"uploadError": "Por favor sube un archivo de imagen JPG, JPEG, PNG o WEBP.",
+		"uploadErrorDescription": "Formatos compatibles: JPG, JPEG, PNG, WEBP."
+	},
+	"cursor": {
+		"title": "Cursor",
+		"pack": "Paquete de cursor"
 	},
 	"webcam": {
 		"title": "Cámara web",

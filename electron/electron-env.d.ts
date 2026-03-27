@@ -4,6 +4,7 @@ import type {
 	CaptionModelStatus,
 	CaptionTrack,
 } from "../src/components/video-editor/types";
+import type { PostRecordingContext } from "../src/lib/recording/postRecording";
 import type { SelectedArea } from "../src/lib/recording/session";
 
 declare global {
@@ -33,6 +34,7 @@ declare global {
 		electronAPI: {
 			getSources: (opts: Electron.SourcesOptions) => Promise<ProcessedDesktopSource[]>;
 			switchToEditor: () => Promise<void>;
+			switchToHud: () => Promise<void>;
 			openSourceSelector: () => Promise<void>;
 			selectSource: (source: SelectedCaptureSource) => Promise<SelectedCaptureSource>;
 			getSelectedSource: () => Promise<SelectedCaptureSource | null>;
@@ -52,6 +54,11 @@ declare global {
 					microphoneDeviceId?: string;
 					microphoneLabel?: string;
 					selectedArea?: SelectedArea;
+					recordingFps?: number;
+					recordingWidth?: number;
+					recordingHeight?: number;
+					videoBitsPerSecond?: number;
+					hardwareAcceleration?: boolean;
 				},
 			) => Promise<{
 				success: boolean;
@@ -145,6 +152,10 @@ declare global {
 				videoData: ArrayBuffer,
 				fileName: string,
 			) => Promise<{ success: boolean; path?: string; message?: string; canceled?: boolean }>;
+			saveExportedVideoToRecordings: (
+				videoData: ArrayBuffer,
+				fileName: string,
+			) => Promise<{ success: boolean; path?: string; message?: string; error?: string }>;
 			openVideoFilePicker: () => Promise<{ success: boolean; path?: string; canceled?: boolean }>;
 			openAudioFilePicker: () => Promise<{ success: boolean; path?: string; canceled?: boolean }>;
 			setCurrentVideoPath: (path: string) => Promise<{ success: boolean }>;
@@ -226,6 +237,28 @@ declare global {
 				filePath: string,
 			) => Promise<{ success: boolean; error?: string; message?: string }>;
 			openRecordingsFolder: () => Promise<{ success: boolean; error?: string; message?: string }>;
+			copyTextToClipboard: (
+				text: string,
+			) => Promise<{ success: boolean; message?: string; error?: string }>;
+			deleteProjectAndMedia: (payload: {
+				projectPath?: string | null;
+				videoPath?: string | null;
+				webcamPath?: string | null;
+			}) => Promise<{
+				success: boolean;
+				deletedPaths?: string[];
+				skippedPaths?: string[];
+				message?: string;
+				error?: string;
+			}>;
+			getPostRecordingContext: () => Promise<{
+				success: boolean;
+				context?: PostRecordingContext | null;
+			}>;
+			setPostRecordingContext: (
+				context: PostRecordingContext | null,
+			) => Promise<{ success: boolean }>;
+			clearPostRecordingContext: () => Promise<{ success: boolean }>;
 			getRecordingsDirectory: () => Promise<{
 				success: boolean;
 				path: string;
@@ -274,6 +307,14 @@ declare global {
 			setHudSettings: (
 				settings: Record<string, unknown>,
 			) => Promise<{ success: boolean; error?: string }>;
+			openSpeakerNotesWindow: (payload: {
+				text: string;
+			}) => Promise<{ success: boolean; error?: string }>;
+			updateSpeakerNotesWindow: (payload: {
+				text: string;
+			}) => Promise<{ success: boolean; error?: string }>;
+			closeSpeakerNotesWindow: () => Promise<{ success: boolean }>;
+			onSpeakerNotesUpdated: (callback: (payload: { text: string }) => void) => () => void;
 			/** Display info */
 			getDisplayInfo: () => Promise<{
 				success: boolean;
@@ -344,7 +385,14 @@ declare global {
 			| "closed-hand"
 			| "resize-ew"
 			| "resize-ns"
-			| "not-allowed";
+			| "resize-nesw"
+			| "not-allowed"
+			| "copy"
+			| "help"
+			| "move"
+			| "zoom-in"
+			| "zoom-out"
+			| "screenshot-selection";
 	}
 
 	interface SystemCursorAsset {

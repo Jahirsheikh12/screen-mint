@@ -20,7 +20,6 @@ type DisplayInfo = {
 
 const MIN_SIZE = 100;
 const HANDLE_SIZE = 10;
-
 function clamp(value: number, min: number, max: number) {
 	return Math.min(max, Math.max(min, value));
 }
@@ -246,6 +245,39 @@ export function AreaSelectionOverlay() {
 
 	const isCorner = (id: string) => id.length === 2;
 
+	const controlsTop = useMemo(() => {
+		const viewportHeight = display?.height ?? window.innerHeight;
+		const estimatedHeight = display ? 116 : 72;
+		const aboveTop = rect.y - estimatedHeight - 16;
+		if (aboveTop >= 16) {
+			return aboveTop;
+		}
+
+		return Math.min(viewportHeight - estimatedHeight - 16, rect.y + rect.height + 16);
+	}, [display, rect.height, rect.y]);
+
+	const applySize = useCallback(
+		(nextWidth: number, nextHeight: number) => {
+			if (!display) return;
+
+			const width = Math.min(display.width, Math.max(MIN_SIZE, Math.round(nextWidth)));
+			const height = Math.min(display.height, Math.max(MIN_SIZE, Math.round(nextHeight)));
+			setRect((current) =>
+				clampRect(
+					{
+						...current,
+						width,
+						height,
+						x: Math.round((display.width - width) / 2),
+						y: Math.round((display.height - height) / 2),
+					},
+					display,
+				),
+			);
+		},
+		[display],
+	);
+
 	return (
 		<div className="fixed inset-0 select-none">
 			<svg className="absolute inset-0 h-full w-full pointer-events-none">
@@ -340,43 +372,71 @@ export function AreaSelectionOverlay() {
 				style={{
 					position: "absolute",
 					left: rect.x + rect.width / 2,
-					top: Math.max(12, rect.y - 56),
+					top: controlsTop,
 					transform: "translateX(-50%)",
 				}}
-				className="flex items-center gap-3 rounded-xl border border-[rgba(16,185,129,0.2)] bg-[rgba(10,15,13,0.95)] px-4 py-2 text-xs text-white shadow-lg backdrop-blur-xl whitespace-nowrap"
+				className="flex items-center justify-center gap-2.5 whitespace-nowrap rounded-[20px] border border-[rgba(16,185,129,0.16)] bg-[linear-gradient(180deg,rgba(8,13,11,0.97)_0%,rgba(8,11,10,0.94)_100%)] px-3 py-2.5 text-xs text-white shadow-[0_18px_48px_rgba(0,0,0,0.38)] backdrop-blur-2xl"
 			>
-				<span className="font-medium tabular-nums">
-					{t("area.areaSize", "{{width}} x {{height}}", {
-						width: Math.round(rect.width),
-						height: Math.round(rect.height),
-					})}
-				</span>
-				<div className="h-4 w-px bg-white/10" />
-				<button
-					type="button"
-					onClick={closeOverlay}
-					className="flex items-center gap-1 rounded-md px-2 py-1 text-white/65 transition-colors hover:bg-white/5 hover:text-white"
-				>
-					<FiX size={12} />
-					<span>{t("area.cancelSelection")}</span>
-				</button>
-				<button
-					type="button"
-					onClick={confirmSelection}
-					className="flex items-center gap-1 rounded-md bg-[#10B981] px-2 py-1 text-[#04110c] transition-colors hover:bg-[#34d399]"
-				>
-					<FiCheck size={12} />
-					<span>{t("area.confirmSelection")}</span>
-				</button>
-			</div>
+				<div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-2.5 py-1.5">
+					<span className="text-[10px] font-medium uppercase tracking-[0.14em] text-white/38">
+						Size
+					</span>
+					<span className="font-semibold tabular-nums text-white/92 leading-none">
+						{t("area.areaSize", "{{width}} x {{height}}", {
+							width: Math.round(rect.width),
+							height: Math.round(rect.height),
+						})}
+					</span>
+				</div>
 
-			<button
-				type="button"
-				onClick={closeOverlay}
-				className="fixed right-5 top-5 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-[rgba(10,15,13,0.9)] text-white/60 shadow-lg transition-colors hover:text-white"
-			>
-				<FiX size={16} />
-			</button>
+				{display && (
+					<div className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-2 py-1.5">
+						<label className="flex items-center gap-1.5 rounded-lg border border-white/8 bg-black/20 px-2 py-1 text-[11px] text-white/62">
+							<span className="font-semibold tracking-[0.12em] text-white/38">W</span>
+							<input
+								type="number"
+								min={MIN_SIZE}
+								max={display.width}
+								value={Math.round(rect.width)}
+								onChange={(event) => applySize(Number(event.target.value), rect.height)}
+								className="w-14 bg-transparent text-right font-semibold text-white outline-none"
+							/>
+						</label>
+						<label className="flex items-center gap-1.5 rounded-lg border border-white/8 bg-black/20 px-2 py-1 text-[11px] text-white/62">
+							<span className="font-semibold tracking-[0.12em] text-white/38">H</span>
+							<input
+								type="number"
+								min={MIN_SIZE}
+								max={display.height}
+								value={Math.round(rect.height)}
+								onChange={(event) => applySize(rect.width, Number(event.target.value))}
+								className="w-14 bg-transparent text-right font-semibold text-white outline-none"
+							/>
+						</label>
+					</div>
+				)}
+
+				<div className="h-7 w-px bg-white/10" />
+
+				<div className="flex items-center gap-2">
+					<button
+						type="button"
+						onClick={closeOverlay}
+						className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5 text-white/72 transition-colors hover:bg-white/[0.09] hover:text-white"
+					>
+						<FiX size={13} />
+						<span className="font-medium">{t("area.cancelSelection")}</span>
+					</button>
+					<button
+						type="button"
+						onClick={confirmSelection}
+						className="flex items-center gap-1.5 rounded-xl bg-[#10B981] px-3.5 py-1.5 font-semibold text-[#04110c] transition-colors hover:bg-[#34d399]"
+					>
+						<FiCheck size={13} />
+						<span>{t("area.confirmSelection")}</span>
+					</button>
+				</div>
+			</div>
 		</div>
 	);
 }

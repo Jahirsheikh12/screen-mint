@@ -188,6 +188,7 @@ let cursorMap: [String: NSCursor] = [
 	"arrow": .arrow,
 	"text": .iBeam,
 	"pointer": .pointingHand,
+	"copy": .dragCopy,
 	"crosshair": .crosshair,
 	"open-hand": .openHand,
 	"closed-hand": .closedHand,
@@ -207,4 +208,3 @@ let encoder = JSONEncoder()
 encoder.outputFormatting = [.sortedKeys]
 let data = try encoder.encode(assets)
 FileHandle.standardOutput.write(data)
-

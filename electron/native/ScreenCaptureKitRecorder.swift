@@ -5,6 +5,10 @@ import CoreGraphics
 
 struct CaptureConfig: Codable {
 	let fps: Int?
+	let width: Int?
+	let height: Int?
+	let videoBitsPerSecond: Int?
+	let hardwareAcceleration: Bool?
 	let displayId: CGDirectDisplayID?
 	let windowId: UInt32?
 	let outputPath: String?
@@ -104,8 +108,8 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 				$0.frame.intersects(window.frame) || $0.frame.contains(CGPoint(x: window.frame.midX, y: window.frame.midY))
 			})
 			let scaleFactor = ScreenCaptureRecorder.scaleFactor(for: candidateDisplay?.displayID ?? CGMainDisplayID())
-			outputWidth = max(2, Int(window.frame.width) * scaleFactor)
-			outputHeight = max(2, Int(window.frame.height) * scaleFactor)
+			outputWidth = max(2, config.width ?? (Int(window.frame.width) * scaleFactor))
+			outputHeight = max(2, config.height ?? (Int(window.frame.height) * scaleFactor))
 			streamConfig.ignoreShadowsSingleWindow = true
 			streamConfig.width = outputWidth
 			streamConfig.height = outputHeight
@@ -119,8 +123,8 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 			filter = SCContentFilter(display: display, excludingApplications: [], exceptingWindows: [])
 			let displayBounds = CGDisplayBounds(display.displayID)
 			let scaleFactor = ScreenCaptureRecorder.scaleFactor(for: display.displayID)
-			outputWidth = max(2, Int(displayBounds.width) * scaleFactor)
-			outputHeight = max(2, Int(displayBounds.height) * scaleFactor)
+			outputWidth = max(2, config.width ?? (Int(displayBounds.width) * scaleFactor))
+			outputHeight = max(2, config.height ?? (Int(displayBounds.height) * scaleFactor))
 			streamConfig.width = outputWidth
 			streamConfig.height = outputHeight
 		}
@@ -156,6 +160,12 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 
 		outputSettings[AVVideoWidthKey] = outputWidth
 		outputSettings[AVVideoHeightKey] = outputHeight
+		if let requestedBitrate = config.videoBitsPerSecond {
+			var compressionProperties =
+				(outputSettings[AVVideoCompressionPropertiesKey] as? [String: Any]) ?? [:]
+			compressionProperties[AVVideoAverageBitRateKey] = requestedBitrate
+			outputSettings[AVVideoCompressionPropertiesKey] = compressionProperties
+		}
 
 		let videoInput = AVAssetWriterInput(mediaType: .video, outputSettings: outputSettings)
 		videoInput.expectsMediaDataInRealTime = true

@@ -17,6 +17,11 @@ describe("buildNativeRecordingOptions", () => {
 				microphoneDeviceId: "mic-1",
 				microphoneLabel: "Studio Mic",
 				selectedArea,
+				recordingFps: 30,
+				recordingWidth: 1280,
+				recordingHeight: 720,
+				videoBitsPerSecond: 12_000_000,
+				hardwareAcceleration: false,
 			}),
 		).toEqual({
 			capturesSystemAudio: true,
@@ -24,6 +29,11 @@ describe("buildNativeRecordingOptions", () => {
 			microphoneDeviceId: "mic-1",
 			microphoneLabel: "Studio Mic",
 			selectedArea,
+			recordingFps: 30,
+			recordingWidth: 1280,
+			recordingHeight: 720,
+			videoBitsPerSecond: 12_000_000,
+			hardwareAcceleration: false,
 		});
 	});
 
@@ -40,6 +50,11 @@ describe("buildNativeRecordingOptions", () => {
 			microphoneDeviceId: undefined,
 			microphoneLabel: undefined,
 			selectedArea: undefined,
+			recordingFps: undefined,
+			recordingWidth: undefined,
+			recordingHeight: undefined,
+			videoBitsPerSecond: undefined,
+			hardwareAcceleration: undefined,
 		});
 	});
 });

@@ -140,7 +140,7 @@ export function HudToolbar({
 	const { locale, setLocale } = useI18n();
 	const t = useScopedT("launch");
 
-	const tabs: HudMode[] = ["display", "window", "area", "device"];
+	const tabs: HudMode[] = ["display", "window", "area"];
 
 	const formatTime = (seconds: number) => {
 		const m = Math.floor(seconds / 60)
@@ -153,86 +153,88 @@ export function HudToolbar({
 	/* ── Recording state: compact bar ── */
 	if (recording) {
 		return (
-			<div
-				style={{
-					display: "flex",
-					alignItems: "center",
-					justifyContent: "center",
-					flexWrap: "wrap",
-					gap: 8,
-					rowGap: 8,
-					padding: "8px 10px",
-					minHeight: 48,
-					width: "100%",
-				}}
-			>
-				{/* Recording indicator + timer */}
-				<div className="flex shrink-0 items-center gap-2.5">
+			<div className="flex items-center gap-1.5 px-2.5 py-[7px]">
+				{/* Timer chip */}
+				<div
+					className={`flex shrink-0 items-center gap-2 rounded-lg px-2.5 py-1.5 ${
+						paused
+							? "bg-yellow-500/[0.08] border border-yellow-500/[0.12]"
+							: "bg-red-500/[0.08] border border-red-500/[0.1]"
+					}`}
+				>
 					<div
-						className={`h-[9px] w-[9px] rounded-full ${paused ? "bg-yellow-500" : "bg-red-500"} ${paused ? "" : styles.recordingPulse}`}
+						className={`h-[7px] w-[7px] rounded-full ${paused ? "bg-yellow-400" : "bg-red-500"} ${paused ? "" : styles.recordingPulse}`}
 					/>
-					<span className="text-[13px] font-mono font-semibold tabular-nums tracking-wider text-white/90">
+					<span className="text-[12px] font-mono font-semibold tabular-nums tracking-wide text-white/85">
 						{formatTime(elapsed)}
 					</span>
 				</div>
 
-				<div className="flex min-w-0 flex-wrap items-center justify-center gap-2">
-					{/* Pause / Resume button */}
+				<div className="h-4 w-px bg-white/[0.06] mx-0.5" />
+
+				{/* Control buttons */}
+				<div className={`${ND} flex items-center gap-1`}>
+					{/* Pause / Resume */}
 					<button
 						type="button"
 						onClick={onTogglePause}
 						disabled={actionBusy}
-						className={`${ND} flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-medium transition-all ${
+						title={paused ? t("recording.resumeRecording") : t("recording.pauseRecording")}
+						className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-all ${
 							paused
-								? "border border-yellow-500/[0.15] bg-yellow-500/[0.12] text-yellow-400 hover:bg-yellow-500/[0.2]"
-								: "border border-white/[0.06] bg-white/[0.06] text-white/60 hover:bg-white/[0.1] hover:text-white/80"
+								? "bg-yellow-500/[0.1] text-yellow-400 hover:bg-yellow-500/[0.18]"
+								: "bg-white/[0.05] text-white/55 hover:bg-white/[0.1] hover:text-white/80"
 						} ${actionBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
 					>
 						{paused ? <FaPlay size={9} /> : <FaPause size={9} />}
 						<span>{paused ? t("recording.resumeRecording") : t("recording.pauseRecording")}</span>
 					</button>
 
+					{/* Retake */}
 					<button
 						type="button"
 						onClick={onRetakeRecording}
 						disabled={actionBusy}
-						className={`${ND} flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.06] px-2.5 py-1.5 text-[11px] font-medium text-white/70 transition-all hover:bg-white/[0.1] hover:text-white ${actionBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+						title={t("recording.retakeRecording")}
+						className={`flex items-center justify-center rounded-lg w-7 h-7 text-white/40 transition-all hover:bg-white/[0.08] hover:text-white/70 ${actionBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
 					>
-						<FiRotateCcw size={10} />
-						<span>{t("recording.retakeRecording")}</span>
+						<FiRotateCcw size={12} />
 					</button>
 
+					{/* Delete */}
 					<button
 						type="button"
 						onClick={onDeleteRecording}
 						disabled={actionBusy}
-						className={`${ND} flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.04] px-2.5 py-1.5 text-[11px] font-medium text-white/55 transition-all hover:bg-white/[0.08] hover:text-white/75 ${actionBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+						title={t("recording.deleteRecording")}
+						className={`flex items-center justify-center rounded-lg w-7 h-7 text-white/30 transition-all hover:bg-red-500/[0.08] hover:text-red-400/80 ${actionBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
 					>
-						<FiTrash2 size={10} />
-						<span>{t("recording.deleteRecording")}</span>
-					</button>
-
-					{/* Stop button */}
-					<button
-						type="button"
-						onClick={onToggleRecording}
-						disabled={actionBusy}
-						className={`${ND} flex items-center gap-1.5 rounded-full border border-red-500/[0.12] bg-red-500/[0.1] px-2.5 py-1.5 text-[11px] font-medium text-red-400 transition-all hover:bg-red-500/[0.18] ${actionBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
-					>
-						<FaRegStopCircle size={10} />
-						<span>{t("recording.stopRecording")}</span>
-					</button>
-
-					{/* Minimize */}
-					<button
-						type="button"
-						onClick={onHide}
-						title={t("recording.hideHud")}
-						className={`${ND} flex items-center justify-center rounded-md p-1.5 text-white/20 transition-colors hover:bg-white/[0.06] hover:text-white/45 cursor-pointer`}
-					>
-						<FiMinus size={13} />
+						<FiTrash2 size={12} />
 					</button>
 				</div>
+
+				<div className="h-4 w-px bg-white/[0.06] mx-0.5" />
+
+				{/* Stop button — prominent */}
+				<button
+					type="button"
+					onClick={onToggleRecording}
+					disabled={actionBusy}
+					className={`${ND} flex items-center gap-1.5 rounded-lg bg-red-500/[0.12] px-3 py-1.5 text-[11px] font-semibold text-red-400 transition-all hover:bg-red-500/[0.22] hover:text-red-300 ${actionBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+				>
+					<FaRegStopCircle size={10} />
+					<span>{t("recording.stopRecording")}</span>
+				</button>
+
+				{/* Minimize */}
+				<button
+					type="button"
+					onClick={onHide}
+					title={t("recording.hideHud")}
+					className={`${ND} flex items-center justify-center rounded-lg w-7 h-7 text-white/20 transition-colors hover:bg-white/[0.06] hover:text-white/45 cursor-pointer ml-0.5`}
+				>
+					<FiMinus size={12} />
+				</button>
 			</div>
 		);
 	}
@@ -456,8 +458,7 @@ export function HudToolbar({
 				</button>
 			</div>
 
-			{/* Spacer */}
-			<div className="flex-1" />
+			<div className="h-4 w-px bg-white/[0.06] mx-0.5" />
 
 			{/* Right utilities */}
 			<div className={`${ND} flex items-center`}>

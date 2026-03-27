@@ -3,6 +3,7 @@ import { CountdownOverlay } from "./components/countdown/CountdownOverlay";
 import { AreaSelectionOverlay } from "./components/launch/AreaSelectionOverlay";
 import { LaunchWindow } from "./components/launch/LaunchWindow";
 import { SourceSelector } from "./components/launch/SourceSelector";
+import { SpeakerNotesWindow } from "./components/launch/SpeakerNotesWindow";
 import { ShortcutsConfigDialog } from "./components/video-editor/ShortcutsConfigDialog";
 import VideoEditor from "./components/video-editor/VideoEditor";
 import { useI18n } from "./contexts/I18nContext";
@@ -74,7 +75,8 @@ export default function App() {
 			type === "hud-overlay" ||
 			type === "source-selector" ||
 			type === "countdown" ||
-			type === "area-overlay"
+			type === "area-overlay" ||
+			type === "speaker-notes"
 		) {
 			document.body.style.background = "transparent";
 			document.documentElement.style.background = "transparent";
@@ -108,6 +110,8 @@ export default function App() {
 			return <CountdownOverlay />;
 		case "area-overlay":
 			return <AreaSelectionOverlay />;
+		case "speaker-notes":
+			return <SpeakerNotesWindow />;
 		case "editor":
 			return (
 				<ShortcutsProvider>

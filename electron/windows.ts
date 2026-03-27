@@ -22,6 +22,7 @@ let hudOverlayCaptureProtectionLoaded = false;
 let countdownWindow: BrowserWindow | null = null;
 let areaOverlayWindow: BrowserWindow | null = null;
 let highlightOverlayWindow: BrowserWindow | null = null;
+let speakerNotesWindow: BrowserWindow | null = null;
 
 const HUD_OVERLAY_SETTINGS_FILE = path.join(app.getPath("userData"), "hud-overlay-settings.json");
 
@@ -147,13 +148,15 @@ export function createHudOverlayWindow(): BrowserWindow {
 		win.setContentProtection(hudOverlayHiddenFromCapture);
 	}
 
+	// Use ready-to-show to ensure first paint is ready before showing — prevents flash
+	win.once("ready-to-show", () => {
+		if (!win.isDestroyed()) {
+			win.show();
+		}
+	});
+
 	win.webContents.on("did-finish-load", () => {
 		win?.webContents.send("main-process-message", new Date().toLocaleString());
-		setTimeout(() => {
-			if (!win.isDestroyed()) {
-				win.show();
-			}
-		}, 100);
 	});
 
 	hudOverlayWindow = win;
@@ -207,8 +210,24 @@ export function createEditorWindow(): BrowserWindow {
 	});
 
 	win.once("ready-to-show", () => {
+		win.setOpacity(0);
 		win.show();
 		win.maximize();
+		// Smooth fade-in after maximize — fast ease-in curve
+		const startTime = Date.now();
+		const duration = 180; // ms
+		const fadeIn = setInterval(() => {
+			if (win.isDestroyed()) {
+				clearInterval(fadeIn);
+				return;
+			}
+			const elapsed = Date.now() - startTime;
+			const progress = Math.min(1, elapsed / duration);
+			// Ease-out curve for natural feel
+			const eased = 1 - (1 - progress) * (1 - progress);
+			win.setOpacity(eased);
+			if (progress >= 1) clearInterval(fadeIn);
+		}, 16);
 	});
 
 	win.webContents.on("did-finish-load", () => {
@@ -252,12 +271,10 @@ export function createSourceSelectorWindow(): BrowserWindow {
 		},
 	});
 
-	win.webContents.on("did-finish-load", () => {
-		setTimeout(() => {
-			if (!win.isDestroyed()) {
-				win.show();
-			}
-		}, 100);
+	win.once("ready-to-show", () => {
+		if (!win.isDestroyed()) {
+			win.show();
+		}
 	});
 
 	if (VITE_DEV_SERVER_URL) {
@@ -269,6 +286,84 @@ export function createSourceSelectorWindow(): BrowserWindow {
 	}
 
 	return win;
+}
+
+export function createSpeakerNotesWindow(text: string): BrowserWindow {
+	const primaryDisplay = getScreen().getPrimaryDisplay();
+	const { workArea } = primaryDisplay;
+
+	if (speakerNotesWindow && !speakerNotesWindow.isDestroyed()) {
+		speakerNotesWindow.webContents.send("speaker-notes-updated", { text });
+		speakerNotesWindow.show();
+		speakerNotesWindow.focus();
+		return speakerNotesWindow;
+	}
+
+	const width = 360;
+	const height = 320;
+	const x = Math.floor(workArea.x + workArea.width - width - 20);
+	const y = Math.floor(workArea.y + 20);
+
+	const win = new BrowserWindow({
+		width,
+		height,
+		x,
+		y,
+		frame: false,
+		transparent: true,
+		resizable: true,
+		alwaysOnTop: true,
+		skipTaskbar: true,
+		show: false,
+		webPreferences: {
+			preload: path.join(__dirname, "preload.mjs"),
+			nodeIntegration: false,
+			contextIsolation: true,
+			backgroundThrottling: false,
+		},
+	});
+
+	pinOverlayWindow(win, true);
+	if (isHudOverlayCaptureProtectionSupported()) {
+		win.setContentProtection(true);
+	}
+
+	speakerNotesWindow = win;
+	win.on("closed", () => {
+		if (speakerNotesWindow === win) {
+			speakerNotesWindow = null;
+		}
+	});
+
+	win.webContents.on("did-finish-load", () => {
+		if (!win.isDestroyed()) {
+			win.webContents.send("speaker-notes-updated", { text });
+			win.show();
+		}
+	});
+
+	if (VITE_DEV_SERVER_URL) {
+		win.loadURL(VITE_DEV_SERVER_URL + "?windowType=speaker-notes");
+	} else {
+		win.loadFile(path.join(RENDERER_DIST, "index.html"), {
+			query: { windowType: "speaker-notes" },
+		});
+	}
+
+	return win;
+}
+
+export function updateSpeakerNotesWindow(text: string): void {
+	if (speakerNotesWindow && !speakerNotesWindow.isDestroyed()) {
+		speakerNotesWindow.webContents.send("speaker-notes-updated", { text });
+	}
+}
+
+export function closeSpeakerNotesWindow(): void {
+	if (speakerNotesWindow && !speakerNotesWindow.isDestroyed()) {
+		speakerNotesWindow.close();
+		speakerNotesWindow = null;
+	}
 }
 
 export function createCountdownWindow(): BrowserWindow {
@@ -475,9 +570,14 @@ export function closeHighlightOverlayWindow(): void {
 
 // Resize HUD window — toggle between slim toolbar and fullscreen overlay
 let hudOriginalBounds: Electron.Rectangle | null = null;
+let hudContentVisible = false;
 
 ipcMain.handle("resize-hud-window", (_event, contentVisible: boolean) => {
 	if (!hudOverlayWindow || hudOverlayWindow.isDestroyed()) return;
+
+	// Skip if already in the desired state — prevents redundant setBounds flicker
+	if (contentVisible === hudContentVisible) return;
+	hudContentVisible = contentVisible;
 
 	const primaryDisplay = getScreen().getPrimaryDisplay();
 	const { workArea } = primaryDisplay;

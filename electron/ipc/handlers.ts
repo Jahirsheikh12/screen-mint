@@ -11,12 +11,14 @@ import { promisify } from "node:util";
 import {
 	app,
 	BrowserWindow,
+	clipboard,
 	desktopCapturer,
 	dialog,
 	ipcMain,
 	shell,
 	systemPreferences,
 } from "electron";
+import type { PostRecordingContext } from "../../src/lib/recording/postRecording";
 import type {
 	SelectedArea,
 	CursorTelemetrySample as SessionCursorTelemetrySample,
@@ -33,10 +35,14 @@ import {
 	closeAreaOverlayWindow,
 	closeCountdownWindow,
 	closeHighlightOverlayWindow,
+	closeSpeakerNotesWindow,
 	createAreaOverlayWindow,
 	createCountdownWindow,
 	createHighlightOverlayWindow,
+	createHudOverlayWindow,
+	createSpeakerNotesWindow,
 	getCountdownWindow,
+	updateSpeakerNotesWindow,
 } from "../windows";
 
 const execFileAsync = promisify(execFile);
@@ -75,6 +81,11 @@ type NativeMacRecordingOptions = {
 	microphoneDeviceId?: string;
 	microphoneLabel?: string;
 	selectedArea?: SelectedArea;
+	recordingFps?: number;
+	recordingWidth?: number;
+	recordingHeight?: number;
+	videoBitsPerSecond?: number;
+	hardwareAcceleration?: boolean;
 };
 
 type WindowBounds = {
@@ -97,6 +108,7 @@ function notifySelectedAreaChanged(): void {
 	}
 }
 let currentProjectPath: string | null = null;
+let postRecordingContext: PostRecordingContext | null = null;
 let nativeScreenRecordingActive = false;
 let currentVideoPath: string | null = null;
 let currentWebcamPath: string | null = null;
@@ -150,7 +162,37 @@ type CursorVisualType =
 	| "closed-hand"
 	| "resize-ew"
 	| "resize-ns"
-	| "not-allowed";
+	| "resize-nesw"
+	| "not-allowed"
+	| "copy"
+	| "help"
+	| "move"
+	| "zoom-in"
+	| "zoom-out"
+	| "screenshot-selection";
+
+const CURSOR_VISUAL_TYPES: CursorVisualType[] = [
+	"arrow",
+	"text",
+	"pointer",
+	"crosshair",
+	"open-hand",
+	"closed-hand",
+	"resize-ew",
+	"resize-ns",
+	"resize-nesw",
+	"not-allowed",
+	"copy",
+	"help",
+	"move",
+	"zoom-in",
+	"zoom-out",
+	"screenshot-selection",
+];
+
+function isCursorVisualType(value: string): value is CursorVisualType {
+	return CURSOR_VISUAL_TYPES.includes(value as CursorVisualType);
+}
 
 let currentCursorVisualType: CursorVisualType | undefined = undefined;
 
@@ -271,6 +313,31 @@ function normalizeVideoSourcePath(videoPath?: string | null): string | null {
 	}
 
 	return trimmed;
+}
+
+function isPathInsideDirectory(candidatePath: string, directoryPath: string): boolean {
+	const normalizedCandidate = path.resolve(candidatePath);
+	const normalizedDirectory = path.resolve(directoryPath);
+	return (
+		normalizedCandidate === normalizedDirectory ||
+		normalizedCandidate.startsWith(`${normalizedDirectory}${path.sep}`)
+	);
+}
+
+async function deletePathIfExists(targetPath: string): Promise<boolean> {
+	try {
+		await fs.unlink(targetPath);
+		return true;
+	} catch (error) {
+		const code =
+			error && typeof error === "object" && "code" in error
+				? String((error as { code?: unknown }).code)
+				: "";
+		if (code === "ENOENT") {
+			return false;
+		}
+		throw error;
+	}
 }
 
 async function hasSiblingProjectFile(videoPath: string) {
@@ -1320,18 +1387,8 @@ function handleCursorMonitorStdout(chunk: Buffer) {
 	for (const line of lines) {
 		const match = line.match(/^STATE:(.+)$/);
 		if (!match) continue;
-		const next = match[1].trim() as CursorVisualType;
-		if (
-			next === "arrow" ||
-			next === "text" ||
-			next === "pointer" ||
-			next === "crosshair" ||
-			next === "open-hand" ||
-			next === "closed-hand" ||
-			next === "resize-ew" ||
-			next === "resize-ns" ||
-			next === "not-allowed"
-		) {
+		const next = match[1].trim();
+		if (isCursorVisualType(next)) {
 			if (currentCursorVisualType !== next) {
 				currentCursorVisualType = next;
 				sampleCursorStateChange(next);
@@ -2342,6 +2399,14 @@ export function registerIpcHandlers(
 		createEditorWindow();
 	});
 
+	ipcMain.handle("switch-to-hud", () => {
+		const mainWin = getMainWindow();
+		if (mainWin) {
+			mainWin.close();
+		}
+		createHudOverlayWindow();
+	});
+
 	ipcMain.handle(
 		"start-native-screen-recording",
 		async (_, source: SelectedSource, options?: NativeMacRecordingOptions) => {
@@ -2375,8 +2440,20 @@ export function registerIpcHandlers(
 
 					const config: Record<string, unknown> = {
 						outputPath,
-						fps: 60,
+						fps: Math.max(30, options?.recordingFps ?? 60),
 					};
+					if (options?.recordingWidth) {
+						config.width = options.recordingWidth;
+					}
+					if (options?.recordingHeight) {
+						config.height = options.recordingHeight;
+					}
+					if (options?.videoBitsPerSecond) {
+						config.bitrate = options.videoBitsPerSecond;
+					}
+					if (typeof options?.hardwareAcceleration === "boolean") {
+						config.hardwareAcceleration = options.hardwareAcceleration;
+					}
 					if (options?.selectedArea) {
 						config.area = options.selectedArea;
 					}
@@ -2493,11 +2570,23 @@ export function registerIpcHandlers(
 						? path.join(recordingsDir, `recording-${Date.now()}.mic.m4a`)
 						: null;
 				const config: Record<string, unknown> = {
-					fps: 60,
+					fps: Math.max(30, options?.recordingFps ?? 60),
 					outputPath,
 					capturesSystemAudio,
 					capturesMicrophone,
 				};
+				if (options?.recordingWidth) {
+					config.width = options.recordingWidth;
+				}
+				if (options?.recordingHeight) {
+					config.height = options.recordingHeight;
+				}
+				if (options?.videoBitsPerSecond) {
+					config.videoBitsPerSecond = options.videoBitsPerSecond;
+				}
+				if (typeof options?.hardwareAcceleration === "boolean") {
+					config.hardwareAcceleration = options.hardwareAcceleration;
+				}
 				if (options?.selectedArea) {
 					config.area = options.selectedArea;
 				}
@@ -2987,15 +3076,7 @@ export function registerIpcHandlers(
 								? point.interactionType
 								: undefined,
 						cursorType:
-							point.cursorType === "arrow" ||
-							point.cursorType === "text" ||
-							point.cursorType === "pointer" ||
-							point.cursorType === "crosshair" ||
-							point.cursorType === "open-hand" ||
-							point.cursorType === "closed-hand" ||
-							point.cursorType === "resize-ew" ||
-							point.cursorType === "resize-ns" ||
-							point.cursorType === "not-allowed"
+							typeof point.cursorType === "string" && isCursorVisualType(point.cursorType)
 								? point.cursorType
 								: undefined,
 					};
@@ -3161,6 +3242,30 @@ export function registerIpcHandlers(
 		}
 	});
 
+	ipcMain.handle(
+		"save-exported-video-to-recordings",
+		async (_, videoData: ArrayBuffer, fileName: string) => {
+			try {
+				const recordingsDir = await getRecordingsDir();
+				const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+				const targetPath = path.join(recordingsDir, `${Date.now()}-${safeName}`);
+				await fs.writeFile(targetPath, Buffer.from(videoData));
+				return {
+					success: true,
+					path: targetPath,
+					message: "Video saved to recordings folder",
+				};
+			} catch (error) {
+				console.error("Failed to save exported video to recordings:", error);
+				return {
+					success: false,
+					message: "Failed to save exported video to recordings",
+					error: String(error),
+				};
+			}
+		},
+	);
+
 	ipcMain.handle("open-video-file-picker", async () => {
 		try {
 			const recordingsDir = await getRecordingsDir();
@@ -3264,6 +3369,95 @@ export function registerIpcHandlers(
 			return { success: false, error: String(error), message: "Failed to open recordings folder." };
 		}
 	});
+
+	ipcMain.handle("copy-text-to-clipboard", async (_, text: string) => {
+		try {
+			clipboard.writeText(text);
+			return { success: true, message: "Copied to clipboard" };
+		} catch (error) {
+			console.error("Failed to copy text to clipboard:", error);
+			return {
+				success: false,
+				message: "Failed to copy text to clipboard",
+				error: String(error),
+			};
+		}
+	});
+
+	ipcMain.handle(
+		"delete-project-and-media",
+		async (
+			_,
+			payload: {
+				projectPath?: string | null;
+				videoPath?: string | null;
+				webcamPath?: string | null;
+			},
+		) => {
+			try {
+				const recordingsDir = await getRecordingsDir();
+				const deletedPaths: string[] = [];
+				const skippedPaths: string[] = [];
+				const candidates = [
+					payload.projectPath ?? null,
+					normalizeVideoSourcePath(payload.videoPath) ?? payload.videoPath ?? null,
+					payload.webcamPath ?? null,
+				].filter((value): value is string => typeof value === "string" && value.trim().length > 0);
+
+				for (const candidate of new Set(candidates)) {
+					const normalizedCandidate = path.resolve(candidate);
+					const isProject =
+						currentProjectPath != null &&
+						normalizePath(normalizedCandidate) === normalizePath(currentProjectPath);
+					const canDelete = isProject || isPathInsideDirectory(normalizedCandidate, recordingsDir);
+
+					if (!canDelete) {
+						skippedPaths.push(normalizedCandidate);
+						continue;
+					}
+
+					const deleted = await deletePathIfExists(normalizedCandidate);
+					if (!deleted) {
+						continue;
+					}
+
+					deletedPaths.push(normalizedCandidate);
+					if (
+						currentProjectPath &&
+						normalizePath(currentProjectPath) === normalizePath(normalizedCandidate)
+					) {
+						currentProjectPath = null;
+					}
+					if (
+						currentVideoPath &&
+						normalizePath(currentVideoPath) === normalizePath(normalizedCandidate)
+					) {
+						currentVideoPath = null;
+					}
+					if (
+						currentWebcamPath &&
+						normalizePath(currentWebcamPath) === normalizePath(normalizedCandidate)
+					) {
+						currentWebcamPath = null;
+					}
+				}
+
+				return {
+					success: true,
+					deletedPaths,
+					skippedPaths,
+					message: deletedPaths.length > 0 ? "Deleted project assets" : "Nothing was deleted",
+				};
+			} catch (error) {
+				console.error("Failed to delete project and media:", error);
+				return {
+					success: false,
+					message: "Failed to delete project and media",
+					error: String(error),
+				};
+			}
+		},
+	);
 
 	ipcMain.handle("get-recordings-directory", async () => {
 		try {
@@ -3439,6 +3633,22 @@ export function registerIpcHandlers(
 				error: String(error),
 			};
 		}
+	});
+	ipcMain.handle("get-post-recording-context", () => {
+		return {
+			success: true,
+			context: postRecordingContext,
+		};
+	});
+
+	ipcMain.handle("set-post-recording-context", (_, context: PostRecordingContext | null) => {
+		postRecordingContext = context;
+		return { success: true };
+	});
+
+	ipcMain.handle("clear-post-recording-context", () => {
+		postRecordingContext = null;
+		return { success: true };
 	});
 	ipcMain.handle("set-current-video-path", (_, path: string) => {
 		const normalizedPath = normalizeVideoSourcePath(path) ?? path;
@@ -3765,6 +3975,31 @@ export function registerIpcHandlers(
 			console.error("Failed to save HUD settings:", error);
 			return { success: false, error: String(error) };
 		}
+	});
+
+	ipcMain.handle("open-speaker-notes-window", async (_, payload: { text: string }) => {
+		try {
+			createSpeakerNotesWindow(payload.text ?? "");
+			return { success: true };
+		} catch (error) {
+			console.error("Failed to open speaker notes window:", error);
+			return { success: false, error: String(error) };
+		}
+	});
+
+	ipcMain.handle("update-speaker-notes-window", async (_, payload: { text: string }) => {
+		try {
+			updateSpeakerNotesWindow(payload.text ?? "");
+			return { success: true };
+		} catch (error) {
+			console.error("Failed to update speaker notes window:", error);
+			return { success: false, error: String(error) };
+		}
+	});
+
+	ipcMain.handle("close-speaker-notes-window", () => {
+		closeSpeakerNotesWindow();
+		return { success: true };
 	});
 
 	// ---------------------------------------------------------------------------

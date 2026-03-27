@@ -4,6 +4,11 @@ import { toast } from "sonner";
 import type { CameraSessionState } from "@/components/video-editor/types";
 import { loadCameraPreferences, saveCameraPreferences } from "@/hooks/cameraPreferences";
 import { buildNativeRecordingOptions } from "@/lib/recording/nativeConfig";
+import type { AfterRecordingAction, PostRecordingContext } from "@/lib/recording/postRecording";
+import {
+	type RecordingRuntimeSettings,
+	resolveRecordingTargetProfile,
+} from "@/lib/recording/runtimeConfig";
 import type {
 	CaptureMode,
 	PendingRecordingAction,
@@ -12,18 +17,6 @@ import type {
 } from "@/lib/recording/session";
 import { INITIAL_RECORDING_SESSION_STATE, recordingSessionReducer } from "@/lib/recording/session";
 
-const TARGET_FRAME_RATE = 60;
-const TARGET_WIDTH = 3840;
-const TARGET_HEIGHT = 2160;
-const FOUR_K_PIXELS = TARGET_WIDTH * TARGET_HEIGHT;
-const QHD_WIDTH = 2560;
-const QHD_HEIGHT = 1440;
-const QHD_PIXELS = QHD_WIDTH * QHD_HEIGHT;
-const BITRATE_4K = 45_000_000;
-const BITRATE_QHD = 28_000_000;
-const BITRATE_BASE = 18_000_000;
-const HIGH_FRAME_RATE_THRESHOLD = 60;
-const HIGH_FRAME_RATE_BOOST = 1.7;
 const DEFAULT_WIDTH = 1920;
 const DEFAULT_HEIGHT = 1080;
 const CODEC_ALIGNMENT = 2;
@@ -79,7 +72,16 @@ type UseScreenRecorderReturn = {
 	sessionState: RecordingSessionState;
 };
 
-export function useScreenRecorder(): UseScreenRecorderReturn {
+type ScreenRecorderOptions = Partial<RecordingRuntimeSettings> & {
+	afterRecordingAction?: AfterRecordingAction;
+	openQuickShare?: boolean;
+	autoCreateZooms?: boolean;
+	highlightArea?: boolean;
+};
+
+export function useScreenRecorder(
+	recordingSettings?: ScreenRecorderOptions,
+): UseScreenRecorderReturn {
 	const initialCameraPreferences = loadCameraPreferences();
 	const [starting, setStarting] = useState(false);
 	const [countdownActive, setCountdownActive] = useState(false);
@@ -174,33 +176,15 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		return false;
 	}, []);
 
+	const resolvedRecordingProfile = resolveRecordingTargetProfile(recordingSettings);
+
 	const selectMimeType = useCallback(() => {
-		const preferred = [
-			"video/webm;codecs=av1",
-			"video/webm;codecs=h264",
-			"video/webm;codecs=vp9",
-			"video/webm;codecs=vp8",
-			"video/webm",
-		];
+		const preferred = resolvedRecordingProfile.preferHardwareEncoding
+			? ["video/webm;codecs=h264", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"]
+			: ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm;codecs=h264", "video/webm"];
 
 		return preferred.find((type) => MediaRecorder.isTypeSupported(type)) ?? "video/webm";
-	}, []);
-
-	const computeBitrate = useCallback((width: number, height: number) => {
-		const pixels = width * height;
-		const highFrameRateBoost =
-			TARGET_FRAME_RATE >= HIGH_FRAME_RATE_THRESHOLD ? HIGH_FRAME_RATE_BOOST : 1;
-
-		if (pixels >= FOUR_K_PIXELS) {
-			return Math.round(BITRATE_4K * highFrameRateBoost);
-		}
-
-		if (pixels >= QHD_PIXELS) {
-			return Math.round(BITRATE_QHD * highFrameRateBoost);
-		}
-
-		return Math.round(BITRATE_BASE * highFrameRateBoost);
-	}, []);
+	}, [resolvedRecordingProfile.preferHardwareEncoding]);
 
 	const releaseWebcamStream = useCallback(() => {
 		const activeStream = webcamStream.current;
@@ -895,6 +879,11 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 						microphoneDeviceId,
 						microphoneLabel: micLabel,
 						selectedArea: effectiveSelectedArea,
+						recordingFps: resolvedRecordingProfile.frameRate,
+						recordingWidth: resolvedRecordingProfile.width,
+						recordingHeight: resolvedRecordingProfile.height,
+						videoBitsPerSecond: resolvedRecordingProfile.videoBitsPerSecond,
+						hardwareAcceleration: resolvedRecordingProfile.preferHardwareEncoding,
 					}),
 				);
 				if (!nativeResult.success) {
@@ -972,9 +961,9 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 					mandatory: {
 						chromeMediaSource: CHROME_MEDIA_SOURCE,
 						chromeMediaSourceId: selectedSource.id,
-						maxWidth: TARGET_WIDTH,
-						maxHeight: TARGET_HEIGHT,
-						maxFrameRate: TARGET_FRAME_RATE,
+						maxWidth: resolvedRecordingProfile.width,
+						maxHeight: resolvedRecordingProfile.height,
+						maxFrameRate: resolvedRecordingProfile.frameRate,
 						minFrameRate: MIN_FRAME_RATE,
 					},
 				};
@@ -1076,9 +1065,18 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 					audio: false,
 					video: {
 						displaySurface: selectedSource.id?.startsWith("window:") ? "window" : "monitor",
-						width: { ideal: TARGET_WIDTH, max: TARGET_WIDTH },
-						height: { ideal: TARGET_HEIGHT, max: TARGET_HEIGHT },
-						frameRate: { ideal: TARGET_FRAME_RATE, max: TARGET_FRAME_RATE },
+						width: {
+							ideal: resolvedRecordingProfile.width,
+							max: resolvedRecordingProfile.width,
+						},
+						height: {
+							ideal: resolvedRecordingProfile.height,
+							max: resolvedRecordingProfile.height,
+						},
+						frameRate: {
+							ideal: resolvedRecordingProfile.frameRate,
+							max: resolvedRecordingProfile.frameRate,
+						},
 						cursor: "never",
 					} as ExtendedDisplayVideoConstraints,
 					selfBrowserSurface: "exclude",
@@ -1095,13 +1093,19 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 
 			try {
 				await videoTrack.applyConstraints({
-					frameRate: { ideal: TARGET_FRAME_RATE, max: TARGET_FRAME_RATE },
-					width: { ideal: TARGET_WIDTH, max: TARGET_WIDTH },
-					height: { ideal: TARGET_HEIGHT, max: TARGET_HEIGHT },
+					frameRate: {
+						ideal: resolvedRecordingProfile.frameRate,
+						max: resolvedRecordingProfile.frameRate,
+					},
+					width: { ideal: resolvedRecordingProfile.width, max: resolvedRecordingProfile.width },
+					height: {
+						ideal: resolvedRecordingProfile.height,
+						max: resolvedRecordingProfile.height,
+					},
 				} as MediaTrackConstraints);
 			} catch (error) {
 				console.warn(
-					"Unable to lock 4K/60fps constraints, using best available track settings.",
+					"Unable to lock the requested recording constraints, using best available track settings.",
 					error,
 				);
 			}
@@ -1109,17 +1113,20 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 			let {
 				width = DEFAULT_WIDTH,
 				height = DEFAULT_HEIGHT,
-				frameRate = TARGET_FRAME_RATE,
+				frameRate = resolvedRecordingProfile.frameRate,
 			} = videoTrack.getSettings();
 
 			width = Math.floor(width / CODEC_ALIGNMENT) * CODEC_ALIGNMENT;
 			height = Math.floor(height / CODEC_ALIGNMENT) * CODEC_ALIGNMENT;
 
-			const videoBitsPerSecond = computeBitrate(width, height);
+			const videoBitsPerSecond = Math.max(
+				resolvedRecordingProfile.videoBitsPerSecond,
+				Math.round((width * height * Math.max(frameRate, 30)) / 8),
+			);
 			const mimeType = selectMimeType();
 
 			console.log(
-				`Recording at ${width}x${height} @ ${frameRate ?? TARGET_FRAME_RATE}fps using ${mimeType} / ${Math.round(
+				`Recording at ${width}x${height} @ ${frameRate ?? resolvedRecordingProfile.frameRate}fps using ${mimeType} / ${Math.round(
 					videoBitsPerSecond / BITS_PER_MEGABIT,
 				)} Mbps`,
 			);
@@ -1227,13 +1234,17 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		}
 	}, [
 		cleanupCapturedMedia,
-		computeBitrate,
 		getCaptureMode,
 		getSelectedArea,
 		microphoneDeviceId,
 		microphoneEnabled,
 		preparePermissions,
 		recordSegment,
+		resolvedRecordingProfile.frameRate,
+		resolvedRecordingProfile.height,
+		resolvedRecordingProfile.preferHardwareEncoding,
+		resolvedRecordingProfile.videoBitsPerSecond,
+		resolvedRecordingProfile.width,
 		resetSegmentBuffers,
 		selectMimeType,
 		startWebcamRecording,
@@ -1265,6 +1276,14 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 
 				resetSegmentBuffers();
 				await window.electronAPI.closeHighlightOverlay();
+				await window.electronAPI.setPostRecordingContext({
+					action: recordingSettings?.afterRecordingAction ?? "create-project",
+					openQuickShare: Boolean(recordingSettings?.openQuickShare),
+					autoCreateZooms: Boolean(recordingSettings?.autoCreateZooms),
+					recordingPath: finalized.path,
+					webcamPath: webcamSegment?.path ?? null,
+					projectPath: null,
+				} satisfies PostRecordingContext);
 				pendingActionRef.current = null;
 				dispatchSession({ type: "reset" });
 				dispatchSession({ type: "clear-pending-action" });
@@ -1279,7 +1298,13 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 				finalizingRecordingRef.current = false;
 			}
 		},
-		[resetSegmentBuffers, startRecording],
+		[
+			recordingSettings?.afterRecordingAction,
+			recordingSettings?.autoCreateZooms,
+			recordingSettings?.openQuickShare,
+			resetSegmentBuffers,
+			startRecording,
+		],
 	);
 
 	finalizeSessionRef.current = finalizeSession;
@@ -1297,7 +1322,9 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 				clearCurrentWebcam: true,
 			});
 			resetSegmentBuffers();
-			await window.electronAPI.closeHighlightOverlay();
+			if (recordingSettings?.highlightArea) {
+				await window.electronAPI.closeHighlightOverlay();
+			}
 			pendingActionRef.current = null;
 			dispatchSession({ type: "reset" });
 			dispatchSession({ type: "clear-pending-action" });
@@ -1305,7 +1332,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 				await startRecording();
 			}
 		},
-		[resetSegmentBuffers, startRecording],
+		[recordingSettings?.highlightArea, resetSegmentBuffers, startRecording],
 	);
 
 	stopRecording.current = () => {
@@ -1350,7 +1377,9 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 					webcamRecorder.current.pause();
 				}
 				dispatchSession({ type: "pause" });
-				void window.electronAPI.closeHighlightOverlay();
+				if (recordingSettings?.highlightArea) {
+					void window.electronAPI.closeHighlightOverlay();
+				}
 			} else if (mediaRecorder.current.state === "paused") {
 				mediaRecorder.current.resume();
 				if (webcamRecorder.current?.state === "paused") {
@@ -1374,7 +1403,13 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		})().catch((error) => {
 			console.error("Failed to toggle pause for native recording:", error);
 		});
-	}, [recording, starting, stopActiveNativeSegment, startRecording]);
+	}, [
+		recording,
+		recordingSettings?.highlightArea,
+		starting,
+		stopActiveNativeSegment,
+		startRecording,
+	]);
 
 	const retakeRecording = useCallback(() => {
 		if (!recording || starting || finalizingRecordingRef.current) {

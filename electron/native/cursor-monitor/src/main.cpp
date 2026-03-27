@@ -28,9 +28,10 @@ int main() {
     cursorMap[LoadCursor(NULL, IDC_HAND)]     = "pointer";
     cursorMap[LoadCursor(NULL, IDC_CROSS)]    = "crosshair";
     cursorMap[LoadCursor(NULL, IDC_NO)]       = "not-allowed";
+    cursorMap[LoadCursor(NULL, IDC_HELP)]     = "help";
     cursorMap[LoadCursor(NULL, IDC_SIZEWE)]   = "resize-ew";
     cursorMap[LoadCursor(NULL, IDC_SIZENS)]   = "resize-ns";
-    cursorMap[LoadCursor(NULL, IDC_SIZEALL)]  = "open-hand";
+    cursorMap[LoadCursor(NULL, IDC_SIZEALL)]  = "move";
     cursorMap[LoadCursor(NULL, IDC_WAIT)]     = "arrow";
     cursorMap[LoadCursor(NULL, IDC_APPSTARTING)] = "arrow";
 

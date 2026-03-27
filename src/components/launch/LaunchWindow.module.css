@@ -25,6 +25,7 @@
 
 .recordingPulse {
 	animation: recording-pulse 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+	will-change: opacity, transform;
 }
 
 /* Overlay entrance */
@@ -40,10 +41,29 @@
 }
 
 .overlayEnter {
-	animation: overlay-enter 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+	animation: overlay-enter 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+	will-change: opacity, transform;
 }
 
-/* Backdrop fade */
+/* Overlay exit */
+@keyframes overlay-exit {
+	from {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+	to {
+		opacity: 0;
+		transform: translateY(8px) scale(0.97);
+	}
+}
+
+.overlayExit {
+	animation: overlay-exit 0.16s cubic-bezier(0.4, 0, 1, 1) both;
+	will-change: opacity, transform;
+	pointer-events: none;
+}
+
+/* Backdrop fade in */
 @keyframes backdrop-fade {
 	from {
 		opacity: 0;
@@ -54,7 +74,24 @@
 }
 
 .backdropFade {
-	animation: backdrop-fade 0.18s ease-out;
+	animation: backdrop-fade 0.16s ease-out both;
+	will-change: opacity;
+}
+
+/* Backdrop fade out */
+@keyframes backdrop-fade-out {
+	from {
+		opacity: 1;
+	}
+	to {
+		opacity: 0;
+	}
+}
+
+.backdropFadeOut {
+	animation: backdrop-fade-out 0.16s ease-in both;
+	will-change: opacity;
+	pointer-events: none;
 }
 
 /* Recording bar glow */
@@ -75,6 +112,7 @@
 
 .recordingGlow {
 	animation: recording-glow 2s ease-in-out infinite;
+	will-change: box-shadow;
 }
 
 /* Custom scrollbar — neutral dark */

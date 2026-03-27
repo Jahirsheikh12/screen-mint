@@ -1,4 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { AfterRecordingAction } from "@/lib/recording/postRecording";
+import {
+	DEFAULT_RECORDING_RUNTIME_SETTINGS,
+	type RecordingFrameRate,
+	type RecordingQuality,
+} from "@/lib/recording/runtimeConfig";
 import type { SelectedArea } from "@/lib/recording/session";
 import { useAudioLevelMeter } from "./useAudioLevelMeter";
 import { useMicrophoneDevices } from "./useMicrophoneDevices";
@@ -6,25 +12,23 @@ import { useScreenRecorder } from "./useScreenRecorder";
 
 export type HudMode = "display" | "window" | "area" | "device";
 
-export type AfterRecordingAction =
-	| "create-project"
-	| "export-clipboard"
-	| "export-share-link"
-	| "export-save-file";
-
 export type HudSettings = {
 	hiddenFromCapture: boolean;
 	hideDesktopIcons: boolean;
 	hideDockIcon: boolean;
 	highlightArea: boolean;
 	openQuickShare: boolean;
+	speakerNotesEnabled: boolean;
+	speakerNotesText: string;
 	afterRecordingAction: AfterRecordingAction;
 	countdownDelay: number;
 	autoCreateZooms: boolean;
-	recordingQuality: "auto" | "high" | "medium";
-	recordingFps: 30 | 60;
+	recordingQuality: RecordingQuality;
+	recordingFps: RecordingFrameRate;
 	hardwareAcceleration: boolean;
 };
+
+export type { AfterRecordingAction };
 
 const DEFAULT_SETTINGS: HudSettings = {
 	hiddenFromCapture: true,
@@ -32,12 +36,14 @@ const DEFAULT_SETTINGS: HudSettings = {
 	hideDockIcon: false,
 	highlightArea: false,
 	openQuickShare: false,
+	speakerNotesEnabled: false,
+	speakerNotesText: "",
 	afterRecordingAction: "create-project",
 	countdownDelay: 0,
 	autoCreateZooms: false,
-	recordingQuality: "auto",
-	recordingFps: 60,
-	hardwareAcceleration: true,
+	recordingQuality: DEFAULT_RECORDING_RUNTIME_SETTINGS.recordingQuality,
+	recordingFps: DEFAULT_RECORDING_RUNTIME_SETTINGS.recordingFps,
+	hardwareAcceleration: DEFAULT_RECORDING_RUNTIME_SETTINGS.hardwareAcceleration,
 };
 
 export type CameraDeviceOption = {
@@ -68,9 +74,17 @@ function selectedAreasEqual(left: SelectedArea | null, right: SelectedArea | nul
 }
 
 export function useHudState() {
-	const screenRecorder = useScreenRecorder();
-	const [mode, setMode] = useState<HudMode>("display");
 	const [hudSettings, setHudSettingsState] = useState<HudSettings>(DEFAULT_SETTINGS);
+	const screenRecorder = useScreenRecorder({
+		recordingQuality: hudSettings.recordingQuality,
+		recordingFps: hudSettings.recordingFps,
+		hardwareAcceleration: hudSettings.hardwareAcceleration,
+		afterRecordingAction: hudSettings.afterRecordingAction,
+		openQuickShare: hudSettings.openQuickShare,
+		autoCreateZooms: hudSettings.autoCreateZooms,
+		highlightArea: hudSettings.highlightArea,
+	});
+	const [mode, setMode] = useState<HudMode>("display");
 	const [platform, setPlatform] = useState<string | null>(null);
 	const [selectedSource, setSelectedSource] = useState("Screen");
 	const [hasSelectedSource, setHasSelectedSource] = useState(false);
@@ -120,6 +134,48 @@ export function useHudState() {
 			}
 		})();
 	}, []);
+
+	useEffect(() => {
+		void window.electronAPI.setHudOverlayCaptureProtection(hudSettings.hiddenFromCapture);
+	}, [hudSettings.hiddenFromCapture]);
+
+	useEffect(() => {
+		if (!screenRecorder.recording) {
+			void window.electronAPI.showDesktopIcons?.();
+			void window.electronAPI.showDockIcon?.();
+			void window.electronAPI.closeSpeakerNotesWindow?.();
+			return;
+		}
+
+		if (hudSettings.hideDesktopIcons && platform !== "linux") {
+			void window.electronAPI.hideDesktopIcons?.();
+		}
+
+		if (hudSettings.hideDockIcon) {
+			void window.electronAPI.hideDockIcon?.();
+		}
+
+		if (hudSettings.speakerNotesEnabled) {
+			void window.electronAPI.openSpeakerNotesWindow({ text: hudSettings.speakerNotesText });
+		}
+	}, [
+		hudSettings.hideDesktopIcons,
+		hudSettings.hideDockIcon,
+		hudSettings.speakerNotesEnabled,
+		hudSettings.speakerNotesText,
+		platform,
+		screenRecorder.recording,
+	]);
+
+	useEffect(() => {
+		if (!screenRecorder.recording || !hudSettings.speakerNotesEnabled) {
+			return;
+		}
+
+		void window.electronAPI.updateSpeakerNotesWindow?.({
+			text: hudSettings.speakerNotesText,
+		});
+	}, [hudSettings.speakerNotesEnabled, hudSettings.speakerNotesText, screenRecorder.recording]);
 
 	// Poll selected source
 	useEffect(() => {
@@ -196,13 +252,19 @@ export function useHudState() {
 		}
 	}, [screenRecorder.cameraSession.enabled, refreshCameraDevices]);
 
-	const updateHudSettings = useCallback((update: Partial<HudSettings>) => {
-		setHudSettingsState((prev) => {
-			const next = { ...prev, ...update };
-			void window.electronAPI.setHudSettings(next);
-			return next;
-		});
-	}, []);
+	const updateHudSettings = useCallback(
+		(update: Partial<HudSettings>) => {
+			setHudSettingsState((prev) => {
+				const next = { ...prev, ...update };
+				void window.electronAPI.setHudSettings(next);
+				if (typeof update.countdownDelay === "number") {
+					void screenRecorder.setCountdownDelay(update.countdownDelay);
+				}
+				return next;
+			});
+		},
+		[screenRecorder],
+	);
 
 	const setSelectedArea = useCallback(async (area: SelectedArea | null) => {
 		const result = await window.electronAPI.setSelectedArea(area);
@@ -241,6 +303,10 @@ export function useHudState() {
 		contentPanelVisible,
 		setContentPanelVisible,
 		resizeHudWindow,
+		supportsSpeakerNotes: platform !== null,
+		supportsHideDesktopIcons: platform === "darwin",
+		supportsHideDockIcon: platform === "darwin",
+		supportsDeviceCapture: false,
 		// Mic controls
 		showMicControls,
 		micDevices: devices,

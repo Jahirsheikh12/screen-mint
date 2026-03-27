@@ -5,7 +5,6 @@ import {
 	DropdownMenu,
 	DropdownMenuCheckboxItem,
 	DropdownMenuContent,
-	DropdownMenuItem,
 	DropdownMenuRadioGroup,
 	DropdownMenuRadioItem,
 	DropdownMenuSeparator,
@@ -39,6 +38,7 @@ export function SettingsDropdown({
 	const t = useScopedT("launch");
 	const isMac = platform === "darwin";
 	const supportsHudCaptureProtection = platform !== "linux";
+	const supportsSpeakerNotes = platform !== null;
 
 	return (
 		<DropdownMenu>
@@ -68,6 +68,7 @@ export function SettingsDropdown({
 				<DropdownMenuCheckboxItem
 					checked={hudSettings.hideDockIcon}
 					onCheckedChange={(checked) => onUpdateSettings({ hideDockIcon: Boolean(checked) })}
+					disabled={!isMac}
 					className="text-xs"
 				>
 					{t("settings.hideDockIcon")}
@@ -91,10 +92,14 @@ export function SettingsDropdown({
 
 				<DropdownMenuSeparator className="bg-white/[0.08]" />
 
-				<DropdownMenuItem disabled className="text-xs text-white/30">
-					<span className="flex-1">{t("settings.speakerNotes")}</span>
-					<span className="text-[10px] text-white/15 ml-2">Coming soon</span>
-				</DropdownMenuItem>
+				<DropdownMenuCheckboxItem
+					checked={hudSettings.speakerNotesEnabled}
+					onCheckedChange={(checked) => onUpdateSettings({ speakerNotesEnabled: Boolean(checked) })}
+					disabled={!supportsSpeakerNotes}
+					className="text-xs"
+				>
+					{t("settings.speakerNotes")}
+				</DropdownMenuCheckboxItem>
 
 				{/* Recording countdown */}
 				<DropdownMenuSub>

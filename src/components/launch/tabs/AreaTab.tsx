@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { MdCropFree } from "react-icons/md";
 import { useScopedT } from "@/contexts/I18nContext";
+import { normalizeSelectedArea } from "@/lib/recording/session";
 
 type AreaTabProps = {
 	disabled: boolean;
@@ -9,6 +10,11 @@ type AreaTabProps = {
 export function AreaTab({ disabled }: AreaTabProps) {
 	const t = useScopedT("launch");
 	const [hasArea, setHasArea] = useState(false);
+	const presets = [
+		{ label: "1920 x 1080", width: 1920, height: 1080 },
+		{ label: "1280 x 720", width: 1280, height: 720 },
+		{ label: "800 x 600", width: 800, height: 600 },
+	];
 
 	// Auto-select the primary display as source when Area tab is active
 	useEffect(() => {
@@ -31,7 +37,44 @@ export function AreaTab({ disabled }: AreaTabProps) {
 		void window.electronAPI.createAreaOverlay();
 	};
 
-	const presets = ["1920 x 1080", "1280 x 720", "800 x 600"];
+	const applyPreset = (width: number, height: number) => {
+		if (disabled) return;
+
+		void (async () => {
+			const [source, displayInfo] = await Promise.all([
+				window.electronAPI.getSelectedSource(),
+				window.electronAPI.getDisplayInfo(),
+			]);
+			const displayId = Number(source?.display_id);
+			const display =
+				displayInfo.success && Number.isFinite(displayId)
+					? (displayInfo.displays.find((candidate) => candidate.id === displayId) ?? null)
+					: null;
+
+			if (!display) {
+				openAreaSelector();
+				return;
+			}
+
+			const nextWidth = Math.min(width, display.width);
+			const nextHeight = Math.min(height, display.height);
+			const x = Math.max(0, Math.round((display.width - nextWidth) / 2));
+			const y = Math.max(0, Math.round((display.height - nextHeight) / 2));
+			const area = normalizeSelectedArea(
+				{
+					x: display.x + x,
+					y: display.y + y,
+					width: nextWidth,
+					height: nextHeight,
+				},
+				display,
+				display.id,
+			);
+			await window.electronAPI.setSelectedArea(area);
+			setHasArea(true);
+			await window.electronAPI.createAreaOverlay(display.id);
+		})();
+	};
 
 	return (
 		<div className="flex flex-col items-center gap-4 py-4 px-4">
@@ -52,12 +95,19 @@ export function AreaTab({ disabled }: AreaTabProps) {
 			{/* Preset sizes */}
 			<div className="flex items-center gap-2">
 				{presets.map((preset) => (
-					<span
-						key={preset}
-						className="rounded-md bg-white/[0.04] px-2.5 py-1 text-[10px] text-white/30 border border-white/[0.06]"
+					<button
+						key={preset.label}
+						type="button"
+						onClick={() => applyPreset(preset.width, preset.height)}
+						disabled={disabled}
+						className={`rounded-md border px-2.5 py-1 text-[10px] transition ${
+							disabled
+								? "cursor-not-allowed border-white/[0.04] bg-white/[0.03] text-white/20"
+								: "cursor-pointer border-white/[0.08] bg-white/[0.05] text-white/55 hover:bg-white/[0.08] hover:text-white/80"
+						}`}
 					>
-						{preset}
-					</span>
+						{preset.label}
+					</button>
 				))}
 			</div>
 		</div>

@@ -6,6 +6,11 @@ export function buildNativeRecordingOptions(payload: {
 	microphoneDeviceId?: string;
 	microphoneLabel?: string;
 	selectedArea?: SelectedArea | null;
+	recordingFps?: number;
+	recordingWidth?: number;
+	recordingHeight?: number;
+	videoBitsPerSecond?: number;
+	hardwareAcceleration?: boolean;
 }) {
 	return {
 		capturesSystemAudio: payload.capturesSystemAudio,
@@ -13,5 +18,10 @@ export function buildNativeRecordingOptions(payload: {
 		microphoneDeviceId: payload.microphoneDeviceId,
 		microphoneLabel: payload.microphoneLabel,
 		selectedArea: payload.selectedArea ?? undefined,
+		recordingFps: payload.recordingFps,
+		recordingWidth: payload.recordingWidth,
+		recordingHeight: payload.recordingHeight,
+		videoBitsPerSecond: payload.videoBitsPerSecond,
+		hardwareAcceleration: payload.hardwareAcceleration,
 	};
 }

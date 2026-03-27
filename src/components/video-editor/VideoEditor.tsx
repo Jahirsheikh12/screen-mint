@@ -13,19 +13,28 @@ import {
 	Undo2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import {
+	type ImperativePanelGroupHandle,
+	Panel,
+	PanelGroup,
+	PanelResizeHandle,
+} from "react-resizable-panels";
 import { toast } from "sonner";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuSub,
+	DropdownMenuSubContent,
+	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Toaster } from "@/components/ui/sonner";
 import { useI18n } from "@/contexts/I18nContext";
-import { type AppLocale, SUPPORTED_LOCALES } from "@/i18n/config";
 import { useShortcuts } from "@/contexts/ShortcutsContext";
-import { getAssetPath } from "@/lib/assetPath";
+import { type AppLocale, SUPPORTED_LOCALES } from "@/i18n/config";
 import {
 	calculateOutputDimensions,
 	type ExportFormat,
@@ -38,12 +47,17 @@ import {
 	type GifSizePreset,
 	VideoExporter,
 } from "@/lib/exporter";
+import type { PostRecordingContext } from "@/lib/recording/postRecording";
 import { matchesShortcut } from "@/lib/shortcuts";
-import { DEFAULT_WALLPAPER_RELATIVE_PATH } from "@/lib/wallpapers";
 import { type AspectRatio, getAspectRatioValue } from "@/utils/aspectRatioUtils";
 import { ExportDialog } from "./ExportDialog";
 import { ExportSettingsDialog } from "./ExportSettingsDialog";
-import { loadEditorPreferences, saveEditorPreferences } from "./editorPreferences";
+import {
+	type EditorPreset,
+	type EditorWorkspaceLayout,
+	loadEditorPreferences,
+	saveEditorPreferences,
+} from "./editorPreferences";
 import {
 	createProjectData,
 	deriveNextId,
@@ -52,7 +66,8 @@ import {
 	toFileUrl,
 	validateProjectData,
 } from "./projectPersistence";
-import { SettingsPanel } from "./SettingsPanel";
+import { QuickShareDialog } from "./QuickShareDialog";
+import SettingsPanel from "./SettingsPanel";
 import TimelineEditor from "./timeline/TimelineEditor";
 import {
 	detectInteractionCandidates,
@@ -183,6 +198,7 @@ export default function VideoEditor() {
 	);
 	const [cursorSway, setCursorSway] = useState(initialEditorPreferences.cursorSway);
 	const [cursorStyle, setCursorStyle] = useState(initialEditorPreferences.cursorStyle);
+	const [cursorPack, setCursorPack] = useState(initialEditorPreferences.cursorPack);
 	const [cursorColor, setCursorColor] = useState(initialEditorPreferences.cursorColor);
 	const [cursorOpacity, setCursorOpacity] = useState(initialEditorPreferences.cursorOpacity);
 	const [clickHighlightColor, setClickHighlightColor] = useState(
@@ -260,19 +276,30 @@ export default function VideoEditor() {
 	const [gifSizePreset, setGifSizePreset] = useState<GifSizePreset>(
 		initialEditorPreferences.gifSizePreset,
 	);
+	const [workspaceLayout, setWorkspaceLayout] = useState<EditorWorkspaceLayout>(
+		initialEditorPreferences.workspaceLayout,
+	);
+	const [customPresets, setCustomPresets] = useState<EditorPreset[]>(
+		initialEditorPreferences.presets,
+	);
 	const [exportedFilePath, setExportedFilePath] = useState<string | undefined>(undefined);
 	const [hasPendingExportSave, setHasPendingExportSave] = useState(false);
 	const [lastSavedSnapshot, setLastSavedSnapshot] = useState<string | null>(null);
+	const [showQuickShare, setShowQuickShare] = useState(false);
+	const [postRecordingContext, setPostRecordingContext] = useState<PostRecordingContext | null>(
+		null,
+	);
 	const captionRegions = captionTrack?.segments ?? [];
 
 	const videoPlaybackRef = useRef<VideoPlaybackRef>(null);
+	const panelGroupRef = useRef<ImperativePanelGroupHandle | null>(null);
 	const nextZoomIdRef = useRef(1);
 	const nextTrimIdRef = useRef(1);
 	const nextSpeedIdRef = useRef(1);
 	const nextAudioIdRef = useRef(1);
 	const nextCameraLayoutIdRef = useRef(1);
 
-	const { shortcuts, isMac } = useShortcuts();
+	const { shortcuts, isMac, openConfig } = useShortcuts();
 	const nextAnnotationIdRef = useRef(1);
 	const nextAnnotationZIndexRef = useRef(1); // Track z-index for stacking order
 	const nextCaptionIdRef = useRef(1);
@@ -285,6 +312,7 @@ export default function VideoEditor() {
 	const pendingExportSaveRef = useRef<PendingExportSave | null>(null);
 	const webcamAvailabilityRequestRef = useRef(0);
 	const notifiedMissingWebcamPathRef = useRef<string | null>(null);
+	const handledPostRecordingContextRef = useRef<string | null>(null);
 	const resolvedWebcamPath = missingWebcamPath ? null : webcamPath;
 
 	const clearWebcamState = useCallback(() => {
@@ -297,7 +325,178 @@ export default function VideoEditor() {
 		setCameraLayouts([]);
 		setSelectedCameraLayoutId(null);
 		setWebcamSelected(false);
-	}, []);
+	}, [initialEditorPreferences.aspectRatio]);
+
+	const builtInPresets = useMemo<EditorPreset[]>(
+		() => [
+			{
+				id: "preset-balanced",
+				name: "Balanced",
+				controls: normalizeProjectEditor({}),
+			},
+			{
+				id: "preset-cinematic",
+				name: "Cinematic",
+				controls: normalizeProjectEditor({
+					shadowIntensity: 0.9,
+					backgroundBlur: 0.2,
+					padding: 64,
+					borderRadius: 24,
+					cursorSize: 6,
+					cursorSmoothing: 0.9,
+				}),
+			},
+			{
+				id: "preset-social",
+				name: "Social",
+				controls: normalizeProjectEditor({
+					aspectRatio: "9:16",
+					padding: 28,
+					borderRadius: 28,
+					showCursor: true,
+					cursorSize: 6.5,
+					showWebcam: false,
+				}),
+			},
+		],
+		[],
+	);
+
+	const allPresets = useMemo(
+		() => [...builtInPresets, ...customPresets],
+		[builtInPresets, customPresets],
+	);
+
+	const buildCurrentPresetControls = useCallback(
+		() =>
+			normalizeProjectEditor({
+				wallpaper,
+				shadowIntensity,
+				backgroundBlur,
+				zoomMotionBlur,
+				connectZooms,
+				showCursor,
+				loopCursor,
+				cursorSize,
+				cursorSmoothing,
+				cursorMotionBlur,
+				cursorClickBounce,
+				cursorSway,
+				cursorStyle,
+				cursorPack,
+				cursorColor,
+				cursorOpacity,
+				clickHighlightColor,
+				clickHighlightSize,
+				clickHighlightOpacity,
+				cursorTrailLength,
+				cursorTrailOpacity,
+				borderRadius,
+				padding,
+				cropRegion,
+				aspectRatio,
+				webcamRegion,
+				showWebcam,
+				mirrorWebcam,
+				cameraSizeDuringZoom,
+				exportQuality,
+				exportFormat,
+				gifFrameRate,
+				gifLoop,
+				gifSizePreset,
+			}),
+		[
+			wallpaper,
+			shadowIntensity,
+			backgroundBlur,
+			zoomMotionBlur,
+			connectZooms,
+			showCursor,
+			loopCursor,
+			cursorSize,
+			cursorSmoothing,
+			cursorMotionBlur,
+			cursorClickBounce,
+			cursorSway,
+			cursorStyle,
+			cursorPack,
+			cursorColor,
+			cursorOpacity,
+			clickHighlightColor,
+			clickHighlightSize,
+			clickHighlightOpacity,
+			cursorTrailLength,
+			cursorTrailOpacity,
+			borderRadius,
+			padding,
+			cropRegion,
+			aspectRatio,
+			webcamRegion,
+			showWebcam,
+			mirrorWebcam,
+			cameraSizeDuringZoom,
+			exportQuality,
+			exportFormat,
+			gifFrameRate,
+			gifLoop,
+			gifSizePreset,
+		],
+	);
+
+	const applyEditorControls = useCallback(
+		(
+			controls: ReturnType<typeof normalizeProjectEditor>,
+			options: { includeTimeline?: boolean } = {},
+		) => {
+			setWallpaper(controls.wallpaper);
+			setShadowIntensity(controls.shadowIntensity);
+			setBackgroundBlur(controls.backgroundBlur);
+			setZoomMotionBlur(controls.zoomMotionBlur);
+			setConnectZooms(controls.connectZooms);
+			setShowCursor(controls.showCursor);
+			setLoopCursor(controls.loopCursor);
+			setCursorSize(controls.cursorSize);
+			setCursorSmoothing(controls.cursorSmoothing);
+			setCursorMotionBlur(controls.cursorMotionBlur);
+			setCursorClickBounce(controls.cursorClickBounce);
+			setCursorSway(controls.cursorSway);
+			setCursorStyle(controls.cursorStyle);
+			setCursorPack(controls.cursorPack);
+			setCursorColor(controls.cursorColor);
+			setCursorOpacity(controls.cursorOpacity);
+			setClickHighlightColor(controls.clickHighlightColor);
+			setClickHighlightSize(controls.clickHighlightSize);
+			setClickHighlightOpacity(controls.clickHighlightOpacity);
+			setCursorTrailLength(controls.cursorTrailLength);
+			setCursorTrailOpacity(controls.cursorTrailOpacity);
+			setBorderRadius(controls.borderRadius);
+			setPadding(controls.padding);
+			setCropRegion(controls.cropRegion);
+			setAspectRatio(controls.aspectRatio);
+			setShowWebcam(controls.showWebcam);
+			setMirrorWebcam(controls.mirrorWebcam);
+			setWebcamRegion({ ...controls.webcamRegion });
+			setCameraSizeDuringZoom(controls.cameraSizeDuringZoom);
+			setCaptionSettings(controls.captionSettings);
+			setCaptionGenerationOptions(controls.captionGenerationOptions);
+			setExportQuality(controls.exportQuality);
+			setExportFormat(controls.exportFormat);
+			setGifFrameRate(controls.gifFrameRate);
+			setGifLoop(controls.gifLoop);
+			setGifSizePreset(controls.gifSizePreset);
+
+			if (options.includeTimeline) {
+				setZoomRegions(controls.zoomRegions);
+				setTrimRegions(controls.trimRegions);
+				setSpeedRegions(controls.speedRegions);
+				setAnnotationRegions(controls.annotationRegions);
+				setAudioRegions(controls.audioRegions);
+				setCameraLayouts(controls.cameraLayouts);
+				setCaptionTrack(controls.captionTrack);
+			}
+		},
+		[],
+	);
 
 	const syncWebcamAvailability = useCallback(
 		async (candidatePath: string | null, options: { quiet?: boolean } = {}) => {
@@ -510,51 +709,9 @@ export default function VideoEditor() {
 			setVideoSourcePath(sourcePath);
 			setVideoPath(toFileUrl(sourcePath));
 			setCurrentProjectPath(path ?? null);
-
-			setWallpaper(normalizedEditor.wallpaper);
-			setShadowIntensity(normalizedEditor.shadowIntensity);
-			setBackgroundBlur(normalizedEditor.backgroundBlur);
-			setZoomMotionBlur(normalizedEditor.zoomMotionBlur);
-			setConnectZooms(normalizedEditor.connectZooms);
-			setShowCursor(normalizedEditor.showCursor);
-			setLoopCursor(normalizedEditor.loopCursor);
-			setCursorSize(normalizedEditor.cursorSize);
-			setCursorSmoothing(normalizedEditor.cursorSmoothing);
-			setCursorMotionBlur(normalizedEditor.cursorMotionBlur);
-			setCursorClickBounce(normalizedEditor.cursorClickBounce);
-			setCursorSway(normalizedEditor.cursorSway);
-			setCursorStyle(normalizedEditor.cursorStyle);
-			setCursorColor(normalizedEditor.cursorColor);
-			setCursorOpacity(normalizedEditor.cursorOpacity);
-			setClickHighlightColor(normalizedEditor.clickHighlightColor);
-			setClickHighlightSize(normalizedEditor.clickHighlightSize);
-			setClickHighlightOpacity(normalizedEditor.clickHighlightOpacity);
-			setCursorTrailLength(normalizedEditor.cursorTrailLength);
-			setCursorTrailOpacity(normalizedEditor.cursorTrailOpacity);
-			setBorderRadius(normalizedEditor.borderRadius);
-			setPadding(normalizedEditor.padding);
-			setCropRegion(normalizedEditor.cropRegion);
-			setZoomRegions(normalizedEditor.zoomRegions);
-			setTrimRegions(normalizedEditor.trimRegions);
-			setSpeedRegions(normalizedEditor.speedRegions);
-			setAnnotationRegions(normalizedEditor.annotationRegions);
-			setAudioRegions(normalizedEditor.audioRegions);
+			applyEditorControls(normalizedEditor, { includeTimeline: true });
 			setWebcamPath(normalizedEditor.webcamPath ?? null);
 			await syncWebcamAvailability(normalizedEditor.webcamPath ?? null, { quiet: false });
-			setWebcamRegion({ ...normalizedEditor.webcamRegion });
-			setShowWebcam(normalizedEditor.showWebcam);
-			setMirrorWebcam(normalizedEditor.mirrorWebcam);
-			setCameraSizeDuringZoom(normalizedEditor.cameraSizeDuringZoom);
-			setCameraLayouts(normalizedEditor.cameraLayouts);
-			setCaptionTrack(normalizedEditor.captionTrack);
-			setCaptionSettings(normalizedEditor.captionSettings);
-			setCaptionGenerationOptions(normalizedEditor.captionGenerationOptions);
-			setAspectRatio(normalizedEditor.aspectRatio);
-			setExportQuality(normalizedEditor.exportQuality);
-			setExportFormat(normalizedEditor.exportFormat);
-			setGifFrameRate(normalizedEditor.gifFrameRate);
-			setGifLoop(normalizedEditor.gifLoop);
-			setGifSizePreset(normalizedEditor.gifSizePreset);
 
 			setSelectedZoomId(null);
 			setSelectedTrimId(null);
@@ -602,7 +759,7 @@ export default function VideoEditor() {
 			setLastSavedSnapshot(JSON.stringify(createProjectData(sourcePath, normalizedEditor)));
 			return true;
 		},
-		[syncWebcamAvailability],
+		[applyEditorControls, syncWebcamAvailability],
 	);
 
 	const currentProjectSnapshot = useMemo(() => {
@@ -625,6 +782,7 @@ export default function VideoEditor() {
 				cursorClickBounce,
 				cursorSway,
 				cursorStyle,
+				cursorPack,
 				cursorColor,
 				cursorOpacity,
 				clickHighlightColor,
@@ -673,6 +831,7 @@ export default function VideoEditor() {
 		cursorClickBounce,
 		cursorSway,
 		cursorStyle,
+		cursorPack,
 		cursorColor,
 		cursorOpacity,
 		clickHighlightColor,
@@ -743,35 +902,42 @@ export default function VideoEditor() {
 	useEffect(() => {
 		async function loadInitialData() {
 			try {
+				let restoredProject = false;
 				const currentProjectResult = await window.electronAPI.loadCurrentProjectFile();
 				if (currentProjectResult.success && currentProjectResult.project) {
-					const restored = await applyLoadedProject(
+					restoredProject = await applyLoadedProject(
 						currentProjectResult.project,
 						currentProjectResult.path ?? null,
 					);
-					if (restored) {
-						return;
+				}
+
+				if (!restoredProject) {
+					const result = await window.electronAPI.getCurrentVideoPath();
+					if (result.success && result.path) {
+						const sourcePath = fromFileUrl(result.path);
+						setVideoSourcePath(sourcePath);
+						setVideoPath(toFileUrl(sourcePath));
+						setCurrentProjectPath(null);
+						setLastSavedSnapshot(null);
+						setAspectRatio("native");
+						setPadding(0);
+
+						const webcamResult = await window.electronAPI.getCurrentWebcamPath();
+						if (webcamResult.success && webcamResult.path) {
+							setWebcamPath(webcamResult.path);
+							await syncWebcamAvailability(webcamResult.path, { quiet: false });
+							setShowWebcam(true);
+						} else {
+							clearWebcamState();
+						}
+					} else {
+						setError("No video to load. Please record or select a video.");
 					}
 				}
 
-				const result = await window.electronAPI.getCurrentVideoPath();
-				if (result.success && result.path) {
-					const sourcePath = fromFileUrl(result.path);
-					setVideoSourcePath(sourcePath);
-					setVideoPath(toFileUrl(sourcePath));
-					setCurrentProjectPath(null);
-					setLastSavedSnapshot(null);
-
-					const webcamResult = await window.electronAPI.getCurrentWebcamPath();
-					if (webcamResult.success && webcamResult.path) {
-						setWebcamPath(webcamResult.path);
-						await syncWebcamAvailability(webcamResult.path, { quiet: false });
-						setShowWebcam(true);
-					} else {
-						clearWebcamState();
-					}
-				} else {
-					setError("No video to load. Please record or select a video.");
+				const postRecordingResult = await window.electronAPI.getPostRecordingContext();
+				if (postRecordingResult.success) {
+					setPostRecordingContext(postRecordingResult.context ?? null);
 				}
 			} catch (err) {
 				setError("Error loading video: " + String(err));
@@ -823,6 +989,7 @@ export default function VideoEditor() {
 			cursorClickBounce,
 			cursorSway,
 			cursorStyle,
+			cursorPack,
 			cursorColor,
 			cursorOpacity,
 			clickHighlightColor,
@@ -843,6 +1010,8 @@ export default function VideoEditor() {
 			gifFrameRate,
 			gifLoop,
 			gifSizePreset,
+			workspaceLayout,
+			presets: customPresets,
 		});
 	}, [
 		wallpaper,
@@ -858,6 +1027,7 @@ export default function VideoEditor() {
 		cursorClickBounce,
 		cursorSway,
 		cursorStyle,
+		cursorPack,
 		cursorColor,
 		cursorOpacity,
 		clickHighlightColor,
@@ -878,6 +1048,8 @@ export default function VideoEditor() {
 		gifFrameRate,
 		gifLoop,
 		gifSizePreset,
+		workspaceLayout,
+		customPresets,
 	]);
 
 	const saveProject = useCallback(
@@ -907,6 +1079,7 @@ export default function VideoEditor() {
 				cursorClickBounce,
 				cursorSway,
 				cursorStyle,
+				cursorPack,
 				cursorColor,
 				cursorOpacity,
 				clickHighlightColor,
@@ -985,6 +1158,7 @@ export default function VideoEditor() {
 			cursorClickBounce,
 			cursorSway,
 			cursorStyle,
+			cursorPack,
 			cursorColor,
 			cursorOpacity,
 			clickHighlightColor,
@@ -1007,6 +1181,9 @@ export default function VideoEditor() {
 			mirrorWebcam,
 			cameraSizeDuringZoom,
 			cameraLayouts,
+			captionTrack,
+			captionSettings,
+			captionGenerationOptions,
 			exportQuality,
 			exportFormat,
 			gifFrameRate,
@@ -1188,7 +1365,8 @@ export default function VideoEditor() {
 			!videoPath ||
 			duration <= 0 ||
 			zoomRegions.length > 0 ||
-			normalizedCursorTelemetry.length < 2
+			normalizedCursorTelemetry.length < 2 ||
+			!postRecordingContext?.autoCreateZooms
 		) {
 			return;
 		}
@@ -1259,26 +1437,24 @@ export default function VideoEditor() {
 		});
 
 		autoSuggestedVideoPathRef.current = videoPath;
-	}, [videoPath, duration, normalizedCursorTelemetry, zoomRegions.length]);
+	}, [
+		videoPath,
+		duration,
+		normalizedCursorTelemetry,
+		postRecordingContext?.autoCreateZooms,
+		zoomRegions.length,
+	]);
 
-	// Initialize default wallpaper with resolved asset path
 	useEffect(() => {
-		let mounted = true;
-		(async () => {
-			try {
-				const resolvedPath = await getAssetPath(DEFAULT_WALLPAPER_RELATIVE_PATH);
-				if (mounted) {
-					setWallpaper(resolvedPath);
-				}
-			} catch (err) {
-				// If resolution fails, keep the fallback
-				console.warn("Failed to resolve default wallpaper path:", err);
-			}
-		})();
-		return () => {
-			mounted = false;
-		};
-	}, []);
+		const layout =
+			workspaceLayout === "preview-focus"
+				? [78, 22]
+				: workspaceLayout === "timeline-focus"
+					? [42, 58]
+					: [65, 35];
+
+		panelGroupRef.current?.setLayout(layout);
+	}, [workspaceLayout]);
 
 	function togglePlayPause() {
 		const playback = videoPlaybackRef.current;
@@ -2519,8 +2695,46 @@ export default function VideoEditor() {
 		});
 	}, []);
 
+	const buildDefaultExportSettings = useCallback((): ExportSettings | null => {
+		const video = videoPlaybackRef.current?.video;
+		if (!video) {
+			toast.error("Video not ready");
+			return null;
+		}
+
+		const sourceWidth = video.videoWidth || 1920;
+		const sourceHeight = video.videoHeight || 1080;
+		const gifDimensions = calculateOutputDimensions(
+			sourceWidth,
+			sourceHeight,
+			gifSizePreset,
+			GIF_SIZE_PRESETS,
+		);
+
+		return {
+			format: exportFormat,
+			quality: exportFormat === "mp4" ? exportQuality : undefined,
+			gifConfig:
+				exportFormat === "gif"
+					? {
+							frameRate: gifFrameRate,
+							loop: gifLoop,
+							sizePreset: gifSizePreset,
+							width: gifDimensions.width,
+							height: gifDimensions.height,
+						}
+					: undefined,
+		};
+	}, [exportFormat, exportQuality, gifFrameRate, gifLoop, gifSizePreset]);
+
 	const handleExport = useCallback(
-		async (settings: ExportSettings) => {
+		async (
+			settings: ExportSettings,
+			options: {
+				saveMode?: "dialog" | "recordings";
+				onSaved?: (filePath: string) => Promise<void> | void;
+			} = {},
+		) => {
 			if (!videoPath) {
 				toast.error("No video loaded");
 				return;
@@ -2539,6 +2753,7 @@ export default function VideoEditor() {
 			setHasPendingExportSave(false);
 
 			let keepExportDialogOpen = false;
+			const saveMode = options.saveMode ?? "dialog";
 
 			try {
 				const wasPlaying = isPlaying;
@@ -2588,6 +2803,7 @@ export default function VideoEditor() {
 						cursorMotionBlur,
 						cursorClickBounce,
 						cursorSway,
+						cursorPack,
 						previewWidth,
 						previewHeight,
 						webcamPath: resolvedWebcamPath,
@@ -2611,9 +2827,12 @@ export default function VideoEditor() {
 						const timestamp = Date.now();
 						const fileName = `export-${timestamp}.gif`;
 
-						const saveResult = await window.electronAPI.saveExportedVideo(arrayBuffer, fileName);
+						const saveResult =
+							saveMode === "recordings"
+								? await window.electronAPI.saveExportedVideoToRecordings(arrayBuffer, fileName)
+								: await window.electronAPI.saveExportedVideo(arrayBuffer, fileName);
 
-						if (saveResult.canceled) {
+						if ("canceled" in saveResult && saveResult.canceled) {
 							pendingExportSaveRef.current = { arrayBuffer, fileName };
 							setHasPendingExportSave(true);
 							setExportError(
@@ -2624,6 +2843,7 @@ export default function VideoEditor() {
 						} else if (saveResult.success && saveResult.path) {
 							showExportSuccessToast(saveResult.path);
 							setExportedFilePath(saveResult.path);
+							await options.onSaved?.(saveResult.path);
 						} else {
 							setExportError(saveResult.message || "Failed to save GIF");
 							toast.error(saveResult.message || "Failed to save GIF");
@@ -2740,6 +2960,7 @@ export default function VideoEditor() {
 						cursorMotionBlur,
 						cursorClickBounce,
 						cursorSway,
+						cursorPack,
 						audioRegions,
 						previewWidth,
 						previewHeight,
@@ -2764,9 +2985,12 @@ export default function VideoEditor() {
 						const timestamp = Date.now();
 						const fileName = `export-${timestamp}.mp4`;
 
-						const saveResult = await window.electronAPI.saveExportedVideo(arrayBuffer, fileName);
+						const saveResult =
+							saveMode === "recordings"
+								? await window.electronAPI.saveExportedVideoToRecordings(arrayBuffer, fileName)
+								: await window.electronAPI.saveExportedVideo(arrayBuffer, fileName);
 
-						if (saveResult.canceled) {
+						if ("canceled" in saveResult && saveResult.canceled) {
 							pendingExportSaveRef.current = { arrayBuffer, fileName };
 							setHasPendingExportSave(true);
 							setExportError(
@@ -2777,6 +3001,7 @@ export default function VideoEditor() {
 						} else if (saveResult.success && saveResult.path) {
 							showExportSuccessToast(saveResult.path);
 							setExportedFilePath(saveResult.path);
+							await options.onSaved?.(saveResult.path);
 						} else {
 							setExportError(saveResult.message || "Failed to save video");
 							toast.error(saveResult.message || "Failed to save video");
@@ -2824,6 +3049,7 @@ export default function VideoEditor() {
 			cursorMotionBlur,
 			cursorClickBounce,
 			cursorSway,
+			cursorPack,
 			audioRegions,
 			borderRadius,
 			padding,
@@ -2857,51 +3083,191 @@ export default function VideoEditor() {
 			return;
 		}
 
-		const video = videoPlaybackRef.current?.video;
-		if (!video) {
-			toast.error("Video not ready");
+		const settings = buildDefaultExportSettings();
+		if (!settings) {
 			return;
 		}
-
-		// Build export settings from current state
-		const sourceWidth = video.videoWidth || 1920;
-		const sourceHeight = video.videoHeight || 1080;
-		const gifDimensions = calculateOutputDimensions(
-			sourceWidth,
-			sourceHeight,
-			gifSizePreset,
-			GIF_SIZE_PRESETS,
-		);
-
-		const settings: ExportSettings = {
-			format: exportFormat,
-			quality: exportFormat === "mp4" ? exportQuality : undefined,
-			gifConfig:
-				exportFormat === "gif"
-					? {
-							frameRate: gifFrameRate,
-							loop: gifLoop,
-							sizePreset: gifSizePreset,
-							width: gifDimensions.width,
-							height: gifDimensions.height,
-						}
-					: undefined,
-		};
 
 		setShowExportDialog(true);
 		setExportError(null);
 
 		// Start export immediately
 		handleExport(settings);
+	}, [videoPath, hasPendingExportSave, buildDefaultExportSettings, handleExport]);
+
+	const handleExportToClipboard = useCallback(async () => {
+		const settings = buildDefaultExportSettings();
+		if (!settings) {
+			return;
+		}
+
+		setShowQuickShare(false);
+		setShowExportDialog(true);
+		setExportError(null);
+		await handleExport(settings, {
+			saveMode: "recordings",
+			onSaved: async (filePath) => {
+				const copyResult = await window.electronAPI.copyTextToClipboard(filePath);
+				if (copyResult.success) {
+					toast.success("Saved locally and copied the file path to your clipboard.");
+					return;
+				}
+				toast.error(copyResult.message || copyResult.error || "Failed to copy file path.");
+			},
+		});
+	}, [buildDefaultExportSettings, handleExport]);
+
+	const handleQuickShareSave = useCallback(() => {
+		setShowQuickShare(false);
+		handleOpenExportDialog();
+	}, [handleOpenExportDialog]);
+
+	const handleQuickShareEdit = useCallback(() => {
+		setShowQuickShare(false);
+	}, []);
+
+	const cycleWorkspaceLayout = useCallback(() => {
+		setWorkspaceLayout((current) => {
+			if (current === "default") return "preview-focus";
+			if (current === "preview-focus") return "timeline-focus";
+			return "default";
+		});
+	}, []);
+
+	const applyPreset = useCallback(
+		(preset: EditorPreset) => {
+			applyEditorControls(normalizeProjectEditor(preset.controls));
+			toast.success(`Applied ${preset.name} preset.`);
+		},
+		[applyEditorControls],
+	);
+
+	const handleSavePreset = useCallback(() => {
+		const input = window.prompt("Name this preset", "My preset");
+		const name = input?.trim();
+		if (!name) {
+			return;
+		}
+
+		const preset: EditorPreset = {
+			id: `preset-${Date.now()}`,
+			name,
+			controls: buildCurrentPresetControls(),
+		};
+
+		setCustomPresets((prev) => [...prev, preset]);
+		toast.success(`Saved ${name} preset.`);
+	}, [buildCurrentPresetControls]);
+
+	const handleDeletePreset = useCallback((presetId: string) => {
+		setCustomPresets((prev) => {
+			const target = prev.find((preset) => preset.id === presetId);
+			if (!target) {
+				return prev;
+			}
+
+			if (!window.confirm(`Delete preset "${target.name}"?`)) {
+				return prev;
+			}
+
+			toast.success(`Deleted ${target.name} preset.`);
+			return prev.filter((preset) => preset.id !== presetId);
+		});
+	}, []);
+
+	const handleDeleteProject = useCallback(async () => {
+		const confirmDelete = window.confirm(
+			[
+				"Delete this ScreenMint project and any managed recording media?",
+				"",
+				"Imported files outside the ScreenMint recordings folder will be kept.",
+			].join("\n"),
+		);
+		if (!confirmDelete) {
+			return;
+		}
+
+		const result = await window.electronAPI.deleteProjectAndMedia({
+			projectPath: currentProjectPath,
+			videoPath: videoSourcePath,
+			webcamPath,
+		});
+
+		if (!result.success) {
+			toast.error(result.message || result.error || "Failed to delete the project.");
+			return;
+		}
+
+		const deletedCount = result.deletedPaths?.length ?? 0;
+		const skippedCount = result.skippedPaths?.length ?? 0;
+		toast.success(
+			deletedCount > 0
+				? `Deleted ${deletedCount} item${deletedCount === 1 ? "" : "s"}.${
+						skippedCount > 0
+							? ` Kept ${skippedCount} external file${skippedCount === 1 ? "" : "s"}.`
+							: ""
+					}`
+				: skippedCount > 0
+					? `Removed this recording from the editor. Kept ${skippedCount} external file${
+							skippedCount === 1 ? "" : "s"
+						}.`
+					: "Project removed.",
+		);
+
+		await window.electronAPI.switchToHud();
+	}, [currentProjectPath, videoSourcePath, webcamPath]);
+
+	useEffect(() => {
+		if (loading || error || !videoPath || !postRecordingContext) {
+			return;
+		}
+
+		if (
+			(postRecordingContext.action === "export-save-file" ||
+				postRecordingContext.action === "export-clipboard") &&
+			duration <= 0
+		) {
+			return;
+		}
+
+		const contextKey = JSON.stringify(postRecordingContext);
+		if (handledPostRecordingContextRef.current === contextKey) {
+			return;
+		}
+
+		handledPostRecordingContextRef.current = contextKey;
+
+		void (async () => {
+			switch (postRecordingContext.action) {
+				case "export-save-file":
+					handleOpenExportDialog();
+					break;
+				case "export-clipboard":
+					await handleExportToClipboard();
+					break;
+				case "export-share-link":
+					setShowQuickShare(true);
+					toast.info("Share links need a backend before they can be enabled.");
+					break;
+				case "create-project":
+				default:
+					if (postRecordingContext.openQuickShare) {
+						setShowQuickShare(true);
+					}
+					break;
+			}
+
+			await window.electronAPI.clearPostRecordingContext();
+			setPostRecordingContext(null);
+		})();
 	}, [
+		duration,
+		error,
+		handleExportToClipboard,
+		handleOpenExportDialog,
+		loading,
+		postRecordingContext,
 		videoPath,
-		hasPendingExportSave,
-		exportFormat,
-		exportQuality,
-		gifFrameRate,
-		gifLoop,
-		gifSizePreset,
-		handleExport,
 	]);
 
 	const handleCancelExport = useCallback(() => {
@@ -2932,7 +3298,7 @@ export default function VideoEditor() {
 			pendingSave.fileName,
 		);
 
-		if (saveResult.canceled) {
+		if ("canceled" in saveResult && saveResult.canceled) {
 			setExportError("Save dialog canceled. Click Save Again to save without re-rendering.");
 			toast.info("Save canceled. You can try again.");
 			return;
@@ -3078,9 +3444,7 @@ export default function VideoEditor() {
 						type="button"
 						className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
 						title="Keyboard Shortcuts"
-						onClick={() => {
-							/* TODO: open shortcuts dialog */
-						}}
+						onClick={openConfig}
 					>
 						<Keyboard className="h-4 w-4" />
 					</button>
@@ -3088,9 +3452,7 @@ export default function VideoEditor() {
 						type="button"
 						className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-red-400/80 hover:text-white cursor-pointer"
 						title="Delete Project"
-						onClick={() => {
-							/* TODO: delete project confirmation */
-						}}
+						onClick={() => void handleDeleteProject()}
 					>
 						<Trash2 className="h-4 w-4" />
 					</button>
@@ -3153,21 +3515,50 @@ export default function VideoEditor() {
 							</button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end" className="bg-[#1a1a1a] border-white/10 min-w-[160px]">
-							<DropdownMenuItem className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer">
-								Default
+							<DropdownMenuLabel className="text-[11px] font-medium text-white/45">
+								Apply preset
+							</DropdownMenuLabel>
+							{allPresets.map((preset) => (
+								<DropdownMenuItem
+									key={preset.id}
+									onSelect={() => applyPreset(preset)}
+									className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer"
+								>
+									{preset.name}
+								</DropdownMenuItem>
+							))}
+							<DropdownMenuSeparator className="bg-white/10" />
+							<DropdownMenuItem
+								onSelect={handleSavePreset}
+								className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer"
+							>
+								Save current as preset...
 							</DropdownMenuItem>
-							<DropdownMenuItem className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer">
-								Cinematic
-							</DropdownMenuItem>
-							<DropdownMenuItem className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer">
-								Tutorial
-							</DropdownMenuItem>
-							<DropdownMenuItem className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer">
-								Minimal
-							</DropdownMenuItem>
-							<DropdownMenuItem className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer">
-								Social Media
-							</DropdownMenuItem>
+							<DropdownMenuSub>
+								<DropdownMenuSubTrigger
+									disabled={customPresets.length === 0}
+									className="text-slate-300"
+								>
+									Delete preset
+								</DropdownMenuSubTrigger>
+								<DropdownMenuSubContent className="min-w-[180px] border-white/10 bg-[#1a1a1a]">
+									{customPresets.length === 0 ? (
+										<DropdownMenuItem disabled className="text-slate-500">
+											No saved presets
+										</DropdownMenuItem>
+									) : (
+										customPresets.map((preset) => (
+											<DropdownMenuItem
+												key={`delete-${preset.id}`}
+												onSelect={() => handleDeletePreset(preset.id)}
+												className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer"
+											>
+												{preset.name}
+											</DropdownMenuItem>
+										))
+									)}
+								</DropdownMenuSubContent>
+							</DropdownMenuSub>
 						</DropdownMenuContent>
 					</DropdownMenu>
 
@@ -3176,6 +3567,7 @@ export default function VideoEditor() {
 						type="button"
 						className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
 						title="Toggle Layout"
+						onClick={cycleWorkspaceLayout}
 					>
 						<SplitSquareHorizontal className="h-4 w-4" />
 					</button>
@@ -3198,14 +3590,14 @@ export default function VideoEditor() {
 				</div>
 			</div>
 
-			<PanelGroup direction="vertical" className="flex-1 min-h-0">
+			<PanelGroup ref={panelGroupRef} direction="vertical" className="flex-1 min-h-0">
 				{/* Top section: Video preview + Settings sidebar */}
 				<Panel defaultSize={65} minSize={35}>
-					<div className="flex h-full p-4 pb-0 gap-4">
+					<div className="flex h-full pb-0 gap-3 pr-3 pl-3 pt-3">
 						{/* Video preview area */}
-						<div className="flex-1 min-w-0 flex flex-col bg-black/40 rounded-2xl border border-white/5 shadow-2xl overflow-hidden">
+						<div className="flex-1 min-w-0 flex flex-col overflow-hidden rounded-xl">
 							{missingWebcamPath && (
-								<div className="mx-4 mt-4 rounded-xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-xs text-amber-100">
+								<div className="mx-3 mt-3 rounded-lg border border-amber-400/20 bg-amber-400/10 px-3 py-2.5 text-xs text-amber-100">
 									<div className="flex items-center justify-between gap-3">
 										<div className="min-w-0">
 											<div className="font-semibold text-amber-50">
@@ -3232,83 +3624,60 @@ export default function VideoEditor() {
 									</div>
 								</div>
 							)}
-							<div
-								className="w-full flex justify-center items-center"
-								style={{ flex: "1 1 auto", margin: "6px 0 0" }}
-							>
-								<div
-									className="relative"
-									style={{
-										width: "auto",
-										height: "100%",
-										aspectRatio: getAspectRatioValue(
-											aspectRatio,
-											(() => {
-												const previewVideo = videoPlaybackRef.current?.video;
-												if (previewVideo && previewVideo.videoHeight > 0) {
-													return previewVideo.videoWidth / previewVideo.videoHeight;
-												}
-												return 16 / 9;
-											})(),
-										),
-										maxWidth: "100%",
-										margin: "0 auto",
-										boxSizing: "border-box",
-									}}
-								>
-									<VideoPlayback
-										key={videoPath || "no-video"}
-										aspectRatio={aspectRatio}
-										ref={videoPlaybackRef}
-										videoPath={videoPath || ""}
-										onDurationChange={setDuration}
-										onTimeUpdate={setCurrentTime}
-										currentTime={currentTime}
-										onPlayStateChange={setIsPlaying}
-										onError={setError}
-										wallpaper={wallpaper}
-										zoomRegions={effectiveZoomRegions}
-										selectedZoomId={selectedZoomId}
-										onSelectZoom={handleSelectZoom}
-										onZoomFocusChange={handleZoomFocusChange}
-										isPlaying={isPlaying}
-										showShadow={shadowIntensity > 0}
-										shadowIntensity={shadowIntensity}
-										backgroundBlur={backgroundBlur}
-										zoomMotionBlur={zoomMotionBlur}
-										connectZooms={connectZooms}
-										borderRadius={borderRadius}
-										padding={padding}
-										cropRegion={cropRegion}
-										trimRegions={trimRegions}
-										speedRegions={speedRegions}
-										annotationRegions={annotationRegions}
-										selectedAnnotationId={selectedAnnotationId}
-										onSelectAnnotation={handleSelectAnnotation}
-										onAnnotationPositionChange={handleAnnotationPositionChange}
-										onAnnotationSizeChange={handleAnnotationSizeChange}
-										cursorTelemetry={effectiveCursorTelemetry}
-										showCursor={showCursor}
-										cursorSize={cursorSize}
-										cursorSmoothing={cursorSmoothing}
-										cursorMotionBlur={cursorMotionBlur}
-										cursorClickBounce={cursorClickBounce}
-										cursorSway={cursorSway}
-										webcamPath={resolvedWebcamPath}
-										webcamRegion={webcamRegion}
-										showWebcam={showWebcam}
-										mirrorWebcam={mirrorWebcam}
-										cameraSizeDuringZoom={cameraSizeDuringZoom}
-										cameraLayouts={cameraLayouts}
-										onWebcamPositionChange={handleWebcamPositionChange}
-										onWebcamSizeChange={handleWebcamSizeChange}
-										webcamSelected={webcamSelected}
-										selectedCameraLayoutId={selectedCameraLayoutId}
-										onSelectWebcam={handleSelectWebcam}
-										captionRegions={captionRegions}
-										captionSettings={captionSettings}
-									/>
-								</div>
+							<div className="relative w-full h-full">
+								<VideoPlayback
+									key={videoPath || "no-video"}
+									aspectRatio={aspectRatio}
+									ref={videoPlaybackRef}
+									videoPath={videoPath || ""}
+									onDurationChange={setDuration}
+									onTimeUpdate={setCurrentTime}
+									currentTime={currentTime}
+									onPlayStateChange={setIsPlaying}
+									onError={setError}
+									wallpaper={wallpaper}
+									zoomRegions={effectiveZoomRegions}
+									selectedZoomId={selectedZoomId}
+									onSelectZoom={handleSelectZoom}
+									onZoomFocusChange={handleZoomFocusChange}
+									isPlaying={isPlaying}
+									showShadow={shadowIntensity > 0}
+									shadowIntensity={shadowIntensity}
+									backgroundBlur={backgroundBlur}
+									zoomMotionBlur={zoomMotionBlur}
+									connectZooms={connectZooms}
+									borderRadius={borderRadius}
+									padding={padding}
+									cropRegion={cropRegion}
+									trimRegions={trimRegions}
+									speedRegions={speedRegions}
+									annotationRegions={annotationRegions}
+									selectedAnnotationId={selectedAnnotationId}
+									onSelectAnnotation={handleSelectAnnotation}
+									onAnnotationPositionChange={handleAnnotationPositionChange}
+									onAnnotationSizeChange={handleAnnotationSizeChange}
+									cursorTelemetry={effectiveCursorTelemetry}
+									showCursor={showCursor}
+									cursorSize={cursorSize}
+									cursorSmoothing={cursorSmoothing}
+									cursorMotionBlur={cursorMotionBlur}
+									cursorClickBounce={cursorClickBounce}
+									cursorSway={cursorSway}
+									cursorPack={cursorPack}
+									webcamPath={resolvedWebcamPath}
+									webcamRegion={webcamRegion}
+									showWebcam={showWebcam}
+									mirrorWebcam={mirrorWebcam}
+									cameraSizeDuringZoom={cameraSizeDuringZoom}
+									cameraLayouts={cameraLayouts}
+									onWebcamPositionChange={handleWebcamPositionChange}
+									onWebcamSizeChange={handleWebcamSizeChange}
+									webcamSelected={webcamSelected}
+									selectedCameraLayoutId={selectedCameraLayoutId}
+									onSelectWebcam={handleSelectWebcam}
+									captionRegions={captionRegions}
+									captionSettings={captionSettings}
+								/>
 							</div>
 						</div>
 
@@ -3348,6 +3717,8 @@ export default function VideoEditor() {
 							onCursorSwayChange={setCursorSway}
 							cursorStyle={cursorStyle}
 							onCursorStyleChange={setCursorStyle}
+							cursorPack={cursorPack}
+							onCursorPackChange={setCursorPack}
 							cursorColor={cursorColor}
 							onCursorColorChange={setCursorColor}
 							cursorOpacity={cursorOpacity}
@@ -3534,6 +3905,15 @@ export default function VideoEditor() {
 				canRetrySave={hasPendingExportSave}
 				exportFormat={exportFormat}
 				exportedFilePath={exportedFilePath}
+			/>
+
+			<QuickShareDialog
+				isOpen={showQuickShare}
+				onClose={() => setShowQuickShare(false)}
+				onSave={handleQuickShareSave}
+				onCopy={() => void handleExportToClipboard()}
+				onEdit={handleQuickShareEdit}
+				shareDisabledReason="Share links need a backend before they can be enabled."
 			/>
 		</div>
 	);

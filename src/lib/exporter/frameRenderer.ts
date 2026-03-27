@@ -8,6 +8,7 @@ import type {
 	CaptionRegion,
 	CaptionSettings,
 	CropRegion,
+	CursorPack,
 	CursorTelemetryPoint,
 	SpeedRegion,
 	WebcamRegion,
@@ -63,6 +64,7 @@ interface FrameRenderConfig {
 	cursorMotionBlur?: number;
 	cursorClickBounce?: number;
 	cursorSway?: number;
+	cursorPack?: CursorPack;
 	webcamPath?: string | null;
 	webcamRegion?: WebcamRegion;
 	showWebcam?: boolean;
@@ -97,6 +99,16 @@ function createAnimationState(): AnimationState {
 	};
 }
 
+type TextureSourceInput = Parameters<typeof Texture.from>[0];
+
+interface FrameLayoutCache {
+	stageSize: { width: number; height: number };
+	videoSize: { width: number; height: number };
+	baseScale: number;
+	baseOffset: { x: number; y: number };
+	maskRect: { x: number; y: number; width: number; height: number };
+}
+
 // Renders video frames with all effects (background, zoom, crop, blur, shadow) to an offscreen canvas for export.
 
 export class FrameRenderer {
@@ -105,7 +117,7 @@ export class FrameRenderer {
 	private videoContainer: Container | null = null;
 	private cursorContainer: Container | null = null;
 	private videoSprite: Sprite | null = null;
-	private backgroundSprite: Sprite | null = null;
+	private backgroundCanvas: HTMLCanvasElement | null = null;
 	private maskGraphics: Graphics | null = null;
 	private blurFilter: BlurFilter | null = null;
 	private motionBlurFilter: MotionBlurFilter | null = null;
@@ -116,7 +128,7 @@ export class FrameRenderer {
 	private config: FrameRenderConfig;
 	private animationState: AnimationState;
 	private motionBlurState: MotionBlurState;
-	private layoutCache: any = null;
+	private layoutCache: FrameLayoutCache | null = null;
 	private currentVideoTime = 0;
 	private lastMotionVector = { x: 0, y: 0 };
 	private cursorOverlay: PixiCursorOverlay | null = null;
@@ -182,6 +194,7 @@ export class FrameRenderer {
 				motionBlur: this.config.cursorMotionBlur ?? 0,
 				clickBounce: this.config.cursorClickBounce ?? DEFAULT_CURSOR_CONFIG.clickBounce,
 				sway: this.config.cursorSway ?? DEFAULT_CURSOR_CONFIG.sway,
+				cursorPack: this.config.cursorPack ?? "classic",
 			});
 		}
 
@@ -365,7 +378,7 @@ export class FrameRenderer {
 		}
 
 		// Store the background canvas for compositing
-		this.backgroundSprite = bgCanvas as any;
+		this.backgroundCanvas = bgCanvas;
 	}
 
 	private async resolveWallpaperImageUrl(wallpaper: string): Promise<string> {
@@ -439,7 +452,7 @@ export class FrameRenderer {
 
 		// Create or update video sprite from VideoFrame
 		if (!this.videoSprite) {
-			const texture = Texture.from(videoFrame as any);
+			const texture = Texture.from(videoFrame as TextureSourceInput);
 			this.videoSprite = new Sprite(texture);
 			this.videoContainer.addChild(this.videoSprite);
 			if (this.cursorOverlay && this.cursorContainer) {
@@ -451,13 +464,16 @@ export class FrameRenderer {
 		} else {
 			// Destroy old texture to avoid memory leaks, then create new one
 			const oldTexture = this.videoSprite.texture;
-			const newTexture = Texture.from(videoFrame as any);
+			const newTexture = Texture.from(videoFrame as TextureSourceInput);
 			this.videoSprite.texture = newTexture;
 			oldTexture.destroy(true);
 		}
 
 		// Apply layout
 		this.updateLayout();
+		if (!this.layoutCache) {
+			throw new Error("Frame layout was not computed");
+		}
 
 		const timeMs = this.currentVideoTime * 1000;
 
@@ -816,16 +832,14 @@ export class FrameRenderer {
 		ctx.clearRect(0, 0, w, h);
 
 		// Step 1: Draw background layer (with optional blur, not affected by zoom)
-		if (this.backgroundSprite) {
-			const bgCanvas = this.backgroundSprite as any as HTMLCanvasElement;
-
+		if (this.backgroundCanvas) {
 			if (this.config.backgroundBlur > 0) {
 				ctx.save();
 				ctx.filter = `blur(${this.config.backgroundBlur * 3}px)`;
-				ctx.drawImage(bgCanvas, 0, 0, w, h);
+				ctx.drawImage(this.backgroundCanvas, 0, 0, w, h);
 				ctx.restore();
 			} else {
-				ctx.drawImage(bgCanvas, 0, 0, w, h);
+				ctx.drawImage(this.backgroundCanvas, 0, 0, w, h);
 			}
 		} else {
 			console.warn("[FrameRenderer] No background sprite found during compositing!");
@@ -875,7 +889,7 @@ export class FrameRenderer {
 			videoTexture?.destroy(true);
 			this.videoSprite = null;
 		}
-		this.backgroundSprite = null;
+		this.backgroundCanvas = null;
 		if (this.app) {
 			this.app.destroy(true, {
 				children: true,
