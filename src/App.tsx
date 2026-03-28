@@ -23,7 +23,7 @@ function AppLoadingScreen({ label }: { label: string }) {
 						alt="ScreenMint"
 						className="h-16 w-16 rounded-2xl"
 						style={{
-							filter: "drop-shadow(0 0 24px rgba(16,185,129,0.15))",
+							filter: "drop-shadow(0 0 24px rgba(245,158,11,0.15))",
 						}}
 					/>
 				</div>

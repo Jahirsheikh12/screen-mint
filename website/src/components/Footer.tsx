@@ -97,7 +97,7 @@ export function Footer() {
 						className="text-[clamp(5rem,16vw,13rem)] font-black tracking-[-0.04em] leading-none"
 						style={{
 							background:
-								"linear-gradient(180deg, rgba(16, 185, 129, 0.35) 0%, rgba(16, 185, 129, 0.15) 40%, rgba(16, 185, 129, 0.04) 75%, transparent 100%)",
+								"linear-gradient(180deg, rgba(245, 158, 11, 0.35) 0%, rgba(245, 158, 11, 0.15) 40%, rgba(245, 158, 11, 0.04) 75%, transparent 100%)",
 							WebkitBackgroundClip: "text",
 							WebkitTextFillColor: "transparent",
 							backgroundClip: "text",

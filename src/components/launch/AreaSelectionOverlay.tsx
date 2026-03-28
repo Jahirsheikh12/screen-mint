@@ -297,7 +297,7 @@ export function AreaSelectionOverlay() {
 					top: rect.y,
 					width: rect.width,
 					height: rect.height,
-					border: "2px solid rgba(16, 185, 129, 0.7)",
+					border: "2px solid rgba(245, 158, 11, 0.7)",
 					cursor: dragging === "move" ? "grabbing" : "grab",
 					boxShadow: "0 0 0 1px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(0,0,0,0.15)",
 				}}
@@ -312,7 +312,7 @@ export function AreaSelectionOverlay() {
 							top: handle.y,
 							width: HANDLE_SIZE,
 							height: HANDLE_SIZE,
-							background: "#10B981",
+							background: "#F59E0B",
 							borderRadius: isCorner(handle.id) ? "50%" : 2,
 							cursor: handle.cursor,
 							border: "2px solid rgba(255,255,255,0.9)",
@@ -375,7 +375,7 @@ export function AreaSelectionOverlay() {
 					top: controlsTop,
 					transform: "translateX(-50%)",
 				}}
-				className="flex items-center justify-center gap-2.5 whitespace-nowrap rounded-[20px] border border-[rgba(16,185,129,0.16)] bg-[linear-gradient(180deg,rgba(8,13,11,0.97)_0%,rgba(8,11,10,0.94)_100%)] px-3 py-2.5 text-xs text-white shadow-[0_18px_48px_rgba(0,0,0,0.38)] backdrop-blur-2xl"
+				className="flex items-center justify-center gap-2.5 whitespace-nowrap rounded-[20px] border border-[rgba(245,158,11,0.16)] bg-[linear-gradient(180deg,rgba(8,13,11,0.97)_0%,rgba(8,11,10,0.94)_100%)] px-3 py-2.5 text-xs text-white shadow-[0_18px_48px_rgba(0,0,0,0.38)] backdrop-blur-2xl"
 			>
 				<div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-2.5 py-1.5">
 					<span className="text-[10px] font-medium uppercase tracking-[0.14em] text-white/38">
@@ -430,7 +430,7 @@ export function AreaSelectionOverlay() {
 					<button
 						type="button"
 						onClick={confirmSelection}
-						className="flex items-center gap-1.5 rounded-xl bg-[#10B981] px-3.5 py-1.5 font-semibold text-[#04110c] transition-colors hover:bg-[#34d399]"
+						className="flex items-center gap-1.5 rounded-xl bg-[#F59E0B] px-3.5 py-1.5 font-semibold text-[#1a0f00] transition-colors hover:bg-[#fbbf24]"
 					>
 						<FiCheck size={13} />
 						<span>{t("area.confirmSelection")}</span>

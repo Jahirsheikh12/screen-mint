@@ -1353,7 +1353,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					>
 						<div
 							ref={focusIndicatorRef}
-							className="absolute rounded-md border border-[#10B981]/80 bg-[#10B981]/20 shadow-[0_0_0_1px_rgba(16,185,129,0.35)]"
+							className="absolute rounded-md border border-[#F59E0B]/80 bg-[#F59E0B]/20 shadow-[0_0_0_1px_rgba(245,158,11,0.35)]"
 							style={{ display: "none", pointerEvents: "none" }}
 						/>
 						{(() => {

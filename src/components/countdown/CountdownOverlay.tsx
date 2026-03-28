@@ -88,7 +88,7 @@ export function CountdownOverlay() {
 						cy={size / 2}
 						r={radius}
 						fill="none"
-						stroke="rgba(16, 185, 129, 0.15)"
+						stroke="rgba(245, 158, 11, 0.15)"
 						strokeWidth={strokeWidth}
 					/>
 					<circle
@@ -96,7 +96,7 @@ export function CountdownOverlay() {
 						cy={size / 2}
 						r={radius}
 						fill="none"
-						stroke="#10B981"
+						stroke="#F59E0B"
 						strokeWidth={strokeWidth}
 						strokeLinecap="round"
 						strokeDasharray={circumference}
@@ -109,7 +109,7 @@ export function CountdownOverlay() {
 					style={{
 						fontSize: "100px",
 						lineHeight: 1,
-						textShadow: "0 0 30px rgba(16,185,129,0.3)",
+						textShadow: "0 0 30px rgba(245,158,11,0.3)",
 					}}
 				>
 					{countdown}

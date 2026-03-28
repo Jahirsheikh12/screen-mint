@@ -4,60 +4,60 @@
 
 @layer base {
 	:root {
-		--brand-accent: #10b981;
-		--brand-accent-rgb: 16, 185, 129;
-		--brand-gradient: linear-gradient(135deg, #10b981, #06b6d4);
-		--surface-glass: rgba(16, 185, 129, 0.06);
-		--glow-primary: rgba(16, 185, 129, 0.25);
+		--brand-accent: #f59e0b;
+		--brand-accent-rgb: 245, 158, 11;
+		--brand-gradient: linear-gradient(135deg, #f59e0b, #f97316);
+		--surface-glass: rgba(245, 158, 11, 0.06);
+		--glow-primary: rgba(245, 158, 11, 0.25);
 		--background: 0 0% 100%;
 		--foreground: 20 14.3% 4.1%;
 		--card: 0 0% 100%;
 		--card-foreground: 20 14.3% 4.1%;
 		--popover: 0 0% 100%;
 		--popover-foreground: 20 14.3% 4.1%;
-		--primary: 160 84% 39%;
-		--primary-foreground: 152 20% 98%;
+		--primary: 38 92% 50%;
+		--primary-foreground: 38 20% 98%;
 		--secondary: 60 4.8% 95.9%;
 		--secondary-foreground: 24 9.8% 10%;
 		--muted: 60 4.8% 95.9%;
 		--muted-foreground: 25 5.3% 44.7%;
-		--accent: 155 30% 95%;
-		--accent-foreground: 160 84% 30%;
+		--accent: 38 30% 95%;
+		--accent-foreground: 38 92% 38%;
 		--destructive: 0 84.2% 60.2%;
 		--destructive-foreground: 60 9.1% 97.8%;
 		--border: 20 5.9% 90%;
 		--input: 20 5.9% 90%;
-		--ring: 160 84% 39%;
-		--chart-1: 160 84% 39%;
-		--chart-2: 173 58% 39%;
+		--ring: 38 92% 50%;
+		--chart-1: 38 92% 50%;
+		--chart-2: 25 95% 53%;
 		--chart-3: 197 37% 24%;
 		--chart-4: 43 74% 66%;
 		--chart-5: 27 87% 67%;
 		--radius: 0.5rem;
 	}
 	.dark {
-		--background: 155 25% 3%;
-		--foreground: 152 10% 95%;
-		--card: 155 20% 7%;
-		--card-foreground: 152 10% 95%;
-		--popover: 155 20% 7%;
-		--popover-foreground: 152 10% 95%;
-		--primary: 160 84% 39%;
-		--primary-foreground: 152 20% 98%;
-		--secondary: 155 10% 9%;
-		--secondary-foreground: 152 10% 95%;
-		--muted: 155 10% 9%;
-		--muted-foreground: 155 10% 55%;
-		--accent: 155 30% 10%;
-		--accent-foreground: 152 20% 98%;
+		--background: 30 25% 3%;
+		--foreground: 38 10% 95%;
+		--card: 30 20% 7%;
+		--card-foreground: 38 10% 95%;
+		--popover: 30 20% 7%;
+		--popover-foreground: 38 10% 95%;
+		--primary: 38 92% 50%;
+		--primary-foreground: 38 20% 98%;
+		--secondary: 30 10% 9%;
+		--secondary-foreground: 38 10% 95%;
+		--muted: 30 10% 9%;
+		--muted-foreground: 30 10% 55%;
+		--accent: 38 30% 10%;
+		--accent-foreground: 38 20% 98%;
 		--destructive: 0 62.8% 30.6%;
 		--destructive-foreground: 60 9.1% 97.8%;
-		--border: 155 15% 11%;
-		--input: 155 15% 11%;
-		--ring: 160 84% 39%;
-		--chart-1: 160 84% 45%;
-		--chart-2: 173 60% 45%;
-		--chart-3: 190 50% 40%;
+		--border: 30 15% 11%;
+		--input: 30 15% 11%;
+		--ring: 38 92% 50%;
+		--chart-1: 38 92% 55%;
+		--chart-2: 25 80% 50%;
+		--chart-3: 15 60% 45%;
 		--chart-4: 280 65% 60%;
 		--chart-5: 340 75% 55%;
 	}
@@ -116,18 +116,18 @@
 	}
 
 	.timeline-scrollbar::-webkit-scrollbar-track {
-		background: rgba(16, 185, 129, 0.05);
+		background: rgba(245, 158, 11, 0.05);
 		border-radius: 3px;
 	}
 
 	.timeline-scrollbar::-webkit-scrollbar-thumb {
-		background: rgba(16, 185, 129, 0.25);
+		background: rgba(245, 158, 11, 0.25);
 		border-radius: 3px;
 		transition: background 0.2s;
 	}
 
 	.timeline-scrollbar::-webkit-scrollbar-thumb:hover {
-		background: rgba(16, 185, 129, 0.4);
+		background: rgba(245, 158, 11, 0.4);
 	}
 
 	.timeline-scrollbar::-webkit-scrollbar-corner {
@@ -137,7 +137,7 @@
 	/* Firefox themed scrollbar */
 	.timeline-scrollbar {
 		scrollbar-width: thin;
-		scrollbar-color: rgba(16, 185, 129, 0.25) rgba(16, 185, 129, 0.05);
+		scrollbar-color: rgba(245, 158, 11, 0.25) rgba(245, 158, 11, 0.05);
 	}
 
 	/* Smooth playback scrubber */

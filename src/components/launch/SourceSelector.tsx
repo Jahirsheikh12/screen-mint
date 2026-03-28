@@ -141,13 +141,13 @@ export function SourceSelector() {
 					<TabsList className="grid grid-cols-2 mb-3 bg-zinc-900/40 rounded-full">
 						<TabsTrigger
 							value="screens"
-							className="data-[state=active]:bg-[#10B981] data-[state=active]:text-white text-zinc-200 rounded-full text-xs py-1"
+							className="data-[state=active]:bg-[#F59E0B] data-[state=active]:text-white text-zinc-200 rounded-full text-xs py-1"
 						>
 							{t("sourceSelector.screens")} ({screenSources.length})
 						</TabsTrigger>
 						<TabsTrigger
 							value="windows"
-							className="data-[state=active]:bg-[#10B981] data-[state=active]:text-white text-zinc-200 rounded-full text-xs py-1"
+							className="data-[state=active]:bg-[#F59E0B] data-[state=active]:text-white text-zinc-200 rounded-full text-xs py-1"
 						>
 							{t("sourceSelector.windows")} ({windowSources.length})
 						</TabsTrigger>
@@ -178,7 +178,7 @@ export function SourceSelector() {
 												/>
 												{selectedSource?.id === source.id && (
 													<div className="absolute -top-1 -right-1">
-														<div className="w-4 h-4 bg-[#10B981] rounded-full flex items-center justify-center shadow-md">
+														<div className="w-4 h-4 bg-[#F59E0B] rounded-full flex items-center justify-center shadow-md">
 															<MdCheck className={styles.icon} />
 														</div>
 													</div>
@@ -271,7 +271,7 @@ export function SourceSelector() {
 					<Button
 						onClick={handleShare}
 						disabled={!selectedSource}
-						className="px-4 py-1 text-xs bg-[#10B981] text-white hover:bg-[#10B981]/80 disabled:opacity-50 disabled:bg-zinc-700"
+						className="px-4 py-1 text-xs bg-[#F59E0B] text-white hover:bg-[#F59E0B]/80 disabled:opacity-50 disabled:bg-zinc-700"
 					>
 						{t("sourceSelector.share")}
 					</Button>

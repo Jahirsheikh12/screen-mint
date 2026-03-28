@@ -366,7 +366,7 @@ function PlaybackCursor({
 			}}
 		>
 			<div
-				className="absolute top-0 bottom-0 w-[1.5px] bg-[#10b981] shadow-[0_0_8px_rgba(16,185,129,0.4)] cursor-ew-resize pointer-events-auto hover:shadow-[0_0_12px_rgba(16,185,129,0.6)] transition-shadow"
+				className="absolute top-0 bottom-0 w-[1.5px] bg-[#f59e0b] shadow-[0_0_8px_rgba(245,158,11,0.4)] cursor-ew-resize pointer-events-auto hover:shadow-[0_0_12px_rgba(245,158,11,0.6)] transition-shadow"
 				style={{
 					[sideProperty]: `${offset}px`,
 				}}
@@ -380,7 +380,7 @@ function PlaybackCursor({
 					className="absolute -top-1.5 left-1/2 -translate-x-1/2 hover:scale-125 transition-transform"
 					style={{ width: "14px", height: "14px" }}
 				>
-					<div className="w-3 h-3 mx-auto mt-[1px] bg-[#10b981] rounded-full shadow-lg border-2 border-[#34d399]" />
+					<div className="w-3 h-3 mx-auto mt-[1px] bg-[#f59e0b] rounded-full shadow-lg border-2 border-[#fbbf24]" />
 				</div>
 				{isDragging && (
 					<div className="absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded bg-black/80 text-[10px] text-white/90 font-medium tabular-nums whitespace-nowrap border border-white/10 shadow-lg pointer-events-none">
@@ -499,7 +499,7 @@ function TimelineAxis({
 							<span
 								className={cn(
 									"text-[10px] font-medium tabular-nums tracking-tight",
-									marker.time === currentTimeMs ? "text-[#34d399]" : "text-slate-500",
+									marker.time === currentTimeMs ? "text-[#fbbf24]" : "text-slate-500",
 								)}
 							>
 								{marker.label}
@@ -2053,7 +2053,7 @@ export default function TimelineEditor({
 									className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer flex items-center gap-1.5"
 								>
 									{visibleLayers.has(opt.type) ? (
-										<Check className="w-3 h-3 text-[#10B981]" />
+										<Check className="w-3 h-3 text-[#F59E0B]" />
 									) : (
 										<Plus className="w-3 h-3 text-slate-500" />
 									)}
@@ -2198,7 +2198,7 @@ export default function TimelineEditor({
 									className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer flex items-center justify-between gap-3"
 								>
 									<span>{getAspectRatioLabel(ratio)}</span>
-									{aspectRatio === ratio && <Check className="w-3 h-3 text-[#10B981]" />}
+									{aspectRatio === ratio && <Check className="w-3 h-3 text-[#F59E0B]" />}
 								</DropdownMenuItem>
 							))}
 							<div className="mx-1 my-1 h-px bg-white/10" />
@@ -2210,7 +2210,7 @@ export default function TimelineEditor({
 									value={customAspectWidth}
 									onChange={(event) => setCustomAspectWidth(event.target.value.replace(/\D/g, ""))}
 									onKeyDown={handleCustomAspectRatioKeyDown}
-									className="w-12 h-7 rounded border border-white/15 bg-black/20 px-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#10B981]"
+									className="w-12 h-7 rounded border border-white/15 bg-black/20 px-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#F59E0B]"
 									aria-label="Custom aspect width"
 								/>
 								<span className="text-slate-500">:</span>
@@ -2220,7 +2220,7 @@ export default function TimelineEditor({
 									value={customAspectHeight}
 									onChange={(event) => setCustomAspectHeight(event.target.value.replace(/\D/g, ""))}
 									onKeyDown={handleCustomAspectRatioKeyDown}
-									className="w-12 h-7 rounded border border-white/15 bg-black/20 px-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#10B981]"
+									className="w-12 h-7 rounded border border-white/15 bg-black/20 px-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#F59E0B]"
 									aria-label="Custom aspect height"
 								/>
 								<Button
@@ -2232,7 +2232,7 @@ export default function TimelineEditor({
 									Set
 								</Button>
 								{isCustomAspectRatio(aspectRatio) && (
-									<Check className="w-3 h-3 text-[#10B981] ml-auto" />
+									<Check className="w-3 h-3 text-[#F59E0B] ml-auto" />
 								)}
 							</div>
 						</DropdownMenuContent>
@@ -2339,7 +2339,7 @@ export default function TimelineEditor({
 								<opt.icon className="w-3.5 h-3.5" />
 								{opt.label}
 								{visibleLayers.has(opt.type) && (
-									<Check className="w-3 h-3 text-[#10B981] ml-auto" />
+									<Check className="w-3 h-3 text-[#F59E0B] ml-auto" />
 								)}
 							</DropdownMenuItem>
 						))}

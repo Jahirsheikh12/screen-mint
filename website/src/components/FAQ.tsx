@@ -91,7 +91,7 @@ function FAQItem({
 								height="10"
 								viewBox="0 0 24 24"
 								fill="none"
-								stroke={isOpen ? "#10B981" : "rgba(255,255,255,0.2)"}
+								stroke={isOpen ? "#F59E0B" : "rgba(255,255,255,0.2)"}
 								strokeWidth="2"
 								strokeLinecap="round"
 								strokeLinejoin="round"

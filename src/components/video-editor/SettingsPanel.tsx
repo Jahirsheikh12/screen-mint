@@ -357,42 +357,25 @@ function SettingsSection({
 	description,
 	children,
 	className,
-	accentColor = "emerald",
+	accentColor = "amber",
 }: {
 	title: string;
 	description?: string;
 	children: React.ReactNode;
 	className?: string;
-	accentColor?: "emerald" | "amber" | "blue" | "red";
+	accentColor?: "amber" | "blue" | "red";
 }) {
-	const accentMap = {
-		emerald: "from-emerald-500/20 to-transparent border-emerald-500/15",
-		amber: "from-amber-500/20 to-transparent border-amber-500/15",
-		blue: "from-blue-500/20 to-transparent border-blue-500/15",
-		red: "from-red-500/20 to-transparent border-red-500/15",
-	};
-	const dotMap = {
-		emerald: "bg-emerald-400",
-		amber: "bg-amber-400",
-		blue: "bg-blue-400",
-		red: "bg-red-400",
+	const borderMap = {
+		amber: "border-l-amber-500/60",
+		blue: "border-l-blue-500/60",
+		red: "border-l-red-500/60",
 	};
 	return (
-		<div className={cn("mb-4 last:mb-2", className)}>
-			<div
-				className={cn(
-					"mb-2.5 px-2.5 py-2 rounded-lg bg-gradient-to-r border",
-					accentMap[accentColor],
-				)}
-			>
-				<div className="flex items-center gap-1.5">
-					<div className={cn("w-1 h-1 rounded-full", dotMap[accentColor])} />
-					<h3 className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-300">
-						{title}
-					</h3>
-				</div>
+		<div className={cn("mb-5 last:mb-2", className)}>
+			<div className={cn("mb-2 pl-2.5 border-l-2", borderMap[accentColor])}>
+				<h3 className="text-[11px] font-semibold text-slate-200 tracking-wide">{title}</h3>
 				{description && (
-					<p className="text-[10px] text-slate-500 mt-0.5 ml-2.5 leading-relaxed">{description}</p>
+					<p className="text-[10px] text-slate-500 mt-0.5 leading-relaxed">{description}</p>
 				)}
 			</div>
 			<div className="flex flex-col gap-1.5">{children}</div>
@@ -417,25 +400,24 @@ function TabHeader({
 	title,
 	description,
 	badge,
-	badgeColor = "emerald",
+	badgeColor = "amber",
 	trailing,
 }: {
 	title: string;
 	description?: string;
 	badge?: string;
-	badgeColor?: "emerald" | "amber" | "blue";
+	badgeColor?: "amber" | "blue";
 	trailing?: React.ReactNode;
 }) {
 	const badgeColorMap = {
-		emerald: "text-[#10B981] bg-[#10B981]/10",
-		amber: "text-[#d97706] bg-[#d97706]/10",
-		blue: "text-[#3b82f6] bg-[#3b82f6]/10",
+		amber: "text-[#F59E0B] bg-[#F59E0B]/10 border border-[#F59E0B]/20",
+		blue: "text-[#3b82f6] bg-[#3b82f6]/10 border border-[#3b82f6]/20",
 	};
 	return (
-		<div className="mb-4">
+		<div className="mb-5 pb-3 border-b border-white/[0.06]">
 			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-2">
-					<span className="text-sm font-semibold text-slate-100 tracking-tight">{title}</span>
+					<span className="text-[13px] font-semibold text-white tracking-tight">{title}</span>
 					{badge && (
 						<span
 							className={cn(
@@ -450,9 +432,8 @@ function TabHeader({
 				{trailing}
 			</div>
 			{description && (
-				<p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{description}</p>
+				<p className="text-[11px] text-slate-500 mt-1.5 leading-relaxed">{description}</p>
 			)}
-			<div className="h-px bg-gradient-to-r from-white/10 via-white/5 to-transparent mt-3" />
 		</div>
 	);
 }
@@ -644,7 +625,7 @@ export default function SettingsPanel({
 		"#FF5722",
 		"#8BC34A",
 		"#FFC107",
-		"#10B981",
+		"#F59E0B",
 		"#000000",
 		"#607D8B",
 		"#795548",
@@ -1010,7 +991,7 @@ export default function SettingsPanel({
 										className={cn(
 											"relative flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-300 ease-out group",
 											isActive
-												? "bg-gradient-to-br from-[#10B981] to-[#059669] text-white shadow-lg shadow-[#10B981]/25 scale-105"
+												? "bg-gradient-to-br from-[#F59E0B] to-[#d97706] text-white shadow-lg shadow-[#F59E0B]/25 scale-105"
 												: "text-slate-500 hover:text-slate-200 hover:bg-white/[0.06] hover:scale-105 active:scale-95",
 										)}
 									>
@@ -1021,7 +1002,7 @@ export default function SettingsPanel({
 											)}
 										/>
 										{isActive && (
-											<div className="absolute inset-0 rounded-lg bg-[#10B981]/10 animate-pulse pointer-events-none" />
+											<div className="absolute inset-0 rounded-lg bg-[#F59E0B]/10 animate-pulse pointer-events-none" />
 										)}
 									</button>
 								);
@@ -1057,7 +1038,7 @@ export default function SettingsPanel({
 								<Switch
 									checked={connectZooms}
 									onCheckedChange={onConnectZoomsChange}
-									className="data-[state=checked]:bg-[#10B981] scale-90"
+									className="data-[state=checked]:bg-[#F59E0B] scale-90"
 								/>
 							</div>
 							<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
@@ -1081,7 +1062,7 @@ export default function SettingsPanel({
 											onPaddingChange?.(0);
 										}
 									}}
-									className="data-[state=checked]:bg-[#10B981] scale-90"
+									className="data-[state=checked]:bg-[#F59E0B] scale-90"
 								/>
 							</div>
 						</SettingsSection>
@@ -1164,7 +1145,7 @@ export default function SettingsPanel({
 							<Button
 								onClick={handleCropToggle}
 								variant="outline"
-								className="w-full gap-2 bg-white/[0.04] text-slate-200 border-white/[0.08] hover:bg-[#10B981]/10 hover:border-[#10B981]/30 hover:text-[#10B981] text-[10px] h-9 rounded-xl transition-all duration-200"
+								className="w-full gap-2 bg-white/[0.04] text-slate-200 border-white/[0.08] hover:bg-[#F59E0B]/10 hover:border-[#F59E0B]/30 hover:text-[#F59E0B] text-[10px] h-9 rounded-xl transition-all duration-200"
 							>
 								<Crop className="w-3.5 h-3.5" />
 								{tSettings("crop.title")}
@@ -1197,7 +1178,7 @@ export default function SettingsPanel({
 								<Switch
 									checked={showCursor}
 									onCheckedChange={onShowCursorChange}
-									className="data-[state=checked]:bg-[#10B981] scale-90"
+									className="data-[state=checked]:bg-[#F59E0B] scale-90"
 								/>
 							</div>
 							<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
@@ -1212,7 +1193,7 @@ export default function SettingsPanel({
 								<Switch
 									checked={loopCursor}
 									onCheckedChange={onLoopCursorChange}
-									className="data-[state=checked]:bg-[#10B981] scale-90"
+									className="data-[state=checked]:bg-[#F59E0B] scale-90"
 								/>
 							</div>
 						</SettingsSection>
@@ -1231,7 +1212,7 @@ export default function SettingsPanel({
 											className={cn(
 												"px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all duration-200 cursor-pointer",
 												cursorPack === opt.value
-													? "bg-gradient-to-r from-[#10B981] to-[#059669] text-white shadow-sm shadow-[#10B981]/20"
+													? "bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-white shadow-sm shadow-[#F59E0B]/20"
 													: "bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200 border border-white/[0.04]",
 											)}
 										>
@@ -1252,7 +1233,7 @@ export default function SettingsPanel({
 											className={cn(
 												"px-1.5 py-1.5 rounded-lg text-[10px] font-medium transition-all duration-200 cursor-pointer",
 												cursorStyle === opt.value
-													? "bg-gradient-to-r from-[#10B981] to-[#059669] text-white shadow-sm shadow-[#10B981]/20"
+													? "bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-white shadow-sm shadow-[#F59E0B]/20"
 													: "bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200 border border-white/[0.04]",
 											)}
 										>
@@ -1263,27 +1244,35 @@ export default function SettingsPanel({
 							</div>
 
 							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<div className="text-xs font-medium text-slate-300 mb-2">Cursor Color</div>
+								<div className="flex items-center justify-between mb-2.5">
+									<span className="text-[11px] font-medium text-slate-300">Cursor Color</span>
+									<button
+										type="button"
+										onClick={() => onCursorColorChange?.(DEFAULT_CURSOR_COLOR)}
+										className="text-[10px] text-slate-600 hover:text-[#F59E0B] transition-colors duration-200 cursor-pointer"
+									>
+										Reset
+									</button>
+								</div>
 								<div className="flex items-center gap-2">
-									<input
-										type="color"
-										value={cursorColor}
-										onChange={(e) => onCursorColorChange?.(e.target.value)}
-										className="w-7 h-7 rounded-lg border border-white/10 cursor-pointer bg-transparent"
-									/>
+									<label className="relative w-8 h-8 rounded-lg border border-white/[0.08] cursor-pointer overflow-hidden group hover:border-[#F59E0B]/40 transition-colors duration-200">
+										<div
+											className="absolute inset-[3px] rounded-[5px]"
+											style={{ backgroundColor: cursorColor }}
+										/>
+										<input
+											type="color"
+											value={cursorColor}
+											onChange={(e) => onCursorColorChange?.(e.target.value)}
+											className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+										/>
+									</label>
 									<input
 										type="text"
 										value={cursorColor}
 										onChange={(e) => onCursorColorChange?.(e.target.value)}
-										className="flex-1 h-7 rounded-lg border border-white/[0.08] bg-black/20 px-2 text-xs text-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-[#10B981]/50 transition-shadow duration-200"
+										className="flex-1 h-8 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 text-[11px] text-slate-200 font-mono tracking-wider focus:outline-none focus:border-[#F59E0B]/40 focus:ring-1 focus:ring-[#F59E0B]/20 transition-all duration-200"
 									/>
-									<button
-										type="button"
-										onClick={() => onCursorColorChange?.(DEFAULT_CURSOR_COLOR)}
-										className="text-[10px] text-slate-500 hover:text-[#10B981] transition-colors duration-200 cursor-pointer"
-									>
-										Reset
-									</button>
 								</div>
 							</div>
 
@@ -1422,27 +1411,37 @@ export default function SettingsPanel({
 							</div>
 
 							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<div className="text-xs font-medium text-slate-300 mb-2">Click Highlight Color</div>
+								<div className="flex items-center justify-between mb-2.5">
+									<span className="text-[11px] font-medium text-slate-300">
+										Click Highlight Color
+									</span>
+									<button
+										type="button"
+										onClick={() => onClickHighlightColorChange?.(DEFAULT_CLICK_HIGHLIGHT_COLOR)}
+										className="text-[10px] text-slate-600 hover:text-[#F59E0B] transition-colors duration-200 cursor-pointer"
+									>
+										Reset
+									</button>
+								</div>
 								<div className="flex items-center gap-2">
-									<input
-										type="color"
-										value={clickHighlightColor}
-										onChange={(e) => onClickHighlightColorChange?.(e.target.value)}
-										className="w-7 h-7 rounded-lg border border-white/10 cursor-pointer bg-transparent"
-									/>
+									<label className="relative w-8 h-8 rounded-lg border border-white/[0.08] cursor-pointer overflow-hidden group hover:border-[#F59E0B]/40 transition-colors duration-200">
+										<div
+											className="absolute inset-[3px] rounded-[5px]"
+											style={{ backgroundColor: clickHighlightColor }}
+										/>
+										<input
+											type="color"
+											value={clickHighlightColor}
+											onChange={(e) => onClickHighlightColorChange?.(e.target.value)}
+											className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+										/>
+									</label>
 									<input
 										type="text"
 										value={clickHighlightColor}
 										onChange={(e) => onClickHighlightColorChange?.(e.target.value)}
-										className="flex-1 h-7 rounded-lg border border-white/[0.08] bg-black/20 px-2 text-xs text-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-[#10B981]/50 transition-shadow duration-200"
+										className="flex-1 h-8 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 text-[11px] text-slate-200 font-mono tracking-wider focus:outline-none focus:border-[#F59E0B]/40 focus:ring-1 focus:ring-[#F59E0B]/20 transition-all duration-200"
 									/>
-									<button
-										type="button"
-										onClick={() => onClickHighlightColorChange?.(DEFAULT_CLICK_HIGHLIGHT_COLOR)}
-										className="text-[10px] text-slate-500 hover:text-[#10B981] transition-colors duration-200 cursor-pointer"
-									>
-										Reset
-									</button>
 								</div>
 							</div>
 
@@ -1503,7 +1502,7 @@ export default function SettingsPanel({
 								<Switch
 									checked={showKeyboardShortcuts}
 									onCheckedChange={onShowKeyboardShortcutsChange}
-									className="data-[state=checked]:bg-[#10B981] scale-90"
+									className="data-[state=checked]:bg-[#F59E0B] scale-90"
 								/>
 							</div>
 						</SettingsSection>
@@ -1525,7 +1524,7 @@ export default function SettingsPanel({
 											className={cn(
 												"px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all duration-200 cursor-pointer",
 												keyboardShortcutPosition === option.value
-													? "bg-gradient-to-r from-[#10B981] to-[#059669] text-white shadow-sm shadow-[#10B981]/20"
+													? "bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-white shadow-sm shadow-[#F59E0B]/20"
 													: "bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200 border border-white/[0.04]",
 											)}
 										>
@@ -1548,7 +1547,7 @@ export default function SettingsPanel({
 											className={cn(
 												"px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all duration-200 cursor-pointer",
 												keyboardShortcutTheme === option.value
-													? "bg-gradient-to-r from-[#10B981] to-[#059669] text-white shadow-sm shadow-[#10B981]/20"
+													? "bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-white shadow-sm shadow-[#F59E0B]/20"
 													: "bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200 border border-white/[0.04]",
 											)}
 										>
@@ -1634,19 +1633,19 @@ export default function SettingsPanel({
 							<TabsList className="mb-3 bg-white/[0.04] border border-white/[0.06] p-0.5 w-full grid grid-cols-3 h-8 rounded-xl">
 								<TabsTrigger
 									value="image"
-									className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#10B981] data-[state=active]:to-[#059669] data-[state=active]:text-white data-[state=active]:shadow-sm text-slate-400 text-[10px] font-medium py-1 rounded-lg transition-all duration-200"
+									className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#F59E0B] data-[state=active]:to-[#d97706] data-[state=active]:text-white data-[state=active]:shadow-sm text-slate-400 text-[10px] font-medium py-1 rounded-lg transition-all duration-200"
 								>
 									{tSettings("background.image")}
 								</TabsTrigger>
 								<TabsTrigger
 									value="color"
-									className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#10B981] data-[state=active]:to-[#059669] data-[state=active]:text-white data-[state=active]:shadow-sm text-slate-400 text-[10px] font-medium py-1 rounded-lg transition-all duration-200"
+									className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#F59E0B] data-[state=active]:to-[#d97706] data-[state=active]:text-white data-[state=active]:shadow-sm text-slate-400 text-[10px] font-medium py-1 rounded-lg transition-all duration-200"
 								>
 									{tSettings("background.color")}
 								</TabsTrigger>
 								<TabsTrigger
 									value="gradient"
-									className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#10B981] data-[state=active]:to-[#059669] data-[state=active]:text-white data-[state=active]:shadow-sm text-slate-400 text-[10px] font-medium py-1 rounded-lg transition-all duration-200"
+									className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#F59E0B] data-[state=active]:to-[#d97706] data-[state=active]:text-white data-[state=active]:shadow-sm text-slate-400 text-[10px] font-medium py-1 rounded-lg transition-all duration-200"
 								>
 									{tSettings("background.gradient")}
 								</TabsTrigger>
@@ -1664,7 +1663,7 @@ export default function SettingsPanel({
 									<Button
 										onClick={() => fileInputRef.current?.click()}
 										variant="outline"
-										className="w-full gap-2 bg-white/[0.04] text-slate-200 border-white/[0.08] hover:bg-[#10B981]/15 hover:text-[#10B981] hover:border-[#10B981]/30 transition-all duration-200 h-8 text-[10px] rounded-xl"
+										className="w-full gap-2 bg-white/[0.04] text-slate-200 border-white/[0.08] hover:bg-[#F59E0B]/15 hover:text-[#F59E0B] hover:border-[#F59E0B]/30 transition-all duration-200 h-8 text-[10px] rounded-xl"
 									>
 										<Upload className="w-3 h-3" />
 										{tSettings("background.uploadCustom")}
@@ -1679,8 +1678,8 @@ export default function SettingsPanel({
 													className={cn(
 														"aspect-square w-9 h-9 rounded-lg border-2 overflow-hidden cursor-pointer transition-all duration-200 relative group shadow-sm hover:scale-105",
 														isSelected
-															? "border-[#10B981] ring-1 ring-[#10B981]/30"
-															: "border-white/10 hover:border-[#10B981]/40 opacity-80 hover:opacity-100 bg-white/5",
+															? "border-[#F59E0B] ring-1 ring-[#F59E0B]/30"
+															: "border-white/10 hover:border-[#F59E0B]/40 opacity-80 hover:opacity-100 bg-white/5",
 													)}
 													style={{
 														backgroundImage: `url(${imageUrl})`,
@@ -1727,8 +1726,8 @@ export default function SettingsPanel({
 													className={cn(
 														"aspect-square w-9 h-9 rounded-lg border-2 overflow-hidden cursor-pointer transition-all duration-200 shadow-sm hover:scale-105",
 														isSelected
-															? "border-[#10B981] ring-1 ring-[#10B981]/30"
-															: "border-white/10 hover:border-[#10B981]/40 opacity-80 hover:opacity-100 bg-white/5",
+															? "border-[#F59E0B] ring-1 ring-[#F59E0B]/30"
+															: "border-white/10 hover:border-[#F59E0B]/40 opacity-80 hover:opacity-100 bg-white/5",
 													)}
 													aria-label={wallpaper?.label ?? `Wallpaper ${index + 1}`}
 													title={wallpaper?.label ?? `Wallpaper ${index + 1}`}
@@ -1746,7 +1745,7 @@ export default function SettingsPanel({
 								</TabsContent>
 
 								<TabsContent value="color" className="mt-0">
-									<div className="p-1">
+									<div className="p-2 rounded-xl bg-white/[0.02] border border-white/[0.04]">
 										<Block
 											color={selectedColor}
 											colors={colorPalette}
@@ -1754,6 +1753,7 @@ export default function SettingsPanel({
 												setSelectedColor(color.hex);
 												onWallpaperChange(color.hex);
 											}}
+											className="!gap-1.5 [&_div[title]]:!w-8 [&_div[title]]:!h-8 [&_div[title]]:!rounded-lg [&_div[title]]:!border-2 [&_div[title]]:!border-white/[0.06] [&_div[title]]:hover:!border-[#F59E0B]/40 [&_div[title]]:!transition-all [&_div[title]]:!duration-200 [&_div[title]]:hover:!scale-105 [&_div[title]]:!shadow-sm [&_div[title]]:!shadow-black/20 [&_input]:!h-8 [&_input]:!rounded-lg [&_input]:!border-white/[0.06] [&_input]:!bg-white/[0.03] [&_input]:!text-[11px] [&_input]:!font-mono [&_input]:!tracking-wider [&_input]:focus:!border-[#F59E0B]/40 [&_input]:focus:!ring-1 [&_input]:focus:!ring-[#F59E0B]/20"
 											style={{
 												width: "100%",
 												borderRadius: "8px",
@@ -1770,8 +1770,8 @@ export default function SettingsPanel({
 												className={cn(
 													"aspect-square w-9 h-9 rounded-lg border-2 overflow-hidden cursor-pointer transition-all duration-200 shadow-sm hover:scale-105",
 													gradient === g
-														? "border-[#10B981] ring-1 ring-[#10B981]/30"
-														: "border-white/10 hover:border-[#10B981]/40 opacity-80 hover:opacity-100 bg-white/5",
+														? "border-[#F59E0B] ring-1 ring-[#F59E0B]/30"
+														: "border-white/10 hover:border-[#F59E0B]/40 opacity-80 hover:opacity-100 bg-white/5",
 												)}
 												style={{ background: g }}
 												aria-label={`Gradient ${idx + 1}`}
@@ -1822,7 +1822,7 @@ export default function SettingsPanel({
 													? "opacity-100 cursor-pointer"
 													: "opacity-40 cursor-not-allowed",
 												isActive
-													? "border-[#10B981] bg-gradient-to-br from-[#10B981] to-[#059669] text-white shadow-lg shadow-[#10B981]/25"
+													? "border-[#F59E0B] bg-gradient-to-br from-[#F59E0B] to-[#d97706] text-white shadow-lg shadow-[#F59E0B]/25"
 													: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:border-white/[0.1] hover:text-slate-200",
 											)}
 										>
@@ -1961,7 +1961,7 @@ export default function SettingsPanel({
 									<Button
 										type="button"
 										onClick={() => void handleImportAudio()}
-										className="w-full gap-2 bg-white/[0.04] text-slate-200 border border-white/[0.08] hover:bg-[#10B981]/10 hover:text-[#10B981] hover:border-[#10B981]/30 transition-all duration-200 rounded-xl"
+										className="w-full gap-2 bg-white/[0.04] text-slate-200 border border-white/[0.08] hover:bg-[#F59E0B]/10 hover:text-[#F59E0B] hover:border-[#F59E0B]/30 transition-all duration-200 rounded-xl"
 									>
 										<Upload className="h-3.5 w-3.5" />
 										{tSettings("audio.upload", "Upload audio")}
@@ -1994,7 +1994,7 @@ export default function SettingsPanel({
 														className={cn(
 															"w-full rounded-xl border px-2.5 py-2 text-left transition-all duration-200",
 															isSelected
-																? "border-[#10B981]/40 bg-[#10B981]/10 shadow-sm shadow-[#10B981]/10"
+																? "border-[#F59E0B]/40 bg-[#F59E0B]/10 shadow-sm shadow-[#F59E0B]/10"
 																: "border-white/[0.06] bg-black/10 hover:bg-white/[0.04] hover:border-white/[0.1]",
 														)}
 													>
@@ -2009,7 +2009,7 @@ export default function SettingsPanel({
 																	className={cn(
 																		"flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-all duration-200",
 																		playingBuiltInTrackId === track.id
-																			? "border-[#10B981]/40 bg-[#10B981]/15 text-[#10B981] shadow-sm shadow-[#10B981]/20"
+																			? "border-[#F59E0B]/40 bg-[#F59E0B]/15 text-[#F59E0B] shadow-sm shadow-[#F59E0B]/20"
 																			: "border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-slate-100",
 																	)}
 																	aria-label={
@@ -2127,7 +2127,7 @@ export default function SettingsPanel({
 										<Switch
 											checked={selectedAudio.loop}
 											onCheckedChange={(checked) => onAudioLoopChange?.(selectedAudio.id, checked)}
-											className="data-[state=checked]:bg-[#10B981] scale-90"
+											className="data-[state=checked]:bg-[#F59E0B] scale-90"
 										/>
 									</div>
 
@@ -2274,7 +2274,7 @@ export default function SettingsPanel({
 								<Switch
 									checked={captionSettings.enabled}
 									onCheckedChange={(enabled) => onCaptionSettingsChange?.({ enabled })}
-									className="data-[state=checked]:bg-[#10B981] scale-90"
+									className="data-[state=checked]:bg-[#F59E0B] scale-90"
 								/>
 							</div>
 						</SettingsSection>
@@ -2314,7 +2314,7 @@ export default function SettingsPanel({
 										)}
 									</div>
 									{isTranscribing && (
-										<div className="text-[10px] uppercase tracking-wider text-[#10B981]">
+										<div className="text-[10px] uppercase tracking-wider text-[#F59E0B]">
 											{captionGenerationProgress?.message ||
 												t("editor.captions.working", "Working...")}
 										</div>
@@ -2418,7 +2418,7 @@ export default function SettingsPanel({
 									type="button"
 									onClick={onAutoTranscribe}
 									disabled={isTranscribing || !hasUsableCaptionAudio}
-									className="w-full h-9 rounded-lg border border-[#10B981]/30 bg-[#10B981]/10 text-[#10B981] hover:bg-[#10B981]/20 text-xs font-semibold"
+									className="w-full h-9 rounded-lg border border-[#F59E0B]/30 bg-[#F59E0B]/10 text-[#F59E0B] hover:bg-[#F59E0B]/20 text-xs font-semibold"
 								>
 									{isTranscribing ? (
 										<>
@@ -2487,7 +2487,7 @@ export default function SettingsPanel({
 											className={cn(
 												"h-8 rounded-lg border shadow-sm transition-all duration-200 justify-center",
 												captionSettings.style.preset === preset
-													? "border-[#10B981] bg-gradient-to-r from-[#10B981] to-[#059669] text-white shadow-sm shadow-[#10B981]/20"
+													? "border-[#F59E0B] bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-white shadow-sm shadow-[#F59E0B]/20"
 													: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08]",
 											)}
 										>
@@ -2510,7 +2510,7 @@ export default function SettingsPanel({
 											className={cn(
 												"h-8 rounded-lg border shadow-sm transition-all duration-200 justify-center",
 												captionSettings.position === pos
-													? "border-[#10B981] bg-gradient-to-r from-[#10B981] to-[#059669] text-white shadow-sm shadow-[#10B981]/20"
+													? "border-[#F59E0B] bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-white shadow-sm shadow-[#F59E0B]/20"
 													: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08]",
 											)}
 										>
@@ -2549,7 +2549,7 @@ export default function SettingsPanel({
 										"#00BFFF",
 										"#FF69B4",
 										"#000000",
-										"#10B981",
+										"#F59E0B",
 									]}
 								/>
 							</div>
@@ -2636,7 +2636,7 @@ export default function SettingsPanel({
 												className={cn(
 													"flex items-start gap-2 p-2 rounded-xl border cursor-pointer transition-all duration-200",
 													selectedCaptionId === caption.id
-														? "border-[#10B981]/30 bg-[#10B981]/8 shadow-sm shadow-[#10B981]/10"
+														? "border-[#F59E0B]/30 bg-[#F59E0B]/8 shadow-sm shadow-[#F59E0B]/10"
 														: "border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/[0.08]",
 												)}
 											>
@@ -2761,7 +2761,7 @@ export default function SettingsPanel({
 								<Button
 									type="button"
 									onClick={onResetRecommendedWebcam}
-									className="h-8 rounded-xl border border-[#10B981]/25 bg-[#10B981]/10 text-[10px] font-semibold text-[#9ff0c8] hover:bg-[#10B981]/18 transition-colors duration-200"
+									className="h-8 rounded-xl border border-[#F59E0B]/25 bg-[#F59E0B]/10 text-[10px] font-semibold text-[#9ff0c8] hover:bg-[#F59E0B]/18 transition-colors duration-200"
 								>
 									{tSettings("webcam.resetRecommended")}
 								</Button>
@@ -2823,7 +2823,7 @@ export default function SettingsPanel({
 								<Switch
 									checked={showWebcam}
 									onCheckedChange={onShowWebcamChange}
-									className="data-[state=checked]:bg-[#10B981] scale-90"
+									className="data-[state=checked]:bg-[#F59E0B] scale-90"
 								/>
 							</div>
 
@@ -2839,7 +2839,7 @@ export default function SettingsPanel({
 								<Switch
 									checked={mirrorWebcam}
 									onCheckedChange={onMirrorWebcamChange}
-									className="data-[state=checked]:bg-[#10B981] scale-90"
+									className="data-[state=checked]:bg-[#F59E0B] scale-90"
 								/>
 							</div>
 						</SettingsSection>
@@ -2872,7 +2872,7 @@ export default function SettingsPanel({
 											className={cn(
 												"h-8 rounded-lg border text-[10px] transition-all duration-200",
 												webcamRegion.anchor === preset.anchor
-													? "border-[#10B981]/40 bg-[#10B981]/10 text-[#a7f3d0] shadow-sm shadow-[#10B981]/10"
+													? "border-[#F59E0B]/40 bg-[#F59E0B]/10 text-[#fde68a] shadow-sm shadow-[#F59E0B]/10"
 													: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08]",
 											)}
 										>
@@ -3051,14 +3051,14 @@ export default function SettingsPanel({
 					<div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none">
 						<div className="pointer-events-auto w-[90vw] max-w-5xl max-h-[90vh] bg-[#0A0F0D] rounded-2xl shadow-2xl shadow-black/60 border border-white/[0.08] overflow-hidden opacity-100 scale-100 translate-y-0 duration-300 ease-out animate-in fade-in zoom-in-95 slide-in-from-bottom-3">
 							{/* Top accent line */}
-							<div className="h-[2px] bg-gradient-to-r from-transparent via-[#10B981] to-transparent" />
+							<div className="h-[2px] bg-gradient-to-r from-transparent via-[#F59E0B] to-transparent" />
 
 							<div className="p-8 overflow-auto max-h-[calc(90vh-2px)]">
 								{/* Header */}
 								<div className="flex items-center justify-between mb-6">
 									<div className="flex items-center gap-3">
-										<div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#10B981]/20 to-[#059669]/10 border border-[#10B981]/20 flex items-center justify-center">
-											<Crop className="w-5 h-5 text-[#10B981]" />
+										<div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#F59E0B]/20 to-[#d97706]/10 border border-[#F59E0B]/20 flex items-center justify-center">
+											<Crop className="w-5 h-5 text-[#F59E0B]" />
 										</div>
 										<div>
 											<h2 className="text-[15px] font-semibold text-white tracking-tight">
@@ -3100,7 +3100,7 @@ export default function SettingsPanel({
 									</Button>
 									<Button
 										onClick={() => setShowCropModal(false)}
-										className="h-10 px-6 text-xs font-semibold bg-gradient-to-r from-[#10B981] to-[#059669] text-white rounded-xl shadow-lg shadow-[#10B981]/20 hover:shadow-[#10B981]/30 hover:scale-[1.01] active:scale-[0.98] transition-all duration-200 border border-[#10B981]/30"
+										className="h-10 px-6 text-xs font-semibold bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-white rounded-xl shadow-lg shadow-[#F59E0B]/20 hover:shadow-[#F59E0B]/30 hover:scale-[1.01] active:scale-[0.98] transition-all duration-200 border border-[#F59E0B]/30"
 									>
 										{t("common.actions.done")}
 									</Button>

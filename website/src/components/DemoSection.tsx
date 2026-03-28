@@ -106,7 +106,7 @@ export function DemoSection() {
 				className="absolute inset-0 pointer-events-none"
 				style={{
 					background:
-						"radial-gradient(ellipse 70% 50% at 50% 40%, rgba(16, 185, 129, 0.03) 0%, transparent 60%)",
+						"radial-gradient(ellipse 70% 50% at 50% 40%, rgba(245, 158, 11, 0.03) 0%, transparent 60%)",
 				}}
 			/>
 
@@ -134,19 +134,19 @@ export function DemoSection() {
 							className="absolute inset-0"
 							style={{
 								background:
-									"radial-gradient(ellipse at 60% 40%, rgba(16, 185, 129, 0.04) 0%, transparent 60%)",
+									"radial-gradient(ellipse at 60% 40%, rgba(245, 158, 11, 0.04) 0%, transparent 60%)",
 							}}
 						/>
 
 						<div className="relative text-center z-10">
 							<div className="demo-label-polished flex flex-col items-center gap-4">
-								<div className="w-16 h-16 rounded-2xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center shadow-[0_0_40px_rgba(16,185,129,0.15)]">
+								<div className="w-16 h-16 rounded-2xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center shadow-[0_0_40px_rgba(245,158,11,0.15)]">
 									<svg
 										width="28"
 										height="28"
 										viewBox="0 0 24 24"
 										fill="none"
-										stroke="#10B981"
+										stroke="#F59E0B"
 										strokeWidth="2"
 										strokeLinecap="round"
 										strokeLinejoin="round"
@@ -166,7 +166,7 @@ export function DemoSection() {
 						</div>
 
 						{/* Green glow border */}
-						<div className="demo-after-border absolute inset-0 rounded-2xl border border-brand-500/20 pointer-events-none shadow-[inset_0_0_60px_rgba(16,185,129,0.05)]" />
+						<div className="demo-after-border absolute inset-0 rounded-2xl border border-brand-500/20 pointer-events-none shadow-[inset_0_0_60px_rgba(245,158,11,0.05)]" />
 					</div>
 
 					{/* Before (raw) layer */}
@@ -208,7 +208,7 @@ export function DemoSection() {
 							ref={progressRef}
 							className="h-full origin-left"
 							style={{
-								background: "linear-gradient(90deg, #059669, #10B981, #34d399)",
+								background: "linear-gradient(90deg, #d97706, #F59E0B, #fbbf24)",
 								transform: "scaleX(0)",
 							}}
 						/>

@@ -162,7 +162,7 @@ export function ExportDialog({
 					{isExporting && !showSuccess ? (
 						<div className="h-[2px] bg-white/[0.04] overflow-hidden">
 							<div
-								className="h-full bg-gradient-to-r from-transparent via-[#10B981] to-transparent transition-all duration-500 ease-out"
+								className="h-full bg-gradient-to-r from-transparent via-[#F59E0B] to-transparent transition-all duration-500 ease-out"
 								style={{
 									width: displayPercentage !== null ? `${displayPercentage}%` : "100%",
 									animation:
@@ -174,7 +174,7 @@ export function ExportDialog({
 						<div
 							className={cn(
 								"h-[2px] bg-gradient-to-r from-transparent to-transparent transition-all duration-500",
-								showSuccess ? "via-[#10B981]" : error ? "via-red-500" : "via-[#10B981]",
+								showSuccess ? "via-[#F59E0B]" : error ? "via-red-500" : "via-[#F59E0B]",
 							)}
 						/>
 					)}
@@ -196,11 +196,11 @@ export function ExportDialog({
 							<div className="animate-in fade-in zoom-in-95 duration-300">
 								<div className="flex flex-col items-center text-center py-2">
 									<div className="relative mb-4">
-										<div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#10B981]/20 to-[#059669]/10 border border-[#10B981]/25 flex items-center justify-center">
-											<CheckCircle2 className="w-8 h-8 text-[#10B981]" />
+										<div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#F59E0B]/20 to-[#d97706]/10 border border-[#F59E0B]/25 flex items-center justify-center">
+											<CheckCircle2 className="w-8 h-8 text-[#F59E0B]" />
 										</div>
 										<div
-											className="absolute inset-0 rounded-2xl border border-[#10B981]/30"
+											className="absolute inset-0 rounded-2xl border border-[#F59E0B]/30"
 											style={{ animation: "pulse-ring 1.5s ease-out infinite" }}
 										/>
 									</div>
@@ -262,7 +262,7 @@ export function ExportDialog({
 								{!isExporting && canRetrySave && onRetrySave && (
 									<Button
 										onClick={onRetrySave}
-										className="w-full h-11 rounded-xl bg-gradient-to-r from-[#10B981] to-[#059669] text-white font-semibold text-sm shadow-lg shadow-[#10B981]/20 hover:shadow-[#10B981]/30 hover:scale-[1.01] active:scale-[0.98] transition-all duration-200"
+										className="w-full h-11 rounded-xl bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-white font-semibold text-sm shadow-lg shadow-[#F59E0B]/20 hover:shadow-[#F59E0B]/30 hover:scale-[1.01] active:scale-[0.98] transition-all duration-200"
 									>
 										Save Again
 									</Button>
@@ -277,8 +277,8 @@ export function ExportDialog({
 								<div className="flex items-center justify-between mb-6">
 									<div className="flex items-center gap-3">
 										<div className="relative">
-											<div className="w-10 h-10 rounded-xl bg-[#10B981]/10 border border-[#10B981]/20 flex items-center justify-center">
-												<Download className="w-5 h-5 text-[#10B981]" />
+											<div className="w-10 h-10 rounded-xl bg-[#F59E0B]/10 border border-[#F59E0B]/20 flex items-center justify-center">
+												<Download className="w-5 h-5 text-[#F59E0B]" />
 											</div>
 										</div>
 										<div>
@@ -296,7 +296,7 @@ export function ExportDialog({
 									<div>
 										<div className="flex justify-between text-[10px] font-semibold uppercase tracking-[0.1em] mb-2">
 											<span className="text-slate-500 flex items-center gap-1.5">
-												<div className="w-1 h-1 rounded-full bg-[#10B981]" />
+												<div className="w-1 h-1 rounded-full bg-[#F59E0B]" />
 												{isCompiling || isFinalizing
 													? t("export.compiling")
 													: t("export.renderingFrames")}
@@ -307,7 +307,7 @@ export function ExportDialog({
 														`${renderProgress}%`
 													) : (
 														<span className="flex items-center gap-1.5">
-															<Download className="w-3 h-3 text-[#10B981]" />
+															<Download className="w-3 h-3 text-[#F59E0B]" />
 															<span className="text-slate-400">{t("export.processing")}</span>
 														</span>
 													)
@@ -321,13 +321,13 @@ export function ExportDialog({
 											{isCompiling || isFinalizing ? (
 												renderProgress !== undefined && renderProgress > 0 ? (
 													<div
-														className="h-full bg-gradient-to-r from-[#10B981] to-[#059669] shadow-[0_0_12px_rgba(16,185,129,0.4)] transition-all duration-500 ease-out rounded-full"
+														className="h-full bg-gradient-to-r from-[#F59E0B] to-[#d97706] shadow-[0_0_12px_rgba(245,158,11,0.4)] transition-all duration-500 ease-out rounded-full"
 														style={{ width: `${renderProgress}%` }}
 													/>
 												) : (
 													<div className="h-full w-full relative overflow-hidden rounded-full">
 														<div
-															className="absolute h-full w-1/3 bg-gradient-to-r from-transparent via-[#10B981] to-transparent shadow-[0_0_12px_rgba(16,185,129,0.4)] rounded-full"
+															className="absolute h-full w-1/3 bg-gradient-to-r from-transparent via-[#F59E0B] to-transparent shadow-[0_0_12px_rgba(245,158,11,0.4)] rounded-full"
 															style={{
 																animation: "indeterminate 1.8s ease-in-out infinite",
 															}}
@@ -342,7 +342,7 @@ export function ExportDialog({
 												)
 											) : (
 												<div
-													className="h-full bg-gradient-to-r from-[#10B981] to-[#059669] shadow-[0_0_12px_rgba(16,185,129,0.4)] transition-all duration-500 ease-out rounded-full"
+													className="h-full bg-gradient-to-r from-[#F59E0B] to-[#d97706] shadow-[0_0_12px_rgba(245,158,11,0.4)] transition-all duration-500 ease-out rounded-full"
 													style={{
 														width: `${Math.min(progress.percentage, 100)}%`,
 													}}

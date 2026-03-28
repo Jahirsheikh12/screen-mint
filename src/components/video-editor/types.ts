@@ -121,7 +121,7 @@ export const DEFAULT_CURSOR_STYLE: CursorStyle = "default";
 export const DEFAULT_CURSOR_PACK: CursorPack = "classic";
 export const DEFAULT_CURSOR_COLOR = "#FFFFFF";
 export const DEFAULT_CURSOR_OPACITY = 1.0;
-export const DEFAULT_CLICK_HIGHLIGHT_COLOR = "#10b981";
+export const DEFAULT_CLICK_HIGHLIGHT_COLOR = "#f59e0b";
 export const DEFAULT_CLICK_HIGHLIGHT_SIZE = 1.0;
 export const DEFAULT_CLICK_HIGHLIGHT_OPACITY = 0.5;
 export const DEFAULT_CURSOR_TRAIL_LENGTH = 0;
@@ -260,7 +260,7 @@ export const DEFAULT_ANNOTATION_STYLE: AnnotationTextStyle = {
 
 export const DEFAULT_FIGURE_DATA: FigureData = {
 	arrowDirection: "right",
-	color: "#10B981",
+	color: "#F59E0B",
 	strokeWidth: 4,
 };
 
@@ -527,7 +527,7 @@ export const CAPTION_STYLE_PRESETS: Record<CaptionStylePreset, CaptionStyle> = {
 		fontFamily: getDefaultCaptionFontFamily(),
 		fontWeight: "bold",
 		color: "#ffffff",
-		backgroundColor: "#10B981",
+		backgroundColor: "#F59E0B",
 		backgroundOpacity: 0.9,
 		outlineColor: "#000000",
 		outlineWidth: 0,

@@ -31,7 +31,7 @@ describe("webcam project persistence", () => {
 				borderRadius: 16,
 				opacity: 0.5,
 				borderWidth: 4,
-				borderColor: "#10B981",
+				borderColor: "#F59E0B",
 			},
 			cameraLayouts: [
 				{

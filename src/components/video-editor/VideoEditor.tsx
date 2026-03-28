@@ -3832,7 +3832,7 @@ export default function VideoEditor() {
 	}
 
 	return (
-		<div className="flex flex-col h-screen bg-[#0c0c0f] text-slate-200 overflow-hidden selection:bg-[#10b981]/30">
+		<div className="flex flex-col h-screen bg-[#0c0c0f] text-slate-200 overflow-hidden selection:bg-[#f59e0b]/30">
 			{/* Header Bar - matches Screen Studio reference */}
 			<div
 				className="relative h-11 flex-shrink-0 bg-[#111114] border-b border-white/5 flex items-center px-4 z-50"
@@ -3996,11 +3996,11 @@ export default function VideoEditor() {
 
 					<div className="w-[1px] h-5 bg-white/10 mx-1" />
 
-					{/* Export button - emerald */}
+					{/* Export button - amber */}
 					<button
 						type="button"
 						onClick={() => setShowExportSettings(true)}
-						className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-white font-semibold text-xs transition bg-[#10b981] hover:bg-[#059669] cursor-pointer shadow-lg shadow-emerald-500/20"
+						className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-white font-semibold text-xs transition bg-[#f59e0b] hover:bg-[#d97706] cursor-pointer shadow-lg shadow-amber-500/20"
 						title="Export"
 					>
 						<Download className="h-3.5 w-3.5" />

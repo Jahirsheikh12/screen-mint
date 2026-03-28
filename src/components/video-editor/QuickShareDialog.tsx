@@ -47,7 +47,7 @@ export function QuickShareDialog({
 						onClick={onSave}
 						className="rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition hover:bg-white/10"
 					>
-						<Download className="mb-3 h-5 w-5 text-emerald-400" />
+						<Download className="mb-3 h-5 w-5 text-amber-400" />
 						<div className="text-sm font-semibold text-white">Save</div>
 						<div className="mt-1 text-xs text-slate-400">Export and save to a file.</div>
 					</button>

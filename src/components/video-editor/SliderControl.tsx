@@ -52,15 +52,15 @@ export function SliderControl({
 	};
 
 	return (
-		<>
-			<div className="flex items-center justify-between mb-1">
-				<div className="flex items-center gap-1">
-					<div className="text-[10px] font-medium text-slate-300">{label}</div>
+		<div className="flex flex-col gap-2">
+			<div className="flex items-center justify-between">
+				<div className="flex items-center gap-1.5">
+					<span className="text-[11px] font-medium text-slate-300">{label}</span>
 					{isModified && (
 						<button
 							type="button"
 							onClick={() => onChange(defaultValue)}
-							className="text-slate-500 hover:text-slate-300 transition-colors"
+							className="text-slate-600 hover:text-[#F59E0B] transition-colors duration-200"
 							title="Reset to default"
 						>
 							<RotateCcw className="w-2.5 h-2.5" />
@@ -78,11 +78,11 @@ export function SliderControl({
 							if (e.key === "Enter") commitEdit();
 							if (e.key === "Escape") cancelEdit();
 						}}
-						className="w-14 text-[10px] text-right font-mono bg-white/10 border border-white/20 rounded px-1 py-0 text-slate-200 outline-none focus:border-white/40"
+						className="w-14 text-[11px] text-right font-mono bg-white/10 border border-white/20 rounded-md px-1.5 py-0.5 text-slate-200 outline-none focus:border-[#F59E0B]/50 focus:ring-1 focus:ring-[#F59E0B]/20 transition-all duration-200"
 					/>
 				) : (
 					<span
-						className="text-[10px] text-slate-500 font-mono cursor-text hover:text-slate-300 transition-colors"
+						className="text-[11px] text-slate-400 font-mono tabular-nums cursor-text hover:text-slate-200 bg-white/[0.04] px-1.5 py-0.5 rounded-md transition-colors duration-200"
 						onClick={() => {
 							setEditText(formatValue(value));
 							setEditing(true);
@@ -100,10 +100,10 @@ export function SliderControl({
 				step={step}
 				className={
 					accentColor === "purple"
-						? "w-full [&_[role=slider]]:bg-[#8b5cf6] [&_[role=slider]]:border-[#8b5cf6] [&_[role=slider]]:h-3 [&_[role=slider]]:w-3"
-						: "w-full [&_[role=slider]]:bg-[#10B981] [&_[role=slider]]:border-[#10B981] [&_[role=slider]]:h-3 [&_[role=slider]]:w-3"
+						? "w-full [&_[role=slider]]:bg-[#8b5cf6] [&_[role=slider]]:border-[#8b5cf6] [&_[role=slider]]:h-3.5 [&_[role=slider]]:w-3.5"
+						: "w-full [&_[role=slider]]:bg-[#F59E0B] [&_[role=slider]]:border-[#F59E0B] [&_[role=slider]]:h-3.5 [&_[role=slider]]:w-3.5"
 				}
 			/>
-		</>
+		</div>
 	);
 }

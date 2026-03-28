@@ -547,7 +547,7 @@ export function createHighlightOverlayWindow(rect: {
 
 	// Render a colored border using inline HTML
 	win.loadURL(
-		`data:text/html,<html><body style="margin:0;padding:0;background:transparent;overflow:hidden;"><div style="position:fixed;inset:0;border:${borderWidth}px solid rgba(16,185,129,0.6);border-radius:4px;pointer-events:none;"></div></body></html>`,
+		`data:text/html,<html><body style="margin:0;padding:0;background:transparent;overflow:hidden;"><div style="position:fixed;inset:0;border:${borderWidth}px solid rgba(245,158,11,0.6);border-radius:4px;pointer-events:none;"></div></body></html>`,
 	);
 
 	highlightOverlayWindow = win;

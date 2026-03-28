@@ -102,14 +102,14 @@ export function ExportSettingsDialog({
 					)}
 				>
 					{/* Top accent line */}
-					<div className="h-[2px] bg-gradient-to-r from-transparent via-[#10B981] to-transparent" />
+					<div className="h-[2px] bg-gradient-to-r from-transparent via-[#F59E0B] to-transparent" />
 
 					<div className="p-6">
 						{/* Header */}
 						<div className="flex items-center justify-between mb-6">
 							<div className="flex items-center gap-3">
-								<div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#10B981]/20 to-[#059669]/10 border border-[#10B981]/20 flex items-center justify-center">
-									<Download className="w-4.5 h-4.5 text-[#10B981]" />
+								<div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#F59E0B]/20 to-[#d97706]/10 border border-[#F59E0B]/20 flex items-center justify-center">
+									<Download className="w-4.5 h-4.5 text-[#F59E0B]" />
 								</div>
 								<div>
 									<h2 className="text-[15px] font-semibold text-white tracking-tight">
@@ -131,8 +131,7 @@ export function ExportSettingsDialog({
 
 						{/* Format selector */}
 						<div className="mb-5">
-							<div className="text-[10px] uppercase tracking-[0.1em] text-slate-500 font-semibold mb-2 flex items-center gap-1.5">
-								<div className="w-1 h-1 rounded-full bg-[#10B981]" />
+							<div className="text-[11px] font-semibold text-slate-200 tracking-wide mb-2 pl-2.5 border-l-2 border-l-amber-500/60">
 								Format
 							</div>
 							<div className="flex items-center gap-2">
@@ -142,13 +141,13 @@ export function ExportSettingsDialog({
 									className={cn(
 										"flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 transition-all duration-200",
 										exportFormat === "mp4"
-											? "bg-gradient-to-br from-[#10B981]/15 to-[#10B981]/5 border-[#10B981]/40 text-white shadow-lg shadow-[#10B981]/10"
+											? "bg-gradient-to-br from-[#F59E0B]/15 to-[#F59E0B]/5 border-[#F59E0B]/40 text-white shadow-lg shadow-[#F59E0B]/10"
 											: "bg-white/[0.03] border-white/[0.06] text-slate-400 hover:bg-white/[0.06] hover:border-white/[0.1] hover:text-slate-200",
 									)}
 								>
 									<Film className="w-4 h-4" />
 									<span className="text-xs font-semibold">{tSettings("export.mp4")}</span>
-									{exportFormat === "mp4" && <Sparkles className="w-3 h-3 text-[#10B981] ml-0.5" />}
+									{exportFormat === "mp4" && <Sparkles className="w-3 h-3 text-[#F59E0B] ml-0.5" />}
 								</button>
 								<button
 									type="button"
@@ -156,13 +155,13 @@ export function ExportSettingsDialog({
 									className={cn(
 										"flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 transition-all duration-200",
 										exportFormat === "gif"
-											? "bg-gradient-to-br from-[#10B981]/15 to-[#10B981]/5 border-[#10B981]/40 text-white shadow-lg shadow-[#10B981]/10"
+											? "bg-gradient-to-br from-[#F59E0B]/15 to-[#F59E0B]/5 border-[#F59E0B]/40 text-white shadow-lg shadow-[#F59E0B]/10"
 											: "bg-white/[0.03] border-white/[0.06] text-slate-400 hover:bg-white/[0.06] hover:border-white/[0.1] hover:text-slate-200",
 									)}
 								>
 									<Image className="w-4 h-4" />
 									<span className="text-xs font-semibold">{tSettings("export.gif")}</span>
-									{exportFormat === "gif" && <Sparkles className="w-3 h-3 text-[#10B981] ml-0.5" />}
+									{exportFormat === "gif" && <Sparkles className="w-3 h-3 text-[#F59E0B] ml-0.5" />}
 								</button>
 							</div>
 						</div>
@@ -170,8 +169,7 @@ export function ExportSettingsDialog({
 						{/* MP4 quality */}
 						{exportFormat === "mp4" && (
 							<div className="mb-5 animate-in fade-in slide-in-from-top-1 duration-200">
-								<div className="text-[10px] uppercase tracking-[0.1em] text-slate-500 font-semibold mb-2 flex items-center gap-1.5">
-									<div className="w-1 h-1 rounded-full bg-[#10B981]" />
+								<div className="text-[11px] font-semibold text-slate-200 tracking-wide mb-2 pl-2.5 border-l-2 border-l-amber-500/60">
 									Quality
 								</div>
 								<div className="grid h-10 w-full grid-cols-4 rounded-xl border border-white/[0.06] bg-white/[0.03] p-1 gap-1">
@@ -208,8 +206,7 @@ export function ExportSettingsDialog({
 						{exportFormat === "gif" && (
 							<div className="mb-5 space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
 								<div>
-									<div className="text-[10px] uppercase tracking-[0.1em] text-slate-500 font-semibold mb-2 flex items-center gap-1.5">
-										<div className="w-1 h-1 rounded-full bg-[#10B981]" />
+									<div className="text-[11px] font-semibold text-slate-200 tracking-wide mb-2 pl-2.5 border-l-2 border-l-amber-500/60">
 										Frame Rate
 									</div>
 									<div className="grid h-10 w-full grid-cols-4 rounded-xl border border-white/[0.06] bg-white/[0.03] p-1 gap-1">
@@ -232,8 +229,7 @@ export function ExportSettingsDialog({
 								</div>
 
 								<div>
-									<div className="text-[10px] uppercase tracking-[0.1em] text-slate-500 font-semibold mb-2 flex items-center gap-1.5">
-										<div className="w-1 h-1 rounded-full bg-[#10B981]" />
+									<div className="text-[11px] font-semibold text-slate-200 tracking-wide mb-2 pl-2.5 border-l-2 border-l-amber-500/60">
 										Size
 									</div>
 									<div className="grid h-10 w-full grid-cols-3 rounded-xl border border-white/[0.06] bg-white/[0.03] p-1 gap-1">
@@ -269,7 +265,7 @@ export function ExportSettingsDialog({
 									<Switch
 										checked={gifLoop}
 										onCheckedChange={onGifLoopChange}
-										className="data-[state=checked]:bg-[#10B981] scale-90"
+										className="data-[state=checked]:bg-[#F59E0B] scale-90"
 									/>
 								</div>
 							</div>
@@ -314,7 +310,7 @@ export function ExportSettingsDialog({
 								onExport();
 								onClose();
 							}}
-							className="w-full h-12 text-sm font-semibold flex items-center justify-center gap-2.5 bg-gradient-to-r from-[#10B981] to-[#059669] text-white rounded-xl shadow-xl shadow-[#10B981]/20 hover:shadow-[#10B981]/30 hover:scale-[1.01] active:scale-[0.98] transition-all duration-200 border border-[#10B981]/30"
+							className="w-full h-12 text-sm font-semibold flex items-center justify-center gap-2.5 bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-white rounded-xl shadow-xl shadow-[#F59E0B]/20 hover:shadow-[#F59E0B]/30 hover:scale-[1.01] active:scale-[0.98] transition-all duration-200 border border-[#F59E0B]/30"
 						>
 							<Zap className="w-4 h-4" />
 							{tSettings("export.exportVideo", undefined, {

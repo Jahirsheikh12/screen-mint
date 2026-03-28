@@ -129,7 +129,7 @@ export default function Item({
 	const endCapColor = isClip
 		? "#f59e0b"
 		: isZoom
-			? "#10B981"
+			? "#F59E0B"
 			: isTrim
 				? "#ef4444"
 				: isSpeed
@@ -139,7 +139,7 @@ export default function Item({
 						: isAudio
 							? "#a855f7"
 							: isCaption
-								? "#06b6d4"
+								? "#f97316"
 								: "#B4A046";
 
 	const timeLabel = useMemo(
