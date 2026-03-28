@@ -1,0 +1,41 @@
+<svg
+	xmlns="http://www.w3.org/2000/svg"
+	width="760"
+	height="180"
+	viewBox="0 0 760 180"
+	fill="none"
+>
+	<g transform="translate(10 10)">
+		<rect x="0" y="0" width="160" height="160" rx="44" fill="#0D0F13" />
+		<rect x="2" y="2" width="156" height="156" rx="42" stroke="rgba(255,255,255,0.14)" stroke-width="4" />
+		<path d="M36 64V46C36 34.954 44.954 26 56 26H74" stroke="#F4EBDD" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
+		<path d="M86 134H104C115.046 134 124 125.046 124 114V96" stroke="#F4EBDD" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
+		<rect x="46" y="50" width="68" height="60" rx="18" fill="#111318" stroke="#F4EBDD" stroke-width="7" />
+		<rect x="60" y="64" width="40" height="8" rx="4" fill="#F4EBDD" opacity="0.88" />
+		<circle cx="80" cy="92" r="12" fill="#F4EBDD" />
+	</g>
+	<g transform="translate(196 0)">
+		<text
+			x="0"
+			y="112"
+			font-family="Avenir Next, Helvetica Neue, Arial, sans-serif"
+			font-size="84"
+			font-weight="650"
+			letter-spacing="-2.4"
+			fill="#F4EBDD"
+		>
+			ScreenMint
+		</text>
+		<text
+			x="4"
+			y="144"
+			font-family="Avenir Next, Helvetica Neue, Arial, sans-serif"
+			font-size="17"
+			font-weight="500"
+			letter-spacing="4.6"
+			fill="#9E9B96"
+		>
+			PREMIUM SCREEN RECORDING
+		</text>
+	</g>
+</svg>

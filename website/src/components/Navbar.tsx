@@ -101,16 +101,16 @@ export function Navbar() {
 				/>
 
 				{/* Logo */}
-				<a href="#" className="relative z-10 flex items-center gap-2 group">
-					<span className="flex h-9 w-9 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.03] shadow-[0_8px_24px_rgba(0,0,0,0.28)] transition-colors duration-300 group-hover:bg-white/[0.06]">
-						<img
-							src="/images/screenmint-logo.svg"
-							alt="ScreenMint logo"
-							className="h-6 w-6 object-contain"
-							loading="eager"
-						/>
-					</span>
-					<span className="text-[15px] font-bold tracking-tight text-white/90">ScreenMint</span>
+				<a
+					href="#"
+					className="relative z-10 flex items-center rounded-full border border-[#d1a86a]/18 bg-[linear-gradient(180deg,rgba(20,18,16,0.94)_0%,rgba(10,10,12,0.94)_100%)] px-3.5 py-2 shadow-[0_12px_36px_rgba(0,0,0,0.3)] transition-all duration-300 hover:border-[#d1a86a]/28 hover:bg-[linear-gradient(180deg,rgba(26,23,20,0.96)_0%,rgba(12,12,14,0.96)_100%)]"
+				>
+					<img
+						src="/images/screenmint-logo.svg"
+						alt="ScreenMint logo"
+						className="h-7 w-auto object-contain"
+						loading="eager"
+					/>
 				</a>
 
 				{/* Desktop nav */}

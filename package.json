@@ -17,6 +17,7 @@
 	"scripts": {
 		"dev": "vite",
 		"postinstall": "npm run rebuild:native",
+		"brand:generate": "node scripts/generate-brand-assets.mjs",
 		"build": "npm run build:native-helpers && tsc && vite build && electron-builder --publish never",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
