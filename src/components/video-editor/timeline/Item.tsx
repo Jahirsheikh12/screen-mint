@@ -226,13 +226,20 @@ export default function Item({
 					<div className="relative z-10 flex flex-col items-center justify-center text-white/90 opacity-80 group-hover:opacity-100 transition-opacity select-none overflow-hidden">
 						{isClip ? (
 							<div className="flex items-center gap-2">
-								<span className="text-[11px] text-white/40 font-medium">Clip</span>
-								<span className="text-[12px] font-semibold tracking-tight whitespace-nowrap">
-									{clipDuration || ""}
-								</span>
-								<span className="text-[11px] text-white/50 whitespace-nowrap">
-									{clipSpeed ? `⏱ ${clipSpeed}` : ""}
-								</span>
+								<span className="text-[11px] text-white/40 font-medium">{children}</span>
+								{clipDuration && (
+									<span className="text-[12px] font-semibold tracking-tight whitespace-nowrap">
+										{clipDuration}
+									</span>
+								)}
+								{clipSpeed && (
+									<span className="text-[11px] text-white/50 whitespace-nowrap">⏱ {clipSpeed}</span>
+								)}
+								{!clipDuration && !clipSpeed && (
+									<span className="text-[9px] tabular-nums tracking-tight whitespace-nowrap opacity-50">
+										{timeLabel}
+									</span>
+								)}
 							</div>
 						) : (
 							<>

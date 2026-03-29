@@ -66,6 +66,7 @@ import {
 	loadEditorPreferences,
 	saveEditorPreferences,
 } from "./editorPreferences";
+import { deriveKeyboardShortcutCallouts } from "./keyboardShortcuts";
 import {
 	createProjectData,
 	deriveNextId,
@@ -76,7 +77,6 @@ import {
 } from "./projectPersistence";
 import { QuickShareDialog } from "./QuickShareDialog";
 import SettingsPanel from "./SettingsPanel";
-import { deriveKeyboardShortcutCallouts } from "./keyboardShortcuts";
 import TimelineEditor from "./timeline/TimelineEditor";
 import {
 	detectInteractionCandidates,
@@ -97,8 +97,6 @@ import {
 	type CaptionStylePreset,
 	type CaptionTrack,
 	type CropRegion,
-	type KeyboardPlatform,
-	type KeyboardTelemetrySample,
 	type CursorTelemetryPoint,
 	clampFocusToDepth,
 	DEFAULT_ANNOTATION_POSITION,
@@ -116,6 +114,8 @@ import {
 	DEFAULT_ZOOM_DEPTH,
 	type FigureData,
 	getRecommendedWebcamRegion,
+	type KeyboardPlatform,
+	type KeyboardTelemetrySample,
 	type PlaybackSpeed,
 	type SpeedRegion,
 	type TrimRegion,
@@ -137,6 +137,7 @@ const LOOP_CURSOR_END_WINDOW_MS = 670;
 type EditorHistorySnapshot = {
 	zoomRegions: ZoomRegion[];
 	trimRegions: TrimRegion[];
+	cutPoints: number[];
 	speedRegions: SpeedRegion[];
 	annotationRegions: AnnotationRegion[];
 	audioRegions: AudioRegion[];
@@ -263,6 +264,7 @@ export default function VideoEditor() {
 	const [selectedZoomId, setSelectedZoomId] = useState<string | null>(null);
 	const [trimRegions, setTrimRegions] = useState<TrimRegion[]>([]);
 	const [selectedTrimId, setSelectedTrimId] = useState<string | null>(null);
+	const [cutPoints, setCutPoints] = useState<number[]>([]);
 	const [speedRegions, setSpeedRegions] = useState<SpeedRegion[]>([]);
 	const [selectedSpeedId, setSelectedSpeedId] = useState<string | null>(null);
 	const [annotationRegions, setAnnotationRegions] = useState<AnnotationRegion[]>([]);
@@ -557,6 +559,7 @@ export default function VideoEditor() {
 			if (options.includeTimeline) {
 				setZoomRegions(controls.zoomRegions);
 				setTrimRegions(controls.trimRegions);
+				setCutPoints(controls.cutPoints ?? []);
 				setSpeedRegions(controls.speedRegions);
 				setAnnotationRegions(controls.annotationRegions);
 				setAudioRegions(controls.audioRegions);
@@ -625,6 +628,7 @@ export default function VideoEditor() {
 		return {
 			zoomRegions: JSON.parse(JSON.stringify(snapshot.zoomRegions)),
 			trimRegions: JSON.parse(JSON.stringify(snapshot.trimRegions)),
+			cutPoints: [...snapshot.cutPoints],
 			speedRegions: JSON.parse(JSON.stringify(snapshot.speedRegions)),
 			annotationRegions: JSON.parse(JSON.stringify(snapshot.annotationRegions)),
 			audioRegions: JSON.parse(JSON.stringify(snapshot.audioRegions)),
@@ -652,6 +656,7 @@ export default function VideoEditor() {
 		return {
 			zoomRegions,
 			trimRegions,
+			cutPoints,
 			speedRegions,
 			annotationRegions,
 			audioRegions,
@@ -674,6 +679,7 @@ export default function VideoEditor() {
 	}, [
 		zoomRegions,
 		trimRegions,
+		cutPoints,
 		speedRegions,
 		annotationRegions,
 		audioRegions,
@@ -700,6 +706,7 @@ export default function VideoEditor() {
 			const cloned = cloneSnapshot(snapshot);
 			setZoomRegions(cloned.zoomRegions);
 			setTrimRegions(cloned.trimRegions);
+			setCutPoints(cloned.cutPoints);
 			setSpeedRegions(cloned.speedRegions);
 			setAnnotationRegions(cloned.annotationRegions);
 			setAudioRegions(cloned.audioRegions);
@@ -893,6 +900,7 @@ export default function VideoEditor() {
 				cropRegion,
 				zoomRegions,
 				trimRegions,
+				cutPoints,
 				speedRegions,
 				annotationRegions,
 				audioRegions,
@@ -949,6 +957,7 @@ export default function VideoEditor() {
 		cropRegion,
 		zoomRegions,
 		trimRegions,
+		cutPoints,
 		speedRegions,
 		audioRegions,
 		annotationRegions,
@@ -1218,6 +1227,7 @@ export default function VideoEditor() {
 				cropRegion,
 				zoomRegions,
 				trimRegions,
+				cutPoints,
 				speedRegions,
 				annotationRegions,
 				audioRegions,
@@ -1304,6 +1314,7 @@ export default function VideoEditor() {
 			cropRegion,
 			zoomRegions,
 			trimRegions,
+			cutPoints,
 			speedRegions,
 			annotationRegions,
 			audioRegions,
@@ -1759,6 +1770,45 @@ export default function VideoEditor() {
 		setSelectedCameraLayoutId(null);
 		setWebcamSelected(false);
 		setSelectedAnnotationId(null);
+	}, []);
+
+	const handleSplitClip = useCallback(
+		(timeMs: number) => {
+			const t = Math.round(timeMs);
+			const totalMs = Math.round(duration * 1000);
+			if (t <= 0 || t >= totalMs) return;
+			// Don't split inside a trim region
+			if (trimRegions.some((r) => t > r.startMs && t < r.endMs)) return;
+			setCutPoints((prev) => {
+				// Don't add duplicate (within 10ms tolerance)
+				if (prev.some((cp) => Math.abs(cp - t) < 10)) return prev;
+				return [...prev, t].sort((a, b) => a - b);
+			});
+		},
+		[duration, trimRegions],
+	);
+
+	const handleDeleteSegment = useCallback((startMs: number, endMs: number) => {
+		if (endMs <= startMs) return;
+		const id = `trim-${nextTrimIdRef.current++}`;
+		const newRegion: TrimRegion = { id, startMs: Math.round(startMs), endMs: Math.round(endMs) };
+		setTrimRegions((prev) => {
+			const updated = [...prev, newRegion].sort((a, b) => a.startMs - b.startMs);
+			// Merge overlapping/adjacent trim regions
+			const merged: TrimRegion[] = [];
+			for (const region of updated) {
+				const last = merged[merged.length - 1];
+				if (last && region.startMs <= last.endMs) {
+					last.endMs = Math.max(last.endMs, region.endMs);
+				} else {
+					merged.push({ ...region });
+				}
+			}
+			return merged;
+		});
+		// Remove cut points that are now inside trim regions
+		setCutPoints((prev) => prev.filter((cp) => cp <= startMs || cp >= endMs));
+		setSelectedTrimId(null);
 	}, []);
 
 	const handleZoomSpanChange = useCallback((id: string, span: Span) => {
@@ -4272,6 +4322,9 @@ export default function VideoEditor() {
 							selectedZoomId={selectedZoomId}
 							onSelectZoom={handleSelectZoom}
 							trimRegions={trimRegions}
+							cutPoints={cutPoints}
+							onSplitClip={handleSplitClip}
+							onDeleteSegment={handleDeleteSegment}
 							onTrimAdded={handleTrimAdded}
 							onTrimSpanChange={handleTrimSpanChange}
 							onTrimDelete={handleTrimDelete}

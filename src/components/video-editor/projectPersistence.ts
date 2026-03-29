@@ -97,6 +97,7 @@ export interface ProjectEditorState {
 	cropRegion: CropRegion;
 	zoomRegions: ZoomRegion[];
 	trimRegions: TrimRegion[];
+	cutPoints: number[];
 	speedRegions: SpeedRegion[];
 	annotationRegions: AnnotationRegion[];
 	audioRegions: AudioRegion[];
@@ -618,6 +619,14 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 				})
 		: [];
 
+	const normalizedCutPoints: number[] = Array.isArray(
+		(editor as Partial<ProjectEditorState> & { cutPoints?: number[] }).cutPoints,
+	)
+		? (
+				(editor as Partial<ProjectEditorState> & { cutPoints?: number[] }).cutPoints as number[]
+			).filter((cp) => typeof cp === "number" && Number.isFinite(cp) && cp > 0)
+		: [];
+
 	const normalizedSpeedRegions: SpeedRegion[] = Array.isArray(editor.speedRegions)
 		? editor.speedRegions
 				.filter((region): region is SpeedRegion => Boolean(region && typeof region.id === "string"))
@@ -907,6 +916,7 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		},
 		zoomRegions: normalizedZoomRegions,
 		trimRegions: normalizedTrimRegions,
+		cutPoints: normalizedCutPoints,
 		speedRegions: normalizedSpeedRegions,
 		annotationRegions: normalizedAnnotationRegions,
 		audioRegions: normalizedAudioRegions,

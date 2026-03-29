@@ -1,4 +1,3 @@
-import Block from "@uiw/react-color-block";
 import {
 	AlignCenter,
 	AlignLeft,
@@ -32,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { useScopedT } from "../../contexts/I18nContext";
 import { AddCustomFontDialog } from "./AddCustomFontDialog";
 import { getArrowComponent } from "./ArrowSvgs";
+import { ColorPicker } from "./ColorPicker";
 import type {
 	AnnotationRegion,
 	AnnotationType,
@@ -407,14 +407,11 @@ export function AnnotationSettingsPanel({
 											</Button>
 										</PopoverTrigger>
 										<PopoverContent className="w-[280px] p-3.5 bg-[#111316] border border-white/[0.08] rounded-xl shadow-2xl shadow-black/60">
-											<Block
+											<ColorPicker
 												color={annotation.style.color}
 												colors={colorPalette}
 												onChange={(color) => {
 													onStyleChange({ color: color.hex });
-												}}
-												style={{
-													borderRadius: "8px",
 												}}
 											/>
 										</PopoverContent>
@@ -446,7 +443,7 @@ export function AnnotationSettingsPanel({
 											</Button>
 										</PopoverTrigger>
 										<PopoverContent className="w-[280px] p-3.5 bg-[#111316] border border-white/[0.08] rounded-xl shadow-2xl shadow-black/60">
-											<Block
+											<ColorPicker
 												color={
 													annotation.style.backgroundColor === "transparent"
 														? "#000000"
@@ -455,9 +452,6 @@ export function AnnotationSettingsPanel({
 												colors={colorPalette}
 												onChange={(color) => {
 													onStyleChange({ backgroundColor: color.hex });
-												}}
-												style={{
-													borderRadius: "8px",
 												}}
 											/>
 											<Button
@@ -603,7 +597,7 @@ export function AnnotationSettingsPanel({
 									</Button>
 								</PopoverTrigger>
 								<PopoverContent className="w-[280px] p-3.5 bg-[#111316] border border-white/[0.08] rounded-xl shadow-2xl shadow-black/60">
-									<Block
+									<ColorPicker
 										color={annotation.figureData?.color || "#F59E0B"}
 										colors={colorPalette}
 										onChange={(color) => {
@@ -612,9 +606,6 @@ export function AnnotationSettingsPanel({
 												color: color.hex,
 											};
 											onFigureDataChange?.(newFigureData);
-										}}
-										style={{
-											borderRadius: "8px",
 										}}
 									/>
 								</PopoverContent>

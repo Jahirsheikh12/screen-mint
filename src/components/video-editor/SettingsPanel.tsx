@@ -1,4 +1,3 @@
-import Block from "@uiw/react-color-block";
 import {
 	AlertTriangle,
 	Camera,
@@ -36,6 +35,7 @@ import {
 	loadAudioSelectionDurationMs,
 	resolveAudioSourceUrl,
 } from "./audioRegionUtils";
+import { ColorPicker } from "./ColorPicker";
 import { CropControl } from "./CropControl";
 import { loadEditorPreferences, saveEditorPreferences } from "./editorPreferences";
 import { KeyboardShortcutsHelp } from "./KeyboardShortcutsHelp";
@@ -1744,22 +1744,15 @@ export default function SettingsPanel({
 									</div>
 								</TabsContent>
 
-								<TabsContent value="color" className="mt-0">
-									<div className="p-2 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-										<Block
-											color={selectedColor}
-											colors={colorPalette}
-											onChange={(color) => {
-												setSelectedColor(color.hex);
-												onWallpaperChange(color.hex);
-											}}
-											className="!gap-1.5 [&_div[title]]:!w-8 [&_div[title]]:!h-8 [&_div[title]]:!rounded-lg [&_div[title]]:!border-2 [&_div[title]]:!border-white/[0.06] [&_div[title]]:hover:!border-[#F59E0B]/40 [&_div[title]]:!transition-all [&_div[title]]:!duration-200 [&_div[title]]:hover:!scale-105 [&_div[title]]:!shadow-sm [&_div[title]]:!shadow-black/20 [&_input]:!h-8 [&_input]:!rounded-lg [&_input]:!border-white/[0.06] [&_input]:!bg-white/[0.03] [&_input]:!text-[11px] [&_input]:!font-mono [&_input]:!tracking-wider [&_input]:focus:!border-[#F59E0B]/40 [&_input]:focus:!ring-1 [&_input]:focus:!ring-[#F59E0B]/20"
-											style={{
-												width: "100%",
-												borderRadius: "8px",
-											}}
-										/>
-									</div>
+								<TabsContent value="color" className="mt-0 p-2.5">
+									<ColorPicker
+										color={selectedColor}
+										colors={colorPalette}
+										onChange={(color) => {
+											setSelectedColor(color.hex);
+											onWallpaperChange(color.hex);
+										}}
+									/>
 								</TabsContent>
 
 								<TabsContent value="gradient" className="mt-0">
@@ -2538,7 +2531,7 @@ export default function SettingsPanel({
 								<label className="text-xs font-medium text-slate-300 mb-2 block">
 									{t("editor.captions.textColor", "Text Color")}
 								</label>
-								<Block
+								<ColorPicker
 									color={captionSettings.style.color}
 									onChange={(color) => onCaptionStyleChange?.({ color: color.hex })}
 									colors={[
