@@ -1,5 +1,11 @@
 import { CONTRIBUTING_URL, LICENSE_URL, REPO_URL } from "../lib/links";
-import { GITHUB_SPONSORS_URL } from "../lib/sponsors";
+import {
+	buildFundingPageHref,
+	CREEM_ENABLED,
+	GITHUB_SPONSORS_URL,
+	SUPPORT_EMAIL,
+	SUPPORT_EMAIL_HREF,
+} from "../lib/sponsors";
 
 export function Footer() {
 	return (
@@ -84,12 +90,58 @@ export function Footer() {
 								Contributing
 							</a>
 						</div>
+
+						<div className="flex flex-col gap-2.5">
+							<span className="text-[11px] text-white/25 uppercase tracking-wider font-medium">
+								Support
+							</span>
+							{CREEM_ENABLED ? (
+								<a
+									href="#sponsor"
+									className="text-[13px] text-white/35 hover:text-white/60 transition-colors"
+								>
+									Support via Card
+								</a>
+							) : null}
+							<a
+								href={buildFundingPageHref("terms")}
+								className="text-[13px] text-white/35 hover:text-white/60 transition-colors"
+							>
+								Terms
+							</a>
+							<a
+								href={buildFundingPageHref("privacy")}
+								className="text-[13px] text-white/35 hover:text-white/60 transition-colors"
+							>
+								Privacy
+							</a>
+							<a
+								href={buildFundingPageHref("refund")}
+								className="text-[13px] text-white/35 hover:text-white/60 transition-colors"
+							>
+								Refund
+							</a>
+							<a
+								href={buildFundingPageHref("support")}
+								className="text-[13px] text-white/35 hover:text-white/60 transition-colors"
+							>
+								Support
+							</a>
+						</div>
 					</div>
 				</div>
 
 				{/* Bottom bar */}
 				<div className="mt-10 pt-6 border-t border-white/[0.04] flex flex-col md:flex-row items-center justify-between gap-4">
-					<p className="text-[11px] text-white/15">Built with Electron, React, and PIXI.js</p>
+					<div className="flex flex-col items-center gap-1 md:items-start">
+						<p className="text-[11px] text-white/15">Built with Electron, React, and PIXI.js</p>
+						<a
+							href={SUPPORT_EMAIL_HREF}
+							className="text-[11px] text-white/22 transition-colors hover:text-white/45"
+						>
+							Support: {SUPPORT_EMAIL}
+						</a>
+					</div>
 					<p className="text-[11px] text-white/15">
 						&copy; {new Date().getFullYear()} ScreenMint. Open source under MIT License.
 					</p>

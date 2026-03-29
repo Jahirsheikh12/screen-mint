@@ -2,7 +2,7 @@ import gsap from "gsap";
 import { useEffect, useRef, useState } from "react";
 import { prefersReducedMotion } from "../hooks/useGSAP";
 import { REPO_URL } from "../lib/links";
-import { GITHUB_SPONSORS_URL } from "../lib/sponsors";
+import { CREEM_ENABLED, GITHUB_SPONSORS_URL } from "../lib/sponsors";
 
 export function Navbar() {
 	const [scrolled, setScrolled] = useState(false);
@@ -134,6 +134,14 @@ export function Navbar() {
 					>
 						Sponsor
 					</a>
+					{CREEM_ENABLED ? (
+						<a
+							href="#sponsor"
+							className="px-3 py-1.5 text-[13px] text-white/40 hover:text-white transition-colors rounded-full hover:bg-white/[0.04]"
+						>
+							Support via Card
+						</a>
+					) : null}
 					<a
 						href="#download"
 						className="px-3 py-1.5 text-[13px] text-white/40 hover:text-white transition-colors rounded-full hover:bg-white/[0.04]"
@@ -240,6 +248,15 @@ export function Navbar() {
 					>
 						Sponsor
 					</a>
+					{CREEM_ENABLED ? (
+						<a
+							href="#sponsor"
+							onClick={() => setMobileOpen(false)}
+							className="block px-3 py-2.5 text-sm text-white/50 hover:text-white rounded-lg hover:bg-white/[0.04]"
+						>
+							Support via Card
+						</a>
+					) : null}
 					<a
 						href="#download"
 						onClick={() => setMobileOpen(false)}

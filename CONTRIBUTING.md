@@ -42,6 +42,9 @@ GitHub Sponsors:
 
 - https://github.com/sponsors/Jahirsheikh12
 
+GitHub Sponsors remains the primary funding path. Any one-time website support checkout is treated
+as a separate support purchase rather than the main open-source sponsorship flow.
+
 ## License
 
 By contributing, you agree that your contributions are licensed under the [MIT License](./LICENSE).

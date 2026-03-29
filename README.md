@@ -76,6 +76,9 @@ releases, you can sponsor the project on GitHub Sponsors:
 
 - https://github.com/sponsors/Jahirsheikh12
 
+If you prefer one-time website support, the support options on `screenmint.live` are designed as
+separate card-checkout support purchases and remain secondary to GitHub Sponsors.
+
 ## License
 
 ScreenMint is released under the MIT License. See [LICENSE](./LICENSE).
