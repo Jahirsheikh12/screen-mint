@@ -2,6 +2,7 @@ import gsap from "gsap";
 import { useEffect, useRef, useState } from "react";
 import { prefersReducedMotion } from "../hooks/useGSAP";
 import { REPO_URL } from "../lib/links";
+import { GITHUB_SPONSORS_URL } from "../lib/sponsors";
 
 export function Navbar() {
 	const [scrolled, setScrolled] = useState(false);
@@ -128,6 +129,12 @@ export function Navbar() {
 						How it works
 					</a>
 					<a
+						href="#sponsor"
+						className="px-3 py-1.5 text-[13px] text-white/40 hover:text-white transition-colors rounded-full hover:bg-white/[0.04]"
+					>
+						Sponsor
+					</a>
+					<a
 						href="#download"
 						className="px-3 py-1.5 text-[13px] text-white/40 hover:text-white transition-colors rounded-full hover:bg-white/[0.04]"
 					>
@@ -149,8 +156,10 @@ export function Navbar() {
 					</a>
 
 					<a
-						href="#download"
-						className="ml-2 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white text-black text-[13px] font-semibold hover:bg-white/90 active:scale-[0.97] transition-all"
+						href={GITHUB_SPONSORS_URL}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="ml-2 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-brand-500 text-black text-[13px] font-semibold hover:bg-brand-400 active:scale-[0.97] transition-all"
 					>
 						<svg
 							width="13"
@@ -162,11 +171,9 @@ export function Navbar() {
 							strokeLinecap="round"
 							strokeLinejoin="round"
 						>
-							<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-							<polyline points="7 10 12 15 17 10" />
-							<line x1="12" y1="15" x2="12" y2="3" />
+							<path d="m12 21-1.45-1.32C5.4 15.02 2 11.93 2 8.13 2 5.04 4.42 3 7.3 3c1.64 0 3.22.81 4.2 2.09C12.48 3.81 14.06 3 15.7 3 18.58 3 21 5.04 21 8.13c0 3.8-3.4 6.89-8.55 11.55z" />
 						</svg>
-						Download
+						Sponsor
 					</a>
 				</div>
 
@@ -227,6 +234,13 @@ export function Navbar() {
 						How it works
 					</a>
 					<a
+						href="#sponsor"
+						onClick={() => setMobileOpen(false)}
+						className="block px-3 py-2.5 text-sm text-white/50 hover:text-white rounded-lg hover:bg-white/[0.04]"
+					>
+						Sponsor
+					</a>
+					<a
 						href="#download"
 						onClick={() => setMobileOpen(false)}
 						className="block px-3 py-2.5 text-sm text-white/50 hover:text-white rounded-lg hover:bg-white/[0.04]"
@@ -251,11 +265,13 @@ export function Navbar() {
 					</a>
 					<div className="pt-2">
 						<a
-							href="#download"
+							href={GITHUB_SPONSORS_URL}
+							target="_blank"
+							rel="noopener noreferrer"
 							onClick={() => setMobileOpen(false)}
-							className="block text-center px-4 py-2.5 rounded-full bg-white text-black text-sm font-semibold"
+							className="block text-center px-4 py-2.5 rounded-full bg-brand-500 text-black text-sm font-semibold"
 						>
-							Download Free
+							Sponsor ScreenMint
 						</a>
 					</div>
 				</div>

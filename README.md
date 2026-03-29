@@ -67,6 +67,14 @@ ScreenMint is an Electron + React + Vite desktop app with:
 
 - GitHub: https://github.com/Jahirsheikh12/screenmint
 - Homepage placeholder: https://screenmint.live
+- Sponsor ScreenMint: https://github.com/sponsors/Jahirsheikh12
+
+## Support ScreenMint
+
+ScreenMint is free and open source. If you want to help fund bug fixes, polish, and future
+releases, you can sponsor the project on GitHub Sponsors:
+
+- https://github.com/sponsors/Jahirsheikh12
 
 ## License
 

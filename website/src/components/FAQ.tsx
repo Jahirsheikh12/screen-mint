@@ -1,6 +1,7 @@
 import gsap from "gsap";
 import { useEffect, useRef, useState } from "react";
 import { prefersReducedMotion } from "../hooks/useGSAP";
+import { SPONSOR_FAQS } from "../lib/sponsors";
 
 const faqs = [
 	{
@@ -43,6 +44,7 @@ const faqs = [
 		answer:
 			"We welcome contributions! Check out our GitHub repository and the CONTRIBUTING.md file for guidelines. Bug reports, feature requests, translations, and code — everything helps.",
 	},
+	...SPONSOR_FAQS,
 ];
 
 function FAQItem({
@@ -104,9 +106,7 @@ function FAQItem({
 					</div>
 					<div className={`faq-answer ${isOpen ? "open" : ""}`}>
 						<div>
-							<p className="text-[13px] text-white/25 leading-relaxed pt-3 pr-8">
-								{answer}
-							</p>
+							<p className="text-[13px] text-white/25 leading-relaxed pt-3 pr-8">{answer}</p>
 						</div>
 					</div>
 				</div>
@@ -180,9 +180,7 @@ export function FAQ() {
 									answer={faq.answer}
 									index={originalIndex}
 									isOpen={openIndex === originalIndex}
-									onToggle={() =>
-										setOpenIndex(openIndex === originalIndex ? null : originalIndex)
-									}
+									onToggle={() => setOpenIndex(openIndex === originalIndex ? null : originalIndex)}
 								/>
 							);
 						})}
@@ -197,9 +195,7 @@ export function FAQ() {
 									answer={faq.answer}
 									index={originalIndex}
 									isOpen={openIndex === originalIndex}
-									onToggle={() =>
-										setOpenIndex(openIndex === originalIndex ? null : originalIndex)
-									}
+									onToggle={() => setOpenIndex(openIndex === originalIndex ? null : originalIndex)}
 								/>
 							);
 						})}

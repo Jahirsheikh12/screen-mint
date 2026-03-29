@@ -1,4 +1,5 @@
 import { CONTRIBUTING_URL, LICENSE_URL, REPO_URL } from "../lib/links";
+import { GITHUB_SPONSORS_URL } from "../lib/sponsors";
 
 export function Footer() {
 	return (
@@ -50,6 +51,14 @@ export function Footer() {
 							<span className="text-[11px] text-white/25 uppercase tracking-wider font-medium">
 								Community
 							</span>
+							<a
+								href={GITHUB_SPONSORS_URL}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="text-[13px] text-white/35 hover:text-white/60 transition-colors"
+							>
+								Sponsor
+							</a>
 							<a
 								href={REPO_URL}
 								target="_blank"

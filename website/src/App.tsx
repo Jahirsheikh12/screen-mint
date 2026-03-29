@@ -7,6 +7,7 @@ import { Footer } from "./components/Footer";
 import { Hero } from "./components/Hero";
 import { Navbar } from "./components/Navbar";
 import { ShowreelSection } from "./components/ShowreelSection";
+import { SponsorSection } from "./components/SponsorSection";
 import { WorkflowSection } from "./components/WorkflowSection";
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
 				<Features />
 				<ShowreelSection />
 				<WorkflowSection />
+				<SponsorSection />
 				<Download />
 				<FAQ />
 			</main>

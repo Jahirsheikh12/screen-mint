@@ -35,6 +35,13 @@ Report bugs and feature requests here:
 
 - https://github.com/Jahirsheikh12/screenmint/issues
 
+## Sponsorship
+
+If you want to support ScreenMint beyond code contributions, you can sponsor the project on
+GitHub Sponsors:
+
+- https://github.com/sponsors/Jahirsheikh12
+
 ## License
 
 By contributing, you agree that your contributions are licensed under the [MIT License](./LICENSE).

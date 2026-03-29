@@ -2,6 +2,7 @@ import gsap from "gsap";
 import { useEffect, useRef, useState } from "react";
 import { prefersReducedMotion } from "../hooks/useGSAP";
 import { REPO_URL } from "../lib/links";
+import { GITHUB_SPONSORS_URL, SPONSOR_SUPPORT_COPY } from "../lib/sponsors";
 
 /* ─── Rotating keyword in the headline ─── */
 const WORDS = ["incredible", "cinematic", "stunning", "polished"];
@@ -173,12 +174,7 @@ export function Hero() {
 			}
 
 			/* Subtitle */
-			tl.fromTo(
-				subRef.current,
-				{ opacity: 0, y: 20 },
-				{ opacity: 1, y: 0, duration: 1 },
-				0.9,
-			);
+			tl.fromTo(subRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 1 }, 0.9);
 
 			/* CTAs */
 			if (ctaRef.current) {
@@ -305,8 +301,8 @@ export function Hero() {
 					ref={subRef}
 					className="text-[16px] md:text-[18px] text-white/30 max-w-[520px] mx-auto mb-10 leading-[1.7] opacity-0"
 				>
-					Auto-zoom, cursor effects, custom backgrounds &amp; a full timeline
-					editor. Record once — polish to perfection.
+					Auto-zoom, cursor effects, custom backgrounds &amp; a full timeline editor. Record once —
+					polish to perfection. {SPONSOR_SUPPORT_COPY}
 				</p>
 
 				{/* CTAs */}
@@ -336,7 +332,7 @@ export function Hero() {
 					</a>
 
 					<a
-						href={REPO_URL}
+						href={GITHUB_SPONSORS_URL}
 						target="_blank"
 						rel="noopener noreferrer"
 						className="hero-btn-ghost group inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full border border-white/[0.07] text-white/45 font-medium text-[15px] transition-all duration-500 hover:border-white/15 hover:text-white/70 hover:bg-white/[0.03]"
@@ -352,10 +348,9 @@ export function Hero() {
 							strokeLinejoin="round"
 							className="transition-transform duration-300 group-hover:rotate-[-8deg]"
 						>
-							<circle cx="12" cy="12" r="10" />
-							<polygon points="10 8 16 12 10 16 10 8" />
+							<path d="m12 21-1.45-1.32C5.4 15.02 2 11.93 2 8.13 2 5.04 4.42 3 7.3 3c1.64 0 3.22.81 4.2 2.09C12.48 3.81 14.06 3 15.7 3 18.58 3 21 5.04 21 8.13c0 3.8-3.4 6.89-8.55 11.55z" />
 						</svg>
-						See it in action
+						Sponsor ScreenMint
 					</a>
 				</div>
 
@@ -390,7 +385,16 @@ export function Hero() {
 						</div>
 						<div className="flex-1 flex justify-center">
 							<div className="flex items-center gap-1.5 px-3 py-0.5 rounded-md bg-white/[0.03]">
-								<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-brand-500/50">
+								<svg
+									width="10"
+									height="10"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									strokeWidth="2"
+									strokeLinecap="round"
+									className="text-brand-500/50"
+								>
 									<rect x="2" y="3" width="20" height="14" rx="2" />
 									<line x1="8" y1="21" x2="16" y2="21" />
 									<line x1="12" y1="17" x2="12" y2="21" />

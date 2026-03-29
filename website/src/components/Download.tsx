@@ -2,6 +2,7 @@ import gsap from "gsap";
 import { useEffect, useRef, useState } from "react";
 import { prefersReducedMotion } from "../hooks/useGSAP";
 import { DOWNLOAD_LINKS, REPO_URL } from "../lib/links";
+import { GITHUB_SPONSORS_URL, SPONSOR_MISSION } from "../lib/sponsors";
 
 type Platform = "macos" | "windows" | "linux" | "unknown";
 type MacArchitecture = "apple-silicon" | "intel" | "unknown";
@@ -99,10 +100,7 @@ const platforms = [
 	},
 ];
 
-function getRecommendedId(
-	platform: Platform,
-	macArch: MacArchitecture,
-): string | null {
+function getRecommendedId(platform: Platform, macArch: MacArchitecture): string | null {
 	if (platform === "macos") {
 		if (macArch === "apple-silicon") return "mac-arm";
 		if (macArch === "intel") return "mac-intel";
@@ -200,6 +198,40 @@ export function Download() {
 					</p>
 				</div>
 
+				<div className="mb-10 rounded-2xl border border-brand-500/12 bg-brand-500/[0.04] p-6 md:p-7">
+					<div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+						<div className="max-w-2xl">
+							<p className="text-[12px] font-medium uppercase tracking-[0.18em] text-brand-400">
+								Sponsor ScreenMint
+							</p>
+							<p className="mt-3 text-[15px] text-white/32 leading-relaxed">
+								{SPONSOR_MISSION} Sponsorship keeps the download free and helps fund new features
+								and future releases.
+							</p>
+						</div>
+						<a
+							href={GITHUB_SPONSORS_URL}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-500 px-5 py-3 text-[14px] font-semibold text-black transition-colors duration-300 hover:bg-brand-400"
+						>
+							<svg
+								width="14"
+								height="14"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+							>
+								<path d="m12 21-1.45-1.32C5.4 15.02 2 11.93 2 8.13 2 5.04 4.42 3 7.3 3c1.64 0 3.22.81 4.2 2.09C12.48 3.81 14.06 3 15.7 3 18.58 3 21 5.04 21 8.13c0 3.8-3.4 6.89-8.55 11.55z" />
+							</svg>
+							Support on GitHub Sponsors
+						</a>
+					</div>
+				</div>
+
 				{/* Platform grid */}
 				<div className="dl-grid grid grid-cols-2 lg:grid-cols-4 gap-3 mb-10">
 					{platforms.map((p) => {
@@ -231,13 +263,17 @@ export function Download() {
 								</div>
 
 								<div>
-									<p className={`text-[15px] font-semibold ${isRecommended ? "text-white" : "text-white/70"}`}>
+									<p
+										className={`text-[15px] font-semibold ${isRecommended ? "text-white" : "text-white/70"}`}
+									>
 										{p.name}
 									</p>
 									<p className="text-[11px] text-white/20 mt-0.5">{p.note}</p>
 								</div>
 
-								<div className={`mt-auto pt-2 text-[12px] font-medium ${isRecommended ? "text-brand-400" : "text-white/25 group-hover:text-white/50"} transition-colors duration-300 flex items-center gap-1.5`}>
+								<div
+									className={`mt-auto pt-2 text-[12px] font-medium ${isRecommended ? "text-brand-400" : "text-white/25 group-hover:text-white/50"} transition-colors duration-300 flex items-center gap-1.5`}
+								>
 									<svg
 										width="12"
 										height="12"
@@ -265,7 +301,16 @@ export function Download() {
 					<div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
 						<div className="flex items-center gap-3 flex-shrink-0">
 							<div className="w-8 h-8 rounded-lg bg-amber-500/8 border border-amber-500/10 flex items-center justify-center">
-								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+								<svg
+									width="14"
+									height="14"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="#f59e0b"
+									strokeWidth="2"
+									strokeLinecap="round"
+									strokeLinejoin="round"
+								>
 									<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
 								</svg>
 							</div>
@@ -287,11 +332,29 @@ export function Download() {
 								title="Copy xattr command"
 							>
 								{xattrCopied ? (
-									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+									<svg
+										width="14"
+										height="14"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="#F59E0B"
+										strokeWidth="2"
+										strokeLinecap="round"
+										strokeLinejoin="round"
+									>
 										<polyline points="20 6 9 17 4 12" />
 									</svg>
 								) : (
-									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+									<svg
+										width="14"
+										height="14"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="2"
+										strokeLinecap="round"
+										strokeLinejoin="round"
+									>
 										<rect x="9" y="9" width="13" height="13" rx="2" />
 										<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
 									</svg>
@@ -304,13 +367,31 @@ export function Download() {
 				{/* Badges */}
 				<div className="flex items-center justify-center gap-3 flex-wrap mt-8">
 					<span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-brand-500/10 bg-brand-500/[0.04] text-brand-400 text-[11px] font-medium">
-						<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+						<svg
+							width="10"
+							height="10"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							strokeWidth="2"
+							strokeLinecap="round"
+							strokeLinejoin="round"
+						>
 							<polyline points="20 6 9 17 4 12" />
 						</svg>
 						Open Source
 					</span>
 					<span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-white/[0.05] bg-white/[0.02] text-white/25 text-[11px] font-medium">
-						<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+						<svg
+							width="10"
+							height="10"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							strokeWidth="2"
+							strokeLinecap="round"
+							strokeLinejoin="round"
+						>
 							<polyline points="20 6 9 17 4 12" />
 						</svg>
 						No Watermarks
