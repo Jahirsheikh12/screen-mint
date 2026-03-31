@@ -27,15 +27,12 @@ import {
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import { AnnotationOverlay } from "./AnnotationOverlay";
 import { CaptionOverlay } from "./CaptionOverlay";
-import { KeyboardShortcutOverlay } from "./KeyboardShortcutOverlay";
 import { resolveCameraLayoutState } from "./cameraLayouts";
+import { KeyboardShortcutOverlay } from "./KeyboardShortcutOverlay";
 import {
 	type AnnotationRegion,
 	type CameraLayoutRegion,
 	type CursorPack,
-	type KeyboardShortcutCallout,
-	type KeyboardShortcutPosition,
-	type KeyboardShortcutTheme,
 	type CursorTelemetryPoint,
 	DEFAULT_CURSOR_CLICK_BOUNCE,
 	DEFAULT_CURSOR_MOTION_BLUR,
@@ -47,6 +44,9 @@ import {
 	DEFAULT_KEYBOARD_SHORTCUT_POSITION,
 	DEFAULT_KEYBOARD_SHORTCUT_SCALE,
 	DEFAULT_KEYBOARD_SHORTCUT_THEME,
+	type KeyboardShortcutCallout,
+	type KeyboardShortcutPosition,
+	type KeyboardShortcutTheme,
 	type SpeedRegion,
 	type TrimRegion,
 	ZOOM_DEPTH_SCALES,
@@ -64,6 +64,7 @@ import {
 	PixiCursorOverlay,
 	preloadCursorAssets,
 } from "./videoPlayback/cursorRenderer";
+import { computeMockupScreenRect, drawDeviceMockup } from "./videoPlayback/deviceMockups";
 import { clampFocusToStage as clampFocusToStageUtil } from "./videoPlayback/focusUtils";
 import { layoutVideoContent as layoutVideoContentUtil } from "./videoPlayback/layoutUtils";
 import { clamp01 } from "./videoPlayback/mathUtils";
@@ -122,6 +123,7 @@ interface VideoPlaybackProps {
 	backgroundBlur?: number;
 	zoomMotionBlur?: number;
 	connectZooms?: boolean;
+	deviceMockup?: import("./types").DeviceMockup;
 	borderRadius?: number;
 	padding?: number;
 	cropRegion?: import("./types").CropRegion;
@@ -194,6 +196,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			backgroundBlur = 0,
 			zoomMotionBlur = 0,
 			connectZooms = true,
+			deviceMockup = "none",
 			borderRadius = 0,
 			padding = 0,
 			cropRegion,
@@ -246,6 +249,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const timeUpdateAnimationRef = useRef<number | null>(null);
 		const [pixiReady, setPixiReady] = useState(false);
 		const [videoReady, setVideoReady] = useState(false);
+		const mockupCanvasRef = useRef<HTMLCanvasElement | null>(null);
 		const overlayRef = useRef<HTMLDivElement | null>(null);
 		const focusIndicatorRef = useRef<HTMLDivElement | null>(null);
 		const currentTimeRef = useRef(0);
@@ -1309,6 +1313,39 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			};
 		}, []);
 
+		// Device mockup overlay rendering
+		const drawMockupOverlay = useCallback(() => {
+			const canvas = mockupCanvasRef.current;
+			const container = containerRef.current;
+			if (!canvas || !container) return;
+
+			const w = container.clientWidth;
+			const h = container.clientHeight;
+			if (!w || !h) return;
+
+			canvas.width = w;
+			canvas.height = h;
+			const ctx = canvas.getContext("2d");
+			if (!ctx) return;
+			ctx.clearRect(0, 0, w, h);
+
+			if (deviceMockup === "none") return;
+
+			const mask = baseMaskRef.current;
+			if (!mask.width || !mask.height) return;
+
+			const videoAR = mask.width / mask.height;
+			const screenRect = computeMockupScreenRect(deviceMockup, w, h, videoAR);
+			if (!screenRect) return;
+
+			drawDeviceMockup(ctx, deviceMockup, w, h, screenRect);
+		}, [deviceMockup]);
+
+		// biome-ignore lint/correctness/useExhaustiveDependencies: padding/borderRadius/cropRegion are component props that affect layout
+		useEffect(() => {
+			drawMockupOverlay();
+		}, [drawMockupOverlay, padding, borderRadius, cropRegion]);
+
 		const isImageUrl = Boolean(
 			resolvedWallpaper &&
 				(resolvedWallpaper.startsWith("file://") ||
@@ -1340,6 +1377,14 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 								: "none",
 					}}
 				/>
+				{/* Device mockup overlay */}
+				{deviceMockup !== "none" && (
+					<canvas
+						ref={mockupCanvasRef}
+						className="absolute inset-0 pointer-events-none"
+						style={{ zIndex: 1 }}
+					/>
+				)}
 				{/* Only render overlay after PIXI and video are fully initialized */}
 				{pixiReady && videoReady && (
 					<div

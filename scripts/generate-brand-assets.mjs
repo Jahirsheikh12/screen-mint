@@ -52,6 +52,7 @@ for (const size of builderSizes) {
 
 renderPng(32, path.join(rootDir, "website", "public", "images", "screenmint-32.png"));
 copyFile(lockupSvg, path.join(rootDir, "website", "public", "images", "screenmint-logo.svg"));
+copyFile(markSvg, path.join(rootDir, "website", "public", "images", "screenmint-mark.svg"));
 
 execFileSync(
 	"npx",

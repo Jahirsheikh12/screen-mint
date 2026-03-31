@@ -33,8 +33,10 @@ export function AreaTab({ disabled }: AreaTabProps) {
 
 	const openAreaSelector = () => {
 		if (disabled) return;
-		setHasArea(true);
-		void window.electronAPI.createAreaOverlay();
+		void (async () => {
+			await window.electronAPI.createAreaOverlay();
+			setHasArea(true);
+		})();
 	};
 
 	const applyPreset = (width: number, height: number) => {
@@ -89,7 +91,7 @@ export function AreaTab({ disabled }: AreaTabProps) {
 				}`}
 			>
 				<MdCropFree size={18} />
-				{hasArea ? t("area.selectArea") : t("area.selectArea")}
+				{hasArea ? t("area.adjustArea", "Adjust Area") : t("area.selectArea")}
 			</button>
 
 			{/* Preset sizes */}

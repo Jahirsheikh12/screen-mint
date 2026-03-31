@@ -1,60 +1,85 @@
 import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { Heart, Menu, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { prefersReducedMotion } from "../hooks/useGSAP";
 import { REPO_URL } from "../lib/links";
 import { CREEM_ENABLED, GITHUB_SPONSORS_URL } from "../lib/sponsors";
 
+const NAV_LINKS = [
+	{ label: "Features", href: "#features" },
+	{ label: "How it works", href: "#how-it-works" },
+	{ label: "Sponsor", href: "#sponsor" },
+	...(CREEM_ENABLED ? [{ label: "Support via Card", href: "#sponsor" }] : []),
+	{ label: "Download", href: "#download" },
+	{ label: "FAQ", href: "#faq" },
+	{ label: "GitHub", href: REPO_URL, external: true },
+] as const;
+
+const SECTION_IDS = ["features", "how-it-works", "sponsor", "download", "faq"];
+
 export function Navbar() {
 	const [scrolled, setScrolled] = useState(false);
 	const [mobileOpen, setMobileOpen] = useState(false);
+	const [activeSection, setActiveSection] = useState("");
 	const navRef = useRef<HTMLElement>(null);
 	const innerRef = useRef<HTMLDivElement>(null);
 	const bgRef = useRef<HTMLDivElement>(null);
+	const mobileMenuRef = useRef<HTMLDivElement>(null);
+	const backdropRef = useRef<HTMLDivElement>(null);
 
+	/* ── Scroll detection ── */
 	useEffect(() => {
 		const onScroll = () => setScrolled(window.scrollY > 20);
 		window.addEventListener("scroll", onScroll, { passive: true });
 		return () => window.removeEventListener("scroll", onScroll);
 	}, []);
 
-	// Smooth GSAP capsule resize animation
+	/* ── Active section detection via ScrollTrigger ── */
+	useEffect(() => {
+		const triggers: ScrollTrigger[] = [];
+		for (const id of SECTION_IDS) {
+			const el = document.getElementById(id);
+			if (!el) continue;
+			const st = ScrollTrigger.create({
+				trigger: el,
+				start: "top 40%",
+				end: "bottom 40%",
+				onToggle: (self) => {
+					if (self.isActive) setActiveSection(id);
+				},
+			});
+			triggers.push(st);
+		}
+		return () => triggers.forEach((t) => t.kill());
+	}, []);
+
+	/* ── GSAP capsule morph ── */
 	useEffect(() => {
 		if (!innerRef.current || !navRef.current || !bgRef.current) return;
-
-		const skipAnim = prefersReducedMotion();
-		const dur = skipAnim ? 0 : 0.6;
+		const dur = prefersReducedMotion() ? 0 : 0.5;
 		const ease = "power3.inOut";
 
 		if (scrolled) {
-			// Compact capsule on scroll
-			gsap.to(navRef.current, {
-				paddingTop: 10,
-				duration: dur,
-				ease,
-			});
+			gsap.to(navRef.current, { paddingTop: 8, duration: dur, ease });
 			gsap.to(innerRef.current, {
-				maxWidth: 820,
-				paddingLeft: 24,
-				paddingRight: 24,
-				height: 52,
+				maxWidth: 800,
+				paddingLeft: 20,
+				paddingRight: 20,
+				height: 50,
 				duration: dur,
 				ease,
 			});
 			gsap.to(bgRef.current, {
 				opacity: 1,
-				scale: 1,
+				borderBottomColor: "rgba(255,255,255,0.06)",
 				duration: dur,
 				ease,
 			});
 		} else {
-			// Wider capsule at top
-			gsap.to(navRef.current, {
-				paddingTop: 16,
-				duration: dur,
-				ease,
-			});
+			gsap.to(navRef.current, { paddingTop: 16, duration: dur, ease });
 			gsap.to(innerRef.current, {
-				maxWidth: 900,
+				maxWidth: 920,
 				paddingLeft: 28,
 				paddingRight: 28,
 				height: 56,
@@ -63,12 +88,41 @@ export function Navbar() {
 			});
 			gsap.to(bgRef.current, {
 				opacity: 1,
-				scale: 1,
+				borderBottomColor: "rgba(255,255,255,0)",
 				duration: dur,
 				ease,
 			});
 		}
 	}, [scrolled]);
+
+	/* ── Mobile menu GSAP animation ── */
+	useEffect(() => {
+		const menu = mobileMenuRef.current;
+		const backdrop = backdropRef.current;
+		if (!menu || !backdrop) return;
+
+		if (mobileOpen) {
+			gsap.set(menu, { display: "block" });
+			gsap.set(backdrop, { display: "block" });
+			gsap.fromTo(backdrop, { opacity: 0 }, { opacity: 1, duration: 0.3 });
+			gsap.fromTo(
+				menu,
+				{ opacity: 0, y: -12, scale: 0.97 },
+				{ opacity: 1, y: 0, scale: 1, duration: 0.35, ease: "power3.out" },
+			);
+			const links = menu.querySelectorAll(".mobile-nav-link");
+			gsap.fromTo(
+				links,
+				{ opacity: 0, x: -12 },
+				{ opacity: 1, x: 0, duration: 0.3, stagger: 0.04, ease: "power2.out", delay: 0.1 },
+			);
+		} else {
+			gsap.to(menu, { opacity: 0, y: -8, duration: 0.2, ease: "power2.in", onComplete: () => { gsap.set(menu, { display: "none" }); } });
+			gsap.to(backdrop, { opacity: 0, duration: 0.2, onComplete: () => { gsap.set(backdrop, { display: "none" }); } });
+		}
+	}, [mobileOpen]);
+
+	const closeMobile = () => setMobileOpen(false);
 
 	return (
 		<nav
@@ -79,21 +133,15 @@ export function Navbar() {
 			<div
 				ref={innerRef}
 				className="relative w-full flex items-center justify-between"
-				style={{
-					maxWidth: 900,
-					paddingLeft: 28,
-					paddingRight: 28,
-					height: 56,
-					borderRadius: 999,
-				}}
+				style={{ maxWidth: 920, paddingLeft: 28, paddingRight: 28, height: 56, borderRadius: 999 }}
 			>
-				{/* Glass background layer — always visible as capsule */}
+				{/* Glass background */}
 				<div
 					ref={bgRef}
 					className="absolute inset-0 pointer-events-none"
 					style={{
 						opacity: 1,
-						background: "rgba(0, 0, 0, 0.6)",
+						background: "rgba(0, 0, 0, 0.65)",
 						backdropFilter: "blur(40px) saturate(180%)",
 						WebkitBackdropFilter: "blur(40px) saturate(180%)",
 						border: "1px solid rgba(255, 255, 255, 0.08)",
@@ -104,83 +152,53 @@ export function Navbar() {
 				{/* Logo */}
 				<a
 					href="#"
-					className="relative z-10 flex items-center rounded-full border border-[#d1a86a]/18 bg-[linear-gradient(180deg,rgba(20,18,16,0.94)_0%,rgba(10,10,12,0.94)_100%)] px-3.5 py-2 shadow-[0_12px_36px_rgba(0,0,0,0.3)] transition-all duration-300 hover:border-[#d1a86a]/28 hover:bg-[linear-gradient(180deg,rgba(26,23,20,0.96)_0%,rgba(12,12,14,0.96)_100%)]"
+					className="relative z-10 flex items-center gap-2.5 group"
 				>
-					<img
-						src="/images/screenmint-logo.svg"
-						alt="ScreenMint logo"
-						className="h-7 w-auto object-contain"
-						loading="eager"
-					/>
+					<span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.04] border border-white/[0.06]">
+						<img
+							src="/images/screenmint-mark.svg"
+							alt="ScreenMint mark"
+							className="h-5 w-5 object-contain"
+							loading="eager"
+						/>
+					</span>
+					<span className="text-[15px] font-semibold tracking-[-0.02em] text-white/90 group-hover:text-white transition-colors">
+						Screen<span className="text-brand-400">Mint</span>
+					</span>
 				</a>
 
 				{/* Desktop nav */}
-				<div className="relative z-10 hidden md:flex items-center gap-1">
-					<a
-						href="#features"
-						className="px-3 py-1.5 text-[13px] text-white/40 hover:text-white transition-colors rounded-full hover:bg-white/[0.04]"
-					>
-						Features
-					</a>
-					<a
-						href="#how-it-works"
-						className="px-3 py-1.5 text-[13px] text-white/40 hover:text-white transition-colors rounded-full hover:bg-white/[0.04]"
-					>
-						How it works
-					</a>
-					<a
-						href="#sponsor"
-						className="px-3 py-1.5 text-[13px] text-white/40 hover:text-white transition-colors rounded-full hover:bg-white/[0.04]"
-					>
-						Sponsor
-					</a>
-					{CREEM_ENABLED ? (
-						<a
-							href="#sponsor"
-							className="px-3 py-1.5 text-[13px] text-white/40 hover:text-white transition-colors rounded-full hover:bg-white/[0.04]"
-						>
-							Support via Card
-						</a>
-					) : null}
-					<a
-						href="#download"
-						className="px-3 py-1.5 text-[13px] text-white/40 hover:text-white transition-colors rounded-full hover:bg-white/[0.04]"
-					>
-						Download
-					</a>
-					<a
-						href="#faq"
-						className="px-3 py-1.5 text-[13px] text-white/40 hover:text-white transition-colors rounded-full hover:bg-white/[0.04]"
-					>
-						FAQ
-					</a>
-					<a
-						href={REPO_URL}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="px-3 py-1.5 text-[13px] text-white/40 hover:text-white transition-colors rounded-full hover:bg-white/[0.04]"
-					>
-						GitHub
-					</a>
+				<div className="relative z-10 hidden md:flex items-center gap-0.5">
+					{NAV_LINKS.map((link) => {
+						const sectionId = link.href.replace("#", "");
+						const isActive = activeSection === sectionId;
+						const isExternal = "external" in link && link.external;
+						return (
+							<a
+								key={link.label}
+								href={link.href}
+								{...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+								className={`relative px-3 py-1.5 text-[13px] rounded-full transition-colors duration-300 ${
+									isActive
+										? "text-white bg-white/[0.06]"
+										: "text-white/40 hover:text-white hover:bg-white/[0.04]"
+								}`}
+							>
+								{link.label}
+								{isActive && (
+									<span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-brand-500" />
+								)}
+							</a>
+						);
+					})}
 
 					<a
 						href={GITHUB_SPONSORS_URL}
 						target="_blank"
 						rel="noopener noreferrer"
-						className="ml-2 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-brand-500 text-black text-[13px] font-semibold hover:bg-brand-400 active:scale-[0.97] transition-all"
+						className="ml-2 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-brand-500 text-black text-[13px] font-semibold hover:bg-brand-400 active:scale-[0.97] transition-all duration-200"
 					>
-						<svg
-							width="13"
-							height="13"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							strokeWidth="2.5"
-							strokeLinecap="round"
-							strokeLinejoin="round"
-						>
-							<path d="m12 21-1.45-1.32C5.4 15.02 2 11.93 2 8.13 2 5.04 4.42 3 7.3 3c1.64 0 3.22.81 4.2 2.09C12.48 3.81 14.06 3 15.7 3 18.58 3 21 5.04 21 8.13c0 3.8-3.4 6.89-8.55 11.55z" />
-						</svg>
+						<Heart className="w-3.5 h-3.5" strokeWidth={2.5} />
 						Sponsor
 					</a>
 				</div>
@@ -188,111 +206,60 @@ export function Navbar() {
 				{/* Mobile hamburger */}
 				<button
 					type="button"
-					className="relative z-10 md:hidden p-2 text-white/50 hover:text-white"
+					className="relative z-10 md:hidden p-2 text-white/50 hover:text-white transition-colors"
 					onClick={() => setMobileOpen(!mobileOpen)}
 					aria-label="Toggle menu"
 				>
-					<svg
-						width="18"
-						height="18"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						strokeWidth="2"
-						strokeLinecap="round"
-					>
-						{mobileOpen ? (
-							<>
-								<line x1="18" y1="6" x2="6" y2="18" />
-								<line x1="6" y1="6" x2="18" y2="18" />
-							</>
-						) : (
-							<>
-								<line x1="4" y1="8" x2="20" y2="8" />
-								<line x1="4" y1="16" x2="20" y2="16" />
-							</>
-						)}
-					</svg>
+					{mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
 				</button>
 			</div>
 
+			{/* Mobile backdrop */}
+			<div
+				ref={backdropRef}
+				className="md:hidden fixed inset-0 bg-black/60 z-40"
+				style={{ display: "none" }}
+				onClick={closeMobile}
+			/>
+
 			{/* Mobile menu */}
-			{mobileOpen && (
-				<div
-					className="md:hidden absolute top-20 left-4 right-4 rounded-2xl px-5 py-4 space-y-1"
-					style={{
-						background: "rgba(0, 0, 0, 0.85)",
-						backdropFilter: "blur(40px) saturate(180%)",
-						WebkitBackdropFilter: "blur(40px) saturate(180%)",
-						border: "1px solid rgba(255, 255, 255, 0.08)",
-					}}
-				>
-					<a
-						href="#features"
-						onClick={() => setMobileOpen(false)}
-						className="block px-3 py-2.5 text-sm text-white/50 hover:text-white rounded-lg hover:bg-white/[0.04]"
-					>
-						Features
-					</a>
-					<a
-						href="#how-it-works"
-						onClick={() => setMobileOpen(false)}
-						className="block px-3 py-2.5 text-sm text-white/50 hover:text-white rounded-lg hover:bg-white/[0.04]"
-					>
-						How it works
-					</a>
-					<a
-						href="#sponsor"
-						onClick={() => setMobileOpen(false)}
-						className="block px-3 py-2.5 text-sm text-white/50 hover:text-white rounded-lg hover:bg-white/[0.04]"
-					>
-						Sponsor
-					</a>
-					{CREEM_ENABLED ? (
+			<div
+				ref={mobileMenuRef}
+				className="md:hidden absolute top-20 left-4 right-4 rounded-2xl px-5 py-4 space-y-1 z-50"
+				style={{
+					display: "none",
+					background: "rgba(0, 0, 0, 0.9)",
+					backdropFilter: "blur(40px) saturate(180%)",
+					WebkitBackdropFilter: "blur(40px) saturate(180%)",
+					border: "1px solid rgba(255, 255, 255, 0.08)",
+				}}
+			>
+				{NAV_LINKS.map((link) => {
+					const isExternal = "external" in link && link.external;
+					return (
 						<a
-							href="#sponsor"
-							onClick={() => setMobileOpen(false)}
-							className="block px-3 py-2.5 text-sm text-white/50 hover:text-white rounded-lg hover:bg-white/[0.04]"
+							key={link.label}
+							href={link.href}
+							{...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+							onClick={closeMobile}
+							className="mobile-nav-link block px-3 py-2.5 text-sm text-white/50 hover:text-white rounded-lg hover:bg-white/[0.04] transition-colors"
 						>
-							Support via Card
+							{link.label}
 						</a>
-					) : null}
+					);
+				})}
+				<div className="pt-2">
 					<a
-						href="#download"
-						onClick={() => setMobileOpen(false)}
-						className="block px-3 py-2.5 text-sm text-white/50 hover:text-white rounded-lg hover:bg-white/[0.04]"
-					>
-						Download
-					</a>
-					<a
-						href="#faq"
-						onClick={() => setMobileOpen(false)}
-						className="block px-3 py-2.5 text-sm text-white/50 hover:text-white rounded-lg hover:bg-white/[0.04]"
-					>
-						FAQ
-					</a>
-					<a
-						href={REPO_URL}
+						href={GITHUB_SPONSORS_URL}
 						target="_blank"
 						rel="noopener noreferrer"
-						onClick={() => setMobileOpen(false)}
-						className="block px-3 py-2.5 text-sm text-white/50 hover:text-white rounded-lg hover:bg-white/[0.04]"
+						onClick={closeMobile}
+						className="mobile-nav-link block text-center px-4 py-2.5 rounded-full bg-brand-500 text-black text-sm font-semibold"
 					>
-						GitHub
+						Sponsor ScreenMint
 					</a>
-					<div className="pt-2">
-						<a
-							href={GITHUB_SPONSORS_URL}
-							target="_blank"
-							rel="noopener noreferrer"
-							onClick={() => setMobileOpen(false)}
-							className="block text-center px-4 py-2.5 rounded-full bg-brand-500 text-black text-sm font-semibold"
-						>
-							Sponsor ScreenMint
-						</a>
-					</div>
 				</div>
-			)}
+			</div>
 		</nav>
 	);
 }

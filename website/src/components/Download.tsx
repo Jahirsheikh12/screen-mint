@@ -1,4 +1,5 @@
 import gsap from "gsap";
+import { Heart, Shield } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { prefersReducedMotion } from "../hooks/useGSAP";
 import { DOWNLOAD_LINKS, REPO_URL } from "../lib/links";
@@ -115,6 +116,7 @@ export function Download() {
 	const [platform, setPlatform] = useState<Platform>("unknown");
 	const [macArch, setMacArch] = useState<MacArchitecture>("unknown");
 	const [xattrCopied, setXattrCopied] = useState(false);
+	const [gatekeeperOpen, setGatekeeperOpen] = useState(false);
 	const sectionRef = useRef<HTMLElement>(null);
 
 	useEffect(() => {
@@ -122,6 +124,7 @@ export function Download() {
 		setPlatform(detected);
 		if (detected === "macos") {
 			void detectMacArchitecture().then(setMacArch);
+			setGatekeeperOpen(true);
 		}
 	}, []);
 
@@ -193,11 +196,12 @@ export function Download() {
 					<h2 className="section-headline mb-4">
 						Start recording<span className="text-brand-500">.</span>
 					</h2>
-					<p className="text-[15px] text-white/30 max-w-md mx-auto leading-relaxed">
+					<p className="text-[15px] text-white/35 max-w-md mx-auto leading-relaxed">
 						Free and open source. No account, no watermarks, no limits.
 					</p>
 				</div>
 
+				{/* Sponsor callout */}
 				<div className="mb-10 rounded-2xl border border-brand-500/12 bg-brand-500/[0.04] p-6 md:p-7">
 					<div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
 						<div className="max-w-2xl">
@@ -213,20 +217,9 @@ export function Download() {
 							href={GITHUB_SPONSORS_URL}
 							target="_blank"
 							rel="noopener noreferrer"
-							className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-500 px-5 py-3 text-[14px] font-semibold text-black transition-colors duration-300 hover:bg-brand-400"
+							className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-500 px-5 py-3 text-[14px] font-semibold text-black transition-all duration-300 hover:bg-brand-400 active:scale-[0.97] flex-shrink-0"
 						>
-							<svg
-								width="14"
-								height="14"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="2"
-								strokeLinecap="round"
-								strokeLinejoin="round"
-							>
-								<path d="m12 21-1.45-1.32C5.4 15.02 2 11.93 2 8.13 2 5.04 4.42 3 7.3 3c1.64 0 3.22.81 4.2 2.09C12.48 3.81 14.06 3 15.7 3 18.58 3 21 5.04 21 8.13c0 3.8-3.4 6.89-8.55 11.55z" />
-							</svg>
+							<Heart className="w-3.5 h-3.5" strokeWidth={2.5} />
 							Support on GitHub Sponsors
 						</a>
 					</div>
@@ -240,9 +233,9 @@ export function Download() {
 							<a
 								key={p.id}
 								href={p.href}
-								className={`dl-card group relative flex flex-col items-center gap-3 rounded-2xl p-6 md:p-8 text-center transition-all duration-300 will-animate ${
+								className={`dl-card group relative flex flex-col items-center gap-3 rounded-2xl p-6 md:p-8 text-center transition-all duration-300 will-animate hover:-translate-y-1 ${
 									isRecommended
-										? "border border-brand-500/20 bg-brand-500/[0.04] hover:bg-brand-500/[0.08]"
+										? "border border-brand-500/20 bg-brand-500/[0.04] hover:bg-brand-500/[0.08] hover:shadow-glow-sm lg:col-span-2 lg:flex-row lg:text-left lg:gap-5 lg:justify-center"
 										: "border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/[0.1]"
 								}`}
 							>
@@ -296,72 +289,83 @@ export function Download() {
 					})}
 				</div>
 
-				{/* macOS Gatekeeper tip */}
-				<div className="dl-footer rounded-xl border border-white/[0.04] bg-white/[0.015] p-5 md:p-6 will-animate">
-					<div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
-						<div className="flex items-center gap-3 flex-shrink-0">
-							<div className="w-8 h-8 rounded-lg bg-amber-500/8 border border-amber-500/10 flex items-center justify-center">
-								<svg
-									width="14"
-									height="14"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="#f59e0b"
-									strokeWidth="2"
-									strokeLinecap="round"
-									strokeLinejoin="round"
-								>
-									<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-								</svg>
+				{/* macOS Gatekeeper tip — collapsible */}
+				<div className="dl-footer will-animate">
+					<button
+						type="button"
+						onClick={() => setGatekeeperOpen(!gatekeeperOpen)}
+						className="w-full rounded-xl border border-white/[0.04] bg-white/[0.015] p-5 md:p-6 text-left transition-colors hover:bg-white/[0.025]"
+					>
+						<div className="flex items-center justify-between gap-4">
+							<div className="flex items-center gap-3">
+								<div className="w-8 h-8 rounded-lg bg-amber-500/8 border border-amber-500/10 flex items-center justify-center flex-shrink-0">
+									<Shield className="w-3.5 h-3.5 text-brand-500" strokeWidth={2} />
+								</div>
+								<div>
+									<p className="text-[13px] font-medium text-white/60">macOS Gatekeeper</p>
+									<p className="text-[11px] text-white/20">Run in Terminal to unblock</p>
+								</div>
 							</div>
-							<div>
-								<p className="text-[13px] font-medium text-white/60">macOS Gatekeeper</p>
-								<p className="text-[11px] text-white/20">Run in Terminal to unblock</p>
-							</div>
+							<svg
+								width="14"
+								height="14"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2"
+								strokeLinecap="round"
+								className={`text-white/20 transition-transform duration-300 flex-shrink-0 ${gatekeeperOpen ? "rotate-180" : ""}`}
+							>
+								<path d="M6 9l6 6 6-6" />
+							</svg>
 						</div>
 
-						<div className="command-block flex-1 flex items-center justify-between rounded-lg bg-black border border-white/[0.04] px-4 py-2.5">
-							<code className="text-[12px] text-brand-400/80 font-mono">
-								<span className="text-white/10 mr-2">$</span>
-								{XATTR_COMMAND}
-							</code>
-							<button
-								type="button"
-								onClick={handleCopyXattr}
-								className="command-copy ml-4 p-1.5 rounded text-white/20 hover:text-white/40 hover:bg-white/[0.03] transition-all flex-shrink-0"
-								title="Copy xattr command"
-							>
-								{xattrCopied ? (
-									<svg
-										width="14"
-										height="14"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="#F59E0B"
-										strokeWidth="2"
-										strokeLinecap="round"
-										strokeLinejoin="round"
+						{gatekeeperOpen && (
+							<div className="mt-4" onClick={(e) => e.stopPropagation()}>
+								<div className="command-block flex items-center justify-between rounded-lg bg-black border border-white/[0.04] px-4 py-2.5">
+									<code className="text-[12px] text-brand-400/80 font-mono">
+										<span className="text-white/10 mr-2">$</span>
+										{XATTR_COMMAND}
+									</code>
+									<button
+										type="button"
+										onClick={handleCopyXattr}
+										className="command-copy ml-4 p-1.5 rounded text-white/20 hover:text-white/40 hover:bg-white/[0.03] transition-all flex-shrink-0"
+										title="Copy xattr command"
 									>
-										<polyline points="20 6 9 17 4 12" />
-									</svg>
-								) : (
-									<svg
-										width="14"
-										height="14"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										strokeWidth="2"
-										strokeLinecap="round"
-										strokeLinejoin="round"
-									>
-										<rect x="9" y="9" width="13" height="13" rx="2" />
-										<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-									</svg>
-								)}
-							</button>
-						</div>
-					</div>
+										{xattrCopied ? (
+											<svg
+												width="14"
+												height="14"
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="#F59E0B"
+												strokeWidth="2"
+												strokeLinecap="round"
+												strokeLinejoin="round"
+											>
+												<polyline points="20 6 9 17 4 12" />
+											</svg>
+										) : (
+											<svg
+												width="14"
+												height="14"
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												strokeWidth="2"
+												strokeLinecap="round"
+												strokeLinejoin="round"
+											>
+												<rect x="9" y="9" width="13" height="13" rx="2" />
+												<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+											</svg>
+										)}
+									</button>
+								</div>
+							</div>
+						)}
+					</button>
 				</div>
 
 				{/* Badges */}

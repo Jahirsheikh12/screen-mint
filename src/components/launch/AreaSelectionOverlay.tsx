@@ -3,81 +3,89 @@ import { FiCheck, FiX } from "react-icons/fi";
 import { useScopedT } from "@/contexts/I18nContext";
 import { normalizeSelectedArea } from "@/lib/recording/session";
 
-type Rect = {
-	x: number;
-	y: number;
-	width: number;
-	height: number;
-};
-
-type DisplayInfo = {
-	id: number;
-	x: number;
-	y: number;
-	width: number;
-	height: number;
-};
+type Rect = { x: number; y: number; width: number; height: number };
+type DisplayInfo = { id: number; x: number; y: number; width: number; height: number };
 
 const MIN_SIZE = 100;
-const HANDLE_SIZE = 10;
-function clamp(value: number, min: number, max: number) {
-	return Math.min(max, Math.max(min, value));
+const HANDLE_HIT = 20;
+const BRACKET_LEN = 16;
+const BRACKET_W = 2.5;
+const EDGE_BAR_LEN = 24;
+const DEAD_ZONE = 5;
+
+function clamp(v: number, lo: number, hi: number) {
+	return Math.min(hi, Math.max(lo, v));
 }
 
-function clampRect(rect: Rect, bounds: { width: number; height: number }) {
-	const width = clamp(rect.width, MIN_SIZE, bounds.width);
-	const height = clamp(rect.height, MIN_SIZE, bounds.height);
-	const x = clamp(rect.x, 0, Math.max(0, bounds.width - width));
-	const y = clamp(rect.y, 0, Math.max(0, bounds.height - height));
-	return { x, y, width, height };
+function clampRect(r: Rect, bounds: { width: number; height: number }): Rect {
+	const w = clamp(r.width, MIN_SIZE, bounds.width);
+	const h = clamp(r.height, MIN_SIZE, bounds.height);
+	return {
+		x: clamp(r.x, 0, Math.max(0, bounds.width - w)),
+		y: clamp(r.y, 0, Math.max(0, bounds.height - h)),
+		width: w,
+		height: h,
+	};
+}
+
+type DragState =
+	| { kind: "idle" }
+	| { kind: "move"; ox: number; oy: number; start: Rect }
+	| { kind: "resize"; handle: string; ox: number; oy: number; start: Rect }
+	| { kind: "draw-pending"; ox: number; oy: number; savedRect: Rect }
+	| { kind: "draw"; ox: number; oy: number };
+
+const IDLE: DragState = { kind: "idle" };
+
+function isDragActive(d: DragState) {
+	return d.kind !== "idle" && d.kind !== "draw-pending";
 }
 
 export function AreaSelectionOverlay() {
 	const t = useScopedT("launch");
-	const [rect, setRect] = useState<Rect>({
-		x: 120,
-		y: 120,
-		width: 800,
-		height: 450,
-	});
-	const [dragging, setDragging] = useState<string | null>(null);
+	const [rect, setRect] = useState<Rect>({ x: 120, y: 120, width: 800, height: 450 });
 	const [display, setDisplay] = useState<DisplayInfo | null>(null);
-	const dragStart = useRef({ mouseX: 0, mouseY: 0, rect });
+	const [drag, setDrag] = useState<DragState>(IDLE);
+	const [shiftKey, setShiftKey] = useState(false);
+	const widthRef = useRef<HTMLInputElement>(null);
+	const heightRef = useRef<HTMLInputElement>(null);
 
+	// ── Initialise display info and restore existing area ─────────────────
 	useEffect(() => {
+		let cancelled = false;
 		void (async () => {
-			const [source, displayInfo, selectedAreaResult] = await Promise.all([
+			const [source, info, areaRes] = await Promise.all([
 				window.electronAPI.getSelectedSource(),
 				window.electronAPI.getDisplayInfo(),
 				window.electronAPI.getSelectedArea(),
 			]);
+			if (cancelled) return;
 
 			const displayId = Number(source?.display_id);
-			const selectedDisplay =
-				displayInfo.success && Number.isFinite(displayId)
-					? (displayInfo.displays.find((candidate) => candidate.id === displayId) ?? null)
+			const found =
+				info.success && Number.isFinite(displayId)
+					? (info.displays.find((d) => d.id === displayId) ?? null)
 					: null;
-
-			const targetDisplay = selectedDisplay ?? {
+			const disp: DisplayInfo = found ?? {
 				id: Number.isFinite(displayId) ? displayId : 0,
 				x: 0,
 				y: 0,
 				width: window.innerWidth,
 				height: window.innerHeight,
 			};
-			setDisplay(targetDisplay);
+			setDisplay(disp);
 
-			const existingArea = selectedAreaResult.success ? (selectedAreaResult.area ?? null) : null;
-			if (existingArea && existingArea.displayId === targetDisplay.id) {
+			const existing = areaRes.success ? (areaRes.area ?? null) : null;
+			if (existing && existing.displayId === disp.id) {
 				setRect(
 					clampRect(
 						{
-							x: existingArea.bounds.x - targetDisplay.x,
-							y: existingArea.bounds.y - targetDisplay.y,
-							width: existingArea.bounds.width,
-							height: existingArea.bounds.height,
+							x: existing.bounds.x - disp.x,
+							y: existing.bounds.y - disp.y,
+							width: existing.bounds.width,
+							height: existing.bounds.height,
 						},
-						targetDisplay,
+						disp,
 					),
 				);
 				return;
@@ -86,83 +94,143 @@ export function AreaSelectionOverlay() {
 			setRect(
 				clampRect(
 					{
-						x: Math.round(targetDisplay.width * 0.15),
-						y: Math.round(targetDisplay.height * 0.18),
-						width: Math.round(targetDisplay.width * 0.5),
-						height: Math.round(targetDisplay.height * 0.42),
+						x: Math.round(disp.width * 0.15),
+						y: Math.round(disp.height * 0.18),
+						width: Math.round(disp.width * 0.5),
+						height: Math.round(disp.height * 0.42),
 					},
-					targetDisplay,
+					disp,
 				),
 			);
 		})();
+		return () => {
+			cancelled = true;
+		};
 	}, []);
 
-	const handleMouseDown = useCallback(
-		(e: React.MouseEvent, handle: string) => {
-			e.preventDefault();
-			e.stopPropagation();
-			setDragging(handle);
-			dragStart.current = {
-				mouseX: e.clientX,
-				mouseY: e.clientY,
-				rect: { ...rect },
-			};
-		},
-		[rect],
-	);
-
+	// ── Pointer move / up during drag ─────────────────────────────────────
 	useEffect(() => {
-		if (!dragging || !display) return;
+		if (drag.kind === "idle" || !display) return;
 
-		const handleMouseMove = (e: MouseEvent) => {
-			const dx = e.clientX - dragStart.current.mouseX;
-			const dy = e.clientY - dragStart.current.mouseY;
-			const start = dragStart.current.rect;
+		const onMove = (e: PointerEvent) => {
+			const dx = e.clientX - drag.ox;
+			const dy = e.clientY - drag.oy;
 
-			setRect(() => {
-				const next = { ...start };
+			if (drag.kind === "draw-pending") {
+				if (Math.hypot(dx, dy) > DEAD_ZONE) {
+					setDrag({ kind: "draw", ox: drag.ox, oy: drag.oy });
+				}
+				return;
+			}
 
-				if (dragging === "move") {
-					next.x = start.x + dx;
-					next.y = start.y + dy;
-				} else {
-					if (dragging.includes("w")) {
-						next.x = start.x + dx;
-						next.width = start.width - dx;
-					}
-					if (dragging.includes("e")) {
-						next.width = start.width + dx;
-					}
-					if (dragging.includes("n")) {
-						next.y = start.y + dy;
-						next.height = start.height - dy;
-					}
-					if (dragging.includes("s")) {
-						next.height = start.height + dy;
+			if (drag.kind === "move") {
+				const s = drag.start;
+				setRect(clampRect({ x: s.x + dx, y: s.y + dy, width: s.width, height: s.height }, display));
+				return;
+			}
+
+			if (drag.kind === "resize") {
+				const s = drag.start;
+				const h = drag.handle;
+				const next = { ...s };
+				const rightEdge = s.x + s.width;
+				const bottomEdge = s.y + s.height;
+
+				// Anchor the opposite edge to prevent rect inversion
+				if (h.includes("w")) {
+					next.x = Math.min(s.x + dx, rightEdge - MIN_SIZE);
+					next.width = rightEdge - next.x;
+				}
+				if (h.includes("e")) {
+					next.width = Math.max(MIN_SIZE, s.width + dx);
+				}
+				if (h.includes("n")) {
+					next.y = Math.min(s.y + dy, bottomEdge - MIN_SIZE);
+					next.height = bottomEdge - next.y;
+				}
+				if (h.includes("s")) {
+					next.height = Math.max(MIN_SIZE, s.height + dy);
+				}
+
+				// Shift + corner = 16:9 aspect ratio lock
+				if (shiftKey && h.length === 2) {
+					const ratio = 16 / 9;
+					if (next.width / next.height > ratio) {
+						next.width = Math.round(next.height * ratio);
+						if (h.includes("w")) next.x = rightEdge - next.width;
+					} else {
+						next.height = Math.round(next.width / ratio);
+						if (h.includes("n")) next.y = bottomEdge - next.height;
 					}
 				}
 
-				return clampRect(next, display);
-			});
+				setRect(clampRect(next, display));
+				return;
+			}
+
+			if (drag.kind === "draw") {
+				setRect(
+					clampRect(
+						{
+							x: Math.min(drag.ox, e.clientX),
+							y: Math.min(drag.oy, e.clientY),
+							width: Math.abs(dx),
+							height: Math.abs(dy),
+						},
+						display,
+					),
+				);
+			}
 		};
 
-		const handleMouseUp = () => setDragging(null);
+		const onUp = () => {
+			if (drag.kind === "draw-pending") {
+				setRect(drag.savedRect);
+			}
+			setDrag(IDLE);
+		};
 
-		window.addEventListener("mousemove", handleMouseMove);
-		window.addEventListener("mouseup", handleMouseUp);
+		// End drag if window loses focus
+		const onBlur = () => {
+			if (drag.kind === "draw-pending") {
+				setRect(drag.savedRect);
+			}
+			setDrag(IDLE);
+		};
+
+		window.addEventListener("pointermove", onMove);
+		window.addEventListener("pointerup", onUp);
+		window.addEventListener("blur", onBlur);
 		return () => {
-			window.removeEventListener("mousemove", handleMouseMove);
-			window.removeEventListener("mouseup", handleMouseUp);
+			window.removeEventListener("pointermove", onMove);
+			window.removeEventListener("pointerup", onUp);
+			window.removeEventListener("blur", onBlur);
 		};
-	}, [display, dragging]);
+	}, [display, drag, shiftKey]);
 
+	// ── Track Shift key for aspect-ratio lock ─────────────────────────────
+	useEffect(() => {
+		const down = (e: KeyboardEvent) => {
+			if (e.key === "Shift") setShiftKey(true);
+		};
+		const up = (e: KeyboardEvent) => {
+			if (e.key === "Shift") setShiftKey(false);
+		};
+		window.addEventListener("keydown", down);
+		window.addEventListener("keyup", up);
+		return () => {
+			window.removeEventListener("keydown", down);
+			window.removeEventListener("keyup", up);
+		};
+	}, []);
+
+	// ── Close / confirm ───────────────────────────────────────────────────
 	const closeOverlay = useCallback(() => {
 		void window.electronAPI.closeAreaOverlay();
 	}, []);
 
 	const confirmSelection = useCallback(() => {
 		if (!display) return;
-
 		void (async () => {
 			const area = normalizeSelectedArea(
 				{
@@ -179,97 +247,60 @@ export function AreaSelectionOverlay() {
 		})();
 	}, [display, rect]);
 
+	// ── Keyboard: Escape, Enter, Arrow keys ───────────────────────────────
 	useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
+		const onKeyDown = (e: KeyboardEvent) => {
 			if (e.key === "Escape") {
 				closeOverlay();
 				return;
 			}
-
 			if (e.key === "Enter") {
 				confirmSelection();
+				return;
+			}
+			if (!display || !e.key.startsWith("Arrow")) return;
+
+			e.preventDefault();
+			const step = e.shiftKey ? 10 : 1;
+			const deltas: Record<string, { dx: number; dy: number }> = {
+				ArrowLeft: { dx: -step, dy: 0 },
+				ArrowRight: { dx: step, dy: 0 },
+				ArrowUp: { dx: 0, dy: -step },
+				ArrowDown: { dx: 0, dy: step },
+			};
+			const delta = deltas[e.key];
+			if (delta) {
+				setRect((r) => clampRect({ ...r, x: r.x + delta.dx, y: r.y + delta.dy }, display));
 			}
 		};
-		window.addEventListener("keydown", handleKeyDown);
-		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [closeOverlay, confirmSelection]);
+		window.addEventListener("keydown", onKeyDown);
+		return () => window.removeEventListener("keydown", onKeyDown);
+	}, [closeOverlay, confirmSelection, display]);
 
-	const handles = useMemo(
-		() => [
-			{ id: "nw", x: -HANDLE_SIZE / 2, y: -HANDLE_SIZE / 2, cursor: "nwse-resize" },
-			{
-				id: "ne",
-				x: rect.width - HANDLE_SIZE / 2,
-				y: -HANDLE_SIZE / 2,
-				cursor: "nesw-resize",
-			},
-			{
-				id: "sw",
-				x: -HANDLE_SIZE / 2,
-				y: rect.height - HANDLE_SIZE / 2,
-				cursor: "nesw-resize",
-			},
-			{
-				id: "se",
-				x: rect.width - HANDLE_SIZE / 2,
-				y: rect.height - HANDLE_SIZE / 2,
-				cursor: "nwse-resize",
-			},
-			{
-				id: "n",
-				x: rect.width / 2 - HANDLE_SIZE / 2,
-				y: -HANDLE_SIZE / 2,
-				cursor: "ns-resize",
-			},
-			{
-				id: "s",
-				x: rect.width / 2 - HANDLE_SIZE / 2,
-				y: rect.height - HANDLE_SIZE / 2,
-				cursor: "ns-resize",
-			},
-			{
-				id: "w",
-				x: -HANDLE_SIZE / 2,
-				y: rect.height / 2 - HANDLE_SIZE / 2,
-				cursor: "ew-resize",
-			},
-			{
-				id: "e",
-				x: rect.width - HANDLE_SIZE / 2,
-				y: rect.height / 2 - HANDLE_SIZE / 2,
-				cursor: "ew-resize",
-			},
-		],
-		[rect.height, rect.width],
-	);
-
-	const isCorner = (id: string) => id.length === 2;
-
-	const controlsTop = useMemo(() => {
-		const viewportHeight = display?.height ?? window.innerHeight;
-		const estimatedHeight = display ? 116 : 72;
-		const aboveTop = rect.y - estimatedHeight - 16;
-		if (aboveTop >= 16) {
-			return aboveTop;
+	// ── Sync dimension inputs when not focused ────────────────────────────
+	useEffect(() => {
+		if (widthRef.current && document.activeElement !== widthRef.current) {
+			widthRef.current.value = String(Math.round(rect.width));
 		}
+		if (heightRef.current && document.activeElement !== heightRef.current) {
+			heightRef.current.value = String(Math.round(rect.height));
+		}
+	}, [rect.width, rect.height]);
 
-		return Math.min(viewportHeight - estimatedHeight - 16, rect.y + rect.height + 16);
-	}, [display, rect.height, rect.y]);
-
+	// ── Apply manual size from inputs ─────────────────────────────────────
 	const applySize = useCallback(
-		(nextWidth: number, nextHeight: number) => {
+		(w: number, h: number) => {
 			if (!display) return;
-
-			const width = Math.min(display.width, Math.max(MIN_SIZE, Math.round(nextWidth)));
-			const height = Math.min(display.height, Math.max(MIN_SIZE, Math.round(nextHeight)));
-			setRect((current) =>
+			const nw = clamp(Math.round(w), MIN_SIZE, display.width);
+			const nh = clamp(Math.round(h), MIN_SIZE, display.height);
+			setRect((r) =>
 				clampRect(
 					{
-						...current,
-						width,
-						height,
-						x: Math.round((display.width - width) / 2),
-						y: Math.round((display.height - height) / 2),
+						...r,
+						width: nw,
+						height: nh,
+						x: Math.round((display.width - nw) / 2),
+						y: Math.round((display.height - nh) / 2),
 					},
 					display,
 				),
@@ -278,8 +309,181 @@ export function AreaSelectionOverlay() {
 		[display],
 	);
 
+	const commitInput = useCallback(
+		(axis: "w" | "h") => {
+			const ref = axis === "w" ? widthRef : heightRef;
+			const val = Number.parseInt(ref.current?.value ?? "", 10);
+			if (Number.isFinite(val) && val > 0) {
+				applySize(axis === "w" ? val : rect.width, axis === "h" ? val : rect.height);
+			} else if (ref.current) {
+				ref.current.value = String(Math.round(axis === "w" ? rect.width : rect.height));
+			}
+		},
+		[applySize, rect.width, rect.height],
+	);
+
+	// ── Pointer-down handlers ─────────────────────────────────────────────
+	const onBackgroundDown = useCallback(
+		(e: React.PointerEvent) => {
+			if ((e.target as HTMLElement).closest("[data-panel]")) return;
+			e.preventDefault();
+			(e.target as HTMLElement).setPointerCapture(e.pointerId);
+			setDrag({
+				kind: "draw-pending",
+				ox: e.clientX,
+				oy: e.clientY,
+				savedRect: rect,
+			});
+		},
+		[rect],
+	);
+
+	const onMoveDown = useCallback(
+		(e: React.PointerEvent) => {
+			e.preventDefault();
+			e.stopPropagation();
+			(e.target as HTMLElement).setPointerCapture(e.pointerId);
+			setDrag({
+				kind: "move",
+				ox: e.clientX,
+				oy: e.clientY,
+				start: { ...rect },
+			});
+		},
+		[rect],
+	);
+
+	const onHandleDown = useCallback(
+		(e: React.PointerEvent, handle: string) => {
+			e.preventDefault();
+			e.stopPropagation();
+			(e.target as HTMLElement).setPointerCapture(e.pointerId);
+			setDrag({
+				kind: "resize",
+				handle,
+				ox: e.clientX,
+				oy: e.clientY,
+				start: { ...rect },
+			});
+		},
+		[rect],
+	);
+
+	// ── Corner handles ────────────────────────────────────────────────────
+	const cornerHandles = useMemo(() => {
+		const hh = HANDLE_HIT / 2;
+		return [
+			{ id: "nw", left: rect.x - hh, top: rect.y - hh, cursor: "nwse-resize" },
+			{
+				id: "ne",
+				left: rect.x + rect.width - hh,
+				top: rect.y - hh,
+				cursor: "nesw-resize",
+			},
+			{
+				id: "sw",
+				left: rect.x - hh,
+				top: rect.y + rect.height - hh,
+				cursor: "nesw-resize",
+			},
+			{
+				id: "se",
+				left: rect.x + rect.width - hh,
+				top: rect.y + rect.height - hh,
+				cursor: "nwse-resize",
+			},
+		] as const;
+	}, [rect.x, rect.y, rect.width, rect.height]);
+
+	// ── Edge strip handles (full edge coverage, no gaps) ──────────────────
+	const edgeStrips = useMemo(() => {
+		const hh = HANDLE_HIT / 2;
+		return [
+			{
+				id: "n",
+				left: rect.x + hh,
+				top: rect.y - hh,
+				width: Math.max(0, rect.width - HANDLE_HIT),
+				height: HANDLE_HIT,
+				cursor: "ns-resize",
+			},
+			{
+				id: "s",
+				left: rect.x + hh,
+				top: rect.y + rect.height - hh,
+				width: Math.max(0, rect.width - HANDLE_HIT),
+				height: HANDLE_HIT,
+				cursor: "ns-resize",
+			},
+			{
+				id: "w",
+				left: rect.x - hh,
+				top: rect.y + hh,
+				width: HANDLE_HIT,
+				height: Math.max(0, rect.height - HANDLE_HIT),
+				cursor: "ew-resize",
+			},
+			{
+				id: "e",
+				left: rect.x + rect.width - hh,
+				top: rect.y + hh,
+				width: HANDLE_HIT,
+				height: Math.max(0, rect.height - HANDLE_HIT),
+				cursor: "ew-resize",
+			},
+		] as const;
+	}, [rect.x, rect.y, rect.width, rect.height]);
+
+	// ── SVG corner bracket paths ──────────────────────────────────────────
+	const bracketPaths = useMemo(() => {
+		const { x, y, width: w, height: h } = rect;
+		const L = BRACKET_LEN;
+		return [
+			`M${x},${y + L} L${x},${y} L${x + L},${y}`,
+			`M${x + w - L},${y} L${x + w},${y} L${x + w},${y + L}`,
+			`M${x},${y + h - L} L${x},${y + h} L${x + L},${y + h}`,
+			`M${x + w - L},${y + h} L${x + w},${y + h} L${x + w},${y + h - L}`,
+		];
+	}, [rect]);
+
+	// ── SVG edge midpoint bars ────────────────────────────────────────────
+	const edgeBars = useMemo(() => {
+		const { x, y, width: w, height: h } = rect;
+		const hl = EDGE_BAR_LEN / 2;
+		return [
+			{ x1: x + w / 2 - hl, y1: y, x2: x + w / 2 + hl, y2: y },
+			{ x1: x + w / 2 - hl, y1: y + h, x2: x + w / 2 + hl, y2: y + h },
+			{ x1: x, y1: y + h / 2 - hl, x2: x, y2: y + h / 2 + hl },
+			{ x1: x + w, y1: y + h / 2 - hl, x2: x + w, y2: y + h / 2 + hl },
+		];
+	}, [rect]);
+
+	// ── Control panel position (clamped to viewport) ──────────────────────
+	const panelPos = useMemo(() => {
+		const vw = display?.width ?? window.innerWidth;
+		const vh = display?.height ?? window.innerHeight;
+		const pw = 480;
+		const ph = 52;
+		const gap = 16;
+
+		const left = clamp(rect.x + rect.width / 2, pw / 2 + gap, vw - pw / 2 - gap);
+		const above = rect.y - ph - gap;
+		const top = above >= gap ? above : Math.min(vh - ph - gap, rect.y + rect.height + gap);
+		return { left, top };
+	}, [display, rect]);
+
+	const active = isDragActive(drag);
+	const showPanel = drag.kind !== "draw" && drag.kind !== "draw-pending";
+
 	return (
-		<div className="fixed inset-0 select-none">
+		<div
+			className="fixed inset-0 select-none"
+			style={{
+				cursor: drag.kind === "draw" || drag.kind === "draw-pending" ? "crosshair" : undefined,
+			}}
+			onPointerDown={onBackgroundDown}
+		>
+			{/* ── SVG: overlay mask + selection visuals ─────────────── */}
 			<svg className="absolute inset-0 h-full w-full pointer-events-none">
 				<defs>
 					<mask id="area-mask">
@@ -287,156 +491,236 @@ export function AreaSelectionOverlay() {
 						<rect x={rect.x} y={rect.y} width={rect.width} height={rect.height} fill="black" />
 					</mask>
 				</defs>
-				<rect width="100%" height="100%" fill="rgba(0,0,0,0.45)" mask="url(#area-mask)" />
-			</svg>
 
-			<div
-				style={{
-					position: "absolute",
-					left: rect.x,
-					top: rect.y,
-					width: rect.width,
-					height: rect.height,
-					border: "2px solid rgba(245, 158, 11, 0.7)",
-					cursor: dragging === "move" ? "grabbing" : "grab",
-					boxShadow: "0 0 0 1px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(0,0,0,0.15)",
-				}}
-				onMouseDown={(e) => handleMouseDown(e, "move")}
-			>
-				{handles.map((handle) => (
-					<div
-						key={handle.id}
-						style={{
-							position: "absolute",
-							left: handle.x,
-							top: handle.y,
-							width: HANDLE_SIZE,
-							height: HANDLE_SIZE,
-							background: "#F59E0B",
-							borderRadius: isCorner(handle.id) ? "50%" : 2,
-							cursor: handle.cursor,
-							border: "2px solid rgba(255,255,255,0.9)",
-							boxShadow: "0 1px 3px rgba(0,0,0,0.4)",
-						}}
-						onMouseDown={(e) => handleMouseDown(e, handle.id)}
-					/>
-				))}
+				{/* Dark overlay */}
+				<rect width="100%" height="100%" fill="rgba(0,0,0,0.5)" mask="url(#area-mask)" />
 
-				<div
-					style={{
-						position: "absolute",
-						left: "33.33%",
-						top: 0,
-						width: 1,
-						height: "100%",
-						background: "rgba(255,255,255,0.08)",
-						pointerEvents: "none",
-					}}
-				/>
-				<div
-					style={{
-						position: "absolute",
-						left: "66.66%",
-						top: 0,
-						width: 1,
-						height: "100%",
-						background: "rgba(255,255,255,0.08)",
-						pointerEvents: "none",
-					}}
-				/>
-				<div
-					style={{
-						position: "absolute",
-						left: 0,
-						top: "33.33%",
-						width: "100%",
-						height: 1,
-						background: "rgba(255,255,255,0.08)",
-						pointerEvents: "none",
-					}}
-				/>
-				<div
-					style={{
-						position: "absolute",
-						left: 0,
-						top: "66.66%",
-						width: "100%",
-						height: 1,
-						background: "rgba(255,255,255,0.08)",
-						pointerEvents: "none",
-					}}
-				/>
-			</div>
-
-			<div
-				style={{
-					position: "absolute",
-					left: rect.x + rect.width / 2,
-					top: controlsTop,
-					transform: "translateX(-50%)",
-				}}
-				className="flex items-center justify-center gap-2.5 whitespace-nowrap rounded-[20px] border border-[rgba(245,158,11,0.16)] bg-[linear-gradient(180deg,rgba(8,13,11,0.97)_0%,rgba(8,11,10,0.94)_100%)] px-3 py-2.5 text-xs text-white shadow-[0_18px_48px_rgba(0,0,0,0.38)] backdrop-blur-2xl"
-			>
-				<div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-2.5 py-1.5">
-					<span className="text-[10px] font-medium uppercase tracking-[0.14em] text-white/38">
-						Size
-					</span>
-					<span className="font-semibold tabular-nums text-white/92 leading-none">
-						{t("area.areaSize", "{{width}} x {{height}}", {
-							width: Math.round(rect.width),
-							height: Math.round(rect.height),
-						})}
-					</span>
-				</div>
-
-				{display && (
-					<div className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-2 py-1.5">
-						<label className="flex items-center gap-1.5 rounded-lg border border-white/8 bg-black/20 px-2 py-1 text-[11px] text-white/62">
-							<span className="font-semibold tracking-[0.12em] text-white/38">W</span>
-							<input
-								type="number"
-								min={MIN_SIZE}
-								max={display.width}
-								value={Math.round(rect.width)}
-								onChange={(event) => applySize(Number(event.target.value), rect.height)}
-								className="w-14 bg-transparent text-right font-semibold text-white outline-none"
-							/>
-						</label>
-						<label className="flex items-center gap-1.5 rounded-lg border border-white/8 bg-black/20 px-2 py-1 text-[11px] text-white/62">
-							<span className="font-semibold tracking-[0.12em] text-white/38">H</span>
-							<input
-								type="number"
-								min={MIN_SIZE}
-								max={display.height}
-								value={Math.round(rect.height)}
-								onChange={(event) => applySize(rect.width, Number(event.target.value))}
-								className="w-14 bg-transparent text-right font-semibold text-white outline-none"
-							/>
-						</label>
-					</div>
+				{/* Edge guide lines (visible during active drag) */}
+				{active && (
+					<g stroke="rgba(245,158,11,0.2)" strokeWidth={1} strokeDasharray="6 4">
+						{/* Vertical guides (left & right edges) */}
+						<line x1={rect.x} y1={0} x2={rect.x} y2={rect.y} />
+						<line x1={rect.x} y1={rect.y + rect.height} x2={rect.x} y2="100%" />
+						<line x1={rect.x + rect.width} y1={0} x2={rect.x + rect.width} y2={rect.y} />
+						<line
+							x1={rect.x + rect.width}
+							y1={rect.y + rect.height}
+							x2={rect.x + rect.width}
+							y2="100%"
+						/>
+						{/* Horizontal guides (top & bottom edges) */}
+						<line x1={0} y1={rect.y} x2={rect.x} y2={rect.y} />
+						<line x1={rect.x + rect.width} y1={rect.y} x2="100%" y2={rect.y} />
+						<line x1={0} y1={rect.y + rect.height} x2={rect.x} y2={rect.y + rect.height} />
+						<line
+							x1={rect.x + rect.width}
+							y1={rect.y + rect.height}
+							x2="100%"
+							y2={rect.y + rect.height}
+						/>
+					</g>
 				)}
 
-				<div className="h-7 w-px bg-white/10" />
+				{/* Selection border */}
+				<rect
+					x={rect.x}
+					y={rect.y}
+					width={rect.width}
+					height={rect.height}
+					fill="none"
+					stroke="rgba(245,158,11,0.7)"
+					strokeWidth={2}
+				/>
 
-				<div className="flex items-center gap-2">
-					<button
-						type="button"
-						onClick={closeOverlay}
-						className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5 text-white/72 transition-colors hover:bg-white/[0.09] hover:text-white"
-					>
-						<FiX size={13} />
-						<span className="font-medium">{t("area.cancelSelection")}</span>
-					</button>
-					<button
-						type="button"
-						onClick={confirmSelection}
-						className="flex items-center gap-1.5 rounded-xl bg-[#F59E0B] px-3.5 py-1.5 font-semibold text-[#1a0f00] transition-colors hover:bg-[#fbbf24]"
-					>
-						<FiCheck size={13} />
-						<span>{t("area.confirmSelection")}</span>
-					</button>
+				{/* Rule-of-thirds grid */}
+				<g stroke="rgba(255,255,255,0.07)" strokeWidth={1}>
+					<line
+						x1={rect.x + rect.width / 3}
+						y1={rect.y}
+						x2={rect.x + rect.width / 3}
+						y2={rect.y + rect.height}
+					/>
+					<line
+						x1={rect.x + (rect.width * 2) / 3}
+						y1={rect.y}
+						x2={rect.x + (rect.width * 2) / 3}
+						y2={rect.y + rect.height}
+					/>
+					<line
+						x1={rect.x}
+						y1={rect.y + rect.height / 3}
+						x2={rect.x + rect.width}
+						y2={rect.y + rect.height / 3}
+					/>
+					<line
+						x1={rect.x}
+						y1={rect.y + (rect.height * 2) / 3}
+						x2={rect.x + rect.width}
+						y2={rect.y + (rect.height * 2) / 3}
+					/>
+				</g>
+
+				{/* Corner brackets */}
+				<g fill="none" stroke="#F59E0B" strokeWidth={BRACKET_W} strokeLinecap="square">
+					{bracketPaths.map((d) => (
+						<path key={d} d={d} />
+					))}
+				</g>
+
+				{/* Edge midpoint bars */}
+				<g stroke="#F59E0B" strokeWidth={3} strokeLinecap="round">
+					{edgeBars.map((l) => (
+						<line key={`${l.x1}-${l.y1}-${l.x2}-${l.y2}`} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} />
+					))}
+				</g>
+			</svg>
+
+			{/* ── Interactive: move handle (interior) ──────────────── */}
+			<div
+				style={{
+					position: "absolute",
+					left: rect.x + HANDLE_HIT / 2,
+					top: rect.y + HANDLE_HIT / 2,
+					width: Math.max(0, rect.width - HANDLE_HIT),
+					height: Math.max(0, rect.height - HANDLE_HIT),
+					cursor: drag.kind === "move" ? "grabbing" : "grab",
+				}}
+				onPointerDown={onMoveDown}
+			/>
+
+			{/* ── Interactive: edge strip handles ──────────────────── */}
+			{edgeStrips.map((strip) => (
+				<div
+					key={strip.id}
+					style={{
+						position: "absolute",
+						left: strip.left,
+						top: strip.top,
+						width: strip.width,
+						height: strip.height,
+						cursor: strip.cursor,
+					}}
+					onPointerDown={(e) => onHandleDown(e, strip.id)}
+				/>
+			))}
+
+			{/* ── Interactive: corner handles ──────────────────────── */}
+			{cornerHandles.map((corner) => (
+				<div
+					key={corner.id}
+					style={{
+						position: "absolute",
+						left: corner.left,
+						top: corner.top,
+						width: HANDLE_HIT,
+						height: HANDLE_HIT,
+						cursor: corner.cursor,
+					}}
+					onPointerDown={(e) => onHandleDown(e, corner.id)}
+				/>
+			))}
+
+			{/* ── Center dimension badge (during active drag) ──────── */}
+			{active && (
+				<div
+					style={{
+						position: "absolute",
+						left: rect.x + rect.width / 2,
+						top: rect.y + rect.height / 2,
+						transform: "translate(-50%, -50%)",
+					}}
+					className="pointer-events-none rounded-lg bg-black/70 px-3 py-1.5 text-xs font-semibold tabular-nums text-white/90 backdrop-blur-sm"
+				>
+					{Math.round(rect.width)} &times; {Math.round(rect.height)}
 				</div>
-			</div>
+			)}
+
+			{/* ── Control panel ─────────────────────────────────────── */}
+			{showPanel && (
+				<div
+					data-panel
+					style={{
+						position: "absolute",
+						left: panelPos.left,
+						top: panelPos.top,
+						transform: "translateX(-50%)",
+					}}
+					className="flex items-center gap-2.5 whitespace-nowrap rounded-2xl border border-amber-500/15 bg-[linear-gradient(180deg,rgba(8,13,11,0.97)_0%,rgba(8,11,10,0.94)_100%)] px-3 py-2.5 text-xs text-white shadow-[0_18px_48px_rgba(0,0,0,0.38)] backdrop-blur-2xl"
+					onPointerDown={(e) => e.stopPropagation()}
+				>
+					{/* Size readout */}
+					<div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-2.5 py-1.5">
+						<span className="text-[10px] font-medium uppercase tracking-widest text-white/35">
+							Size
+						</span>
+						<span className="font-semibold tabular-nums leading-none text-white/90">
+							{t("area.areaSize", "{{width}} \u00d7 {{height}}", {
+								width: Math.round(rect.width),
+								height: Math.round(rect.height),
+							})}
+						</span>
+					</div>
+
+					{/* Dimension inputs */}
+					{display && (
+						<div className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-2 py-1.5">
+							<label className="flex items-center gap-1.5 rounded-lg border border-white/8 bg-black/20 px-2 py-1 text-[11px] text-white/60">
+								<span className="font-semibold tracking-widest text-white/35">W</span>
+								<input
+									ref={widthRef}
+									type="number"
+									min={MIN_SIZE}
+									max={display.width}
+									defaultValue={Math.round(rect.width)}
+									onBlur={() => commitInput("w")}
+									onKeyDown={(e) => {
+										if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+										if (e.key.startsWith("Arrow")) e.stopPropagation();
+									}}
+									className="w-14 bg-transparent text-right font-semibold text-white outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+								/>
+							</label>
+							<label className="flex items-center gap-1.5 rounded-lg border border-white/8 bg-black/20 px-2 py-1 text-[11px] text-white/60">
+								<span className="font-semibold tracking-widest text-white/35">H</span>
+								<input
+									ref={heightRef}
+									type="number"
+									min={MIN_SIZE}
+									max={display.height}
+									defaultValue={Math.round(rect.height)}
+									onBlur={() => commitInput("h")}
+									onKeyDown={(e) => {
+										if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+										if (e.key.startsWith("Arrow")) e.stopPropagation();
+									}}
+									className="w-14 bg-transparent text-right font-semibold text-white outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+								/>
+							</label>
+						</div>
+					)}
+
+					<div className="h-7 w-px bg-white/10" />
+
+					<div className="flex items-center gap-2">
+						<button
+							type="button"
+							onClick={closeOverlay}
+							className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5 text-white/70 transition-colors hover:bg-white/[0.09] hover:text-white"
+						>
+							<FiX size={13} />
+							<span className="font-medium">{t("area.cancelSelection")}</span>
+						</button>
+						<button
+							type="button"
+							onClick={confirmSelection}
+							className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-3.5 py-1.5 font-semibold text-[#1a0f00] transition-colors hover:bg-amber-400"
+						>
+							<FiCheck size={13} />
+							<span>{t("area.confirmSelection")}</span>
+						</button>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }

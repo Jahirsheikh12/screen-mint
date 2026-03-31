@@ -55,6 +55,7 @@ Maintain clearspace around the mark equal to the height of the recording dot.
 | `ScreenMint-Mark.svg` | `icons/icons/mac/icon.icns` |
 | `ScreenMint-Mark.svg` | `icons/icons/win/icon.ico` |
 | `ScreenMint-Mark.svg` | `website/public/images/screenmint-32.png` |
+| `ScreenMint-Mark.svg` | `website/public/images/screenmint-mark.svg` |
 | `ScreenMint.svg` | `website/public/images/screenmint-logo.svg` |
 
 ## Verification Checklist

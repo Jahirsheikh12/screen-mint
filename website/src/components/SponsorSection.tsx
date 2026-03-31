@@ -1,4 +1,5 @@
 import gsap from "gsap";
+import { Heart, Rocket, Star, Zap } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { prefersReducedMotion } from "../hooks/useGSAP";
 import {
@@ -11,6 +12,8 @@ import {
 	SPONSOR_TIERS,
 	SUPPORT_EMAIL_HREF,
 } from "../lib/sponsors";
+
+const TIER_ICONS = [Star, Zap, Rocket] as const;
 
 export function SponsorSection() {
 	const sectionRef = useRef<HTMLElement>(null);
@@ -38,27 +41,28 @@ export function SponsorSection() {
 			);
 
 			gsap.fromTo(
+				".sponsor-hero-cta",
+				{ opacity: 0, y: 30, scale: 0.97 },
+				{
+					opacity: 1,
+					y: 0,
+					scale: 1,
+					duration: 0.8,
+					ease: "power2.out",
+					scrollTrigger: { trigger: ".sponsor-hero-cta", start: "top 85%", once: true },
+				},
+			);
+
+			gsap.fromTo(
 				".sponsor-card",
 				{ opacity: 0, y: 24 },
 				{
 					opacity: 1,
 					y: 0,
 					duration: 0.6,
-					stagger: 0.08,
+					stagger: 0.1,
 					ease: "power2.out",
 					scrollTrigger: { trigger: ".sponsor-grid", start: "top 85%", once: true },
-				},
-			);
-
-			gsap.fromTo(
-				".sponsor-cta",
-				{ opacity: 0, y: 20 },
-				{
-					opacity: 1,
-					y: 0,
-					duration: 0.6,
-					ease: "power2.out",
-					scrollTrigger: { trigger: ".sponsor-cta", start: "top 90%", once: true },
 				},
 			);
 		}, sectionRef);
@@ -71,6 +75,7 @@ export function SponsorSection() {
 			<div className="section-divider mx-auto mb-20 max-w-6xl" />
 
 			<div className="mx-auto max-w-6xl">
+				{/* Support return state banner */}
 				{supportState && !dismissedSupportState ? (
 					<div
 						className={`mb-8 rounded-2xl border px-5 py-4 ${
@@ -112,7 +117,8 @@ export function SponsorSection() {
 					</div>
 				) : null}
 
-				<div className="sponsor-heading will-animate text-center">
+				{/* Section heading */}
+				<div className="sponsor-heading will-animate text-center mb-12">
 					<p className="section-eyebrow mb-4">Sponsor</p>
 					<h2 className="section-headline mb-5">
 						Help keep ScreenMint shipping<span className="text-brand-500">.</span>
@@ -123,100 +129,125 @@ export function SponsorSection() {
 					</p>
 				</div>
 
-				<div className="sponsor-grid mt-12 grid gap-4 md:grid-cols-3">
-					{SPONSOR_TIERS.map((tier) => (
-						<div
-							key={tier.name}
-							className="sponsor-card will-animate rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6"
-						>
-							<p className="text-[12px] font-medium uppercase tracking-[0.18em] text-brand-400">
-								GitHub Sponsors
-							</p>
-							<h3 className="mt-4 text-[24px] font-semibold tracking-[-0.03em] text-white">
-								{tier.name}
-							</h3>
-							<p className="mt-3 text-[14px] leading-relaxed text-white/30">{tier.description}</p>
+				{/* Hero CTA card */}
+				<div className="sponsor-hero-cta will-animate mb-10 rounded-3xl border border-brand-500/15 bg-gradient-to-b from-brand-500/[0.08] to-transparent p-8 md:p-10 text-center">
+					<div className="flex justify-center mb-5">
+						<div className="relative">
+							<Heart className="w-10 h-10 text-brand-500" strokeWidth={1.5} />
+							<div className="absolute inset-0 animate-ping">
+								<Heart className="w-10 h-10 text-brand-500/30" strokeWidth={1.5} />
+							</div>
 						</div>
-					))}
+					</div>
+					<h3 className="text-[22px] md:text-[26px] font-bold tracking-[-0.03em] text-white mb-3">
+						Support the roadmap without changing what makes ScreenMint special.
+					</h3>
+					<p className="text-[15px] text-white/30 leading-relaxed max-w-xl mx-auto mb-6">
+						GitHub Sponsors stays the primary home for recurring support. It helps fund bug
+						fixes, platform support, and future releases without gating the app behind accounts,
+						telemetry, or paywalls.
+					</p>
+					<a
+						href={GITHUB_SPONSORS_URL}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-500 px-7 py-3.5 text-[15px] font-semibold text-black transition-all duration-300 hover:bg-brand-400 hover:shadow-glow-md active:scale-[0.97]"
+					>
+						<Heart className="w-4 h-4" strokeWidth={2.5} />
+						Sponsor on GitHub
+					</a>
 				</div>
 
-				<div className="sponsor-cta will-animate mt-10 rounded-3xl border border-brand-500/14 bg-[linear-gradient(180deg,rgba(245,158,11,0.08)_0%,rgba(10,10,12,0.82)_100%)] p-7 md:p-8">
-					<div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)]">
-						<div className="rounded-[28px] border border-white/[0.06] bg-black/20 p-6">
-							<p className="text-[12px] font-medium uppercase tracking-[0.18em] text-brand-400">
-								Sponsor on GitHub
-							</p>
-							<p className="mt-3 text-[17px] font-medium text-white">
-								Support the roadmap without changing what makes ScreenMint special.
-							</p>
-							<p className="mt-2 text-[14px] leading-relaxed text-white/30">
-								GitHub Sponsors stays the primary home for recurring support. It helps fund bug
-								fixes, platform support, and future releases without gating the app behind accounts,
-								telemetry, or paywalls.
-							</p>
+				{/* Tier cards */}
+				<div className="sponsor-grid grid gap-4 md:grid-cols-3 mb-8">
+					{SPONSOR_TIERS.map((tier, i) => {
+						const Icon = TIER_ICONS[i];
+						const isPopular = i === 1;
+						return (
 							<a
+								key={tier.name}
 								href={GITHUB_SPONSORS_URL}
 								target="_blank"
 								rel="noopener noreferrer"
-								className="mt-5 inline-flex items-center justify-center gap-2 rounded-full bg-brand-500 px-6 py-3.5 text-[14px] font-semibold text-black transition-colors duration-300 hover:bg-brand-400"
+								className={`sponsor-card will-animate relative rounded-2xl border p-6 transition-all duration-500 group hover:-translate-y-1 ${
+									isPopular
+										? "border-brand-500/20 bg-brand-500/[0.04] hover:border-brand-500/30 hover:bg-brand-500/[0.06]"
+										: "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12] hover:bg-white/[0.04]"
+								}`}
 							>
-								<svg
-									width="14"
-									height="14"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									strokeWidth="2"
-									strokeLinecap="round"
-									strokeLinejoin="round"
-								>
-									<path d="m12 21-1.45-1.32C5.4 15.02 2 11.93 2 8.13 2 5.04 4.42 3 7.3 3c1.64 0 3.22.81 4.2 2.09C12.48 3.81 14.06 3 15.7 3 18.58 3 21 5.04 21 8.13c0 3.8-3.4 6.89-8.55 11.55z" />
-								</svg>
-								Sponsor ScreenMint
-							</a>
-						</div>
+								{/* Gradient top accent */}
+								<div
+									className={`absolute top-0 left-4 right-4 h-px ${
+										isPopular
+											? "bg-gradient-to-r from-transparent via-brand-500/50 to-transparent"
+											: "bg-gradient-to-r from-transparent via-white/[0.08] to-transparent"
+									}`}
+								/>
 
-						{CREEM_ENABLED ? (
-							<div className="rounded-[28px] border border-white/[0.06] bg-black/20 p-6">
-								<p className="text-[12px] font-medium uppercase tracking-[0.18em] text-white/45">
-									Support via Card
-								</p>
-								<p className="mt-3 text-[14px] leading-relaxed text-white/30">
-									Prefer a one-time card checkout instead of GitHub? Use one of these Creem support
-									options.
-								</p>
-								<div className="mt-5 grid gap-3">
-									{CREEM_PRODUCTS.map((product) => (
-										<a
-											key={product.id}
-											href={product.checkoutUrl}
-											target="_blank"
-											rel="noopener noreferrer"
-											className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 transition-colors hover:border-brand-500/25 hover:bg-brand-500/[0.05]"
-										>
-											<div className="flex items-start justify-between gap-4">
-												<div>
-													<p className="text-[13px] font-medium uppercase tracking-[0.16em] text-white/40">
-														{product.label}
-													</p>
-													<h3 className="mt-2 text-[18px] font-semibold tracking-[-0.03em] text-white">
-														{product.name}
-													</h3>
-													<p className="mt-2 text-[13px] leading-relaxed text-white/28">
-														{product.description}
-													</p>
-												</div>
-												<span className="rounded-full border border-brand-500/18 bg-brand-500/[0.08] px-3 py-1 text-[12px] font-semibold text-brand-300">
-													{product.price}
-												</span>
-											</div>
-										</a>
-									))}
+								{isPopular && (
+									<span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-brand-500 px-3 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-black">
+										Popular
+									</span>
+								)}
+
+								<div className="flex items-center gap-3 mb-4">
+									<div className={`flex items-center justify-center w-9 h-9 rounded-xl ${
+										isPopular ? "bg-brand-500/10 border border-brand-500/20" : "bg-white/[0.04] border border-white/[0.06]"
+									}`}>
+										<Icon className={`w-4 h-4 ${isPopular ? "text-brand-400" : "text-white/30 group-hover:text-white/60"} transition-colors`} strokeWidth={1.5} />
+									</div>
+									<p className="text-[11px] font-medium uppercase tracking-[0.18em] text-brand-400/70">
+										GitHub Sponsors
+									</p>
 								</div>
-							</div>
-						) : null}
-					</div>
+
+								<h3 className="text-[22px] font-semibold tracking-[-0.03em] text-white mb-2">
+									{tier.name}
+								</h3>
+								<p className="text-[14px] leading-relaxed text-white/30">{tier.description}</p>
+							</a>
+						);
+					})}
 				</div>
+
+				{/* Creem section */}
+				{CREEM_ENABLED ? (
+					<div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 md:p-8">
+						<p className="text-[12px] font-medium uppercase tracking-[0.18em] text-white/45 mb-4">
+							Support via Card
+						</p>
+						<p className="text-[14px] leading-relaxed text-white/30 mb-6 max-w-xl">
+							Prefer a one-time card checkout instead of GitHub? Use one of these Creem support
+							options.
+						</p>
+						<div className="grid gap-3 md:grid-cols-3">
+							{CREEM_PRODUCTS.map((product) => (
+								<a
+									key={product.id}
+									href={product.checkoutUrl}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 transition-all duration-300 hover:border-brand-500/25 hover:bg-brand-500/[0.04] hover:-translate-y-1"
+								>
+									<div className="flex items-start justify-between gap-3 mb-3">
+										<p className="text-[11px] font-medium uppercase tracking-[0.16em] text-white/40">
+											{product.label}
+										</p>
+										<span className="rounded-full border border-brand-500/18 bg-brand-500/[0.08] px-2.5 py-0.5 text-[12px] font-semibold text-brand-300">
+											{product.price}
+										</span>
+									</div>
+									<h4 className="text-[16px] font-semibold tracking-[-0.02em] text-white mb-2">
+										{product.name}
+									</h4>
+									<p className="text-[13px] leading-relaxed text-white/25">
+										{product.description}
+									</p>
+								</a>
+							))}
+						</div>
+					</div>
+				) : null}
 			</div>
 		</section>
 	);

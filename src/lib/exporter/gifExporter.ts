@@ -7,6 +7,7 @@ import type {
 	CropRegion,
 	CursorPack,
 	CursorTelemetryPoint,
+	DeviceMockup,
 	KeyboardShortcutCallout,
 	KeyboardShortcutPosition,
 	KeyboardShortcutTheme,
@@ -43,6 +44,7 @@ interface GifExporterConfig {
 	backgroundBlur: number;
 	zoomMotionBlur?: number;
 	connectZooms?: boolean;
+	deviceMockup?: DeviceMockup;
 	borderRadius?: number;
 	padding?: number;
 	videoPadding?: number;
@@ -141,6 +143,7 @@ export class GifExporter {
 				backgroundBlur: this.config.backgroundBlur,
 				zoomMotionBlur: this.config.zoomMotionBlur,
 				connectZooms: this.config.connectZooms,
+				deviceMockup: this.config.deviceMockup,
 				borderRadius: this.config.borderRadius,
 				padding: this.config.padding,
 				cropRegion: this.config.cropRegion,

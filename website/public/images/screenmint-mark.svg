@@ -1,0 +1,79 @@
+<svg
+	xmlns="http://www.w3.org/2000/svg"
+	width="1024"
+	height="1024"
+	viewBox="0 0 1024 1024"
+	fill="none"
+>
+	<defs>
+		<linearGradient id="mark-bg" x1="148" y1="96" x2="844" y2="928" gradientUnits="userSpaceOnUse">
+			<stop offset="0" stop-color="#1F232A" />
+			<stop offset="0.38" stop-color="#13161B" />
+			<stop offset="1" stop-color="#08090C" />
+		</linearGradient>
+		<radialGradient id="mark-top-glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(300 224) rotate(55) scale(404 284)">
+			<stop offset="0" stop-color="#D3A25A" stop-opacity="0.18" />
+			<stop offset="1" stop-color="#D3A25A" stop-opacity="0" />
+		</radialGradient>
+		<radialGradient id="mark-bottom-glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(758 780) rotate(45) scale(320 240)">
+			<stop offset="0" stop-color="#F5E6CE" stop-opacity="0.08" />
+			<stop offset="1" stop-color="#F5E6CE" stop-opacity="0" />
+		</radialGradient>
+		<linearGradient id="mark-shell" x1="222" y1="220" x2="784" y2="790" gradientUnits="userSpaceOnUse">
+			<stop offset="0" stop-color="#F7E8CD" />
+			<stop offset="0.42" stop-color="#D4A365" />
+			<stop offset="1" stop-color="#815C31" />
+		</linearGradient>
+		<linearGradient id="mark-panel" x1="290" y1="318" x2="726" y2="780" gradientUnits="userSpaceOnUse">
+			<stop offset="0" stop-color="#1A1D23" />
+			<stop offset="1" stop-color="#0A0C10" />
+		</linearGradient>
+		<linearGradient id="mark-bar" x1="386" y1="416" x2="642" y2="416" gradientUnits="userSpaceOnUse">
+			<stop offset="0" stop-color="#F9EDD9" />
+			<stop offset="1" stop-color="#C99247" />
+		</linearGradient>
+		<radialGradient id="mark-rec" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(512 560) rotate(90) scale(120)">
+			<stop offset="0" stop-color="#FF7E80" />
+			<stop offset="0.5" stop-color="#D03E46" />
+			<stop offset="1" stop-color="#5C1218" />
+		</radialGradient>
+	</defs>
+	<rect x="80" y="80" width="864" height="864" rx="248" fill="url(#mark-bg)" />
+	<rect
+		x="88"
+		y="88"
+		width="848"
+		height="848"
+		rx="240"
+		stroke="rgba(247,232,205,0.14)"
+		stroke-width="16"
+	/>
+	<rect x="80" y="80" width="864" height="864" rx="248" fill="url(#mark-top-glow)" />
+	<rect x="80" y="80" width="864" height="864" rx="248" fill="url(#mark-bottom-glow)" />
+	<path
+		d="M250 406V308C250 267.131 283.131 234 324 234H420"
+		stroke="url(#mark-shell)"
+		stroke-width="44"
+		stroke-linecap="round"
+		stroke-linejoin="round"
+	/>
+	<path
+		d="M612 790H700C740.869 790 774 756.869 774 716V618"
+		stroke="url(#mark-shell)"
+		stroke-width="44"
+		stroke-linecap="round"
+		stroke-linejoin="round"
+	/>
+	<rect
+		x="302"
+		y="340"
+		width="420"
+		height="352"
+		rx="108"
+		fill="url(#mark-panel)"
+		stroke="url(#mark-shell)"
+		stroke-width="28"
+	/>
+	<rect x="386" y="396" width="256" height="34" rx="17" fill="url(#mark-bar)" opacity="0.92" />
+	<circle cx="512" cy="560" r="76" fill="url(#mark-rec)" />
+</svg>

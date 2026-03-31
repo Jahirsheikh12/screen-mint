@@ -8,57 +8,61 @@ const features = [
 		description:
 			"Smart zoom follows your clicks and interactions automatically. Focus your audience on what matters — no manual keyframing needed.",
 		image: "/images/preview2.png",
-		align: "right" as const,
 	},
 	{
 		title: "Cursor Effects",
 		description:
 			"Smooth tracking, click highlights, motion blur, and a cinematic sway animation. Every interaction feels intentional and polished.",
 		image: "/images/CursorLoop.gif",
-		align: "left" as const,
 	},
 	{
 		title: "Cursor Sway",
 		description:
 			"Natural, organic cursor movement that makes screen recordings feel human. Subtle sway removes the robotic look of raw captures.",
 		image: "/images/CursorSwayDemo.gif",
-		align: "right" as const,
 	},
 	{
 		title: "Custom Backgrounds",
 		description:
 			"Wallpapers, gradients, solid colors, or your own brand assets. Drop your recording onto any background in seconds.",
 		image: "/images/preview3.png",
-		align: "left" as const,
 	},
 	{
 		title: "Timeline Editor",
 		description:
 			"Drag-and-drop timeline with zoom, trim, speed control, and annotation layers. Full non-destructive editing at your fingertips.",
 		image: "/images/preview4.png",
-		align: "right" as const,
 	},
 	{
 		title: "Export MP4 & GIF",
 		description:
 			"GPU-accelerated rendering pipeline. Export crisp MP4 or optimized GIF with custom frame rates and quality settings.",
 		image: "/images/demo.gif",
-		align: "left" as const,
 	},
 ];
 
-function FeatureSpotlight({
+/* Bento grid spans: row1=[7,5], row2=[4,4,4], row3=[12] */
+const GRID_CLASSES = [
+	"md:col-span-7",
+	"md:col-span-5",
+	"md:col-span-4",
+	"md:col-span-4",
+	"md:col-span-4",
+	"md:col-span-12",
+];
+
+function FeatureCard({
 	title,
 	description,
 	image,
-	align,
 	index,
+	gridClass,
 }: {
 	title: string;
 	description: string;
 	image: string;
-	align: "left" | "right";
 	index: number;
+	gridClass: string;
 }) {
 	const ref = useRef<HTMLDivElement>(null);
 
@@ -66,37 +70,18 @@ function FeatureSpotlight({
 		if (prefersReducedMotion() || !ref.current) return;
 
 		const ctx = gsap.context(() => {
-			const textEl = ref.current!.querySelector(".feature-text");
-			const imgEl = ref.current!.querySelector(".feature-img");
-
 			gsap.fromTo(
-				textEl,
-				{ opacity: 0, y: 40 },
-				{
-					opacity: 1,
-					y: 0,
-					duration: 0.8,
-					ease: "power2.out",
-					scrollTrigger: {
-						trigger: ref.current,
-						start: "top 82%",
-						once: true,
-					},
-				},
-			);
-
-			gsap.fromTo(
-				imgEl,
-				{ opacity: 0, y: 50, scale: 0.97 },
+				ref.current,
+				{ opacity: 0, y: 40, scale: 0.97 },
 				{
 					opacity: 1,
 					y: 0,
 					scale: 1,
-					duration: 0.9,
+					duration: 0.8,
 					ease: "power2.out",
 					scrollTrigger: {
 						trigger: ref.current,
-						start: "top 80%",
+						start: "top 85%",
 						once: true,
 					},
 				},
@@ -106,39 +91,37 @@ function FeatureSpotlight({
 		return () => ctx.revert();
 	}, []);
 
+	const isFullWidth = index === 5;
+
 	return (
 		<div
 			ref={ref}
-			className={`grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center ${
-				index > 0 ? "mt-20 lg:mt-28" : ""
-			}`}
+			className={`feature-card col-span-12 ${gridClass} rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden group will-animate`}
 		>
-			<div
-				className={`feature-text will-animate ${align === "right" ? "lg:order-1" : "lg:order-2"}`}
-			>
-				<span className="inline-block text-[12px] font-medium tracking-[0.2em] uppercase text-brand-500 mb-4">
+			{/* Image */}
+			<div className={`relative overflow-hidden ${isFullWidth ? "max-h-[400px]" : "aspect-video"}`}>
+				<img
+					src={image}
+					alt={title}
+					className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+					loading="lazy"
+				/>
+				<div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+
+				{/* Feature number badge */}
+				<span className="absolute top-4 left-4 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-brand-500/10 border border-brand-500/20 text-[11px] font-semibold text-brand-400 backdrop-blur-sm">
 					0{index + 1}
 				</span>
-				<h3 className="text-[clamp(1.75rem,3.5vw,2.75rem)] font-bold tracking-[-0.03em] leading-[1.1] text-white mb-4">
-					{title}
-				</h3>
-				<p className="text-[15px] md:text-[16px] text-white/30 leading-relaxed max-w-[440px]">
-					{description}
-				</p>
 			</div>
 
-			<div
-				className={`feature-img will-animate ${align === "right" ? "lg:order-2" : "lg:order-1"}`}
-			>
-				<div className="relative group rounded-xl overflow-hidden border border-white/[0.05] bg-black">
-					<img
-						src={image}
-						alt={title}
-						className="w-full h-auto block transition-transform duration-700 ease-out group-hover:scale-[1.03]"
-						loading="lazy"
-					/>
-					<div className="absolute inset-0 bg-brand-500/0 group-hover:bg-brand-500/[0.02] transition-colors duration-500 pointer-events-none" />
-				</div>
+			{/* Content */}
+			<div className="p-6">
+				<h3 className="text-[18px] md:text-[20px] font-semibold tracking-[-0.02em] text-white mb-2 group-hover:text-brand-400 transition-colors duration-300">
+					{title}
+				</h3>
+				<p className="text-[14px] text-white/30 leading-relaxed max-w-[480px]">
+					{description}
+				</p>
 			</div>
 		</div>
 	);
@@ -196,7 +179,7 @@ export function Features() {
 			<div className="section-divider max-w-6xl mx-auto mb-20" />
 
 			<div className="max-w-6xl mx-auto">
-				<div className="text-center mb-20 lg:mb-24">
+				<div className="text-center mb-16 lg:mb-20">
 					<p className="features-eyebrow section-eyebrow mb-4 will-animate">Features</p>
 					<h2 className="features-headline section-headline mb-5 will-animate">
 						Everything you need.
@@ -208,16 +191,19 @@ export function Features() {
 					</p>
 				</div>
 
-				{features.map((feature, index) => (
-					<FeatureSpotlight
-						key={feature.title}
-						title={feature.title}
-						description={feature.description}
-						image={feature.image}
-						align={feature.align}
-						index={index}
-					/>
-				))}
+				{/* Bento grid */}
+				<div className="grid grid-cols-12 gap-4">
+					{features.map((feature, index) => (
+						<FeatureCard
+							key={feature.title}
+							title={feature.title}
+							description={feature.description}
+							image={feature.image}
+							index={index}
+							gridClass={GRID_CLASSES[index]}
+						/>
+					))}
+				</div>
 			</div>
 		</section>
 	);

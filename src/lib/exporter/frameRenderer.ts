@@ -1,6 +1,7 @@
 import { Application, BlurFilter, Container, Graphics, Sprite, Texture } from "pixi.js";
 import { MotionBlurFilter } from "pixi-filters/motion-blur";
 import { resolveCameraLayoutState } from "@/components/video-editor/cameraLayouts";
+import { renderKeyboardShortcutCalloutsCanvas } from "@/components/video-editor/keyboardShortcuts";
 import { toFileUrl } from "@/components/video-editor/projectPersistence";
 import type {
 	AnnotationRegion,
@@ -10,6 +11,7 @@ import type {
 	CropRegion,
 	CursorPack,
 	CursorTelemetryPoint,
+	DeviceMockup,
 	KeyboardShortcutCallout,
 	KeyboardShortcutPosition,
 	KeyboardShortcutTheme,
@@ -28,7 +30,10 @@ import {
 	PixiCursorOverlay,
 	preloadCursorAssets,
 } from "@/components/video-editor/videoPlayback/cursorRenderer";
-import { renderKeyboardShortcutCalloutsCanvas } from "@/components/video-editor/keyboardShortcuts";
+import {
+	computeMockupScreenRect,
+	drawDeviceMockup,
+} from "@/components/video-editor/videoPlayback/deviceMockups";
 import { findDominantRegion } from "@/components/video-editor/videoPlayback/zoomRegionUtils";
 import {
 	applyZoomTransform,
@@ -52,6 +57,7 @@ interface FrameRenderConfig {
 	backgroundBlur: number;
 	zoomMotionBlur?: number;
 	connectZooms?: boolean;
+	deviceMockup?: DeviceMockup;
 	borderRadius?: number;
 	padding?: number;
 	cropRegion: CropRegion;
@@ -904,6 +910,17 @@ export class FrameRenderer {
 			ctx.drawImage(this.shadowCanvas, 0, 0, w, h);
 		} else {
 			ctx.drawImage(videoCanvas, 0, 0, w, h);
+		}
+
+		// Draw device mockup frame on top of video
+		const mockup = this.config.deviceMockup;
+		if (mockup && mockup !== "none" && this.layoutCache) {
+			const mask = this.layoutCache.maskRect;
+			const videoAR = mask.width / mask.height;
+			const screenRect = computeMockupScreenRect(mockup, w, h, videoAR);
+			if (screenRect) {
+				drawDeviceMockup(ctx, mockup, w, h, screenRect);
+			}
 		}
 	}
 

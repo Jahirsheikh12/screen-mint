@@ -17,6 +17,14 @@ import resizeNeswCustomUrl from "../../../assets/cursors/custom/resize-nesw.svg"
 import screenshotSelectionCustomUrl from "../../../assets/cursors/custom/screenshot-selection.svg";
 import zoomInCustomUrl from "../../../assets/cursors/custom/zoom-in.svg";
 import zoomOutCustomUrl from "../../../assets/cursors/custom/zoom-out.svg";
+import auroraGradientArrowUrl from "../../../assets/cursors/packs/aurora-gradient.svg";
+import glassFrostArrowUrl from "../../../assets/cursors/packs/glass-frost.svg";
+import midnightEleganceArrowUrl from "../../../assets/cursors/packs/midnight-elegance.svg";
+import minimalDotArrowUrl from "../../../assets/cursors/packs/minimal-dot.svg";
+import neonGlowArrowUrl from "../../../assets/cursors/packs/neon-glow.svg";
+import outlineBoldArrowUrl from "../../../assets/cursors/packs/outline-bold.svg";
+import retroPixelArrowUrl from "../../../assets/cursors/packs/retro-pixel.svg";
+import sunsetWarmArrowUrl from "../../../assets/cursors/packs/sunset-warm.svg";
 import type { CursorPack, CursorType } from "../types";
 
 export type CursorAssetDefinition = {
@@ -146,4 +154,65 @@ export const cursorAssetPacks: Record<
 			fallbackAnchor: { x: 0.5, y: 0.5 },
 		},
 	},
+	"neon-glow": {
+		arrow: {
+			url: neonGlowArrowUrl,
+			fallbackAnchor: { x: 0.18, y: 0.1 },
+		},
+	},
+	"minimal-dot": {
+		arrow: {
+			url: minimalDotArrowUrl,
+			fallbackAnchor: { x: 0.18, y: 0.1 },
+		},
+	},
+	"glass-frost": {
+		arrow: {
+			url: glassFrostArrowUrl,
+			fallbackAnchor: { x: 0.18, y: 0.1 },
+		},
+	},
+	"retro-pixel": {
+		arrow: {
+			url: retroPixelArrowUrl,
+			fallbackAnchor: { x: 0.18, y: 0.1 },
+		},
+	},
+	"aurora-gradient": {
+		arrow: {
+			url: auroraGradientArrowUrl,
+			fallbackAnchor: { x: 0.18, y: 0.1 },
+		},
+	},
+	"outline-bold": {
+		arrow: {
+			url: outlineBoldArrowUrl,
+			fallbackAnchor: { x: 0.18, y: 0.1 },
+		},
+	},
+	"sunset-warm": {
+		arrow: {
+			url: sunsetWarmArrowUrl,
+			fallbackAnchor: { x: 0.18, y: 0.1 },
+		},
+	},
+	"midnight-elegance": {
+		arrow: {
+			url: midnightEleganceArrowUrl,
+			fallbackAnchor: { x: 0.18, y: 0.1 },
+		},
+	},
+};
+
+export const cursorPackPreviewUrls: Record<CursorPack, string> = {
+	classic: arrowClassicUrl,
+	custom: pointerCustomUrl,
+	"neon-glow": neonGlowArrowUrl,
+	"minimal-dot": minimalDotArrowUrl,
+	"glass-frost": glassFrostArrowUrl,
+	"retro-pixel": retroPixelArrowUrl,
+	"aurora-gradient": auroraGradientArrowUrl,
+	"outline-bold": outlineBoldArrowUrl,
+	"sunset-warm": sunsetWarmArrowUrl,
+	"midnight-elegance": midnightEleganceArrowUrl,
 };

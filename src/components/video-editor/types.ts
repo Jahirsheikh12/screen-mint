@@ -72,7 +72,17 @@ export interface KeyboardShortcutCallout {
 }
 
 export type CursorStyle = "default" | "dot" | "crosshair" | "circle" | "ring";
-export type CursorPack = "classic" | "custom";
+export type CursorPack =
+	| "classic"
+	| "custom"
+	| "neon-glow"
+	| "minimal-dot"
+	| "glass-frost"
+	| "retro-pixel"
+	| "aurora-gradient"
+	| "outline-bold"
+	| "sunset-warm"
+	| "midnight-elegance";
 
 export interface CursorVisualSettings {
 	size: number;
@@ -92,6 +102,14 @@ export const CURSOR_STYLE_OPTIONS: { value: CursorStyle; label: string }[] = [
 export const CURSOR_PACK_OPTIONS: { value: CursorPack; label: string }[] = [
 	{ value: "classic", label: "Classic" },
 	{ value: "custom", label: "Custom" },
+	{ value: "neon-glow", label: "Neon Glow" },
+	{ value: "minimal-dot", label: "Minimal Dot" },
+	{ value: "glass-frost", label: "Glass Frost" },
+	{ value: "retro-pixel", label: "Retro Pixel" },
+	{ value: "aurora-gradient", label: "Aurora" },
+	{ value: "outline-bold", label: "Outline Bold" },
+	{ value: "sunset-warm", label: "Sunset Warm" },
+	{ value: "midnight-elegance", label: "Midnight" },
 ];
 export const CURSOR_TYPE_VALUES: CursorType[] = [
 	"arrow",
@@ -126,6 +144,31 @@ export const DEFAULT_CLICK_HIGHLIGHT_SIZE = 1.0;
 export const DEFAULT_CLICK_HIGHLIGHT_OPACITY = 0.5;
 export const DEFAULT_CURSOR_TRAIL_LENGTH = 0;
 export const DEFAULT_CURSOR_TRAIL_OPACITY = 0.3;
+export type DeviceMockup =
+	| "none"
+	| "macbook-pro"
+	| "macbook-air"
+	| "imac"
+	| "iphone"
+	| "ipad"
+	| "android-phone"
+	| "browser-window"
+	| "monitor";
+
+export const DEFAULT_DEVICE_MOCKUP: DeviceMockup = "none";
+
+export const DEVICE_MOCKUP_OPTIONS: { value: DeviceMockup; label: string }[] = [
+	{ value: "none", label: "None" },
+	{ value: "macbook-pro", label: "MacBook Pro" },
+	{ value: "macbook-air", label: "MacBook Air" },
+	{ value: "imac", label: "iMac" },
+	{ value: "iphone", label: "iPhone" },
+	{ value: "ipad", label: "iPad" },
+	{ value: "android-phone", label: "Android" },
+	{ value: "browser-window", label: "Browser" },
+	{ value: "monitor", label: "Monitor" },
+];
+
 export const DEFAULT_ZOOM_MOTION_BLUR = 0.35;
 export const DEFAULT_SHOW_KEYBOARD_SHORTCUTS = false;
 export const DEFAULT_KEYBOARD_SHORTCUT_POSITION: KeyboardShortcutPosition = "bottom-center";

@@ -1,5 +1,11 @@
 import gsap from "gsap";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from "../components/ui/accordion";
 import { prefersReducedMotion } from "../hooks/useGSAP";
 import { SPONSOR_FAQS } from "../lib/sponsors";
 
@@ -47,77 +53,8 @@ const faqs = [
 	...SPONSOR_FAQS,
 ];
 
-function FAQItem({
-	question,
-	answer,
-	index,
-	isOpen,
-	onToggle,
-}: {
-	question: string;
-	answer: string;
-	index: number;
-	isOpen: boolean;
-	onToggle: () => void;
-}) {
-	return (
-		<button
-			type="button"
-			onClick={onToggle}
-			className={`faq-item group w-full text-left rounded-xl p-5 md:p-6 transition-all duration-300 ${
-				isOpen
-					? "bg-white/[0.03] border border-white/[0.06]"
-					: "bg-transparent border border-transparent hover:bg-white/[0.02]"
-			}`}
-		>
-			<div className="flex items-start gap-4">
-				<span className="text-[12px] font-mono text-white/10 mt-0.5 flex-shrink-0 tabular-nums">
-					{String(index + 1).padStart(2, "0")}
-				</span>
-				<div className="flex-1 min-w-0">
-					<div className="flex items-center justify-between gap-4">
-						<h3
-							className={`text-[14px] md:text-[15px] font-medium transition-colors duration-300 ${
-								isOpen ? "text-white" : "text-white/50 group-hover:text-white/70"
-							}`}
-						>
-							{question}
-						</h3>
-						<div
-							className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
-								isOpen ? "bg-brand-500/15 rotate-45" : "bg-white/[0.04]"
-							}`}
-						>
-							<svg
-								width="10"
-								height="10"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke={isOpen ? "#F59E0B" : "rgba(255,255,255,0.2)"}
-								strokeWidth="2"
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								className="transition-colors duration-300"
-							>
-								<line x1="12" y1="5" x2="12" y2="19" />
-								<line x1="5" y1="12" x2="19" y2="12" />
-							</svg>
-						</div>
-					</div>
-					<div className={`faq-answer ${isOpen ? "open" : ""}`}>
-						<div>
-							<p className="text-[13px] text-white/25 leading-relaxed pt-3 pr-8">{answer}</p>
-						</div>
-					</div>
-				</div>
-			</div>
-		</button>
-	);
-}
-
 export function FAQ() {
 	const sectionRef = useRef<HTMLElement>(null);
-	const [openIndex, setOpenIndex] = useState<number | null>(null);
 
 	useEffect(() => {
 		if (prefersReducedMotion()) return;
@@ -136,11 +73,24 @@ export function FAQ() {
 			);
 
 			gsap.fromTo(
-				".faq-item",
-				{ opacity: 0, y: 20 },
+				".faq-col-left .faq-item-wrap",
+				{ opacity: 0, x: -20 },
 				{
 					opacity: 1,
-					y: 0,
+					x: 0,
+					duration: 0.5,
+					stagger: 0.06,
+					ease: "power2.out",
+					scrollTrigger: { trigger: ".faq-grid", start: "top 85%", once: true },
+				},
+			);
+
+			gsap.fromTo(
+				".faq-col-right .faq-item-wrap",
+				{ opacity: 0, x: 20 },
+				{
+					opacity: 1,
+					x: 0,
 					duration: 0.5,
 					stagger: 0.06,
 					ease: "power2.out",
@@ -169,36 +119,61 @@ export function FAQ() {
 				</div>
 
 				{/* Two-column FAQ grid */}
-				<div className="faq-grid grid md:grid-cols-2 gap-2">
-					<div className="flex flex-col gap-2">
-						{leftColumn.map((faq) => {
-							const originalIndex = faqs.indexOf(faq);
-							return (
-								<FAQItem
-									key={faq.question}
-									question={faq.question}
-									answer={faq.answer}
-									index={originalIndex}
-									isOpen={openIndex === originalIndex}
-									onToggle={() => setOpenIndex(openIndex === originalIndex ? null : originalIndex)}
-								/>
-							);
-						})}
+				<div className="faq-grid grid md:grid-cols-2 gap-4">
+					<div className="faq-col-left">
+						<Accordion type="single" collapsible className="space-y-2">
+							{leftColumn.map((faq) => {
+								const originalIndex = faqs.indexOf(faq);
+								return (
+									<div key={faq.question} className="faq-item-wrap will-animate">
+										<AccordionItem
+											value={`faq-${originalIndex}`}
+											className="rounded-xl border-0 data-[state=open]:bg-white/[0.03] data-[state=open]:border data-[state=open]:border-white/[0.06] px-5 md:px-6 transition-colors"
+										>
+											<AccordionTrigger className="py-5 text-[14px] md:text-[15px] font-medium text-white/50 hover:text-white/70 hover:no-underline data-[state=open]:text-white gap-4 [&>svg]:text-white/20 [&[data-state=open]>svg]:text-brand-500">
+												<div className="flex items-start gap-4 text-left">
+													<span className="text-[12px] font-mono text-white/10 mt-0.5 flex-shrink-0 tabular-nums">
+														{String(originalIndex + 1).padStart(2, "0")}
+													</span>
+													<span>{faq.question}</span>
+												</div>
+											</AccordionTrigger>
+											<AccordionContent className="text-[13px] text-white/25 leading-relaxed pl-10 pr-4">
+												{faq.answer}
+											</AccordionContent>
+										</AccordionItem>
+									</div>
+								);
+							})}
+						</Accordion>
 					</div>
-					<div className="flex flex-col gap-2">
-						{rightColumn.map((faq) => {
-							const originalIndex = faqs.indexOf(faq);
-							return (
-								<FAQItem
-									key={faq.question}
-									question={faq.question}
-									answer={faq.answer}
-									index={originalIndex}
-									isOpen={openIndex === originalIndex}
-									onToggle={() => setOpenIndex(openIndex === originalIndex ? null : originalIndex)}
-								/>
-							);
-						})}
+
+					<div className="faq-col-right">
+						<Accordion type="single" collapsible className="space-y-2">
+							{rightColumn.map((faq) => {
+								const originalIndex = faqs.indexOf(faq);
+								return (
+									<div key={faq.question} className="faq-item-wrap will-animate">
+										<AccordionItem
+											value={`faq-${originalIndex}`}
+											className="rounded-xl border-0 data-[state=open]:bg-white/[0.03] data-[state=open]:border data-[state=open]:border-white/[0.06] px-5 md:px-6 transition-colors"
+										>
+											<AccordionTrigger className="py-5 text-[14px] md:text-[15px] font-medium text-white/50 hover:text-white/70 hover:no-underline data-[state=open]:text-white gap-4 [&>svg]:text-white/20 [&[data-state=open]>svg]:text-brand-500">
+												<div className="flex items-start gap-4 text-left">
+													<span className="text-[12px] font-mono text-white/10 mt-0.5 flex-shrink-0 tabular-nums">
+														{String(originalIndex + 1).padStart(2, "0")}
+													</span>
+													<span>{faq.question}</span>
+												</div>
+											</AccordionTrigger>
+											<AccordionContent className="text-[13px] text-white/25 leading-relaxed pl-10 pr-4">
+												{faq.answer}
+											</AccordionContent>
+										</AccordionItem>
+									</div>
+								);
+							})}
+						</Accordion>
 					</div>
 				</div>
 			</div>

@@ -30,6 +30,7 @@ type PersistedEditorControls = Pick<
 	| "keyboardShortcutOpacity"
 	| "keyboardShortcutDisplayMs"
 	| "keyboardShortcutMaxVisible"
+	| "deviceMockup"
 	| "borderRadius"
 	| "padding"
 	| "cropRegion"
@@ -96,6 +97,7 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	keyboardShortcutOpacity: DEFAULT_EDITOR_CONTROLS.keyboardShortcutOpacity,
 	keyboardShortcutDisplayMs: DEFAULT_EDITOR_CONTROLS.keyboardShortcutDisplayMs,
 	keyboardShortcutMaxVisible: DEFAULT_EDITOR_CONTROLS.keyboardShortcutMaxVisible,
+	deviceMockup: DEFAULT_EDITOR_CONTROLS.deviceMockup,
 	borderRadius: DEFAULT_EDITOR_CONTROLS.borderRadius,
 	padding: DEFAULT_EDITOR_CONTROLS.padding,
 	cropRegion: DEFAULT_EDITOR_CONTROLS.cropRegion,
@@ -215,15 +217,14 @@ function normalizeEditorControls(
 		cursorTrailLength: raw.cursorTrailLength ?? fallback.cursorTrailLength,
 		cursorTrailOpacity: raw.cursorTrailOpacity ?? fallback.cursorTrailOpacity,
 		showKeyboardShortcuts: raw.showKeyboardShortcuts ?? fallback.showKeyboardShortcuts,
-		keyboardShortcutPosition:
-			raw.keyboardShortcutPosition ?? fallback.keyboardShortcutPosition,
+		keyboardShortcutPosition: raw.keyboardShortcutPosition ?? fallback.keyboardShortcutPosition,
 		keyboardShortcutTheme: raw.keyboardShortcutTheme ?? fallback.keyboardShortcutTheme,
 		keyboardShortcutScale: raw.keyboardShortcutScale ?? fallback.keyboardShortcutScale,
 		keyboardShortcutOpacity: raw.keyboardShortcutOpacity ?? fallback.keyboardShortcutOpacity,
-		keyboardShortcutDisplayMs:
-			raw.keyboardShortcutDisplayMs ?? fallback.keyboardShortcutDisplayMs,
+		keyboardShortcutDisplayMs: raw.keyboardShortcutDisplayMs ?? fallback.keyboardShortcutDisplayMs,
 		keyboardShortcutMaxVisible:
 			raw.keyboardShortcutMaxVisible ?? fallback.keyboardShortcutMaxVisible,
+		deviceMockup: raw.deviceMockup ?? fallback.deviceMockup,
 		borderRadius: raw.borderRadius ?? fallback.borderRadius,
 		padding: candidatePadding,
 		cropRegion: normalizeCropRegion(raw.cropRegion, fallback.cropRegion),
@@ -270,6 +271,7 @@ function normalizeEditorControls(
 		keyboardShortcutOpacity: normalized.keyboardShortcutOpacity,
 		keyboardShortcutDisplayMs: normalized.keyboardShortcutDisplayMs,
 		keyboardShortcutMaxVisible: normalized.keyboardShortcutMaxVisible,
+		deviceMockup: normalized.deviceMockup,
 		borderRadius: normalized.borderRadius,
 		padding: normalized.padding,
 		cropRegion: normalized.cropRegion,

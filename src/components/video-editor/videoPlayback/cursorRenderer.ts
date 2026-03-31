@@ -78,8 +78,19 @@ const CURSOR_SHADOW_BLUR = 3;
 const CURSOR_SHADOW_PADDING = 12;
 
 let cursorAssetsPromise: Promise<void> | null = null;
+function createEmptyPacksRecord(): Record<
+	CursorPack,
+	Partial<Record<CursorAssetKey, LoadedCursorAsset>>
+> {
+	const packs = {} as Record<CursorPack, Partial<Record<CursorAssetKey, LoadedCursorAsset>>>;
+	for (const pack of Object.keys(cursorAssetPacks) as CursorPack[]) {
+		packs[pack] = {};
+	}
+	return packs;
+}
+
 let loadedCursorAssets: LoadedCursorAssets = {
-	packs: { classic: {}, custom: {} },
+	packs: createEmptyPacksRecord(),
 	system: {},
 };
 
@@ -247,7 +258,7 @@ export async function preloadCursorAssets() {
 			}
 
 			const nextLoadedAssets: LoadedCursorAssets = {
-				packs: { classic: {}, custom: {} },
+				packs: createEmptyPacksRecord(),
 				system: {},
 			};
 

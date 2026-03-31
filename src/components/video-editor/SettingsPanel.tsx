@@ -92,11 +92,14 @@ import {
 	DEFAULT_KEYBOARD_SHORTCUT_SCALE,
 	DEFAULT_KEYBOARD_SHORTCUT_THEME,
 	DEFAULT_ZOOM_MOTION_BLUR,
+	DEVICE_MOCKUP_OPTIONS,
 	KEYBOARD_SHORTCUT_POSITION_OPTIONS,
 	KEYBOARD_SHORTCUT_THEME_OPTIONS,
 	SPEED_OPTIONS,
 } from "./types";
+import { cursorPackPreviewUrls } from "./videoPlayback/cursorAssetPacks";
 import { fromCursorSwaySliderValue, toCursorSwaySliderValue } from "./videoPlayback/cursorSway";
+import { renderMockupPreview } from "./videoPlayback/deviceMockups";
 
 const GRADIENTS = [
 	"linear-gradient(135deg, #03045e 0%, #0077b6 42%, #90e0ef 100%)",
@@ -267,6 +270,8 @@ interface SettingsPanelProps {
 	onKeyboardShortcutDisplayMsChange?: (durationMs: number) => void;
 	keyboardShortcutMaxVisible?: number;
 	onKeyboardShortcutMaxVisibleChange?: (count: number) => void;
+	deviceMockup?: import("./types").DeviceMockup;
+	onDeviceMockupChange?: (mockup: import("./types").DeviceMockup) => void;
 	borderRadius?: number;
 	onBorderRadiusChange?: (radius: number) => void;
 	padding?: number;
@@ -438,6 +443,20 @@ function TabHeader({
 	);
 }
 
+function MockupPreviewCanvas({ mockup }: { mockup: import("./types").DeviceMockup }) {
+	const canvasRef = useRef<HTMLCanvasElement>(null);
+
+	useEffect(() => {
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+		canvas.width = 120;
+		canvas.height = 90;
+		renderMockupPreview(canvas, mockup);
+	}, [mockup]);
+
+	return <canvas ref={canvasRef} className="w-full h-full" />;
+}
+
 export default function SettingsPanel({
 	selected,
 	onWallpaperChange,
@@ -501,6 +520,8 @@ export default function SettingsPanel({
 	onKeyboardShortcutDisplayMsChange,
 	keyboardShortcutMaxVisible = DEFAULT_KEYBOARD_SHORTCUT_MAX_VISIBLE,
 	onKeyboardShortcutMaxVisibleChange,
+	deviceMockup = "none",
+	onDeviceMockupChange,
 	borderRadius = 12.5,
 	onBorderRadiusChange,
 	padding = 0,
@@ -1151,6 +1172,53 @@ export default function SettingsPanel({
 								{tSettings("crop.title")}
 							</Button>
 						</SettingsSection>
+
+						<SettingsSection
+							title="Device Mockup"
+							description="Wrap your recording in a device frame"
+						>
+							<div className="grid grid-cols-3 gap-1.5">
+								{DEVICE_MOCKUP_OPTIONS.map((opt) => (
+									<button
+										key={opt.value}
+										type="button"
+										onClick={() => onDeviceMockupChange?.(opt.value)}
+										className={cn(
+											"group relative flex flex-col items-center gap-1 p-2 rounded-lg transition-all duration-200 cursor-pointer",
+											deviceMockup === opt.value
+												? "bg-gradient-to-b from-[#F59E0B]/20 to-[#d97706]/10 ring-1 ring-[#F59E0B]/60 shadow-sm shadow-[#F59E0B]/10"
+												: "bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.04] hover:border-white/[0.1]",
+										)}
+										title={opt.label}
+									>
+										<div
+											className={cn(
+												"w-full aspect-[4/3] rounded-md overflow-hidden flex items-center justify-center transition-transform duration-200 group-hover:scale-105",
+												opt.value === "none"
+													? "bg-white/[0.03] border border-dashed border-white/[0.08]"
+													: "bg-slate-900/50",
+											)}
+										>
+											{opt.value === "none" ? (
+												<span className="text-[9px] text-slate-600">None</span>
+											) : (
+												<MockupPreviewCanvas mockup={opt.value} />
+											)}
+										</div>
+										<span
+											className={cn(
+												"text-[9px] font-medium leading-tight text-center",
+												deviceMockup === opt.value
+													? "text-[#F59E0B]"
+													: "text-slate-500 group-hover:text-slate-300",
+											)}
+										>
+											{opt.label}
+										</span>
+									</button>
+								))}
+							</div>
+						</SettingsSection>
 					</TabContent>
 				)}
 
@@ -1203,20 +1271,45 @@ export default function SettingsPanel({
 								<div className="text-xs font-medium text-slate-300 mb-2">
 									{tSettings("cursor.pack")}
 								</div>
-								<div className="grid grid-cols-2 gap-1">
+								<div className="grid grid-cols-5 gap-1.5">
 									{CURSOR_PACK_OPTIONS.map((opt) => (
 										<button
 											key={opt.value}
 											type="button"
 											onClick={() => onCursorPackChange?.(opt.value)}
 											className={cn(
-												"px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all duration-200 cursor-pointer",
+												"group relative flex flex-col items-center gap-1 p-1.5 rounded-lg transition-all duration-200 cursor-pointer",
 												cursorPack === opt.value
-													? "bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-white shadow-sm shadow-[#F59E0B]/20"
-													: "bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200 border border-white/[0.04]",
+													? "bg-gradient-to-b from-[#F59E0B]/20 to-[#d97706]/10 ring-1 ring-[#F59E0B]/60 shadow-sm shadow-[#F59E0B]/10"
+													: "bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.04] hover:border-white/[0.1]",
 											)}
+											title={opt.label}
 										>
-											{opt.label}
+											<div
+												className={cn(
+													"w-8 h-8 flex items-center justify-center rounded-md transition-transform duration-200 group-hover:scale-110",
+													cursorPack === opt.value
+														? "drop-shadow-[0_0_4px_rgba(245,158,11,0.3)]"
+														: "",
+												)}
+											>
+												<img
+													src={cursorPackPreviewUrls[opt.value]}
+													alt={opt.label}
+													className="w-6 h-6 object-contain pointer-events-none"
+													draggable={false}
+												/>
+											</div>
+											<span
+												className={cn(
+													"text-[8px] font-medium leading-tight text-center truncate w-full",
+													cursorPack === opt.value
+														? "text-[#F59E0B]"
+														: "text-slate-500 group-hover:text-slate-300",
+												)}
+											>
+												{opt.label}
+											</span>
 										</button>
 									))}
 								</div>

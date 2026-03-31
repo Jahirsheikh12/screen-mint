@@ -12,6 +12,7 @@ import {
 	type CaptionTrack,
 	type CaptionWord,
 	type CropRegion,
+	CURSOR_PACK_OPTIONS,
 	type CursorPack,
 	type CursorStyle,
 	DEFAULT_ANNOTATION_POSITION,
@@ -40,6 +41,7 @@ import {
 	DEFAULT_CURSOR_SWAY,
 	DEFAULT_CURSOR_TRAIL_LENGTH,
 	DEFAULT_CURSOR_TRAIL_OPACITY,
+	DEFAULT_DEVICE_MOCKUP,
 	DEFAULT_FIGURE_DATA,
 	DEFAULT_KEYBOARD_SHORTCUT_DISPLAY_MS,
 	DEFAULT_KEYBOARD_SHORTCUT_MAX_VISIBLE,
@@ -52,6 +54,8 @@ import {
 	DEFAULT_WEBCAM_REGION,
 	DEFAULT_ZOOM_DEPTH,
 	DEFAULT_ZOOM_MOTION_BLUR,
+	DEVICE_MOCKUP_OPTIONS,
+	type DeviceMockup,
 	type KeyboardShortcutPosition,
 	type KeyboardShortcutTheme,
 	type SpeedRegion,
@@ -92,6 +96,7 @@ export interface ProjectEditorState {
 	keyboardShortcutOpacity: number;
 	keyboardShortcutDisplayMs: number;
 	keyboardShortcutMaxVisible: number;
+	deviceMockup: import("./types").DeviceMockup;
 	borderRadius: number;
 	padding: number;
 	cropRegion: CropRegion;
@@ -852,8 +857,9 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 				? (editor.cursorStyle as CursorStyle)
 				: DEFAULT_CURSOR_STYLE,
 		cursorPack:
-			editor.cursorPack === "custom" || editor.cursorPack === "classic"
-				? editor.cursorPack
+			typeof editor.cursorPack === "string" &&
+			CURSOR_PACK_OPTIONS.some((opt) => opt.value === editor.cursorPack)
+				? (editor.cursorPack as CursorPack)
 				: DEFAULT_CURSOR_PACK,
 		cursorColor: typeof editor.cursorColor === "string" ? editor.cursorColor : DEFAULT_CURSOR_COLOR,
 		cursorOpacity: isFiniteNumber(editor.cursorOpacity)
@@ -906,6 +912,11 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		keyboardShortcutMaxVisible: isFiniteNumber(editor.keyboardShortcutMaxVisible)
 			? clamp(Math.round(editor.keyboardShortcutMaxVisible), 1, 3)
 			: DEFAULT_KEYBOARD_SHORTCUT_MAX_VISIBLE,
+		deviceMockup:
+			typeof editor.deviceMockup === "string" &&
+			DEVICE_MOCKUP_OPTIONS.some((opt) => opt.value === editor.deviceMockup)
+				? (editor.deviceMockup as DeviceMockup)
+				: DEFAULT_DEVICE_MOCKUP,
 		borderRadius: typeof editor.borderRadius === "number" ? editor.borderRadius : 12.5,
 		padding: normalizedPadding,
 		cropRegion: {

@@ -253,6 +253,7 @@ export default function VideoEditor() {
 	const [keyboardShortcutMaxVisible, setKeyboardShortcutMaxVisible] = useState(
 		initialEditorPreferences.keyboardShortcutMaxVisible,
 	);
+	const [deviceMockup, setDeviceMockup] = useState(initialEditorPreferences.deviceMockup);
 	const [borderRadius, setBorderRadius] = useState(initialEditorPreferences.borderRadius);
 	const [padding, setPadding] = useState(initialEditorPreferences.padding);
 	const [cropRegion, setCropRegion] = useState<CropRegion>(initialEditorPreferences.cropRegion);
@@ -895,6 +896,7 @@ export default function VideoEditor() {
 				keyboardShortcutOpacity,
 				keyboardShortcutDisplayMs,
 				keyboardShortcutMaxVisible,
+				deviceMockup,
 				borderRadius,
 				padding,
 				cropRegion,
@@ -952,6 +954,7 @@ export default function VideoEditor() {
 		keyboardShortcutOpacity,
 		keyboardShortcutDisplayMs,
 		keyboardShortcutMaxVisible,
+		deviceMockup,
 		borderRadius,
 		padding,
 		cropRegion,
@@ -1118,6 +1121,7 @@ export default function VideoEditor() {
 			keyboardShortcutOpacity,
 			keyboardShortcutDisplayMs,
 			keyboardShortcutMaxVisible,
+			deviceMockup,
 			borderRadius,
 			padding,
 			cropRegion,
@@ -1163,6 +1167,7 @@ export default function VideoEditor() {
 		keyboardShortcutOpacity,
 		keyboardShortcutDisplayMs,
 		keyboardShortcutMaxVisible,
+		deviceMockup,
 		borderRadius,
 		padding,
 		cropRegion,
@@ -1222,6 +1227,7 @@ export default function VideoEditor() {
 				keyboardShortcutOpacity,
 				keyboardShortcutDisplayMs,
 				keyboardShortcutMaxVisible,
+				deviceMockup,
 				borderRadius,
 				padding,
 				cropRegion,
@@ -3238,6 +3244,7 @@ export default function VideoEditor() {
 						backgroundBlur,
 						zoomMotionBlur,
 						connectZooms,
+						deviceMockup,
 						borderRadius,
 						padding,
 						videoPadding: padding,
@@ -3403,6 +3410,7 @@ export default function VideoEditor() {
 						backgroundBlur,
 						zoomMotionBlur,
 						connectZooms,
+						deviceMockup,
 						borderRadius,
 						padding,
 						cropRegion,
@@ -4115,6 +4123,7 @@ export default function VideoEditor() {
 									backgroundBlur={backgroundBlur}
 									zoomMotionBlur={zoomMotionBlur}
 									connectZooms={connectZooms}
+									deviceMockup={deviceMockup}
 									borderRadius={borderRadius}
 									padding={padding}
 									cropRegion={cropRegion}
@@ -4223,6 +4232,8 @@ export default function VideoEditor() {
 							onKeyboardShortcutDisplayMsChange={setKeyboardShortcutDisplayMs}
 							keyboardShortcutMaxVisible={keyboardShortcutMaxVisible}
 							onKeyboardShortcutMaxVisibleChange={setKeyboardShortcutMaxVisible}
+							deviceMockup={deviceMockup}
+							onDeviceMockupChange={setDeviceMockup}
 							borderRadius={borderRadius}
 							onBorderRadiusChange={setBorderRadius}
 							padding={padding}

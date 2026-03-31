@@ -14,13 +14,18 @@ export function Footer() {
 				<div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
 					{/* Logo & description */}
 					<div className="flex flex-col gap-3">
-						<div className="inline-flex w-fit items-center rounded-[22px] border border-[#d1a86a]/16 bg-[linear-gradient(180deg,rgba(18,17,15,0.92)_0%,rgba(10,10,12,0.96)_100%)] px-4 py-2.5 shadow-[0_16px_40px_rgba(0,0,0,0.28)]">
-							<img
-								src="/images/screenmint-logo.svg"
-								alt="ScreenMint logo"
-								className="h-8 w-auto object-contain"
-								loading="lazy"
-							/>
+						<div className="inline-flex w-fit items-center gap-3 rounded-[22px] border border-[#d1a86a]/16 bg-[linear-gradient(180deg,rgba(18,17,15,0.92)_0%,rgba(10,10,12,0.96)_100%)] px-4 py-2.5 shadow-[0_16px_40px_rgba(0,0,0,0.28)]">
+							<span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/[0.06] bg-black/20 shadow-[0_10px_24px_rgba(0,0,0,0.24)]">
+								<img
+									src="/images/screenmint-mark.svg"
+									alt="ScreenMint mark"
+									className="h-8 w-8 object-contain"
+									loading="lazy"
+								/>
+							</span>
+							<span className="text-[18px] font-semibold tracking-[-0.03em] text-[#f4ebdd]">
+								Screen<span className="text-[#d1a86a]">Mint</span>
+							</span>
 						</div>
 						<p className="text-[12px] text-white/20 max-w-[280px] leading-relaxed">
 							Free, open-source screen recorder and editor. Record once, polish to perfection.

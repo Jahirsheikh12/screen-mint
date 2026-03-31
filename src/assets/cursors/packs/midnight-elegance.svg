@@ -1,0 +1,10 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="midnightGrad" x1="8" y1="3" x2="22" y2="29" gradientUnits="userSpaceOnUse">
+<stop offset="0" stop-color="#1e1b4b"/>
+<stop offset="1" stop-color="#312e81"/>
+</linearGradient>
+</defs>
+<path d="M8 3L8 27L13.5 21L18.5 29L22 27L16.5 19L25 19L8 3Z" fill="url(#midnightGrad)" stroke="#c4b5fd" stroke-width="1" stroke-linejoin="round"/>
+<path d="M8 3L8 27L13.5 21L18.5 29L22 27L16.5 19L25 19L8 3Z" fill="none" stroke="#e9d5ff" stroke-width="0.3" stroke-linejoin="round" opacity="0.6"/>
+</svg>
