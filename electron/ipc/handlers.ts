@@ -120,6 +120,8 @@ let nativeCaptureStopRequested = false;
 let nativeCaptureMicrophonePath: string | null = null;
 let nativeCursorMonitorProcess: ChildProcessWithoutNullStreams | null = null;
 let nativeCursorMonitorOutputBuffer = "";
+let nativeWindowBoundsMonitorProcess: ChildProcessWithoutNullStreams | null = null;
+let nativeWindowBoundsMonitorOutputBuffer = "";
 let wgcCaptureProcess: ChildProcessWithoutNullStreams | null = null;
 let wgcCaptureOutputBuffer = "";
 let wgcCaptureTargetPath: string | null = null;
@@ -169,7 +171,8 @@ type CursorVisualType =
 	| "move"
 	| "zoom-in"
 	| "zoom-out"
-	| "screenshot-selection";
+	| "screenshot-selection"
+	| "unknown";
 
 const CURSOR_VISUAL_TYPES: CursorVisualType[] = [
 	"arrow",
@@ -188,6 +191,7 @@ const CURSOR_VISUAL_TYPES: CursorVisualType[] = [
 	"zoom-in",
 	"zoom-out",
 	"screenshot-selection",
+	"unknown",
 ];
 
 function isCursorVisualType(value: string): value is CursorVisualType {
@@ -466,6 +470,14 @@ function getNativeWindowListBinaryPath() {
 	return path.join(app.getPath("userData"), "native-tools", "screenmint-window-list");
 }
 
+function getNativeWindowBoundsMonitorSourcePath() {
+	return resolveUnpackedAppPath("electron", "native", "NativeWindowBoundsMonitor.swift");
+}
+
+function getNativeWindowBoundsMonitorBinaryPath() {
+	return path.join(app.getPath("userData"), "native-tools", "screenmint-window-bounds-monitor");
+}
+
 type NativeMacWindowSource = {
 	id: string;
 	name: string;
@@ -550,6 +562,14 @@ async function ensureNativeWindowListBinary() {
 		getNativeWindowListBinaryPath(),
 		"native ScreenCaptureKit window list helper",
 		"screenmint-window-list",
+	);
+}
+
+async function ensureNativeWindowBoundsMonitorBinary() {
+	return ensureSwiftHelperBinary(
+		getNativeWindowBoundsMonitorSourcePath(),
+		getNativeWindowBoundsMonitorBinaryPath(),
+		"native window bounds monitor helper",
 	);
 }
 
@@ -1339,7 +1359,17 @@ function sampleCursorStateChange(cursorType: CursorVisualType) {
 		return;
 	}
 
-	pushCursorSample(point.cx, point.cy, Date.now() - cursorCaptureStartTimeMs, "move", cursorType);
+	pushCursorSample(point.cx, point.cy, getCursorCaptureElapsedMs(), "move", cursorType, {
+		rawX: point.rawX,
+		rawY: point.rawY,
+		origin: "native-monitor",
+		confidence: cursorType === "unknown" ? "low" : "medium",
+		sourceBounds: point.sourceBounds,
+		displayBounds: point.displayBounds,
+		sourceDisplayId: point.sourceDisplayId,
+		displayScaleFactor: point.displayScaleFactor,
+		captureMode: point.captureMode,
+	});
 }
 
 function attachNativeCaptureLifecycle(process: ChildProcessWithoutNullStreams) {
@@ -1683,14 +1713,21 @@ async function finalizeRecordingSession(payload: {
 	return await finalizeStoredVideo(finalVideoPath);
 }
 
-const CURSOR_TELEMETRY_VERSION = 2;
+const CURSOR_TELEMETRY_VERSION = 4;
 const KEYBOARD_TELEMETRY_VERSION = 1;
-const CURSOR_SAMPLE_INTERVAL_MS = 33;
-const MAX_CURSOR_SAMPLES = 60 * 60 * 30; // 1 hour @ 30Hz
+const CURSOR_SAMPLE_INTERVAL_MS = 1000 / 60;
+const CURSOR_DRAG_SAMPLE_INTERVAL_MS = 16;
+const WINDOW_BOUNDS_CAPTURE_INTERVAL_MS = 1000 / 30;
+const WINDOW_BOUNDS_FALLBACK_CAPTURE_INTERVAL_MS = 1000;
+const MAX_CURSOR_SAMPLES = 60 * 60 * 120; // 1 hour @ 120Hz worth of mixed cursor events
 const MAX_KEYBOARD_SAMPLES = 60 * 60 * 20; // 1 hour @ ~20 keyboard events/sec average
 
 type CursorInteractionType =
 	| "move"
+	| "mousedown"
+	| "drag-start"
+	| "drag"
+	| "drag-end"
 	| "click"
 	| "double-click"
 	| "right-click"
@@ -1706,6 +1743,15 @@ interface CursorTelemetryPoint {
 	cy: number;
 	interactionType?: CursorInteractionType;
 	cursorType?: CursorVisualType;
+	rawX?: number;
+	rawY?: number;
+	origin?: "hook" | "poll" | "native-monitor";
+	confidence?: "high" | "medium" | "low";
+	sourceBounds?: WindowBounds;
+	displayBounds?: WindowBounds;
+	sourceDisplayId?: number;
+	displayScaleFactor?: number;
+	captureMode?: "display" | "window" | "area";
 }
 
 interface KeyboardTelemetryPoint {
@@ -1717,6 +1763,35 @@ interface KeyboardTelemetryPoint {
 	ctrlKey: boolean;
 	metaKey: boolean;
 	shiftKey: boolean;
+}
+
+function sanitizeTelemetryBounds(value: unknown): WindowBounds | undefined {
+	if (!value || typeof value !== "object") {
+		return undefined;
+	}
+
+	const candidate = value as Partial<WindowBounds>;
+	if (
+		typeof candidate.x !== "number" ||
+		!Number.isFinite(candidate.x) ||
+		typeof candidate.y !== "number" ||
+		!Number.isFinite(candidate.y) ||
+		typeof candidate.width !== "number" ||
+		!Number.isFinite(candidate.width) ||
+		typeof candidate.height !== "number" ||
+		!Number.isFinite(candidate.height) ||
+		candidate.width <= 0 ||
+		candidate.height <= 0
+	) {
+		return undefined;
+	}
+
+	return {
+		x: candidate.x,
+		y: candidate.y,
+		width: candidate.width,
+		height: candidate.height,
+	};
 }
 
 type HookMouseEvent = {
@@ -1782,6 +1857,7 @@ type UiohookKeyExports = Record<string, number>;
 
 let cursorCaptureInterval: NodeJS.Timeout | null = null;
 let cursorCaptureStartTimeMs = 0;
+let cursorCaptureStartHrTimeNs = 0n;
 let activeCursorSamples: CursorTelemetryPoint[] = [];
 let pendingCursorSamples: CursorTelemetryPoint[] = [];
 let activeKeyboardSamples: KeyboardTelemetryPoint[] = [];
@@ -1790,9 +1866,18 @@ let isCursorCaptureActive = false;
 let interactionCaptureCleanup: (() => void) | null = null;
 let hasLoggedInteractionHookFailure = false;
 let lastLeftClick: { timeMs: number; cx: number; cy: number } | null = null;
-let linuxCursorScreenPoint: { x: number; y: number; updatedAt: number } | null = null;
+let hookCursorScreenPoint: { x: number; y: number; updatedAt: number } | null = null;
+let activePointerState: {
+	button: 1 | 2 | 3;
+	startCx: number;
+	startCy: number;
+	startTimeMs: number;
+	lastDragSampleTimeMs: number;
+	isDragging: boolean;
+} | null = null;
 let selectedWindowBounds: WindowBounds | null = null;
 let windowBoundsCaptureInterval: NodeJS.Timeout | null = null;
+let windowBoundsCaptureSessionId = 0;
 let keyboardCapturePlatform: KeyboardTelemetryPlatform =
 	process.platform === "darwin" ? "darwin" : process.platform === "linux" ? "linux" : "win32";
 let uiohookKeyNameByCode: Map<number, string> | null = null;
@@ -1845,10 +1930,7 @@ function loadUiohookKeyExports(): UiohookKeyExports | null {
 
 	if (typeof moduleExports.default === "object" && moduleExports.default !== null) {
 		const wrappedExports = moduleExports.default as { UiohookKey?: unknown };
-		if (
-			typeof wrappedExports.UiohookKey === "object" &&
-			wrappedExports.UiohookKey !== null
-		) {
+		if (typeof wrappedExports.UiohookKey === "object" && wrappedExports.UiohookKey !== null) {
 			return wrappedExports.UiohookKey as UiohookKeyExports;
 		}
 
@@ -1963,10 +2045,7 @@ function pushKeyboardSample(
 	type: KeyboardTelemetryEventType,
 	key: string,
 	keycode: number,
-	modifiers: Pick<
-		KeyboardTelemetryPoint,
-		"altKey" | "ctrlKey" | "metaKey" | "shiftKey"
-	>,
+	modifiers: Pick<KeyboardTelemetryPoint, "altKey" | "ctrlKey" | "metaKey" | "shiftKey">,
 ) {
 	activeKeyboardSamples.push({
 		timeMs: Math.max(0, timeMs),
@@ -1999,10 +2078,12 @@ function stopInteractionCapture() {
 }
 
 function stopWindowBoundsCapture() {
+	windowBoundsCaptureSessionId += 1;
 	if (windowBoundsCaptureInterval) {
 		clearInterval(windowBoundsCaptureInterval);
 		windowBoundsCaptureInterval = null;
 	}
+	stopNativeWindowBoundsMonitor();
 	selectedWindowBounds = null;
 }
 
@@ -2032,6 +2113,28 @@ function getWindowBoundsFromNativeSource(
 	}
 
 	return { x, y, width, height };
+}
+
+function cloneWindowBounds(bounds: WindowBounds | null | undefined): WindowBounds | undefined {
+	if (!bounds) {
+		return undefined;
+	}
+
+	return {
+		x: bounds.x,
+		y: bounds.y,
+		width: bounds.width,
+		height: bounds.height,
+	};
+}
+
+function getDisplayForBounds(bounds: WindowBounds): Electron.Display {
+	const centerPoint = {
+		x: Math.round(bounds.x + bounds.width / 2),
+		y: Math.round(bounds.y + bounds.height / 2),
+	};
+
+	return getScreen().getDisplayNearestPoint(centerPoint);
 }
 
 async function resolveMacWindowBounds(source: SelectedSource): Promise<WindowBounds | null> {
@@ -2066,8 +2169,102 @@ async function refreshSelectedWindowBounds() {
 	selectedWindowBounds = bounds;
 }
 
+function handleNativeWindowBoundsMonitorStdout(chunk: Buffer) {
+	nativeWindowBoundsMonitorOutputBuffer += chunk.toString();
+	const lines = nativeWindowBoundsMonitorOutputBuffer.split(/\r?\n/);
+	nativeWindowBoundsMonitorOutputBuffer = lines.pop() ?? "";
+
+	for (const line of lines) {
+		const match = line.match(/^BOUNDS:(.+)$/);
+		if (!match) {
+			continue;
+		}
+
+		try {
+			const parsed = JSON.parse(match[1]) as Partial<WindowBounds>;
+			const bounds = sanitizeTelemetryBounds(parsed);
+			if (bounds) {
+				selectedWindowBounds = bounds;
+			}
+		} catch {
+			// Ignore malformed monitor payloads and continue falling back to polling.
+		}
+	}
+}
+
+async function startNativeWindowBoundsMonitor(sourceId: string) {
+	stopNativeWindowBoundsMonitor();
+
+	if (
+		process.platform !== "darwin" ||
+		selectedSource?.id !== sourceId ||
+		!sourceId.startsWith("window:")
+	) {
+		return false;
+	}
+
+	const windowId = parseWindowId(sourceId);
+	if (!windowId) {
+		return false;
+	}
+
+	try {
+		const helperPath = await ensureNativeWindowBoundsMonitorBinary();
+		if (selectedSource?.id !== sourceId) {
+			return false;
+		}
+		nativeWindowBoundsMonitorOutputBuffer = "";
+		nativeWindowBoundsMonitorProcess = spawn(helperPath, [String(windowId)], {
+			stdio: ["pipe", "pipe", "pipe"],
+		});
+
+		nativeWindowBoundsMonitorProcess.once("error", (error) => {
+			console.warn("Native window bounds monitor process error:", error);
+			nativeWindowBoundsMonitorProcess = null;
+			nativeWindowBoundsMonitorOutputBuffer = "";
+		});
+
+		nativeWindowBoundsMonitorProcess.stdout.on("data", handleNativeWindowBoundsMonitorStdout);
+
+		nativeWindowBoundsMonitorProcess.once("close", () => {
+			nativeWindowBoundsMonitorProcess = null;
+			nativeWindowBoundsMonitorOutputBuffer = "";
+		});
+
+		return true;
+	} catch (error) {
+		console.warn("Failed to start native window bounds monitor:", error);
+		nativeWindowBoundsMonitorProcess = null;
+		nativeWindowBoundsMonitorOutputBuffer = "";
+		return false;
+	}
+}
+
+function stopNativeWindowBoundsMonitor() {
+	if (!nativeWindowBoundsMonitorProcess) {
+		nativeWindowBoundsMonitorOutputBuffer = "";
+		return;
+	}
+
+	try {
+		nativeWindowBoundsMonitorProcess.stdin.write("stop\n");
+	} catch {
+		// ignore stop signal issues
+	}
+
+	try {
+		nativeWindowBoundsMonitorProcess.kill();
+	} catch {
+		// ignore kill issues
+	}
+
+	nativeWindowBoundsMonitorProcess = null;
+	nativeWindowBoundsMonitorOutputBuffer = "";
+}
+
 function startWindowBoundsCapture() {
 	stopWindowBoundsCapture();
+	const sessionId = windowBoundsCaptureSessionId;
 
 	if (
 		!["darwin", "linux"].includes(process.platform) ||
@@ -2077,39 +2274,74 @@ function startWindowBoundsCapture() {
 	}
 
 	void refreshSelectedWindowBounds();
+	if (process.platform === "darwin") {
+		const sourceId = selectedSource.id;
+		void startNativeWindowBoundsMonitor(sourceId).then((started) => {
+			if (
+				sessionId !== windowBoundsCaptureSessionId ||
+				!selectedSource?.id?.startsWith("window:")
+			) {
+				return;
+			}
+			const intervalMs = started
+				? WINDOW_BOUNDS_FALLBACK_CAPTURE_INTERVAL_MS
+				: WINDOW_BOUNDS_CAPTURE_INTERVAL_MS;
+			windowBoundsCaptureInterval = setInterval(() => {
+				void refreshSelectedWindowBounds();
+			}, intervalMs);
+		});
+		return;
+	}
+
 	windowBoundsCaptureInterval = setInterval(() => {
 		void refreshSelectedWindowBounds();
-	}, 250);
+	}, WINDOW_BOUNDS_CAPTURE_INTERVAL_MS);
 }
 
-function getNormalizedCursorPoint() {
-	const fallbackCursor = getScreen().getCursorScreenPoint();
-	const linuxCursorCache = process.platform === "linux" ? linuxCursorScreenPoint : null;
-	const isLinuxCacheFresh = !!linuxCursorCache && Date.now() - linuxCursorCache.updatedAt <= 1000;
+function getCursorCaptureElapsedMs() {
+	if (!cursorCaptureStartHrTimeNs) {
+		return cursorCaptureStartTimeMs > 0 ? Math.max(0, Date.now() - cursorCaptureStartTimeMs) : 0;
+	}
 
-	const cursor = isLinuxCacheFresh
-		? { x: linuxCursorCache.x, y: linuxCursorCache.y }
-		: fallbackCursor;
+	return Math.max(0, Number(process.hrtime.bigint() - cursorCaptureStartHrTimeNs) / 1_000_000);
+}
 
-	const areaBounds = getSelectedAreaForSource(selectedSource)?.bounds;
-	if (areaBounds) {
-		const width = Math.max(1, areaBounds.width);
-		const height = Math.max(1, areaBounds.height);
+function getCursorGeometrySnapshot(cursor: { x: number; y: number }) {
+	const area = getSelectedAreaForSource(selectedSource);
+	if (area) {
+		const display =
+			getScreen()
+				.getAllDisplays()
+				.find((candidate) => candidate.id === area.displayId) ??
+			getDisplayForBounds(area.displayBounds);
 
 		return {
-			cx: clamp((cursor.x - areaBounds.x) / width, 0, 1),
-			cy: clamp((cursor.y - areaBounds.y) / height, 0, 1),
+			sourceBounds: cloneWindowBounds(area.bounds),
+			displayBounds: cloneWindowBounds(area.displayBounds),
+			sourceDisplayId: area.displayId,
+			displayScaleFactor: display.scaleFactor,
+			captureMode: "area" as const,
 		};
 	}
 
-	const windowBounds = selectedSource?.id?.startsWith("window:") ? selectedWindowBounds : null;
-	if (windowBounds) {
-		const width = Math.max(1, windowBounds.width);
-		const height = Math.max(1, windowBounds.height);
+	if (selectedSource?.id?.startsWith("window:")) {
+		if (selectedWindowBounds) {
+			const display = getDisplayForBounds(selectedWindowBounds);
+			return {
+				sourceBounds: cloneWindowBounds(selectedWindowBounds),
+				displayBounds: cloneWindowBounds(display.bounds),
+				sourceDisplayId: display.id,
+				displayScaleFactor: display.scaleFactor,
+				captureMode: "window" as const,
+			};
+		}
 
+		const fallbackDisplay = getScreen().getDisplayNearestPoint(cursor);
 		return {
-			cx: clamp((cursor.x - windowBounds.x) / width, 0, 1),
-			cy: clamp((cursor.y - windowBounds.y) / height, 0, 1),
+			displayBounds: cloneWindowBounds(fallbackDisplay.bounds),
+			sourceDisplayId: fallbackDisplay.id,
+			displayScaleFactor: fallbackDisplay.scaleFactor,
+			captureMode: "window" as const,
 		};
 	}
 
@@ -2120,13 +2352,61 @@ function getNormalizedCursorPoint() {
 				.find((display) => display.id === sourceDisplayId) ?? null)
 		: null;
 	const display = sourceDisplay ?? getScreen().getDisplayNearestPoint(cursor);
-	const bounds = display.bounds;
+	return {
+		sourceBounds: cloneWindowBounds(display.bounds),
+		displayBounds: cloneWindowBounds(display.bounds),
+		sourceDisplayId: display.id,
+		displayScaleFactor: display.scaleFactor,
+		captureMode: "display" as const,
+	};
+}
+
+function getNormalizedCursorPoint(cursorOverride?: { x: number; y: number } | null) {
+	const fallbackCursor = cursorOverride ?? getScreen().getCursorScreenPoint();
+	const cachedHookPoint =
+		hookCursorScreenPoint && Date.now() - hookCursorScreenPoint.updatedAt <= 1000
+			? { x: hookCursorScreenPoint.x, y: hookCursorScreenPoint.y }
+			: null;
+
+	const cursor = cachedHookPoint ?? fallbackCursor;
+	const geometry = getCursorGeometrySnapshot(cursor);
+
+	if (geometry.captureMode === "area" && geometry.sourceBounds) {
+		const width = Math.max(1, geometry.sourceBounds.width);
+		const height = Math.max(1, geometry.sourceBounds.height);
+
+		return {
+			cx: clamp((cursor.x - geometry.sourceBounds.x) / width, 0, 1),
+			cy: clamp((cursor.y - geometry.sourceBounds.y) / height, 0, 1),
+			rawX: cursor.x,
+			rawY: cursor.y,
+			...geometry,
+		};
+	}
+
+	if (geometry.captureMode === "window" && geometry.sourceBounds) {
+		const width = Math.max(1, geometry.sourceBounds.width);
+		const height = Math.max(1, geometry.sourceBounds.height);
+
+		return {
+			cx: clamp((cursor.x - geometry.sourceBounds.x) / width, 0, 1),
+			cy: clamp((cursor.y - geometry.sourceBounds.y) / height, 0, 1),
+			rawX: cursor.x,
+			rawY: cursor.y,
+			...geometry,
+		};
+	}
+
+	const bounds =
+		geometry.sourceBounds ??
+		geometry.displayBounds ??
+		getScreen().getDisplayNearestPoint(cursor).bounds;
 	const width = Math.max(1, bounds.width);
 	const height = Math.max(1, bounds.height);
 
 	const cx = clamp((cursor.x - bounds.x) / width, 0, 1);
 	const cy = clamp((cursor.y - bounds.y) / height, 0, 1);
-	return { cx, cy };
+	return { cx, cy, rawX: cursor.x, rawY: cursor.y, ...geometry };
 }
 
 function getHookCursorScreenPoint(
@@ -2153,6 +2433,17 @@ function pushCursorSample(
 	timeMs: number,
 	interactionType: CursorInteractionType = "move",
 	cursorType?: CursorVisualType,
+	options?: {
+		rawX?: number;
+		rawY?: number;
+		origin?: "hook" | "poll" | "native-monitor";
+		confidence?: "high" | "medium" | "low";
+		sourceBounds?: WindowBounds;
+		displayBounds?: WindowBounds;
+		sourceDisplayId?: number;
+		displayScaleFactor?: number;
+		captureMode?: "display" | "window" | "area";
+	},
 ) {
 	activeCursorSamples.push({
 		timeMs: Math.max(0, timeMs),
@@ -2160,6 +2451,15 @@ function pushCursorSample(
 		cy,
 		interactionType,
 		cursorType: cursorType ?? currentCursorVisualType,
+		rawX: options?.rawX,
+		rawY: options?.rawY,
+		origin: options?.origin,
+		confidence: options?.confidence,
+		sourceBounds: cloneWindowBounds(options?.sourceBounds),
+		displayBounds: cloneWindowBounds(options?.displayBounds),
+		sourceDisplayId: options?.sourceDisplayId,
+		displayScaleFactor: options?.displayScaleFactor,
+		captureMode: options?.captureMode,
 	});
 
 	if (activeCursorSamples.length > MAX_CURSOR_SAMPLES) {
@@ -2173,7 +2473,17 @@ function sampleCursorPoint() {
 		return;
 	}
 
-	pushCursorSample(point.cx, point.cy, Date.now() - cursorCaptureStartTimeMs, "move");
+	pushCursorSample(point.cx, point.cy, getCursorCaptureElapsedMs(), "move", undefined, {
+		rawX: point.rawX,
+		rawY: point.rawY,
+		origin: "poll",
+		confidence: "medium",
+		sourceBounds: point.sourceBounds,
+		displayBounds: point.displayBounds,
+		sourceDisplayId: point.sourceDisplayId,
+		displayScaleFactor: point.displayScaleFactor,
+		captureMode: point.captureMode,
+	});
 }
 
 async function persistPendingCursorTelemetry(videoPath: string) {
@@ -2335,51 +2645,116 @@ async function startInteractionCapture() {
 				return;
 			}
 
-			const point = getNormalizedCursorPoint();
+			const screenPoint = getHookCursorScreenPoint(event);
+			if (screenPoint) {
+				hookCursorScreenPoint = { x: screenPoint.x, y: screenPoint.y, updatedAt: Date.now() };
+			}
+
+			const point = getNormalizedCursorPoint(screenPoint);
 			if (!point) {
 				return;
 			}
 
-			const timeMs = Date.now() - cursorCaptureStartTimeMs;
+			const timeMs = getCursorCaptureElapsedMs();
 			const button = getHookMouseButton(event);
-			let interactionType: CursorInteractionType = "click";
+			activePointerState = {
+				button,
+				startCx: point.cx,
+				startCy: point.cy,
+				startTimeMs: timeMs,
+				lastDragSampleTimeMs: timeMs,
+				isDragging: false,
+			};
 
-			if (button === 2) {
-				interactionType = "right-click";
-			} else if (button === 3) {
-				interactionType = "middle-click";
-			} else {
-				const thresholdMs = 350;
-				const distance = lastLeftClick
-					? Math.hypot(point.cx - lastLeftClick.cx, point.cy - lastLeftClick.cy)
-					: Number.POSITIVE_INFINITY;
-
-				if (lastLeftClick && timeMs - lastLeftClick.timeMs <= thresholdMs && distance <= 0.04) {
-					interactionType = "double-click";
-				}
-
-				lastLeftClick = { timeMs, cx: point.cx, cy: point.cy };
-			}
-
-			pushCursorSample(point.cx, point.cy, timeMs, interactionType);
+			pushCursorSample(point.cx, point.cy, timeMs, "mousedown", undefined, {
+				rawX: point.rawX,
+				rawY: point.rawY,
+				origin: "hook",
+				confidence: "high",
+				sourceBounds: point.sourceBounds,
+				displayBounds: point.displayBounds,
+				sourceDisplayId: point.sourceDisplayId,
+				displayScaleFactor: point.displayScaleFactor,
+				captureMode: point.captureMode,
+			});
 		};
 
-		const onMouseUp = (_event: HookMouseEvent) => {
+		const onMouseUp = (event: HookMouseEvent) => {
 			if (!isCursorCaptureActive) {
 				return;
 			}
 
-			const point = getNormalizedCursorPoint();
+			const screenPoint = getHookCursorScreenPoint(event);
+			if (screenPoint) {
+				hookCursorScreenPoint = { x: screenPoint.x, y: screenPoint.y, updatedAt: Date.now() };
+			}
+
+			const point = getNormalizedCursorPoint(screenPoint);
 			if (!point) {
 				return;
 			}
 
-			const timeMs = Date.now() - cursorCaptureStartTimeMs;
-			pushCursorSample(point.cx, point.cy, timeMs, "mouseup");
+			const timeMs = getCursorCaptureElapsedMs();
+			const button = getHookMouseButton(event);
+			const wasDragging = activePointerState?.isDragging ?? false;
+			pushCursorSample(
+				point.cx,
+				point.cy,
+				timeMs,
+				wasDragging ? "drag-end" : "mouseup",
+				undefined,
+				{
+					rawX: point.rawX,
+					rawY: point.rawY,
+					origin: "hook",
+					confidence: "high",
+					sourceBounds: point.sourceBounds,
+					displayBounds: point.displayBounds,
+					sourceDisplayId: point.sourceDisplayId,
+					displayScaleFactor: point.displayScaleFactor,
+					captureMode: point.captureMode,
+				},
+			);
+
+			let interactionType: CursorInteractionType | null = null;
+			if (!wasDragging) {
+				if (button === 2) {
+					interactionType = "right-click";
+				} else if (button === 3) {
+					interactionType = "middle-click";
+				} else {
+					const thresholdMs = 350;
+					const distance = lastLeftClick
+						? Math.hypot(point.cx - lastLeftClick.cx, point.cy - lastLeftClick.cy)
+						: Number.POSITIVE_INFINITY;
+
+					interactionType =
+						lastLeftClick && timeMs - lastLeftClick.timeMs <= thresholdMs && distance <= 0.04
+							? "double-click"
+							: "click";
+					lastLeftClick = { timeMs, cx: point.cx, cy: point.cy };
+				}
+			}
+
+			if (interactionType) {
+				pushCursorSample(point.cx, point.cy, timeMs, interactionType, undefined, {
+					rawX: point.rawX,
+					rawY: point.rawY,
+					origin: "hook",
+					confidence: "high",
+					sourceBounds: point.sourceBounds,
+					displayBounds: point.displayBounds,
+					sourceDisplayId: point.sourceDisplayId,
+					displayScaleFactor: point.displayScaleFactor,
+					captureMode: point.captureMode,
+				});
+			}
+
+			activePointerState = null;
 		};
 
 		const onMouseMove = (event: HookMouseEvent) => {
-			if (process.platform !== "linux" || !isCursorCaptureActive) {
+			if (!isCursorCaptureActive) {
 				return;
 			}
 
@@ -2388,7 +2763,52 @@ async function startInteractionCapture() {
 				return;
 			}
 
-			linuxCursorScreenPoint = { x: point.x, y: point.y, updatedAt: Date.now() };
+			hookCursorScreenPoint = { x: point.x, y: point.y, updatedAt: Date.now() };
+			const normalizedPoint = getNormalizedCursorPoint(point);
+			if (!normalizedPoint || !activePointerState) {
+				return;
+			}
+
+			const timeMs = getCursorCaptureElapsedMs();
+			const distance = Math.hypot(
+				normalizedPoint.cx - activePointerState.startCx,
+				normalizedPoint.cy - activePointerState.startCy,
+			);
+			const shouldPromoteToDrag = distance > 0.012;
+			const shouldSampleDrag =
+				timeMs - activePointerState.lastDragSampleTimeMs >= CURSOR_DRAG_SAMPLE_INTERVAL_MS;
+
+			if (shouldPromoteToDrag && !activePointerState.isDragging) {
+				activePointerState.isDragging = true;
+				activePointerState.lastDragSampleTimeMs = timeMs;
+				pushCursorSample(normalizedPoint.cx, normalizedPoint.cy, timeMs, "drag-start", undefined, {
+					rawX: normalizedPoint.rawX,
+					rawY: normalizedPoint.rawY,
+					origin: "hook",
+					confidence: "high",
+					sourceBounds: normalizedPoint.sourceBounds,
+					displayBounds: normalizedPoint.displayBounds,
+					sourceDisplayId: normalizedPoint.sourceDisplayId,
+					displayScaleFactor: normalizedPoint.displayScaleFactor,
+					captureMode: normalizedPoint.captureMode,
+				});
+				return;
+			}
+
+			if (activePointerState.isDragging && shouldSampleDrag) {
+				activePointerState.lastDragSampleTimeMs = timeMs;
+				pushCursorSample(normalizedPoint.cx, normalizedPoint.cy, timeMs, "drag", undefined, {
+					rawX: normalizedPoint.rawX,
+					rawY: normalizedPoint.rawY,
+					origin: "hook",
+					confidence: "high",
+					sourceBounds: normalizedPoint.sourceBounds,
+					displayBounds: normalizedPoint.displayBounds,
+					sourceDisplayId: normalizedPoint.sourceDisplayId,
+					displayScaleFactor: normalizedPoint.displayScaleFactor,
+					captureMode: normalizedPoint.captureMode,
+				});
+			}
 		};
 
 		const onKeyDown = (event: HookKeyboardEvent) => {
@@ -2402,7 +2822,7 @@ async function startInteractionCapture() {
 				return;
 			}
 
-			const timeMs = Date.now() - cursorCaptureStartTimeMs;
+			const timeMs = getCursorCaptureElapsedMs();
 			pushKeyboardSample(timeMs, "keydown", key, keycode, {
 				altKey: getHookKeyboardModifier(event, "altKey"),
 				ctrlKey: getHookKeyboardModifier(event, "ctrlKey"),
@@ -2422,7 +2842,7 @@ async function startInteractionCapture() {
 				return;
 			}
 
-			const timeMs = Date.now() - cursorCaptureStartTimeMs;
+			const timeMs = getCursorCaptureElapsedMs();
 			pushKeyboardSample(timeMs, "keyup", key, keycode, {
 				altKey: getHookKeyboardModifier(event, "altKey"),
 				ctrlKey: getHookKeyboardModifier(event, "ctrlKey"),
@@ -3316,7 +3736,9 @@ export function registerIpcHandlers(
 			pendingKeyboardSamples = [];
 			keyboardCapturePlatform = normalizeKeyboardPlatform(process.platform);
 			cursorCaptureStartTimeMs = Date.now();
-			linuxCursorScreenPoint = null;
+			cursorCaptureStartHrTimeNs = process.hrtime.bigint();
+			hookCursorScreenPoint = null;
+			activePointerState = null;
 			lastLeftClick = null;
 			sampleCursorPoint();
 			cursorCaptureInterval = setInterval(sampleCursorPoint, CURSOR_SAMPLE_INTERVAL_MS);
@@ -3327,7 +3749,8 @@ export function registerIpcHandlers(
 			stopInteractionCapture();
 			stopWindowBoundsCapture();
 			stopNativeCursorMonitor();
-			linuxCursorScreenPoint = null;
+			hookCursorScreenPoint = null;
+			activePointerState = null;
 			snapshotCursorTelemetryForPersistence();
 			snapshotKeyboardTelemetryForPersistence();
 			activeCursorSamples = [];
@@ -3383,6 +3806,10 @@ export function registerIpcHandlers(
 								? clamp(point.cy, 0, 1)
 								: 0.5,
 						interactionType:
+							point.interactionType === "mousedown" ||
+							point.interactionType === "drag-start" ||
+							point.interactionType === "drag" ||
+							point.interactionType === "drag-end" ||
 							point.interactionType === "click" ||
 							point.interactionType === "double-click" ||
 							point.interactionType === "right-click" ||
@@ -3394,6 +3821,44 @@ export function registerIpcHandlers(
 						cursorType:
 							typeof point.cursorType === "string" && isCursorVisualType(point.cursorType)
 								? point.cursorType
+								: undefined,
+						rawX:
+							typeof point.rawX === "number" && Number.isFinite(point.rawX)
+								? point.rawX
+								: undefined,
+						rawY:
+							typeof point.rawY === "number" && Number.isFinite(point.rawY)
+								? point.rawY
+								: undefined,
+						origin:
+							point.origin === "hook" ||
+							point.origin === "poll" ||
+							point.origin === "native-monitor"
+								? point.origin
+								: undefined,
+						confidence:
+							point.confidence === "high" ||
+							point.confidence === "medium" ||
+							point.confidence === "low"
+								? point.confidence
+								: undefined,
+						sourceBounds: sanitizeTelemetryBounds(point.sourceBounds),
+						displayBounds: sanitizeTelemetryBounds(point.displayBounds),
+						sourceDisplayId:
+							typeof point.sourceDisplayId === "number" && Number.isFinite(point.sourceDisplayId)
+								? point.sourceDisplayId
+								: undefined,
+						displayScaleFactor:
+							typeof point.displayScaleFactor === "number" &&
+							Number.isFinite(point.displayScaleFactor) &&
+							point.displayScaleFactor > 0
+								? point.displayScaleFactor
+								: undefined,
+						captureMode:
+							point.captureMode === "display" ||
+							point.captureMode === "window" ||
+							point.captureMode === "area"
+								? point.captureMode
 								: undefined,
 					};
 				})
@@ -3452,9 +3917,7 @@ export function registerIpcHandlers(
 						shiftKey: Boolean(point.shiftKey),
 					};
 				})
-				.sort(
-					(a: KeyboardTelemetryPoint, b: KeyboardTelemetryPoint) => a.timeMs - b.timeMs,
-				);
+				.sort((a: KeyboardTelemetryPoint, b: KeyboardTelemetryPoint) => a.timeMs - b.timeMs);
 
 			return {
 				success: true,

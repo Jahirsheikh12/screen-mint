@@ -19,29 +19,28 @@ import type {
 	WebcamRegion,
 	ZoomRegion,
 } from "@/components/video-editor/types";
-import { ZOOM_DEPTH_SCALES } from "@/components/video-editor/types";
 import {
-	DEFAULT_FOCUS,
-	ZOOM_SCALE_DEADZONE,
-	ZOOM_TRANSLATION_DEADZONE_PX,
-} from "@/components/video-editor/videoPlayback/constants";
+	createPlaybackCameraState,
+	evaluatePlaybackCameraFrame,
+	type PlaybackCameraState,
+} from "@/components/video-editor/videoPlayback/cameraEvaluator";
 import {
 	DEFAULT_CURSOR_CONFIG,
 	PixiCursorOverlay,
 	preloadCursorAssets,
 } from "@/components/video-editor/videoPlayback/cursorRenderer";
 import {
+	buildCursorSimulationPath,
+	type CursorSimulationPath,
+} from "@/components/video-editor/videoPlayback/cursorSimulation";
+import {
 	computeMockupScreenRect,
 	drawDeviceMockup,
 } from "@/components/video-editor/videoPlayback/deviceMockups";
-import { findDominantRegion } from "@/components/video-editor/videoPlayback/zoomRegionUtils";
 import {
 	applyZoomTransform,
-	computeFocusFromTransform,
-	computeZoomTransform,
 	createMotionBlurState,
 	type MotionBlurState,
-	smoothZoomValue,
 } from "@/components/video-editor/videoPlayback/zoomTransform";
 import { getWebcamPixelRect } from "@/components/video-editor/webcamRegionUtils";
 import { getAssetPath, getRenderableAssetUrl } from "@/lib/assetPath";
@@ -92,30 +91,6 @@ interface FrameRenderConfig {
 	captionSettings?: CaptionSettings;
 }
 
-interface AnimationState {
-	scale: number;
-	appliedScale: number;
-	focusX: number;
-	focusY: number;
-	progress: number;
-	x: number;
-	y: number;
-	lastUpdateMs: number | null;
-}
-
-function createAnimationState(): AnimationState {
-	return {
-		scale: 1,
-		appliedScale: 1,
-		focusX: DEFAULT_FOCUS.cx,
-		focusY: DEFAULT_FOCUS.cy,
-		progress: 0,
-		x: 0,
-		y: 0,
-		lastUpdateMs: null,
-	};
-}
-
 type TextureSourceInput = Parameters<typeof Texture.from>[0];
 
 interface FrameLayoutCache {
@@ -143,17 +118,18 @@ export class FrameRenderer {
 	private compositeCanvas: HTMLCanvasElement | null = null;
 	private compositeCtx: CanvasRenderingContext2D | null = null;
 	private config: FrameRenderConfig;
-	private animationState: AnimationState;
+	private animationState: PlaybackCameraState;
 	private motionBlurState: MotionBlurState;
 	private layoutCache: FrameLayoutCache | null = null;
 	private currentVideoTime = 0;
 	private lastMotionVector = { x: 0, y: 0 };
 	private cursorOverlay: PixiCursorOverlay | null = null;
 	private webcamVideo: HTMLVideoElement | null = null;
+	private cursorSimulationPath: CursorSimulationPath | null = null;
 
 	constructor(config: FrameRenderConfig) {
 		this.config = config;
-		this.animationState = createAnimationState();
+		this.animationState = createPlaybackCameraState();
 		this.motionBlurState = createMotionBlurState();
 	}
 
@@ -203,6 +179,11 @@ export class FrameRenderer {
 		this.app.stage.addChild(this.cameraContainer);
 		this.cameraContainer.addChild(this.videoContainer);
 		this.cameraContainer.addChild(this.cursorContainer);
+
+		this.cursorSimulationPath = buildCursorSimulationPath(
+			this.config.cursorTelemetry ?? [],
+			this.config.cursorTelemetry?.[this.config.cursorTelemetry.length - 1]?.timeMs ?? 0,
+		);
 
 		if (cursorOverlayEnabled) {
 			this.cursorOverlay = new PixiCursorOverlay({
@@ -750,112 +731,23 @@ export class FrameRenderer {
 
 	private updateAnimationState(timeMs: number): number {
 		if (!this.cameraContainer || !this.layoutCache) return 0;
-
-		const { region, strength, blendedScale, transition } = findDominantRegion(
-			this.config.zoomRegions,
-			timeMs,
-			{
-				connectZooms: this.config.connectZooms,
+		const evaluation = evaluatePlaybackCameraFrame({
+			state: this.animationState,
+			frameTimeMs: timeMs,
+			playbackTimeMs: timeMs,
+			cursorSimulationPath: this.cursorSimulationPath,
+			zoomRegions: this.config.zoomRegions,
+			connectZooms: this.config.connectZooms,
+			geometry: {
+				stageSize: this.layoutCache.stageSize,
+				baseMask: this.layoutCache.maskRect,
 			},
-		);
-
-		const defaultFocus = DEFAULT_FOCUS;
-		let targetScaleFactor = 1;
-		let targetFocus = { ...defaultFocus };
-		let targetProgress = 0;
-
-		if (region && strength > 0) {
-			const zoomScale = blendedScale ?? ZOOM_DEPTH_SCALES[region.depth];
-			const regionFocus = region.focus;
-
-			targetScaleFactor = zoomScale;
-			targetFocus = regionFocus;
-			targetProgress = strength;
-
-			if (transition) {
-				const startTransform = computeZoomTransform({
-					stageSize: this.layoutCache.stageSize,
-					baseMask: this.layoutCache.maskRect,
-					zoomScale: transition.startScale,
-					zoomProgress: 1,
-					focusX: transition.startFocus.cx,
-					focusY: transition.startFocus.cy,
-				});
-				const endTransform = computeZoomTransform({
-					stageSize: this.layoutCache.stageSize,
-					baseMask: this.layoutCache.maskRect,
-					zoomScale: transition.endScale,
-					zoomProgress: 1,
-					focusX: transition.endFocus.cx,
-					focusY: transition.endFocus.cy,
-				});
-
-				const interpolatedTransform = {
-					scale:
-						startTransform.scale +
-						(endTransform.scale - startTransform.scale) * transition.progress,
-					x: startTransform.x + (endTransform.x - startTransform.x) * transition.progress,
-					y: startTransform.y + (endTransform.y - startTransform.y) * transition.progress,
-				};
-
-				targetScaleFactor = interpolatedTransform.scale;
-				targetFocus = computeFocusFromTransform({
-					stageSize: this.layoutCache.stageSize,
-					baseMask: this.layoutCache.maskRect,
-					zoomScale: interpolatedTransform.scale,
-					x: interpolatedTransform.x,
-					y: interpolatedTransform.y,
-				});
-				targetProgress = 1;
-			}
-		}
-
-		const state = this.animationState;
-
-		const prevScale = state.appliedScale;
-		const prevX = state.x;
-		const prevY = state.y;
-		const deltaSeconds =
-			state.lastUpdateMs === null ? 0 : Math.max(0, (timeMs - state.lastUpdateMs) / 1000);
-		state.lastUpdateMs = timeMs;
-
-		state.scale = smoothZoomValue(state.scale, targetScaleFactor, deltaSeconds);
-		state.focusX = smoothZoomValue(state.focusX, targetFocus.cx, deltaSeconds);
-		state.focusY = smoothZoomValue(state.focusY, targetFocus.cy, deltaSeconds);
-		state.progress = smoothZoomValue(state.progress, targetProgress, deltaSeconds);
-
-		const projectedTransform = computeZoomTransform({
-			stageSize: this.layoutCache.stageSize,
-			baseMask: this.layoutCache.maskRect,
-			zoomScale: state.scale,
-			zoomProgress: state.progress,
-			focusX: state.focusX,
-			focusY: state.focusY,
+			shouldSmooth: true,
 		});
 
-		state.appliedScale =
-			Math.abs(projectedTransform.scale - prevScale) < ZOOM_SCALE_DEADZONE
-				? projectedTransform.scale
-				: projectedTransform.scale;
-		state.x =
-			Math.abs(projectedTransform.x - prevX) < ZOOM_TRANSLATION_DEADZONE_PX
-				? projectedTransform.x
-				: projectedTransform.x;
-		state.y =
-			Math.abs(projectedTransform.y - prevY) < ZOOM_TRANSLATION_DEADZONE_PX
-				? projectedTransform.y
-				: projectedTransform.y;
-
-		this.lastMotionVector = {
-			x: state.x - prevX,
-			y: state.y - prevY,
-		};
-
-		return Math.max(
-			Math.abs(state.appliedScale - prevScale),
-			Math.abs(state.x - prevX) / Math.max(1, this.layoutCache.stageSize.width),
-			Math.abs(state.y - prevY) / Math.max(1, this.layoutCache.stageSize.height),
-		);
+		this.animationState = evaluation.state;
+		this.lastMotionVector = evaluation.motionVector;
+		return evaluation.motionIntensity;
 	}
 
 	private compositeWithShadows(): void {

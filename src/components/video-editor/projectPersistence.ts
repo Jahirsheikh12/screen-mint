@@ -32,6 +32,7 @@ import {
 	DEFAULT_CROP_REGION,
 	DEFAULT_CURSOR_CLICK_BOUNCE,
 	DEFAULT_CURSOR_COLOR,
+	DEFAULT_CURSOR_FOLLOW_TRACKING,
 	DEFAULT_CURSOR_MOTION_BLUR,
 	DEFAULT_CURSOR_OPACITY,
 	DEFAULT_CURSOR_PACK,
@@ -53,6 +54,7 @@ import {
 	DEFAULT_SHOW_KEYBOARD_SHORTCUTS,
 	DEFAULT_WEBCAM_REGION,
 	DEFAULT_ZOOM_DEPTH,
+	DEFAULT_ZOOM_MODE,
 	DEFAULT_ZOOM_MOTION_BLUR,
 	DEVICE_MOCKUP_OPTIONS,
 	type DeviceMockup,
@@ -61,11 +63,12 @@ import {
 	type SpeedRegion,
 	type TrimRegion,
 	type WebcamRegion,
+	type ZoomMode,
 	type ZoomRegion,
 } from "./types";
 import { normalizeWebcamRegion } from "./webcamRegionUtils";
 
-export const PROJECT_VERSION = 5;
+export const PROJECT_VERSION = 6;
 
 export interface ProjectEditorState {
 	wallpaper: string;
@@ -566,6 +569,35 @@ function normalizeCaptionGenerationOptions(candidate: unknown): CaptionGeneratio
 	};
 }
 
+function normalizeZoomMode(value: unknown): ZoomMode {
+	return value === "cursor-follow" || value === "static" ? value : DEFAULT_ZOOM_MODE;
+}
+
+function normalizeCursorFollowTracking(candidate: unknown) {
+	if (!candidate || typeof candidate !== "object") {
+		return { ...DEFAULT_CURSOR_FOLLOW_TRACKING };
+	}
+
+	const tracking = candidate as Partial<NonNullable<ZoomRegion["tracking"]>>;
+	return {
+		deadzone: isFiniteNumber(tracking.deadzone)
+			? clamp(tracking.deadzone, 0, 0.2)
+			: DEFAULT_CURSOR_FOLLOW_TRACKING.deadzone,
+		lookAheadMs: isFiniteNumber(tracking.lookAheadMs)
+			? clamp(Math.round(tracking.lookAheadMs), 0, 300)
+			: DEFAULT_CURSOR_FOLLOW_TRACKING.lookAheadMs,
+		maxPanPerSecond: isFiniteNumber(tracking.maxPanPerSecond)
+			? clamp(tracking.maxPanPerSecond, 0.2, 3)
+			: DEFAULT_CURSOR_FOLLOW_TRACKING.maxPanPerSecond,
+		dwellHoldMs: isFiniteNumber(tracking.dwellHoldMs)
+			? clamp(Math.round(tracking.dwellHoldMs), 0, 1000)
+			: DEFAULT_CURSOR_FOLLOW_TRACKING.dwellHoldMs,
+		textHoldMs: isFiniteNumber(tracking.textHoldMs)
+			? clamp(Math.round(tracking.textHoldMs), 0, 1500)
+			: DEFAULT_CURSOR_FOLLOW_TRACKING.textHoldMs,
+	};
+}
+
 export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): ProjectEditorState {
 	const validAspectRatios = new Set<AspectRatio>(ASPECT_RATIOS);
 	const legacyMotionBlurEnabled = (editor as Partial<{ motionBlurEnabled: boolean }>)
@@ -604,6 +636,8 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 							cx: clamp(isFiniteNumber(region.focus?.cx) ? region.focus.cx : 0.5, 0, 1),
 							cy: clamp(isFiniteNumber(region.focus?.cy) ? region.focus.cy : 0.5, 0, 1),
 						},
+						mode: normalizeZoomMode(region.mode),
+						tracking: normalizeCursorFollowTracking(region.tracking),
 					};
 				})
 		: [];

@@ -1,0 +1,28 @@
+{
+	"id": "real-area-text-entry",
+	"description": "Genuine ScreenMint area capture with form focus, text entry, and later pointer interactions.",
+	"durationMs": 13876,
+	"geometry": {
+		"stageSize": { "width": 1920, "height": 1080 },
+		"baseMask": { "x": 160, "y": 90, "width": 1600, "height": 900 }
+	},
+	"sampleTimes": [0, 7006, 7772, 8300, 9071, 11077, 13876],
+	"zoomRegions": [
+		{
+			"id": "real-area-follow",
+			"startMs": 6900,
+			"endMs": 9400,
+			"depth": 3,
+			"focus": { "cx": 0.08, "cy": 0.08 },
+			"mode": "cursor-follow"
+		},
+		{
+			"id": "real-area-static",
+			"startMs": 10850,
+			"endMs": 11480,
+			"depth": 4,
+			"focus": { "cx": 0.63, "cy": 0.94 },
+			"mode": "static"
+		}
+	]
+}

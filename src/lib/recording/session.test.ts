@@ -116,17 +116,51 @@ describe("offsetCursorTelemetry", () => {
 		const samples = offsetCursorTelemetry([
 			{
 				durationMs: 1000,
-				samples: [{ timeMs: 200, cx: 0.1, cy: 0.2 }],
+				samples: [
+					{
+						timeMs: 200,
+						cx: 0.1,
+						cy: 0.2,
+						rawX: 240,
+						rawY: 180,
+						sourceBounds: { x: 100, y: 50, width: 800, height: 600 },
+						captureMode: "display",
+					},
+				],
 			},
 			{
 				durationMs: 750,
-				samples: [{ timeMs: 50, cx: 0.3, cy: 0.4 }],
+				samples: [
+					{
+						timeMs: 50,
+						cx: 0.3,
+						cy: 0.4,
+						rawX: 480,
+						rawY: 220,
+						sourceBounds: { x: 300, y: 100, width: 640, height: 360 },
+						captureMode: "window",
+					},
+				],
 			},
 		]);
 
-		expect(samples).toEqual([
-			{ timeMs: 200, cx: 0.1, cy: 0.2 },
-			{ timeMs: 1050, cx: 0.3, cy: 0.4 },
-		]);
+		expect(samples[0]).toMatchObject({
+			timeMs: 200,
+			cx: 0.1,
+			cy: 0.2,
+			rawX: 240,
+			rawY: 180,
+			sourceBounds: { x: 100, y: 50, width: 800, height: 600 },
+			captureMode: "display",
+		});
+		expect(samples[1]).toMatchObject({
+			timeMs: 1050,
+			cx: 0.3,
+			cy: 0.4,
+			rawX: 480,
+			rawY: 220,
+			sourceBounds: { x: 300, y: 100, width: 640, height: 360 },
+			captureMode: "window",
+		});
 	});
 });

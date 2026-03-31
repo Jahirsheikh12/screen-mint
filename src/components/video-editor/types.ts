@@ -5,12 +5,24 @@ export interface ZoomFocus {
 	cy: number; // normalized vertical center (0-1)
 }
 
+export type ZoomMode = "static" | "cursor-follow";
+
+export interface CursorFollowTracking {
+	deadzone: number;
+	lookAheadMs: number;
+	maxPanPerSecond: number;
+	dwellHoldMs: number;
+	textHoldMs: number;
+}
+
 export interface ZoomRegion {
 	id: string;
 	startMs: number;
 	endMs: number;
 	depth: ZoomDepth;
 	focus: ZoomFocus;
+	mode?: ZoomMode;
+	tracking?: Partial<CursorFollowTracking>;
 }
 
 export type CursorType =
@@ -29,14 +41,58 @@ export type CursorType =
 	| "move"
 	| "zoom-in"
 	| "zoom-out"
-	| "screenshot-selection";
+	| "screenshot-selection"
+	| "unknown";
+
+export type CursorInteractionType =
+	| "move"
+	| "mousedown"
+	| "mouseup"
+	| "drag-start"
+	| "drag"
+	| "drag-end"
+	| "click"
+	| "double-click"
+	| "right-click"
+	| "middle-click";
+
+export type CursorTelemetryOrigin =
+	| "hook"
+	| "poll"
+	| "native-monitor"
+	| "normalized"
+	| "gap-fill"
+	| "synthetic";
+
+export type CursorTelemetryConfidence = "high" | "medium" | "low";
+
+export interface CursorTelemetryBounds {
+	x: number;
+	y: number;
+	width: number;
+	height: number;
+}
+
+export type CursorCaptureMode = "display" | "window" | "area";
 
 export interface CursorTelemetryPoint {
 	timeMs: number;
 	cx: number;
 	cy: number;
-	interactionType?: "move" | "click" | "double-click" | "right-click" | "middle-click" | "mouseup";
+	interactionType?: CursorInteractionType;
 	cursorType?: CursorType;
+	rawX?: number;
+	rawY?: number;
+	origin?: CursorTelemetryOrigin;
+	confidence?: CursorTelemetryConfidence;
+	sourceBounds?: CursorTelemetryBounds;
+	displayBounds?: CursorTelemetryBounds;
+	sourceDisplayId?: number;
+	displayScaleFactor?: number;
+	captureMode?: CursorCaptureMode;
+	velocityX?: number;
+	velocityY?: number;
+	heading?: number;
 }
 
 export type KeyboardTelemetryEventType = "keydown" | "keyup";
@@ -128,7 +184,18 @@ export const CURSOR_TYPE_VALUES: CursorType[] = [
 	"zoom-in",
 	"zoom-out",
 	"screenshot-selection",
+	"unknown",
 ];
+
+export const DEFAULT_ZOOM_MODE: ZoomMode = "static";
+
+export const DEFAULT_CURSOR_FOLLOW_TRACKING: CursorFollowTracking = {
+	deadzone: 0.035,
+	lookAheadMs: 90,
+	maxPanPerSecond: 1.25,
+	dwellHoldMs: 220,
+	textHoldMs: 420,
+};
 
 export const DEFAULT_CURSOR_SIZE = 3.0;
 export const DEFAULT_CURSOR_SMOOTHING = 0.67;

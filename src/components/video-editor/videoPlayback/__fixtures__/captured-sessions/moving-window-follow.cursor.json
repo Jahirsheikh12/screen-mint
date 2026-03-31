@@ -1,0 +1,105 @@
+{
+	"version": 4,
+	"samples": [
+		{
+			"timeMs": 0,
+			"cx": 0.25,
+			"cy": 0.32,
+			"rawX": 660,
+			"rawY": 388,
+			"sourceBounds": { "x": 500, "y": 100, "width": 640, "height": 360 },
+			"displayBounds": { "x": 0, "y": 0, "width": 2560, "height": 1440 },
+			"sourceDisplayId": 1,
+			"displayScaleFactor": 2,
+			"captureMode": "window"
+		},
+		{
+			"timeMs": 180,
+			"cx": 0.35,
+			"cy": 0.38,
+			"interactionType": "click",
+			"rawX": 756,
+			"rawY": 424,
+			"sourceBounds": { "x": 540, "y": 112, "width": 640, "height": 360 },
+			"displayBounds": { "x": 0, "y": 0, "width": 2560, "height": 1440 },
+			"sourceDisplayId": 1,
+			"displayScaleFactor": 2,
+			"captureMode": "window"
+		},
+		{
+			"timeMs": 360,
+			"cx": 0.46,
+			"cy": 0.44,
+			"rawX": 858,
+			"rawY": 470,
+			"sourceBounds": { "x": 590, "y": 128, "width": 640, "height": 360 },
+			"displayBounds": { "x": 0, "y": 0, "width": 2560, "height": 1440 },
+			"sourceDisplayId": 1,
+			"displayScaleFactor": 2,
+			"captureMode": "window"
+		},
+		{
+			"timeMs": 540,
+			"cx": 0.58,
+			"cy": 0.46,
+			"rawX": 964,
+			"rawY": 498,
+			"sourceBounds": { "x": 640, "y": 136, "width": 640, "height": 360 },
+			"displayBounds": { "x": 0, "y": 0, "width": 2560, "height": 1440 },
+			"sourceDisplayId": 1,
+			"displayScaleFactor": 2,
+			"captureMode": "window"
+		},
+		{
+			"timeMs": 720,
+			"cx": 0.63,
+			"cy": 0.51,
+			"rawX": 1048,
+			"rawY": 538,
+			"interactionType": "drag-start",
+			"sourceBounds": { "x": 680, "y": 150, "width": 640, "height": 360 },
+			"displayBounds": { "x": 0, "y": 0, "width": 2560, "height": 1440 },
+			"sourceDisplayId": 1,
+			"displayScaleFactor": 2,
+			"captureMode": "window"
+		},
+		{
+			"timeMs": 930,
+			"cx": 0.68,
+			"cy": 0.56,
+			"rawX": 1126,
+			"rawY": 580,
+			"interactionType": "drag",
+			"sourceBounds": { "x": 730, "y": 170, "width": 640, "height": 360 },
+			"displayBounds": { "x": 0, "y": 0, "width": 2560, "height": 1440 },
+			"sourceDisplayId": 1,
+			"displayScaleFactor": 2,
+			"captureMode": "window"
+		},
+		{
+			"timeMs": 1170,
+			"cx": 0.7,
+			"cy": 0.58,
+			"rawX": 1182,
+			"rawY": 606,
+			"interactionType": "drag-end",
+			"sourceBounds": { "x": 770, "y": 186, "width": 640, "height": 360 },
+			"displayBounds": { "x": 0, "y": 0, "width": 2560, "height": 1440 },
+			"sourceDisplayId": 1,
+			"displayScaleFactor": 2,
+			"captureMode": "window"
+		},
+		{
+			"timeMs": 1500,
+			"cx": 0.72,
+			"cy": 0.6,
+			"rawX": 1238,
+			"rawY": 618,
+			"sourceBounds": { "x": 790, "y": 190, "width": 640, "height": 360 },
+			"displayBounds": { "x": 0, "y": 0, "width": 2560, "height": 1440 },
+			"sourceDisplayId": 1,
+			"displayScaleFactor": 2,
+			"captureMode": "window"
+		}
+	]
+}

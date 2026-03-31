@@ -1,0 +1,20 @@
+{
+	"id": "moving-window-follow",
+	"description": "Cursor remains locked to content while the captured window shifts across the display.",
+	"durationMs": 1500,
+	"geometry": {
+		"stageSize": { "width": 1920, "height": 1080 },
+		"baseMask": { "x": 160, "y": 90, "width": 1600, "height": 900 }
+	},
+	"sampleTimes": [0, 150, 300, 450, 600, 900, 1200, 1500],
+	"zoomRegions": [
+		{
+			"id": "window-follow",
+			"startMs": 120,
+			"endMs": 1320,
+			"depth": 3,
+			"focus": { "cx": 0.48, "cy": 0.44 },
+			"mode": "cursor-follow"
+		}
+	]
+}

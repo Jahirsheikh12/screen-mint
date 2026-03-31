@@ -359,17 +359,17 @@ func currentSystemCursorType() -> String {
 	}
 
 	guard let resolvedCursor else {
-		return accessibilityCursorMatch() ?? "arrow"
+		return accessibilityCursorMatch() ?? "unknown"
 	}
 
 	guard let currentSignature = signature(for: resolvedCursor) else {
-		return accessibilityCursorMatch() ?? "arrow"
+		return accessibilityCursorMatch() ?? "unknown"
 	}
 
 	guard let bestMatch = knownCursorSignatures.min(by: { lhs, rhs in
 		signatureScore(currentSignature, lhs.1) < signatureScore(currentSignature, rhs.1)
 	}) else {
-		return accessibilityCursorMatch() ?? "arrow"
+		return accessibilityCursorMatch() ?? "unknown"
 	}
 
 	let bestScore = signatureScore(currentSignature, bestMatch.1)
@@ -379,7 +379,7 @@ func currentSystemCursorType() -> String {
 		if let relaxedThreshold = relaxedSignatureAcceptanceThresholds[bestMatch.0], bestScore <= relaxedThreshold {
 			matchedCursorType = bestMatch.0
 		} else {
-			matchedCursorType = "arrow"
+			matchedCursorType = accessibilityCursorMatch() ?? "unknown"
 		}
 	} else {
 		matchedCursorType = bestMatch.0

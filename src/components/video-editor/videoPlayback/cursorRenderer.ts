@@ -7,6 +7,11 @@ import {
 	cursorAssetPacks,
 	SUPPORTED_CURSOR_KEYS,
 } from "./cursorAssetPacks";
+import {
+	buildCursorSimulationPath,
+	type CursorSimulationPath,
+	evaluateCursorPath,
+} from "./cursorSimulation";
 import { computeCursorSwayRotation } from "./cursorSway";
 import {
 	createSpringState,
@@ -565,6 +570,8 @@ export class PixiCursorOverlay {
 	private lastRenderedTimeMs: number | null = null;
 	private swayRotation = 0;
 	private swaySpring = createSpringState(0);
+	private simulationPath: CursorSimulationPath | null = null;
+	private simulationSamplesRef: CursorTelemetryPoint[] | null = null;
 
 	constructor(config: Partial<CursorRenderConfig> = {}) {
 		this.config = { ...DEFAULT_CURSOR_CONFIG, ...config };
@@ -653,8 +660,20 @@ export class PixiCursorOverlay {
 			return;
 		}
 
-		const target = interpolateCursorPosition(samples, timeMs);
-		if (!target) {
+		if (
+			this.simulationSamplesRef !== samples ||
+			!this.simulationPath ||
+			this.simulationPath.durationMs < timeMs
+		) {
+			this.simulationPath = buildCursorSimulationPath(
+				samples,
+				Math.max(timeMs, samples[samples.length - 1]?.timeMs ?? timeMs),
+			);
+			this.simulationSamplesRef = samples;
+		}
+
+		const evaluated = evaluateCursorPath(this.simulationPath, timeMs);
+		if (!evaluated) {
 			this.container.visible = false;
 			return;
 		}
@@ -667,11 +686,9 @@ export class PixiCursorOverlay {
 		const shouldFreezeCursorMotion = freeze || hasTimeDiscontinuity;
 
 		if (shouldFreezeCursorMotion) {
-			if (!sameFrameTime || !this.lastRenderedPoint) {
-				this.state.snapTo(target.cx, target.cy, timeMs);
-			}
-		} else {
-			this.state.update(target.cx, target.cy, timeMs);
+			this.state.snapTo(evaluated.cx, evaluated.cy, timeMs);
+		} else if (!sameFrameTime) {
+			this.state.snapTo(evaluated.cx, evaluated.cy, timeMs);
 		}
 		this.container.visible = true;
 
@@ -802,6 +819,8 @@ export class PixiCursorOverlay {
 		this.container.visible = false;
 		this.lastRenderedPoint = null;
 		this.lastRenderedTimeMs = null;
+		this.simulationPath = null;
+		this.simulationSamplesRef = null;
 		this.swayRotation = 0;
 		resetSpringState(this.swaySpring, 0);
 		this.cursorMotionBlurFilter.velocity = { x: 0, y: 0 };
@@ -838,7 +857,15 @@ export function drawCursorOnCanvas(
 	const py = viewport.y + smoothedState.y * viewport.height;
 	const h = config.dotRadius * getCursorViewportScale(viewport);
 	const { cursorType, clickBounceProgress } = getCursorVisualState(samples, timeMs);
-	const spriteKey = cursorType ? cursorType : "arrow";
+	let spriteKey: CursorAssetKey = "arrow";
+	if (cursorType) {
+		try {
+			getCursorAsset(cursorType, config.cursorPack);
+			spriteKey = cursorType;
+		} catch {
+			spriteKey = "arrow";
+		}
+	}
 	const asset = getCursorAsset(spriteKey, config.cursorPack);
 	const bounceScale = Math.max(
 		0.72,

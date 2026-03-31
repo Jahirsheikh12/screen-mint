@@ -1,0 +1,36 @@
+{
+	"id": "real-display-navigation",
+	"description": "Genuine ScreenMint display capture with repeated pointer navigation, double-clicking, and a later text-field focus.",
+	"durationMs": 46368,
+	"geometry": {
+		"stageSize": { "width": 1920, "height": 1080 },
+		"baseMask": { "x": 160, "y": 90, "width": 1600, "height": 900 }
+	},
+	"sampleTimes": [0, 10256, 10729, 18245, 24220, 32966, 38134, 46368],
+	"zoomRegions": [
+		{
+			"id": "real-display-follow-a",
+			"startMs": 10000,
+			"endMs": 11150,
+			"depth": 3,
+			"focus": { "cx": 0.24, "cy": 0.33 },
+			"mode": "cursor-follow"
+		},
+		{
+			"id": "real-display-follow-b",
+			"startMs": 23850,
+			"endMs": 24650,
+			"depth": 3,
+			"focus": { "cx": 0.34, "cy": 0.75 },
+			"mode": "cursor-follow"
+		},
+		{
+			"id": "real-display-static",
+			"startMs": 37950,
+			"endMs": 38680,
+			"depth": 4,
+			"focus": { "cx": 0.49, "cy": 0.21 },
+			"mode": "static"
+		}
+	]
+}

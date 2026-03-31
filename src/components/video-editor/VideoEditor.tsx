@@ -109,9 +109,11 @@ import {
 	DEFAULT_CAMERA_SIZE_DURING_ZOOM,
 	DEFAULT_CAPTION_GENERATION_OPTIONS,
 	DEFAULT_CAPTION_SETTINGS,
+	DEFAULT_CURSOR_FOLLOW_TRACKING,
 	DEFAULT_FIGURE_DATA,
 	DEFAULT_PLAYBACK_SPEED,
 	DEFAULT_ZOOM_DEPTH,
+	DEFAULT_ZOOM_MODE,
 	type FigureData,
 	getRecommendedWebcamRegion,
 	type KeyboardPlatform,
@@ -122,6 +124,7 @@ import {
 	type WebcamRegion,
 	type ZoomDepth,
 	type ZoomFocus,
+	type ZoomMode,
 	type ZoomRegion,
 } from "./types";
 import VideoPlayback, { VideoPlaybackRef } from "./VideoPlayback";
@@ -129,6 +132,8 @@ import {
 	buildLoopedCursorTelemetry,
 	getDisplayedTimelineWindowMs,
 } from "./videoPlayback/cursorLoopTelemetry";
+import { buildCursorSimulationPath, evaluateCursorPath } from "./videoPlayback/cursorSimulation";
+import { resolveZoomRegionFocus } from "./videoPlayback/smartZoomController";
 import { findDominantRegion } from "./videoPlayback/zoomRegionUtils";
 import { normalizeWebcamRegion } from "./webcamRegionUtils";
 
@@ -1339,6 +1344,7 @@ export default function VideoEditor() {
 			gifFrameRate,
 			gifLoop,
 			gifSizePreset,
+			deviceMockup,
 		],
 	);
 
@@ -1520,6 +1526,18 @@ export default function VideoEditor() {
 		);
 	}, [loopCursor, normalizedCursorTelemetry, displayedTimelineWindow]);
 
+	const cursorSimulationPath = useMemo(
+		() =>
+			buildCursorSimulationPath(
+				effectiveCursorTelemetry,
+				Math.max(
+					displayedTimelineWindow.endMs,
+					effectiveCursorTelemetry[effectiveCursorTelemetry.length - 1]?.timeMs ?? 0,
+				),
+			),
+		[displayedTimelineWindow.endMs, effectiveCursorTelemetry],
+	);
+
 	const effectiveZoomRegions = useMemo(() => {
 		if (!loopCursor || zoomRegions.length === 0) {
 			return zoomRegions;
@@ -1617,6 +1635,8 @@ export default function VideoEditor() {
 					endMs,
 					depth: DEFAULT_ZOOM_DEPTH,
 					focus: clampFocusToDepth(candidate.focus, DEFAULT_ZOOM_DEPTH),
+					mode: "cursor-follow",
+					tracking: DEFAULT_CURSOR_FOLLOW_TRACKING,
 				});
 				reservedSpans.push({ start: startMs, end: endMs });
 				acceptedCenters.push(candidate.centerTimeMs);
@@ -1734,6 +1754,8 @@ export default function VideoEditor() {
 			endMs: Math.round(span.end),
 			depth: DEFAULT_ZOOM_DEPTH,
 			focus: { cx: 0.5, cy: 0.5 },
+			mode: DEFAULT_ZOOM_MODE,
+			tracking: DEFAULT_CURSOR_FOLLOW_TRACKING,
 		};
 		setZoomRegions((prev) => [...prev, newRegion]);
 		setSelectedZoomId(id);
@@ -1752,6 +1774,8 @@ export default function VideoEditor() {
 			endMs: Math.round(span.end),
 			depth: DEFAULT_ZOOM_DEPTH,
 			focus: clampFocusToDepth(focus, DEFAULT_ZOOM_DEPTH),
+			mode: "cursor-follow",
+			tracking: DEFAULT_CURSOR_FOLLOW_TRACKING,
 		};
 		setZoomRegions((prev) => [...prev, newRegion]);
 		setSelectedZoomId(id);
@@ -1761,6 +1785,39 @@ export default function VideoEditor() {
 		setWebcamSelected(false);
 		setSelectedAnnotationId(null);
 	}, []);
+
+	const handleZoomModeChange = useCallback(
+		(mode: ZoomMode) => {
+			if (!selectedZoomId) {
+				return;
+			}
+
+			const currentTimeMs = Math.round(currentTime * 1000);
+			const simulatedCursor = evaluateCursorPath(cursorSimulationPath, currentTimeMs);
+			setZoomRegions((prev) =>
+				prev.map((region) => {
+					if (region.id !== selectedZoomId) {
+						return region;
+					}
+
+					if (mode === "static") {
+						return {
+							...region,
+							mode,
+							focus: resolveZoomRegionFocus(region, simulatedCursor, region.focus, 0),
+						};
+					}
+
+					return {
+						...region,
+						mode,
+						tracking: region.tracking ?? DEFAULT_CURSOR_FOLLOW_TRACKING,
+					};
+				}),
+			);
+		},
+		[currentTime, cursorSimulationPath, selectedZoomId],
+	);
 
 	const handleTrimAdded = useCallback((span: Span) => {
 		const id = `trim-${nextTrimIdRef.current++}`;
@@ -3528,6 +3585,7 @@ export default function VideoEditor() {
 			keyboardShortcutOpacity,
 			keyboardShortcutMaxVisible,
 			audioRegions,
+			deviceMockup,
 			borderRadius,
 			padding,
 			cropRegion,
@@ -4173,7 +4231,13 @@ export default function VideoEditor() {
 							selectedZoomDepth={
 								selectedZoomId ? zoomRegions.find((z) => z.id === selectedZoomId)?.depth : null
 							}
+							selectedZoomMode={
+								selectedZoomId
+									? (zoomRegions.find((z) => z.id === selectedZoomId)?.mode ?? DEFAULT_ZOOM_MODE)
+									: null
+							}
 							onZoomDepthChange={(depth) => selectedZoomId && handleZoomDepthChange(depth)}
+							onZoomModeChange={handleZoomModeChange}
 							selectedZoomId={selectedZoomId}
 							onZoomDelete={handleZoomDelete}
 							selectedTrimId={selectedTrimId}

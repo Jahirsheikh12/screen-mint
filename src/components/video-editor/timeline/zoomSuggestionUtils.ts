@@ -25,12 +25,39 @@ function normalizeTelemetrySample(
 	sample: CursorTelemetryPoint,
 	totalMs: number,
 ): CursorTelemetryPoint {
+	const bounds = sample.sourceBounds;
+	const hasSourceBounds =
+		bounds &&
+		Number.isFinite(bounds.x) &&
+		Number.isFinite(bounds.y) &&
+		Number.isFinite(bounds.width) &&
+		Number.isFinite(bounds.height) &&
+		bounds.width > 0 &&
+		bounds.height > 0;
+	const reprojectedCx =
+		hasSourceBounds && typeof sample.rawX === "number" && Number.isFinite(sample.rawX)
+			? (sample.rawX - bounds.x) / bounds.width
+			: sample.cx;
+	const reprojectedCy =
+		hasSourceBounds && typeof sample.rawY === "number" && Number.isFinite(sample.rawY)
+			? (sample.rawY - bounds.y) / bounds.height
+			: sample.cy;
+
 	return {
 		timeMs: Math.max(0, Math.min(sample.timeMs, totalMs)),
-		cx: Math.max(0, Math.min(sample.cx, 1)),
-		cy: Math.max(0, Math.min(sample.cy, 1)),
+		cx: Math.max(0, Math.min(reprojectedCx, 1)),
+		cy: Math.max(0, Math.min(reprojectedCy, 1)),
 		interactionType: sample.interactionType,
 		cursorType: sample.cursorType,
+		rawX: sample.rawX,
+		rawY: sample.rawY,
+		origin: sample.origin,
+		confidence: sample.confidence,
+		sourceBounds: sample.sourceBounds,
+		displayBounds: sample.displayBounds,
+		sourceDisplayId: sample.sourceDisplayId,
+		displayScaleFactor: sample.displayScaleFactor,
+		captureMode: sample.captureMode,
 	};
 }
 
@@ -48,17 +75,77 @@ function applyCursorTypeInRange(
 	}
 }
 
+function dedupeCursorSamples(samples: CursorTelemetryPoint[]) {
+	if (samples.length <= 1) {
+		return samples;
+	}
+
+	const deduped: CursorTelemetryPoint[] = [];
+	for (const sample of samples) {
+		const previous = deduped[deduped.length - 1];
+		if (!previous || previous.timeMs !== sample.timeMs) {
+			deduped.push(sample);
+			continue;
+		}
+
+		deduped[deduped.length - 1] = {
+			...previous,
+			...sample,
+			timeMs: previous.timeMs,
+		};
+	}
+
+	return deduped;
+}
+
+function annotateCursorMotion(samples: CursorTelemetryPoint[]) {
+	let previous: CursorTelemetryPoint | null = null;
+
+	return samples.map((sample) => {
+		if (!previous) {
+			previous = sample;
+			return {
+				...sample,
+				origin: sample.origin ?? "normalized",
+				confidence: sample.confidence ?? "high",
+				velocityX: 0,
+				velocityY: 0,
+				heading: 0,
+			};
+		}
+
+		const deltaSeconds = Math.max(1 / 240, (sample.timeMs - previous.timeMs) / 1000);
+		const velocityX = (sample.cx - previous.cx) / deltaSeconds;
+		const velocityY = (sample.cy - previous.cy) / deltaSeconds;
+		const heading = Math.atan2(velocityY, velocityX);
+		previous = sample;
+
+		return {
+			...sample,
+			origin: sample.origin ?? "normalized",
+			confidence: sample.confidence ?? "high",
+			velocityX,
+			velocityY,
+			heading: Number.isFinite(heading) ? heading : 0,
+		};
+	});
+}
+
 export function normalizeCursorTelemetry(
 	telemetry: CursorTelemetryPoint[],
 	totalMs: number,
 ): CursorTelemetryPoint[] {
-	const normalized = [...telemetry]
-		.filter(
-			(sample) =>
-				Number.isFinite(sample.timeMs) && Number.isFinite(sample.cx) && Number.isFinite(sample.cy),
-		)
-		.sort((a, b) => a.timeMs - b.timeMs)
-		.map((sample) => normalizeTelemetrySample(sample, totalMs));
+	const normalized = dedupeCursorSamples(
+		[...telemetry]
+			.filter(
+				(sample) =>
+					Number.isFinite(sample.timeMs) &&
+					Number.isFinite(sample.cx) &&
+					Number.isFinite(sample.cy),
+			)
+			.sort((a, b) => a.timeMs - b.timeMs)
+			.map((sample) => normalizeTelemetrySample(sample, totalMs)),
+	);
 
 	const interactions = detectInteractionCandidates(normalized);
 	for (const candidate of interactions) {
@@ -108,7 +195,7 @@ export function normalizeCursorTelemetry(
 		}
 	}
 
-	return normalized;
+	return annotateCursorMotion(normalized);
 }
 
 export function detectZoomDwellCandidates(samples: CursorTelemetryPoint[]): ZoomDwellCandidate[] {

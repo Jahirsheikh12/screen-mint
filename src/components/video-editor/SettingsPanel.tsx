@@ -63,6 +63,7 @@ import type {
 	PlaybackSpeed,
 	WebcamRegion,
 	ZoomDepth,
+	ZoomMode,
 } from "./types";
 import {
 	CAMERA_ZOOM_SCALE_DISABLED,
@@ -91,6 +92,7 @@ import {
 	DEFAULT_KEYBOARD_SHORTCUT_POSITION,
 	DEFAULT_KEYBOARD_SHORTCUT_SCALE,
 	DEFAULT_KEYBOARD_SHORTCUT_THEME,
+	DEFAULT_ZOOM_MODE,
 	DEFAULT_ZOOM_MOTION_BLUR,
 	DEVICE_MOCKUP_OPTIONS,
 	KEYBOARD_SHORTCUT_POSITION_OPTIONS,
@@ -211,7 +213,9 @@ interface SettingsPanelProps {
 	selected: string;
 	onWallpaperChange: (path: string) => void;
 	selectedZoomDepth?: ZoomDepth | null;
+	selectedZoomMode?: ZoomMode | null;
 	onZoomDepthChange?: (depth: ZoomDepth) => void;
+	onZoomModeChange?: (mode: ZoomMode) => void;
 	selectedZoomId?: string | null;
 	onZoomDelete?: (id: string) => void;
 	selectedTrimId?: string | null;
@@ -461,7 +465,9 @@ export default function SettingsPanel({
 	selected,
 	onWallpaperChange,
 	selectedZoomDepth,
+	selectedZoomMode = DEFAULT_ZOOM_MODE,
 	onZoomDepthChange,
+	onZoomModeChange,
 	selectedZoomId,
 	onZoomDelete,
 	selectedTrimId,
@@ -1892,6 +1898,36 @@ export default function SettingsPanel({
 							title="Zoom Depth"
 							description="Select how much to magnify the zoomed area"
 						>
+							<div className="grid grid-cols-2 gap-1.5">
+								{(
+									[
+										{ value: "static", label: "Static" },
+										{ value: "cursor-follow", label: "Cursor Follow" },
+									] as const
+								).map((option) => {
+									const isActive = selectedZoomMode === option.value;
+									return (
+										<Button
+											key={option.value}
+											type="button"
+											disabled={!zoomEnabled}
+											onClick={() => onZoomModeChange?.(option.value)}
+											className={cn(
+												"h-10 rounded-xl border shadow-sm transition-all justify-center",
+												"duration-200 ease-out",
+												zoomEnabled
+													? "opacity-100 cursor-pointer"
+													: "opacity-40 cursor-not-allowed",
+												isActive
+													? "border-[#F59E0B] bg-gradient-to-br from-[#F59E0B] to-[#d97706] text-white shadow-lg shadow-[#F59E0B]/25"
+													: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:border-white/[0.1] hover:text-slate-200",
+											)}
+										>
+											<span className="text-xs font-semibold">{option.label}</span>
+										</Button>
+									);
+								})}
+							</div>
 							<div className="grid grid-cols-3 gap-1.5">
 								{ZOOM_DEPTH_OPTIONS.map((option) => {
 									const isActive = selectedZoomDepth === option.depth;

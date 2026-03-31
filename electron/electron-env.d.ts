@@ -380,6 +380,10 @@ declare global {
 		cy: number;
 		interactionType?:
 			| "move"
+			| "mousedown"
+			| "drag-start"
+			| "drag"
+			| "drag-end"
 			| "click"
 			| "double-click"
 			| "right-click"
@@ -401,7 +405,27 @@ declare global {
 			| "move"
 			| "zoom-in"
 			| "zoom-out"
-			| "screenshot-selection";
+			| "screenshot-selection"
+			| "unknown";
+		rawX?: number;
+		rawY?: number;
+		origin?: "hook" | "poll" | "native-monitor";
+		confidence?: "high" | "medium" | "low";
+		sourceBounds?: {
+			x: number;
+			y: number;
+			width: number;
+			height: number;
+		};
+		displayBounds?: {
+			x: number;
+			y: number;
+			width: number;
+			height: number;
+		};
+		sourceDisplayId?: number;
+		displayScaleFactor?: number;
+		captureMode?: "display" | "window" | "area";
 	}
 
 	interface KeyboardTelemetrySample {

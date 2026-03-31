@@ -150,6 +150,18 @@ export type CursorTelemetrySample = {
 	cy: number;
 	interactionType?: string;
 	cursorType?: string;
+	rawX?: number;
+	rawY?: number;
+	origin?: string;
+	confidence?: string;
+	sourceBounds?: RecordingBounds;
+	displayBounds?: RecordingBounds;
+	sourceDisplayId?: number;
+	displayScaleFactor?: number;
+	captureMode?: CaptureMode;
+	velocityX?: number;
+	velocityY?: number;
+	heading?: number;
 };
 
 export function offsetCursorTelemetry(

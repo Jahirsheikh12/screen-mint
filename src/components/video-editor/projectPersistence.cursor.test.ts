@@ -10,10 +10,38 @@ describe("cursor project persistence", () => {
 	it("round-trips cursor pack through project serialization", () => {
 		const editor = normalizeProjectEditor({
 			cursorPack: "custom",
+			zoomRegions: [
+				{
+					id: "zoom-1",
+					startMs: 0,
+					endMs: 1000,
+					depth: 3,
+					focus: { cx: 0.5, cy: 0.5 },
+					mode: "cursor-follow",
+				},
+			],
 		});
 
 		const project = createProjectData("/tmp/video.mp4", editor);
 		expect(project.editor.cursorPack).toBe("custom");
+		expect(project.editor.zoomRegions[0]?.mode).toBe("cursor-follow");
+	});
+
+	it("defaults missing zoom region modes to static", () => {
+		const editor = normalizeProjectEditor({
+			zoomRegions: [
+				{
+					id: "zoom-1",
+					startMs: 0,
+					endMs: 1000,
+					depth: 3,
+					focus: { cx: 0.5, cy: 0.5 },
+				},
+			],
+		});
+
+		expect(editor.zoomRegions[0]?.mode).toBe("static");
+		expect(editor.zoomRegions[0]?.tracking).toBeTruthy();
 	});
 
 	it("falls back removed built-in wallpapers to the new default", () => {
