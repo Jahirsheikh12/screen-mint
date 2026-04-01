@@ -1,5 +1,5 @@
 import { ChevronDown } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { BsRecordCircle } from "react-icons/bs";
 import { useScopedT } from "@/contexts/I18nContext";
 import type { AfterRecordingAction, HudMode } from "@/hooks/useHudState";
@@ -31,7 +31,9 @@ export function LaunchWindow() {
 	const [elapsed, setElapsed] = useState(0);
 	const pausedAtRef = useRef<number | null>(null);
 	const totalPausedRef = useRef(0);
+	const compactHudRef = useRef<HTMLDivElement | null>(null);
 	const cameraPreviewRef = useRef<HTMLVideoElement | null>(null);
+	const lastSyncedLayoutRef = useRef<{ width: number; height: number } | null>(null);
 
 	// Sync mic device id
 	useEffect(() => {
@@ -261,12 +263,61 @@ export function LaunchWindow() {
 		!hud.hasSelectedSource ||
 		(hud.mode === "area" && !hud.hasSelectedArea);
 
+	useLayoutEffect(() => {
+		const compactHud = compactHudRef.current;
+		if (!compactHud) {
+			return;
+		}
+
+		let frameId: number | null = null;
+		const syncCompactLayout = () => {
+			frameId = null;
+
+			const rect = compactHud.getBoundingClientRect();
+			const width = Math.ceil(rect.width);
+			const height = Math.ceil(rect.height);
+			if (width <= 0 || height <= 0) {
+				return;
+			}
+
+			const previousLayout = lastSyncedLayoutRef.current;
+			if (previousLayout && previousLayout.width === width && previousLayout.height === height) {
+				return;
+			}
+
+			lastSyncedLayoutRef.current = { width, height };
+			void window.electronAPI.syncHudCompactLayout({ width, height });
+		};
+
+		const scheduleSync = () => {
+			if (frameId !== null) {
+				return;
+			}
+
+			frameId = window.requestAnimationFrame(syncCompactLayout);
+		};
+
+		scheduleSync();
+
+		const observer = new ResizeObserver(scheduleSync);
+		observer.observe(compactHud);
+		window.addEventListener("resize", scheduleSync);
+
+		return () => {
+			if (frameId !== null) {
+				window.cancelAnimationFrame(frameId);
+			}
+			observer.disconnect();
+			window.removeEventListener("resize", scheduleSync);
+		};
+	}, []);
+
 	return (
-		<div className="fixed inset-0">
+		<div className="fixed inset-0 pointer-events-none">
 			{/* Fullscreen overlay backdrop */}
 			{showOverlay && (
 				<div
-					className={`absolute inset-0 flex items-center justify-center ${overlayExiting ? styles.backdropFadeOut : styles.backdropFade}`}
+					className={`pointer-events-auto absolute inset-0 flex items-center justify-center ${overlayExiting ? styles.backdropFadeOut : styles.backdropFade}`}
 					style={{
 						background:
 							"radial-gradient(ellipse at center bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.65) 100%)",
@@ -384,97 +435,102 @@ export function LaunchWindow() {
 				</div>
 			)}
 
-			{/* Camera preview — floating above toolbar */}
-			{hud.cameraSession.enabled && hud.cameraSession.previewVisible && hud.cameraPreviewStream && (
-				<div className="fixed bottom-[76px] left-1/2 -translate-x-1/2 mb-3 z-10">
+			<div
+				ref={compactHudRef}
+				className="fixed bottom-0 left-1/2 z-20 flex w-fit -translate-x-1/2 flex-col items-center gap-3 pb-3 pointer-events-none"
+			>
+				{/* Camera preview — floating above toolbar */}
+				{hud.cameraSession.enabled &&
+					hud.cameraSession.previewVisible &&
+					hud.cameraPreviewStream && (
+						<div
+							className={`${styles.electronNoDrag} pointer-events-auto`}
+							style={{
+								borderRadius: 16,
+								border: "1px solid rgba(255,255,255,0.08)",
+								background: "rgba(18,18,20,0.9)",
+								padding: 6,
+								boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+								backdropFilter: "blur(20px)",
+								WebkitBackdropFilter: "blur(20px)",
+							}}
+						>
+							<div className="relative h-[84px] w-[140px] overflow-hidden rounded-[12px] bg-black">
+								<video
+									ref={cameraPreviewRef}
+									autoPlay
+									playsInline
+									muted
+									className="h-full w-full object-cover"
+									style={{
+										transform: hud.cameraSession.previewMirrored ? "scaleX(-1)" : undefined,
+									}}
+								/>
+							</div>
+						</div>
+					)}
+
+				{/* Bottom toolbar */}
+				<div className="flex justify-center pointer-events-none">
 					<div
-						className={styles.electronNoDrag}
+						className={`${styles.hudBar} ${hud.recording ? styles.recordingGlow : ""} w-fit pointer-events-auto`}
 						style={{
-							borderRadius: 16,
-							border: "1px solid rgba(255,255,255,0.08)",
-							background: "rgba(18,18,20,0.9)",
-							padding: 6,
-							boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-							backdropFilter: "blur(20px)",
-							WebkitBackdropFilter: "blur(20px)",
+							borderRadius: 14,
+							background: hud.recording
+								? "linear-gradient(180deg, rgba(30,18,18,0.88) 0%, rgba(22,16,16,0.92) 100%)"
+								: "linear-gradient(180deg, rgba(28,28,30,0.82) 0%, rgba(20,20,22,0.88) 100%)",
+							backdropFilter: "blur(40px) saturate(180%)",
+							WebkitBackdropFilter: "blur(40px) saturate(180%)",
+							border: hud.recording
+								? "1px solid rgba(239,68,68,0.12)"
+								: "1px solid rgba(255,255,255,0.07)",
+							boxShadow: hud.recording
+								? undefined
+								: "0 8px 40px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(255,255,255,0.04)",
 						}}
 					>
-						<div className="relative h-[84px] w-[140px] overflow-hidden rounded-[12px] bg-black">
-							<video
-								ref={cameraPreviewRef}
-								autoPlay
-								playsInline
-								muted
-								className="h-full w-full object-cover"
-								style={{
-									transform: hud.cameraSession.previewMirrored ? "scaleX(-1)" : undefined,
-								}}
-							/>
-						</div>
+						<HudToolbar
+							mode={hud.mode}
+							onTabClick={handleTabClick}
+							recording={hud.recording}
+							paused={hud.paused}
+							elapsed={elapsed}
+							onToggleRecording={hud.toggleRecording}
+							onTogglePause={hud.togglePause}
+							onRetakeRecording={hud.retakeRecording}
+							onDeleteRecording={hud.deleteRecording}
+							microphoneEnabled={hud.microphoneEnabled}
+							setMicrophoneEnabled={hud.setMicrophoneEnabled}
+							microphoneDeviceId={hud.microphoneDeviceId}
+							setMicrophoneDeviceId={hud.setMicrophoneDeviceId}
+							systemAudioEnabled={hud.systemAudioEnabled}
+							setSystemAudioEnabled={hud.setSystemAudioEnabled}
+							webcamEnabled={hud.webcamEnabled}
+							cameraSession={hud.cameraSession}
+							setCameraDeviceId={hud.setCameraDeviceId}
+							setCameraPreviewVisible={hud.setCameraPreviewVisible}
+							setCameraPreviewMirrored={hud.setCameraPreviewMirrored}
+							cameraDevices={hud.cameraDevices}
+							showMicControls={hud.showMicControls}
+							micDevices={hud.micDevices}
+							selectedMicDeviceId={hud.selectedMicDeviceId}
+							setSelectedMicDeviceId={hud.setSelectedMicDeviceId}
+							audioLevel={hud.audioLevel}
+							onOpenVideoFile={openVideoFile}
+							onOpenProject={openProjectFile}
+							onHide={sendHudOverlayHide}
+							onClose={sendHudOverlayClose}
+							hudSettings={hud.hudSettings}
+							platform={hud.platform}
+							countdownDelay={hud.countdownDelay}
+							setCountdownDelay={hud.setCountdownDelay}
+							onUpdateSettings={hud.updateHudSettings}
+							actionBusy={hud.recordingBusy}
+							showQuickRecord={showAreaQuickRecord}
+							quickRecordDisabled={isRecordDisabled}
+							onQuickRecord={hud.toggleRecording}
+						/>
 					</div>
-				</div>
-			)}
-
-			{/* Bottom toolbar */}
-			<div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-20 flex justify-center">
-				<div
-					className={`${styles.hudBar} ${hud.recording ? styles.recordingGlow : ""} w-fit`}
-					style={{
-						borderRadius: 14,
-						background: hud.recording
-							? "linear-gradient(180deg, rgba(30,18,18,0.88) 0%, rgba(22,16,16,0.92) 100%)"
-							: "linear-gradient(180deg, rgba(28,28,30,0.82) 0%, rgba(20,20,22,0.88) 100%)",
-						backdropFilter: "blur(40px) saturate(180%)",
-						WebkitBackdropFilter: "blur(40px) saturate(180%)",
-						border: hud.recording
-							? "1px solid rgba(239,68,68,0.12)"
-							: "1px solid rgba(255,255,255,0.07)",
-						boxShadow: hud.recording
-							? undefined
-							: "0 8px 40px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(255,255,255,0.04)",
-					}}
-				>
-					<HudToolbar
-						mode={hud.mode}
-						onTabClick={handleTabClick}
-						recording={hud.recording}
-						paused={hud.paused}
-						elapsed={elapsed}
-						onToggleRecording={hud.toggleRecording}
-						onTogglePause={hud.togglePause}
-						onRetakeRecording={hud.retakeRecording}
-						onDeleteRecording={hud.deleteRecording}
-						microphoneEnabled={hud.microphoneEnabled}
-						setMicrophoneEnabled={hud.setMicrophoneEnabled}
-						microphoneDeviceId={hud.microphoneDeviceId}
-						setMicrophoneDeviceId={hud.setMicrophoneDeviceId}
-						systemAudioEnabled={hud.systemAudioEnabled}
-						setSystemAudioEnabled={hud.setSystemAudioEnabled}
-						webcamEnabled={hud.webcamEnabled}
-						cameraSession={hud.cameraSession}
-						setCameraDeviceId={hud.setCameraDeviceId}
-						setCameraPreviewVisible={hud.setCameraPreviewVisible}
-						setCameraPreviewMirrored={hud.setCameraPreviewMirrored}
-						cameraDevices={hud.cameraDevices}
-						showMicControls={hud.showMicControls}
-						micDevices={hud.micDevices}
-						selectedMicDeviceId={hud.selectedMicDeviceId}
-						setSelectedMicDeviceId={hud.setSelectedMicDeviceId}
-						audioLevel={hud.audioLevel}
-						onOpenVideoFile={openVideoFile}
-						onOpenProject={openProjectFile}
-						onHide={sendHudOverlayHide}
-						onClose={sendHudOverlayClose}
-						hudSettings={hud.hudSettings}
-						platform={hud.platform}
-						countdownDelay={hud.countdownDelay}
-						setCountdownDelay={hud.setCountdownDelay}
-						onUpdateSettings={hud.updateHudSettings}
-						actionBusy={hud.recordingBusy}
-						showQuickRecord={showAreaQuickRecord}
-						quickRecordDisabled={isRecordDisabled}
-						onQuickRecord={hud.toggleRecording}
-					/>
 				</div>
 			</div>
 		</div>

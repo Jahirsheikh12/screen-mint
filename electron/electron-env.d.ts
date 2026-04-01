@@ -369,6 +369,8 @@ declare global {
 			closeHighlightOverlay: () => Promise<{ success: boolean }>;
 			/** Resize HUD window */
 			resizeHudWindow: (contentVisible: boolean) => Promise<void>;
+			/** Sync compact HUD layout so the main process can tighten the window hitbox */
+			syncHudCompactLayout: (layout: { width: number; height: number }) => Promise<void>;
 		};
 	}
 

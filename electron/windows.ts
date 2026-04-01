@@ -3,6 +3,11 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { app, BrowserWindow, ipcMain } from "electron";
+import {
+	computeHudCompactBounds,
+	DEFAULT_HUD_COMPACT_LAYOUT,
+	type HudCompactLayout,
+} from "./hudCompactBounds";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const nodeRequire = createRequire(import.meta.url);
@@ -23,6 +28,7 @@ let countdownWindow: BrowserWindow | null = null;
 let areaOverlayWindow: BrowserWindow | null = null;
 let highlightOverlayWindow: BrowserWindow | null = null;
 let speakerNotesWindow: BrowserWindow | null = null;
+let hudCompactLayout: HudCompactLayout = DEFAULT_HUD_COMPACT_LAYOUT;
 
 const HUD_OVERLAY_SETTINGS_FILE = path.join(app.getPath("userData"), "hud-overlay-settings.json");
 
@@ -70,6 +76,33 @@ function getScreen() {
 	return nodeRequire("electron").screen as typeof import("electron").screen;
 }
 
+function getHudOverlayWorkArea() {
+	if (hudOverlayWindow && !hudOverlayWindow.isDestroyed()) {
+		return getScreen().getDisplayMatching(hudOverlayWindow.getBounds()).workArea;
+	}
+
+	return getScreen().getPrimaryDisplay().workArea;
+}
+
+function applyHudCompactBounds(): void {
+	if (!hudOverlayWindow || hudOverlayWindow.isDestroyed()) {
+		return;
+	}
+
+	const bounds = computeHudCompactBounds(getHudOverlayWorkArea(), hudCompactLayout);
+	const currentBounds = hudOverlayWindow.getBounds();
+	if (
+		currentBounds.x === bounds.x &&
+		currentBounds.y === bounds.y &&
+		currentBounds.width === bounds.width &&
+		currentBounds.height === bounds.height
+	) {
+		return;
+	}
+
+	hudOverlayWindow.setBounds(bounds);
+}
+
 function pinOverlayWindow(win: BrowserWindow, allowFullscreenVisibility = true): void {
 	win.setAlwaysOnTop(true, "screen-saver");
 	win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: allowFullscreenVisibility });
@@ -110,23 +143,43 @@ ipcMain.handle("set-hud-overlay-capture-protection", (_event, enabled: boolean) 
 	};
 });
 
+ipcMain.handle(
+	"sync-hud-compact-layout",
+	(_event, layout: { width: number; height: number } | null | undefined) => {
+		if (!layout) {
+			return;
+		}
+
+		const width = Math.round(layout.width);
+		const height = Math.round(layout.height);
+		if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+			return;
+		}
+
+		if (hudCompactLayout.width === width && hudCompactLayout.height === height) {
+			return;
+		}
+
+		hudCompactLayout = { width, height };
+		if (!hudContentVisible) {
+			applyHudCompactBounds();
+		}
+	},
+);
+
 export function createHudOverlayWindow(): BrowserWindow {
 	loadHudOverlayCaptureProtectionSetting();
 
-	const primaryDisplay = getScreen().getPrimaryDisplay();
-	const { workArea } = primaryDisplay;
-
-	const windowWidth = 980;
-	const windowHeight = 400;
-
-	const x = Math.floor(workArea.x + (workArea.width - windowWidth) / 2);
-	const y = Math.floor(workArea.y + workArea.height - windowHeight - 5);
+	const compactBounds = computeHudCompactBounds(
+		getScreen().getPrimaryDisplay().workArea,
+		hudCompactLayout,
+	);
 
 	const win = new BrowserWindow({
-		width: windowWidth,
-		height: windowHeight,
-		x: x,
-		y: y,
+		width: compactBounds.width,
+		height: compactBounds.height,
+		x: compactBounds.x,
+		y: compactBounds.y,
 		frame: false,
 		transparent: true,
 		resizable: false,
@@ -569,7 +622,6 @@ export function closeHighlightOverlayWindow(): void {
 }
 
 // Resize HUD window — toggle between slim toolbar and fullscreen overlay
-let hudOriginalBounds: Electron.Rectangle | null = null;
 let hudContentVisible = false;
 
 ipcMain.handle("resize-hud-window", (_event, contentVisible: boolean) => {
@@ -580,11 +632,11 @@ ipcMain.handle("resize-hud-window", (_event, contentVisible: boolean) => {
 	hudContentVisible = contentVisible;
 
 	const primaryDisplay = getScreen().getPrimaryDisplay();
-	const { workArea } = primaryDisplay;
+	const workArea =
+		getScreen().getDisplayMatching(hudOverlayWindow.getBounds()).workArea ??
+		primaryDisplay.workArea;
 
 	if (contentVisible) {
-		// Save current bounds before expanding to fullscreen
-		hudOriginalBounds = hudOverlayWindow.getBounds();
 		hudOverlayWindow.setBounds({
 			x: workArea.x,
 			y: workArea.y,
@@ -592,16 +644,6 @@ ipcMain.handle("resize-hud-window", (_event, contentVisible: boolean) => {
 			height: workArea.height,
 		});
 	} else {
-		// Restore to slim toolbar size
-		if (hudOriginalBounds) {
-			hudOverlayWindow.setBounds(hudOriginalBounds);
-			hudOriginalBounds = null;
-		} else {
-			const slimWidth = 980;
-			const slimHeight = 400;
-			const x = Math.floor(workArea.x + (workArea.width - slimWidth) / 2);
-			const y = Math.floor(workArea.y + workArea.height - slimHeight - 5);
-			hudOverlayWindow.setBounds({ x, y, width: slimWidth, height: slimHeight });
-		}
+		applyHudCompactBounds();
 	}
 });

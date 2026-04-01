@@ -385,4 +385,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	// Resize HUD
 	resizeHudWindow: (contentVisible: boolean) =>
 		ipcRenderer.invoke("resize-hud-window", contentVisible),
+	syncHudCompactLayout: (layout: { width: number; height: number }) =>
+		ipcRenderer.invoke("sync-hud-compact-layout", layout),
 });
