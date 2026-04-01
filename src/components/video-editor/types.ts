@@ -1,4 +1,5 @@
 export type ZoomDepth = 1 | 2 | 3 | 4 | 5 | 6;
+export type PreviewQuality = "low" | "medium" | "high";
 
 export interface ZoomFocus {
 	cx: number; // normalized horizontal center (0-1)
@@ -237,6 +238,12 @@ export const DEVICE_MOCKUP_OPTIONS: { value: DeviceMockup; label: string }[] = [
 ];
 
 export const DEFAULT_ZOOM_MOTION_BLUR = 0.35;
+export const DEFAULT_PREVIEW_QUALITY: PreviewQuality = "high";
+export const PREVIEW_QUALITY_OPTIONS: Array<{ value: PreviewQuality; label: string }> = [
+	{ value: "low", label: "Low" },
+	{ value: "medium", label: "Medium" },
+	{ value: "high", label: "High" },
+];
 export const DEFAULT_SHOW_KEYBOARD_SHORTCUTS = false;
 export const DEFAULT_KEYBOARD_SHORTCUT_POSITION: KeyboardShortcutPosition = "bottom-center";
 export const DEFAULT_KEYBOARD_SHORTCUT_THEME: KeyboardShortcutTheme = "dark";

@@ -63,6 +63,17 @@
 		"padding": "内边距",
 		"removeBackground": "移除背景"
 	},
+	"previewQuality": {
+		"title": "预览质量",
+		"description": "降低预览质量可以提升较慢电脑上的编辑器流畅度。",
+		"helper": "这只会影响编辑器中的预览流畅度，不会影响导出结果。",
+		"switchFailed": "无法切换预览质量，已恢复到之前的设置。",
+		"options": {
+			"low": "低",
+			"medium": "中",
+			"high": "高"
+		}
+	},
 	"crop": {
 		"title": "裁剪视频",
 		"instruction": "拖动各边以调整裁剪区域"

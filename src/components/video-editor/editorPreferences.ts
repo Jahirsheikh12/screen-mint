@@ -1,4 +1,5 @@
 import { normalizeProjectEditor, type ProjectEditorState } from "./projectPersistence";
+import { DEFAULT_PREVIEW_QUALITY, type PreviewQuality } from "./types";
 
 type PersistedEditorControls = Pick<
 	ProjectEditorState,
@@ -57,6 +58,7 @@ export interface EditorPreset {
 }
 
 export interface EditorPreferences extends PersistedEditorControls {
+	previewQuality: PreviewQuality;
 	customAspectWidth: string;
 	customAspectHeight: string;
 	customWallpapers: string[];
@@ -111,6 +113,7 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	gifFrameRate: DEFAULT_EDITOR_CONTROLS.gifFrameRate,
 	gifLoop: DEFAULT_EDITOR_CONTROLS.gifLoop,
 	gifSizePreset: DEFAULT_EDITOR_CONTROLS.gifSizePreset,
+	previewQuality: DEFAULT_PREVIEW_QUALITY,
 	customAspectWidth: "16",
 	customAspectHeight: "9",
 	customWallpapers: [],
@@ -183,6 +186,10 @@ function normalizeWorkspaceLayout(
 	return value === "preview-focus" || value === "timeline-focus" || value === "default"
 		? value
 		: fallback;
+}
+
+function normalizePreviewQuality(value: unknown, fallback: PreviewQuality): PreviewQuality {
+	return value === "low" || value === "medium" || value === "high" ? value : fallback;
 }
 
 function normalizeEditorControls(
@@ -297,6 +304,7 @@ export function normalizeEditorPreferences(
 
 	return {
 		...normalizeEditorControls(raw, fallback),
+		previewQuality: normalizePreviewQuality(raw.previewQuality, fallback.previewQuality),
 		customAspectWidth: normalizePositiveIntegerString(
 			raw.customAspectWidth,
 			fallback.customAspectWidth,

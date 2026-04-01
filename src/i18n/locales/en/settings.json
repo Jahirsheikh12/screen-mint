@@ -63,6 +63,17 @@
 		"padding": "Padding",
 		"removeBackground": "Remove background"
 	},
+	"previewQuality": {
+		"title": "Preview Quality",
+		"description": "Lower preview quality can improve editor responsiveness on slower computers.",
+		"helper": "This only changes editor playback responsiveness and does not affect exports.",
+		"switchFailed": "Could not switch preview quality. Restored the previous setting.",
+		"options": {
+			"low": "Low",
+			"medium": "Medium",
+			"high": "High"
+		}
+	},
 	"crop": {
 		"title": "Crop Video",
 		"instruction": "Drag on each side to adjust the crop area"

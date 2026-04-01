@@ -63,6 +63,17 @@
 		"padding": "Relleno",
 		"removeBackground": "Quitar fondo"
 	},
+	"previewQuality": {
+		"title": "Calidad de vista previa",
+		"description": "Reducir la calidad de la vista previa puede mejorar la fluidez del editor en equipos lentos.",
+		"helper": "Esto solo cambia la fluidez de la reproducción en el editor y no afecta a las exportaciones.",
+		"switchFailed": "No se pudo cambiar la calidad de la vista previa. Se restauró la configuración anterior.",
+		"options": {
+			"low": "Baja",
+			"medium": "Media",
+			"high": "Alta"
+		}
+	},
 	"crop": {
 		"title": "Recortar video",
 		"instruction": "Arrastra cada lado para ajustar el área de recorte"

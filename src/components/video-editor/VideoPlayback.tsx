@@ -47,6 +47,7 @@ import {
 	type KeyboardShortcutCallout,
 	type KeyboardShortcutPosition,
 	type KeyboardShortcutTheme,
+	type PreviewQuality,
 	type SpeedRegion,
 	type TrimRegion,
 	type ZoomDepth,
@@ -72,6 +73,14 @@ import { clampFocusToStage as clampFocusToStageUtil } from "./videoPlayback/focu
 import { layoutVideoContent as layoutVideoContentUtil } from "./videoPlayback/layoutUtils";
 import { clamp01 } from "./videoPlayback/mathUtils";
 import { updateOverlayIndicator } from "./videoPlayback/overlayUtils";
+import {
+	commitPreviewQualitySwitch,
+	createPreviewQualitySwitchState,
+	getEffectivePreviewResolution,
+	type PreviewQualitySwitchState,
+	requestPreviewQualitySwitch,
+	rollbackPreviewQualitySwitch,
+} from "./videoPlayback/previewQuality";
 import { createVideoEventHandlers } from "./videoPlayback/videoEventHandlers";
 import {
 	applyZoomTransform,
@@ -95,6 +104,8 @@ interface VideoPlaybackProps {
 	isPlaying: boolean;
 	showShadow?: boolean;
 	shadowIntensity?: number;
+	previewQuality: PreviewQuality;
+	onPreviewQualitySwitchFailed?: (fallbackQuality: PreviewQuality) => void;
 	backgroundBlur?: number;
 	zoomMotionBlur?: number;
 	connectZooms?: boolean;
@@ -168,6 +179,8 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			isPlaying,
 			showShadow,
 			shadowIntensity = 0,
+			previewQuality,
+			onPreviewQualitySwitchFailed,
 			backgroundBlur = 0,
 			zoomMotionBlur = 0,
 			connectZooms = true,
@@ -224,6 +237,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const timeUpdateAnimationRef = useRef<number | null>(null);
 		const [pixiReady, setPixiReady] = useState(false);
 		const [videoReady, setVideoReady] = useState(false);
+		const [rendererPreviewQuality, setRendererPreviewQuality] = useState(previewQuality);
 		const mockupCanvasRef = useRef<HTMLCanvasElement | null>(null);
 		const overlayRef = useRef<HTMLDivElement | null>(null);
 		const focusIndicatorRef = useRef<HTMLDivElement | null>(null);
@@ -265,6 +279,25 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const cursorSwayRef = useRef(cursorSway);
 		const cursorPackRef = useRef(cursorPack);
 		const motionBlurStateRef = useRef<MotionBlurState>(createMotionBlurState());
+		const previewQualitySwitchStateRef = useRef<PreviewQualitySwitchState>(
+			createPreviewQualitySwitchState(previewQuality),
+		);
+		const pendingPreviewQualitySwitchRef = useRef<{
+			token: number;
+			targetQuality: PreviewQuality;
+			fallbackQuality: PreviewQuality;
+			restoreTime: number;
+			wasPlaying: boolean;
+		} | null>(null);
+		const previewQualitySwitchTokenRef = useRef(0);
+		const desiredPreviewQualityRef = useRef(previewQuality);
+		const previewResolution = useMemo(
+			() => getEffectivePreviewResolution(window.devicePixelRatio || 1, rendererPreviewQuality),
+			[rendererPreviewQuality],
+		);
+		useEffect(() => {
+			desiredPreviewQualityRef.current = previewQuality;
+		}, [previewQuality]);
 		const resolvedCameraState = useMemo(() => {
 			if (!webcamRegion) {
 				return null;
@@ -397,6 +430,104 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			return zoomRegions.find((region) => region.id === selectedZoomId) ?? null;
 		}, [zoomRegions, selectedZoomId]);
 
+		const seekVideoToTime = useCallback((video: HTMLVideoElement, time: number) => {
+			if (Number.isNaN(time) || Math.abs(video.currentTime - time) < 0.0001) {
+				return Promise.resolve();
+			}
+
+			return new Promise<void>((resolve) => {
+				const handleSeeked = () => {
+					video.removeEventListener("seeked", handleSeeked);
+					resolve();
+				};
+
+				video.addEventListener("seeked", handleSeeked, { once: true });
+				video.currentTime = time;
+			});
+		}, []);
+
+		const refreshVideoFrame = useCallback(async () => {
+			const video = videoRef.current;
+			if (!video || Number.isNaN(video.currentTime)) {
+				return;
+			}
+
+			const restoreTime = video.currentTime;
+			const duration = Number.isFinite(video.duration) ? video.duration : 0;
+			const epsilon = duration > 0 ? Math.min(1 / 120, duration / 1000 || 1 / 120) : 1 / 120;
+			const nudgeTarget =
+				restoreTime > epsilon
+					? restoreTime - epsilon
+					: Math.min(duration || restoreTime + epsilon, restoreTime + epsilon);
+
+			if (Math.abs(nudgeTarget - restoreTime) < 0.000001) {
+				return;
+			}
+
+			await new Promise<void>((resolve) => {
+				const handleFirstSeeked = () => {
+					video.removeEventListener("seeked", handleFirstSeeked);
+					const handleSecondSeeked = () => {
+						video.removeEventListener("seeked", handleSecondSeeked);
+						video.pause();
+						resolve();
+					};
+
+					video.addEventListener("seeked", handleSecondSeeked, {
+						once: true,
+					});
+					video.currentTime = restoreTime;
+				};
+
+				video.addEventListener("seeked", handleFirstSeeked, { once: true });
+				video.currentTime = nudgeTarget;
+			});
+		}, []);
+
+		const beginPreviewQualitySwitch = useCallback((targetQuality: PreviewQuality) => {
+			const coordinator = previewQualitySwitchStateRef.current;
+			const video = videoRef.current;
+			const restoreTime = video?.currentTime ?? currentTimeRef.current / 1000;
+			const wasPlaying = Boolean(video && !video.paused && !video.ended);
+
+			pendingPreviewQualitySwitchRef.current = {
+				token: ++previewQualitySwitchTokenRef.current,
+				targetQuality,
+				fallbackQuality: coordinator.lastStableQuality,
+				restoreTime,
+				wasPlaying,
+			};
+
+			allowPlaybackRef.current = false;
+			if (video && !video.paused) {
+				video.pause();
+			}
+
+			setRendererPreviewQuality(targetQuality);
+		}, []);
+
+		const handlePreviewQualitySwitchFailure = useCallback(
+			(error: unknown, expectedQuality: PreviewQuality) => {
+				const pendingSwitch = pendingPreviewQualitySwitchRef.current;
+				if (!pendingSwitch || pendingSwitch.targetQuality !== expectedQuality) {
+					onError(error instanceof Error ? error.message : "Failed to initialize preview renderer");
+					return;
+				}
+
+				const coordinator = previewQualitySwitchStateRef.current;
+				const hadQueuedQuality = coordinator.queuedQuality !== null;
+				const { state, fallbackQuality, startQuality } = rollbackPreviewQualitySwitch(coordinator);
+				previewQualitySwitchStateRef.current = state;
+				pendingPreviewQualitySwitchRef.current = null;
+				beginPreviewQualitySwitch(startQuality);
+
+				if (!hadQueuedQuality && desiredPreviewQualityRef.current === expectedQuality) {
+					onPreviewQualitySwitchFailed?.(fallbackQuality);
+				}
+			},
+			[beginPreviewQualitySwitch, onError, onPreviewQualitySwitchFailed],
+		);
+
 		useImperativeHandle(ref, () => ({
 			video: videoRef.current,
 			app: appRef.current,
@@ -435,43 +566,84 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				video.pause();
 			},
 			refreshFrame: async () => {
-				const video = videoRef.current;
-				if (!video || Number.isNaN(video.currentTime)) {
-					return;
-				}
-
-				const restoreTime = video.currentTime;
-				const duration = Number.isFinite(video.duration) ? video.duration : 0;
-				const epsilon = duration > 0 ? Math.min(1 / 120, duration / 1000 || 1 / 120) : 1 / 120;
-				const nudgeTarget =
-					restoreTime > epsilon
-						? restoreTime - epsilon
-						: Math.min(duration || restoreTime + epsilon, restoreTime + epsilon);
-
-				if (Math.abs(nudgeTarget - restoreTime) < 0.000001) {
-					return;
-				}
-
-				await new Promise<void>((resolve) => {
-					const handleFirstSeeked = () => {
-						video.removeEventListener("seeked", handleFirstSeeked);
-						const handleSecondSeeked = () => {
-							video.removeEventListener("seeked", handleSecondSeeked);
-							video.pause();
-							resolve();
-						};
-
-						video.addEventListener("seeked", handleSecondSeeked, {
-							once: true,
-						});
-						video.currentTime = restoreTime;
-					};
-
-					video.addEventListener("seeked", handleFirstSeeked, { once: true });
-					video.currentTime = nudgeTarget;
-				});
+				await refreshVideoFrame();
 			},
 		}));
+
+		useEffect(() => {
+			const { state, startQuality } = requestPreviewQualitySwitch(
+				previewQualitySwitchStateRef.current,
+				previewQuality,
+			);
+			previewQualitySwitchStateRef.current = state;
+
+			if (startQuality) {
+				beginPreviewQualitySwitch(startQuality);
+			}
+		}, [beginPreviewQualitySwitch, previewQuality]);
+
+		useEffect(() => {
+			const pendingSwitch = pendingPreviewQualitySwitchRef.current;
+			if (!pendingSwitch || !pixiReady || !videoReady) {
+				return;
+			}
+
+			if (pendingSwitch.targetQuality !== rendererPreviewQuality) {
+				return;
+			}
+
+			let cancelled = false;
+			const switchToken = pendingSwitch.token;
+
+			void (async () => {
+				try {
+					const video = videoRef.current;
+					if (!video) {
+						throw new Error("Preview video is unavailable.");
+					}
+
+					await seekVideoToTime(video, pendingSwitch.restoreTime);
+					await refreshVideoFrame();
+
+					if (cancelled || pendingPreviewQualitySwitchRef.current?.token !== switchToken) {
+						return;
+					}
+
+					const { state, startQuality } = commitPreviewQualitySwitch(
+						previewQualitySwitchStateRef.current,
+					);
+					previewQualitySwitchStateRef.current = state;
+					pendingPreviewQualitySwitchRef.current = null;
+
+					if (!startQuality && pendingSwitch.wasPlaying) {
+						allowPlaybackRef.current = true;
+						void video.play().catch(() => {
+							allowPlaybackRef.current = false;
+						});
+					}
+
+					if (startQuality) {
+						beginPreviewQualitySwitch(startQuality);
+					}
+				} catch (error) {
+					if (!cancelled && pendingPreviewQualitySwitchRef.current?.token === switchToken) {
+						handlePreviewQualitySwitchFailure(error, pendingSwitch.targetQuality);
+					}
+				}
+			})();
+
+			return () => {
+				cancelled = true;
+			};
+		}, [
+			beginPreviewQualitySwitch,
+			handlePreviewQualitySwitchFailure,
+			pixiReady,
+			refreshVideoFrame,
+			rendererPreviewQuality,
+			seekVideoToTime,
+			videoReady,
+		]);
 
 		const updateFocusFromClientPoint = (clientX: number, clientY: number) => {
 			const overlayEl = overlayRef.current;
@@ -750,7 +922,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					height: container.clientHeight,
 					backgroundAlpha: 0,
 					antialias: true,
-					resolution: window.devicePixelRatio || 1,
+					resolution: previewResolution,
 					autoDensity: true,
 				});
 
@@ -801,7 +973,14 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 
 				setPixiReady(true);
 			})().catch((error) => {
+				if (!mounted) {
+					return;
+				}
 				console.error("Failed to initialize preview renderer:", error);
+				if (pendingPreviewQualitySwitchRef.current?.targetQuality === rendererPreviewQuality) {
+					handlePreviewQualitySwitchFailure(error, rendererPreviewQuality);
+					return;
+				}
 				onError(error instanceof Error ? error.message : "Failed to initialize preview renderer");
 			});
 
@@ -824,8 +1003,9 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				videoContainerRef.current = null;
 				cursorContainerRef.current = null;
 				videoSpriteRef.current = null;
+				maskGraphicsRef.current = null;
 			};
-		}, [onError]);
+		}, [handlePreviewQualitySwitchFailure, onError, previewResolution, rendererPreviewQuality]);
 
 		useEffect(() => {
 			const video = videoRef.current;

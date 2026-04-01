@@ -43,6 +43,7 @@ describe("editorPreferences", () => {
 			normalizeEditorPreferences({
 				wallpaper: 123,
 				showCursor: "yes",
+				previewQuality: "ultra",
 				cropRegion: { x: 2, width: -1 },
 				aspectRatio: "bad-value",
 				customAspectWidth: "0",
@@ -62,6 +63,7 @@ describe("editorPreferences", () => {
 					wallpaper: "#123456",
 					backgroundBlur: 3.5,
 					showCursor: false,
+					previewQuality: "medium",
 					cropRegion: { x: 0.1, y: 0.2, width: 0.7, height: 0.6 },
 					aspectRatio: "native",
 					exportFormat: "gif",
@@ -81,6 +83,7 @@ describe("editorPreferences", () => {
 			zoomMotionBlur: DEFAULT_EDITOR_PREFERENCES.zoomMotionBlur,
 			connectZooms: DEFAULT_EDITOR_PREFERENCES.connectZooms,
 			showCursor: false,
+			previewQuality: "medium",
 			loopCursor: DEFAULT_EDITOR_PREFERENCES.loopCursor,
 			cursorSize: DEFAULT_EDITOR_PREFERENCES.cursorSize,
 			cursorSmoothing: DEFAULT_EDITOR_PREFERENCES.cursorSmoothing,
@@ -190,6 +193,7 @@ describe("editorPreferences", () => {
 			cursorClickBounce: DEFAULT_EDITOR_PREFERENCES.cursorClickBounce,
 			cursorSway: DEFAULT_EDITOR_PREFERENCES.cursorSway,
 			cursorPack: DEFAULT_EDITOR_PREFERENCES.cursorPack,
+			previewQuality: DEFAULT_EDITOR_PREFERENCES.previewQuality,
 			borderRadius: DEFAULT_EDITOR_PREFERENCES.borderRadius,
 			padding: DEFAULT_EDITOR_PREFERENCES.padding,
 			cropRegion: DEFAULT_EDITOR_PREFERENCES.cropRegion,
@@ -228,6 +232,7 @@ describe("editorPreferences", () => {
 			cursorClickBounce: 2.25,
 			cursorSway: 1.5,
 			cursorPack: "custom",
+			previewQuality: "low",
 			borderRadius: 18,
 			padding: 30,
 			cropRegion: { x: 0.12, y: 0.08, width: 0.7, height: 0.65 },
@@ -260,6 +265,7 @@ describe("editorPreferences", () => {
 			cursorClickBounce: 2.25,
 			cursorSway: 1.5,
 			cursorPack: "custom",
+			previewQuality: "low",
 			borderRadius: 18,
 			padding: 30,
 			cropRegion: { x: 0.12, y: 0.08, width: 0.7, height: 0.65 },
@@ -279,6 +285,19 @@ describe("editorPreferences", () => {
 			workspaceLayout: DEFAULT_EDITOR_PREFERENCES.workspaceLayout,
 			presets: DEFAULT_EDITOR_PREFERENCES.presets,
 		});
+	});
+
+	it("falls back invalid stored preview quality values to high", () => {
+		vi.stubGlobal(
+			"localStorage",
+			createStorageMock({
+				[EDITOR_PREFERENCES_STORAGE_KEY]: JSON.stringify({
+					previewQuality: "ultra",
+				}),
+			}),
+		);
+
+		expect(loadEditorPreferences().previewQuality).toBe("high");
 	});
 
 	it("normalizes workspace layouts and custom presets", () => {

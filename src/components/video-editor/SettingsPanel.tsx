@@ -62,6 +62,7 @@ import type {
 	KeyboardShortcutPosition,
 	KeyboardShortcutTheme,
 	PlaybackSpeed,
+	PreviewQuality,
 	WebcamRegion,
 	ZoomDepth,
 	ZoomMode,
@@ -93,11 +94,13 @@ import {
 	DEFAULT_KEYBOARD_SHORTCUT_POSITION,
 	DEFAULT_KEYBOARD_SHORTCUT_SCALE,
 	DEFAULT_KEYBOARD_SHORTCUT_THEME,
+	DEFAULT_PREVIEW_QUALITY,
 	DEFAULT_ZOOM_MODE,
 	DEFAULT_ZOOM_MOTION_BLUR,
 	DEVICE_MOCKUP_OPTIONS,
 	KEYBOARD_SHORTCUT_POSITION_OPTIONS,
 	KEYBOARD_SHORTCUT_THEME_OPTIONS,
+	PREVIEW_QUALITY_OPTIONS,
 	SPEED_OPTIONS,
 } from "./types";
 import { cursorPackPreviewUrls } from "./videoPlayback/cursorAssetPacks";
@@ -213,6 +216,8 @@ function groupBuiltInTracksByMood() {
 interface SettingsPanelProps {
 	selected: string;
 	onWallpaperChange: (path: string) => void;
+	previewQuality?: PreviewQuality;
+	onPreviewQualityChange?: (quality: PreviewQuality) => void;
 	selectedZoomDepth?: ZoomDepth | null;
 	selectedZoomMode?: ZoomMode | null;
 	onZoomDepthChange?: (depth: ZoomDepth) => void;
@@ -466,6 +471,8 @@ function MockupPreviewCanvas({ mockup }: { mockup: import("./types").DeviceMocku
 export default function SettingsPanel({
 	selected,
 	onWallpaperChange,
+	previewQuality = DEFAULT_PREVIEW_QUALITY,
+	onPreviewQualityChange,
 	selectedZoomDepth,
 	selectedZoomMode = DEFAULT_ZOOM_MODE,
 	onZoomDepthChange,
@@ -1051,6 +1058,40 @@ export default function SettingsPanel({
 							description="Control visual effects, transitions, and frame properties"
 							trailing={<KeyboardShortcutsHelp />}
 						/>
+
+						<SettingsSection
+							title={tSettings("previewQuality.title")}
+							description={tSettings("previewQuality.description")}
+						>
+							<div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-2.5">
+								<div className="grid grid-cols-3 gap-1.5">
+									{PREVIEW_QUALITY_OPTIONS.map((option) => {
+										const isActive = previewQuality === option.value;
+										return (
+											<Button
+												key={option.value}
+												type="button"
+												onClick={() => onPreviewQualityChange?.(option.value)}
+												className={cn(
+													"h-10 rounded-xl border shadow-sm transition-all justify-center",
+													"duration-200 ease-out",
+													isActive
+														? "border-[#F59E0B] bg-gradient-to-br from-[#F59E0B] to-[#d97706] text-white shadow-lg shadow-[#F59E0B]/25"
+														: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:border-white/[0.1] hover:text-slate-200",
+												)}
+											>
+												<span className="text-xs font-semibold">
+													{tSettings(`previewQuality.options.${option.value}`)}
+												</span>
+											</Button>
+										);
+									})}
+								</div>
+								<p className="mt-2 text-[10px] leading-relaxed text-slate-500">
+									{tSettings("previewQuality.helper")}
+								</p>
+							</div>
+						</SettingsSection>
 
 						<SettingsSection
 							title="Transitions"

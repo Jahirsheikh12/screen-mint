@@ -31,7 +31,7 @@ import {
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useI18n } from "@/contexts/I18nContext";
+import { useI18n, useScopedT } from "@/contexts/I18nContext";
 import { useShortcuts } from "@/contexts/ShortcutsContext";
 import { type AppLocale, SUPPORTED_LOCALES } from "@/i18n/config";
 import { getBackgroundMusicAssetById } from "@/lib/backgroundMusic";
@@ -82,7 +82,6 @@ import {
 	detectInteractionCandidates,
 	normalizeCursorTelemetry,
 } from "./timeline/zoomSuggestionUtils";
-import { composeCropRegions, deriveLegacyCaptureCorrectionCrop } from "./videoPlayback/layoutUtils";
 import {
 	type AnnotationRegion,
 	type AudioRegion,
@@ -120,6 +119,7 @@ import {
 	type KeyboardPlatform,
 	type KeyboardTelemetrySample,
 	type PlaybackSpeed,
+	type PreviewQuality,
 	type SpeedRegion,
 	type TrimRegion,
 	type WebcamRegion,
@@ -134,6 +134,7 @@ import {
 	getDisplayedTimelineWindowMs,
 } from "./videoPlayback/cursorLoopTelemetry";
 import { buildCursorSimulationPath, evaluateCursorPath } from "./videoPlayback/cursorSimulation";
+import { composeCropRegions, deriveLegacyCaptureCorrectionCrop } from "./videoPlayback/layoutUtils";
 import { resolveZoomRegionFocus } from "./videoPlayback/smartZoomController";
 import { findDominantRegion } from "./videoPlayback/zoomRegionUtils";
 import { normalizeWebcamRegion } from "./webcamRegionUtils";
@@ -194,6 +195,7 @@ function LanguageSwitcher() {
 
 export default function VideoEditor() {
 	const { t } = useI18n();
+	const tSettings = useScopedT("settings");
 	const initialEditorPreferences = useMemo(() => loadEditorPreferences(), []);
 	const [videoPath, setVideoPath] = useState<string | null>(null);
 	const [videoSourcePath, setVideoSourcePath] = useState<string | null>(null);
@@ -209,6 +211,9 @@ export default function VideoEditor() {
 	const [zoomMotionBlur, setZoomMotionBlur] = useState(initialEditorPreferences.zoomMotionBlur);
 	const [connectZooms, setConnectZooms] = useState(initialEditorPreferences.connectZooms);
 	const [showCursor, setShowCursor] = useState(initialEditorPreferences.showCursor);
+	const [previewQuality, setPreviewQuality] = useState<PreviewQuality>(
+		initialEditorPreferences.previewQuality,
+	);
 	const [loopCursor, setLoopCursor] = useState(initialEditorPreferences.loopCursor);
 	const [cursorSize, setCursorSize] = useState(initialEditorPreferences.cursorSize);
 	const [cursorSmoothing, setCursorSmoothing] = useState(initialEditorPreferences.cursorSmoothing);
@@ -1105,6 +1110,7 @@ export default function VideoEditor() {
 			zoomMotionBlur,
 			connectZooms,
 			showCursor,
+			previewQuality,
 			loopCursor,
 			cursorSize,
 			cursorSmoothing,
@@ -1151,6 +1157,7 @@ export default function VideoEditor() {
 		zoomMotionBlur,
 		connectZooms,
 		showCursor,
+		previewQuality,
 		loopCursor,
 		cursorSize,
 		cursorSmoothing,
@@ -1716,6 +1723,14 @@ export default function VideoEditor() {
 			playback.play().catch((err) => console.error("Video play failed:", err));
 		}
 	}
+
+	const handlePreviewQualitySwitchFailed = useCallback(
+		(fallbackQuality: PreviewQuality) => {
+			setPreviewQuality(fallbackQuality);
+			toast.error(tSettings("previewQuality.switchFailed"));
+		},
+		[tSettings],
+	);
 
 	function handleSeek(time: number) {
 		const video = videoPlaybackRef.current?.video;
@@ -4215,6 +4230,8 @@ export default function VideoEditor() {
 									isPlaying={isPlaying}
 									showShadow={shadowIntensity > 0}
 									shadowIntensity={shadowIntensity}
+									previewQuality={previewQuality}
+									onPreviewQualitySwitchFailed={handlePreviewQualitySwitchFailed}
 									backgroundBlur={backgroundBlur}
 									zoomMotionBlur={zoomMotionBlur}
 									connectZooms={connectZooms}
@@ -4265,6 +4282,8 @@ export default function VideoEditor() {
 						<SettingsPanel
 							selected={wallpaper}
 							onWallpaperChange={setWallpaper}
+							previewQuality={previewQuality}
+							onPreviewQualityChange={setPreviewQuality}
 							selectedZoomDepth={
 								selectedZoomId ? zoomRegions.find((z) => z.id === selectedZoomId)?.depth : null
 							}
