@@ -64,7 +64,7 @@ import Item from "./Item";
 import KeyframeMarkers from "./KeyframeMarkers";
 import Row from "./Row";
 import TimelineWrapper from "./TimelineWrapper";
-import { detectInteractionCandidates, normalizeCursorTelemetry } from "./zoomSuggestionUtils";
+import { buildAutoZoomSuggestions, normalizeCursorTelemetry } from "./zoomSuggestionUtils";
 
 const CLIP_ROW_ID = "row-clip";
 const ZOOM_ROW_ID = "row-zoom";
@@ -89,8 +89,6 @@ const ADDITIONAL_LAYER_OPTIONS: {
 	{ type: "caption", label: "Caption", icon: MessageSquare },
 ];
 const TARGET_MARKER_COUNT = 12;
-const SUGGESTION_SPACING_MS = 1800;
-
 interface TimelineEditorProps {
 	videoDuration: number;
 	currentTime: number;
@@ -1390,11 +1388,6 @@ export default function TimelineEditor({
 			return;
 		}
 
-		const defaultDuration = Math.min(defaultRegionDurationMs, totalMs);
-		if (defaultDuration <= 0) {
-			return;
-		}
-
 		const reservedSpans = [...zoomRegions]
 			.map((region) => ({ start: region.startMs, end: region.endMs }))
 			.sort((a, b) => a.start - b.start);
@@ -1408,43 +1401,19 @@ export default function TimelineEditor({
 			return;
 		}
 
-		const dwellCandidates = detectInteractionCandidates(normalizedSamples);
+		const suggestionResult = buildAutoZoomSuggestions(normalizedSamples, totalMs, reservedSpans);
 
-		if (dwellCandidates.length === 0) {
+		if (suggestionResult.status === "no-candidates") {
 			toast.info("No clear interaction moments found", {
 				description: "Try a recording with pauses or clicks around important actions.",
 			});
 			return;
 		}
 
-		const sortedCandidates = [...dwellCandidates].sort((a, b) => b.strength - a.strength);
-		const acceptedCenters: number[] = [];
-
 		let addedCount = 0;
 
-		for (const candidate of sortedCandidates) {
-			const tooCloseToAccepted = acceptedCenters.some(
-				(center) => Math.abs(center - candidate.centerTimeMs) < SUGGESTION_SPACING_MS,
-			);
-
-			if (tooCloseToAccepted) {
-				continue;
-			}
-
-			const centeredStart = Math.round(candidate.centerTimeMs - defaultDuration / 2);
-			const candidateStart = Math.max(0, Math.min(centeredStart, totalMs - defaultDuration));
-			const candidateEnd = candidateStart + defaultDuration;
-			const hasOverlap = reservedSpans.some(
-				(span) => candidateEnd > span.start && candidateStart < span.end,
-			);
-
-			if (hasOverlap) {
-				continue;
-			}
-
-			reservedSpans.push({ start: candidateStart, end: candidateEnd });
-			acceptedCenters.push(candidate.centerTimeMs);
-			onZoomSuggested({ start: candidateStart, end: candidateEnd }, candidate.focus);
+		for (const suggestion of suggestionResult.suggestions) {
+			onZoomSuggested({ start: suggestion.startMs, end: suggestion.endMs }, suggestion.focus);
 			addedCount += 1;
 		}
 
@@ -1458,14 +1427,7 @@ export default function TimelineEditor({
 		toast.success(
 			`Added ${addedCount} interaction-based zoom suggestion${addedCount === 1 ? "" : "s"}`,
 		);
-	}, [
-		videoDuration,
-		totalMs,
-		defaultRegionDurationMs,
-		zoomRegions,
-		onZoomSuggested,
-		cursorTelemetry,
-	]);
+	}, [videoDuration, totalMs, zoomRegions, onZoomSuggested, cursorTelemetry]);
 
 	const handleAddSpeed = useCallback(
 		(clickTimeMs?: number) => {

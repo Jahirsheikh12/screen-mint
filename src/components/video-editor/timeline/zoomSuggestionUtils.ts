@@ -3,6 +3,8 @@ import type { CursorTelemetryPoint, ZoomFocus } from "../types";
 export const MIN_DWELL_DURATION_MS = 450;
 export const MAX_DWELL_DURATION_MS = 2600;
 export const DWELL_MOVE_THRESHOLD = 0.02;
+export const AUTO_ZOOM_REGION_DURATION_MS = 1000;
+export const AUTO_ZOOM_SUGGESTION_SPACING_MS = 1800;
 
 export interface ZoomDwellCandidate {
 	centerTimeMs: number;
@@ -19,6 +21,17 @@ export interface CursorInteractionCandidate extends ZoomDwellCandidate {
 		| "dropdown-open"
 		| "text-selection"
 		| "text-field-click";
+}
+
+export interface AutoZoomSuggestion {
+	startMs: number;
+	endMs: number;
+	focus: ZoomFocus;
+}
+
+export interface AutoZoomSuggestionResult {
+	suggestions: AutoZoomSuggestion[];
+	status: "ok" | "insufficient-telemetry" | "no-candidates" | "no-slots";
 }
 
 function normalizeTelemetrySample(
@@ -315,6 +328,62 @@ export function detectInteractionCandidates(
 	}
 
 	return [...explicitInteractionCandidates, ...dwellCandidates, ...doubleClickCandidates];
+}
+
+export function buildAutoZoomSuggestions(
+	samples: CursorTelemetryPoint[],
+	totalMs: number,
+	reservedSpans: Array<{ start: number; end: number }> = [],
+): AutoZoomSuggestionResult {
+	if (samples.length < 2 || totalMs <= 0) {
+		return { suggestions: [], status: "insufficient-telemetry" };
+	}
+
+	const defaultDuration = Math.min(AUTO_ZOOM_REGION_DURATION_MS, totalMs);
+	if (defaultDuration <= 0) {
+		return { suggestions: [], status: "insufficient-telemetry" };
+	}
+
+	const candidates = detectInteractionCandidates(samples);
+	if (candidates.length === 0) {
+		return { suggestions: [], status: "no-candidates" };
+	}
+
+	const blockedSpans = [...reservedSpans];
+	const acceptedCenters: number[] = [];
+	const suggestions: AutoZoomSuggestion[] = [];
+	const sortedCandidates = [...candidates].sort((a, b) => b.strength - a.strength);
+
+	for (const candidate of sortedCandidates) {
+		const tooCloseToAccepted = acceptedCenters.some(
+			(center) => Math.abs(center - candidate.centerTimeMs) < AUTO_ZOOM_SUGGESTION_SPACING_MS,
+		);
+		if (tooCloseToAccepted) {
+			continue;
+		}
+
+		const centeredStart = Math.round(candidate.centerTimeMs - defaultDuration / 2);
+		const startMs = Math.max(0, Math.min(centeredStart, totalMs - defaultDuration));
+		const endMs = Math.min(totalMs, startMs + defaultDuration);
+		const hasOverlap = blockedSpans.some((span) => endMs > span.start && startMs < span.end);
+
+		if (hasOverlap) {
+			continue;
+		}
+
+		suggestions.push({
+			startMs,
+			endMs,
+			focus: candidate.focus,
+		});
+		blockedSpans.push({ start: startMs, end: endMs });
+		acceptedCenters.push(candidate.centerTimeMs);
+	}
+
+	return {
+		suggestions,
+		status: suggestions.length > 0 ? "ok" : "no-slots",
+	};
 }
 
 /**

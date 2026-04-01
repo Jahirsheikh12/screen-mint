@@ -30,7 +30,7 @@ export type HudSettings = {
 
 export type { AfterRecordingAction };
 
-const DEFAULT_SETTINGS: HudSettings = {
+export const DEFAULT_HUD_SETTINGS: HudSettings = {
 	hiddenFromCapture: true,
 	hideDesktopIcons: false,
 	hideDockIcon: false,
@@ -40,11 +40,24 @@ const DEFAULT_SETTINGS: HudSettings = {
 	speakerNotesText: "",
 	afterRecordingAction: "create-project",
 	countdownDelay: 0,
-	autoCreateZooms: false,
+	autoCreateZooms: true,
 	recordingQuality: DEFAULT_RECORDING_RUNTIME_SETTINGS.recordingQuality,
 	recordingFps: DEFAULT_RECORDING_RUNTIME_SETTINGS.recordingFps,
 	hardwareAcceleration: DEFAULT_RECORDING_RUNTIME_SETTINGS.hardwareAcceleration,
 };
+
+export function resolveHudSettings(
+	settings: Record<string, unknown> | null | undefined,
+): HudSettings {
+	return {
+		...DEFAULT_HUD_SETTINGS,
+		...settings,
+		autoCreateZooms:
+			typeof settings?.autoCreateZooms === "boolean"
+				? settings.autoCreateZooms
+				: DEFAULT_HUD_SETTINGS.autoCreateZooms,
+	};
+}
 
 export type CameraDeviceOption = {
 	deviceId: string;
@@ -74,7 +87,7 @@ function selectedAreasEqual(left: SelectedArea | null, right: SelectedArea | nul
 }
 
 export function useHudState() {
-	const [hudSettings, setHudSettingsState] = useState<HudSettings>(DEFAULT_SETTINGS);
+	const [hudSettings, setHudSettingsState] = useState<HudSettings>(DEFAULT_HUD_SETTINGS);
 	const screenRecorder = useScreenRecorder({
 		recordingQuality: hudSettings.recordingQuality,
 		recordingFps: hudSettings.recordingFps,
@@ -127,7 +140,7 @@ export function useHudState() {
 			try {
 				const result = await window.electronAPI.getHudSettings();
 				if (result.success && result.settings) {
-					setHudSettingsState((prev) => ({ ...prev, ...result.settings }));
+					setHudSettingsState(resolveHudSettings(result.settings));
 				}
 			} catch {
 				// Use defaults

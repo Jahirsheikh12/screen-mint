@@ -67,6 +67,11 @@ import {
 } from "./editorPreferences";
 import { deriveKeyboardShortcutCallouts } from "./keyboardShortcuts";
 import {
+	isPostRecordingAutoZoomPending,
+	type PostRecordingAutoZoomBootstrapState,
+	resolvePostRecordingAutoZoomDecision,
+} from "./postRecordingAutoZoomUtils";
+import {
 	createProjectData,
 	DEFAULT_VIDEO_PREVIEW_PADDING,
 	deriveNextId,
@@ -78,10 +83,7 @@ import {
 import { QuickShareDialog } from "./QuickShareDialog";
 import SettingsPanel from "./SettingsPanel";
 import TimelineEditor from "./timeline/TimelineEditor";
-import {
-	detectInteractionCandidates,
-	normalizeCursorTelemetry,
-} from "./timeline/zoomSuggestionUtils";
+import { buildAutoZoomSuggestions, normalizeCursorTelemetry } from "./timeline/zoomSuggestionUtils";
 import {
 	type AnnotationRegion,
 	type AudioRegion,
@@ -346,6 +348,9 @@ export default function VideoEditor() {
 	const [postRecordingContext, setPostRecordingContext] = useState<PostRecordingContext | null>(
 		null,
 	);
+	const [cursorTelemetryLoadSettled, setCursorTelemetryLoadSettled] = useState(false);
+	const [postRecordingAutoZoomBootstrap, setPostRecordingAutoZoomBootstrap] =
+		useState<PostRecordingAutoZoomBootstrapState | null>(null);
 	const captionRegions = captionTrack?.segments ?? [];
 
 	const videoPlaybackRef = useRef<VideoPlaybackRef>(null);
@@ -361,7 +366,6 @@ export default function VideoEditor() {
 	const nextAnnotationZIndexRef = useRef(1); // Track z-index for stacking order
 	const nextCaptionIdRef = useRef(1);
 	const exporterRef = useRef<VideoExporter | null>(null);
-	const autoSuggestedVideoPathRef = useRef<string | null>(null);
 	const historyPastRef = useRef<EditorHistorySnapshot[]>([]);
 	const historyFutureRef = useRef<EditorHistorySnapshot[]>([]);
 	const historyCurrentRef = useRef<EditorHistorySnapshot | null>(null);
@@ -1446,8 +1450,13 @@ export default function VideoEditor() {
 			if (!videoPath) {
 				if (mounted) {
 					setCursorTelemetry([]);
+					setCursorTelemetryLoadSettled(true);
 				}
 				return;
+			}
+
+			if (mounted) {
+				setCursorTelemetryLoadSettled(false);
 			}
 
 			try {
@@ -1460,6 +1469,10 @@ export default function VideoEditor() {
 				if (mounted) {
 					setCursorTelemetry([]);
 				}
+			} finally {
+				if (mounted) {
+					setCursorTelemetryLoadSettled(true);
+				}
 			}
 		}
 
@@ -1469,6 +1482,29 @@ export default function VideoEditor() {
 			mounted = false;
 		};
 	}, [videoPath]);
+
+	useEffect(() => {
+		if (!postRecordingContext?.recordingPath || !videoPath) {
+			return;
+		}
+
+		const postRecordingVideoPath = toFileUrl(postRecordingContext.recordingPath);
+		if (postRecordingVideoPath !== videoPath) {
+			return;
+		}
+
+		setPostRecordingAutoZoomBootstrap((current) => {
+			if (current?.videoPath === videoPath) {
+				return current;
+			}
+
+			return {
+				videoPath,
+				enabled: Boolean(postRecordingContext.autoCreateZooms),
+				settled: false,
+			};
+		});
+	}, [postRecordingContext, videoPath]);
 
 	useEffect(() => {
 		let mounted = true;
@@ -1615,89 +1651,58 @@ export default function VideoEditor() {
 	}, [loopCursor, zoomRegions, displayedTimelineWindow, connectZooms]);
 
 	useEffect(() => {
-		if (
-			!videoPath ||
-			duration <= 0 ||
-			zoomRegions.length > 0 ||
-			normalizedCursorTelemetry.length < 2 ||
-			!postRecordingContext?.autoCreateZooms
-		) {
+		const decision = resolvePostRecordingAutoZoomDecision({
+			bootstrap: postRecordingAutoZoomBootstrap,
+			videoPath,
+			durationSeconds: duration,
+			cursorTelemetryLoadSettled,
+			normalizedCursorTelemetryLength: normalizedCursorTelemetry.length,
+			zoomRegionCount: zoomRegions.length,
+		});
+
+		if (decision === "idle" || decision === "wait" || !videoPath) {
 			return;
 		}
 
-		if (autoSuggestedVideoPathRef.current === videoPath) {
+		if (decision === "settle") {
+			setPostRecordingAutoZoomBootstrap((current) =>
+				current && current.videoPath === videoPath ? { ...current, settled: true } : current,
+			);
 			return;
 		}
 
 		const totalMs = Math.max(0, Math.round(duration * 1000));
-		if (totalMs <= 0) {
-			return;
-		}
-
-		const candidates = detectInteractionCandidates(normalizedCursorTelemetry);
-		if (candidates.length === 0) {
-			autoSuggestedVideoPathRef.current = videoPath;
-			return;
-		}
-
-		const DEFAULT_DURATION_MS = 1100;
-		const MIN_SPACING_MS = 1800;
-		const sortedCandidates = [...candidates].sort((a, b) => b.strength - a.strength);
-		const acceptedCenters: number[] = [];
+		const suggestionResult = buildAutoZoomSuggestions(normalizedCursorTelemetry, totalMs);
 
 		setZoomRegions((prev) => {
-			if (prev.length > 0) {
+			if (prev.length > 0 || suggestionResult.suggestions.length === 0) {
 				return prev;
 			}
 
-			const reservedSpans: Array<{ start: number; end: number }> = [];
-			const additions: ZoomRegion[] = [];
 			let nextId = nextZoomIdRef.current;
-
-			sortedCandidates.forEach((candidate) => {
-				const tooCloseToAccepted = acceptedCenters.some(
-					(center) => Math.abs(center - candidate.centerTimeMs) < MIN_SPACING_MS,
-				);
-				if (tooCloseToAccepted) {
-					return;
-				}
-
-				const centeredStart = Math.round(candidate.centerTimeMs - DEFAULT_DURATION_MS / 2);
-				const startMs = Math.max(0, Math.min(centeredStart, totalMs - DEFAULT_DURATION_MS));
-				const endMs = Math.min(totalMs, startMs + DEFAULT_DURATION_MS);
-
-				const hasOverlap = reservedSpans.some((span) => endMs > span.start && startMs < span.end);
-				if (hasOverlap) {
-					return;
-				}
-
-				additions.push({
-					id: `zoom-${nextId++}`,
-					startMs,
-					endMs,
-					depth: DEFAULT_ZOOM_DEPTH,
-					focus: clampFocusToDepth(candidate.focus, DEFAULT_ZOOM_DEPTH),
-					mode: "cursor-follow",
-					tracking: DEFAULT_CURSOR_FOLLOW_TRACKING,
-				});
-				reservedSpans.push({ start: startMs, end: endMs });
-				acceptedCenters.push(candidate.centerTimeMs);
-			});
-
-			if (additions.length === 0) {
-				return prev;
-			}
+			const additions: ZoomRegion[] = suggestionResult.suggestions.map((suggestion) => ({
+				id: `zoom-${nextId++}`,
+				startMs: suggestion.startMs,
+				endMs: suggestion.endMs,
+				depth: DEFAULT_ZOOM_DEPTH,
+				focus: clampFocusToDepth(suggestion.focus, DEFAULT_ZOOM_DEPTH),
+				mode: "cursor-follow",
+				tracking: DEFAULT_CURSOR_FOLLOW_TRACKING,
+			}));
 
 			nextZoomIdRef.current = nextId;
 			return [...prev, ...additions];
 		});
 
-		autoSuggestedVideoPathRef.current = videoPath;
+		setPostRecordingAutoZoomBootstrap((current) =>
+			current && current.videoPath === videoPath ? { ...current, settled: true } : current,
+		);
 	}, [
-		videoPath,
+		cursorTelemetryLoadSettled,
 		duration,
 		normalizedCursorTelemetry,
-		postRecordingContext?.autoCreateZooms,
+		postRecordingAutoZoomBootstrap,
+		videoPath,
 		zoomRegions.length,
 	]);
 
@@ -3809,6 +3814,10 @@ export default function VideoEditor() {
 			return;
 		}
 
+		if (isPostRecordingAutoZoomPending(postRecordingAutoZoomBootstrap, videoPath)) {
+			return;
+		}
+
 		if (
 			(postRecordingContext.action === "export-save-file" ||
 				postRecordingContext.action === "export-clipboard") &&
@@ -3853,6 +3862,7 @@ export default function VideoEditor() {
 		handleExportToClipboard,
 		handleOpenExportDialog,
 		loading,
+		postRecordingAutoZoomBootstrap,
 		postRecordingContext,
 		videoPath,
 	]);
