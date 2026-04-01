@@ -39,6 +39,7 @@ import { ColorPicker } from "./ColorPicker";
 import { CropControl } from "./CropControl";
 import { loadEditorPreferences, saveEditorPreferences } from "./editorPreferences";
 import { KeyboardShortcutsHelp } from "./KeyboardShortcutsHelp";
+import { DEFAULT_VIDEO_PREVIEW_PADDING } from "./projectPersistence";
 import { SliderControl } from "./SliderControl";
 import type {
 	AnnotationRegion,
@@ -281,6 +282,7 @@ interface SettingsPanelProps {
 	padding?: number;
 	onPaddingChange?: (padding: number) => void;
 	cropRegion?: CropRegion;
+	baseCropRegion?: CropRegion;
 	onCropChange?: (region: CropRegion) => void;
 	aspectRatio: AspectRatio;
 	onAspectRatioChange?: (ratio: AspectRatio) => void;
@@ -530,9 +532,10 @@ export default function SettingsPanel({
 	onDeviceMockupChange,
 	borderRadius = 12.5,
 	onBorderRadiusChange,
-	padding = 0,
+	padding = DEFAULT_VIDEO_PREVIEW_PADDING,
 	onPaddingChange,
 	cropRegion,
+	baseCropRegion,
 	onCropChange,
 	aspectRatio,
 	onAspectRatioChange,
@@ -1160,7 +1163,7 @@ export default function SettingsPanel({
 								<SliderControl
 									label={tSettings("effects.padding")}
 									value={padding}
-									defaultValue={0}
+									defaultValue={DEFAULT_VIDEO_PREVIEW_PADDING}
 									min={0}
 									max={100}
 									step={1}
@@ -3205,6 +3208,7 @@ export default function SettingsPanel({
 									<CropControl
 										videoElement={videoElement || null}
 										cropRegion={cropRegion}
+										baseCropRegion={baseCropRegion}
 										onCropChange={onCropChange}
 										aspectRatio={aspectRatio}
 									/>

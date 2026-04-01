@@ -69,6 +69,7 @@ import {
 import { normalizeWebcamRegion } from "./webcamRegionUtils";
 
 export const PROJECT_VERSION = 6;
+export const DEFAULT_VIDEO_PREVIEW_PADDING = 20;
 
 export interface ProjectEditorState {
 	wallpaper: string;
@@ -851,7 +852,9 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 			isCustomAspectRatio(editor.aspectRatio))
 			? (editor.aspectRatio as AspectRatio)
 			: "16:9";
-	const rawPadding = isFiniteNumber(editor.padding) ? clamp(editor.padding, 0, 100) : 8;
+	const rawPadding = isFiniteNumber(editor.padding)
+		? clamp(editor.padding, 0, 100)
+		: DEFAULT_VIDEO_PREVIEW_PADDING;
 	const normalizedPadding =
 		hasFullFrameCrop &&
 		(normalizedAspectRatio === "native" || normalizedAspectRatio === "16:9") &&

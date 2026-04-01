@@ -108,8 +108,16 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 				$0.frame.intersects(window.frame) || $0.frame.contains(CGPoint(x: window.frame.midX, y: window.frame.midY))
 			})
 			let scaleFactor = ScreenCaptureRecorder.scaleFactor(for: candidateDisplay?.displayID ?? CGMainDisplayID())
-			outputWidth = max(2, config.width ?? (Int(window.frame.width) * scaleFactor))
-			outputHeight = max(2, config.height ?? (Int(window.frame.height) * scaleFactor))
+			let nativeWidth = max(2, Int(window.frame.width) * scaleFactor)
+			let nativeHeight = max(2, Int(window.frame.height) * scaleFactor)
+			let fittedSize = Self.fitCaptureSize(
+				sourceWidth: nativeWidth,
+				sourceHeight: nativeHeight,
+				maxWidth: config.width,
+				maxHeight: config.height
+			)
+			outputWidth = fittedSize.width
+			outputHeight = fittedSize.height
 			streamConfig.ignoreShadowsSingleWindow = true
 			streamConfig.width = outputWidth
 			streamConfig.height = outputHeight
@@ -123,8 +131,16 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 			filter = SCContentFilter(display: display, excludingApplications: [], exceptingWindows: [])
 			let displayBounds = CGDisplayBounds(display.displayID)
 			let scaleFactor = ScreenCaptureRecorder.scaleFactor(for: display.displayID)
-			outputWidth = max(2, config.width ?? (Int(displayBounds.width) * scaleFactor))
-			outputHeight = max(2, config.height ?? (Int(displayBounds.height) * scaleFactor))
+			let nativeWidth = max(2, Int(displayBounds.width) * scaleFactor)
+			let nativeHeight = max(2, Int(displayBounds.height) * scaleFactor)
+			let fittedSize = Self.fitCaptureSize(
+				sourceWidth: nativeWidth,
+				sourceHeight: nativeHeight,
+				maxWidth: config.width,
+				maxHeight: config.height
+			)
+			outputWidth = fittedSize.width
+			outputHeight = fittedSize.height
 			streamConfig.width = outputWidth
 			streamConfig.height = outputHeight
 		}
@@ -427,6 +443,36 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 			return 1
 		}
 		return max(1, mode.pixelWidth / max(1, mode.width))
+	}
+
+	private static func fitCaptureSize(
+		sourceWidth: Int,
+		sourceHeight: Int,
+		maxWidth: Int?,
+		maxHeight: Int?
+	) -> (width: Int, height: Int) {
+		let safeSourceWidth = max(2, sourceWidth)
+		let safeSourceHeight = max(2, sourceHeight)
+
+		guard let maxWidth, let maxHeight, maxWidth > 0, maxHeight > 0 else {
+			return (
+				width: safeSourceWidth.isMultiple(of: 2) ? safeSourceWidth : safeSourceWidth - 1,
+				height: safeSourceHeight.isMultiple(of: 2) ? safeSourceHeight : safeSourceHeight - 1
+			)
+		}
+
+		let scale = min(
+			1,
+			Double(maxWidth) / Double(safeSourceWidth),
+			Double(maxHeight) / Double(safeSourceHeight)
+		)
+		let fittedWidth = max(2, Int((Double(safeSourceWidth) * scale).rounded()))
+		let fittedHeight = max(2, Int((Double(safeSourceHeight) * scale).rounded()))
+
+		return (
+			width: fittedWidth.isMultiple(of: 2) ? fittedWidth : fittedWidth - 1,
+			height: fittedHeight.isMultiple(of: 2) ? fittedHeight : fittedHeight - 1
+		)
 	}
 }
 

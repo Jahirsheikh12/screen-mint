@@ -1,29 +1,72 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { type AspectRatio } from "@/utils/aspectRatioUtils";
+import { getAspectRatioValue, type AspectRatio } from "@/utils/aspectRatioUtils";
+import { composeCropRegions, invertCropRegionWithinBase } from "./videoPlayback/layoutUtils";
 
 interface CropRegion {
-	x: number; // 0-1 normalized
-	y: number; // 0-1 normalized
-	width: number; // 0-1 normalized
-	height: number; // 0-1 normalized
+	x: number;
+	y: number;
+	width: number;
+	height: number;
 }
 
 interface CropControlProps {
 	videoElement: HTMLVideoElement | null;
 	cropRegion: CropRegion;
-	onCropChange: (region: CropRegion) => void;
+	baseCropRegion?: CropRegion;
+	onCropChange?: (region: CropRegion) => void;
 	aspectRatio: AspectRatio;
 }
 
 type DragHandle = "top" | "right" | "bottom" | "left" | null;
 
-export function CropControl({ videoElement, cropRegion, onCropChange }: CropControlProps) {
+const FULL_CROP_REGION: CropRegion = { x: 0, y: 0, width: 1, height: 1 };
+const MIN_CROP_HEIGHT = 0.1;
+const MIN_CROP_WIDTH = 0.1;
+
+function clamp(value: number, min: number, max: number) {
+	return Math.min(max, Math.max(min, value));
+}
+
+function normalizeCropRegion(cropRegion: CropRegion): CropRegion {
+	const x = clamp(cropRegion.x, 0, 1);
+	const y = clamp(cropRegion.y, 0, 1);
+	const width = clamp(cropRegion.width, 0.0001, 1 - x);
+	const height = clamp(cropRegion.height, 0.0001, 1 - y);
+	return { x, y, width, height };
+}
+
+function clampCropRegionToBounds(cropRegion: CropRegion, bounds: CropRegion): CropRegion {
+	const normalizedBounds = normalizeCropRegion(bounds);
+	const width = clamp(cropRegion.width, 0.0001, normalizedBounds.width);
+	const height = clamp(cropRegion.height, 0.0001, normalizedBounds.height);
+	const x = clamp(
+		cropRegion.x,
+		normalizedBounds.x,
+		normalizedBounds.x + normalizedBounds.width - width,
+	);
+	const y = clamp(
+		cropRegion.y,
+		normalizedBounds.y,
+		normalizedBounds.y + normalizedBounds.height - height,
+	);
+	return { x, y, width, height };
+}
+
+export function CropControl({
+	videoElement,
+	cropRegion,
+	baseCropRegion = FULL_CROP_REGION,
+	onCropChange,
+	aspectRatio,
+}: CropControlProps) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [isDragging, setIsDragging] = useState<DragHandle>(null);
 	const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-	const [initialCrop, setInitialCrop] = useState<CropRegion>(cropRegion);
+	const [initialCrop, setInitialCrop] = useState<CropRegion>(
+		composeCropRegions(baseCropRegion, cropRegion),
+	);
 
 	useEffect(() => {
 		if (!videoElement || !canvasRef.current) return;
@@ -35,22 +78,38 @@ export function CropControl({ videoElement, cropRegion, onCropChange }: CropCont
 		canvas.width = videoElement.videoWidth || 1920;
 		canvas.height = videoElement.videoHeight || 1080;
 
+		let rafId = 0;
 		const draw = () => {
 			if (videoElement.readyState >= 2) {
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
 				ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
 			}
-			requestAnimationFrame(draw);
+			rafId = requestAnimationFrame(draw);
 		};
 
-		const rafId = requestAnimationFrame(draw);
+		rafId = requestAnimationFrame(draw);
 		return () => cancelAnimationFrame(rafId);
 	}, [videoElement]);
 
-	const getContainerRect = () => {
-		return (
-			containerRef.current?.getBoundingClientRect() || { width: 0, height: 0, left: 0, top: 0 }
-		);
+	const normalizedBaseCropRegion = useMemo(
+		() => normalizeCropRegion(baseCropRegion),
+		[baseCropRegion],
+	);
+	const displayCropRegion = useMemo(
+		() => composeCropRegions(normalizedBaseCropRegion, cropRegion),
+		[cropRegion, normalizedBaseCropRegion],
+	);
+
+	const getContainerRect = () =>
+		containerRef.current?.getBoundingClientRect() || { width: 0, height: 0, left: 0, top: 0 };
+
+	const emitCropChange = (absoluteCropRegion: CropRegion) => {
+		if (!onCropChange) {
+			return;
+		}
+
+		const boundedCropRegion = clampCropRegionToBounds(absoluteCropRegion, normalizedBaseCropRegion);
+		onCropChange(invertCropRegionWithinBase(normalizedBaseCropRegion, boundedCropRegion));
 	};
 
 	const handlePointerDown = (e: React.PointerEvent, handle: DragHandle) => {
@@ -62,10 +121,17 @@ export function CropControl({ videoElement, cropRegion, onCropChange }: CropCont
 			x: (e.clientX - rect.left) / rect.width,
 			y: (e.clientY - rect.top) / rect.height,
 		});
-		setInitialCrop(cropRegion);
-
+		setInitialCrop(displayCropRegion);
 		e.currentTarget.setPointerCapture(e.pointerId);
 	};
+
+	const videoAspectRatio = videoElement
+		? videoElement.videoWidth / Math.max(videoElement.videoHeight, 1)
+		: 16 / 9;
+	const lockedAspectRatio =
+		aspectRatio === "native" ? null : getAspectRatioValue(aspectRatio, videoAspectRatio);
+	const normalizedAspectRatio =
+		lockedAspectRatio && videoAspectRatio > 0 ? lockedAspectRatio / videoAspectRatio : null;
 
 	const handlePointerMove = (e: React.PointerEvent) => {
 		if (!isDragging) return;
@@ -75,51 +141,135 @@ export function CropControl({ videoElement, cropRegion, onCropChange }: CropCont
 		const currentY = (e.clientY - rect.top) / rect.height;
 		const deltaX = currentX - dragStart.x;
 		const deltaY = currentY - dragStart.y;
+		const bounds = normalizedBaseCropRegion;
+		const boundsRight = bounds.x + bounds.width;
+		const boundsBottom = bounds.y + bounds.height;
+		let nextCrop = { ...initialCrop };
 
-		let newCrop = { ...initialCrop };
+		if (!normalizedAspectRatio) {
+			switch (isDragging) {
+				case "top": {
+					const newY = clamp(
+						initialCrop.y + deltaY,
+						bounds.y,
+						initialCrop.y + initialCrop.height - MIN_CROP_HEIGHT,
+					);
+					nextCrop.y = newY;
+					nextCrop.height = initialCrop.y + initialCrop.height - newY;
+					break;
+				}
+				case "bottom":
+					nextCrop.height = clamp(
+						initialCrop.height + deltaY,
+						MIN_CROP_HEIGHT,
+						boundsBottom - initialCrop.y,
+					);
+					break;
+				case "left": {
+					const newX = clamp(
+						initialCrop.x + deltaX,
+						bounds.x,
+						initialCrop.x + initialCrop.width - MIN_CROP_WIDTH,
+					);
+					nextCrop.x = newX;
+					nextCrop.width = initialCrop.x + initialCrop.width - newX;
+					break;
+				}
+				case "right":
+					nextCrop.width = clamp(
+						initialCrop.width + deltaX,
+						MIN_CROP_WIDTH,
+						boundsRight - initialCrop.x,
+					);
+					break;
+			}
+
+			emitCropChange(nextCrop);
+			return;
+		}
+
+		const minWidth = Math.max(MIN_CROP_WIDTH, MIN_CROP_HEIGHT * normalizedAspectRatio);
+		const minHeight = Math.max(MIN_CROP_HEIGHT, MIN_CROP_WIDTH / normalizedAspectRatio);
+		const centerX = initialCrop.x + initialCrop.width / 2;
+		const centerY = initialCrop.y + initialCrop.height / 2;
 
 		switch (isDragging) {
 			case "top": {
-				const newY = Math.max(0, initialCrop.y + deltaY);
 				const bottom = initialCrop.y + initialCrop.height;
-				newCrop.y = Math.min(newY, bottom - 0.1);
-				newCrop.height = bottom - newCrop.y;
+				let height = clamp(bottom - currentY, minHeight, boundsBottom - bounds.y);
+				let width = height * normalizedAspectRatio;
+				if (width > bounds.width) {
+					width = bounds.width;
+					height = width / normalizedAspectRatio;
+				}
+
+				const x = clamp(centerX - width / 2, bounds.x, boundsRight - width);
+				const y = clamp(bottom - height, bounds.y, boundsBottom - height);
+				nextCrop = { x, y, width, height };
 				break;
 			}
-			case "bottom":
-				newCrop.height = Math.max(0.1, Math.min(initialCrop.height + deltaY, 1 - initialCrop.y));
+			case "bottom": {
+				const top = initialCrop.y;
+				let height = clamp(currentY - top, minHeight, boundsBottom - bounds.y);
+				let width = height * normalizedAspectRatio;
+				if (width > bounds.width) {
+					width = bounds.width;
+					height = width / normalizedAspectRatio;
+				}
+
+				const x = clamp(centerX - width / 2, bounds.x, boundsRight - width);
+				const y = clamp(top, bounds.y, boundsBottom - height);
+				nextCrop = { x, y, width, height };
 				break;
+			}
 			case "left": {
-				const newX = Math.max(0, initialCrop.x + deltaX);
 				const right = initialCrop.x + initialCrop.width;
-				newCrop.x = Math.min(newX, right - 0.1);
-				newCrop.width = right - newCrop.x;
+				let width = clamp(right - currentX, minWidth, boundsRight - bounds.x);
+				let height = width / normalizedAspectRatio;
+				if (height > bounds.height) {
+					height = bounds.height;
+					width = height * normalizedAspectRatio;
+				}
+
+				const x = clamp(right - width, bounds.x, boundsRight - width);
+				const y = clamp(centerY - height / 2, bounds.y, boundsBottom - height);
+				nextCrop = { x, y, width, height };
 				break;
 			}
-			case "right":
-				newCrop.width = Math.max(0.1, Math.min(initialCrop.width + deltaX, 1 - initialCrop.x));
+			case "right": {
+				const left = initialCrop.x;
+				let width = clamp(currentX - left, minWidth, boundsRight - bounds.x);
+				let height = width / normalizedAspectRatio;
+				if (height > bounds.height) {
+					height = bounds.height;
+					width = height * normalizedAspectRatio;
+				}
+
+				const x = clamp(left, bounds.x, boundsRight - width);
+				const y = clamp(centerY - height / 2, bounds.y, boundsBottom - height);
+				nextCrop = { x, y, width, height };
 				break;
+			}
 		}
 
-		onCropChange(newCrop);
+		emitCropChange(nextCrop);
 	};
 
 	const handlePointerUp = (e: React.PointerEvent) => {
 		if (isDragging) {
 			try {
 				e.currentTarget.releasePointerCapture(e.pointerId);
-			} catch {}
+			} catch {
+				// Ignore stale pointer capture release errors.
+			}
 		}
 		setIsDragging(null);
 	};
 
-	const cropPixelX = cropRegion.x * 100;
-	const cropPixelY = cropRegion.y * 100;
-	const cropPixelWidth = cropRegion.width * 100;
-	const cropPixelHeight = cropRegion.height * 100;
-	const videoAspectRatio = videoElement
-		? videoElement.videoWidth / videoElement.videoHeight
-		: 16 / 9;
+	const cropPixelX = displayCropRegion.x * 100;
+	const cropPixelY = displayCropRegion.y * 100;
+	const cropPixelWidth = displayCropRegion.width * 100;
+	const cropPixelHeight = displayCropRegion.height * 100;
 	const isVideoPortrait = videoAspectRatio < 1;
 	const maxContainerWidth = isVideoPortrait ? "40vw" : "75vw";
 	const maxContainerHeight = "75vh";

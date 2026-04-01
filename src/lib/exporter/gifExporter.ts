@@ -16,6 +16,7 @@ import type {
 	WebcamRegion,
 	ZoomRegion,
 } from "@/components/video-editor/types";
+import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import { FrameRenderer } from "./frameRenderer";
 import { StreamingVideoDecoder } from "./streamingDecoder";
 import type {
@@ -49,6 +50,7 @@ interface GifExporterConfig {
 	padding?: number;
 	videoPadding?: number;
 	cropRegion: CropRegion;
+	aspectRatio?: AspectRatio;
 	annotationRegions?: AnnotationRegion[];
 	cursorTelemetry?: CursorTelemetryPoint[];
 	keyboardShortcutCallouts?: KeyboardShortcutCallout[];
@@ -147,6 +149,7 @@ export class GifExporter {
 				borderRadius: this.config.borderRadius,
 				padding: this.config.padding,
 				cropRegion: this.config.cropRegion,
+				aspectRatio: this.config.aspectRatio,
 				videoWidth: videoInfo.width,
 				videoHeight: videoInfo.height,
 				annotationRegions: this.config.annotationRegions,

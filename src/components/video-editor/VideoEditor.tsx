@@ -68,6 +68,7 @@ import {
 import { deriveKeyboardShortcutCallouts } from "./keyboardShortcuts";
 import {
 	createProjectData,
+	DEFAULT_VIDEO_PREVIEW_PADDING,
 	deriveNextId,
 	fromFileUrl,
 	normalizeProjectEditor,
@@ -81,6 +82,7 @@ import {
 	detectInteractionCandidates,
 	normalizeCursorTelemetry,
 } from "./timeline/zoomSuggestionUtils";
+import { composeCropRegions, deriveLegacyCaptureCorrectionCrop } from "./videoPlayback/layoutUtils";
 import {
 	type AnnotationRegion,
 	type AudioRegion,
@@ -1041,7 +1043,7 @@ export default function VideoEditor() {
 						setCurrentProjectPath(null);
 						setLastSavedSnapshot(null);
 						setAspectRatio("native");
-						setPadding(0);
+						setPadding(DEFAULT_VIDEO_PREVIEW_PADDING);
 
 						const webcamResult = await window.electronAPI.getCurrentWebcamPath();
 						if (webcamResult.success && webcamResult.path) {
@@ -1540,6 +1542,24 @@ export default function VideoEditor() {
 			displayedTimelineWindow.startMs,
 		);
 	}, [loopCursor, normalizedCursorTelemetry, displayedTimelineWindow]);
+
+	const sourceVideoWidth = videoPlaybackRef.current?.video?.videoWidth || 0;
+	const sourceVideoHeight = videoPlaybackRef.current?.video?.videoHeight || 0;
+
+	const legacyCaptureCorrectionCrop = useMemo(
+		() =>
+			deriveLegacyCaptureCorrectionCrop({
+				videoWidth: sourceVideoWidth,
+				videoHeight: sourceVideoHeight,
+				cursorTelemetry,
+			}),
+		[cursorTelemetry, sourceVideoHeight, sourceVideoWidth],
+	);
+
+	const effectiveCropRegion = useMemo(
+		() => composeCropRegions(legacyCaptureCorrectionCrop, cropRegion),
+		[cropRegion, legacyCaptureCorrectionCrop],
+	);
 
 	const cursorSimulationPath = useMemo(
 		() =>
@@ -3320,7 +3340,8 @@ export default function VideoEditor() {
 						borderRadius,
 						padding,
 						videoPadding: padding,
-						cropRegion,
+						cropRegion: effectiveCropRegion,
+						aspectRatio,
 						annotationRegions,
 						zoomRegions: effectiveZoomRegions,
 						cursorTelemetry: effectiveCursorTelemetry,
@@ -3485,7 +3506,8 @@ export default function VideoEditor() {
 						deviceMockup,
 						borderRadius,
 						padding,
-						cropRegion,
+						cropRegion: effectiveCropRegion,
+						aspectRatio,
 						annotationRegions,
 						zoomRegions: effectiveZoomRegions,
 						cursorTelemetry: effectiveCursorTelemetry,
@@ -3603,7 +3625,7 @@ export default function VideoEditor() {
 			deviceMockup,
 			borderRadius,
 			padding,
-			cropRegion,
+			effectiveCropRegion,
 			annotationRegions,
 			isPlaying,
 			aspectRatio,
@@ -4199,7 +4221,7 @@ export default function VideoEditor() {
 									deviceMockup={deviceMockup}
 									borderRadius={borderRadius}
 									padding={padding}
-									cropRegion={cropRegion}
+									cropRegion={effectiveCropRegion}
 									trimRegions={trimRegions}
 									speedRegions={speedRegions}
 									annotationRegions={annotationRegions}
@@ -4318,6 +4340,7 @@ export default function VideoEditor() {
 							padding={padding}
 							onPaddingChange={setPadding}
 							cropRegion={cropRegion}
+							baseCropRegion={legacyCaptureCorrectionCrop}
 							onCropChange={setCropRegion}
 							aspectRatio={aspectRatio}
 							onAspectRatioChange={setAspectRatio}

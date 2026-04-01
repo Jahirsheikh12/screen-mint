@@ -12,6 +12,8 @@
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
+#include <algorithm>
+#include <cmath>
 
 static std::atomic<bool> g_stopRequested{false};
 static std::mutex g_stopMutex;
@@ -132,6 +134,35 @@ static std::wstring utf8ToWide(const std::string& str) {
     return wstr;
 }
 
+static int ensureEvenDimension(int value) {
+    int clamped = std::max(2, value);
+    return clamped % 2 == 0 ? clamped : clamped - 1;
+}
+
+static std::pair<int, int> fitCaptureDimensions(
+    int sourceWidth,
+    int sourceHeight,
+    int maxWidth,
+    int maxHeight) {
+    const int safeSourceWidth = std::max(2, sourceWidth);
+    const int safeSourceHeight = std::max(2, sourceHeight);
+
+    if (maxWidth <= 0 || maxHeight <= 0) {
+        return { ensureEvenDimension(safeSourceWidth), ensureEvenDimension(safeSourceHeight) };
+    }
+
+    const double scale = std::min(
+        1.0,
+        std::min(
+            static_cast<double>(maxWidth) / static_cast<double>(safeSourceWidth),
+            static_cast<double>(maxHeight) / static_cast<double>(safeSourceHeight)));
+
+    return {
+        ensureEvenDimension(static_cast<int>(std::round(safeSourceWidth * scale))),
+        ensureEvenDimension(static_cast<int>(std::round(safeSourceHeight * scale)))
+    };
+}
+
 static void stdinListenerThread() {
     std::string line;
     while (std::getline(std::cin, line)) {
@@ -190,12 +221,13 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    int captureWidth = config.width > 0 ? config.width : session.captureWidth();
-    int captureHeight = config.height > 0 ? config.height : session.captureHeight();
-
-    // Ensure even dimensions for H.264
-    captureWidth = (captureWidth / 2) * 2;
-    captureHeight = (captureHeight / 2) * 2;
+    int captureWidth = session.captureWidth();
+    int captureHeight = session.captureHeight();
+    std::tie(captureWidth, captureHeight) = fitCaptureDimensions(
+        captureWidth,
+        captureHeight,
+        config.width,
+        config.height);
 
     // Initialize encoder
     MFEncoder encoder;

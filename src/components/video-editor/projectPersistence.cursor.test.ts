@@ -62,6 +62,6 @@ describe("cursor project persistence", () => {
 			aspectRatio: "native",
 		});
 
-		expect(editor.padding).toBe(8);
+		expect(editor.padding).toBe(20);
 	});
 });

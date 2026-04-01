@@ -89,7 +89,7 @@ describe("editorPreferences", () => {
 			cursorSway: DEFAULT_EDITOR_PREFERENCES.cursorSway,
 			cursorPack: DEFAULT_EDITOR_PREFERENCES.cursorPack,
 			borderRadius: DEFAULT_EDITOR_PREFERENCES.borderRadius,
-			padding: 8,
+			padding: 20,
 			cropRegion: { x: 0.1, y: 0.2, width: 0.7, height: 0.6 },
 			aspectRatio: "native",
 			webcamRegion: DEFAULT_EDITOR_PREFERENCES.webcamRegion,
@@ -160,7 +160,7 @@ describe("editorPreferences", () => {
 			}),
 		);
 
-		expect(loadEditorPreferences().padding).toBe(8);
+		expect(loadEditorPreferences().padding).toBe(20);
 	});
 
 	it("preserves the last valid custom aspect inputs while typing", () => {

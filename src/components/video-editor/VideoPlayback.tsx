@@ -177,7 +177,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			cropRegion,
 			trimRegions = [],
 			speedRegions = [],
-			aspectRatio: _aspectRatio,
+			aspectRatio,
 			annotationRegions = [],
 			selectedAnnotationId,
 			onSelectAnnotation,
@@ -364,6 +364,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				lockedVideoDimensions: lockedVideoDimensionsRef.current,
 				borderRadius,
 				padding,
+				aspectRatio,
 			});
 
 			if (result) {
@@ -385,7 +386,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 
 				updateOverlayForRegion(activeRegion);
 			}
-		}, [updateOverlayForRegion, cropRegion, borderRadius, padding]);
+		}, [updateOverlayForRegion, cropRegion, borderRadius, padding, aspectRatio]);
 
 		useEffect(() => {
 			layoutVideoContentRef.current = layoutVideoContent;

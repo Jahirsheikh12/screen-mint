@@ -37,6 +37,7 @@ import {
 	computeMockupScreenRect,
 	drawDeviceMockup,
 } from "@/components/video-editor/videoPlayback/deviceMockups";
+import { calculateVideoLayoutGeometry } from "@/components/video-editor/videoPlayback/layoutUtils";
 import {
 	applyZoomTransform,
 	createMotionBlurState,
@@ -44,6 +45,7 @@ import {
 } from "@/components/video-editor/videoPlayback/zoomTransform";
 import { getWebcamPixelRect } from "@/components/video-editor/webcamRegionUtils";
 import { getAssetPath, getRenderableAssetUrl } from "@/lib/assetPath";
+import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import { renderAnnotations, renderCaptions } from "./annotationRenderer";
 
 interface FrameRenderConfig {
@@ -60,6 +62,7 @@ interface FrameRenderConfig {
 	borderRadius?: number;
 	padding?: number;
 	cropRegion: CropRegion;
+	aspectRatio?: AspectRatio;
 	videoWidth: number;
 	videoHeight: number;
 	annotationRegions?: AnnotationRegion[];
@@ -95,6 +98,7 @@ type TextureSourceInput = Parameters<typeof Texture.from>[0];
 
 interface FrameLayoutCache {
 	stageSize: { width: number; height: number };
+	frameRect: { x: number; y: number; width: number; height: number };
 	videoSize: { width: number; height: number };
 	baseScale: number;
 	baseOffset: { x: number; y: number };
@@ -663,38 +667,23 @@ export class FrameRenderer {
 		if (!this.app || !this.videoSprite || !this.maskGraphics || !this.videoContainer) return;
 
 		const { width, height } = this.config;
-		const { cropRegion, borderRadius = 0, padding = 0 } = this.config;
-		const videoWidth = this.config.videoWidth;
-		const videoHeight = this.config.videoHeight;
+		const { cropRegion, borderRadius = 0, padding = 0, aspectRatio = "native" } = this.config;
+		const layout = calculateVideoLayoutGeometry({
+			containerWidth: width,
+			containerHeight: height,
+			videoWidth: this.config.videoWidth,
+			videoHeight: this.config.videoHeight,
+			cropRegion,
+			padding,
+			aspectRatio,
+		});
 
-		// Calculate cropped video dimensions
-		const cropStartX = cropRegion.x;
-		const cropStartY = cropRegion.y;
-		const cropEndX = cropRegion.x + cropRegion.width;
-		const cropEndY = cropRegion.y + cropRegion.height;
+		if (!layout) {
+			return;
+		}
 
-		const croppedVideoWidth = videoWidth * (cropEndX - cropStartX);
-		const croppedVideoHeight = videoHeight * (cropEndY - cropStartY);
-
-		// Calculate scale to fit in viewport
-		// Padding is a percentage (0-100), where 50% ~ 0.8 scale
-		const paddingScale = 1.0 - (padding / 100) * 0.4;
-		const viewportWidth = width * paddingScale;
-		const viewportHeight = height * paddingScale;
-		const scale = Math.min(viewportWidth / croppedVideoWidth, viewportHeight / croppedVideoHeight);
-
-		this.videoSprite.scale.set(scale);
-
-		const fullVideoDisplayWidth = videoWidth * scale;
-		const fullVideoDisplayHeight = videoHeight * scale;
-		const croppedDisplayWidth = croppedVideoWidth * scale;
-		const croppedDisplayHeight = croppedVideoHeight * scale;
-		const centerOffsetX = (width - croppedDisplayWidth) / 2;
-		const centerOffsetY = (height - croppedDisplayHeight) / 2;
-
-		const spriteX = centerOffsetX - cropRegion.x * fullVideoDisplayWidth;
-		const spriteY = centerOffsetY - cropRegion.y * fullVideoDisplayHeight;
-		this.videoSprite.position.set(spriteX, spriteY);
+		this.videoSprite.scale.set(layout.baseScale);
+		this.videoSprite.position.set(layout.baseOffset.x, layout.baseOffset.y);
 
 		this.videoContainer.position.set(0, 0);
 
@@ -706,26 +695,22 @@ export class FrameRenderer {
 
 		this.maskGraphics.clear();
 		this.maskGraphics.roundRect(
-			centerOffsetX,
-			centerOffsetY,
-			croppedDisplayWidth,
-			croppedDisplayHeight,
+			layout.maskRect.x,
+			layout.maskRect.y,
+			layout.maskRect.width,
+			layout.maskRect.height,
 			scaledBorderRadius,
 		);
 		this.maskGraphics.fill({ color: 0xffffff });
 
 		// Cache layout info
 		this.layoutCache = {
-			stageSize: { width, height },
-			videoSize: { width: croppedVideoWidth, height: croppedVideoHeight },
-			baseScale: scale,
-			baseOffset: { x: spriteX, y: spriteY },
-			maskRect: {
-				x: centerOffsetX,
-				y: centerOffsetY,
-				width: croppedDisplayWidth,
-				height: croppedDisplayHeight,
-			},
+			stageSize: layout.stageSize,
+			frameRect: layout.frameRect,
+			videoSize: layout.videoSize,
+			baseScale: layout.baseScale,
+			baseOffset: layout.baseOffset,
+			maskRect: layout.maskRect,
 		};
 	}
 

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import type { CameraSessionState } from "@/components/video-editor/types";
 import { loadCameraPreferences, saveCameraPreferences } from "@/hooks/cameraPreferences";
 import { playAppAudioCue, preloadAppAudioCues } from "@/lib/appAudio";
+import { resolveCaptureDimensions } from "@/lib/recording/captureSizing";
 import { buildNativeRecordingOptions } from "@/lib/recording/nativeConfig";
 import type { AfterRecordingAction, PostRecordingContext } from "@/lib/recording/postRecording";
 import {
@@ -190,6 +191,47 @@ export function useScreenRecorder(
 
 		return preferred.find((type) => MediaRecorder.isTypeSupported(type)) ?? "video/webm";
 	}, [resolvedRecordingProfile.preferHardwareEncoding]);
+
+	const resolveSourceCaptureBounds = useCallback(
+		async (
+			selectedSource: { id?: string; display_id?: string } | null,
+			selectedArea: SelectedArea | null,
+			fallbackTrackSize?: { width?: number; height?: number },
+		): Promise<{ width: number; height: number } | null> => {
+			if (selectedArea) {
+				return {
+					width: selectedArea.bounds.width,
+					height: selectedArea.bounds.height,
+				};
+			}
+
+			if (selectedSource?.id?.startsWith("screen:") && selectedSource.display_id) {
+				const displayInfo = await window.electronAPI.getDisplayInfo();
+				const matchedDisplay = displayInfo.success
+					? displayInfo.displays.find(
+							(display) => String(display.id) === String(selectedSource.display_id),
+						)
+					: null;
+
+				if (matchedDisplay) {
+					return {
+						width: matchedDisplay.width,
+						height: matchedDisplay.height,
+					};
+				}
+			}
+
+			if (fallbackTrackSize?.width && fallbackTrackSize?.height) {
+				return {
+					width: fallbackTrackSize.width,
+					height: fallbackTrackSize.height,
+				};
+			}
+
+			return null;
+		},
+		[],
+	);
 
 	const releaseWebcamStream = useCallback(() => {
 		const activeStream = webcamStream.current;
@@ -971,8 +1013,6 @@ export function useScreenRecorder(
 					mandatory: {
 						chromeMediaSource: CHROME_MEDIA_SOURCE,
 						chromeMediaSourceId: selectedSource.id,
-						maxWidth: resolvedRecordingProfile.width,
-						maxHeight: resolvedRecordingProfile.height,
 						maxFrameRate: resolvedRecordingProfile.frameRate,
 						minFrameRate: MIN_FRAME_RATE,
 					},
@@ -1075,14 +1115,6 @@ export function useScreenRecorder(
 					audio: false,
 					video: {
 						displaySurface: selectedSource.id?.startsWith("window:") ? "window" : "monitor",
-						width: {
-							ideal: resolvedRecordingProfile.width,
-							max: resolvedRecordingProfile.width,
-						},
-						height: {
-							ideal: resolvedRecordingProfile.height,
-							max: resolvedRecordingProfile.height,
-						},
 						frameRate: {
 							ideal: resolvedRecordingProfile.frameRate,
 							max: resolvedRecordingProfile.frameRate,
@@ -1101,17 +1133,42 @@ export function useScreenRecorder(
 				throw new Error("Media stream is not available.");
 			}
 
+			const initialTrackSettings = videoTrack.getSettings();
+			const sourceCaptureBounds = await resolveSourceCaptureBounds(
+				selectedSource,
+				effectiveSelectedArea,
+				{
+					width: initialTrackSettings.width,
+					height: initialTrackSettings.height,
+				},
+			);
+			const targetCaptureDimensions = sourceCaptureBounds
+				? resolveCaptureDimensions({
+						sourceWidth: sourceCaptureBounds.width,
+						sourceHeight: sourceCaptureBounds.height,
+						maxWidth: resolvedRecordingProfile.width,
+						maxHeight: resolvedRecordingProfile.height,
+					})
+				: null;
+
 			try {
 				await videoTrack.applyConstraints({
 					frameRate: {
 						ideal: resolvedRecordingProfile.frameRate,
 						max: resolvedRecordingProfile.frameRate,
 					},
-					width: { ideal: resolvedRecordingProfile.width, max: resolvedRecordingProfile.width },
-					height: {
-						ideal: resolvedRecordingProfile.height,
-						max: resolvedRecordingProfile.height,
-					},
+					...(targetCaptureDimensions
+						? {
+								width: {
+									ideal: targetCaptureDimensions.width,
+									max: targetCaptureDimensions.width,
+								},
+								height: {
+									ideal: targetCaptureDimensions.height,
+									max: targetCaptureDimensions.height,
+								},
+							}
+						: {}),
 				} as MediaTrackConstraints);
 			} catch (error) {
 				console.warn(
@@ -1256,6 +1313,7 @@ export function useScreenRecorder(
 		resolvedRecordingProfile.preferHardwareEncoding,
 		resolvedRecordingProfile.videoBitsPerSecond,
 		resolvedRecordingProfile.width,
+		resolveSourceCaptureBounds,
 		resetSegmentBuffers,
 		selectMimeType,
 		startWebcamRecording,
