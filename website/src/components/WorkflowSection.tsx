@@ -32,60 +32,35 @@ const steps = [
 
 export function WorkflowSection() {
 	const sectionRef = useRef<HTMLElement>(null);
-	const lineRef = useRef<SVGLineElement>(null);
 
 	useEffect(() => {
 		if (prefersReducedMotion()) return;
 
 		const ctx = gsap.context(() => {
+			/* Heading */
 			gsap.fromTo(
-				".workflow-eyebrow",
-				{ opacity: 0, y: 20 },
+				".wf-head",
+				{ opacity: 0, y: 24 },
+				{
+					opacity: 1,
+					y: 0,
+					duration: 0.7,
+					ease: "power3.out",
+					scrollTrigger: { trigger: ".wf-head", start: "top 85%", once: true },
+				},
+			);
+
+			/* Step cards stagger */
+			gsap.fromTo(
+				".wf-step",
+				{ opacity: 0, y: 32 },
 				{
 					opacity: 1,
 					y: 0,
 					duration: 0.6,
-					ease: "power2.out",
-					scrollTrigger: { trigger: ".workflow-eyebrow", start: "top 85%", once: true },
-				},
-			);
-
-			gsap.fromTo(
-				".workflow-headline",
-				{ opacity: 0, y: 30 },
-				{
-					opacity: 1,
-					y: 0,
-					duration: 0.7,
-					ease: "power2.out",
-					scrollTrigger: { trigger: ".workflow-headline", start: "top 85%", once: true },
-				},
-			);
-
-			/* Connecting line draws in */
-			if (lineRef.current) {
-				const lineLength = lineRef.current.getTotalLength?.() || 1000;
-				gsap.set(lineRef.current, { strokeDasharray: lineLength, strokeDashoffset: lineLength });
-				gsap.to(lineRef.current, {
-					strokeDashoffset: 0,
-					duration: 1.2,
-					ease: "power2.inOut",
-					scrollTrigger: { trigger: ".workflow-steps", start: "top 80%", once: true },
-				});
-			}
-
-			/* Cards stagger in */
-			gsap.fromTo(
-				".workflow-step",
-				{ opacity: 0, y: 40, scale: 0.95 },
-				{
-					opacity: 1,
-					y: 0,
-					scale: 1,
-					duration: 0.7,
-					stagger: 0.12,
-					ease: "power2.out",
-					scrollTrigger: { trigger: ".workflow-steps", start: "top 80%", once: true },
+					stagger: 0.1,
+					ease: "power3.out",
+					scrollTrigger: { trigger: ".wf-steps", start: "top 82%", once: true },
 				},
 			);
 		}, sectionRef);
@@ -98,66 +73,62 @@ export function WorkflowSection() {
 			<div className="section-divider max-w-6xl mx-auto mb-20" />
 
 			<div className="max-w-5xl mx-auto">
-				<div className="text-center mb-16">
-					<p className="workflow-eyebrow section-eyebrow mb-4 will-animate">Workflow</p>
-					<h2 className="workflow-headline section-headline will-animate">
-						Four steps to{" "}
-						<span className="text-gradient">
-							perfection
-						</span>
+				{/* Heading */}
+				<div className="wf-head text-center mb-16">
+					<p className="section-eyebrow mb-4">How it works</p>
+					<h2 className="section-headline">
+						Four steps to <span className="text-gradient">perfection</span>
 					</h2>
 				</div>
 
-				{/* Steps with connecting line */}
-				<div className="relative">
-					{/* Connecting line (desktop only) */}
-					<svg
-						className="hidden md:block absolute top-[52px] left-0 right-0 w-full h-1 pointer-events-none"
-						preserveAspectRatio="none"
-					>
-						<line
-							ref={lineRef}
-							x1="12.5%"
-							y1="50%"
-							x2="87.5%"
-							y2="50%"
-							stroke="rgba(245, 158, 11, 0.15)"
-							strokeWidth="1"
-							strokeDasharray="4 4"
-						/>
-					</svg>
-
-					<div className="workflow-steps grid grid-cols-1 md:grid-cols-4 gap-6">
-						{steps.map((step) => {
-							const Icon = step.icon;
-							return (
-								<div
-									key={step.number}
-									className="workflow-step will-animate group relative"
-								>
-									{/* Step number + icon */}
-									<div className="flex flex-col items-center mb-6">
-										<span className="flex items-center justify-center w-10 h-10 rounded-full bg-brand-500/10 border border-brand-500/20 text-[11px] font-bold text-brand-400 mb-3">
-											{step.number}
-										</span>
-										<div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/[0.03] border border-white/[0.06] group-hover:bg-brand-500/[0.06] group-hover:border-brand-500/15 transition-all duration-500">
-											<Icon className="w-5 h-5 text-white/30 group-hover:text-brand-400 transition-colors duration-300" strokeWidth={1.5} />
+				{/* Steps */}
+				<div className="wf-steps grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+					{steps.map((step, i) => {
+						const Icon = step.icon;
+						return (
+							<div key={step.number} className="wf-step group relative">
+								<div className="wf-card">
+									{/* Number + icon row */}
+									<div className="flex items-center justify-between mb-5">
+										<span className="wf-number">{step.number}</span>
+										<div className="wf-icon">
+											<Icon
+												className="w-[18px] h-[18px] text-white/25 group-hover:text-brand-400 transition-colors duration-400"
+												strokeWidth={1.5}
+											/>
 										</div>
 									</div>
 
-									{/* Card content */}
-									<div className="text-center rounded-2xl p-5 bg-white/[0.02] border border-white/[0.04] group-hover:bg-white/[0.03] group-hover:border-white/[0.08] transition-all duration-500">
-										<h3 className="text-lg font-semibold text-white mb-2 group-hover:text-brand-400 transition-colors duration-300">
-											{step.title}
-										</h3>
-										<p className="text-[13px] text-white/25 leading-relaxed">
-											{step.description}
-										</p>
-									</div>
+									{/* Title */}
+									<h3 className="text-[17px] font-semibold text-white/90 mb-2 group-hover:text-white transition-colors duration-300">
+										{step.title}
+									</h3>
+
+									{/* Description */}
+									<p className="text-[13px] leading-relaxed text-white/25 group-hover:text-white/35 transition-colors duration-400">
+										{step.description}
+									</p>
 								</div>
-							);
-						})}
-					</div>
+
+								{/* Arrow connector (hidden on last + mobile) */}
+								{i < steps.length - 1 && (
+									<div className="hidden lg:flex absolute -right-[10px] top-1/2 -translate-y-1/2 z-10 text-white/[0.08]">
+										<svg
+											width="16"
+											height="16"
+											viewBox="0 0 16 16"
+											fill="none"
+											stroke="currentColor"
+											strokeWidth="1.5"
+											strokeLinecap="round"
+										>
+											<path d="M5 3l5 5-5 5" />
+										</svg>
+									</div>
+								)}
+							</div>
+						);
+					})}
 				</div>
 			</div>
 		</section>
