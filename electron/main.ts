@@ -14,6 +14,7 @@ import {
 	Tray,
 } from "electron";
 import { getSelectedSourceId, killWgcCaptureProcess, registerIpcHandlers } from "./ipc/handlers";
+import { getScreenMintUpdater } from "./updater";
 import { createEditorWindow, createHudOverlayWindow, createSourceSelectorWindow } from "./windows";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -138,6 +139,58 @@ function sendEditorMenuAction(
 	targetWindow.webContents.send(channel);
 }
 
+function getUpdateStatusDetail() {
+	const updater = getScreenMintUpdater();
+	const state = updater.getState();
+	const latestVersion = state.latestVersion ?? state.currentVersion;
+
+	switch (state.status) {
+		case "checking":
+			return "Checking for updates…";
+		case "available":
+			return `Version ${latestVersion} is available. Use Check for Updates to open the update window.`;
+		case "downloading":
+			return `Downloading version ${latestVersion}${typeof state.progress === "number" ? ` (${Math.round(state.progress)}%)` : ""}.`;
+		case "downloaded":
+			return state.installMode === "external-installer"
+				? `Version ${latestVersion} has been downloaded. Open the update window to continue.`
+				: `Version ${latestVersion} has been downloaded and is ready to install from the update window.`;
+		case "no-update":
+			return `You’re up to date on version ${state.currentVersion}.`;
+		case "manual-download-required":
+			return `Version ${latestVersion} is available to download manually from GitHub Releases.`;
+		case "error":
+			return state.error ?? "Unable to check for updates right now.";
+		default:
+			return "Automatic updates are available in packaged builds.";
+	}
+}
+
+async function showAboutScreenMintDialog() {
+	const updater = getScreenMintUpdater();
+	const buttons = ["Close", "Check for Updates…"];
+
+	const targetWindow = BrowserWindow.getFocusedWindow() ?? mainWindow;
+	const dialogOptions: Electron.MessageBoxOptions = {
+		type: "info",
+		buttons,
+		defaultId: buttons.length - 1,
+		cancelId: buttons.indexOf("Close"),
+		title: "About ScreenMint",
+		message: `ScreenMint ${app.getVersion()}`,
+		detail: getUpdateStatusDetail(),
+		noLink: true,
+	};
+	const response = targetWindow
+		? await dialog.showMessageBox(targetWindow, dialogOptions)
+		: await dialog.showMessageBox(dialogOptions);
+
+	const selectedButton = buttons[response.response];
+	if (selectedButton === "Check for Updates…") {
+		void updater.checkForUpdates("manual");
+	}
+}
+
 function setupApplicationMenu() {
 	const isMac = process.platform === "darwin";
 	const template: Electron.MenuItemConstructorOptions[] = [];
@@ -212,6 +265,23 @@ function setupApplicationMenu() {
 			submenu: isMac
 				? [{ role: "minimize" }, { role: "zoom" }, { type: "separator" }, { role: "front" }]
 				: [{ role: "minimize" }, { role: "close" }],
+		},
+		{
+			label: "Help",
+			submenu: [
+				{
+					label: "About ScreenMint",
+					click: () => {
+						void showAboutScreenMintDialog();
+					},
+				},
+				{
+					label: "Check for Updates…",
+					click: () => {
+						void getScreenMintUpdater().checkForUpdates("manual");
+					},
+				},
+			],
 		},
 	);
 
@@ -366,6 +436,8 @@ app.on("second-instance", () => {
 
 // Register all IPC handlers when app is ready
 app.whenReady().then(async () => {
+	const updater = getScreenMintUpdater();
+
 	session.defaultSession.setPermissionCheckHandler((_webContents, permission) => {
 		const allowed = ["media", "audioCapture", "microphone"];
 		return allowed.includes(permission);
@@ -392,6 +464,7 @@ app.whenReady().then(async () => {
 	setupApplicationMenu();
 	// Ensure recordings directory exists
 	await ensureRecordingsDir();
+	await updater.init();
 
 	registerIpcHandlers(
 		createEditorWindowWrapper,

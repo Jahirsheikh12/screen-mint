@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { Toaster } from "@/components/ui/sonner";
+import { UpdaterDialogs } from "@/components/updater/UpdaterDialogs";
 import { CountdownOverlay } from "./components/countdown/CountdownOverlay";
 import { AreaSelectionOverlay } from "./components/launch/AreaSelectionOverlay";
 import { LaunchWindow } from "./components/launch/LaunchWindow";
@@ -101,25 +103,41 @@ export default function App() {
 				: t("app.name", "ScreenMint");
 	}, [windowType, t]);
 
+	let content: JSX.Element;
 	switch (windowType) {
 		case "hud-overlay":
-			return <LaunchWindow />;
+			content = <LaunchWindow />;
+			break;
 		case "source-selector":
-			return <SourceSelector />;
+			content = <SourceSelector />;
+			break;
 		case "countdown":
-			return <CountdownOverlay />;
+			content = <CountdownOverlay />;
+			break;
 		case "area-overlay":
-			return <AreaSelectionOverlay />;
+			content = <AreaSelectionOverlay />;
+			break;
 		case "speaker-notes":
-			return <SpeakerNotesWindow />;
+			content = <SpeakerNotesWindow />;
+			break;
 		case "editor":
-			return (
+			content = (
 				<ShortcutsProvider>
 					<VideoEditor />
 					<ShortcutsConfigDialog />
 				</ShortcutsProvider>
 			);
+			break;
 		default:
-			return <AppLoadingScreen label={t("app.subtitle", "Screen recording and editing")} />;
+			content = <AppLoadingScreen label={t("app.subtitle", "Screen recording and editing")} />;
+			break;
 	}
+
+	return (
+		<>
+			{content}
+			<UpdaterDialogs windowType={windowType} />
+			<Toaster theme="dark" className="pointer-events-auto" />
+		</>
+	);
 }

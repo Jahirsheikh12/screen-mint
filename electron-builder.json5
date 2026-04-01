@@ -12,6 +12,14 @@
   "npmRebuild": true,
   "buildDependenciesFromSource": true,
   "compression": "normal",
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "Jahirsheikh12",
+      "repo": "screenmint",
+      "releaseType": "release"
+    }
+  ],
   "directories": {
     "output": "release"
   },
@@ -39,10 +47,14 @@
       {
         "target": "dmg",
         "arch": ["x64", "arm64"]
+      },
+      {
+        "target": "zip",
+        "arch": ["x64", "arm64"]
       }
     ],
     "icon": "icons/icons/mac/icon.icns",
-    "artifactName": "ScreenMint.dmg",
+    "artifactName": "ScreenMint-${arch}.${ext}",
     "extendInfo": {
       "NSAudioCaptureUsageDescription": "ScreenMint needs audio capture permission to record system audio.",
       "NSMicrophoneUsageDescription": "ScreenMint needs microphone access to record voice audio.",
@@ -56,7 +68,7 @@
       "AppImage"
     ],
     "icon": "icons/icons/png",
-    "artifactName": "ScreenMint.AppImage",
+    "artifactName": "ScreenMint-linux-${arch}.${ext}",
     "category": "AudioVideo"
   },
   "win": {
@@ -65,7 +77,7 @@
     ],
     "icon": "icons/icons/win/icon.ico"
     ,
-    "artifactName": "ScreenMint.exe"
+    "artifactName": "ScreenMint-windows-${arch}.${ext}"
   }
 }
 

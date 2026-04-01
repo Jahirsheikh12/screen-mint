@@ -10,6 +10,41 @@
 		"delete": "Delete",
 		"done": "Done"
 	},
+	"updates": {
+		"available": "Version {{version}} is available.",
+		"downloadAction": "Download",
+		"downloadingSoon": "Update found. Downloading will start when ScreenMint is idle.",
+		"downloading": "Downloading update… {{progress}}",
+		"downloaded": "Version {{version}} is ready to install.",
+		"installAction": "Open Installer",
+		"installDeferred": "The installer will be available when recording, export, or transcription is finished.",
+		"restartAction": "Restart",
+		"restartDeferred": "Restart is waiting for recording, export, or transcription to finish.",
+		"manualRequired": "Version {{version}} is available to download manually.",
+		"openReleases": "Open Releases",
+		"upToDate": "ScreenMint {{version}} is up to date.",
+		"error": "Unable to complete the update request.",
+		"popup": {
+			"title": "Update available",
+			"downloadingTitle": "Updating ScreenMint",
+			"readyTitle": "Ready to update",
+			"updateNow": "Update now",
+			"updateLater": "Update later",
+			"availableBody": "ScreenMint {{version}} is ready. Update now will download the latest version, then you'll choose when to install it.",
+			"availableBodyExternal": "ScreenMint {{version}} is ready. Update now will download the installer, then ScreenMint will open it so you can finish the update.",
+			"downloadingBody": "Downloading ScreenMint {{version}} now. Keep this window open or choose Update later and come back when you're ready.",
+			"downloadingProgressLabel": "{{progress}} downloaded",
+			"downloadedBodyInApp": "ScreenMint {{version}} is ready. Click Update now to restart and finish installing it.",
+			"downloadedBodyExternal": "ScreenMint {{version}} is ready. Click Update now to open the installer. ScreenMint will quit so you can finish updating.",
+			"manualBody": "ScreenMint {{version}} is available, but this installation cannot update itself. Update now will open the latest download page.",
+			"busyHint": "Finish recording, export, or transcription before continuing with the update."
+		},
+		"whatsNew": {
+			"title": "What's new in {{version}}",
+			"intro": "Here’s what changed in this release.",
+			"fallback": "ScreenMint was updated successfully. You're now running the latest version."
+		}
+	},
 	"errors": {
 		"invalidFileType": "Invalid file type",
 		"failedToUploadImage": "Failed to upload image",

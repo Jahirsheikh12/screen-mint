@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type { SelectedArea } from "../src/lib/recording/session";
+import type { UpdaterState } from "../src/lib/updater/types";
 
 contextBridge.exposeInMainWorld("electronAPI", {
 	hudOverlayHide: () => {
@@ -256,6 +257,40 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	},
 	getPlatform: () => {
 		return ipcRenderer.invoke("get-platform");
+	},
+	getAppVersion: () => {
+		return ipcRenderer.invoke("get-app-version");
+	},
+	getUpdaterState: () => {
+		return ipcRenderer.invoke("get-updater-state");
+	},
+	checkForUpdates: () => {
+		return ipcRenderer.invoke("check-for-updates");
+	},
+	downloadUpdate: () => {
+		return ipcRenderer.invoke("download-update");
+	},
+	installUpdateAndRestart: () => {
+		return ipcRenderer.invoke("install-update-and-restart");
+	},
+	dismissUpdate: () => {
+		return ipcRenderer.invoke("dismiss-update");
+	},
+	updateLaterForSession: () => {
+		return ipcRenderer.invoke("update-later-for-session");
+	},
+	dismissWhatsNew: () => {
+		return ipcRenderer.invoke("dismiss-whats-new");
+	},
+	setUpdaterBusyState: (update: {
+		recording?: boolean;
+		exporting?: boolean;
+		transcribing?: boolean;
+	}) => ipcRenderer.invoke("set-updater-busy-state", update),
+	onUpdaterStateChanged: (callback: (state: UpdaterState) => void) => {
+		const listener = (_event: Electron.IpcRendererEvent, state: UpdaterState) => callback(state);
+		ipcRenderer.on("updater-state-changed", listener);
+		return () => ipcRenderer.removeListener("updater-state-changed", listener);
 	},
 	revealInFolder: (filePath: string) => {
 		return ipcRenderer.invoke("reveal-in-folder", filePath);

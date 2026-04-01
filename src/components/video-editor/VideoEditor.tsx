@@ -31,7 +31,6 @@ import {
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Toaster } from "@/components/ui/sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { useShortcuts } from "@/contexts/ShortcutsContext";
 import { type AppLocale, SUPPORTED_LOCALES } from "@/i18n/config";
@@ -1365,6 +1364,22 @@ export default function VideoEditor() {
 	useEffect(() => {
 		window.electronAPI.setHasUnsavedChanges(hasUnsavedChanges);
 	}, [hasUnsavedChanges]);
+
+	useEffect(() => {
+		void window.electronAPI.setUpdaterBusyState({
+			exporting: isExporting,
+			transcribing: isTranscribing,
+		});
+	}, [isExporting, isTranscribing]);
+
+	useEffect(() => {
+		return () => {
+			void window.electronAPI.setUpdaterBusyState({
+				exporting: false,
+				transcribing: false,
+			});
+		};
+	}, []);
 
 	useEffect(() => {
 		const cleanup = window.electronAPI.onRequestSaveBeforeClose(async () => {
@@ -4446,8 +4461,6 @@ export default function VideoEditor() {
 					</div>
 				</Panel>
 			</PanelGroup>
-
-			<Toaster theme="dark" className="pointer-events-auto" />
 
 			<ExportSettingsDialog
 				isOpen={showExportSettings}

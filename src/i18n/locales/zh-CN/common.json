@@ -10,6 +10,41 @@
 		"delete": "删除",
 		"done": "完成"
 	},
+	"updates": {
+		"available": "版本 {{version}} 已可用。",
+		"downloadAction": "下载",
+		"downloadingSoon": "发现更新。ScreenMint 空闲后将开始下载。",
+		"downloading": "正在下载更新… {{progress}}",
+		"downloaded": "版本 {{version}} 已准备好安装。",
+		"installAction": "打开安装器",
+		"installDeferred": "需要等录制、导出或转录完成后才能打开安装器。",
+		"restartAction": "重新启动",
+		"restartDeferred": "需要等录制、导出或转录完成后才能重新启动。",
+		"manualRequired": "版本 {{version}} 已可手动下载。",
+		"openReleases": "打开发布页",
+		"upToDate": "ScreenMint {{version}} 已是最新版本。",
+		"error": "无法完成更新请求。",
+		"popup": {
+			"title": "发现新版本",
+			"downloadingTitle": "正在更新 ScreenMint",
+			"readyTitle": "已准备好更新",
+			"updateNow": "立即更新",
+			"updateLater": "稍后更新",
+			"availableBody": "ScreenMint {{version}} 已就绪。点击“立即更新”会下载最新版本，之后你可以选择安装时机。",
+			"availableBodyExternal": "ScreenMint {{version}} 已就绪。点击“立即更新”会下载安装器，随后 ScreenMint 会自动打开它，方便你完成更新。",
+			"downloadingBody": "正在下载 ScreenMint {{version}}。你可以保持此窗口开启，或者选择“稍后更新”，准备好后再回来。",
+			"downloadingProgressLabel": "已下载 {{progress}}",
+			"downloadedBodyInApp": "ScreenMint {{version}} 已准备好。点击“立即更新”即可重新启动并完成安装。",
+			"downloadedBodyExternal": "ScreenMint {{version}} 已准备好。点击“立即更新”会打开安装器，ScreenMint 会退出，以便你完成更新。",
+			"manualBody": "ScreenMint {{version}} 已可用，但当前安装方式无法自更新。点击“立即更新”会打开最新下载页面。",
+			"busyHint": "请先完成录制、导出或转录，再继续更新。"
+		},
+		"whatsNew": {
+			"title": "{{version}} 的新内容",
+			"intro": "以下是此版本的更新内容。",
+			"fallback": "ScreenMint 已成功更新，你现在运行的是最新版本。"
+		}
+	},
 	"errors": {
 		"invalidFileType": "无效的文件类型",
 		"failedToUploadImage": "上传图片失败",

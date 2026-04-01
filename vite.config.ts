@@ -51,6 +51,9 @@ export default defineConfig({
 			"react-icons/rx",
 		],
 	},
+	test: {
+		include: ["src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}", "electron/**/*.test.ts"],
+	},
 	build: {
 		target: "esnext",
 		minify: "terser",

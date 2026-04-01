@@ -6,6 +6,7 @@ import type {
 } from "../src/components/video-editor/types";
 import type { PostRecordingContext } from "../src/lib/recording/postRecording";
 import type { SelectedArea } from "../src/lib/recording/session";
+import type { UpdaterState } from "../src/lib/updater/types";
 
 declare global {
 	namespace NodeJS {
@@ -240,6 +241,20 @@ declare global {
 			onMenuSaveProject: (callback: () => void) => () => void;
 			onMenuSaveProjectAs: (callback: () => void) => () => void;
 			getPlatform: () => Promise<string>;
+			getAppVersion: () => Promise<string>;
+			getUpdaterState: () => Promise<UpdaterState>;
+			checkForUpdates: () => Promise<UpdaterState>;
+			downloadUpdate: () => Promise<UpdaterState>;
+			installUpdateAndRestart: () => Promise<{ success: boolean; reason?: string }>;
+			dismissUpdate: () => Promise<UpdaterState>;
+			updateLaterForSession: () => Promise<UpdaterState>;
+			dismissWhatsNew: () => Promise<UpdaterState>;
+			setUpdaterBusyState: (update: {
+				recording?: boolean;
+				exporting?: boolean;
+				transcribing?: boolean;
+			}) => Promise<UpdaterState>;
+			onUpdaterStateChanged: (callback: (state: UpdaterState) => void) => () => void;
 			revealInFolder: (
 				filePath: string,
 			) => Promise<{ success: boolean; error?: string; message?: string }>;

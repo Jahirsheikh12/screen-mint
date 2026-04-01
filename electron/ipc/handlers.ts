@@ -31,6 +31,7 @@ import {
 	isCaptionGenerationCancelled,
 } from "../captions/transcriptionOrchestrator";
 import { RECORDINGS_DIR } from "../main";
+import { getScreenMintUpdater } from "../updater";
 import {
 	closeAreaOverlayWindow,
 	closeCountdownWindow,
@@ -3770,6 +3771,8 @@ export function registerIpcHandlers(
 		if (onRecordingStateChange) {
 			onRecordingStateChange(recording, source.name);
 		}
+
+		void getScreenMintUpdater().setBusyState({ recording });
 	});
 
 	ipcMain.handle("get-cursor-telemetry", async (_, videoPath?: string) => {
@@ -4683,6 +4686,46 @@ export function registerIpcHandlers(
 
 	ipcMain.handle("get-platform", () => {
 		return process.platform;
+	});
+
+	ipcMain.handle("get-app-version", () => {
+		return getScreenMintUpdater().getAppVersion();
+	});
+
+	ipcMain.handle("get-updater-state", () => {
+		return getScreenMintUpdater().getState();
+	});
+
+	ipcMain.handle("check-for-updates", async () => {
+		return await getScreenMintUpdater().checkForUpdates("manual");
+	});
+
+	ipcMain.handle("download-update", async () => {
+		return await getScreenMintUpdater().downloadUpdate("manual");
+	});
+
+	ipcMain.handle("install-update-and-restart", async () => {
+		return await getScreenMintUpdater().installUpdateAndRestart();
+	});
+
+	ipcMain.handle("dismiss-update", async () => {
+		return await getScreenMintUpdater().dismissUpdate();
+	});
+
+	ipcMain.handle("update-later-for-session", async () => {
+		return await getScreenMintUpdater().updateLaterForSession();
+	});
+
+	ipcMain.handle("dismiss-whats-new", async () => {
+		return await getScreenMintUpdater().dismissWhatsNew();
+	});
+
+	ipcMain.handle("set-updater-busy-state", async (_, update: Record<string, unknown>) => {
+		return await getScreenMintUpdater().setBusyState({
+			exporting: typeof update.exporting === "boolean" ? update.exporting : undefined,
+			transcribing: typeof update.transcribing === "boolean" ? update.transcribing : undefined,
+			recording: typeof update.recording === "boolean" ? update.recording : undefined,
+		});
 	});
 
 	// ---------------------------------------------------------------------------
