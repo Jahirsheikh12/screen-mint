@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_CURSOR_FOLLOW_TRACKING, type ZoomRegion } from "../types";
-import type { CursorEvaluation } from "./cursorSimulation";
+import type { CursorMotionSnapshot } from "./cursorSimulation";
 import { resolveZoomRegionFocus } from "./smartZoomController";
 
 const baseRegion: ZoomRegion = {
@@ -13,15 +13,18 @@ const baseRegion: ZoomRegion = {
 	tracking: DEFAULT_CURSOR_FOLLOW_TRACKING,
 };
 
-function makeCursor(overrides: Partial<CursorEvaluation> = {}): CursorEvaluation {
+function makeCursor(overrides: Partial<CursorMotionSnapshot> = {}): CursorMotionSnapshot {
 	return {
 		timeMs: 500,
 		cx: 0.8,
 		cy: 0.75,
+		rawCx: 0.8,
+		rawCy: 0.75,
 		predictedCx: 0.82,
 		predictedCy: 0.77,
 		velocityX: 0.25,
 		velocityY: 0.2,
+		speed: Math.hypot(0.25, 0.2),
 		heading: 0,
 		cursorType: "arrow",
 		latestInteractionAgeMs: Number.POSITIVE_INFINITY,
@@ -30,81 +33,84 @@ function makeCursor(overrides: Partial<CursorEvaluation> = {}): CursorEvaluation
 		isTextInput: false,
 		intent: "idle",
 		confidence: "high",
+		isDiscontinuous: false,
 		...overrides,
 	};
 }
 
 describe("resolveZoomRegionFocus", () => {
 	it("returns static focus for static zoom regions", () => {
-		expect(
-			resolveZoomRegionFocus(
-				{ ...baseRegion, mode: "static", focus: { cx: 0.42, cy: 0.61 } },
-				makeCursor(),
-				{ cx: 0.5, cy: 0.5 },
-				1 / 60,
-			),
-		).toEqual({ cx: 0.42, cy: 0.61 });
+		const result = resolveZoomRegionFocus(
+			{ ...baseRegion, mode: "static", focus: { cx: 0.42, cy: 0.61 } },
+			makeCursor(),
+			{ cx: 0.5, cy: 0.5 },
+			1 / 60,
+		);
+		expect(result.focus).toEqual({ cx: 0.42, cy: 0.61 });
+		expect(result.smoothTimeFactor).toBe(1.0);
 	});
 
 	it("holds focus during text interactions", () => {
-		expect(
-			resolveZoomRegionFocus(
-				baseRegion,
-				makeCursor({
-					cursorType: "text",
-					isTextInput: true,
-					latestInteractionType: "click",
-					latestInteractionAgeMs: 120,
-				}),
-				{ cx: 0.52, cy: 0.49 },
-				1 / 60,
-			),
-		).toEqual({ cx: 0.52, cy: 0.49 });
+		const result = resolveZoomRegionFocus(
+			baseRegion,
+			makeCursor({
+				cursorType: "text",
+				isTextInput: true,
+				latestInteractionType: "click",
+				latestInteractionAgeMs: 120,
+			}),
+			{ cx: 0.52, cy: 0.49 },
+			1 / 60,
+		);
+		expect(result.focus.cx).toBeCloseTo(0.52, 1);
+		expect(result.focus.cy).toBeCloseTo(0.49, 1);
 	});
 
 	it("respects the deadzone for tiny cursor movement", () => {
-		const focus = resolveZoomRegionFocus(
+		const result = resolveZoomRegionFocus(
 			baseRegion,
 			makeCursor({ cx: 0.53, cy: 0.515, velocityX: 0, velocityY: 0 }),
 			{ cx: 0.52, cy: 0.5 },
 			1 / 60,
 		);
 
-		expect(focus).toEqual({ cx: 0.52, cy: 0.5 });
+		expect(result.focus.cx).toBeCloseTo(0.52, 1);
+		expect(result.focus.cy).toBeCloseTo(0.5, 1);
 	});
 
-	it("limits pan speed for large cursor jumps", () => {
-		const focus = resolveZoomRegionFocus(
+	it("returns raw target for large cursor movements (no speed capping)", () => {
+		const result = resolveZoomRegionFocus(
 			baseRegion,
 			makeCursor({ cx: 0.9, cy: 0.82, velocityX: 0, velocityY: 0 }),
 			{ cx: 0.5, cy: 0.5 },
 			1 / 60,
 		);
 
-		expect(focus.cx).toBeGreaterThan(0.5);
-		expect(focus.cx).toBeLessThan(0.6);
-		expect(focus.cy).toBeGreaterThan(0.5);
-		expect(focus.cy).toBeLessThan(0.6);
+		// With speed capping removed, target should be near the cursor position
+		// (soft-clamped to viewport bounds for depth 3 / scale 1.8)
+		expect(result.focus.cx).toBeGreaterThan(0.7);
+		expect(result.focus.cy).toBeGreaterThan(0.7);
+		expect(result.smoothTimeFactor).toBe(1.0);
 	});
 
 	it("locks focus during typing intent even without a fresh click", () => {
-		expect(
-			resolveZoomRegionFocus(
-				baseRegion,
-				makeCursor({
-					cursorType: "text",
-					isTextInput: true,
-					intent: "typing",
-					latestInteractionAgeMs: 800,
-				}),
-				{ cx: 0.48, cy: 0.51 },
-				1 / 60,
-			),
-		).toEqual({ cx: 0.48, cy: 0.51 });
+		const result = resolveZoomRegionFocus(
+			baseRegion,
+			makeCursor({
+				cursorType: "text",
+				isTextInput: true,
+				intent: "typing",
+				latestInteractionAgeMs: 800,
+			}),
+			{ cx: 0.48, cy: 0.51 },
+			1 / 60,
+		);
+		expect(result.focus.cx).toBeCloseTo(0.48, 1);
+		expect(result.focus.cy).toBeCloseTo(0.51, 1);
 	});
 
-	it("moves more aggressively for targeting intent", () => {
-		const idleFocus = resolveZoomRegionFocus(
+	it("returns lower smoothTimeFactor for targeting intent (faster tracking)", () => {
+		const idleResult = resolveZoomRegionFocus(
 			baseRegion,
 			makeCursor({
 				intent: "idle",
@@ -114,7 +120,7 @@ describe("resolveZoomRegionFocus", () => {
 			{ cx: 0.5, cy: 0.5 },
 			1 / 15,
 		);
-		const focus = resolveZoomRegionFocus(
+		const targetingResult = resolveZoomRegionFocus(
 			baseRegion,
 			makeCursor({
 				intent: "targeting",
@@ -127,19 +133,18 @@ describe("resolveZoomRegionFocus", () => {
 			1 / 15,
 		);
 
-		expect(focus.cx).toBeGreaterThan(idleFocus.cx);
-		expect(focus.cy).toBeGreaterThan(idleFocus.cy);
-		expect(focus.cx).toBeGreaterThan(0.55);
+		expect(targetingResult.smoothTimeFactor).toBeLessThan(idleResult.smoothTimeFactor);
+		expect(targetingResult.smoothTimeFactor).toBe(0.6);
 	});
 
-	it("damps dropdown browsing so the camera does not lurch", () => {
-		const idleFocus = resolveZoomRegionFocus(
+	it("returns higher smoothTimeFactor for dropdown intent (slower tracking)", () => {
+		const idleResult = resolveZoomRegionFocus(
 			baseRegion,
 			makeCursor({ intent: "idle", velocityX: 0.35, velocityY: 0.8 }),
 			{ cx: 0.5, cy: 0.5 },
 			1 / 30,
 		);
-		const dropdownFocus = resolveZoomRegionFocus(
+		const dropdownResult = resolveZoomRegionFocus(
 			baseRegion,
 			makeCursor({
 				intent: "dropdown",
@@ -152,7 +157,23 @@ describe("resolveZoomRegionFocus", () => {
 			1 / 30,
 		);
 
-		expect(dropdownFocus.cx).toBeLessThan(idleFocus.cx);
-		expect(dropdownFocus.cy).toBeLessThan(idleFocus.cy);
+		expect(dropdownResult.smoothTimeFactor).toBeGreaterThan(idleResult.smoothTimeFactor);
+		expect(dropdownResult.smoothTimeFactor).toBe(2.0);
+	});
+
+	it("resets focus to the cursor when motion is discontinuous", () => {
+		const result = resolveZoomRegionFocus(
+			baseRegion,
+			makeCursor({
+				cx: 0.72,
+				cy: 0.68,
+				isDiscontinuous: true,
+			}),
+			{ cx: 0.5, cy: 0.5 },
+			1 / 30,
+		);
+
+		expect(result.focus.cx).toBeCloseTo(0.72, 1);
+		expect(result.focus.cy).toBeCloseTo(0.68, 1);
 	});
 });

@@ -70,4 +70,51 @@ describe("cameraEvaluator parity", () => {
 		expect(path.samples[1]?.cx).toBeCloseTo(0.3375, 4);
 		expect(path.samples[5]?.cx).toBeCloseTo(0.61875, 4);
 	});
+
+	it("keeps camera follow stable across lower-FPS stepping", () => {
+		const fixture = recordedSessionFixtures.find(
+			(entry) => entry.id === "aggressive-horizontal-follow",
+		);
+		expect(fixture).toBeTruthy();
+
+		const path = buildCursorSimulationPath(fixture?.cursorTelemetry ?? [], fixture?.durationMs ?? 0);
+		let highFpsState = createPlaybackCameraState();
+		let lowFpsState = createPlaybackCameraState();
+
+		for (let timeMs = 0; timeMs <= (fixture?.durationMs ?? 0); timeMs += 1000 / 60) {
+			highFpsState = evaluatePlaybackCameraFrame({
+				state: highFpsState,
+				frameTimeMs: timeMs,
+				playbackTimeMs: timeMs,
+				cursorSimulationPath: path,
+				zoomRegions: fixture?.zoomRegions ?? [],
+				connectZooms: true,
+				geometry: fixture?.geometry ?? {
+					stageSize: { width: 1920, height: 1080 },
+					baseMask: { x: 0, y: 0, width: 1920, height: 1080 },
+				},
+				shouldSmooth: true,
+			}).state;
+		}
+
+		for (let timeMs = 0; timeMs <= (fixture?.durationMs ?? 0); timeMs += 1000 / 15) {
+			lowFpsState = evaluatePlaybackCameraFrame({
+				state: lowFpsState,
+				frameTimeMs: timeMs,
+				playbackTimeMs: Math.min(timeMs, fixture?.durationMs ?? 0),
+				cursorSimulationPath: path,
+				zoomRegions: fixture?.zoomRegions ?? [],
+				connectZooms: true,
+				geometry: fixture?.geometry ?? {
+					stageSize: { width: 1920, height: 1080 },
+					baseMask: { x: 0, y: 0, width: 1920, height: 1080 },
+				},
+				shouldSmooth: true,
+			}).state;
+		}
+
+		expect(Math.abs(lowFpsState.focusX - highFpsState.focusX)).toBeLessThan(0.1);
+		expect(Math.abs(lowFpsState.focusY - highFpsState.focusY)).toBeLessThan(0.1);
+		expect(Math.abs(lowFpsState.scale - highFpsState.scale)).toBeLessThan(0.1);
+	});
 });

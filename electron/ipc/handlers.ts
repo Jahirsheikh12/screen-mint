@@ -45,6 +45,10 @@ import {
 	getCountdownWindow,
 	updateSpeakerNotesWindow,
 } from "../windows";
+import {
+	shouldRecordCursorMoveSample,
+	type CursorMoveSampleCandidate,
+} from "./cursorTelemetryUtils";
 
 const execFileAsync = promisify(execFile);
 const nodeRequire = createRequire(import.meta.url);
@@ -1360,16 +1364,11 @@ function sampleCursorStateChange(cursorType: CursorVisualType) {
 		return;
 	}
 
-	pushCursorSample(point.cx, point.cy, getCursorCaptureElapsedMs(), "move", cursorType, {
-		rawX: point.rawX,
-		rawY: point.rawY,
+	pushMoveCursorSample(point, getCursorCaptureElapsedMs(), {
+		cursorType,
 		origin: "native-monitor",
 		confidence: cursorType === "unknown" ? "low" : "medium",
-		sourceBounds: point.sourceBounds,
-		displayBounds: point.displayBounds,
-		sourceDisplayId: point.sourceDisplayId,
-		displayScaleFactor: point.displayScaleFactor,
-		captureMode: point.captureMode,
+		force: true,
 	});
 }
 
@@ -1718,6 +1717,10 @@ const CURSOR_TELEMETRY_VERSION = 4;
 const KEYBOARD_TELEMETRY_VERSION = 1;
 const CURSOR_SAMPLE_INTERVAL_MS = 1000 / 60;
 const CURSOR_DRAG_SAMPLE_INTERVAL_MS = 16;
+const CURSOR_MOVE_SAMPLE_INTERVAL_MS = 8;
+const CURSOR_MOVE_MIN_DISTANCE = 0.0015;
+const CURSOR_POLL_HEARTBEAT_INTERVAL_MS = 120;
+const CURSOR_POLL_STALE_AFTER_MS = 40;
 const WINDOW_BOUNDS_CAPTURE_INTERVAL_MS = 1000 / 30;
 const WINDOW_BOUNDS_FALLBACK_CAPTURE_INTERVAL_MS = 1000;
 const MAX_CURSOR_SAMPLES = 60 * 60 * 120; // 1 hour @ 120Hz worth of mixed cursor events
@@ -1876,6 +1879,7 @@ let activePointerState: {
 	lastDragSampleTimeMs: number;
 	isDragging: boolean;
 } | null = null;
+let lastRecordedCursorPositionSample: CursorMoveSampleCandidate | null = null;
 let selectedWindowBounds: WindowBounds | null = null;
 let windowBoundsCaptureInterval: NodeJS.Timeout | null = null;
 let windowBoundsCaptureSessionId = 0;
@@ -2446,7 +2450,7 @@ function pushCursorSample(
 		captureMode?: "display" | "window" | "area";
 	},
 ) {
-	activeCursorSamples.push({
+	const sample: CursorTelemetryPoint = {
 		timeMs: Math.max(0, timeMs),
 		cx,
 		cy,
@@ -2461,29 +2465,94 @@ function pushCursorSample(
 		sourceDisplayId: options?.sourceDisplayId,
 		displayScaleFactor: options?.displayScaleFactor,
 		captureMode: options?.captureMode,
-	});
+	};
+
+	activeCursorSamples.push(sample);
+
+	lastRecordedCursorPositionSample = {
+		timeMs: sample.timeMs,
+		cx: sample.cx,
+		cy: sample.cy,
+		rawX: sample.rawX,
+		rawY: sample.rawY,
+		sourceBounds: sample.sourceBounds,
+		displayBounds: sample.displayBounds,
+		sourceDisplayId: sample.sourceDisplayId,
+		displayScaleFactor: sample.displayScaleFactor,
+		captureMode: sample.captureMode,
+	};
 
 	if (activeCursorSamples.length > MAX_CURSOR_SAMPLES) {
 		activeCursorSamples.shift();
 	}
 }
 
-function sampleCursorPoint() {
-	const point = getNormalizedCursorPoint();
-	if (!point) {
-		return;
-	}
-
-	pushCursorSample(point.cx, point.cy, getCursorCaptureElapsedMs(), "move", undefined, {
+function pushMoveCursorSample(
+	point: ReturnType<typeof getNormalizedCursorPoint>,
+	timeMs: number,
+	options: {
+		cursorType?: CursorVisualType;
+		origin: "hook" | "poll" | "native-monitor";
+		confidence: "high" | "medium" | "low";
+		heartbeatIntervalMs?: number;
+		force?: boolean;
+	},
+) {
+	const candidate: CursorMoveSampleCandidate = {
+		timeMs,
+		cx: point.cx,
+		cy: point.cy,
 		rawX: point.rawX,
 		rawY: point.rawY,
-		origin: "poll",
-		confidence: "medium",
 		sourceBounds: point.sourceBounds,
 		displayBounds: point.displayBounds,
 		sourceDisplayId: point.sourceDisplayId,
 		displayScaleFactor: point.displayScaleFactor,
 		captureMode: point.captureMode,
+	};
+
+	if (
+		!options.force &&
+		!shouldRecordCursorMoveSample(lastRecordedCursorPositionSample, candidate, {
+			minIntervalMs: CURSOR_MOVE_SAMPLE_INTERVAL_MS,
+			minDistance: CURSOR_MOVE_MIN_DISTANCE,
+			heartbeatIntervalMs: options.heartbeatIntervalMs,
+		})
+	) {
+		return;
+	}
+
+	pushCursorSample(point.cx, point.cy, timeMs, "move", options.cursorType, {
+		rawX: point.rawX,
+		rawY: point.rawY,
+		origin: options.origin,
+		confidence: options.confidence,
+		sourceBounds: point.sourceBounds,
+		displayBounds: point.displayBounds,
+		sourceDisplayId: point.sourceDisplayId,
+		displayScaleFactor: point.displayScaleFactor,
+		captureMode: point.captureMode,
+	});
+}
+
+function sampleCursorPoint() {
+	const hookIsFresh = Boolean(
+		hookCursorScreenPoint &&
+			Date.now() - hookCursorScreenPoint.updatedAt <= CURSOR_POLL_STALE_AFTER_MS,
+	);
+	if (hookIsFresh) {
+		return;
+	}
+
+	const point = getNormalizedCursorPoint();
+	if (!point) {
+		return;
+	}
+
+	pushMoveCursorSample(point, getCursorCaptureElapsedMs(), {
+		origin: "poll",
+		confidence: "medium",
+		heartbeatIntervalMs: CURSOR_POLL_HEARTBEAT_INTERVAL_MS,
 	});
 }
 
@@ -2766,11 +2835,19 @@ async function startInteractionCapture() {
 
 			hookCursorScreenPoint = { x: point.x, y: point.y, updatedAt: Date.now() };
 			const normalizedPoint = getNormalizedCursorPoint(point);
-			if (!normalizedPoint || !activePointerState) {
+			if (!normalizedPoint) {
 				return;
 			}
 
 			const timeMs = getCursorCaptureElapsedMs();
+			pushMoveCursorSample(normalizedPoint, timeMs, {
+				origin: "hook",
+				confidence: "high",
+			});
+
+			if (!activePointerState) {
+				return;
+			}
 			const distance = Math.hypot(
 				normalizedPoint.cx - activePointerState.startCx,
 				normalizedPoint.cy - activePointerState.startCy,
@@ -3741,6 +3818,7 @@ export function registerIpcHandlers(
 			hookCursorScreenPoint = null;
 			activePointerState = null;
 			lastLeftClick = null;
+			lastRecordedCursorPositionSample = null;
 			sampleCursorPoint();
 			cursorCaptureInterval = setInterval(sampleCursorPoint, CURSOR_SAMPLE_INTERVAL_MS);
 			void startInteractionCapture();
@@ -3752,6 +3830,7 @@ export function registerIpcHandlers(
 			stopNativeCursorMonitor();
 			hookCursorScreenPoint = null;
 			activePointerState = null;
+			lastRecordedCursorPositionSample = null;
 			snapshotCursorTelemetryForPersistence();
 			snapshotKeyboardTelemetryForPersistence();
 			activeCursorSamples = [];

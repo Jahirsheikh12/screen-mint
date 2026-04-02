@@ -479,23 +479,8 @@ export class FrameRenderer {
 
 		const timeMs = this.currentVideoTime * 1000;
 
-		if (this.cursorOverlay) {
-			this.cursorOverlay.update(
-				this.config.cursorTelemetry ?? [],
-				timeMs,
-				this.layoutCache.maskRect,
-				this.config.showCursor ?? true,
-				false,
-			);
-		}
-
-		const TICKS_PER_FRAME = 1;
-
-		let maxMotionIntensity = 0;
-		for (let i = 0; i < TICKS_PER_FRAME; i++) {
-			const motionIntensity = this.updateAnimationState(timeMs);
-			maxMotionIntensity = Math.max(maxMotionIntensity, motionIntensity);
-		}
+		const evaluation = this.updateAnimationState(timeMs);
+		const maxMotionIntensity = evaluation.motionIntensity;
 
 		// Apply transform once with maximum motion intensity from all ticks
 		applyZoomTransform({
@@ -520,6 +505,17 @@ export class FrameRenderer {
 			motionBlurState: this.motionBlurState,
 			frameTimeMs: timeMs,
 		});
+
+		if (this.cursorOverlay) {
+			this.cursorOverlay.updateFromMotionSnapshot(
+				evaluation.simulatedCursor,
+				this.config.cursorTelemetry ?? [],
+				timeMs,
+				this.layoutCache.maskRect,
+				this.config.showCursor ?? true,
+				false,
+			);
+		}
 
 		// Render the PixiJS stage to its canvas (video only, transparent background)
 		this.app.renderer.render(this.app.stage);
@@ -714,8 +710,20 @@ export class FrameRenderer {
 		};
 	}
 
-	private updateAnimationState(timeMs: number): number {
-		if (!this.cameraContainer || !this.layoutCache) return 0;
+	private updateAnimationState(timeMs: number) {
+		if (!this.cameraContainer || !this.layoutCache) {
+			return {
+				motionIntensity: 0,
+				motionVector: { x: 0, y: 0 },
+				simulatedCursor: null,
+				state: this.animationState,
+				transform: { scale: this.animationState.appliedScale, x: this.animationState.x, y: this.animationState.y },
+				targetFocus: { cx: this.animationState.focusX, cy: this.animationState.focusY },
+				targetScaleFactor: this.animationState.scale,
+				targetProgress: this.animationState.progress,
+				region: null,
+			};
+		}
 		const evaluation = evaluatePlaybackCameraFrame({
 			state: this.animationState,
 			frameTimeMs: timeMs,
@@ -732,7 +740,7 @@ export class FrameRenderer {
 
 		this.animationState = evaluation.state;
 		this.lastMotionVector = evaluation.motionVector;
-		return evaluation.motionIntensity;
+		return evaluation;
 	}
 
 	private compositeWithShadows(): void {

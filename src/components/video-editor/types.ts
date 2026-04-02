@@ -191,11 +191,11 @@ export const CURSOR_TYPE_VALUES: CursorType[] = [
 export const DEFAULT_ZOOM_MODE: ZoomMode = "static";
 
 export const DEFAULT_CURSOR_FOLLOW_TRACKING: CursorFollowTracking = {
-	deadzone: 0.035,
-	lookAheadMs: 90,
-	maxPanPerSecond: 1.25,
-	dwellHoldMs: 220,
-	textHoldMs: 420,
+	deadzone: 0.028,
+	lookAheadMs: 72,
+	maxPanPerSecond: 1.7,
+	dwellHoldMs: 180,
+	textHoldMs: 360,
 };
 
 export const DEFAULT_CURSOR_SIZE = 3.0;

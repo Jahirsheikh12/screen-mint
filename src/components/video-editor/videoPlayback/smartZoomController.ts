@@ -5,15 +5,18 @@ import {
 	type ZoomFocus,
 	type ZoomRegion,
 } from "../types";
-import type { CursorEvaluation } from "./cursorSimulation";
-import { clampFocusToScale } from "./focusUtils";
+import type { CursorMotionSnapshot } from "./cursorSimulation";
+import { clampFocusToScale, softenFocusToScale } from "./focusUtils";
+
+export interface ZoomRegionFocusResult {
+	focus: ZoomFocus;
+	smoothTimeFactor: number;
+}
+
+const PREDICTION_SPEED_THRESHOLD = 0.16;
 
 function clamp(value: number, min: number, max: number) {
 	return Math.min(max, Math.max(min, value));
-}
-
-function lerp(start: number, end: number, progress: number) {
-	return start + (end - start) * progress;
 }
 
 function mergeTrackingConfig(tracking?: Partial<CursorFollowTracking>): CursorFollowTracking {
@@ -43,83 +46,68 @@ function mergeTrackingConfig(tracking?: Partial<CursorFollowTracking>): CursorFo
 }
 
 function deriveIntentAwareTargetFocus(
-	cursor: CursorEvaluation,
-	currentFocus: ZoomFocus,
+	cursor: CursorMotionSnapshot,
+	_currentFocus: ZoomFocus,
 	tracking: CursorFollowTracking,
 ): {
 	targetFocus: ZoomFocus;
 	deadzone: number;
-	maxPanPerSecond: number;
 	hysteresisMultiplier: number;
 	hold: boolean;
+	smoothTimeFactor: number;
 } {
 	const lookAheadScale = tracking.lookAheadMs / 1000;
+	const shouldLead =
+		cursor.confidence !== "low" && !cursor.isDiscontinuous && cursor.speed >= PREDICTION_SPEED_THRESHOLD;
 	const predictedFocus = {
-		cx: cursor.cx + cursor.velocityX * lookAheadScale,
-		cy: cursor.cy + cursor.velocityY * lookAheadScale,
+		cx: shouldLead ? cursor.cx + cursor.velocityX * lookAheadScale : cursor.cx,
+		cy: shouldLead ? cursor.cy + cursor.velocityY * lookAheadScale : cursor.cy,
 	};
 
 	let targetFocus = predictedFocus;
 	let deadzone = tracking.deadzone;
-	let maxPanPerSecond = tracking.maxPanPerSecond;
 	let hysteresisMultiplier = cursor.isDwell ? 1.75 : 1;
 	let hold = false;
+	let smoothTimeFactor = 1.0;
 
 	switch (cursor.intent) {
 		case "typing":
 			hold = true;
+			smoothTimeFactor = 1.0;
 			break;
 		case "reading":
-			targetFocus = {
-				cx: lerp(currentFocus.cx, cursor.cx, 0.18),
-				cy: lerp(currentFocus.cy, cursor.cy, 0.18),
-			};
+			targetFocus = { cx: cursor.cx, cy: cursor.cy };
 			deadzone *= 2.1;
-			maxPanPerSecond *= 0.5;
 			hysteresisMultiplier = 2.6;
+			smoothTimeFactor = 3.2;
 			break;
 		case "dropdown":
-			targetFocus = {
-				cx: lerp(currentFocus.cx, predictedFocus.cx, 0.42),
-				cy: lerp(currentFocus.cy, predictedFocus.cy, 0.72),
-			};
+			targetFocus = predictedFocus;
 			deadzone *= 1.55;
-			maxPanPerSecond *= 0.62;
 			hysteresisMultiplier = Math.max(hysteresisMultiplier, 2.2);
+			smoothTimeFactor = 2.0;
 			break;
 		case "dragging":
-			targetFocus = {
-				cx: lerp(currentFocus.cx, cursor.cx, 0.38),
-				cy: lerp(currentFocus.cy, cursor.cy, 0.38),
-			};
+			targetFocus = { cx: cursor.cx, cy: cursor.cy };
 			deadzone *= 1.2;
-			maxPanPerSecond *= 0.7;
 			hysteresisMultiplier = Math.max(hysteresisMultiplier, 1.9);
+			smoothTimeFactor = 1.8;
 			break;
 		case "selecting":
-			targetFocus = {
-				cx: lerp(currentFocus.cx, cursor.cx, 0.28),
-				cy: lerp(currentFocus.cy, cursor.cy, 0.28),
-			};
+			targetFocus = { cx: cursor.cx, cy: cursor.cy };
 			deadzone *= 1.7;
-			maxPanPerSecond *= 0.45;
 			hysteresisMultiplier = Math.max(hysteresisMultiplier, 2.4);
+			smoothTimeFactor = 2.5;
 			break;
 		case "precision":
-			targetFocus = {
-				cx: lerp(currentFocus.cx, predictedFocus.cx, 0.55),
-				cy: lerp(currentFocus.cy, predictedFocus.cy, 0.55),
-			};
-			deadzone *= 0.58;
-			maxPanPerSecond *= 0.82;
+			targetFocus = predictedFocus;
+			deadzone *= 0.44;
+			smoothTimeFactor = 0.7;
 			break;
 		case "targeting":
-			targetFocus = {
-				cx: lerp(cursor.cx, predictedFocus.cx, 0.72),
-				cy: lerp(cursor.cy, predictedFocus.cy, 0.72),
-			};
-			deadzone *= 0.68;
-			maxPanPerSecond *= 1.18;
+			targetFocus = predictedFocus;
+			deadzone *= 0.52;
+			smoothTimeFactor = 0.6;
 			break;
 		case "idle":
 		default:
@@ -129,25 +117,32 @@ function deriveIntentAwareTargetFocus(
 	return {
 		targetFocus,
 		deadzone,
-		maxPanPerSecond,
 		hysteresisMultiplier,
 		hold,
+		smoothTimeFactor,
 	};
 }
 
 export function resolveZoomRegionFocus(
 	region: ZoomRegion,
-	cursor: CursorEvaluation | null,
+	cursor: CursorMotionSnapshot | null,
 	currentFocus: ZoomFocus,
-	deltaSeconds: number,
-): ZoomFocus {
+	_deltaSeconds: number,
+): ZoomRegionFocusResult {
 	const zoomScale = ZOOM_DEPTH_SCALES[region.depth];
 	const staticFocus = clampFocusToScale(region.focus, zoomScale);
 	if (region.mode !== "cursor-follow" || !cursor) {
-		return staticFocus;
+		return { focus: staticFocus, smoothTimeFactor: 1.0 };
 	}
 
 	const tracking = mergeTrackingConfig(region.tracking);
+	if (cursor.isDiscontinuous) {
+		return {
+			focus: softenFocusToScale({ cx: cursor.cx, cy: cursor.cy }, zoomScale),
+			smoothTimeFactor: 1.0,
+		};
+	}
+
 	const holdForRecentInteraction =
 		cursor.latestInteractionAgeMs <= tracking.dwellHoldMs &&
 		(cursor.latestInteractionType === "click" ||
@@ -164,35 +159,28 @@ export function resolveZoomRegionFocus(
 		intentAdjusted.hold ||
 		cursor.confidence === "low"
 	) {
-		return clampFocusToScale(currentFocus, zoomScale);
+		return {
+			focus: softenFocusToScale(currentFocus, zoomScale),
+			smoothTimeFactor: intentAdjusted.smoothTimeFactor,
+		};
 	}
 
-	const predictedFocus = clampFocusToScale(intentAdjusted.targetFocus, zoomScale);
-	const deltaX = predictedFocus.cx - currentFocus.cx;
-	const deltaY = predictedFocus.cy - currentFocus.cy;
+	const targetFocus = softenFocusToScale(intentAdjusted.targetFocus, zoomScale);
+	const deltaX = targetFocus.cx - currentFocus.cx;
+	const deltaY = targetFocus.cy - currentFocus.cy;
 	const distance = Math.hypot(deltaX, deltaY);
 	if (
 		distance <= intentAdjusted.deadzone ||
 		(cursor.isDwell && distance <= intentAdjusted.deadzone * intentAdjusted.hysteresisMultiplier)
 	) {
-		return clampFocusToScale(currentFocus, zoomScale);
+		return {
+			focus: softenFocusToScale(currentFocus, zoomScale),
+			smoothTimeFactor: intentAdjusted.smoothTimeFactor,
+		};
 	}
 
-	if (deltaSeconds <= 0) {
-		return predictedFocus;
-	}
-
-	const maxStep = intentAdjusted.maxPanPerSecond * deltaSeconds;
-	if (distance <= maxStep) {
-		return predictedFocus;
-	}
-
-	const ratio = maxStep / distance;
-	return clampFocusToScale(
-		{
-			cx: currentFocus.cx + deltaX * ratio,
-			cy: currentFocus.cy + deltaY * ratio,
-		},
-		zoomScale,
-	);
+	return {
+		focus: targetFocus,
+		smoothTimeFactor: intentAdjusted.smoothTimeFactor,
+	};
 }

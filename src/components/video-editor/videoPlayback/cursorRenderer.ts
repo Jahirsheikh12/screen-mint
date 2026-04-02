@@ -9,8 +9,9 @@ import {
 } from "./cursorAssetPacks";
 import {
 	buildCursorSimulationPath,
+	type CursorMotionSnapshot,
 	type CursorSimulationPath,
-	evaluateCursorPath,
+	evaluateCursorMotionSnapshot,
 } from "./cursorSimulation";
 import { computeCursorSwayRotation } from "./cursorSway";
 import {
@@ -672,8 +673,33 @@ export class PixiCursorOverlay {
 			this.simulationSamplesRef = samples;
 		}
 
-		const evaluated = evaluateCursorPath(this.simulationPath, timeMs);
-		if (!evaluated) {
+		const motionSnapshot = evaluateCursorMotionSnapshot(
+			this.simulationPath,
+			timeMs,
+			this.lastRenderedTimeMs,
+		);
+		this.updateFromMotionSnapshot(motionSnapshot, samples, timeMs, viewport, visible, freeze);
+	}
+
+	updateFromMotionSnapshot(
+		motionSnapshot: CursorMotionSnapshot | null,
+		samples: CursorTelemetryPoint[],
+		timeMs: number,
+		viewport: CursorViewportRect,
+		visible: boolean,
+		freeze = false,
+	): void {
+		if (!visible || samples.length === 0 || viewport.width <= 0 || viewport.height <= 0) {
+			this.container.visible = false;
+			this.lastRenderedPoint = null;
+			this.lastRenderedTimeMs = null;
+			this.swayRotation = 0;
+			resetSpringState(this.swaySpring, 0);
+			this.cursorMotionBlurFilter.velocity = { x: 0, y: 0 };
+			return;
+		}
+
+		if (!motionSnapshot) {
 			this.container.visible = false;
 			return;
 		}
@@ -683,12 +709,11 @@ export class PixiCursorOverlay {
 		const hasTimeDiscontinuity =
 			this.lastRenderedTimeMs !== null &&
 			Math.abs(timeMs - this.lastRenderedTimeMs) > CURSOR_TIME_DISCONTINUITY_MS;
-		const shouldFreezeCursorMotion = freeze || hasTimeDiscontinuity;
+		const shouldFreezeCursorMotion =
+			freeze || hasTimeDiscontinuity || motionSnapshot.isDiscontinuous;
 
-		if (shouldFreezeCursorMotion) {
-			this.state.snapTo(evaluated.cx, evaluated.cy, timeMs);
-		} else if (!sameFrameTime) {
-			this.state.snapTo(evaluated.cx, evaluated.cy, timeMs);
+		if (shouldFreezeCursorMotion || !sameFrameTime) {
+			this.state.snapTo(motionSnapshot.cx, motionSnapshot.cy, timeMs);
 		}
 		this.container.visible = true;
 

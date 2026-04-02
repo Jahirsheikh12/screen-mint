@@ -1202,7 +1202,8 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				// Update cursor overlay
 				const cursorOverlay = cursorOverlayRef.current;
 				if (cursorOverlay) {
-					cursorOverlay.update(
+					cursorOverlay.updateFromMotionSnapshot(
+						evaluation.simulatedCursor,
 						cursorTelemetryRef.current,
 						playbackTimeMs,
 						baseMaskRef.current,

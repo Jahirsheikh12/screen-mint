@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { CursorTelemetryPoint } from "../types";
-import { buildCursorSimulationPath, evaluateCursorPath } from "./cursorSimulation";
+import {
+	buildCursorSimulationPath,
+	evaluateCursorMotionSnapshot,
+	evaluateCursorPath,
+} from "./cursorSimulation";
 
 describe("cursorSimulation", () => {
 	it("suppresses small jitter during dwell", () => {
@@ -134,5 +138,42 @@ describe("cursorSimulation", () => {
 		expect(path.samples[1]?.cx).toBeCloseTo(0.05, 4);
 		expect(startEvaluation!.cx).toBeLessThan(0.35);
 		expect(endEvaluation!.cx).toBeLessThan(0.31);
+	});
+
+	it("stays stable with dense motion samples mixed with stale fallback polls", () => {
+		const samples: CursorTelemetryPoint[] = [
+			{ timeMs: 0, cx: 0.2, cy: 0.2, origin: "hook", confidence: "high" },
+			{ timeMs: 8, cx: 0.24, cy: 0.22, origin: "hook", confidence: "high" },
+			{ timeMs: 16, cx: 0.29, cy: 0.25, origin: "hook", confidence: "high" },
+			{ timeMs: 24, cx: 0.35, cy: 0.28, origin: "hook", confidence: "high" },
+			{ timeMs: 120, cx: 0.35, cy: 0.28, origin: "poll", confidence: "medium" },
+		];
+
+		const path = buildCursorSimulationPath(samples, 120);
+		const evaluation = evaluateCursorPath(path, 24);
+
+		expect(evaluation).not.toBeNull();
+		expect(evaluation!.cx).toBeGreaterThan(0.21);
+		expect(evaluation!.cy).toBeGreaterThan(0.2);
+		expect(evaluation!.cx).toBeLessThan(0.36);
+		expect(evaluation!.confidence).not.toBe("low");
+	});
+
+	it("marks large playback gaps as discontinuities in the shared motion snapshot", () => {
+		const path = buildCursorSimulationPath(
+			[
+				{ timeMs: 0, cx: 0.2, cy: 0.2 },
+				{ timeMs: 80, cx: 0.7, cy: 0.65 },
+			],
+			80,
+		);
+
+		const snapshot = evaluateCursorMotionSnapshot(path, 80, 0);
+		expect(snapshot).not.toBeNull();
+		expect(snapshot!.isDiscontinuous).toBe(false);
+
+		const discontinuous = evaluateCursorMotionSnapshot(path, 80, -40);
+		expect(discontinuous).not.toBeNull();
+		expect(discontinuous!.isDiscontinuous).toBe(true);
 	});
 });

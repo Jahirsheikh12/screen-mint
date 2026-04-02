@@ -16,6 +16,7 @@ const DROPDOWN_DETECTION_WINDOW_MS = 700;
 const MIN_CUTOFF = 1.15;
 const DERIVATIVE_CUTOFF = 1.4;
 const FILTER_BETA = 0.24;
+export const CURSOR_MOTION_DISCONTINUITY_MS = 100;
 
 export type CursorIntent =
 	| "idle"
@@ -60,6 +61,19 @@ export interface CursorEvaluation {
 	isTextInput: boolean;
 	intent: CursorIntent;
 	confidence: CursorTelemetryConfidence;
+}
+
+export interface CursorMotionSnapshot extends CursorEvaluation {
+	rawCx: number;
+	rawCy: number;
+	speed: number;
+	isDiscontinuous: boolean;
+}
+
+export interface CursorFollowerState {
+	x: number;
+	y: number;
+	lastTimeMs: number | null;
 }
 
 type OneEuroAxisState = {
@@ -251,6 +265,44 @@ function interpolateRawCursorPosition(samples: CursorTelemetryPoint[], timeMs: n
 			start.confidence === "low" || end.confidence === "low"
 				? ("low" as const)
 				: (end.confidence ?? start.confidence ?? "high"),
+	};
+}
+
+export function evaluateCursorMotionSnapshot(
+	path: CursorSimulationPath | null | undefined,
+	timeMs: number,
+	previousTimeMs: number | null = null,
+	lookAheadMs = 90,
+): CursorMotionSnapshot | null {
+	if (!path || path.frames.length === 0) {
+		return null;
+	}
+
+	const clampedTimeMs = clamp(timeMs, 0, path.durationMs);
+	const evaluation = evaluateCursorPath(path, clampedTimeMs, lookAheadMs);
+	if (!evaluation) {
+		return null;
+	}
+
+	const rawPosition =
+		interpolateRawCursorPosition(path.samples, clampedTimeMs) ??
+		({
+			cx: evaluation.cx,
+			cy: evaluation.cy,
+			confidence: evaluation.confidence,
+		} satisfies ReturnType<typeof interpolateRawCursorPosition>);
+	const speed = Math.hypot(evaluation.velocityX, evaluation.velocityY);
+	const isDiscontinuous = Boolean(
+		previousTimeMs !== null &&
+			(timeMs < previousTimeMs || timeMs - previousTimeMs > CURSOR_MOTION_DISCONTINUITY_MS),
+	);
+
+	return {
+		...evaluation,
+		rawCx: rawPosition.cx,
+		rawCy: rawPosition.cy,
+		speed,
+		isDiscontinuous,
 	};
 }
 
