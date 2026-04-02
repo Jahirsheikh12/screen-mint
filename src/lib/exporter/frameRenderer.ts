@@ -1,6 +1,11 @@
 import { Application, BlurFilter, Container, Graphics, Sprite, Texture } from "pixi.js";
 import { MotionBlurFilter } from "pixi-filters/motion-blur";
 import { resolveCameraLayoutState } from "@/components/video-editor/cameraLayouts";
+import {
+	applyOpacityToHex,
+	buildFrameShadowFilter,
+	hasVisibleFrameShadow,
+} from "@/components/video-editor/frameEffects";
 import { renderKeyboardShortcutCalloutsCanvas } from "@/components/video-editor/keyboardShortcuts";
 import { toFileUrl } from "@/components/video-editor/projectPersistence";
 import type {
@@ -55,10 +60,17 @@ interface FrameRenderConfig {
 	zoomRegions: ZoomRegion[];
 	showShadow: boolean;
 	shadowIntensity: number;
+	frameShadowSize?: number;
+	frameShadowOpacity?: number;
+	frameShadowBlur?: number;
 	backgroundBlur: number;
 	zoomMotionBlur?: number;
 	connectZooms?: boolean;
 	deviceMockup?: DeviceMockup;
+	frameBorderEnabled?: boolean;
+	frameBorderWidth?: number;
+	frameBorderColor?: string;
+	frameBorderOpacity?: number;
 	borderRadius?: number;
 	padding?: number;
 	cropRegion: CropRegion;
@@ -710,6 +722,42 @@ export class FrameRenderer {
 		};
 	}
 
+	private getCanvasScaleFactor(): number {
+		const previewWidth = this.config.previewWidth || 1920;
+		const previewHeight = this.config.previewHeight || 1080;
+		return Math.min(this.config.width / previewWidth, this.config.height / previewHeight);
+	}
+
+	private drawFrameBorder(ctx: CanvasRenderingContext2D, scaleFactor: number): void {
+		if (!this.layoutCache || !this.config.frameBorderEnabled) {
+			return;
+		}
+
+		const borderWidth = (this.config.frameBorderWidth || 0) * scaleFactor;
+		const borderOpacity = this.config.frameBorderOpacity ?? 0;
+		if (borderWidth <= 0 || borderOpacity <= 0) {
+			return;
+		}
+
+		const color = applyOpacityToHex(this.config.frameBorderColor || "#000000", borderOpacity);
+		const radius = (this.config.borderRadius || 0) * scaleFactor;
+		const mask = this.layoutCache.maskRect;
+
+		ctx.save();
+		ctx.fillStyle = color;
+		ctx.beginPath();
+		ctx.roundRect(
+			mask.x - borderWidth,
+			mask.y - borderWidth,
+			mask.width + borderWidth * 2,
+			mask.height + borderWidth * 2,
+			radius + borderWidth,
+		);
+		ctx.roundRect(mask.x, mask.y, mask.width, mask.height, radius);
+		ctx.fill("evenodd");
+		ctx.restore();
+	}
+
 	private updateAnimationState(timeMs: number) {
 		if (!this.cameraContainer || !this.layoutCache) {
 			return {
@@ -717,7 +765,11 @@ export class FrameRenderer {
 				motionVector: { x: 0, y: 0 },
 				simulatedCursor: null,
 				state: this.animationState,
-				transform: { scale: this.animationState.appliedScale, x: this.animationState.x, y: this.animationState.y },
+				transform: {
+					scale: this.animationState.appliedScale,
+					x: this.animationState.x,
+					y: this.animationState.y,
+				},
 				targetFocus: { cx: this.animationState.focusX, cy: this.animationState.focusY },
 				targetScaleFactor: this.animationState.scale,
 				targetProgress: this.animationState.progress,
@@ -750,6 +802,12 @@ export class FrameRenderer {
 		const ctx = this.compositeCtx;
 		const w = this.compositeCanvas.width;
 		const h = this.compositeCanvas.height;
+		const shadowSettings = {
+			size: this.config.frameShadowSize ?? this.config.shadowIntensity * 12,
+			opacity: this.config.frameShadowOpacity ?? this.config.shadowIntensity * 0.7,
+			blur: this.config.frameShadowBlur ?? this.config.shadowIntensity * 48,
+		};
+		const canvasScaleFactor = this.getCanvasScaleFactor();
 
 		// Clear composite canvas
 		ctx.clearRect(0, 0, w, h);
@@ -771,31 +829,22 @@ export class FrameRenderer {
 		// Draw video layer with shadows on top of background
 		if (
 			this.config.showShadow &&
-			this.config.shadowIntensity > 0 &&
+			hasVisibleFrameShadow(shadowSettings) &&
 			this.shadowCanvas &&
 			this.shadowCtx
 		) {
 			const shadowCtx = this.shadowCtx;
 			shadowCtx.clearRect(0, 0, w, h);
 			shadowCtx.save();
-
-			// Calculate shadow parameters based on intensity (0-1)
-			const intensity = this.config.shadowIntensity;
-			const baseBlur1 = 48 * intensity;
-			const baseBlur2 = 16 * intensity;
-			const baseBlur3 = 8 * intensity;
-			const baseAlpha1 = 0.7 * intensity;
-			const baseAlpha2 = 0.5 * intensity;
-			const baseAlpha3 = 0.3 * intensity;
-			const baseOffset = 12 * intensity;
-
-			shadowCtx.filter = `drop-shadow(0 ${baseOffset}px ${baseBlur1}px rgba(0,0,0,${baseAlpha1})) drop-shadow(0 ${baseOffset / 3}px ${baseBlur2}px rgba(0,0,0,${baseAlpha2})) drop-shadow(0 ${baseOffset / 6}px ${baseBlur3}px rgba(0,0,0,${baseAlpha3}))`;
+			shadowCtx.filter = buildFrameShadowFilter(shadowSettings, canvasScaleFactor);
 			shadowCtx.drawImage(videoCanvas, 0, 0, w, h);
 			shadowCtx.restore();
 			ctx.drawImage(this.shadowCanvas, 0, 0, w, h);
 		} else {
 			ctx.drawImage(videoCanvas, 0, 0, w, h);
 		}
+
+		this.drawFrameBorder(ctx, canvasScaleFactor);
 
 		// Draw device mockup frame on top of video
 		const mockup = this.config.deviceMockup;

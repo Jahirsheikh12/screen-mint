@@ -65,6 +65,7 @@ import {
 	loadEditorPreferences,
 	saveEditorPreferences,
 } from "./editorPreferences";
+import { getLegacyShadowIntensityFromFrameShadow } from "./frameEffects";
 import { deriveKeyboardShortcutCallouts } from "./keyboardShortcuts";
 import {
 	isPostRecordingAutoZoomPending,
@@ -208,7 +209,11 @@ export default function VideoEditor() {
 	const [currentTime, setCurrentTime] = useState(0);
 	const [duration, setDuration] = useState(0);
 	const [wallpaper, setWallpaper] = useState<string>(initialEditorPreferences.wallpaper);
-	const [shadowIntensity, setShadowIntensity] = useState(initialEditorPreferences.shadowIntensity);
+	const [frameShadowSize, setFrameShadowSize] = useState(initialEditorPreferences.frameShadowSize);
+	const [frameShadowOpacity, setFrameShadowOpacity] = useState(
+		initialEditorPreferences.frameShadowOpacity,
+	);
+	const [frameShadowBlur, setFrameShadowBlur] = useState(initialEditorPreferences.frameShadowBlur);
 	const [backgroundBlur, setBackgroundBlur] = useState(initialEditorPreferences.backgroundBlur);
 	const [zoomMotionBlur, setZoomMotionBlur] = useState(initialEditorPreferences.zoomMotionBlur);
 	const [connectZooms, setConnectZooms] = useState(initialEditorPreferences.connectZooms);
@@ -267,6 +272,18 @@ export default function VideoEditor() {
 		initialEditorPreferences.keyboardShortcutMaxVisible,
 	);
 	const [deviceMockup, setDeviceMockup] = useState(initialEditorPreferences.deviceMockup);
+	const [frameBorderEnabled, setFrameBorderEnabled] = useState(
+		initialEditorPreferences.frameBorderEnabled,
+	);
+	const [frameBorderWidth, setFrameBorderWidth] = useState(
+		initialEditorPreferences.frameBorderWidth,
+	);
+	const [frameBorderColor, setFrameBorderColor] = useState(
+		initialEditorPreferences.frameBorderColor,
+	);
+	const [frameBorderOpacity, setFrameBorderOpacity] = useState(
+		initialEditorPreferences.frameBorderOpacity,
+	);
 	const [borderRadius, setBorderRadius] = useState(initialEditorPreferences.borderRadius);
 	const [padding, setPadding] = useState(initialEditorPreferences.padding);
 	const [cropRegion, setCropRegion] = useState<CropRegion>(initialEditorPreferences.cropRegion);
@@ -380,6 +397,15 @@ export default function VideoEditor() {
 		? (audioRegions.find((region) => region.id === selectedAudioId) ?? null)
 		: null;
 	const missingSelectedAudioPath = selectedAudioId ? missingAudioPathsById[selectedAudioId] : null;
+	const shadowIntensity = useMemo(
+		() =>
+			getLegacyShadowIntensityFromFrameShadow({
+				size: frameShadowSize,
+				opacity: frameShadowOpacity,
+				blur: frameShadowBlur,
+			}),
+		[frameShadowBlur, frameShadowOpacity, frameShadowSize],
+	);
 
 	const clearWebcamState = useCallback(() => {
 		setWebcamPath(null);
@@ -438,6 +464,9 @@ export default function VideoEditor() {
 			normalizeProjectEditor({
 				wallpaper,
 				shadowIntensity,
+				frameShadowSize,
+				frameShadowOpacity,
+				frameShadowBlur,
 				backgroundBlur,
 				zoomMotionBlur,
 				connectZooms,
@@ -465,6 +494,10 @@ export default function VideoEditor() {
 				keyboardShortcutDisplayMs,
 				keyboardShortcutMaxVisible,
 				borderRadius,
+				frameBorderEnabled,
+				frameBorderWidth,
+				frameBorderColor,
+				frameBorderOpacity,
 				padding,
 				cropRegion,
 				aspectRatio,
@@ -481,6 +514,9 @@ export default function VideoEditor() {
 		[
 			wallpaper,
 			shadowIntensity,
+			frameShadowSize,
+			frameShadowOpacity,
+			frameShadowBlur,
 			backgroundBlur,
 			zoomMotionBlur,
 			connectZooms,
@@ -508,6 +544,10 @@ export default function VideoEditor() {
 			keyboardShortcutDisplayMs,
 			keyboardShortcutMaxVisible,
 			borderRadius,
+			frameBorderEnabled,
+			frameBorderWidth,
+			frameBorderColor,
+			frameBorderOpacity,
 			padding,
 			cropRegion,
 			aspectRatio,
@@ -529,7 +569,9 @@ export default function VideoEditor() {
 			options: { includeTimeline?: boolean } = {},
 		) => {
 			setWallpaper(controls.wallpaper);
-			setShadowIntensity(controls.shadowIntensity);
+			setFrameShadowSize(controls.frameShadowSize);
+			setFrameShadowOpacity(controls.frameShadowOpacity);
+			setFrameShadowBlur(controls.frameShadowBlur);
 			setBackgroundBlur(controls.backgroundBlur);
 			setZoomMotionBlur(controls.zoomMotionBlur);
 			setConnectZooms(controls.connectZooms);
@@ -556,6 +598,10 @@ export default function VideoEditor() {
 			setKeyboardShortcutOpacity(controls.keyboardShortcutOpacity);
 			setKeyboardShortcutDisplayMs(controls.keyboardShortcutDisplayMs);
 			setKeyboardShortcutMaxVisible(controls.keyboardShortcutMaxVisible);
+			setFrameBorderEnabled(controls.frameBorderEnabled);
+			setFrameBorderWidth(controls.frameBorderWidth);
+			setFrameBorderColor(controls.frameBorderColor);
+			setFrameBorderOpacity(controls.frameBorderOpacity);
 			setBorderRadius(controls.borderRadius);
 			setPadding(controls.padding);
 			setCropRegion(controls.cropRegion);
@@ -885,6 +931,9 @@ export default function VideoEditor() {
 			createProjectData(sourcePath, {
 				wallpaper,
 				shadowIntensity,
+				frameShadowSize,
+				frameShadowOpacity,
+				frameShadowBlur,
 				backgroundBlur,
 				zoomMotionBlur,
 				connectZooms,
@@ -912,6 +961,10 @@ export default function VideoEditor() {
 				keyboardShortcutDisplayMs,
 				keyboardShortcutMaxVisible,
 				deviceMockup,
+				frameBorderEnabled,
+				frameBorderWidth,
+				frameBorderColor,
+				frameBorderOpacity,
 				borderRadius,
 				padding,
 				cropRegion,
@@ -943,6 +996,9 @@ export default function VideoEditor() {
 		videoSourcePath,
 		wallpaper,
 		shadowIntensity,
+		frameShadowSize,
+		frameShadowOpacity,
+		frameShadowBlur,
 		backgroundBlur,
 		zoomMotionBlur,
 		connectZooms,
@@ -970,6 +1026,10 @@ export default function VideoEditor() {
 		keyboardShortcutDisplayMs,
 		keyboardShortcutMaxVisible,
 		deviceMockup,
+		frameBorderEnabled,
+		frameBorderWidth,
+		frameBorderColor,
+		frameBorderOpacity,
 		borderRadius,
 		padding,
 		cropRegion,
@@ -1110,6 +1170,9 @@ export default function VideoEditor() {
 		saveEditorPreferences({
 			wallpaper,
 			shadowIntensity,
+			frameShadowSize,
+			frameShadowOpacity,
+			frameShadowBlur,
 			backgroundBlur,
 			zoomMotionBlur,
 			connectZooms,
@@ -1138,6 +1201,10 @@ export default function VideoEditor() {
 			keyboardShortcutDisplayMs,
 			keyboardShortcutMaxVisible,
 			deviceMockup,
+			frameBorderEnabled,
+			frameBorderWidth,
+			frameBorderColor,
+			frameBorderOpacity,
 			borderRadius,
 			padding,
 			cropRegion,
@@ -1157,6 +1224,9 @@ export default function VideoEditor() {
 	}, [
 		wallpaper,
 		shadowIntensity,
+		frameShadowSize,
+		frameShadowOpacity,
+		frameShadowBlur,
 		backgroundBlur,
 		zoomMotionBlur,
 		connectZooms,
@@ -1185,6 +1255,10 @@ export default function VideoEditor() {
 		keyboardShortcutDisplayMs,
 		keyboardShortcutMaxVisible,
 		deviceMockup,
+		frameBorderEnabled,
+		frameBorderWidth,
+		frameBorderColor,
+		frameBorderOpacity,
 		borderRadius,
 		padding,
 		cropRegion,
@@ -1218,6 +1292,9 @@ export default function VideoEditor() {
 			const projectData = createProjectData(sourcePath, {
 				wallpaper,
 				shadowIntensity,
+				frameShadowSize,
+				frameShadowOpacity,
+				frameShadowBlur,
 				backgroundBlur,
 				zoomMotionBlur,
 				connectZooms,
@@ -1245,6 +1322,10 @@ export default function VideoEditor() {
 				keyboardShortcutDisplayMs,
 				keyboardShortcutMaxVisible,
 				deviceMockup,
+				frameBorderEnabled,
+				frameBorderWidth,
+				frameBorderColor,
+				frameBorderOpacity,
 				borderRadius,
 				padding,
 				cropRegion,
@@ -1306,6 +1387,9 @@ export default function VideoEditor() {
 			currentProjectPath,
 			wallpaper,
 			shadowIntensity,
+			frameShadowSize,
+			frameShadowOpacity,
+			frameShadowBlur,
 			backgroundBlur,
 			zoomMotionBlur,
 			connectZooms,
@@ -1332,6 +1416,10 @@ export default function VideoEditor() {
 			keyboardShortcutOpacity,
 			keyboardShortcutDisplayMs,
 			keyboardShortcutMaxVisible,
+			frameBorderEnabled,
+			frameBorderWidth,
+			frameBorderColor,
+			frameBorderOpacity,
 			borderRadius,
 			padding,
 			cropRegion,
@@ -3351,12 +3439,19 @@ export default function VideoEditor() {
 						wallpaper,
 						trimRegions,
 						speedRegions,
-						showShadow: shadowIntensity > 0,
+						showShadow: frameShadowOpacity > 0 && (frameShadowSize > 0 || frameShadowBlur > 0),
 						shadowIntensity,
+						frameShadowSize,
+						frameShadowOpacity,
+						frameShadowBlur,
 						backgroundBlur,
 						zoomMotionBlur,
 						connectZooms,
 						deviceMockup,
+						frameBorderEnabled,
+						frameBorderWidth,
+						frameBorderColor,
+						frameBorderOpacity,
 						borderRadius,
 						padding,
 						videoPadding: padding,
@@ -3518,12 +3613,19 @@ export default function VideoEditor() {
 						wallpaper,
 						trimRegions,
 						speedRegions,
-						showShadow: shadowIntensity > 0,
+						showShadow: frameShadowOpacity > 0 && (frameShadowSize > 0 || frameShadowBlur > 0),
 						shadowIntensity,
+						frameShadowSize,
+						frameShadowOpacity,
+						frameShadowBlur,
 						backgroundBlur,
 						zoomMotionBlur,
 						connectZooms,
 						deviceMockup,
+						frameBorderEnabled,
+						frameBorderWidth,
+						frameBorderColor,
+						frameBorderOpacity,
 						borderRadius,
 						padding,
 						cropRegion: effectiveCropRegion,
@@ -3623,6 +3725,9 @@ export default function VideoEditor() {
 			trimRegions,
 			speedRegions,
 			shadowIntensity,
+			frameShadowSize,
+			frameShadowOpacity,
+			frameShadowBlur,
 			backgroundBlur,
 			zoomMotionBlur,
 			connectZooms,
@@ -3643,6 +3748,10 @@ export default function VideoEditor() {
 			keyboardShortcutMaxVisible,
 			audioRegions,
 			deviceMockup,
+			frameBorderEnabled,
+			frameBorderWidth,
+			frameBorderColor,
+			frameBorderOpacity,
 			borderRadius,
 			padding,
 			effectiveCropRegion,
@@ -4238,14 +4347,19 @@ export default function VideoEditor() {
 									onSelectZoom={handleSelectZoom}
 									onZoomFocusChange={handleZoomFocusChange}
 									isPlaying={isPlaying}
-									showShadow={shadowIntensity > 0}
-									shadowIntensity={shadowIntensity}
+									frameShadowSize={frameShadowSize}
+									frameShadowOpacity={frameShadowOpacity}
+									frameShadowBlur={frameShadowBlur}
 									previewQuality={previewQuality}
 									onPreviewQualitySwitchFailed={handlePreviewQualitySwitchFailed}
 									backgroundBlur={backgroundBlur}
 									zoomMotionBlur={zoomMotionBlur}
 									connectZooms={connectZooms}
 									deviceMockup={deviceMockup}
+									frameBorderEnabled={frameBorderEnabled}
+									frameBorderWidth={frameBorderWidth}
+									frameBorderColor={frameBorderColor}
+									frameBorderOpacity={frameBorderOpacity}
 									borderRadius={borderRadius}
 									padding={padding}
 									cropRegion={effectiveCropRegion}
@@ -4308,8 +4422,12 @@ export default function VideoEditor() {
 							onZoomDelete={handleZoomDelete}
 							selectedTrimId={selectedTrimId}
 							onTrimDelete={handleTrimDelete}
-							shadowIntensity={shadowIntensity}
-							onShadowChange={setShadowIntensity}
+							frameShadowSize={frameShadowSize}
+							onFrameShadowSizeChange={setFrameShadowSize}
+							frameShadowOpacity={frameShadowOpacity}
+							onFrameShadowOpacityChange={setFrameShadowOpacity}
+							frameShadowBlur={frameShadowBlur}
+							onFrameShadowBlurChange={setFrameShadowBlur}
 							backgroundBlur={backgroundBlur}
 							onBackgroundBlurChange={setBackgroundBlur}
 							zoomMotionBlur={zoomMotionBlur}
@@ -4364,6 +4482,14 @@ export default function VideoEditor() {
 							onKeyboardShortcutMaxVisibleChange={setKeyboardShortcutMaxVisible}
 							deviceMockup={deviceMockup}
 							onDeviceMockupChange={setDeviceMockup}
+							frameBorderEnabled={frameBorderEnabled}
+							onFrameBorderEnabledChange={setFrameBorderEnabled}
+							frameBorderWidth={frameBorderWidth}
+							onFrameBorderWidthChange={setFrameBorderWidth}
+							frameBorderColor={frameBorderColor}
+							onFrameBorderColorChange={setFrameBorderColor}
+							frameBorderOpacity={frameBorderOpacity}
+							onFrameBorderOpacityChange={setFrameBorderOpacity}
 							borderRadius={borderRadius}
 							onBorderRadiusChange={setBorderRadius}
 							padding={padding}

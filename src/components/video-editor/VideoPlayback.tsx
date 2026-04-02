@@ -28,6 +28,7 @@ import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import { AnnotationOverlay } from "./AnnotationOverlay";
 import { CaptionOverlay } from "./CaptionOverlay";
 import { resolveCameraLayoutState } from "./cameraLayouts";
+import { applyOpacityToHex, buildFrameShadowFilter, hasVisibleFrameShadow } from "./frameEffects";
 import { KeyboardShortcutOverlay } from "./KeyboardShortcutOverlay";
 import {
 	type AnnotationRegion,
@@ -102,14 +103,19 @@ interface VideoPlaybackProps {
 	onSelectZoom: (id: string | null) => void;
 	onZoomFocusChange: (id: string, focus: ZoomFocus) => void;
 	isPlaying: boolean;
-	showShadow?: boolean;
-	shadowIntensity?: number;
+	frameShadowSize?: number;
+	frameShadowOpacity?: number;
+	frameShadowBlur?: number;
 	previewQuality: PreviewQuality;
 	onPreviewQualitySwitchFailed?: (fallbackQuality: PreviewQuality) => void;
 	backgroundBlur?: number;
 	zoomMotionBlur?: number;
 	connectZooms?: boolean;
 	deviceMockup?: import("./types").DeviceMockup;
+	frameBorderEnabled?: boolean;
+	frameBorderWidth?: number;
+	frameBorderColor?: string;
+	frameBorderOpacity?: number;
 	borderRadius?: number;
 	padding?: number;
 	cropRegion?: import("./types").CropRegion;
@@ -177,14 +183,19 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			onSelectZoom,
 			onZoomFocusChange,
 			isPlaying,
-			showShadow,
-			shadowIntensity = 0,
+			frameShadowSize = 0,
+			frameShadowOpacity = 0,
+			frameShadowBlur = 0,
 			previewQuality,
 			onPreviewQualitySwitchFailed,
 			backgroundBlur = 0,
 			zoomMotionBlur = 0,
 			connectZooms = true,
 			deviceMockup = "none",
+			frameBorderEnabled = false,
+			frameBorderWidth = 0,
+			frameBorderColor = "#000000",
+			frameBorderOpacity = 0.5,
 			borderRadius = 0,
 			padding = 0,
 			cropRegion,
@@ -241,6 +252,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const mockupCanvasRef = useRef<HTMLCanvasElement | null>(null);
 		const overlayRef = useRef<HTMLDivElement | null>(null);
 		const focusIndicatorRef = useRef<HTMLDivElement | null>(null);
+		const frameBorderRef = useRef<HTMLDivElement | null>(null);
 		const currentTimeRef = useRef(0);
 		const zoomRegionsRef = useRef<ZoomRegion[]>([]);
 		const selectedZoomIdRef = useRef<string | null>(null);
@@ -356,6 +368,35 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			[],
 		);
 
+		const updateFrameBorderOverlay = useCallback(() => {
+			const frameBorderEl = frameBorderRef.current;
+			const maskRect = baseMaskRef.current;
+
+			if (!frameBorderEl) {
+				return;
+			}
+
+			const shouldShowBorder =
+				frameBorderEnabled &&
+				frameBorderWidth > 0 &&
+				frameBorderOpacity > 0 &&
+				maskRect.width > 0 &&
+				maskRect.height > 0;
+
+			if (!shouldShowBorder) {
+				frameBorderEl.style.display = "none";
+				return;
+			}
+
+			frameBorderEl.style.display = "block";
+			frameBorderEl.style.left = `${maskRect.x}px`;
+			frameBorderEl.style.top = `${maskRect.y}px`;
+			frameBorderEl.style.width = `${maskRect.width}px`;
+			frameBorderEl.style.height = `${maskRect.height}px`;
+			frameBorderEl.style.borderRadius = `${borderRadius}px`;
+			frameBorderEl.style.boxShadow = `0 0 0 ${frameBorderWidth}px ${applyOpacityToHex(frameBorderColor, frameBorderOpacity)}`;
+		}, [borderRadius, frameBorderColor, frameBorderEnabled, frameBorderOpacity, frameBorderWidth]);
+
 		const layoutVideoContent = useCallback(() => {
 			const container = containerRef.current;
 			const app = appRef.current;
@@ -407,6 +448,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				baseOffsetRef.current = result.baseOffset;
 				baseMaskRef.current = result.maskRect;
 				cropBoundsRef.current = result.cropBounds;
+				updateFrameBorderOverlay();
 
 				// Reset camera container to identity
 				cameraContainer.scale.set(1);
@@ -419,11 +461,22 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 
 				updateOverlayForRegion(activeRegion);
 			}
-		}, [updateOverlayForRegion, cropRegion, borderRadius, padding, aspectRatio]);
+		}, [
+			updateFrameBorderOverlay,
+			updateOverlayForRegion,
+			cropRegion,
+			borderRadius,
+			padding,
+			aspectRatio,
+		]);
 
 		useEffect(() => {
 			layoutVideoContentRef.current = layoutVideoContent;
 		}, [layoutVideoContent]);
+
+		useEffect(() => {
+			updateFrameBorderOverlay();
+		}, [updateFrameBorderOverlay]);
 
 		const selectedZoom = useMemo(() => {
 			if (!selectedZoomId) return null;
@@ -1436,11 +1489,23 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					ref={containerRef}
 					className="absolute inset-0"
 					style={{
-						filter:
-							showShadow && shadowIntensity > 0
-								? `drop-shadow(0 ${shadowIntensity * 12}px ${shadowIntensity * 48}px rgba(0,0,0,${shadowIntensity * 0.7})) drop-shadow(0 ${shadowIntensity * 4}px ${shadowIntensity * 16}px rgba(0,0,0,${shadowIntensity * 0.5})) drop-shadow(0 ${shadowIntensity * 2}px ${shadowIntensity * 8}px rgba(0,0,0,${shadowIntensity * 0.3}))`
-								: "none",
+						filter: hasVisibleFrameShadow({
+							size: frameShadowSize,
+							opacity: frameShadowOpacity,
+							blur: frameShadowBlur,
+						})
+							? buildFrameShadowFilter({
+									size: frameShadowSize,
+									opacity: frameShadowOpacity,
+									blur: frameShadowBlur,
+								})
+							: "none",
 					}}
+				/>
+				<div
+					ref={frameBorderRef}
+					className="absolute pointer-events-none"
+					style={{ display: "none" }}
 				/>
 				{/* Device mockup overlay */}
 				{deviceMockup !== "none" && (

@@ -5,6 +5,9 @@ type PersistedEditorControls = Pick<
 	ProjectEditorState,
 	| "wallpaper"
 	| "shadowIntensity"
+	| "frameShadowSize"
+	| "frameShadowOpacity"
+	| "frameShadowBlur"
 	| "backgroundBlur"
 	| "zoomMotionBlur"
 	| "connectZooms"
@@ -32,6 +35,10 @@ type PersistedEditorControls = Pick<
 	| "keyboardShortcutDisplayMs"
 	| "keyboardShortcutMaxVisible"
 	| "deviceMockup"
+	| "frameBorderEnabled"
+	| "frameBorderWidth"
+	| "frameBorderColor"
+	| "frameBorderOpacity"
 	| "borderRadius"
 	| "padding"
 	| "cropRegion"
@@ -73,6 +80,9 @@ const DEFAULT_EDITOR_CONTROLS = normalizeProjectEditor({});
 export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	wallpaper: DEFAULT_EDITOR_CONTROLS.wallpaper,
 	shadowIntensity: DEFAULT_EDITOR_CONTROLS.shadowIntensity,
+	frameShadowSize: DEFAULT_EDITOR_CONTROLS.frameShadowSize,
+	frameShadowOpacity: DEFAULT_EDITOR_CONTROLS.frameShadowOpacity,
+	frameShadowBlur: DEFAULT_EDITOR_CONTROLS.frameShadowBlur,
 	backgroundBlur: DEFAULT_EDITOR_CONTROLS.backgroundBlur,
 	zoomMotionBlur: DEFAULT_EDITOR_CONTROLS.zoomMotionBlur,
 	connectZooms: DEFAULT_EDITOR_CONTROLS.connectZooms,
@@ -100,6 +110,10 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	keyboardShortcutDisplayMs: DEFAULT_EDITOR_CONTROLS.keyboardShortcutDisplayMs,
 	keyboardShortcutMaxVisible: DEFAULT_EDITOR_CONTROLS.keyboardShortcutMaxVisible,
 	deviceMockup: DEFAULT_EDITOR_CONTROLS.deviceMockup,
+	frameBorderEnabled: DEFAULT_EDITOR_CONTROLS.frameBorderEnabled,
+	frameBorderWidth: DEFAULT_EDITOR_CONTROLS.frameBorderWidth,
+	frameBorderColor: DEFAULT_EDITOR_CONTROLS.frameBorderColor,
+	frameBorderOpacity: DEFAULT_EDITOR_CONTROLS.frameBorderOpacity,
 	borderRadius: DEFAULT_EDITOR_CONTROLS.borderRadius,
 	padding: DEFAULT_EDITOR_CONTROLS.padding,
 	cropRegion: DEFAULT_EDITOR_CONTROLS.cropRegion,
@@ -204,6 +218,9 @@ function normalizeEditorControls(
 	const candidate: PartialEditorControls = {
 		wallpaper: raw.wallpaper ?? fallback.wallpaper,
 		shadowIntensity: raw.shadowIntensity ?? fallback.shadowIntensity,
+		frameShadowSize: raw.frameShadowSize ?? fallback.frameShadowSize,
+		frameShadowOpacity: raw.frameShadowOpacity ?? fallback.frameShadowOpacity,
+		frameShadowBlur: raw.frameShadowBlur ?? fallback.frameShadowBlur,
 		backgroundBlur: raw.backgroundBlur ?? fallback.backgroundBlur,
 		zoomMotionBlur: raw.zoomMotionBlur ?? fallback.zoomMotionBlur,
 		connectZooms: raw.connectZooms ?? fallback.connectZooms,
@@ -232,6 +249,10 @@ function normalizeEditorControls(
 		keyboardShortcutMaxVisible:
 			raw.keyboardShortcutMaxVisible ?? fallback.keyboardShortcutMaxVisible,
 		deviceMockup: raw.deviceMockup ?? fallback.deviceMockup,
+		frameBorderEnabled: raw.frameBorderEnabled ?? fallback.frameBorderEnabled,
+		frameBorderWidth: raw.frameBorderWidth ?? fallback.frameBorderWidth,
+		frameBorderColor: raw.frameBorderColor ?? fallback.frameBorderColor,
+		frameBorderOpacity: raw.frameBorderOpacity ?? fallback.frameBorderOpacity,
 		borderRadius: raw.borderRadius ?? fallback.borderRadius,
 		padding: candidatePadding,
 		cropRegion: normalizeCropRegion(raw.cropRegion, fallback.cropRegion),
@@ -252,6 +273,9 @@ function normalizeEditorControls(
 	return {
 		wallpaper: normalized.wallpaper,
 		shadowIntensity: normalized.shadowIntensity,
+		frameShadowSize: normalized.frameShadowSize,
+		frameShadowOpacity: normalized.frameShadowOpacity,
+		frameShadowBlur: normalized.frameShadowBlur,
 		backgroundBlur: normalized.backgroundBlur,
 		zoomMotionBlur: normalized.zoomMotionBlur,
 		connectZooms: normalized.connectZooms,
@@ -279,6 +303,10 @@ function normalizeEditorControls(
 		keyboardShortcutDisplayMs: normalized.keyboardShortcutDisplayMs,
 		keyboardShortcutMaxVisible: normalized.keyboardShortcutMaxVisible,
 		deviceMockup: normalized.deviceMockup,
+		frameBorderEnabled: normalized.frameBorderEnabled,
+		frameBorderWidth: normalized.frameBorderWidth,
+		frameBorderColor: normalized.frameBorderColor,
+		frameBorderOpacity: normalized.frameBorderOpacity,
 		borderRadius: normalized.borderRadius,
 		padding: normalized.padding,
 		cropRegion: normalized.cropRegion,

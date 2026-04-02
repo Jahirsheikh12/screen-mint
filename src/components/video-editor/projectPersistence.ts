@@ -2,6 +2,19 @@ import type { ExportFormat, ExportQuality, GifFrameRate, GifSizePreset } from "@
 import { normalizeWallpaperSelection, WALLPAPER_PATHS } from "@/lib/wallpapers";
 import { ASPECT_RATIOS, type AspectRatio, isCustomAspectRatio } from "@/utils/aspectRatioUtils";
 import {
+	clampNumber,
+	DEFAULT_FRAME_BORDER_COLOR,
+	DEFAULT_FRAME_BORDER_ENABLED,
+	DEFAULT_FRAME_BORDER_OPACITY,
+	DEFAULT_FRAME_BORDER_WIDTH,
+	DEFAULT_FRAME_SHADOW_BLUR,
+	DEFAULT_FRAME_SHADOW_OPACITY,
+	DEFAULT_FRAME_SHADOW_SIZE,
+	getFrameShadowFromLegacyIntensity,
+	getLegacyShadowIntensityFromFrameShadow,
+	normalizeHexColor,
+} from "./frameEffects";
+import {
 	type AnnotationRegion,
 	type AudioRegion,
 	type AudioSourceType,
@@ -68,12 +81,15 @@ import {
 } from "./types";
 import { normalizeWebcamRegion } from "./webcamRegionUtils";
 
-export const PROJECT_VERSION = 6;
+export const PROJECT_VERSION = 7;
 export const DEFAULT_VIDEO_PREVIEW_PADDING = 20;
 
 export interface ProjectEditorState {
 	wallpaper: string;
 	shadowIntensity: number;
+	frameShadowSize: number;
+	frameShadowOpacity: number;
+	frameShadowBlur: number;
 	backgroundBlur: number;
 	zoomMotionBlur: number;
 	connectZooms: boolean;
@@ -101,6 +117,10 @@ export interface ProjectEditorState {
 	keyboardShortcutDisplayMs: number;
 	keyboardShortcutMaxVisible: number;
 	deviceMockup: import("./types").DeviceMockup;
+	frameBorderEnabled: boolean;
+	frameBorderWidth: number;
+	frameBorderColor: string;
+	frameBorderOpacity: number;
 	borderRadius: number;
 	padding: number;
 	cropRegion: CropRegion;
@@ -227,7 +247,7 @@ function isFiniteNumber(value: unknown): value is number {
 }
 
 function clamp(value: number, min: number, max: number) {
-	return Math.min(max, Math.max(min, value));
+	return clampNumber(value, min, max);
 }
 
 function isFileUrl(value: string): boolean {
@@ -861,13 +881,56 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		rawPadding === 50
 			? 0
 			: rawPadding;
+	const legacyShadowIntensity = isFiniteNumber(editor.shadowIntensity)
+		? clamp(editor.shadowIntensity, 0, 1)
+		: undefined;
+	const defaultShadow =
+		legacyShadowIntensity != null
+			? getFrameShadowFromLegacyIntensity(legacyShadowIntensity)
+			: {
+					size: DEFAULT_FRAME_SHADOW_SIZE,
+					opacity: DEFAULT_FRAME_SHADOW_OPACITY,
+					blur: DEFAULT_FRAME_SHADOW_BLUR,
+				};
+	const normalizedFrameShadow = {
+		size: isFiniteNumber((editor as Partial<ProjectEditorState>).frameShadowSize)
+			? clamp((editor as Partial<ProjectEditorState>).frameShadowSize as number, 0, 48)
+			: defaultShadow.size,
+		opacity: isFiniteNumber((editor as Partial<ProjectEditorState>).frameShadowOpacity)
+			? clamp((editor as Partial<ProjectEditorState>).frameShadowOpacity as number, 0, 1)
+			: defaultShadow.opacity,
+		blur: isFiniteNumber((editor as Partial<ProjectEditorState>).frameShadowBlur)
+			? clamp((editor as Partial<ProjectEditorState>).frameShadowBlur as number, 0, 96)
+			: defaultShadow.blur,
+	};
+	const normalizedFrameBorderColor =
+		normalizeHexColor((editor as Partial<ProjectEditorState>).frameBorderColor ?? "") ??
+		DEFAULT_FRAME_BORDER_COLOR;
+	const normalizedFrameBorder = {
+		enabled:
+			typeof (editor as Partial<ProjectEditorState>).frameBorderEnabled === "boolean"
+				? ((editor as Partial<ProjectEditorState>).frameBorderEnabled as boolean)
+				: DEFAULT_FRAME_BORDER_ENABLED,
+		width: isFiniteNumber((editor as Partial<ProjectEditorState>).frameBorderWidth)
+			? clamp((editor as Partial<ProjectEditorState>).frameBorderWidth as number, 0, 20)
+			: DEFAULT_FRAME_BORDER_WIDTH,
+		color: normalizedFrameBorderColor,
+		opacity: isFiniteNumber((editor as Partial<ProjectEditorState>).frameBorderOpacity)
+			? clamp((editor as Partial<ProjectEditorState>).frameBorderOpacity as number, 0, 1)
+			: DEFAULT_FRAME_BORDER_OPACITY,
+	};
+	const normalizedShadowIntensity =
+		legacyShadowIntensity ?? getLegacyShadowIntensityFromFrameShadow(normalizedFrameShadow);
 
 	return {
 		wallpaper:
 			typeof editor.wallpaper === "string"
 				? normalizeWallpaperSelection(editor.wallpaper)
 				: WALLPAPER_PATHS[0],
-		shadowIntensity: typeof editor.shadowIntensity === "number" ? editor.shadowIntensity : 0.67,
+		shadowIntensity: normalizedShadowIntensity,
+		frameShadowSize: normalizedFrameShadow.size,
+		frameShadowOpacity: normalizedFrameShadow.opacity,
+		frameShadowBlur: normalizedFrameShadow.blur,
 		backgroundBlur: normalizedBackgroundBlur,
 		zoomMotionBlur: normalizedZoomMotionBlur,
 		connectZooms: typeof editor.connectZooms === "boolean" ? editor.connectZooms : true,
@@ -954,6 +1017,10 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 			DEVICE_MOCKUP_OPTIONS.some((opt) => opt.value === editor.deviceMockup)
 				? (editor.deviceMockup as DeviceMockup)
 				: DEFAULT_DEVICE_MOCKUP,
+		frameBorderEnabled: normalizedFrameBorder.enabled,
+		frameBorderWidth: normalizedFrameBorder.width,
+		frameBorderColor: normalizedFrameBorder.color,
+		frameBorderOpacity: normalizedFrameBorder.opacity,
 		borderRadius: typeof editor.borderRadius === "number" ? editor.borderRadius : 12.5,
 		padding: normalizedPadding,
 		cropRegion: {

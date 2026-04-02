@@ -42,10 +42,17 @@ interface GifExporterConfig {
 	speedRegions?: SpeedRegion[];
 	showShadow: boolean;
 	shadowIntensity: number;
+	frameShadowSize?: number;
+	frameShadowOpacity?: number;
+	frameShadowBlur?: number;
 	backgroundBlur: number;
 	zoomMotionBlur?: number;
 	connectZooms?: boolean;
 	deviceMockup?: DeviceMockup;
+	frameBorderEnabled?: boolean;
+	frameBorderWidth?: number;
+	frameBorderColor?: string;
+	frameBorderOpacity?: number;
 	borderRadius?: number;
 	padding?: number;
 	videoPadding?: number;
@@ -142,10 +149,17 @@ export class GifExporter {
 				zoomRegions: this.config.zoomRegions,
 				showShadow: this.config.showShadow,
 				shadowIntensity: this.config.shadowIntensity,
+				frameShadowSize: this.config.frameShadowSize,
+				frameShadowOpacity: this.config.frameShadowOpacity,
+				frameShadowBlur: this.config.frameShadowBlur,
 				backgroundBlur: this.config.backgroundBlur,
 				zoomMotionBlur: this.config.zoomMotionBlur,
 				connectZooms: this.config.connectZooms,
 				deviceMockup: this.config.deviceMockup,
+				frameBorderEnabled: this.config.frameBorderEnabled,
+				frameBorderWidth: this.config.frameBorderWidth,
+				frameBorderColor: this.config.frameBorderColor,
+				frameBorderOpacity: this.config.frameBorderOpacity,
 				borderRadius: this.config.borderRadius,
 				padding: this.config.padding,
 				cropRegion: this.config.cropRegion,

@@ -2,6 +2,8 @@ import {
 	AlertTriangle,
 	Camera,
 	Captions,
+	ChevronDown,
+	ChevronUp,
 	Crop,
 	Gauge,
 	Keyboard,
@@ -38,6 +40,15 @@ import {
 import { ColorPicker } from "./ColorPicker";
 import { CropControl } from "./CropControl";
 import { loadEditorPreferences, saveEditorPreferences } from "./editorPreferences";
+import {
+	DEFAULT_FRAME_BORDER_COLOR,
+	DEFAULT_FRAME_BORDER_ENABLED,
+	DEFAULT_FRAME_BORDER_OPACITY,
+	DEFAULT_FRAME_BORDER_WIDTH,
+	DEFAULT_FRAME_SHADOW_BLUR,
+	DEFAULT_FRAME_SHADOW_OPACITY,
+	DEFAULT_FRAME_SHADOW_SIZE,
+} from "./frameEffects";
 import { KeyboardShortcutsHelp } from "./KeyboardShortcutsHelp";
 import { DEFAULT_VIDEO_PREVIEW_PADDING } from "./projectPersistence";
 import { SliderControl } from "./SliderControl";
@@ -226,8 +237,12 @@ interface SettingsPanelProps {
 	onZoomDelete?: (id: string) => void;
 	selectedTrimId?: string | null;
 	onTrimDelete?: (id: string) => void;
-	shadowIntensity?: number;
-	onShadowChange?: (intensity: number) => void;
+	frameShadowSize?: number;
+	onFrameShadowSizeChange?: (size: number) => void;
+	frameShadowOpacity?: number;
+	onFrameShadowOpacityChange?: (opacity: number) => void;
+	frameShadowBlur?: number;
+	onFrameShadowBlurChange?: (blur: number) => void;
 	backgroundBlur?: number;
 	onBackgroundBlurChange?: (amount: number) => void;
 	zoomMotionBlur?: number;
@@ -282,6 +297,14 @@ interface SettingsPanelProps {
 	onKeyboardShortcutMaxVisibleChange?: (count: number) => void;
 	deviceMockup?: import("./types").DeviceMockup;
 	onDeviceMockupChange?: (mockup: import("./types").DeviceMockup) => void;
+	frameBorderEnabled?: boolean;
+	onFrameBorderEnabledChange?: (enabled: boolean) => void;
+	frameBorderWidth?: number;
+	onFrameBorderWidthChange?: (width: number) => void;
+	frameBorderColor?: string;
+	onFrameBorderColorChange?: (color: string) => void;
+	frameBorderOpacity?: number;
+	onFrameBorderOpacityChange?: (opacity: number) => void;
 	borderRadius?: number;
 	onBorderRadiusChange?: (radius: number) => void;
 	padding?: number;
@@ -481,8 +504,12 @@ export default function SettingsPanel({
 	onZoomDelete,
 	selectedTrimId,
 	onTrimDelete,
-	shadowIntensity = 0.67,
-	onShadowChange,
+	frameShadowSize = DEFAULT_FRAME_SHADOW_SIZE,
+	onFrameShadowSizeChange,
+	frameShadowOpacity = DEFAULT_FRAME_SHADOW_OPACITY,
+	onFrameShadowOpacityChange,
+	frameShadowBlur = DEFAULT_FRAME_SHADOW_BLUR,
+	onFrameShadowBlurChange,
 	backgroundBlur = 0,
 	onBackgroundBlurChange,
 	zoomMotionBlur = 0,
@@ -537,6 +564,14 @@ export default function SettingsPanel({
 	onKeyboardShortcutMaxVisibleChange,
 	deviceMockup = "none",
 	onDeviceMockupChange,
+	frameBorderEnabled = DEFAULT_FRAME_BORDER_ENABLED,
+	onFrameBorderEnabledChange,
+	frameBorderWidth = DEFAULT_FRAME_BORDER_WIDTH,
+	onFrameBorderWidthChange,
+	frameBorderColor = DEFAULT_FRAME_BORDER_COLOR,
+	onFrameBorderColorChange,
+	frameBorderOpacity = DEFAULT_FRAME_BORDER_OPACITY,
+	onFrameBorderOpacityChange,
 	borderRadius = 12.5,
 	onBorderRadiusChange,
 	padding = DEFAULT_VIDEO_PREVIEW_PADDING,
@@ -678,6 +713,7 @@ export default function SettingsPanel({
 		getBackgroundTabForWallpaper(selected),
 	);
 	const [showCropModal, setShowCropModal] = useState(false);
+	const [showAdvancedShadowSettings, setShowAdvancedShadowSettings] = useState(true);
 	const [showAdvancedWebcam, setShowAdvancedWebcam] = useState(false);
 	const [activeTab, setActiveTab] = useState<
 		| "effects"
@@ -1168,18 +1204,69 @@ export default function SettingsPanel({
 									parseInput={(t) => parseFloat(t.replace(/×$/, ""))}
 								/>
 							</div>
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<SliderControl
-									label={tSettings("effects.shadow")}
-									value={shadowIntensity}
-									defaultValue={0}
-									min={0}
-									max={1}
-									step={0.01}
-									onChange={(v) => onShadowChange?.(v)}
-									formatValue={(v) => `${Math.round(v * 100)}%`}
-									parseInput={(t) => parseFloat(t.replace(/%$/, "")) / 100}
-								/>
+							<div className="rounded-xl border border-white/[0.06] bg-white/[0.04] transition-colors duration-200 hover:bg-white/[0.06]">
+								<button
+									type="button"
+									onClick={() => setShowAdvancedShadowSettings((value) => !value)}
+									className="flex w-full items-center justify-between px-3 py-2.5 text-left"
+								>
+									<div>
+										<div className="text-[11px] font-medium text-slate-200">
+											{tSettings("effects.advancedShadowSettings")}
+										</div>
+										<div className="mt-0.5 text-[10px] leading-relaxed text-slate-500">
+											{tSettings("effects.advancedShadowDescription")}
+										</div>
+									</div>
+									{showAdvancedShadowSettings ? (
+										<ChevronUp className="h-3.5 w-3.5 text-slate-400" />
+									) : (
+										<ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+									)}
+								</button>
+								{showAdvancedShadowSettings && (
+									<div className="flex flex-col gap-1.5 border-t border-white/[0.06] px-2.5 py-2.5">
+										<div className="rounded-xl border border-white/[0.06] bg-black/10 p-2.5">
+											<SliderControl
+												label={tSettings("effects.shadowSize")}
+												value={frameShadowSize}
+												defaultValue={DEFAULT_FRAME_SHADOW_SIZE}
+												min={0}
+												max={48}
+												step={0.5}
+												onChange={(v) => onFrameShadowSizeChange?.(v)}
+												formatValue={(v) => `${v.toFixed(1)}px`}
+												parseInput={(t) => parseFloat(t.replace(/px$/, ""))}
+											/>
+										</div>
+										<div className="rounded-xl border border-white/[0.06] bg-black/10 p-2.5">
+											<SliderControl
+												label={tSettings("effects.shadowOpacity")}
+												value={frameShadowOpacity}
+												defaultValue={DEFAULT_FRAME_SHADOW_OPACITY}
+												min={0}
+												max={1}
+												step={0.01}
+												onChange={(v) => onFrameShadowOpacityChange?.(v)}
+												formatValue={(v) => `${Math.round(v * 100)}%`}
+												parseInput={(t) => parseFloat(t.replace(/%$/, "")) / 100}
+											/>
+										</div>
+										<div className="rounded-xl border border-white/[0.06] bg-black/10 p-2.5">
+											<SliderControl
+												label={tSettings("effects.shadowBlur")}
+												value={frameShadowBlur}
+												defaultValue={DEFAULT_FRAME_SHADOW_BLUR}
+												min={0}
+												max={96}
+												step={1}
+												onChange={(v) => onFrameShadowBlurChange?.(v)}
+												formatValue={(v) => `${Math.round(v)}px`}
+												parseInput={(t) => parseFloat(t.replace(/px$/, ""))}
+											/>
+										</div>
+									</div>
+								)}
 							</div>
 						</SettingsSection>
 
@@ -1187,6 +1274,72 @@ export default function SettingsPanel({
 							title="Frame"
 							description="Adjust the recording frame shape and spacing"
 						>
+							<div className="rounded-xl border border-white/[0.06] bg-white/[0.04] px-3 py-2.5 transition-colors duration-200 hover:bg-white/[0.06]">
+								<div className="flex items-center justify-between gap-3">
+									<div>
+										<div className="text-[11px] font-medium text-slate-200">
+											{tSettings("effects.border")}
+										</div>
+										<div className="mt-0.5 text-[10px] leading-relaxed text-slate-500">
+											{tSettings("effects.borderDescription")}
+										</div>
+									</div>
+									<Switch
+										checked={frameBorderEnabled}
+										onCheckedChange={(checked) => onFrameBorderEnabledChange?.(checked)}
+										className="data-[state=checked]:bg-[#3b82f6]"
+									/>
+								</div>
+							</div>
+							{frameBorderEnabled && (
+								<>
+									<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+										<SliderControl
+											label={tSettings("effects.borderWidth")}
+											value={frameBorderWidth}
+											defaultValue={DEFAULT_FRAME_BORDER_WIDTH}
+											min={0}
+											max={20}
+											step={1}
+											onChange={(v) => onFrameBorderWidthChange?.(v)}
+											formatValue={(v) => `${Math.round(v)}px`}
+											parseInput={(t) => parseFloat(t.replace(/px$/, ""))}
+										/>
+									</div>
+									<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+										<label className="mb-2 block text-xs font-medium text-slate-300">
+											{tSettings("effects.borderColor")}
+										</label>
+										<ColorPicker
+											color={frameBorderColor}
+											onChange={(color) => onFrameBorderColorChange?.(color.hex)}
+											colors={[
+												"#000000",
+												"#FFFFFF",
+												"#F59E0B",
+												"#3B82F6",
+												"#22C55E",
+												"#EF4444",
+												"#A855F7",
+												"#F97316",
+											]}
+										/>
+									</div>
+									<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+										<SliderControl
+											label={tSettings("effects.borderOpacity")}
+											value={frameBorderOpacity}
+											defaultValue={DEFAULT_FRAME_BORDER_OPACITY}
+											min={0}
+											max={1}
+											step={0.01}
+											onChange={(v) => onFrameBorderOpacityChange?.(v)}
+											formatValue={(v) => `${Math.round(v * 100)}%`}
+											parseInput={(t) => parseFloat(t.replace(/%$/, "")) / 100}
+										/>
+									</div>
+								</>
+							)}
 							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label={tSettings("effects.roundness")}
