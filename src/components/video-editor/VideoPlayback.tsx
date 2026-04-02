@@ -33,28 +33,48 @@ import { KeyboardShortcutOverlay } from "./KeyboardShortcutOverlay";
 import {
 	type AnnotationRegion,
 	type CameraLayoutRegion,
-	type CursorPack,
-	type CursorTelemetryPoint,
-	DEFAULT_CURSOR_CLICK_BOUNCE,
-	DEFAULT_CURSOR_MOTION_BLUR,
-	DEFAULT_CURSOR_SIZE,
-	DEFAULT_CURSOR_SMOOTHING,
-	DEFAULT_CURSOR_SWAY,
-	DEFAULT_KEYBOARD_SHORTCUT_MAX_VISIBLE,
-	DEFAULT_KEYBOARD_SHORTCUT_OPACITY,
-	DEFAULT_KEYBOARD_SHORTCUT_POSITION,
-	DEFAULT_KEYBOARD_SHORTCUT_SCALE,
-	DEFAULT_KEYBOARD_SHORTCUT_THEME,
-	type KeyboardShortcutCallout,
-	type KeyboardShortcutPosition,
-	type KeyboardShortcutTheme,
-	type PreviewQuality,
-	type SpeedRegion,
-	type TrimRegion,
-	type ZoomDepth,
-	type ZoomFocus,
-	type ZoomRegion,
-} from "./types";
+			type CursorPack,
+			type CursorMovementStyle,
+			type CursorSpringSettings,
+			type CursorStyle,
+			type CursorTelemetryPoint,
+			type CursorTypeMode,
+			DEFAULT_CLICK_HIGHLIGHT_COLOR,
+			DEFAULT_CLICK_HIGHLIGHT_OPACITY,
+			DEFAULT_CLICK_HIGHLIGHT_SIZE,
+			DEFAULT_CURSOR_CLICK_BOUNCE,
+			DEFAULT_CURSOR_COLOR,
+			DEFAULT_CURSOR_IDLE_HIDE_DELAY_MS,
+			DEFAULT_CURSOR_MOTION_BLUR,
+			DEFAULT_CURSOR_MOVEMENT_STYLE,
+			DEFAULT_CURSOR_OPACITY,
+			DEFAULT_CURSOR_SIZE,
+			DEFAULT_CURSOR_SMOOTHING,
+			DEFAULT_CURSOR_SWAY,
+			DEFAULT_CURSOR_SPRING,
+			DEFAULT_CURSOR_STYLE,
+			DEFAULT_CURSOR_TILT,
+			DEFAULT_CURSOR_TRAIL_LENGTH,
+			DEFAULT_CURSOR_TRAIL_OPACITY,
+			DEFAULT_HIGH_QUALITY_SVG_CURSORS,
+			DEFAULT_HIDE_CURSOR_WHEN_IDLE,
+			DEFAULT_KEYBOARD_SHORTCUT_MAX_VISIBLE,
+			DEFAULT_KEYBOARD_SHORTCUT_OPACITY,
+			DEFAULT_KEYBOARD_SHORTCUT_POSITION,
+			DEFAULT_KEYBOARD_SHORTCUT_SCALE,
+			DEFAULT_KEYBOARD_SHORTCUT_THEME,
+			DEFAULT_SMOOTH_CURSOR_MOVEMENT,
+			type KeyboardShortcutCallout,
+			type KeyboardShortcutPosition,
+			type KeyboardShortcutTheme,
+			type PreviewQuality,
+			type SpeedRegion,
+			type TrimRegion,
+			type ZoomDepth,
+			type ZoomFocus,
+			type ZoomRegion,
+			DEFAULT_CURSOR_TYPE_MODE,
+		} from "./types";
 import {
 	createPlaybackCameraState,
 	evaluatePlaybackCameraFrame,
@@ -65,6 +85,7 @@ import {
 	PixiCursorOverlay,
 	preloadCursorAssets,
 } from "./videoPlayback/cursorRenderer";
+import { resolveCursorV2Config } from "./videoPlayback/cursorV2";
 import {
 	buildCursorSimulationPath,
 	type CursorSimulationPath,
@@ -141,7 +162,23 @@ interface VideoPlaybackProps {
 	cursorMotionBlur?: number;
 	cursorClickBounce?: number;
 	cursorSway?: number;
+	cursorStyle?: CursorStyle;
 	cursorPack?: CursorPack;
+	cursorColor?: string;
+	cursorOpacity?: number;
+	clickHighlightColor?: string;
+	clickHighlightSize?: number;
+	clickHighlightOpacity?: number;
+	cursorTrailLength?: number;
+	cursorTrailOpacity?: number;
+	cursorTypeMode?: CursorTypeMode;
+	cursorTilt?: number;
+	hideWhenIdle?: boolean;
+	idleHideDelayMs?: number;
+	smoothMovementEnabled?: boolean;
+	cursorMovementStyle?: CursorMovementStyle;
+	cursorSpring?: CursorSpringSettings;
+	highQualitySvgCursors?: boolean;
 	webcamPath?: string | null;
 	webcamRegion?: import("./types").WebcamRegion;
 	showWebcam?: boolean;
@@ -221,7 +258,23 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			cursorMotionBlur = DEFAULT_CURSOR_MOTION_BLUR,
 			cursorClickBounce = DEFAULT_CURSOR_CLICK_BOUNCE,
 			cursorSway = DEFAULT_CURSOR_SWAY,
+			cursorStyle = DEFAULT_CURSOR_STYLE,
 			cursorPack = "classic",
+			cursorColor = DEFAULT_CURSOR_COLOR,
+			cursorOpacity = DEFAULT_CURSOR_OPACITY,
+			clickHighlightColor = DEFAULT_CLICK_HIGHLIGHT_COLOR,
+			clickHighlightSize = DEFAULT_CLICK_HIGHLIGHT_SIZE,
+			clickHighlightOpacity = DEFAULT_CLICK_HIGHLIGHT_OPACITY,
+			cursorTrailLength = DEFAULT_CURSOR_TRAIL_LENGTH,
+			cursorTrailOpacity = DEFAULT_CURSOR_TRAIL_OPACITY,
+			cursorTypeMode = DEFAULT_CURSOR_TYPE_MODE,
+			cursorTilt = DEFAULT_CURSOR_TILT,
+			hideWhenIdle = DEFAULT_HIDE_CURSOR_WHEN_IDLE,
+			idleHideDelayMs = DEFAULT_CURSOR_IDLE_HIDE_DELAY_MS,
+			smoothMovementEnabled = DEFAULT_SMOOTH_CURSOR_MOVEMENT,
+			cursorMovementStyle = DEFAULT_CURSOR_MOVEMENT_STYLE,
+			cursorSpring = DEFAULT_CURSOR_SPRING,
+			highQualitySvgCursors = DEFAULT_HIGH_QUALITY_SVG_CURSORS,
 			webcamPath,
 			webcamRegion,
 			showWebcam = true,
@@ -289,7 +342,23 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const cursorMotionBlurRef = useRef(cursorMotionBlur);
 		const cursorClickBounceRef = useRef(cursorClickBounce);
 		const cursorSwayRef = useRef(cursorSway);
+		const cursorStyleRef = useRef(cursorStyle);
 		const cursorPackRef = useRef(cursorPack);
+		const cursorColorRef = useRef(cursorColor);
+		const cursorOpacityRef = useRef(cursorOpacity);
+		const clickHighlightColorRef = useRef(clickHighlightColor);
+		const clickHighlightSizeRef = useRef(clickHighlightSize);
+		const clickHighlightOpacityRef = useRef(clickHighlightOpacity);
+		const cursorTrailLengthRef = useRef(cursorTrailLength);
+		const cursorTrailOpacityRef = useRef(cursorTrailOpacity);
+		const cursorTypeModeRef = useRef(cursorTypeMode);
+		const cursorTiltRef = useRef(cursorTilt);
+		const hideWhenIdleRef = useRef(hideWhenIdle);
+		const idleHideDelayMsRef = useRef(idleHideDelayMs);
+		const smoothMovementEnabledRef = useRef(smoothMovementEnabled);
+		const cursorMovementStyleRef = useRef(cursorMovementStyle);
+		const cursorSpringRef = useRef(cursorSpring);
+		const highQualitySvgCursorsRef = useRef(highQualitySvgCursors);
 		const motionBlurStateRef = useRef<MotionBlurState>(createMotionBlurState());
 		const previewQualitySwitchStateRef = useRef<PreviewQualitySwitchState>(
 			createPreviewQualitySwitchState(previewQuality),
@@ -834,8 +903,72 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		}, [cursorSway]);
 
 		useEffect(() => {
+			cursorStyleRef.current = cursorStyle;
+		}, [cursorStyle]);
+
+		useEffect(() => {
 			cursorPackRef.current = cursorPack;
 		}, [cursorPack]);
+
+		useEffect(() => {
+			cursorColorRef.current = cursorColor;
+		}, [cursorColor]);
+
+		useEffect(() => {
+			cursorOpacityRef.current = cursorOpacity;
+		}, [cursorOpacity]);
+
+		useEffect(() => {
+			clickHighlightColorRef.current = clickHighlightColor;
+		}, [clickHighlightColor]);
+
+		useEffect(() => {
+			clickHighlightSizeRef.current = clickHighlightSize;
+		}, [clickHighlightSize]);
+
+		useEffect(() => {
+			clickHighlightOpacityRef.current = clickHighlightOpacity;
+		}, [clickHighlightOpacity]);
+
+		useEffect(() => {
+			cursorTrailLengthRef.current = cursorTrailLength;
+		}, [cursorTrailLength]);
+
+		useEffect(() => {
+			cursorTrailOpacityRef.current = cursorTrailOpacity;
+		}, [cursorTrailOpacity]);
+
+		useEffect(() => {
+			cursorTypeModeRef.current = cursorTypeMode;
+		}, [cursorTypeMode]);
+
+		useEffect(() => {
+			cursorTiltRef.current = cursorTilt;
+		}, [cursorTilt]);
+
+		useEffect(() => {
+			hideWhenIdleRef.current = hideWhenIdle;
+		}, [hideWhenIdle]);
+
+		useEffect(() => {
+			idleHideDelayMsRef.current = idleHideDelayMs;
+		}, [idleHideDelayMs]);
+
+		useEffect(() => {
+			smoothMovementEnabledRef.current = smoothMovementEnabled;
+		}, [smoothMovementEnabled]);
+
+		useEffect(() => {
+			cursorMovementStyleRef.current = cursorMovementStyle;
+		}, [cursorMovementStyle]);
+
+		useEffect(() => {
+			cursorSpringRef.current = cursorSpring;
+		}, [cursorSpring]);
+
+		useEffect(() => {
+			highQualitySvgCursorsRef.current = highQualitySvgCursors;
+		}, [highQualitySvgCursors]);
 
 		useEffect(() => {
 			if (!pixiReady || !videoReady) return;
@@ -1010,13 +1143,38 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				// Cursor overlay - rendered above the masked video so it can sit in front
 				// of the content without getting clipped.
 				if (cursorOverlayEnabled) {
+					const resolvedCursorConfig = resolveCursorV2Config({
+						cursorPack: cursorPackRef.current,
+						cursorTypeMode: cursorTypeModeRef.current,
+						cursorTilt: cursorTiltRef.current,
+						hideWhenIdle: hideWhenIdleRef.current,
+						idleHideDelayMs: idleHideDelayMsRef.current,
+						smoothMovementEnabled: smoothMovementEnabledRef.current,
+						cursorMovementStyle: cursorMovementStyleRef.current,
+						cursorSpring: cursorSpringRef.current,
+						highQualitySvgCursors: highQualitySvgCursorsRef.current,
+					});
 					const cursorOverlay = new PixiCursorOverlay({
 						dotRadius: DEFAULT_CURSOR_CONFIG.dotRadius * cursorSizeRef.current,
-						smoothingFactor: cursorSmoothingRef.current,
+						smoothingFactor: smoothMovementEnabledRef.current ? cursorSmoothingRef.current : 0,
 						motionBlur: cursorMotionBlurRef.current,
 						clickBounce: cursorClickBounceRef.current,
 						sway: cursorSwayRef.current,
-						cursorPack: cursorPackRef.current,
+						cursorStyle: cursorStyleRef.current,
+						cursorPack: resolvedCursorConfig.cursorPack,
+						cursorColor: cursorColorRef.current,
+						cursorOpacity: cursorOpacityRef.current,
+						clickHighlightColor: clickHighlightColorRef.current,
+						clickHighlightSize: clickHighlightSizeRef.current,
+						clickHighlightOpacity: clickHighlightOpacityRef.current,
+						trailLength: cursorTrailLengthRef.current,
+						trailOpacity: cursorTrailOpacityRef.current,
+						springConfig: resolvedCursorConfig.springConfig,
+						cursorTypeMode: resolvedCursorConfig.cursorTypeMode,
+						cursorTilt: resolvedCursorConfig.cursorTilt,
+						hideWhenIdle: resolvedCursorConfig.hideWhenIdle,
+						idleHideDelayMs: resolvedCursorConfig.idleHideDelayMs,
+						preferSystemCursorAssets: resolvedCursorConfig.preferSystemCursorAssets,
 					});
 					cursorOverlayRef.current = cursorOverlay;
 					cursorContainer.addChild(cursorOverlay.container);
@@ -1280,13 +1438,61 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				return;
 			}
 
+			const resolvedCursorConfig = resolveCursorV2Config({
+				cursorPack,
+				cursorTypeMode,
+				cursorTilt,
+				hideWhenIdle,
+				idleHideDelayMs,
+				smoothMovementEnabled,
+				cursorMovementStyle,
+				cursorSpring,
+				highQualitySvgCursors,
+			});
 			overlay.setDotRadius(DEFAULT_CURSOR_CONFIG.dotRadius * cursorSize);
-			overlay.setSmoothingFactor(cursorSmoothing);
+			overlay.setSmoothingFactor(smoothMovementEnabled ? cursorSmoothing : 0);
 			overlay.setMotionBlur(cursorMotionBlur);
 			overlay.setClickBounce(cursorClickBounce);
 			overlay.setSway(cursorSway);
+			overlay.setCursorStyle(cursorStyle);
+			overlay.setCursorColor(cursorColor);
+			overlay.setCursorOpacity(cursorOpacity);
+			overlay.setClickHighlightColor(clickHighlightColor);
+			overlay.setClickHighlightSize(clickHighlightSize);
+			overlay.setClickHighlightOpacity(clickHighlightOpacity);
+			overlay.setTrailLength(cursorTrailLength);
+			overlay.setTrailOpacity(cursorTrailOpacity);
+			overlay.setSpringConfig(resolvedCursorConfig.springConfig);
+			overlay.setCursorTypeMode(resolvedCursorConfig.cursorTypeMode);
+			overlay.setCursorTilt(resolvedCursorConfig.cursorTilt);
+			overlay.setHideWhenIdle(resolvedCursorConfig.hideWhenIdle);
+			overlay.setIdleHideDelayMs(resolvedCursorConfig.idleHideDelayMs);
+			overlay.setPreferSystemCursorAssets(resolvedCursorConfig.preferSystemCursorAssets);
 			overlay.reset();
-		}, [cursorSize, cursorSmoothing, cursorMotionBlur, cursorClickBounce, cursorSway]);
+		}, [
+			cursorSize,
+			cursorSmoothing,
+			cursorMotionBlur,
+			cursorClickBounce,
+			cursorSway,
+			cursorStyle,
+			cursorPack,
+			cursorColor,
+			cursorOpacity,
+			clickHighlightColor,
+			clickHighlightSize,
+			clickHighlightOpacity,
+			cursorTrailLength,
+			cursorTrailOpacity,
+			cursorTypeMode,
+			cursorTilt,
+			hideWhenIdle,
+			idleHideDelayMs,
+			smoothMovementEnabled,
+			cursorMovementStyle,
+			cursorSpring,
+			highQualitySvgCursors,
+		]);
 
 		useEffect(() => {
 			const cursorContainer = cursorContainerRef.current;
@@ -1319,13 +1525,38 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					cursorOverlayRef.current.destroy();
 				}
 
+				const resolvedCursorConfig = resolveCursorV2Config({
+					cursorPack,
+					cursorTypeMode: cursorTypeModeRef.current,
+					cursorTilt: cursorTiltRef.current,
+					hideWhenIdle: hideWhenIdleRef.current,
+					idleHideDelayMs: idleHideDelayMsRef.current,
+					smoothMovementEnabled: smoothMovementEnabledRef.current,
+					cursorMovementStyle: cursorMovementStyleRef.current,
+					cursorSpring: cursorSpringRef.current,
+					highQualitySvgCursors: highQualitySvgCursorsRef.current,
+				});
 				const cursorOverlay = new PixiCursorOverlay({
 					dotRadius: DEFAULT_CURSOR_CONFIG.dotRadius * cursorSizeRef.current,
-					smoothingFactor: cursorSmoothingRef.current,
+					smoothingFactor: smoothMovementEnabledRef.current ? cursorSmoothingRef.current : 0,
 					motionBlur: cursorMotionBlurRef.current,
 					clickBounce: cursorClickBounceRef.current,
 					sway: cursorSwayRef.current,
+					cursorStyle: cursorStyleRef.current,
 					cursorPack,
+					cursorColor: cursorColorRef.current,
+					cursorOpacity: cursorOpacityRef.current,
+					clickHighlightColor: clickHighlightColorRef.current,
+					clickHighlightSize: clickHighlightSizeRef.current,
+					clickHighlightOpacity: clickHighlightOpacityRef.current,
+					trailLength: cursorTrailLengthRef.current,
+					trailOpacity: cursorTrailOpacityRef.current,
+					springConfig: resolvedCursorConfig.springConfig,
+					cursorTypeMode: resolvedCursorConfig.cursorTypeMode,
+					cursorTilt: resolvedCursorConfig.cursorTilt,
+					hideWhenIdle: resolvedCursorConfig.hideWhenIdle,
+					idleHideDelayMs: resolvedCursorConfig.idleHideDelayMs,
+					preferSystemCursorAssets: resolvedCursorConfig.preferSystemCursorAssets,
 				});
 				cursorOverlayRef.current = cursorOverlay;
 				cursorContainerRef.current.addChild(cursorOverlay.container);

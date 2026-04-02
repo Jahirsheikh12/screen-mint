@@ -129,6 +129,15 @@ export interface KeyboardShortcutCallout {
 }
 
 export type CursorStyle = "default" | "dot" | "crosshair" | "circle" | "ring";
+export type CursorTypeMode = "auto" | "circle";
+export type CursorMovementStyle = "slow" | "smooth" | "mellow" | "fast" | "custom";
+
+export interface CursorSpringSettings {
+	tension: number;
+	friction: number;
+	mass: number;
+}
+
 export type CursorPack =
 	| "classic"
 	| "custom"
@@ -148,6 +157,22 @@ export interface CursorVisualSettings {
 	clickBounce: number;
 	sway: number;
 }
+
+export const CURSOR_TYPE_MODE_OPTIONS: { value: CursorTypeMode; label: string }[] = [
+	{ value: "auto", label: "Auto" },
+	{ value: "circle", label: "Circle" },
+];
+
+export const CURSOR_MOVEMENT_STYLE_OPTIONS: {
+	value: CursorMovementStyle;
+	label: string;
+}[] = [
+	{ value: "slow", label: "Slow" },
+	{ value: "smooth", label: "Smooth" },
+	{ value: "mellow", label: "Mellow" },
+	{ value: "fast", label: "Fast" },
+	{ value: "custom", label: "Custom" },
+];
 
 export const CURSOR_STYLE_OPTIONS: { value: CursorStyle; label: string }[] = [
 	{ value: "default", label: "Default" },
@@ -205,6 +230,18 @@ export const DEFAULT_CURSOR_CLICK_BOUNCE = 2.5;
 export const DEFAULT_CURSOR_SWAY = 0.25;
 export const DEFAULT_CURSOR_STYLE: CursorStyle = "default";
 export const DEFAULT_CURSOR_PACK: CursorPack = "classic";
+export const DEFAULT_CURSOR_TYPE_MODE: CursorTypeMode = "auto";
+export const DEFAULT_CURSOR_TILT = 0.125;
+export const DEFAULT_HIDE_CURSOR_WHEN_IDLE = false;
+export const DEFAULT_CURSOR_IDLE_HIDE_DELAY_MS = 1500;
+export const DEFAULT_SMOOTH_CURSOR_MOVEMENT = true;
+export const DEFAULT_CURSOR_MOVEMENT_STYLE: CursorMovementStyle = "custom";
+export const DEFAULT_CURSOR_SPRING: CursorSpringSettings = {
+	tension: 319.6,
+	friction: 60.49333333333333,
+	mass: 1.0396666666666667,
+};
+export const DEFAULT_HIGH_QUALITY_SVG_CURSORS = true;
 export const DEFAULT_CURSOR_COLOR = "#FFFFFF";
 export const DEFAULT_CURSOR_OPACITY = 1.0;
 export const DEFAULT_CLICK_HIGHLIGHT_COLOR = "#f59e0b";

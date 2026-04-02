@@ -17,6 +17,8 @@ const MIN_CUTOFF = 1.15;
 const DERIVATIVE_CUTOFF = 1.4;
 const FILTER_BETA = 0.24;
 export const CURSOR_MOTION_DISCONTINUITY_MS = 100;
+const CURSOR_ACTIVITY_SPEED_THRESHOLD = 0.015;
+const CURSOR_ACTIVITY_INTERACTION_WINDOW_MS = 120;
 
 export type CursorIntent =
 	| "idle"
@@ -36,6 +38,10 @@ export interface CursorSimulationFrame {
 	velocityY: number;
 	heading: number;
 	confidence: CursorTelemetryConfidence;
+	isActive: boolean;
+	lastActiveTimeMs: number;
+	lastBecameActiveTimeMs: number;
+	lastBecameInactiveTimeMs: number;
 }
 
 export interface CursorSimulationPath {
@@ -61,6 +67,10 @@ export interface CursorEvaluation {
 	isTextInput: boolean;
 	intent: CursorIntent;
 	confidence: CursorTelemetryConfidence;
+	isActive: boolean;
+	lastActiveTimeMs: number;
+	lastBecameActiveTimeMs: number;
+	lastBecameInactiveTimeMs: number;
 }
 
 export interface CursorMotionSnapshot extends CursorEvaluation {
@@ -514,6 +524,14 @@ function classifyCursorIntent(args: {
 	return "idle" as const;
 }
 
+function hasRecentInteractionActivity(samples: CursorTelemetryPoint[], timeMs: number) {
+	const latestInteraction = findLatestInteractionSample(samples, timeMs);
+	return Boolean(
+		latestInteraction &&
+			timeMs - latestInteraction.timeMs <= CURSOR_ACTIVITY_INTERACTION_WINDOW_MS,
+	);
+}
+
 export function buildCursorSimulationPath(
 	samples: CursorTelemetryPoint[],
 	durationMs: number,
@@ -545,6 +563,10 @@ export function buildCursorSimulationPath(
 	);
 	const frames: CursorSimulationFrame[] = [];
 	let previousFrame: CursorSimulationFrame | null = null;
+	let lastActiveTimeMs = 0;
+	let lastBecameActiveTimeMs = 0;
+	let lastBecameInactiveTimeMs = 0;
+	let wasActive = true;
 
 	for (let timeMs = 0; timeMs <= finalDurationMs; timeMs += SIMULATION_SAMPLE_MS) {
 		const rawPoint = interpolateRawCursorPosition(normalizedSamples, timeMs);
@@ -576,6 +598,26 @@ export function buildCursorSimulationPath(
 					? (filteredY - previousFrame.cy) / deltaSeconds
 					: 0;
 		const heading = Math.atan2(velocityY, velocityX);
+		const speed = Math.hypot(velocityX, velocityY);
+		const isActive =
+			speed > CURSOR_ACTIVITY_SPEED_THRESHOLD ||
+			isDraggingAtTime(normalizedSamples, timeMs) ||
+			hasRecentInteractionActivity(normalizedSamples, timeMs);
+
+		if (frames.length === 0) {
+			wasActive = isActive;
+			lastBecameActiveTimeMs = timeMs;
+			lastBecameInactiveTimeMs = 0;
+		}
+
+		if (isActive) {
+			lastActiveTimeMs = timeMs;
+			if (!wasActive) {
+				lastBecameActiveTimeMs = timeMs;
+			}
+		} else if (wasActive) {
+			lastBecameInactiveTimeMs = timeMs;
+		}
 
 		const frame: CursorSimulationFrame = {
 			timeMs: Math.min(finalDurationMs, Math.round(timeMs * 1000) / 1000),
@@ -585,9 +627,14 @@ export function buildCursorSimulationPath(
 			velocityY,
 			heading: Number.isFinite(heading) ? heading : 0,
 			confidence: rawPoint.confidence,
+			isActive,
+			lastActiveTimeMs,
+			lastBecameActiveTimeMs,
+			lastBecameInactiveTimeMs,
 		};
 		frames.push(frame);
 		previousFrame = frame;
+		wasActive = isActive;
 	}
 
 	if (frames[frames.length - 1]?.timeMs !== finalDurationMs) {
@@ -604,6 +651,10 @@ export function buildCursorSimulationPath(
 			velocityY: previousFrame?.velocityY ?? 0,
 			heading: previousFrame?.heading ?? 0,
 			confidence: lastRawPoint.confidence,
+			isActive: previousFrame?.isActive ?? false,
+			lastActiveTimeMs: previousFrame?.lastActiveTimeMs ?? 0,
+			lastBecameActiveTimeMs: previousFrame?.lastBecameActiveTimeMs ?? 0,
+			lastBecameInactiveTimeMs: previousFrame?.lastBecameInactiveTimeMs ?? 0,
 		});
 	}
 
@@ -657,6 +708,12 @@ function interpolateFrame(frames: CursorSimulationFrame[], timeMs: number) {
 			start.confidence === "medium" || end.confidence === "medium"
 				? ("medium" as const)
 				: ("high" as const),
+		isActive: progress < 0.5 ? start.isActive : end.isActive,
+		lastActiveTimeMs: progress < 0.5 ? start.lastActiveTimeMs : end.lastActiveTimeMs,
+		lastBecameActiveTimeMs:
+			progress < 0.5 ? start.lastBecameActiveTimeMs : end.lastBecameActiveTimeMs,
+		lastBecameInactiveTimeMs:
+			progress < 0.5 ? start.lastBecameInactiveTimeMs : end.lastBecameInactiveTimeMs,
 	};
 }
 
@@ -713,5 +770,9 @@ export function evaluateCursorPath(
 		isTextInput: cursorType === "text",
 		intent,
 		confidence: frame.confidence,
+		isActive: frame.isActive,
+		lastActiveTimeMs: frame.lastActiveTimeMs,
+		lastBecameActiveTimeMs: frame.lastBecameActiveTimeMs,
+		lastBecameInactiveTimeMs: frame.lastBecameInactiveTimeMs,
 	};
 }

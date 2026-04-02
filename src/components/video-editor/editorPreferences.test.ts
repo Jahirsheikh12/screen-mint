@@ -94,6 +94,14 @@ describe("editorPreferences", () => {
 			cursorClickBounce: DEFAULT_EDITOR_PREFERENCES.cursorClickBounce,
 			cursorSway: DEFAULT_EDITOR_PREFERENCES.cursorSway,
 			cursorPack: DEFAULT_EDITOR_PREFERENCES.cursorPack,
+			cursorTypeMode: DEFAULT_EDITOR_PREFERENCES.cursorTypeMode,
+			cursorTilt: DEFAULT_EDITOR_PREFERENCES.cursorTilt,
+			hideWhenIdle: DEFAULT_EDITOR_PREFERENCES.hideWhenIdle,
+			idleHideDelayMs: DEFAULT_EDITOR_PREFERENCES.idleHideDelayMs,
+			smoothMovementEnabled: DEFAULT_EDITOR_PREFERENCES.smoothMovementEnabled,
+			cursorMovementStyle: DEFAULT_EDITOR_PREFERENCES.cursorMovementStyle,
+			cursorSpring: DEFAULT_EDITOR_PREFERENCES.cursorSpring,
+			highQualitySvgCursors: DEFAULT_EDITOR_PREFERENCES.highQualitySvgCursors,
 			frameBorderEnabled: DEFAULT_EDITOR_PREFERENCES.frameBorderEnabled,
 			frameBorderWidth: DEFAULT_EDITOR_PREFERENCES.frameBorderWidth,
 			frameBorderColor: DEFAULT_EDITOR_PREFERENCES.frameBorderColor,
@@ -143,6 +151,43 @@ describe("editorPreferences", () => {
 			keyboardShortcutOpacity: 0.75,
 			keyboardShortcutDisplayMs: 1700,
 			keyboardShortcutMaxVisible: 3,
+		});
+	});
+
+	it("loads stored cursor v2 preferences", () => {
+		vi.stubGlobal(
+			"localStorage",
+			createStorageMock({
+				[EDITOR_PREFERENCES_STORAGE_KEY]: JSON.stringify({
+					cursorTypeMode: "circle",
+					cursorTilt: 0.62,
+					hideWhenIdle: true,
+					idleHideDelayMs: 2300,
+					smoothMovementEnabled: true,
+					cursorMovementStyle: "custom",
+					cursorSpring: {
+						tension: 560,
+						friction: 42,
+						mass: 0.72,
+					},
+					highQualitySvgCursors: false,
+				}),
+			}),
+		);
+
+		expect(loadEditorPreferences()).toMatchObject({
+			cursorTypeMode: "circle",
+			cursorTilt: 0.62,
+			hideWhenIdle: true,
+			idleHideDelayMs: 2300,
+			smoothMovementEnabled: true,
+			cursorMovementStyle: "custom",
+			cursorSpring: {
+				tension: 560,
+				friction: 42,
+				mass: 0.72,
+			},
+			highQualitySvgCursors: false,
 		});
 	});
 
@@ -249,6 +294,18 @@ describe("editorPreferences", () => {
 			cursorClickBounce: 2.25,
 			cursorSway: 1.5,
 			cursorPack: "custom",
+			cursorTypeMode: "circle",
+			cursorTilt: 0.6,
+			hideWhenIdle: true,
+			idleHideDelayMs: 2200,
+			smoothMovementEnabled: true,
+			cursorMovementStyle: "custom",
+			cursorSpring: {
+				tension: 580,
+				friction: 39,
+				mass: 0.69,
+			},
+			highQualitySvgCursors: false,
 			previewQuality: "low",
 			frameBorderEnabled: true,
 			frameBorderWidth: 18,
@@ -289,6 +346,18 @@ describe("editorPreferences", () => {
 			cursorClickBounce: 2.25,
 			cursorSway: 1.5,
 			cursorPack: "custom",
+			cursorTypeMode: "circle",
+			cursorTilt: 0.6,
+			hideWhenIdle: true,
+			idleHideDelayMs: 2200,
+			smoothMovementEnabled: true,
+			cursorMovementStyle: "custom",
+			cursorSpring: {
+				tension: 580,
+				friction: 39,
+				mass: 0.69,
+			},
+			highQualitySvgCursors: false,
 			previewQuality: "low",
 			frameBorderEnabled: true,
 			frameBorderWidth: 18,

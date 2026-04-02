@@ -27,7 +27,10 @@ import {
 	type CropRegion,
 	CURSOR_PACK_OPTIONS,
 	type CursorPack,
+	type CursorMovementStyle,
+	type CursorSpringSettings,
 	type CursorStyle,
+	type CursorTypeMode,
 	DEFAULT_ANNOTATION_POSITION,
 	DEFAULT_ANNOTATION_SIZE,
 	DEFAULT_ANNOTATION_STYLE,
@@ -49,6 +52,7 @@ import {
 	DEFAULT_CURSOR_MOTION_BLUR,
 	DEFAULT_CURSOR_OPACITY,
 	DEFAULT_CURSOR_PACK,
+	DEFAULT_CURSOR_SPRING,
 	DEFAULT_CURSOR_SIZE,
 	DEFAULT_CURSOR_SMOOTHING,
 	DEFAULT_CURSOR_STYLE,
@@ -79,9 +83,10 @@ import {
 	type ZoomMode,
 	type ZoomRegion,
 } from "./types";
+import { normalizeCursorSpring, resolveCursorV2Fields } from "./videoPlayback/cursorV2";
 import { normalizeWebcamRegion } from "./webcamRegionUtils";
 
-export const PROJECT_VERSION = 7;
+export const PROJECT_VERSION = 8;
 export const DEFAULT_VIDEO_PREVIEW_PADDING = 20;
 
 export interface ProjectEditorState {
@@ -102,6 +107,14 @@ export interface ProjectEditorState {
 	cursorSway: number;
 	cursorStyle: import("./types").CursorStyle;
 	cursorPack: CursorPack;
+	cursorTypeMode: CursorTypeMode;
+	cursorTilt: number;
+	hideWhenIdle: boolean;
+	idleHideDelayMs: number;
+	smoothMovementEnabled: boolean;
+	cursorMovementStyle: CursorMovementStyle;
+	cursorSpring: CursorSpringSettings;
+	highQualitySvgCursors: boolean;
 	cursorColor: string;
 	cursorOpacity: number;
 	clickHighlightColor: string;
@@ -921,6 +934,18 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 	};
 	const normalizedShadowIntensity =
 		legacyShadowIntensity ?? getLegacyShadowIntensityFromFrameShadow(normalizedFrameShadow);
+	const cursorV2Fields = resolveCursorV2Fields({
+		cursorTypeMode: (editor as Partial<ProjectEditorState>).cursorTypeMode,
+		cursorTilt: (editor as Partial<ProjectEditorState>).cursorTilt,
+		hideWhenIdle: (editor as Partial<ProjectEditorState>).hideWhenIdle,
+		idleHideDelayMs: (editor as Partial<ProjectEditorState>).idleHideDelayMs,
+		smoothMovementEnabled: (editor as Partial<ProjectEditorState>).smoothMovementEnabled,
+		cursorMovementStyle: (editor as Partial<ProjectEditorState>).cursorMovementStyle,
+		cursorSpring: (editor as Partial<ProjectEditorState>).cursorSpring,
+		highQualitySvgCursors: (editor as Partial<ProjectEditorState>).highQualitySvgCursors,
+		legacyCursorSmoothing: editor.cursorSmoothing,
+		legacyCursorSway: (editor as Partial<ProjectEditorState>).cursorSway,
+	});
 
 	return {
 		wallpaper:
@@ -961,6 +986,14 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 			CURSOR_PACK_OPTIONS.some((opt) => opt.value === editor.cursorPack)
 				? (editor.cursorPack as CursorPack)
 				: DEFAULT_CURSOR_PACK,
+		cursorTypeMode: cursorV2Fields.cursorTypeMode,
+		cursorTilt: cursorV2Fields.cursorTilt,
+		hideWhenIdle: cursorV2Fields.hideWhenIdle,
+		idleHideDelayMs: cursorV2Fields.idleHideDelayMs,
+		smoothMovementEnabled: cursorV2Fields.smoothMovementEnabled,
+		cursorMovementStyle: cursorV2Fields.cursorMovementStyle,
+		cursorSpring: normalizeCursorSpring(cursorV2Fields.cursorSpring, DEFAULT_CURSOR_SPRING),
+		highQualitySvgCursors: cursorV2Fields.highQualitySvgCursors,
 		cursorColor: typeof editor.cursorColor === "string" ? editor.cursorColor : DEFAULT_CURSOR_COLOR,
 		cursorOpacity: isFiniteNumber(editor.cursorOpacity)
 			? clamp(editor.cursorOpacity, 0, 1)

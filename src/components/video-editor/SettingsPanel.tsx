@@ -68,7 +68,9 @@ import type {
 	CaptionStylePreset,
 	CropRegion,
 	CursorPack,
-	CursorStyle,
+	CursorMovementStyle,
+	CursorSpringSettings,
+	CursorTypeMode,
 	FigureData,
 	KeyboardShortcutPosition,
 	KeyboardShortcutTheme,
@@ -81,8 +83,9 @@ import type {
 import {
 	CAMERA_ZOOM_SCALE_DISABLED,
 	CAPTION_STYLE_PRESETS,
+	CURSOR_MOVEMENT_STYLE_OPTIONS,
 	CURSOR_PACK_OPTIONS,
-	CURSOR_STYLE_OPTIONS,
+	CURSOR_TYPE_MODE_OPTIONS,
 	DEFAULT_AUDIO_FADE_IN_MS,
 	DEFAULT_AUDIO_FADE_OUT_MS,
 	DEFAULT_AUDIO_REGION_VOLUME,
@@ -92,13 +95,17 @@ import {
 	DEFAULT_CLICK_HIGHLIGHT_SIZE,
 	DEFAULT_CURSOR_CLICK_BOUNCE,
 	DEFAULT_CURSOR_COLOR,
+	DEFAULT_CURSOR_IDLE_HIDE_DELAY_MS,
 	DEFAULT_CURSOR_MOTION_BLUR,
+	DEFAULT_CURSOR_MOVEMENT_STYLE,
 	DEFAULT_CURSOR_OPACITY,
 	DEFAULT_CURSOR_SIZE,
-	DEFAULT_CURSOR_SMOOTHING,
-	DEFAULT_CURSOR_SWAY,
+	DEFAULT_CURSOR_SPRING,
+	DEFAULT_CURSOR_TILT,
 	DEFAULT_CURSOR_TRAIL_LENGTH,
 	DEFAULT_CURSOR_TRAIL_OPACITY,
+	DEFAULT_HIGH_QUALITY_SVG_CURSORS,
+	DEFAULT_HIDE_CURSOR_WHEN_IDLE,
 	DEFAULT_KEYBOARD_SHORTCUT_DISPLAY_MS,
 	DEFAULT_KEYBOARD_SHORTCUT_MAX_VISIBLE,
 	DEFAULT_KEYBOARD_SHORTCUT_OPACITY,
@@ -106,6 +113,8 @@ import {
 	DEFAULT_KEYBOARD_SHORTCUT_SCALE,
 	DEFAULT_KEYBOARD_SHORTCUT_THEME,
 	DEFAULT_PREVIEW_QUALITY,
+	DEFAULT_SMOOTH_CURSOR_MOVEMENT,
+	DEFAULT_CURSOR_TYPE_MODE,
 	DEFAULT_ZOOM_MODE,
 	DEFAULT_ZOOM_MOTION_BLUR,
 	DEVICE_MOCKUP_OPTIONS,
@@ -115,7 +124,6 @@ import {
 	SPEED_OPTIONS,
 } from "./types";
 import { cursorPackPreviewUrls } from "./videoPlayback/cursorAssetPacks";
-import { fromCursorSwaySliderValue, toCursorSwaySliderValue } from "./videoPlayback/cursorSway";
 import { renderMockupPreview } from "./videoPlayback/deviceMockups";
 
 const GRADIENTS = [
@@ -263,10 +271,24 @@ interface SettingsPanelProps {
 	onCursorClickBounceChange?: (amount: number) => void;
 	cursorSway?: number;
 	onCursorSwayChange?: (amount: number) => void;
-	cursorStyle?: CursorStyle;
-	onCursorStyleChange?: (style: CursorStyle) => void;
 	cursorPack?: CursorPack;
 	onCursorPackChange?: (pack: CursorPack) => void;
+	cursorTypeMode?: CursorTypeMode;
+	onCursorTypeModeChange?: (mode: CursorTypeMode) => void;
+	cursorTilt?: number;
+	onCursorTiltChange?: (tilt: number) => void;
+	hideWhenIdle?: boolean;
+	onHideWhenIdleChange?: (enabled: boolean) => void;
+	idleHideDelayMs?: number;
+	onIdleHideDelayMsChange?: (delayMs: number) => void;
+	smoothMovementEnabled?: boolean;
+	onSmoothMovementEnabledChange?: (enabled: boolean) => void;
+	cursorMovementStyle?: CursorMovementStyle;
+	onCursorMovementStyleChange?: (style: CursorMovementStyle) => void;
+	cursorSpring?: CursorSpringSettings;
+	onCursorSpringChange?: (spring: CursorSpringSettings) => void;
+	highQualitySvgCursors?: boolean;
+	onHighQualitySvgCursorsChange?: (enabled: boolean) => void;
 	cursorColor?: string;
 	onCursorColorChange?: (color: string) => void;
 	cursorOpacity?: number;
@@ -522,18 +544,28 @@ export default function SettingsPanel({
 	onLoopCursorChange,
 	cursorSize = 5,
 	onCursorSizeChange,
-	cursorSmoothing = 2,
-	onCursorSmoothingChange,
 	cursorMotionBlur = 0.35,
 	onCursorMotionBlurChange,
 	cursorClickBounce = 1,
 	onCursorClickBounceChange,
-	cursorSway = DEFAULT_CURSOR_SWAY,
-	onCursorSwayChange,
-	cursorStyle = "default",
-	onCursorStyleChange,
 	cursorPack = "classic",
 	onCursorPackChange,
+	cursorTypeMode = DEFAULT_CURSOR_TYPE_MODE,
+	onCursorTypeModeChange,
+	cursorTilt = DEFAULT_CURSOR_TILT,
+	onCursorTiltChange,
+	hideWhenIdle = DEFAULT_HIDE_CURSOR_WHEN_IDLE,
+	onHideWhenIdleChange,
+	idleHideDelayMs = DEFAULT_CURSOR_IDLE_HIDE_DELAY_MS,
+	onIdleHideDelayMsChange,
+	smoothMovementEnabled = DEFAULT_SMOOTH_CURSOR_MOVEMENT,
+	onSmoothMovementEnabledChange,
+	cursorMovementStyle = DEFAULT_CURSOR_MOVEMENT_STYLE,
+	onCursorMovementStyleChange,
+	cursorSpring = DEFAULT_CURSOR_SPRING,
+	onCursorSpringChange,
+	highQualitySvgCursors = DEFAULT_HIGH_QUALITY_SVG_CURSORS,
+	onHighQualitySvgCursorsChange,
 	cursorColor = DEFAULT_CURSOR_COLOR,
 	onCursorColorChange,
 	cursorOpacity = DEFAULT_CURSOR_OPACITY,
@@ -652,6 +684,7 @@ export default function SettingsPanel({
 	const [customImages, setCustomImages] = useState<string[]>(
 		initialEditorPreferences.customWallpapers,
 	);
+	const [showLegacyCursorSettings, setShowLegacyCursorSettings] = useState(false);
 	const removeBackgroundStateRef = useRef<{
 		aspectRatio: AspectRatio;
 		padding: number;
@@ -1430,20 +1463,20 @@ export default function SettingsPanel({
 					<TabContent>
 						<TabHeader
 							title={tSettings("cursor.title")}
-							description="Customize cursor appearance, motion, and click effects"
+							description="Control cursor style, movement, visibility, and rendering quality"
 						/>
 
 						<SettingsSection
 							title="Visibility"
-							description="Toggle cursor display in your recording"
+							description="Control whether the cursor shows and when it fades away"
 						>
 							<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<div>
 									<div className="text-xs font-medium text-slate-300">
-										{tSettings("effects.showCursor")}
+										{tSettings("effects.showCursor", "Cursor")}
 									</div>
 									<div className="text-[10px] text-slate-500 mt-0.5">
-										Display cursor in the final export
+										Show the cursor in preview and export.
 									</div>
 								</div>
 								<Switch
@@ -1455,19 +1488,288 @@ export default function SettingsPanel({
 							<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<div>
 									<div className="text-xs font-medium text-slate-300">
-										{tSettings("effects.loopCursor")}
+										{tSettings("cursor.hideWhenIdle", "Hide When Idle")}
 									</div>
 									<div className="text-[10px] text-slate-500 mt-0.5">
-										Loop cursor from last position to first
+										Fade the cursor out after inactivity based on the timeline.
 									</div>
 								</div>
 								<Switch
-									checked={loopCursor}
-									onCheckedChange={onLoopCursorChange}
+									checked={hideWhenIdle}
+									onCheckedChange={onHideWhenIdleChange}
+									className="data-[state=checked]:bg-[#F59E0B] scale-90"
+								/>
+							</div>
+							{hideWhenIdle && (
+								<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+									<SliderControl
+										label={tSettings("cursor.idleDelay", "Idle Delay")}
+										value={idleHideDelayMs}
+										defaultValue={DEFAULT_CURSOR_IDLE_HIDE_DELAY_MS}
+										min={500}
+										max={5000}
+										step={50}
+										onChange={(v) => onIdleHideDelayMsChange?.(Math.round(v))}
+										formatValue={(v) => `${(v / 1000).toFixed(1)}s`}
+										parseInput={(t) =>
+											Math.round(
+												parseFloat(t.replace(/s$/i, "").trim()) * 1000,
+											)
+										}
+									/>
+								</div>
+							)}
+						</SettingsSection>
+
+						<SettingsSection
+							title={tSettings("cursor.type", "Cursor Type")}
+							description="Choose between using detected cursor states or a touch-style circle."
+						>
+							<div className="grid grid-cols-1 gap-2">
+								{CURSOR_TYPE_MODE_OPTIONS.map((option) => {
+									const description =
+										option.value === "auto"
+											? tSettings(
+													"cursor.typeAutoDescription",
+													"Uses the actual cursor from your recording.",
+												)
+											: tSettings(
+													"cursor.typeCircleDescription",
+													"A touch-style circle cursor like mobile simulators.",
+												);
+									return (
+										<button
+											key={option.value}
+											type="button"
+											onClick={() => onCursorTypeModeChange?.(option.value)}
+										className={cn(
+											"flex items-start gap-3 rounded-xl border p-3 text-left transition-all duration-200",
+											cursorTypeMode === option.value
+												? "border-[#F59E0B]/55 bg-[#F59E0B]/10 shadow-[0_0_0_1px_rgba(245,158,11,0.2)]"
+												: "border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06]",
+										)}
+									>
+										<div
+											className={cn(
+												"mt-1 h-4 w-4 rounded-full border",
+												cursorTypeMode === option.value
+													? "border-[#F59E0B] bg-[#F59E0B]"
+													: "border-white/15 bg-transparent",
+											)}
+										/>
+											<div>
+												<div className="text-[15px] font-semibold text-slate-100">
+													{option.label}
+												</div>
+												<div className="mt-0.5 text-[12px] leading-relaxed text-slate-400">
+													{description}
+												</div>
+											</div>
+										</button>
+									);
+								})}
+							</div>
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+								<SliderControl
+									label={tSettings("effects.cursorSize", "Size")}
+									value={cursorSize}
+									defaultValue={DEFAULT_CURSOR_SIZE}
+									min={0.5}
+									max={10}
+									step={0.05}
+									onChange={(v) => onCursorSizeChange?.(v)}
+									formatValue={(v) => `${v.toFixed(2)}×`}
+									parseInput={(t) => parseFloat(t.replace(/×$/, ""))}
+								/>
+							</div>
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+								<SliderControl
+									label={tSettings("cursor.tilt", "Tilt")}
+									value={cursorTilt}
+									defaultValue={DEFAULT_CURSOR_TILT}
+									min={0}
+									max={1}
+									step={0.01}
+									onChange={(v) => onCursorTiltChange?.(v)}
+									formatValue={(v) => `${Math.round(v * 100)}%`}
+									parseInput={(t) => parseFloat(t.replace(/%$/, "")) / 100}
+								/>
+							</div>
+						</SettingsSection>
+
+						<SettingsSection
+							title={tSettings("cursor.movementStyle", "Cursor Movement Style")}
+							description="Choose a motion preset or fine-tune the spring behavior."
+						>
+							<div className="grid grid-cols-1 gap-2">
+								{CURSOR_MOVEMENT_STYLE_OPTIONS.map((option) => {
+									const descriptionMap: Record<CursorMovementStyle, string> = {
+										slow: "Relaxed easing with a gentle follow and higher inertia.",
+										smooth: "Ultra-smooth cinematic feel with high damping.",
+										mellow: "Balanced smoothing for everyday tutorials and walkthroughs.",
+										fast: "Quick, responsive smoothing for fast-paced content.",
+										custom: "Tune tension, friction, and mass manually for full control.",
+									};
+									return (
+										<button
+											key={option.value}
+											type="button"
+											onClick={() => onCursorMovementStyleChange?.(option.value)}
+										className={cn(
+											"flex items-start gap-3 rounded-xl border p-3 text-left transition-all duration-200",
+											cursorMovementStyle === option.value
+												? "border-[#F59E0B]/55 bg-[#F59E0B]/10 shadow-[0_0_0_1px_rgba(245,158,11,0.2)]"
+												: "border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06]",
+										)}
+									>
+										<div
+											className={cn(
+												"mt-1 h-4 w-4 rounded-full border",
+												cursorMovementStyle === option.value
+													? "border-[#F59E0B] bg-[#F59E0B]"
+													: "border-white/15 bg-transparent",
+											)}
+										/>
+											<div>
+												<div className="text-[15px] font-semibold text-slate-100">
+													{option.label}
+												</div>
+												<div className="mt-0.5 text-[12px] leading-relaxed text-slate-400">
+													{descriptionMap[option.value]}
+												</div>
+											</div>
+										</button>
+									);
+								})}
+							</div>
+							<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+								<div>
+									<div className="text-xs font-medium text-slate-300">
+										{tSettings("cursor.smoothMovement", "Smooth Movement")}
+									</div>
+									<div className="text-[10px] text-slate-500 mt-0.5">
+										Use spring smoothing instead of raw cursor tracking.
+									</div>
+								</div>
+								<Switch
+									checked={smoothMovementEnabled}
+									onCheckedChange={onSmoothMovementEnabledChange}
+									className="data-[state=checked]:bg-[#F59E0B] scale-90"
+								/>
+							</div>
+							{smoothMovementEnabled && cursorMovementStyle === "custom" && (
+								<>
+									<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+										<SliderControl
+											label={tSettings("cursor.tension", "Tension")}
+											value={cursorSpring.tension}
+											defaultValue={DEFAULT_CURSOR_SPRING.tension}
+											min={120}
+											max={700}
+											step={1}
+											onChange={(v) =>
+												onCursorSpringChange?.({ ...cursorSpring, tension: v })
+											}
+											formatValue={(v) => `${Math.round(v)}`}
+											parseInput={(t) => parseFloat(t)}
+										/>
+									</div>
+									<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+										<SliderControl
+											label={tSettings("cursor.friction", "Friction")}
+											value={cursorSpring.friction}
+											defaultValue={DEFAULT_CURSOR_SPRING.friction}
+											min={20}
+											max={100}
+											step={1}
+											onChange={(v) =>
+												onCursorSpringChange?.({ ...cursorSpring, friction: v })
+											}
+											formatValue={(v) => `${Math.round(v)}`}
+											parseInput={(t) => parseFloat(t)}
+										/>
+									</div>
+									<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+										<SliderControl
+											label={tSettings("cursor.mass", "Mass")}
+											value={cursorSpring.mass}
+											defaultValue={DEFAULT_CURSOR_SPRING.mass}
+											min={0.5}
+											max={1.6}
+											step={0.01}
+											onChange={(v) =>
+												onCursorSpringChange?.({ ...cursorSpring, mass: v })
+											}
+											formatValue={(v) => `${v.toFixed(2)}`}
+											parseInput={(t) => parseFloat(t)}
+										/>
+									</div>
+								</>
+							)}
+						</SettingsSection>
+
+						<SettingsSection
+							title={tSettings("cursor.rendering", "Rendering")}
+							description="Choose how cursor assets are rendered in preview and export."
+						>
+							<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+								<div>
+									<div className="text-xs font-medium text-slate-300">
+										{tSettings("cursor.highQualitySvg", "High Quality SVG Cursors")}
+									</div>
+									<div className="text-[10px] text-slate-500 mt-0.5">
+										Use Screen Mint&apos;s SVG cursor assets in preview and export.
+									</div>
+								</div>
+								<Switch
+									checked={highQualitySvgCursors}
+									onCheckedChange={onHighQualitySvgCursorsChange}
 									className="data-[state=checked]:bg-[#F59E0B] scale-90"
 								/>
 							</div>
 						</SettingsSection>
+
+						<div className="mb-3 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
+							<button
+								type="button"
+								onClick={() => setShowLegacyCursorSettings((current) => !current)}
+								className="flex w-full items-center justify-between text-left"
+							>
+								<div>
+									<div className="text-xs font-semibold text-slate-200">
+										{tSettings("cursor.legacySettings", "Advanced Settings")}
+									</div>
+									<div className="mt-0.5 text-[10px] text-slate-500">
+										Optional cursor appearance and compatibility controls for fine-tuning special cases.
+									</div>
+								</div>
+								{showLegacyCursorSettings ? (
+									<ChevronUp className="h-4 w-4 text-slate-400" />
+								) : (
+									<ChevronDown className="h-4 w-4 text-slate-400" />
+								)}
+							</button>
+						</div>
+
+						{showLegacyCursorSettings && (
+							<>
+								<SettingsSection title="Legacy Visibility" description="Compatibility controls for older projects">
+									<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+										<div>
+											<div className="text-xs font-medium text-slate-300">
+												{tSettings("effects.loopCursor")}
+											</div>
+											<div className="text-[10px] text-slate-500 mt-0.5">
+												Loop cursor from last position to first
+											</div>
+										</div>
+										<Switch
+											checked={loopCursor}
+											onCheckedChange={onLoopCursorChange}
+											className="data-[state=checked]:bg-[#F59E0B] scale-90"
+										/>
+									</div>
+								</SettingsSection>
 
 						<SettingsSection title="Appearance" description="Customize how your cursor looks">
 							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
@@ -1519,27 +1821,6 @@ export default function SettingsPanel({
 							</div>
 
 							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<div className="text-xs font-medium text-slate-300 mb-2">Style</div>
-								<div className="grid grid-cols-5 gap-1">
-									{CURSOR_STYLE_OPTIONS.map((opt) => (
-										<button
-											key={opt.value}
-											type="button"
-											onClick={() => onCursorStyleChange?.(opt.value)}
-											className={cn(
-												"px-1.5 py-1.5 rounded-lg text-[10px] font-medium transition-all duration-200 cursor-pointer",
-												cursorStyle === opt.value
-													? "bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-white shadow-sm shadow-[#F59E0B]/20"
-													: "bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200 border border-white/[0.04]",
-											)}
-										>
-											{opt.label}
-										</button>
-									))}
-								</div>
-							</div>
-
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<div className="flex items-center justify-between mb-2.5">
 									<span className="text-[11px] font-medium text-slate-300">Cursor Color</span>
 									<button
@@ -1585,40 +1866,12 @@ export default function SettingsPanel({
 									parseInput={(t) => parseFloat(t.replace(/%$/, "")) / 100}
 								/>
 							</div>
-
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<SliderControl
-									label={tSettings("effects.cursorSize")}
-									value={cursorSize}
-									defaultValue={DEFAULT_CURSOR_SIZE}
-									min={0.5}
-									max={10}
-									step={0.05}
-									onChange={(v) => onCursorSizeChange?.(v)}
-									formatValue={(v) => `${v.toFixed(2)}×`}
-									parseInput={(t) => parseFloat(t.replace(/×$/, ""))}
-								/>
-							</div>
 						</SettingsSection>
 
 						<SettingsSection
 							title="Motion"
-							description="Control cursor movement smoothness and trails"
+							description="Fine-tune motion blur and trail effects"
 						>
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<SliderControl
-									label={tSettings("effects.cursorSmoothing")}
-									value={cursorSmoothing}
-									defaultValue={DEFAULT_CURSOR_SMOOTHING}
-									min={0}
-									max={2}
-									step={0.01}
-									onChange={(v) => onCursorSmoothingChange?.(v)}
-									formatValue={(v) => (v <= 0 ? "Off" : v.toFixed(2))}
-									parseInput={(t) => parseFloat(t)}
-								/>
-							</div>
-
 							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 								<SliderControl
 									label={tSettings("effects.cursorMotionBlur")}
@@ -1630,26 +1883,6 @@ export default function SettingsPanel({
 									onChange={(v) => onCursorMotionBlurChange?.(v)}
 									formatValue={(v) => `${v.toFixed(2)}×`}
 									parseInput={(t) => parseFloat(t.replace(/×$/, ""))}
-								/>
-							</div>
-
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<SliderControl
-									label={tSettings("effects.cursorSway")}
-									value={toCursorSwaySliderValue(cursorSway)}
-									defaultValue={toCursorSwaySliderValue(DEFAULT_CURSOR_SWAY)}
-									min={0}
-									max={toCursorSwaySliderValue(2)}
-									step={toCursorSwaySliderValue(0.05)}
-									onChange={(v) => onCursorSwayChange?.(fromCursorSwaySliderValue(v))}
-									formatValue={(v) => (v <= 0 ? "Off" : `${v.toFixed(2)}×`)}
-									parseInput={(t) => {
-										const normalized = t.trim().toLowerCase();
-										if (normalized === "off") {
-											return 0;
-										}
-										return parseFloat(t.replace(/×$/, ""));
-									}}
 								/>
 							</div>
 
@@ -1772,6 +2005,8 @@ export default function SettingsPanel({
 								/>
 							</div>
 						</SettingsSection>
+							</>
+						)}
 					</TabContent>
 				)}
 

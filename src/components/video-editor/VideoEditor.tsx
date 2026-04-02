@@ -136,7 +136,10 @@ import {
 	buildLoopedCursorTelemetry,
 	getDisplayedTimelineWindowMs,
 } from "./videoPlayback/cursorLoopTelemetry";
-import { buildCursorSimulationPath, evaluateCursorPath } from "./videoPlayback/cursorSimulation";
+import {
+	buildCursorSimulationPath,
+	evaluateCursorMotionSnapshot,
+} from "./videoPlayback/cursorSimulation";
 import { composeCropRegions, deriveLegacyCaptureCorrectionCrop } from "./videoPlayback/layoutUtils";
 import { resolveZoomRegionFocus } from "./videoPlayback/smartZoomController";
 import { findDominantRegion } from "./videoPlayback/zoomRegionUtils";
@@ -233,6 +236,22 @@ export default function VideoEditor() {
 	const [cursorSway, setCursorSway] = useState(initialEditorPreferences.cursorSway);
 	const [cursorStyle, setCursorStyle] = useState(initialEditorPreferences.cursorStyle);
 	const [cursorPack, setCursorPack] = useState(initialEditorPreferences.cursorPack);
+	const [cursorTypeMode, setCursorTypeMode] = useState(initialEditorPreferences.cursorTypeMode);
+	const [cursorTilt, setCursorTilt] = useState(initialEditorPreferences.cursorTilt);
+	const [hideWhenIdle, setHideWhenIdle] = useState(initialEditorPreferences.hideWhenIdle);
+	const [idleHideDelayMs, setIdleHideDelayMs] = useState(
+		initialEditorPreferences.idleHideDelayMs,
+	);
+	const [smoothMovementEnabled, setSmoothMovementEnabled] = useState(
+		initialEditorPreferences.smoothMovementEnabled,
+	);
+	const [cursorMovementStyle, setCursorMovementStyle] = useState(
+		initialEditorPreferences.cursorMovementStyle,
+	);
+	const [cursorSpring, setCursorSpring] = useState(initialEditorPreferences.cursorSpring);
+	const [highQualitySvgCursors, setHighQualitySvgCursors] = useState(
+		initialEditorPreferences.highQualitySvgCursors,
+	);
 	const [cursorColor, setCursorColor] = useState(initialEditorPreferences.cursorColor);
 	const [cursorOpacity, setCursorOpacity] = useState(initialEditorPreferences.cursorOpacity);
 	const [clickHighlightColor, setClickHighlightColor] = useState(
@@ -479,6 +498,14 @@ export default function VideoEditor() {
 				cursorSway,
 				cursorStyle,
 				cursorPack,
+				cursorTypeMode,
+				cursorTilt,
+				hideWhenIdle,
+				idleHideDelayMs,
+				smoothMovementEnabled,
+				cursorMovementStyle,
+				cursorSpring,
+				highQualitySvgCursors,
 				cursorColor,
 				cursorOpacity,
 				clickHighlightColor,
@@ -529,6 +556,14 @@ export default function VideoEditor() {
 			cursorSway,
 			cursorStyle,
 			cursorPack,
+			cursorTypeMode,
+			cursorTilt,
+			hideWhenIdle,
+			idleHideDelayMs,
+			smoothMovementEnabled,
+			cursorMovementStyle,
+			cursorSpring,
+			highQualitySvgCursors,
 			cursorColor,
 			cursorOpacity,
 			clickHighlightColor,
@@ -584,6 +619,14 @@ export default function VideoEditor() {
 			setCursorSway(controls.cursorSway);
 			setCursorStyle(controls.cursorStyle);
 			setCursorPack(controls.cursorPack);
+			setCursorTypeMode(controls.cursorTypeMode);
+			setCursorTilt(controls.cursorTilt);
+			setHideWhenIdle(controls.hideWhenIdle);
+			setIdleHideDelayMs(controls.idleHideDelayMs);
+			setSmoothMovementEnabled(controls.smoothMovementEnabled);
+			setCursorMovementStyle(controls.cursorMovementStyle);
+			setCursorSpring(controls.cursorSpring);
+			setHighQualitySvgCursors(controls.highQualitySvgCursors);
 			setCursorColor(controls.cursorColor);
 			setCursorOpacity(controls.cursorOpacity);
 			setClickHighlightColor(controls.clickHighlightColor);
@@ -946,6 +989,14 @@ export default function VideoEditor() {
 				cursorSway,
 				cursorStyle,
 				cursorPack,
+				cursorTypeMode,
+				cursorTilt,
+				hideWhenIdle,
+				idleHideDelayMs,
+				smoothMovementEnabled,
+				cursorMovementStyle,
+				cursorSpring,
+				highQualitySvgCursors,
 				cursorColor,
 				cursorOpacity,
 				clickHighlightColor,
@@ -1011,6 +1062,14 @@ export default function VideoEditor() {
 		cursorSway,
 		cursorStyle,
 		cursorPack,
+		cursorTypeMode,
+		cursorTilt,
+		hideWhenIdle,
+		idleHideDelayMs,
+		smoothMovementEnabled,
+		cursorMovementStyle,
+		cursorSpring,
+		highQualitySvgCursors,
 		cursorColor,
 		cursorOpacity,
 		clickHighlightColor,
@@ -1186,6 +1245,14 @@ export default function VideoEditor() {
 			cursorSway,
 			cursorStyle,
 			cursorPack,
+			cursorTypeMode,
+			cursorTilt,
+			hideWhenIdle,
+			idleHideDelayMs,
+			smoothMovementEnabled,
+			cursorMovementStyle,
+			cursorSpring,
+			highQualitySvgCursors,
 			cursorColor,
 			cursorOpacity,
 			clickHighlightColor,
@@ -1240,6 +1307,14 @@ export default function VideoEditor() {
 		cursorSway,
 		cursorStyle,
 		cursorPack,
+		cursorTypeMode,
+		cursorTilt,
+		hideWhenIdle,
+		idleHideDelayMs,
+		smoothMovementEnabled,
+		cursorMovementStyle,
+		cursorSpring,
+		highQualitySvgCursors,
 		cursorColor,
 		cursorOpacity,
 		clickHighlightColor,
@@ -1307,6 +1382,14 @@ export default function VideoEditor() {
 				cursorSway,
 				cursorStyle,
 				cursorPack,
+				cursorTypeMode,
+				cursorTilt,
+				hideWhenIdle,
+				idleHideDelayMs,
+				smoothMovementEnabled,
+				cursorMovementStyle,
+				cursorSpring,
+				highQualitySvgCursors,
 				cursorColor,
 				cursorOpacity,
 				clickHighlightColor,
@@ -1402,6 +1485,14 @@ export default function VideoEditor() {
 			cursorSway,
 			cursorStyle,
 			cursorPack,
+			cursorTypeMode,
+			cursorTilt,
+			hideWhenIdle,
+			idleHideDelayMs,
+			smoothMovementEnabled,
+			cursorMovementStyle,
+			cursorSpring,
+			highQualitySvgCursors,
 			cursorColor,
 			cursorOpacity,
 			clickHighlightColor,
@@ -1936,7 +2027,11 @@ export default function VideoEditor() {
 			}
 
 			const currentTimeMs = Math.round(currentTime * 1000);
-			const simulatedCursor = evaluateCursorPath(cursorSimulationPath, currentTimeMs);
+			const simulatedCursor = evaluateCursorMotionSnapshot(
+				cursorSimulationPath,
+				currentTimeMs,
+				null,
+			);
 			setZoomRegions((prev) =>
 				prev.map((region) => {
 					if (region.id !== selectedZoomId) {
@@ -1944,10 +2039,16 @@ export default function VideoEditor() {
 					}
 
 					if (mode === "static") {
+						const { focus } = resolveZoomRegionFocus(
+							region,
+							simulatedCursor,
+							region.focus,
+							0,
+						);
 						return {
 							...region,
 							mode,
-							focus: resolveZoomRegionFocus(region, simulatedCursor, region.focus, 0),
+							focus,
 						};
 					}
 
@@ -3468,7 +3569,23 @@ export default function VideoEditor() {
 						cursorMotionBlur,
 						cursorClickBounce,
 						cursorSway,
+						cursorStyle,
 						cursorPack,
+						cursorColor,
+						cursorOpacity,
+						clickHighlightColor,
+						clickHighlightSize,
+						clickHighlightOpacity,
+						cursorTrailLength,
+						cursorTrailOpacity,
+						cursorTypeMode,
+						cursorTilt,
+						hideWhenIdle,
+						idleHideDelayMs,
+						smoothMovementEnabled,
+						cursorMovementStyle,
+						cursorSpring,
+						highQualitySvgCursors,
 						keyboardShortcutPosition,
 						keyboardShortcutTheme,
 						keyboardShortcutScale,
@@ -3641,7 +3758,23 @@ export default function VideoEditor() {
 						cursorMotionBlur,
 						cursorClickBounce,
 						cursorSway,
+						cursorStyle,
 						cursorPack,
+						cursorColor,
+						cursorOpacity,
+						clickHighlightColor,
+						clickHighlightSize,
+						clickHighlightOpacity,
+						cursorTrailLength,
+						cursorTrailOpacity,
+						cursorTypeMode,
+						cursorTilt,
+						hideWhenIdle,
+						idleHideDelayMs,
+						smoothMovementEnabled,
+						cursorMovementStyle,
+						cursorSpring,
+						highQualitySvgCursors,
 						keyboardShortcutPosition,
 						keyboardShortcutTheme,
 						keyboardShortcutScale,
@@ -3740,7 +3873,23 @@ export default function VideoEditor() {
 			cursorMotionBlur,
 			cursorClickBounce,
 			cursorSway,
+			cursorStyle,
 			cursorPack,
+			cursorColor,
+			cursorOpacity,
+			clickHighlightColor,
+			clickHighlightSize,
+			clickHighlightOpacity,
+			cursorTrailLength,
+			cursorTrailOpacity,
+			cursorTypeMode,
+			cursorTilt,
+			hideWhenIdle,
+			idleHideDelayMs,
+			smoothMovementEnabled,
+			cursorMovementStyle,
+			cursorSpring,
+			highQualitySvgCursors,
 			keyboardShortcutPosition,
 			keyboardShortcutTheme,
 			keyboardShortcutScale,
@@ -4384,7 +4533,23 @@ export default function VideoEditor() {
 									cursorMotionBlur={cursorMotionBlur}
 									cursorClickBounce={cursorClickBounce}
 									cursorSway={cursorSway}
+									cursorStyle={cursorStyle}
 									cursorPack={cursorPack}
+									cursorColor={cursorColor}
+									cursorOpacity={cursorOpacity}
+									clickHighlightColor={clickHighlightColor}
+									clickHighlightSize={clickHighlightSize}
+									clickHighlightOpacity={clickHighlightOpacity}
+									cursorTrailLength={cursorTrailLength}
+									cursorTrailOpacity={cursorTrailOpacity}
+									cursorTypeMode={cursorTypeMode}
+									cursorTilt={cursorTilt}
+									hideWhenIdle={hideWhenIdle}
+									idleHideDelayMs={idleHideDelayMs}
+									smoothMovementEnabled={smoothMovementEnabled}
+									cursorMovementStyle={cursorMovementStyle}
+									cursorSpring={cursorSpring}
+									highQualitySvgCursors={highQualitySvgCursors}
 									webcamPath={resolvedWebcamPath}
 									webcamRegion={webcamRegion}
 									showWebcam={showWebcam}
@@ -4448,10 +4613,24 @@ export default function VideoEditor() {
 							onCursorClickBounceChange={setCursorClickBounce}
 							cursorSway={cursorSway}
 							onCursorSwayChange={setCursorSway}
-							cursorStyle={cursorStyle}
-							onCursorStyleChange={setCursorStyle}
 							cursorPack={cursorPack}
 							onCursorPackChange={setCursorPack}
+							cursorTypeMode={cursorTypeMode}
+							onCursorTypeModeChange={setCursorTypeMode}
+							cursorTilt={cursorTilt}
+							onCursorTiltChange={setCursorTilt}
+							hideWhenIdle={hideWhenIdle}
+							onHideWhenIdleChange={setHideWhenIdle}
+							idleHideDelayMs={idleHideDelayMs}
+							onIdleHideDelayMsChange={setIdleHideDelayMs}
+							smoothMovementEnabled={smoothMovementEnabled}
+							onSmoothMovementEnabledChange={setSmoothMovementEnabled}
+							cursorMovementStyle={cursorMovementStyle}
+							onCursorMovementStyleChange={setCursorMovementStyle}
+							cursorSpring={cursorSpring}
+							onCursorSpringChange={setCursorSpring}
+							highQualitySvgCursors={highQualitySvgCursors}
+							onHighQualitySvgCursorsChange={setHighQualitySvgCursors}
 							cursorColor={cursorColor}
 							onCursorColorChange={setCursorColor}
 							cursorOpacity={cursorOpacity}

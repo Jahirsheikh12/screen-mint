@@ -15,7 +15,11 @@ import type {
 	CaptionSettings,
 	CropRegion,
 	CursorPack,
+	CursorMovementStyle,
+	CursorSpringSettings,
+	CursorStyle,
 	CursorTelemetryPoint,
+	CursorTypeMode,
 	DeviceMockup,
 	KeyboardShortcutCallout,
 	KeyboardShortcutPosition,
@@ -24,6 +28,7 @@ import type {
 	WebcamRegion,
 	ZoomRegion,
 } from "@/components/video-editor/types";
+import { DEFAULT_CURSOR_SPRING } from "@/components/video-editor/types";
 import {
 	createPlaybackCameraState,
 	evaluatePlaybackCameraFrame,
@@ -34,6 +39,7 @@ import {
 	PixiCursorOverlay,
 	preloadCursorAssets,
 } from "@/components/video-editor/videoPlayback/cursorRenderer";
+import { resolveCursorV2Config } from "@/components/video-editor/videoPlayback/cursorV2";
 import {
 	buildCursorSimulationPath,
 	type CursorSimulationPath,
@@ -95,7 +101,23 @@ interface FrameRenderConfig {
 	cursorMotionBlur?: number;
 	cursorClickBounce?: number;
 	cursorSway?: number;
+	cursorStyle?: CursorStyle;
 	cursorPack?: CursorPack;
+	cursorColor?: string;
+	cursorOpacity?: number;
+	clickHighlightColor?: string;
+	clickHighlightSize?: number;
+	clickHighlightOpacity?: number;
+	cursorTrailLength?: number;
+	cursorTrailOpacity?: number;
+	cursorTypeMode?: CursorTypeMode;
+	cursorTilt?: number;
+	hideWhenIdle?: boolean;
+	idleHideDelayMs?: number;
+	smoothMovementEnabled?: boolean;
+	cursorMovementStyle?: CursorMovementStyle;
+	cursorSpring?: CursorSpringSettings;
+	highQualitySvgCursors?: boolean;
 	webcamPath?: string | null;
 	webcamRegion?: WebcamRegion;
 	showWebcam?: boolean;
@@ -202,13 +224,42 @@ export class FrameRenderer {
 		);
 
 		if (cursorOverlayEnabled) {
+			const resolvedCursorConfig = resolveCursorV2Config({
+				cursorPack: this.config.cursorPack,
+				cursorTypeMode: this.config.cursorTypeMode ?? "auto",
+				cursorTilt: this.config.cursorTilt ?? 0,
+				hideWhenIdle: this.config.hideWhenIdle ?? false,
+				idleHideDelayMs: this.config.idleHideDelayMs ?? 1500,
+				smoothMovementEnabled: this.config.smoothMovementEnabled ?? true,
+				cursorMovementStyle: this.config.cursorMovementStyle ?? "custom",
+				cursorSpring: this.config.cursorSpring ?? DEFAULT_CURSOR_SPRING,
+				highQualitySvgCursors: this.config.highQualitySvgCursors ?? true,
+			});
 			this.cursorOverlay = new PixiCursorOverlay({
 				dotRadius: DEFAULT_CURSOR_CONFIG.dotRadius * (this.config.cursorSize ?? 1.4),
-				smoothingFactor: this.config.cursorSmoothing ?? DEFAULT_CURSOR_CONFIG.smoothingFactor,
+				smoothingFactor:
+					this.config.smoothMovementEnabled === false ? 0 : this.config.cursorSmoothing ?? 0,
 				motionBlur: this.config.cursorMotionBlur ?? 0,
 				clickBounce: this.config.cursorClickBounce ?? DEFAULT_CURSOR_CONFIG.clickBounce,
 				sway: this.config.cursorSway ?? DEFAULT_CURSOR_CONFIG.sway,
-				cursorPack: this.config.cursorPack ?? "classic",
+				cursorStyle: this.config.cursorStyle ?? DEFAULT_CURSOR_CONFIG.cursorStyle,
+				cursorPack: resolvedCursorConfig.cursorPack,
+				cursorColor: this.config.cursorColor ?? DEFAULT_CURSOR_CONFIG.cursorColor,
+				cursorOpacity: this.config.cursorOpacity ?? DEFAULT_CURSOR_CONFIG.cursorOpacity,
+				clickHighlightColor:
+					this.config.clickHighlightColor ?? DEFAULT_CURSOR_CONFIG.clickHighlightColor,
+				clickHighlightSize:
+					this.config.clickHighlightSize ?? DEFAULT_CURSOR_CONFIG.clickHighlightSize,
+				clickHighlightOpacity:
+					this.config.clickHighlightOpacity ?? DEFAULT_CURSOR_CONFIG.clickHighlightOpacity,
+				trailLength: this.config.cursorTrailLength ?? DEFAULT_CURSOR_CONFIG.trailLength,
+				trailOpacity: this.config.cursorTrailOpacity ?? DEFAULT_CURSOR_CONFIG.trailOpacity,
+				springConfig: resolvedCursorConfig.springConfig,
+				cursorTypeMode: resolvedCursorConfig.cursorTypeMode,
+				cursorTilt: resolvedCursorConfig.cursorTilt,
+				hideWhenIdle: resolvedCursorConfig.hideWhenIdle,
+				idleHideDelayMs: resolvedCursorConfig.idleHideDelayMs,
+				preferSystemCursorAssets: resolvedCursorConfig.preferSystemCursorAssets,
 			});
 		}
 

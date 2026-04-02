@@ -1,6 +1,12 @@
 import { Assets, BlurFilter, Container, Graphics, Sprite, Texture } from "pixi.js";
 import { MotionBlurFilter } from "pixi-filters/motion-blur";
-import type { CursorPack, CursorTelemetryPoint, CursorType } from "../types";
+import type {
+	CursorPack,
+	CursorStyle,
+	CursorTelemetryPoint,
+	CursorType,
+	CursorTypeMode,
+} from "../types";
 import {
 	CURSOR_ASSET_SAMPLE_SIZE,
 	type CursorAssetDefinition,
@@ -16,10 +22,16 @@ import {
 import { computeCursorSwayRotation } from "./cursorSway";
 import {
 	createSpringState,
+	type SpringConfig,
 	getCursorSpringConfig,
 	resetSpringState,
 	stepSpringValue,
 } from "./motionSmoothing";
+import {
+	getCursorTiltRotation,
+	getCursorVisibilityOpacity,
+	resolveCursorVisualMode,
+} from "./cursorV2";
 
 type CursorAssetKey = CursorType;
 
@@ -48,11 +60,24 @@ export interface CursorRenderConfig {
 	dotColor: number;
 	dotAlpha: number;
 	trailLength: number;
+	trailOpacity: number;
 	smoothingFactor: number;
+	springConfig: SpringConfig | null;
 	motionBlur: number;
 	clickBounce: number;
+	clickHighlightColor: string;
+	clickHighlightSize: number;
+	clickHighlightOpacity: number;
 	sway: number;
 	cursorPack: CursorPack;
+	cursorStyle: CursorStyle;
+	cursorColor: string;
+	cursorOpacity: number;
+	cursorTypeMode: CursorTypeMode;
+	cursorTilt: number;
+	hideWhenIdle: boolean;
+	idleHideDelayMs: number;
+	preferSystemCursorAssets: boolean;
 }
 
 export const DEFAULT_CURSOR_CONFIG: CursorRenderConfig = {
@@ -60,11 +85,24 @@ export const DEFAULT_CURSOR_CONFIG: CursorRenderConfig = {
 	dotColor: 0xffffff,
 	dotAlpha: 0.95,
 	trailLength: 0,
+	trailOpacity: 0.3,
 	smoothingFactor: 0.18,
+	springConfig: null,
 	motionBlur: 0,
 	clickBounce: 1,
+	clickHighlightColor: "#f59e0b",
+	clickHighlightSize: 1,
+	clickHighlightOpacity: 0.5,
 	sway: 0,
 	cursorPack: "classic",
+	cursorStyle: "default",
+	cursorColor: "#ffffff",
+	cursorOpacity: 1,
+	cursorTypeMode: "auto",
+	cursorTilt: 0,
+	hideWhenIdle: false,
+	idleHideDelayMs: 1500,
+	preferSystemCursorAssets: false,
 };
 
 const REFERENCE_WIDTH = 1920;
@@ -112,6 +150,27 @@ function loadImage(dataUrl: string) {
 
 function clamp(value: number, min: number, max: number) {
 	return Math.min(max, Math.max(min, value));
+}
+
+function parseHexColorToNumber(value: string, fallback: number) {
+	const normalized = value.trim();
+	if (!/^#?[0-9a-f]{6}$/i.test(normalized)) {
+		return fallback;
+	}
+
+	return Number.parseInt(normalized.replace(/^#/, ""), 16);
+}
+
+function getCursorColorNumber(config: CursorRenderConfig) {
+	return parseHexColorToNumber(config.cursorColor, config.dotColor);
+}
+
+function getClickHighlightColorNumber(config: CursorRenderConfig) {
+	return parseHexColorToNumber(config.clickHighlightColor, 0xf59e0b);
+}
+
+function usesStyledCursorOverride(cursorStyle: CursorStyle) {
+	return cursorStyle !== "default";
 }
 
 function getNormalizedAnchor(
@@ -164,7 +223,15 @@ function getCursorPackOrder(cursorPack: CursorPack): CursorPack[] {
 function getCursorAsset(
 	key: CursorAssetKey,
 	cursorPack: CursorPack = "classic",
+	preferSystemCursorAssets = false,
 ): LoadedCursorAsset {
+	if (preferSystemCursorAssets) {
+		const systemAsset = loadedCursorAssets.system[key];
+		if (systemAsset) {
+			return systemAsset;
+		}
+	}
+
 	for (const pack of getCursorPackOrder(cursorPack)) {
 		const packAsset = loadedCursorAssets.packs[pack][key];
 		if (packAsset) {
@@ -191,10 +258,13 @@ function getCursorAsset(
 	throw new Error(`Missing cursor asset for ${key}`);
 }
 
-function getAvailableCursorKeys(cursorPack: CursorPack = "classic"): CursorAssetKey[] {
+function getAvailableCursorKeys(
+	cursorPack: CursorPack = "classic",
+	preferSystemCursorAssets = false,
+): CursorAssetKey[] {
 	const loadedKeys = SUPPORTED_CURSOR_KEYS.filter((key) => {
 		try {
-			getCursorAsset(key, cursorPack);
+			getCursorAsset(key, cursorPack, preferSystemCursorAssets);
 			return true;
 		} catch {
 			return false;
@@ -478,14 +548,16 @@ export class SmoothedCursorState {
 	public y = 0.5;
 	public trail: Array<{ x: number; y: number }> = [];
 	private smoothingFactor: number;
+	private springConfig: SpringConfig | null;
 	private trailLength: number;
 	private initialized = false;
 	private lastTimeMs: number | null = null;
 	private xSpring = createSpringState(0.5);
 	private ySpring = createSpringState(0.5);
 
-	constructor(config: Pick<CursorRenderConfig, "smoothingFactor" | "trailLength">) {
+	constructor(config: Pick<CursorRenderConfig, "smoothingFactor" | "trailLength" | "springConfig">) {
 		this.smoothingFactor = config.smoothingFactor;
+		this.springConfig = config.springConfig;
 		this.trailLength = config.trailLength;
 	}
 
@@ -518,13 +590,29 @@ export class SmoothedCursorState {
 		const deltaMs = this.lastTimeMs === null ? 1000 / 60 : Math.max(1, timeMs - this.lastTimeMs);
 		this.lastTimeMs = timeMs;
 
-		const springConfig = getCursorSpringConfig(this.smoothingFactor);
+		const springConfig =
+			this.springConfig ?? (this.smoothingFactor > 0 ? getCursorSpringConfig(this.smoothingFactor) : null);
+		if (!springConfig) {
+			this.snapTo(targetX, targetY, timeMs);
+			return;
+		}
 		this.x = stepSpringValue(this.xSpring, targetX, deltaMs, springConfig);
 		this.y = stepSpringValue(this.ySpring, targetY, deltaMs, springConfig);
 	}
 
 	setSmoothingFactor(smoothingFactor: number): void {
 		this.smoothingFactor = smoothingFactor;
+	}
+
+	setSpringConfig(springConfig: SpringConfig | null): void {
+		this.springConfig = springConfig;
+	}
+
+	setTrailLength(trailLength: number): void {
+		this.trailLength = Math.max(0, Math.round(trailLength));
+		if (this.trail.length > this.trailLength) {
+			this.trail.length = this.trailLength;
+		}
 	}
 
 	snapTo(targetX: number, targetY: number, timeMs: number): void {
@@ -550,17 +638,42 @@ export class SmoothedCursorState {
 	}
 }
 
-function drawClickRing(graphics: Graphics, px: number, py: number, h: number, progress: number) {
-	void graphics;
-	void px;
-	void py;
-	void h;
-	void progress;
+function drawClickRing(
+	graphics: Graphics,
+	px: number,
+	py: number,
+	h: number,
+	progress: number,
+	config: Pick<
+		CursorRenderConfig,
+		"clickHighlightColor" | "clickHighlightOpacity" | "clickHighlightSize"
+	>,
+) {
+	graphics.clear();
+	if (progress <= 0 || config.clickHighlightOpacity <= 0 || config.clickHighlightSize <= 0) {
+		return;
+	}
+
+	const color = getClickHighlightColorNumber({
+		...DEFAULT_CURSOR_CONFIG,
+		...config,
+	});
+	const alpha = clamp(progress * config.clickHighlightOpacity, 0, 1);
+	const radiusBase = h * 0.16 * config.clickHighlightSize;
+	const radius = radiusBase + (1 - progress) * h * 0.38 * config.clickHighlightSize;
+	const lineWidth = Math.max(1, h * 0.04 * Math.max(0.75, config.clickHighlightSize));
+
+	graphics.lineStyle(lineWidth, color, alpha);
+	graphics.drawCircle(px, py, radius);
+	graphics.lineStyle(0, 0, 0);
 }
 
 export class PixiCursorOverlay {
 	public readonly container: Container;
+	private trailGraphics: Graphics;
 	private clickRingGraphics: Graphics;
+	private circleCursorShadowGraphics: Graphics;
+	private circleCursorGraphics: Graphics;
 	private cursorShadowSprites: Partial<Record<CursorAssetKey, Sprite>>;
 	private cursorShadowFilters: Partial<Record<CursorAssetKey, BlurFilter>>;
 	private cursorSprites: Partial<Record<CursorAssetKey, Sprite>>;
@@ -581,12 +694,24 @@ export class PixiCursorOverlay {
 		this.container = new Container();
 		this.container.label = "cursor-overlay";
 
+		this.trailGraphics = new Graphics();
 		this.clickRingGraphics = new Graphics();
+		this.circleCursorShadowGraphics = new Graphics();
+		this.circleCursorShadowGraphics.visible = false;
+		this.circleCursorGraphics = new Graphics();
+		this.circleCursorGraphics.visible = false;
 		this.cursorShadowSprites = {};
 		this.cursorShadowFilters = {};
 		this.cursorSprites = {};
-		for (const key of getAvailableCursorKeys(this.config.cursorPack)) {
-			const asset = getCursorAsset(key, this.config.cursorPack);
+		for (const key of getAvailableCursorKeys(
+			this.config.cursorPack,
+			this.config.preferSystemCursorAssets,
+		)) {
+			const asset = getCursorAsset(
+				key,
+				this.config.cursorPack,
+				this.config.preferSystemCursorAssets,
+			);
 			const shadowSprite = new Sprite(asset.texture);
 			shadowSprite.anchor.set(asset.anchorX, asset.anchorY);
 			shadowSprite.visible = false;
@@ -610,8 +735,11 @@ export class PixiCursorOverlay {
 		this.container.filters = null;
 
 		this.container.addChild(
+			this.trailGraphics,
 			this.clickRingGraphics,
+			this.circleCursorShadowGraphics,
 			...Object.values(this.cursorShadowSprites),
+			this.circleCursorGraphics,
 			...Object.values(this.cursorSprites),
 		);
 		this.setMotionBlur(this.config.motionBlur);
@@ -621,9 +749,35 @@ export class PixiCursorOverlay {
 		this.config.dotRadius = dotRadius;
 	}
 
+	setCursorStyle(cursorStyle: CursorStyle) {
+		this.config.cursorStyle = cursorStyle;
+	}
+
+	setCursorColor(cursorColor: string) {
+		this.config.cursorColor = cursorColor;
+	}
+
+	setCursorOpacity(cursorOpacity: number) {
+		this.config.cursorOpacity = clamp(cursorOpacity, 0, 1);
+	}
+
 	setSmoothingFactor(smoothingFactor: number) {
 		this.config.smoothingFactor = smoothingFactor;
 		this.state.setSmoothingFactor(smoothingFactor);
+	}
+
+	setTrailLength(trailLength: number) {
+		this.config.trailLength = Math.max(0, Math.round(trailLength));
+		this.state.setTrailLength(this.config.trailLength);
+	}
+
+	setTrailOpacity(trailOpacity: number) {
+		this.config.trailOpacity = clamp(trailOpacity, 0, 1);
+	}
+
+	setSpringConfig(springConfig: SpringConfig | null) {
+		this.config.springConfig = springConfig;
+		this.state.setSpringConfig(springConfig);
 	}
 
 	setMotionBlur(motionBlur: number) {
@@ -640,8 +794,40 @@ export class PixiCursorOverlay {
 		this.config.clickBounce = Math.max(0, clickBounce);
 	}
 
+	setClickHighlightColor(clickHighlightColor: string) {
+		this.config.clickHighlightColor = clickHighlightColor;
+	}
+
+	setClickHighlightSize(clickHighlightSize: number) {
+		this.config.clickHighlightSize = Math.max(0, clickHighlightSize);
+	}
+
+	setClickHighlightOpacity(clickHighlightOpacity: number) {
+		this.config.clickHighlightOpacity = clamp(clickHighlightOpacity, 0, 1);
+	}
+
 	setSway(sway: number) {
 		this.config.sway = clamp(sway, 0, 2);
+	}
+
+	setCursorTypeMode(cursorTypeMode: CursorTypeMode) {
+		this.config.cursorTypeMode = cursorTypeMode;
+	}
+
+	setCursorTilt(cursorTilt: number) {
+		this.config.cursorTilt = clamp(cursorTilt, 0, 1);
+	}
+
+	setHideWhenIdle(hideWhenIdle: boolean) {
+		this.config.hideWhenIdle = hideWhenIdle;
+	}
+
+	setIdleHideDelayMs(idleHideDelayMs: number) {
+		this.config.idleHideDelayMs = clamp(idleHideDelayMs, 500, 5000);
+	}
+
+	setPreferSystemCursorAssets(preferSystemCursorAssets: boolean) {
+		this.config.preferSystemCursorAssets = preferSystemCursorAssets;
 	}
 
 	update(
@@ -653,6 +839,7 @@ export class PixiCursorOverlay {
 	): void {
 		if (!visible || samples.length === 0 || viewport.width <= 0 || viewport.height <= 0) {
 			this.container.visible = false;
+			this.trailGraphics.clear();
 			this.lastRenderedPoint = null;
 			this.lastRenderedTimeMs = null;
 			this.swayRotation = 0;
@@ -691,6 +878,7 @@ export class PixiCursorOverlay {
 	): void {
 		if (!visible || samples.length === 0 || viewport.width <= 0 || viewport.height <= 0) {
 			this.container.visible = false;
+			this.trailGraphics.clear();
 			this.lastRenderedPoint = null;
 			this.lastRenderedTimeMs = null;
 			this.swayRotation = 0;
@@ -715,7 +903,14 @@ export class PixiCursorOverlay {
 		if (shouldFreezeCursorMotion || !sameFrameTime) {
 			this.state.snapTo(motionSnapshot.cx, motionSnapshot.cy, timeMs);
 		}
-		this.container.visible = true;
+		const visibilityOpacity = getCursorVisibilityOpacity(motionSnapshot, this.config);
+		this.container.visible = visibilityOpacity > 0.001;
+		this.container.alpha = visibilityOpacity;
+		if (!this.container.visible) {
+			this.lastRenderedPoint = { px: viewport.x + this.state.x * viewport.width, py: viewport.y + this.state.y * viewport.height };
+			this.lastRenderedTimeMs = timeMs;
+			return;
+		}
 
 		const px = viewport.x + this.state.x * viewport.width;
 		const py = viewport.y + this.state.y * viewport.height;
@@ -724,43 +919,73 @@ export class PixiCursorOverlay {
 			samples,
 			timeMs,
 		);
-		const spriteKey = (
-			cursorType && cursorType in this.cursorSprites ? cursorType : "arrow"
-		) as CursorAssetKey;
-		const asset = getCursorAsset(spriteKey, this.config.cursorPack);
+		const visualMode = resolveCursorVisualMode({
+			cursorTypeMode: this.config.cursorTypeMode,
+			detectedCursorType: cursorType,
+			availableCursorTypes: Object.keys(this.cursorSprites) as CursorAssetKey[],
+		});
+		const spriteKey = visualMode.assetCursorType as CursorAssetKey;
+		const asset = getCursorAsset(
+			spriteKey,
+			this.config.cursorPack,
+			this.config.preferSystemCursorAssets,
+		);
 		const shadowSprite = this.cursorShadowSprites[spriteKey] ?? this.cursorShadowSprites.arrow!;
 		const sprite = this.cursorSprites[spriteKey] ?? this.cursorSprites.arrow!;
+		const cursorColor = getCursorColorNumber(this.config);
 		const bounceScale = Math.max(
 			0.72,
 			1 - Math.sin(clickBounceProgress * Math.PI) * (0.08 * this.config.clickBounce),
 		);
 		const scaledH = h;
-		const swayRotation = this.updateCursorSway(px, py, timeMs, shouldFreezeCursorMotion);
+		const swayRotation = this.updateCursorSway(
+			px,
+			py,
+			timeMs,
+			shouldFreezeCursorMotion,
+			motionSnapshot,
+		);
 
-		this.clickRingGraphics.clear();
-		drawClickRing(this.clickRingGraphics, px, py, h, clickProgress);
+		this.drawTrail(viewport, h, cursorColor);
+		drawClickRing(this.clickRingGraphics, px, py, h, clickProgress, this.config);
 
 		for (const [key, currentShadowSprite] of Object.entries(this.cursorShadowSprites) as Array<
 			[CursorAssetKey, Sprite]
 		>) {
-			currentShadowSprite.visible = key === spriteKey;
+			currentShadowSprite.visible = !visualMode.renderCircleCursor && key === spriteKey;
 		}
 
 		for (const [key, currentSprite] of Object.entries(this.cursorSprites) as Array<
 			[CursorAssetKey, Sprite]
 		>) {
-			currentSprite.visible = key === spriteKey;
+			currentSprite.visible = !visualMode.renderCircleCursor && key === spriteKey;
 		}
 
-		if (shadowSprite) {
+		this.circleCursorShadowGraphics.visible = visualMode.renderCircleCursor;
+		this.circleCursorGraphics.visible = visualMode.renderCircleCursor;
+
+		if (visualMode.renderCircleCursor || usesStyledCursorOverride(this.config.cursorStyle)) {
+			this.drawStyledCursor(
+				px,
+				py,
+				scaledH,
+				bounceScale,
+				swayRotation,
+				cursorColor,
+				usesStyledCursorOverride(this.config.cursorStyle) ? this.config.cursorStyle : "circle",
+			);
+		} else if (shadowSprite) {
 			shadowSprite.height = scaledH * bounceScale;
 			shadowSprite.width = scaledH * bounceScale * asset.aspectRatio;
 			shadowSprite.position.set(px + CURSOR_SHADOW_OFFSET_X, py + CURSOR_SHADOW_OFFSET_Y);
 			shadowSprite.rotation = swayRotation;
+			shadowSprite.tint = CURSOR_SHADOW_COLOR;
+			shadowSprite.alpha = CURSOR_SHADOW_ALPHA;
 		}
 
 		if (sprite) {
-			sprite.alpha = this.config.dotAlpha;
+			sprite.tint = cursorColor;
+			sprite.alpha = this.config.cursorOpacity;
 			sprite.height = scaledH * bounceScale;
 			sprite.width = scaledH * bounceScale * asset.aspectRatio;
 			sprite.position.set(px, py);
@@ -772,12 +997,109 @@ export class PixiCursorOverlay {
 		this.lastRenderedTimeMs = timeMs;
 	}
 
-	private updateCursorSway(px: number, py: number, timeMs: number, freeze: boolean) {
+	private drawStyledCursor(
+		px: number,
+		py: number,
+		scaledH: number,
+		bounceScale: number,
+		rotation: number,
+		color: number,
+		style: Exclude<CursorStyle, "default">,
+	) {
+		this.circleCursorShadowGraphics.clear();
+		this.circleCursorShadowGraphics.position.set(px + 1.5, py + 1.5);
+		this.circleCursorShadowGraphics.rotation = rotation;
+		this.circleCursorGraphics.clear();
+		this.circleCursorGraphics.position.set(px, py);
+		this.circleCursorGraphics.rotation = rotation;
+
+		const radius = (scaledH * 0.28 * bounceScale) / 2;
+		const lineWidth = Math.max(1, radius * 0.18);
+		const crosshairExtent = radius * 1.5;
+		const alpha = this.config.cursorOpacity;
+
+		switch (style) {
+			case "dot":
+				this.circleCursorShadowGraphics.beginFill(0x000000, 0.22 * alpha);
+				this.circleCursorShadowGraphics.drawCircle(0, 0, radius * 0.68);
+				this.circleCursorShadowGraphics.endFill();
+				this.circleCursorGraphics.beginFill(color, alpha);
+				this.circleCursorGraphics.drawCircle(0, 0, radius * 0.68);
+				this.circleCursorGraphics.endFill();
+				break;
+			case "crosshair":
+				this.circleCursorShadowGraphics.lineStyle(Math.max(1, lineWidth), 0x000000, 0.24 * alpha);
+				this.circleCursorShadowGraphics.drawCircle(0, 0, radius * 0.72);
+				this.circleCursorShadowGraphics.moveTo(-crosshairExtent, 0);
+				this.circleCursorShadowGraphics.lineTo(crosshairExtent, 0);
+				this.circleCursorShadowGraphics.moveTo(0, -crosshairExtent);
+				this.circleCursorShadowGraphics.lineTo(0, crosshairExtent);
+				this.circleCursorGraphics.lineStyle(Math.max(1, lineWidth), color, alpha);
+				this.circleCursorGraphics.drawCircle(0, 0, radius * 0.72);
+				this.circleCursorGraphics.moveTo(-crosshairExtent, 0);
+				this.circleCursorGraphics.lineTo(crosshairExtent, 0);
+				this.circleCursorGraphics.moveTo(0, -crosshairExtent);
+				this.circleCursorGraphics.lineTo(0, crosshairExtent);
+				break;
+			case "ring":
+				this.circleCursorShadowGraphics.lineStyle(Math.max(1, lineWidth), 0x000000, 0.24 * alpha);
+				this.circleCursorShadowGraphics.drawCircle(0, 0, radius);
+				this.circleCursorGraphics.lineStyle(Math.max(1, lineWidth), color, alpha);
+				this.circleCursorGraphics.drawCircle(0, 0, radius);
+				break;
+			case "circle":
+			default: {
+				const highlightRadius = radius * 0.35;
+				const highlightOffset = radius * 0.35;
+				this.circleCursorShadowGraphics.beginFill(0x000000, 0.22 * alpha);
+				this.circleCursorShadowGraphics.drawCircle(0, 0, radius);
+				this.circleCursorShadowGraphics.endFill();
+				this.circleCursorGraphics.beginFill(color, alpha);
+				this.circleCursorGraphics.lineStyle(lineWidth, 0xffffff, 0.28 * alpha);
+				this.circleCursorGraphics.drawCircle(0, 0, radius);
+				this.circleCursorGraphics.endFill();
+				this.circleCursorGraphics.beginFill(0xffffff, 0.3 * alpha);
+				this.circleCursorGraphics.drawCircle(
+					-highlightOffset,
+					-highlightOffset,
+					highlightRadius,
+				);
+				this.circleCursorGraphics.endFill();
+				break;
+			}
+		}
+	}
+
+	private drawTrail(viewport: CursorViewportRect, cursorHeight: number, color: number) {
+		this.trailGraphics.clear();
+		if (this.config.trailLength <= 0 || this.config.trailOpacity <= 0 || this.state.trail.length === 0) {
+			return;
+		}
+
+		const baseRadius = Math.max(2, cursorHeight * 0.08);
+		for (const [index, point] of this.state.trail.entries()) {
+			const progress = 1 - index / Math.max(1, this.state.trail.length);
+			const alpha = progress * this.config.trailOpacity * this.config.cursorOpacity * 0.85;
+			const px = viewport.x + point.x * viewport.width;
+			const py = viewport.y + point.y * viewport.height;
+			this.trailGraphics.beginFill(color, alpha);
+			this.trailGraphics.drawCircle(px, py, baseRadius * (0.55 + progress * 0.9));
+			this.trailGraphics.endFill();
+		}
+	}
+
+	private updateCursorSway(
+		px: number,
+		py: number,
+		timeMs: number,
+		freeze: boolean,
+		motionSnapshot: CursorMotionSnapshot | null,
+	) {
 		const deltaMs =
 			this.lastRenderedTimeMs === null || freeze
 				? 1000 / 60
 				: Math.max(1, timeMs - this.lastRenderedTimeMs);
-		const targetRotation =
+		const legacySwayRotation =
 			!freeze && this.lastRenderedPoint && this.lastRenderedTimeMs !== null
 				? computeCursorSwayRotation(
 						px - this.lastRenderedPoint.px,
@@ -786,12 +1108,16 @@ export class PixiCursorOverlay {
 						this.config.sway,
 					)
 				: 0;
+		const tiltRotation = freeze ? 0 : getCursorTiltRotation(motionSnapshot, this.config.cursorTilt);
+		const targetRotation = legacySwayRotation + tiltRotation;
 
 		this.swayRotation = stepSpringValue(
 			this.swaySpring,
 			targetRotation,
 			deltaMs,
-			getCursorSwaySpringConfig(this.config.smoothingFactor),
+			getCursorSwaySpringConfig(
+				this.config.springConfig ? this.config.springConfig.damping / 40 : this.config.smoothingFactor,
+			),
 		);
 
 		if (Math.abs(this.swayRotation) < 0.0001 && targetRotation === 0) {
@@ -832,7 +1158,12 @@ export class PixiCursorOverlay {
 
 	reset(): void {
 		this.state.reset();
+		this.trailGraphics.clear();
 		this.clickRingGraphics.clear();
+		this.circleCursorShadowGraphics.clear();
+		this.circleCursorShadowGraphics.visible = false;
+		this.circleCursorGraphics.clear();
+		this.circleCursorGraphics.visible = false;
 		for (const shadowSprite of Object.values(this.cursorShadowSprites)) {
 			shadowSprite.visible = false;
 			shadowSprite.scale.set(1);
@@ -842,6 +1173,7 @@ export class PixiCursorOverlay {
 			sprite.scale.set(1);
 		}
 		this.container.visible = false;
+		this.container.alpha = 1;
 		this.lastRenderedPoint = null;
 		this.lastRenderedTimeMs = null;
 		this.simulationPath = null;
@@ -854,7 +1186,10 @@ export class PixiCursorOverlay {
 	}
 
 	destroy(): void {
+		this.trailGraphics.destroy();
 		this.clickRingGraphics.destroy();
+		this.circleCursorShadowGraphics.destroy();
+		this.circleCursorGraphics.destroy();
 		for (const shadowFilter of Object.values(this.cursorShadowFilters)) {
 			shadowFilter.destroy();
 		}
@@ -883,19 +1218,45 @@ export function drawCursorOnCanvas(
 	const h = config.dotRadius * getCursorViewportScale(viewport);
 	const { cursorType, clickBounceProgress } = getCursorVisualState(samples, timeMs);
 	let spriteKey: CursorAssetKey = "arrow";
-	if (cursorType) {
+	if (config.cursorTypeMode !== "circle" && cursorType) {
 		try {
-			getCursorAsset(cursorType, config.cursorPack);
+			getCursorAsset(cursorType, config.cursorPack, config.preferSystemCursorAssets);
 			spriteKey = cursorType;
 		} catch {
 			spriteKey = "arrow";
 		}
 	}
-	const asset = getCursorAsset(spriteKey, config.cursorPack);
+	const asset = getCursorAsset(spriteKey, config.cursorPack, config.preferSystemCursorAssets);
 	const bounceScale = Math.max(
 		0.72,
 		1 - Math.sin(clickBounceProgress * Math.PI) * (0.08 * config.clickBounce),
 	);
+
+	if (config.cursorTypeMode === "circle") {
+		const radius = ((h * 0.28) / 2) * bounceScale;
+		const highlightRadius = radius * 0.35;
+		const highlightOffset = radius * 0.35;
+		ctx.save();
+		ctx.globalAlpha = config.dotAlpha;
+		ctx.shadowColor = "rgba(0, 0, 0, 0.22)";
+		ctx.shadowBlur = 6;
+		ctx.shadowOffsetX = 1.5;
+		ctx.shadowOffsetY = 1.5;
+		ctx.fillStyle = "#F59E0B";
+		ctx.beginPath();
+		ctx.arc(px, py, radius, 0, Math.PI * 2);
+		ctx.fill();
+		ctx.shadowColor = "transparent";
+		ctx.strokeStyle = "rgba(255, 255, 255, 0.28)";
+		ctx.lineWidth = Math.max(1, radius * 0.18);
+		ctx.stroke();
+		ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+		ctx.beginPath();
+		ctx.arc(px - highlightOffset, py - highlightOffset, highlightRadius, 0, Math.PI * 2);
+		ctx.fill();
+		ctx.restore();
+		return;
+	}
 
 	ctx.save();
 	ctx.filter = CURSOR_SVG_DROP_SHADOW_FILTER;

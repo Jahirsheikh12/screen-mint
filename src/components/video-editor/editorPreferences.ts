@@ -20,6 +20,14 @@ type PersistedEditorControls = Pick<
 	| "cursorSway"
 	| "cursorStyle"
 	| "cursorPack"
+	| "cursorTypeMode"
+	| "cursorTilt"
+	| "hideWhenIdle"
+	| "idleHideDelayMs"
+	| "smoothMovementEnabled"
+	| "cursorMovementStyle"
+	| "cursorSpring"
+	| "highQualitySvgCursors"
 	| "cursorColor"
 	| "cursorOpacity"
 	| "clickHighlightColor"
@@ -95,6 +103,14 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	cursorSway: DEFAULT_EDITOR_CONTROLS.cursorSway,
 	cursorStyle: DEFAULT_EDITOR_CONTROLS.cursorStyle,
 	cursorPack: DEFAULT_EDITOR_CONTROLS.cursorPack,
+	cursorTypeMode: DEFAULT_EDITOR_CONTROLS.cursorTypeMode,
+	cursorTilt: DEFAULT_EDITOR_CONTROLS.cursorTilt,
+	hideWhenIdle: DEFAULT_EDITOR_CONTROLS.hideWhenIdle,
+	idleHideDelayMs: DEFAULT_EDITOR_CONTROLS.idleHideDelayMs,
+	smoothMovementEnabled: DEFAULT_EDITOR_CONTROLS.smoothMovementEnabled,
+	cursorMovementStyle: DEFAULT_EDITOR_CONTROLS.cursorMovementStyle,
+	cursorSpring: DEFAULT_EDITOR_CONTROLS.cursorSpring,
+	highQualitySvgCursors: DEFAULT_EDITOR_CONTROLS.highQualitySvgCursors,
 	cursorColor: DEFAULT_EDITOR_CONTROLS.cursorColor,
 	cursorOpacity: DEFAULT_EDITOR_CONTROLS.cursorOpacity,
 	clickHighlightColor: DEFAULT_EDITOR_CONTROLS.clickHighlightColor,
@@ -233,6 +249,14 @@ function normalizeEditorControls(
 		cursorSway: raw.cursorSway ?? fallback.cursorSway,
 		cursorStyle: raw.cursorStyle ?? fallback.cursorStyle,
 		cursorPack: raw.cursorPack ?? fallback.cursorPack,
+		cursorTypeMode: raw.cursorTypeMode ?? fallback.cursorTypeMode,
+		cursorTilt: raw.cursorTilt ?? fallback.cursorTilt,
+		hideWhenIdle: raw.hideWhenIdle ?? fallback.hideWhenIdle,
+		idleHideDelayMs: raw.idleHideDelayMs ?? fallback.idleHideDelayMs,
+		smoothMovementEnabled: raw.smoothMovementEnabled ?? fallback.smoothMovementEnabled,
+		cursorMovementStyle: raw.cursorMovementStyle ?? fallback.cursorMovementStyle,
+		cursorSpring: raw.cursorSpring ?? fallback.cursorSpring,
+		highQualitySvgCursors: raw.highQualitySvgCursors ?? fallback.highQualitySvgCursors,
 		cursorColor: raw.cursorColor ?? fallback.cursorColor,
 		cursorOpacity: raw.cursorOpacity ?? fallback.cursorOpacity,
 		clickHighlightColor: raw.clickHighlightColor ?? fallback.clickHighlightColor,
@@ -288,6 +312,14 @@ function normalizeEditorControls(
 		cursorSway: normalized.cursorSway,
 		cursorStyle: normalized.cursorStyle,
 		cursorPack: normalized.cursorPack,
+		cursorTypeMode: normalized.cursorTypeMode,
+		cursorTilt: normalized.cursorTilt,
+		hideWhenIdle: normalized.hideWhenIdle,
+		idleHideDelayMs: normalized.idleHideDelayMs,
+		smoothMovementEnabled: normalized.smoothMovementEnabled,
+		cursorMovementStyle: normalized.cursorMovementStyle,
+		cursorSpring: normalized.cursorSpring,
+		highQualitySvgCursors: normalized.highQualitySvgCursors,
 		cursorColor: normalized.cursorColor,
 		cursorOpacity: normalized.cursorOpacity,
 		clickHighlightColor: normalized.clickHighlightColor,

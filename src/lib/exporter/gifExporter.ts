@@ -6,7 +6,11 @@ import type {
 	CaptionSettings,
 	CropRegion,
 	CursorPack,
+	CursorMovementStyle,
+	CursorSpringSettings,
+	CursorStyle,
 	CursorTelemetryPoint,
+	CursorTypeMode,
 	DeviceMockup,
 	KeyboardShortcutCallout,
 	KeyboardShortcutPosition,
@@ -73,7 +77,23 @@ interface GifExporterConfig {
 	cursorMotionBlur?: number;
 	cursorClickBounce?: number;
 	cursorSway?: number;
+	cursorStyle?: CursorStyle;
 	cursorPack?: CursorPack;
+	cursorColor?: string;
+	cursorOpacity?: number;
+	clickHighlightColor?: string;
+	clickHighlightSize?: number;
+	clickHighlightOpacity?: number;
+	cursorTrailLength?: number;
+	cursorTrailOpacity?: number;
+	cursorTypeMode?: CursorTypeMode;
+	cursorTilt?: number;
+	hideWhenIdle?: boolean;
+	idleHideDelayMs?: number;
+	smoothMovementEnabled?: boolean;
+	cursorMovementStyle?: CursorMovementStyle;
+	cursorSpring?: CursorSpringSettings;
+	highQualitySvgCursors?: boolean;
 	previewWidth?: number;
 	previewHeight?: number;
 	webcamPath?: string | null;
@@ -184,7 +204,23 @@ export class GifExporter {
 				cursorMotionBlur: this.config.cursorMotionBlur,
 				cursorClickBounce: this.config.cursorClickBounce,
 				cursorSway: this.config.cursorSway,
+				cursorStyle: this.config.cursorStyle,
 				cursorPack: this.config.cursorPack,
+				cursorColor: this.config.cursorColor,
+				cursorOpacity: this.config.cursorOpacity,
+				clickHighlightColor: this.config.clickHighlightColor,
+				clickHighlightSize: this.config.clickHighlightSize,
+				clickHighlightOpacity: this.config.clickHighlightOpacity,
+				cursorTrailLength: this.config.cursorTrailLength,
+				cursorTrailOpacity: this.config.cursorTrailOpacity,
+				cursorTypeMode: this.config.cursorTypeMode,
+				cursorTilt: this.config.cursorTilt,
+				hideWhenIdle: this.config.hideWhenIdle,
+				idleHideDelayMs: this.config.idleHideDelayMs,
+				smoothMovementEnabled: this.config.smoothMovementEnabled,
+				cursorMovementStyle: this.config.cursorMovementStyle,
+				cursorSpring: this.config.cursorSpring,
+				highQualitySvgCursors: this.config.highQualitySvgCursors,
 				webcamPath: this.config.webcamPath,
 				webcamRegion: this.config.webcamRegion,
 				showWebcam: this.config.showWebcam,
