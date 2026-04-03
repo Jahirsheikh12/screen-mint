@@ -36,16 +36,16 @@ import { useShortcuts } from "@/contexts/ShortcutsContext";
 import { type AppLocale, SUPPORTED_LOCALES } from "@/i18n/config";
 import { getBackgroundMusicAssetById } from "@/lib/backgroundMusic";
 import {
-	calculateOutputDimensions,
+	type ExportDetails,
 	type ExportFormat,
 	type ExportProgress,
-	type ExportQuality,
 	type ExportSettings,
-	GIF_SIZE_PRESETS,
+	type GifExportConfig,
 	GifExporter,
-	type GifFrameRate,
-	type GifSizePreset,
+	resolveGifExportPlan,
+	resolveVideoExportPlan,
 	VideoExporter,
+	type VideoExportSettings,
 } from "@/lib/exporter";
 import type { PostRecordingContext } from "@/lib/recording/postRecording";
 import { matchesShortcut } from "@/lib/shortcuts";
@@ -356,18 +356,14 @@ export default function VideoEditor() {
 	const [showExportDialog, setShowExportDialog] = useState(false);
 	const [showExportSettings, setShowExportSettings] = useState(false);
 	const [aspectRatio, setAspectRatio] = useState<AspectRatio>(initialEditorPreferences.aspectRatio);
-	const [exportQuality, setExportQuality] = useState<ExportQuality>(
-		initialEditorPreferences.exportQuality,
+	const [videoExportSettings, setVideoExportSettings] = useState<VideoExportSettings>(
+		initialEditorPreferences.videoExportSettings,
 	);
 	const [exportFormat, setExportFormat] = useState<ExportFormat>(
 		initialEditorPreferences.exportFormat,
 	);
-	const [gifFrameRate, setGifFrameRate] = useState<GifFrameRate>(
-		initialEditorPreferences.gifFrameRate,
-	);
-	const [gifLoop, setGifLoop] = useState(initialEditorPreferences.gifLoop);
-	const [gifSizePreset, setGifSizePreset] = useState<GifSizePreset>(
-		initialEditorPreferences.gifSizePreset,
+	const [gifExportSettings, setGifExportSettings] = useState<GifExportConfig>(
+		initialEditorPreferences.gifExportSettings,
 	);
 	const [workspaceLayout, setWorkspaceLayout] = useState<EditorWorkspaceLayout>(
 		initialEditorPreferences.workspaceLayout,
@@ -375,6 +371,7 @@ export default function VideoEditor() {
 	const [customPresets, setCustomPresets] = useState<EditorPreset[]>(
 		initialEditorPreferences.presets,
 	);
+	const [exportDetails, setExportDetails] = useState<ExportDetails | null>(null);
 	const [exportedFilePath, setExportedFilePath] = useState<string | undefined>(undefined);
 	const [hasPendingExportSave, setHasPendingExportSave] = useState(false);
 	const [lastSavedSnapshot, setLastSavedSnapshot] = useState<string | null>(null);
@@ -530,11 +527,9 @@ export default function VideoEditor() {
 				showWebcam,
 				mirrorWebcam,
 				cameraSizeDuringZoom,
-				exportQuality,
 				exportFormat,
-				gifFrameRate,
-				gifLoop,
-				gifSizePreset,
+				videoExportSettings,
+				gifExportSettings,
 			}),
 		[
 			wallpaper,
@@ -588,11 +583,9 @@ export default function VideoEditor() {
 			showWebcam,
 			mirrorWebcam,
 			cameraSizeDuringZoom,
-			exportQuality,
 			exportFormat,
-			gifFrameRate,
-			gifLoop,
-			gifSizePreset,
+			videoExportSettings,
+			gifExportSettings,
 		],
 	);
 
@@ -653,11 +646,9 @@ export default function VideoEditor() {
 			setCameraSizeDuringZoom(controls.cameraSizeDuringZoom);
 			setCaptionSettings(controls.captionSettings);
 			setCaptionGenerationOptions(controls.captionGenerationOptions);
-			setExportQuality(controls.exportQuality);
 			setExportFormat(controls.exportFormat);
-			setGifFrameRate(controls.gifFrameRate);
-			setGifLoop(controls.gifLoop);
-			setGifSizePreset(controls.gifSizePreset);
+			setVideoExportSettings(controls.videoExportSettings);
+			setGifExportSettings(controls.gifExportSettings);
 
 			if (options.includeTimeline) {
 				setZoomRegions(controls.zoomRegions);
@@ -1033,11 +1024,9 @@ export default function VideoEditor() {
 				captionTrack,
 				captionSettings,
 				captionGenerationOptions,
-				exportQuality,
 				exportFormat,
-				gifFrameRate,
-				gifLoop,
-				gifSizePreset,
+				videoExportSettings,
+				gifExportSettings,
 			}),
 		);
 	}, [
@@ -1106,11 +1095,9 @@ export default function VideoEditor() {
 		captionTrack,
 		captionSettings,
 		captionGenerationOptions,
-		exportQuality,
 		exportFormat,
-		gifFrameRate,
-		gifLoop,
-		gifSizePreset,
+		videoExportSettings,
+		gifExportSettings,
 	]);
 
 	useEffect(() => {
@@ -1278,11 +1265,9 @@ export default function VideoEditor() {
 			showWebcam,
 			mirrorWebcam,
 			cameraSizeDuringZoom,
-			exportQuality,
 			exportFormat,
-			gifFrameRate,
-			gifLoop,
-			gifSizePreset,
+			videoExportSettings,
+			gifExportSettings,
 			workspaceLayout,
 			presets: customPresets,
 		});
@@ -1340,11 +1325,9 @@ export default function VideoEditor() {
 		showWebcam,
 		mirrorWebcam,
 		cameraSizeDuringZoom,
-		exportQuality,
 		exportFormat,
-		gifFrameRate,
-		gifLoop,
-		gifSizePreset,
+		videoExportSettings,
+		gifExportSettings,
 		workspaceLayout,
 		customPresets,
 	]);
@@ -1426,11 +1409,9 @@ export default function VideoEditor() {
 				captionTrack,
 				captionSettings,
 				captionGenerationOptions,
-				exportQuality,
 				exportFormat,
-				gifFrameRate,
-				gifLoop,
-				gifSizePreset,
+				videoExportSettings,
+				gifExportSettings,
 			});
 
 			const fileNameBase =
@@ -1528,11 +1509,9 @@ export default function VideoEditor() {
 			captionTrack,
 			captionSettings,
 			captionGenerationOptions,
-			exportQuality,
 			exportFormat,
-			gifFrameRate,
-			gifLoop,
-			gifSizePreset,
+			videoExportSettings,
+			gifExportSettings,
 			deviceMockup,
 		],
 	);
@@ -3452,28 +3431,30 @@ export default function VideoEditor() {
 
 		const sourceWidth = video.videoWidth || 1920;
 		const sourceHeight = video.videoHeight || 1080;
-		const gifDimensions = calculateOutputDimensions(
-			sourceWidth,
-			sourceHeight,
-			gifSizePreset,
-			GIF_SIZE_PRESETS,
+		const sourceAspectRatio = sourceHeight > 0 ? sourceWidth / sourceHeight : 16 / 9;
+		const aspectRatioValue = getAspectRatioValue(aspectRatio, sourceAspectRatio);
+		const gifPlan = resolveGifExportPlan(
+			{
+				width: sourceWidth,
+				height: sourceHeight,
+				frameRate: 60,
+				durationMs: Math.round(duration * 1000),
+			},
+			gifExportSettings,
+			aspectRatioValue,
+			Math.round(duration * 1000),
 		);
 
 		return {
 			format: exportFormat,
-			quality: exportFormat === "mp4" ? exportQuality : undefined,
-			gifConfig:
-				exportFormat === "gif"
-					? {
-							frameRate: gifFrameRate,
-							loop: gifLoop,
-							sizePreset: gifSizePreset,
-							width: gifDimensions.width,
-							height: gifDimensions.height,
-						}
-					: undefined,
+			video: videoExportSettings,
+			gif: {
+				...gifExportSettings,
+				width: gifPlan.width,
+				height: gifPlan.height,
+			},
 		};
-	}, [exportFormat, exportQuality, gifFrameRate, gifLoop, gifSizePreset]);
+	}, [aspectRatio, duration, exportFormat, gifExportSettings, videoExportSettings]);
 
 	const handleExport = useCallback(
 		async (
@@ -3525,6 +3506,7 @@ export default function VideoEditor() {
 			};
 
 			try {
+				setExportDetails(null);
 				const wasPlaying = isPlaying;
 				previewRestoreTime = video.currentTime;
 				shouldResumePreviewPlayback = wasPlaying;
@@ -3537,6 +3519,12 @@ export default function VideoEditor() {
 				const sourceHeight = video.videoHeight || 1080;
 				const sourceAspectRatio = sourceHeight > 0 ? sourceWidth / sourceHeight : 16 / 9;
 				const aspectRatioValue = getAspectRatioValue(aspectRatio, sourceAspectRatio);
+				const sourceMetadata = {
+					width: sourceWidth,
+					height: sourceHeight,
+					frameRate: 60,
+					durationMs: Math.round(duration * 1000),
+				};
 
 				// Get preview CONTAINER dimensions for scaling
 				const playbackRef = videoPlaybackRef.current;
@@ -3544,15 +3532,25 @@ export default function VideoEditor() {
 				const previewWidth = containerElement?.clientWidth || 1920;
 				const previewHeight = containerElement?.clientHeight || 1080;
 
-				if (settings.format === "gif" && settings.gifConfig) {
+				if (settings.format === "gif") {
 					// GIF Export
+					const gifPlan = resolveGifExportPlan(
+						sourceMetadata,
+						settings.gif,
+						aspectRatioValue,
+						Math.round(duration * 1000),
+					);
 					const gifExporter = new GifExporter({
 						videoUrl: videoPath,
-						width: settings.gifConfig.width,
-						height: settings.gifConfig.height,
-						frameRate: settings.gifConfig.frameRate,
-						loop: settings.gifConfig.loop,
-						sizePreset: settings.gifConfig.sizePreset,
+						width: gifPlan.width,
+						height: gifPlan.height,
+						frameRate: gifPlan.frameRate,
+						loop: gifPlan.loop,
+						preset: gifPlan.preset,
+						dedupeFrames: gifPlan.dedupeFrames,
+						colorCount: gifPlan.colorCount,
+						ditherMode: gifPlan.ditherMode,
+						motionSensitivity: gifPlan.motionSensitivity,
 						wallpaper,
 						trimRegions,
 						speedRegions,
@@ -3626,6 +3624,16 @@ export default function VideoEditor() {
 					const result = await gifExporter.export();
 
 					if (result.success && result.blob) {
+						setExportDetails(
+							result.details ?? {
+								format: "gif",
+								width: gifPlan.width,
+								height: gifPlan.height,
+								frameRate: gifPlan.frameRate,
+								warnings: gifPlan.warnings,
+								fileSizeBytes: result.blob.size,
+							},
+						);
 						const arrayBuffer = await result.blob.arrayBuffer();
 						const timestamp = Date.now();
 						const fileName = `export-${timestamp}.gif`;
@@ -3657,92 +3665,22 @@ export default function VideoEditor() {
 					}
 				} else {
 					// MP4 Export
-					const quality = settings.quality || exportQuality;
-					let exportWidth: number;
-					let exportHeight: number;
-					let bitrate: number;
-
-					if (quality === "source") {
-						// Use source resolution
-						exportWidth = sourceWidth;
-						exportHeight = sourceHeight;
-
-						if (aspectRatio === "native") {
-							exportWidth = Math.floor(sourceWidth / 2) * 2;
-							exportHeight = Math.floor(sourceHeight / 2) * 2;
-						} else if (aspectRatioValue === 1) {
-							// Square (1:1): use smaller dimension to avoid codec limits
-							const baseDimension = Math.floor(Math.min(sourceWidth, sourceHeight) / 2) * 2;
-							exportWidth = baseDimension;
-							exportHeight = baseDimension;
-						} else if (aspectRatioValue > 1) {
-							// Landscape: find largest even dimensions that exactly match aspect ratio
-							const baseWidth = Math.floor(sourceWidth / 2) * 2;
-							let found = false;
-							for (let w = baseWidth; w >= 100 && !found; w -= 2) {
-								const h = Math.round(w / aspectRatioValue);
-								if (h % 2 === 0 && Math.abs(w / h - aspectRatioValue) < 0.0001) {
-									exportWidth = w;
-									exportHeight = h;
-									found = true;
-								}
-							}
-							if (!found) {
-								exportWidth = baseWidth;
-								exportHeight = Math.floor(baseWidth / aspectRatioValue / 2) * 2;
-							}
-						} else {
-							// Portrait: find largest even dimensions that exactly match aspect ratio
-							const baseHeight = Math.floor(sourceHeight / 2) * 2;
-							let found = false;
-							for (let h = baseHeight; h >= 100 && !found; h -= 2) {
-								const w = Math.round(h * aspectRatioValue);
-								if (w % 2 === 0 && Math.abs(w / h - aspectRatioValue) < 0.0001) {
-									exportWidth = w;
-									exportHeight = h;
-									found = true;
-								}
-							}
-							if (!found) {
-								exportHeight = baseHeight;
-								exportWidth = Math.floor((baseHeight * aspectRatioValue) / 2) * 2;
-							}
-						}
-
-						// Calculate visually lossless bitrate matching screen recording optimization
-						const totalPixels = exportWidth * exportHeight;
-						bitrate = 30_000_000;
-						if (totalPixels > 1920 * 1080 && totalPixels <= 2560 * 1440) {
-							bitrate = 50_000_000;
-						} else if (totalPixels > 2560 * 1440) {
-							bitrate = 80_000_000;
-						}
-					} else {
-						// Use quality-based target resolution
-						const targetHeight = quality === "medium" ? 720 : 1080;
-
-						// Calculate dimensions maintaining aspect ratio
-						exportHeight = Math.floor(targetHeight / 2) * 2;
-						exportWidth = Math.floor((exportHeight * aspectRatioValue) / 2) * 2;
-
-						// Adjust bitrate for lower resolutions
-						const totalPixels = exportWidth * exportHeight;
-						if (totalPixels <= 1280 * 720) {
-							bitrate = 10_000_000;
-						} else if (totalPixels <= 1920 * 1080) {
-							bitrate = 20_000_000;
-						} else {
-							bitrate = 30_000_000;
-						}
-					}
+					const videoPlan = resolveVideoExportPlan(
+						sourceMetadata,
+						settings.video,
+						aspectRatioValue,
+					);
 
 					const exporter = new VideoExporter({
 						videoUrl: videoPath,
-						width: exportWidth,
-						height: exportHeight,
-						frameRate: 60,
-						bitrate,
-						codec: "avc1.640033",
+						width: videoPlan.width,
+						height: videoPlan.height,
+						frameRate: videoPlan.frameRate,
+						bitrate: videoPlan.bitrate,
+						codec: videoPlan.codec,
+						codecCandidates: videoPlan.codecCandidates,
+						encoderCandidates: videoPlan.encoderCandidates,
+						fallbackSteps: videoPlan.fallbackSteps,
 						wallpaper,
 						trimRegions,
 						speedRegions,
@@ -3816,6 +3754,22 @@ export default function VideoEditor() {
 					const result = await exporter.export();
 
 					if (result.success && result.blob) {
+						setExportDetails(
+							result.details ?? {
+								format: "mp4",
+								width: videoPlan.width,
+								height: videoPlan.height,
+								frameRate: videoPlan.frameRate,
+								bitrate: videoPlan.bitrate,
+								codec: videoPlan.codec,
+								codecLabel: videoPlan.codecLabel,
+								warnings: videoPlan.warnings,
+								fallbackApplied: videoPlan.fallbackApplied,
+								fallbackReason: videoPlan.fallbackReason,
+								fallbackSteps: videoPlan.fallbackSteps,
+								fileSizeBytes: result.blob.size,
+							},
+						);
 						const arrayBuffer = await result.blob.arrayBuffer();
 						const timestamp = Date.now();
 						const fileName = `export-${timestamp}.mp4`;
@@ -3930,7 +3884,6 @@ export default function VideoEditor() {
 			annotationRegions,
 			isPlaying,
 			aspectRatio,
-			exportQuality,
 			effectiveZoomRegions,
 			showExportSuccessToast,
 			resolvedWebcamPath,
@@ -3941,6 +3894,7 @@ export default function VideoEditor() {
 			cameraLayouts,
 			captionRegions,
 			captionSettings,
+			duration,
 		],
 	);
 
@@ -4847,19 +4801,38 @@ export default function VideoEditor() {
 				onClose={() => setShowExportSettings(false)}
 				exportFormat={exportFormat}
 				onExportFormatChange={setExportFormat}
-				exportQuality={exportQuality}
-				onExportQualityChange={setExportQuality}
-				gifFrameRate={gifFrameRate}
-				onGifFrameRateChange={setGifFrameRate}
-				gifLoop={gifLoop}
-				onGifLoopChange={setGifLoop}
-				gifSizePreset={gifSizePreset}
-				onGifSizePresetChange={setGifSizePreset}
-				gifOutputDimensions={calculateOutputDimensions(
-					videoPlaybackRef.current?.video?.videoWidth || 1920,
-					videoPlaybackRef.current?.video?.videoHeight || 1080,
-					gifSizePreset,
-					GIF_SIZE_PRESETS,
+				videoExportSettings={videoExportSettings}
+				onVideoExportSettingsChange={setVideoExportSettings}
+				gifExportSettings={gifExportSettings}
+				onGifExportSettingsChange={setGifExportSettings}
+				resolvedVideoPlan={resolveVideoExportPlan(
+					{
+						width: videoPlaybackRef.current?.video?.videoWidth || 1920,
+						height: videoPlaybackRef.current?.video?.videoHeight || 1080,
+						frameRate: 60,
+						durationMs: Math.round(duration * 1000),
+					},
+					videoExportSettings,
+					getAspectRatioValue(
+						aspectRatio,
+						(videoPlaybackRef.current?.video?.videoWidth || 1920) /
+							(videoPlaybackRef.current?.video?.videoHeight || 1080),
+					),
+				)}
+				resolvedGifPlan={resolveGifExportPlan(
+					{
+						width: videoPlaybackRef.current?.video?.videoWidth || 1920,
+						height: videoPlaybackRef.current?.video?.videoHeight || 1080,
+						frameRate: 60,
+						durationMs: Math.round(duration * 1000),
+					},
+					gifExportSettings,
+					getAspectRatioValue(
+						aspectRatio,
+						(videoPlaybackRef.current?.video?.videoWidth || 1920) /
+							(videoPlaybackRef.current?.video?.videoHeight || 1080),
+					),
+					Math.round(duration * 1000),
 				)}
 				onSaveProject={handleSaveProject}
 				onLoadProject={handleLoadProject}
@@ -4876,6 +4849,7 @@ export default function VideoEditor() {
 				onRetrySave={handleRetrySaveExport}
 				canRetrySave={hasPendingExportSave}
 				exportFormat={exportFormat}
+				details={exportDetails}
 				exportedFilePath={exportedFilePath}
 			/>
 

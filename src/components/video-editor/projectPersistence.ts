@@ -1,4 +1,17 @@
-import type { ExportFormat, ExportQuality, GifFrameRate, GifSizePreset } from "@/lib/exporter";
+import type {
+	ExportFormat,
+	ExportQuality,
+	GifExportConfig,
+	GifFrameRate,
+	GifSizePreset,
+	VideoExportSettings,
+} from "@/lib/exporter";
+import {
+	getDefaultGifExportSettings,
+	getDefaultVideoExportSettings,
+	mapLegacyExportQualityToVideoSettings,
+	mapLegacyGifSizePreset,
+} from "@/lib/exporter";
 import { normalizeWallpaperSelection, WALLPAPER_PATHS } from "@/lib/wallpapers";
 import { ASPECT_RATIOS, type AspectRatio, isCustomAspectRatio } from "@/utils/aspectRatioUtils";
 import {
@@ -26,8 +39,8 @@ import {
 	type CaptionWord,
 	type CropRegion,
 	CURSOR_PACK_OPTIONS,
-	type CursorPack,
 	type CursorMovementStyle,
+	type CursorPack,
 	type CursorSpringSettings,
 	type CursorStyle,
 	type CursorTypeMode,
@@ -52,9 +65,9 @@ import {
 	DEFAULT_CURSOR_MOTION_BLUR,
 	DEFAULT_CURSOR_OPACITY,
 	DEFAULT_CURSOR_PACK,
-	DEFAULT_CURSOR_SPRING,
 	DEFAULT_CURSOR_SIZE,
 	DEFAULT_CURSOR_SMOOTHING,
+	DEFAULT_CURSOR_SPRING,
 	DEFAULT_CURSOR_STYLE,
 	DEFAULT_CURSOR_SWAY,
 	DEFAULT_CURSOR_TRAIL_LENGTH,
@@ -86,7 +99,7 @@ import {
 import { normalizeCursorSpring, resolveCursorV2Fields } from "./videoPlayback/cursorV2";
 import { normalizeWebcamRegion } from "./webcamRegionUtils";
 
-export const PROJECT_VERSION = 8;
+export const PROJECT_VERSION = 9;
 export const DEFAULT_VIDEO_PREVIEW_PADDING = 40;
 
 export interface ProjectEditorState {
@@ -153,11 +166,9 @@ export interface ProjectEditorState {
 	captionTrack: CaptionTrack | null;
 	captionSettings: CaptionSettings;
 	captionGenerationOptions: CaptionGenerationOptions;
-	exportQuality: ExportQuality;
 	exportFormat: ExportFormat;
-	gifFrameRate: GifFrameRate;
-	gifLoop: boolean;
-	gifSizePreset: GifSizePreset;
+	videoExportSettings: VideoExportSettings;
+	gifExportSettings: GifExportConfig;
 }
 
 export interface EditorProjectData {
@@ -633,6 +644,143 @@ function normalizeCursorFollowTracking(candidate: unknown) {
 }
 
 export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): ProjectEditorState {
+	const exportEditor = editor as Partial<ProjectEditorState> & {
+		exportQuality?: ExportQuality;
+		gifFrameRate?: GifFrameRate;
+		gifLoop?: boolean;
+		gifSizePreset?: GifSizePreset;
+		videoExportSettings?: Partial<VideoExportSettings>;
+		gifExportSettings?: Partial<GifExportConfig>;
+	};
+	const defaultVideoExportSettings = getDefaultVideoExportSettings();
+	const defaultGifExportSettings = getDefaultGifExportSettings();
+	const legacyVideoExportSettings = mapLegacyExportQualityToVideoSettings(
+		exportEditor.exportQuality,
+	);
+	const legacyGifExportPreset = mapLegacyGifSizePreset(exportEditor.gifSizePreset);
+	const normalizedVideoExportSettings: VideoExportSettings = {
+		mode:
+			exportEditor.videoExportSettings?.mode === "custom" ||
+			exportEditor.videoExportSettings?.mode === "preset"
+				? exportEditor.videoExportSettings.mode
+				: "preset",
+		preset:
+			exportEditor.videoExportSettings?.preset === "fast-share" ||
+			exportEditor.videoExportSettings?.preset === "balanced" ||
+			exportEditor.videoExportSettings?.preset === "quality" ||
+			exportEditor.videoExportSettings?.preset === "master"
+				? exportEditor.videoExportSettings.preset
+				: legacyVideoExportSettings.preset,
+		resolutionMode:
+			exportEditor.videoExportSettings?.resolutionMode === "720p" ||
+			exportEditor.videoExportSettings?.resolutionMode === "1080p" ||
+			exportEditor.videoExportSettings?.resolutionMode === "1440p" ||
+			exportEditor.videoExportSettings?.resolutionMode === "2160p" ||
+			exportEditor.videoExportSettings?.resolutionMode === "source"
+				? exportEditor.videoExportSettings.resolutionMode
+				: legacyVideoExportSettings.resolutionMode,
+		frameRateMode:
+			exportEditor.videoExportSettings?.frameRateMode === "auto" ||
+			exportEditor.videoExportSettings?.frameRateMode === "24" ||
+			exportEditor.videoExportSettings?.frameRateMode === "30" ||
+			exportEditor.videoExportSettings?.frameRateMode === "48" ||
+			exportEditor.videoExportSettings?.frameRateMode === "60" ||
+			exportEditor.videoExportSettings?.frameRateMode === "source"
+				? exportEditor.videoExportSettings.frameRateMode
+				: legacyVideoExportSettings.frameRateMode,
+		bitrateMode:
+			exportEditor.videoExportSettings?.bitrateMode === "auto" ||
+			exportEditor.videoExportSettings?.bitrateMode === "high" ||
+			exportEditor.videoExportSettings?.bitrateMode === "very-high" ||
+			exportEditor.videoExportSettings?.bitrateMode === "archive" ||
+			exportEditor.videoExportSettings?.bitrateMode === "custom"
+				? exportEditor.videoExportSettings.bitrateMode
+				: legacyVideoExportSettings.bitrateMode,
+		customBitrateMbps:
+			typeof exportEditor.videoExportSettings?.customBitrateMbps === "number" &&
+			Number.isFinite(exportEditor.videoExportSettings.customBitrateMbps)
+				? clamp(exportEditor.videoExportSettings.customBitrateMbps, 4, 80)
+				: legacyVideoExportSettings.customBitrateMbps,
+		optimizeForWeb:
+			typeof exportEditor.videoExportSettings?.optimizeForWeb === "boolean"
+				? exportEditor.videoExportSettings.optimizeForWeb
+				: defaultVideoExportSettings.optimizeForWeb,
+	};
+	const normalizedGifExportSettings: GifExportConfig = {
+		mode:
+			exportEditor.gifExportSettings?.mode === "custom" ||
+			exportEditor.gifExportSettings?.mode === "preset"
+				? exportEditor.gifExportSettings.mode
+				: "preset",
+		preset:
+			exportEditor.gifExportSettings?.preset === "small-share" ||
+			exportEditor.gifExportSettings?.preset === "balanced" ||
+			exportEditor.gifExportSettings?.preset === "quality"
+				? exportEditor.gifExportSettings.preset
+				: legacyGifExportPreset,
+		resolutionMode:
+			exportEditor.gifExportSettings?.resolutionMode === "480p" ||
+			exportEditor.gifExportSettings?.resolutionMode === "720p" ||
+			exportEditor.gifExportSettings?.resolutionMode === "1080p" ||
+			exportEditor.gifExportSettings?.resolutionMode === "source"
+				? exportEditor.gifExportSettings.resolutionMode
+				: defaultGifExportSettings.resolutionMode,
+		frameRate:
+			exportEditor.gifExportSettings?.frameRate === 10 ||
+			exportEditor.gifExportSettings?.frameRate === 12 ||
+			exportEditor.gifExportSettings?.frameRate === 15 ||
+			exportEditor.gifExportSettings?.frameRate === 20 ||
+			exportEditor.gifExportSettings?.frameRate === 24 ||
+			exportEditor.gifExportSettings?.frameRate === 25 ||
+			exportEditor.gifExportSettings?.frameRate === 30
+				? exportEditor.gifExportSettings.frameRate
+				: exportEditor.gifFrameRate === 10 ||
+						exportEditor.gifFrameRate === 12 ||
+						exportEditor.gifFrameRate === 15 ||
+						exportEditor.gifFrameRate === 20 ||
+						exportEditor.gifFrameRate === 24 ||
+						exportEditor.gifFrameRate === 25 ||
+						exportEditor.gifFrameRate === 30
+					? exportEditor.gifFrameRate
+					: defaultGifExportSettings.frameRate,
+		loop:
+			typeof exportEditor.gifExportSettings?.loop === "boolean"
+				? exportEditor.gifExportSettings.loop
+				: typeof exportEditor.gifLoop === "boolean"
+					? exportEditor.gifLoop
+					: defaultGifExportSettings.loop,
+		dedupeFrames:
+			typeof exportEditor.gifExportSettings?.dedupeFrames === "boolean"
+				? exportEditor.gifExportSettings.dedupeFrames
+				: defaultGifExportSettings.dedupeFrames,
+		colorCount:
+			exportEditor.gifExportSettings?.colorCount === 64 ||
+			exportEditor.gifExportSettings?.colorCount === 128 ||
+			exportEditor.gifExportSettings?.colorCount === 256
+				? exportEditor.gifExportSettings.colorCount
+				: defaultGifExportSettings.colorCount,
+		ditherMode:
+			exportEditor.gifExportSettings?.ditherMode === "off" ||
+			exportEditor.gifExportSettings?.ditherMode === "bayer" ||
+			exportEditor.gifExportSettings?.ditherMode === "floyd-steinberg"
+				? exportEditor.gifExportSettings.ditherMode
+				: defaultGifExportSettings.ditherMode,
+		motionSensitivity:
+			exportEditor.gifExportSettings?.motionSensitivity === "low" ||
+			exportEditor.gifExportSettings?.motionSensitivity === "balanced" ||
+			exportEditor.gifExportSettings?.motionSensitivity === "high"
+				? exportEditor.gifExportSettings.motionSensitivity
+				: defaultGifExportSettings.motionSensitivity,
+		width:
+			typeof exportEditor.gifExportSettings?.width === "number"
+				? exportEditor.gifExportSettings.width
+				: defaultGifExportSettings.width,
+		height:
+			typeof exportEditor.gifExportSettings?.height === "number"
+				? exportEditor.gifExportSettings.height
+				: defaultGifExportSettings.height,
+	};
+
 	const validAspectRatios = new Set<AspectRatio>(ASPECT_RATIOS);
 	const legacyMotionBlurEnabled = (editor as Partial<{ motionBlurEnabled: boolean }>)
 		.motionBlurEnabled;
@@ -1069,28 +1217,9 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		annotationRegions: normalizedAnnotationRegions,
 		audioRegions: normalizedAudioRegions,
 		aspectRatio: normalizedAspectRatio,
-		exportQuality:
-			editor.exportQuality === "medium" ||
-			editor.exportQuality === "good" ||
-			editor.exportQuality === "high" ||
-			editor.exportQuality === "source"
-				? editor.exportQuality
-				: "good",
 		exportFormat: editor.exportFormat === "gif" ? "gif" : "mp4",
-		gifFrameRate:
-			editor.gifFrameRate === 15 ||
-			editor.gifFrameRate === 20 ||
-			editor.gifFrameRate === 25 ||
-			editor.gifFrameRate === 30
-				? editor.gifFrameRate
-				: 15,
-		gifLoop: typeof editor.gifLoop === "boolean" ? editor.gifLoop : true,
-		gifSizePreset:
-			editor.gifSizePreset === "medium" ||
-			editor.gifSizePreset === "large" ||
-			editor.gifSizePreset === "original"
-				? editor.gifSizePreset
-				: "medium",
+		videoExportSettings: normalizedVideoExportSettings,
+		gifExportSettings: normalizedGifExportSettings,
 		webcamPath: typeof editor.webcamPath === "string" ? editor.webcamPath : undefined,
 		webcamRegion: normalizeWebcamRegion({
 			...DEFAULT_WEBCAM_REGION,

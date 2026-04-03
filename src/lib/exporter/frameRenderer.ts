@@ -148,6 +148,9 @@ export class FrameRenderer {
 	private videoContainer: Container | null = null;
 	private cursorContainer: Container | null = null;
 	private videoSprite: Sprite | null = null;
+	private videoTexture: Texture | null = null;
+	private frameCanvas: HTMLCanvasElement | null = null;
+	private frameCtx: CanvasRenderingContext2D | null = null;
 	private backgroundCanvas: HTMLCanvasElement | null = null;
 	private maskGraphics: Graphics | null = null;
 	private blurFilter: BlurFilter | null = null;
@@ -266,6 +269,14 @@ export class FrameRenderer {
 
 		// Setup background (render separately, not in PixiJS)
 		await this.setupBackground();
+
+		this.frameCanvas = document.createElement("canvas");
+		this.frameCanvas.width = this.config.videoWidth;
+		this.frameCanvas.height = this.config.videoHeight;
+		this.frameCtx = this.frameCanvas.getContext("2d", { willReadFrequently: false });
+		if (!this.frameCtx) {
+			throw new Error("Failed to get 2D context for frame canvas");
+		}
 
 		// Setup blur filter for video container
 		this.blurFilter = new BlurFilter();
@@ -516,10 +527,28 @@ export class FrameRenderer {
 
 		this.currentVideoTime = timestamp / 1000000;
 
-		// Create or update video sprite from VideoFrame
+		if (!this.frameCanvas || !this.frameCtx) {
+			throw new Error("Frame canvas not initialized");
+		}
+
+		if (
+			this.frameCanvas.width !== videoFrame.displayWidth ||
+			this.frameCanvas.height !== videoFrame.displayHeight
+		) {
+			this.frameCanvas.width = videoFrame.displayWidth;
+			this.frameCanvas.height = videoFrame.displayHeight;
+			if (this.videoTexture) {
+				this.videoTexture.destroy(true);
+				this.videoTexture = null;
+			}
+		}
+
+		this.frameCtx.clearRect(0, 0, this.frameCanvas.width, this.frameCanvas.height);
+		this.frameCtx.drawImage(videoFrame, 0, 0, this.frameCanvas.width, this.frameCanvas.height);
+
 		if (!this.videoSprite) {
-			const texture = Texture.from(videoFrame as TextureSourceInput);
-			this.videoSprite = new Sprite(texture);
+			this.videoTexture = Texture.from(this.frameCanvas as TextureSourceInput);
+			this.videoSprite = new Sprite(this.videoTexture);
 			this.videoContainer.addChild(this.videoSprite);
 			if (this.cursorOverlay && this.cursorContainer) {
 				this.cursorContainer.addChild(this.cursorOverlay.container);
@@ -528,11 +557,7 @@ export class FrameRenderer {
 				this.videoContainer.addChild(this.maskGraphics);
 			}
 		} else {
-			// Destroy old texture to avoid memory leaks, then create new one
-			const oldTexture = this.videoSprite.texture;
-			const newTexture = Texture.from(videoFrame as TextureSourceInput);
-			this.videoSprite.texture = newTexture;
-			oldTexture.destroy(true);
+			this.videoTexture?.source.update();
 		}
 
 		// Apply layout
@@ -935,6 +960,9 @@ export class FrameRenderer {
 			videoTexture?.destroy(true);
 			this.videoSprite = null;
 		}
+		this.videoTexture = null;
+		this.frameCanvas = null;
+		this.frameCtx = null;
 		this.backgroundCanvas = null;
 		if (this.app) {
 			this.app.destroy(true, {

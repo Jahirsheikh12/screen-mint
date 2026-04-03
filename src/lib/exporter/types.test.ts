@@ -16,7 +16,7 @@ import { GifFrameRate, isValidGifFrameRate, VALID_GIF_FRAME_RATES } from "./type
 describe("GIF Export Types", () => {
 	describe("Property 1: Valid Frame Rate Acceptance", () => {
 		// Property test: Valid frame rates should be accepted
-		it("should accept all valid frame rates (15, 20, 25, 30)", () => {
+		it("should accept all valid frame rates (10, 12, 15, 20, 24, 25, 30)", () => {
 			fc.assert(
 				fc.property(fc.constantFrom(...VALID_GIF_FRAME_RATES), (frameRate: GifFrameRate) => {
 					expect(isValidGifFrameRate(frameRate)).toBe(true);

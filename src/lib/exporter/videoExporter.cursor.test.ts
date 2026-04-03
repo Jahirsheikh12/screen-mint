@@ -8,13 +8,11 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("./frameRenderer", () => ({
 	FrameRenderer: mocks.frameRendererConstructor.mockImplementation(
-		function MockFrameRenderer(
-			this: {
-				initialize: typeof mocks.frameRendererInitialize;
-				cleanup: ReturnType<typeof vi.fn>;
-				destroy: ReturnType<typeof vi.fn>;
-			},
-		) {
+		function MockFrameRenderer(this: {
+			initialize: typeof mocks.frameRendererInitialize;
+			cleanup: ReturnType<typeof vi.fn>;
+			destroy: ReturnType<typeof vi.fn>;
+		}) {
 			this.initialize = mocks.frameRendererInitialize;
 			this.cleanup = vi.fn();
 			this.destroy = vi.fn();
@@ -23,17 +21,13 @@ vi.mock("./frameRenderer", () => ({
 }));
 
 vi.mock("./streamingDecoder", () => ({
-	StreamingVideoDecoder: vi.fn().mockImplementation(
-		function MockStreamingVideoDecoder(
-			this: {
-				loadMetadata: typeof mocks.streamingDecoderLoadMetadata;
-				destroy: ReturnType<typeof vi.fn>;
-			},
-		) {
-			this.loadMetadata = mocks.streamingDecoderLoadMetadata;
-			this.destroy = vi.fn();
-		},
-	),
+	StreamingVideoDecoder: vi.fn().mockImplementation(function MockStreamingVideoDecoder(this: {
+		loadMetadata: typeof mocks.streamingDecoderLoadMetadata;
+		destroy: ReturnType<typeof vi.fn>;
+	}) {
+		this.loadMetadata = mocks.streamingDecoderLoadMetadata;
+		this.destroy = vi.fn();
+	}),
 }));
 
 import { VideoExporter } from "./videoExporter";
@@ -41,7 +35,12 @@ import { VideoExporter } from "./videoExporter";
 describe("VideoExporter cursor config", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		vi.spyOn(console, "error").mockImplementation(() => {});
+		vi.spyOn(console, "error").mockImplementation(() => {
+			// Silence expected exporter setup errors in this unit test.
+		});
+		vi.stubGlobal("VideoEncoder", {
+			isConfigSupported: vi.fn().mockResolvedValue({ supported: true }),
+		});
 		mocks.streamingDecoderLoadMetadata.mockResolvedValue({
 			width: 1920,
 			height: 1080,
@@ -52,6 +51,7 @@ describe("VideoExporter cursor config", () => {
 	});
 
 	afterEach(() => {
+		vi.unstubAllGlobals();
 		vi.restoreAllMocks();
 	});
 

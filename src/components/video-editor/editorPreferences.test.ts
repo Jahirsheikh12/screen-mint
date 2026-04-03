@@ -114,11 +114,13 @@ describe("editorPreferences", () => {
 			showWebcam: DEFAULT_EDITOR_PREFERENCES.showWebcam,
 			mirrorWebcam: DEFAULT_EDITOR_PREFERENCES.mirrorWebcam,
 			cameraSizeDuringZoom: DEFAULT_EDITOR_PREFERENCES.cameraSizeDuringZoom,
-			exportQuality: DEFAULT_EDITOR_PREFERENCES.exportQuality,
 			exportFormat: "gif",
-			gifFrameRate: 30,
-			gifLoop: false,
-			gifSizePreset: DEFAULT_EDITOR_PREFERENCES.gifSizePreset,
+			videoExportSettings: DEFAULT_EDITOR_PREFERENCES.videoExportSettings,
+			gifExportSettings: {
+				...DEFAULT_EDITOR_PREFERENCES.gifExportSettings,
+				frameRate: 30,
+				loop: false,
+			},
 			customAspectWidth: "21",
 			customAspectHeight: "9",
 			customWallpapers: ["data:image/jpeg;base64,abc"],
@@ -260,11 +262,9 @@ describe("editorPreferences", () => {
 			showWebcam: DEFAULT_EDITOR_PREFERENCES.showWebcam,
 			mirrorWebcam: DEFAULT_EDITOR_PREFERENCES.mirrorWebcam,
 			cameraSizeDuringZoom: DEFAULT_EDITOR_PREFERENCES.cameraSizeDuringZoom,
-			exportQuality: DEFAULT_EDITOR_PREFERENCES.exportQuality,
 			exportFormat: DEFAULT_EDITOR_PREFERENCES.exportFormat,
-			gifFrameRate: DEFAULT_EDITOR_PREFERENCES.gifFrameRate,
-			gifLoop: DEFAULT_EDITOR_PREFERENCES.gifLoop,
-			gifSizePreset: DEFAULT_EDITOR_PREFERENCES.gifSizePreset,
+			videoExportSettings: DEFAULT_EDITOR_PREFERENCES.videoExportSettings,
+			gifExportSettings: DEFAULT_EDITOR_PREFERENCES.gifExportSettings,
 			customAspectWidth: "21",
 			customAspectHeight: "9",
 			customWallpapers: DEFAULT_EDITOR_PREFERENCES.customWallpapers,
@@ -319,11 +319,18 @@ describe("editorPreferences", () => {
 			showWebcam: DEFAULT_EDITOR_PREFERENCES.showWebcam,
 			mirrorWebcam: DEFAULT_EDITOR_PREFERENCES.mirrorWebcam,
 			cameraSizeDuringZoom: DEFAULT_EDITOR_PREFERENCES.cameraSizeDuringZoom,
-			exportQuality: "source",
 			exportFormat: "gif",
-			gifFrameRate: 20,
-			gifLoop: false,
-			gifSizePreset: "large",
+			videoExportSettings: {
+				preset: "master",
+				frameRateMode: "source",
+				optimizeForWeb: false,
+			},
+			gifExportSettings: {
+				...DEFAULT_EDITOR_PREFERENCES.gifExportSettings,
+				preset: "quality",
+				frameRate: 20,
+				loop: false,
+			},
 			customAspectWidth: "4",
 			customAspectHeight: "5",
 			customWallpapers: ["data:image/jpeg;base64,abc", "data:image/jpeg;base64,abc"],
@@ -371,11 +378,18 @@ describe("editorPreferences", () => {
 			showWebcam: DEFAULT_EDITOR_PREFERENCES.showWebcam,
 			mirrorWebcam: DEFAULT_EDITOR_PREFERENCES.mirrorWebcam,
 			cameraSizeDuringZoom: DEFAULT_EDITOR_PREFERENCES.cameraSizeDuringZoom,
-			exportQuality: "source",
 			exportFormat: "gif",
-			gifFrameRate: 20,
-			gifLoop: false,
-			gifSizePreset: "large",
+			videoExportSettings: {
+				preset: "master",
+				frameRateMode: "source",
+				optimizeForWeb: false,
+			},
+			gifExportSettings: {
+				...DEFAULT_EDITOR_PREFERENCES.gifExportSettings,
+				preset: "quality",
+				frameRate: 20,
+				loop: false,
+			},
 			customAspectWidth: "4",
 			customAspectHeight: "5",
 			customWallpapers: ["data:image/jpeg;base64,abc"],
@@ -433,5 +447,83 @@ describe("editorPreferences", () => {
 		expect(preferences.presets[1]?.id).toBe("preset-2");
 		expect(preferences.presets[1]?.name).toBe("Preset 2");
 		expect(preferences.presets[1]?.controls.wallpaper).toBe("#112233");
+	});
+
+	it("migrates legacy export settings into preset mode", () => {
+		vi.stubGlobal(
+			"localStorage",
+			createStorageMock({
+				[EDITOR_PREFERENCES_STORAGE_KEY]: JSON.stringify({
+					exportFormat: "gif",
+					exportQuality: "source",
+					gifFrameRate: 25,
+					gifLoop: false,
+					gifSizePreset: "large",
+				}),
+			}),
+		);
+
+		expect(loadEditorPreferences()).toMatchObject({
+			videoExportSettings: {
+				mode: "preset",
+				preset: "master",
+				resolutionMode: "source",
+				frameRateMode: "source",
+				bitrateMode: "archive",
+				optimizeForWeb: false,
+			},
+			gifExportSettings: {
+				...DEFAULT_EDITOR_PREFERENCES.gifExportSettings,
+				mode: "preset",
+				preset: "quality",
+				frameRate: 25,
+				loop: false,
+			},
+		});
+	});
+
+	it("normalizes partially saved advanced export settings safely", () => {
+		expect(
+			normalizeEditorPreferences({
+				videoExportSettings: {
+					mode: "custom",
+					preset: "quality",
+					resolutionMode: "2160p",
+					frameRateMode: "48",
+					bitrateMode: "custom",
+					customBitrateMbps: 200,
+					optimizeForWeb: true,
+				},
+				gifExportSettings: {
+					mode: "custom",
+					preset: "balanced",
+					resolutionMode: "source",
+					frameRate: 24,
+					loop: true,
+					dedupeFrames: true,
+					colorCount: 256,
+					ditherMode: "floyd-steinberg",
+					motionSensitivity: "high",
+					width: 1920,
+					height: 1080,
+				},
+			}),
+		).toMatchObject({
+			videoExportSettings: {
+				mode: "custom",
+				resolutionMode: "2160p",
+				frameRateMode: "48",
+				bitrateMode: "custom",
+				customBitrateMbps: 80,
+			},
+			gifExportSettings: {
+				mode: "custom",
+				resolutionMode: "source",
+				frameRate: 24,
+				colorCount: 256,
+				ditherMode: "floyd-steinberg",
+				motionSensitivity: "high",
+			},
+		});
 	});
 });

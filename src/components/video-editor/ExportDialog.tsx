@@ -2,7 +2,7 @@ import { CheckCircle2, Download, FolderOpen, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import type { ExportProgress } from "@/lib/exporter";
+import type { ExportDetails, ExportProgress } from "@/lib/exporter";
 import { cn } from "@/lib/utils";
 import { useScopedT } from "../../contexts/I18nContext";
 
@@ -16,6 +16,7 @@ interface ExportDialogProps {
 	onRetrySave?: () => void;
 	canRetrySave?: boolean;
 	exportFormat?: "mp4" | "gif";
+	details?: ExportDetails | null;
 	exportedFilePath?: string;
 }
 
@@ -29,6 +30,7 @@ export function ExportDialog({
 	onRetrySave,
 	canRetrySave = false,
 	exportFormat = "mp4",
+	details,
 	exportedFilePath,
 }: ExportDialogProps) {
 	const t = useScopedT("dialogs");
@@ -83,15 +85,20 @@ export function ExportDialog({
 
 	const formatLabel = exportFormat === "gif" ? "GIF" : "Video";
 
-	// Determine if we're in the compiling phase (frames done but still exporting)
-	const isCompiling =
-		isExporting && progress && progress.percentage >= 100 && exportFormat === "gif";
+	const isCompiling = isExporting && progress?.phase === "finalizing" && exportFormat === "gif";
 	const isFinalizing = progress?.phase === "finalizing";
 	const renderProgress = progress?.renderProgress;
+	const etaSeconds = progress?.etaSeconds ?? progress?.estimatedTimeRemaining ?? 0;
+	const throughputFps = progress?.throughputFps;
+	const warnings = progress?.warnings ?? details?.warnings ?? [];
+	const fallbackSteps = details?.fallbackSteps ?? [];
 
-	// Get status message based on phase
 	const getStatusMessage = () => {
 		if (error) return t("export.pleaseTryAgain");
+		if (progress?.phase && progress.phase !== "finalizing") {
+			const phaseLabel = progress.phase.charAt(0).toUpperCase() + progress.phase.slice(1);
+			return `${phaseLabel}${throughputFps ? ` • ${throughputFps.toFixed(1)} fps` : ""}${etaSeconds > 0 ? ` • ETA ${Math.ceil(etaSeconds)}s` : ""}`;
+		}
 		if (isCompiling || isFinalizing) {
 			if (renderProgress !== undefined && renderProgress > 0) {
 				return t("export.compilingGifProgress", undefined, { progress: renderProgress });
@@ -212,6 +219,32 @@ export function ExportDialog({
 											format: formatLabel.toLowerCase(),
 										})}
 									</p>
+									{details ? (
+										<div className="mb-4 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-left text-[11px] text-slate-300">
+											<div>
+												{details.width} × {details.height} • {details.frameRate} FPS
+											</div>
+											{details.codecLabel || details.codec ? (
+												<div>{details.codecLabel ?? details.codec}</div>
+											) : null}
+											{typeof details.bitrate === "number" ? (
+												<div>{(details.bitrate / 1_000_000).toFixed(1)} Mbps</div>
+											) : null}
+											{typeof details.fileSizeBytes === "number" ? (
+												<div>{(details.fileSizeBytes / 1_000_000).toFixed(1)} MB</div>
+											) : null}
+											{fallbackSteps.map((step) => (
+												<div key={step} className="mt-1 text-amber-300">
+													{step}
+												</div>
+											))}
+											{details.warnings?.map((warning) => (
+												<div key={warning} className="mt-1 text-slate-500">
+													{warning}
+												</div>
+											))}
+										</div>
+									) : null}
 									{exportedFilePath && (
 										<>
 											<Button
@@ -370,6 +403,25 @@ export function ExportDialog({
 												{progress.totalFrames}
 											</div>
 										</div>
+									</div>
+									<div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3 text-[11px] text-slate-300">
+										<div className="flex items-center justify-between">
+											<span>{progress.phase ? progress.phase : "rendering"}</span>
+											<span>
+												{displayPercentage !== null ? `${displayPercentage}%` : "working"}
+											</span>
+										</div>
+										{throughputFps ? (
+											<div className="mt-1 text-slate-500">
+												{throughputFps.toFixed(1)} fps throughput
+											</div>
+										) : null}
+										{etaSeconds > 0 ? (
+											<div className="mt-1 text-slate-500">ETA {Math.ceil(etaSeconds)} seconds</div>
+										) : null}
+										{warnings.length > 0 ? (
+											<div className="mt-1 text-amber-200">{warnings[0]}</div>
+										) : null}
 									</div>
 
 									{/* Cancel button */}

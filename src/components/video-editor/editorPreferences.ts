@@ -1,3 +1,5 @@
+import type { ExportQuality, GifSizePreset } from "@/lib/exporter";
+import { mapLegacyExportQualityToVideoSettings, mapLegacyGifSizePreset } from "@/lib/exporter";
 import { normalizeProjectEditor, type ProjectEditorState } from "./projectPersistence";
 import { DEFAULT_PREVIEW_QUALITY, type PreviewQuality } from "./types";
 
@@ -55,11 +57,9 @@ type PersistedEditorControls = Pick<
 	| "showWebcam"
 	| "mirrorWebcam"
 	| "cameraSizeDuringZoom"
-	| "exportQuality"
 	| "exportFormat"
-	| "gifFrameRate"
-	| "gifLoop"
-	| "gifSizePreset"
+	| "videoExportSettings"
+	| "gifExportSettings"
 >;
 
 type PartialEditorControls = Partial<PersistedEditorControls>;
@@ -138,11 +138,9 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	showWebcam: DEFAULT_EDITOR_CONTROLS.showWebcam,
 	mirrorWebcam: DEFAULT_EDITOR_CONTROLS.mirrorWebcam,
 	cameraSizeDuringZoom: DEFAULT_EDITOR_CONTROLS.cameraSizeDuringZoom,
-	exportQuality: DEFAULT_EDITOR_CONTROLS.exportQuality,
 	exportFormat: DEFAULT_EDITOR_CONTROLS.exportFormat,
-	gifFrameRate: DEFAULT_EDITOR_CONTROLS.gifFrameRate,
-	gifLoop: DEFAULT_EDITOR_CONTROLS.gifLoop,
-	gifSizePreset: DEFAULT_EDITOR_CONTROLS.gifSizePreset,
+	videoExportSettings: DEFAULT_EDITOR_CONTROLS.videoExportSettings,
+	gifExportSettings: DEFAULT_EDITOR_CONTROLS.gifExportSettings,
 	previewQuality: DEFAULT_PREVIEW_QUALITY,
 	customAspectWidth: "16",
 	customAspectHeight: "9",
@@ -226,6 +224,12 @@ function normalizeEditorControls(
 	raw: Partial<EditorPreferences>,
 	fallback: EditorPreferences,
 ): PersistedEditorControls {
+	const legacyRaw = raw as Partial<EditorPreferences> & {
+		exportQuality?: ExportQuality;
+		gifFrameRate?: number;
+		gifLoop?: boolean;
+		gifSizePreset?: GifSizePreset;
+	};
 	const candidateAspectRatio = raw.aspectRatio ?? fallback.aspectRatio;
 	const candidatePadding =
 		raw.padding ??
@@ -285,11 +289,24 @@ function normalizeEditorControls(
 		showWebcam: raw.showWebcam ?? fallback.showWebcam,
 		mirrorWebcam: raw.mirrorWebcam ?? fallback.mirrorWebcam,
 		cameraSizeDuringZoom: raw.cameraSizeDuringZoom ?? fallback.cameraSizeDuringZoom,
-		exportQuality: raw.exportQuality ?? fallback.exportQuality,
 		exportFormat: raw.exportFormat ?? fallback.exportFormat,
-		gifFrameRate: raw.gifFrameRate ?? fallback.gifFrameRate,
-		gifLoop: raw.gifLoop ?? fallback.gifLoop,
-		gifSizePreset: raw.gifSizePreset ?? fallback.gifSizePreset,
+		videoExportSettings:
+			raw.videoExportSettings ?? mapLegacyExportQualityToVideoSettings(legacyRaw.exportQuality),
+		gifExportSettings: raw.gifExportSettings ?? {
+			...fallback.gifExportSettings,
+			frameRate:
+				legacyRaw.gifFrameRate === 15 ||
+				legacyRaw.gifFrameRate === 20 ||
+				legacyRaw.gifFrameRate === 25 ||
+				legacyRaw.gifFrameRate === 30
+					? legacyRaw.gifFrameRate
+					: fallback.gifExportSettings.frameRate,
+			loop:
+				typeof legacyRaw.gifLoop === "boolean"
+					? legacyRaw.gifLoop
+					: fallback.gifExportSettings.loop,
+			preset: mapLegacyGifSizePreset(legacyRaw.gifSizePreset),
+		},
 	};
 
 	const normalized = normalizeProjectEditor(candidate);
@@ -347,11 +364,9 @@ function normalizeEditorControls(
 		showWebcam: normalized.showWebcam,
 		mirrorWebcam: normalized.mirrorWebcam,
 		cameraSizeDuringZoom: normalized.cameraSizeDuringZoom,
-		exportQuality: normalized.exportQuality,
 		exportFormat: normalized.exportFormat,
-		gifFrameRate: normalized.gifFrameRate,
-		gifLoop: normalized.gifLoop,
-		gifSizePreset: normalized.gifSizePreset,
+		videoExportSettings: normalized.videoExportSettings,
+		gifExportSettings: normalized.gifExportSettings,
 	};
 }
 

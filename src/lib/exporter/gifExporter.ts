@@ -1,12 +1,11 @@
-import GIF from "gif.js";
 import type {
 	AnnotationRegion,
 	CameraLayoutRegion,
 	CaptionRegion,
 	CaptionSettings,
 	CropRegion,
-	CursorPack,
 	CursorMovementStyle,
+	CursorPack,
 	CursorSpringSettings,
 	CursorStyle,
 	CursorTelemetryPoint,
@@ -24,14 +23,19 @@ import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import { FrameRenderer } from "./frameRenderer";
 import { StreamingVideoDecoder } from "./streamingDecoder";
 import type {
+	ExportDetails,
 	ExportProgress,
 	ExportResult,
-	GIF_SIZE_PRESETS,
+	GifColorCount,
+	GifDitherMode,
+	GifExportPreset,
 	GifFrameRate,
+	GifMotionSensitivity,
 	GifSizePreset,
 } from "./types";
+import { GIF_EXPORT_PRESETS, GIF_SIZE_PRESETS } from "./types";
 
-const GIF_WORKER_URL = new URL("gif.js/dist/gif.worker.js", import.meta.url).toString();
+const GIF_ENCODER_WORKER_URL = new URL("./gifEncoder.worker.ts", import.meta.url);
 
 interface GifExporterConfig {
 	videoUrl: string;
@@ -39,7 +43,11 @@ interface GifExporterConfig {
 	height: number;
 	frameRate: GifFrameRate;
 	loop: boolean;
-	sizePreset: GifSizePreset;
+	preset: GifExportPreset;
+	dedupeFrames: boolean;
+	colorCount: GifColorCount;
+	ditherMode: GifDitherMode;
+	motionSensitivity: GifMotionSensitivity;
 	wallpaper: string;
 	zoomRegions: ZoomRegion[];
 	trimRegions?: TrimRegion[];
@@ -107,46 +115,82 @@ interface GifExporterConfig {
 	onProgress?: (progress: ExportProgress) => void;
 }
 
-/**
- * Calculate output dimensions based on size preset and source dimensions while preserving aspect ratio.
- * @param sourceWidth - Original video width
- * @param sourceHeight - Original video height
- * @param sizePreset - The size preset to use
- * @param sizePresets - The size presets configuration
- * @returns The calculated output dimensions
- */
+type LegacyOrModernGifPreset = GifSizePreset | GifExportPreset;
+
+const PRESET_MAX_HEIGHTS: Record<LegacyOrModernGifPreset, { maxHeight: number }> = {
+	medium: { maxHeight: 720 },
+	large: { maxHeight: 1080 },
+	original: { maxHeight: Number.POSITIVE_INFINITY },
+	"small-share": { maxHeight: 480 },
+	balanced: { maxHeight: 720 },
+	quality: { maxHeight: 1080 },
+};
+
 export function calculateOutputDimensions(
 	sourceWidth: number,
 	sourceHeight: number,
-	sizePreset: GifSizePreset,
-	sizePresets: typeof GIF_SIZE_PRESETS,
+	sizePreset: LegacyOrModernGifPreset,
+	sizePresets:
+		| typeof GIF_SIZE_PRESETS
+		| typeof GIF_EXPORT_PRESETS
+		| Record<LegacyOrModernGifPreset, { maxHeight: number }>,
 ): { width: number; height: number } {
-	const preset = sizePresets[sizePreset];
+	const presetMap = sizePresets as Record<string, { maxHeight: number }>;
+	const preset = presetMap[sizePreset] ?? PRESET_MAX_HEIGHTS[sizePreset];
 	const maxHeight = preset.maxHeight;
 
-	// If original is smaller than max height or preset is 'original', use source dimensions
 	if (sourceHeight <= maxHeight || sizePreset === "original") {
 		return { width: sourceWidth, height: sourceHeight };
 	}
 
-	// Calculate scaled dimensions preserving aspect ratio
 	const aspectRatio = sourceWidth / sourceHeight;
 	const newHeight = maxHeight;
 	const newWidth = Math.round(newHeight * aspectRatio);
 
-	// Ensure dimensions are even (required for some encoders)
 	return {
 		width: newWidth % 2 === 0 ? newWidth : newWidth + 1,
 		height: newHeight % 2 === 0 ? newHeight : newHeight + 1,
 	};
 }
 
+interface GifWorkerProgressMessage {
+	type: "progress";
+	progress: number;
+	dedupedFrames: number;
+}
+
+interface GifWorkerDoneMessage {
+	type: "done";
+	buffer: ArrayBuffer;
+	dedupedFrames: number;
+}
+
+interface GifWorkerErrorMessage {
+	type: "error";
+	error: string;
+}
+
+type GifWorkerMessage = GifWorkerProgressMessage | GifWorkerDoneMessage | GifWorkerErrorMessage;
+
+function getMotionDedupeThreshold(motionSensitivity: GifMotionSensitivity): number {
+	switch (motionSensitivity) {
+		case "low":
+			return 12;
+		case "high":
+			return 4;
+		case "balanced":
+		default:
+			return 8;
+	}
+}
+
 export class GifExporter {
 	private config: GifExporterConfig;
 	private streamingDecoder: StreamingVideoDecoder | null = null;
 	private renderer: FrameRenderer | null = null;
-	private gif: GIF | null = null;
+	private worker: Worker | null = null;
 	private cancelled = false;
+	private exportStartedAtMs = 0;
 
 	constructor(config: GifExporterConfig) {
 		this.config = config;
@@ -156,12 +200,12 @@ export class GifExporter {
 		try {
 			this.cleanup();
 			this.cancelled = false;
+			this.exportStartedAtMs = performance.now();
+			this.reportProgress(0, 1, "preparing");
 
-			// Initialize streaming decoder and load video metadata
 			this.streamingDecoder = new StreamingVideoDecoder();
 			const videoInfo = await this.streamingDecoder.loadMetadata(this.config.videoUrl);
 
-			// Initialize frame renderer
 			this.renderer = new FrameRenderer({
 				width: this.config.width,
 				height: this.config.height,
@@ -232,45 +276,38 @@ export class GifExporter {
 			});
 			await this.renderer.initialize();
 
-			// Initialize GIF encoder
-			// Loop: 0 = infinite loop, 1 = play once (no loop)
-			const repeat = this.config.loop ? 0 : 1;
-			const cores = navigator.hardwareConcurrency || 4;
-			const WORKER_COUNT = Math.max(1, Math.min(8, cores - 1));
-
-			this.gif = new GIF({
-				workers: WORKER_COUNT,
-				quality: 10,
+			this.worker = new Worker(GIF_ENCODER_WORKER_URL, { type: "module" });
+			this.worker.postMessage({
+				type: "init",
 				width: this.config.width,
 				height: this.config.height,
-				workerScript: GIF_WORKER_URL,
-				repeat,
-				background: "#000000",
-				transparent: null,
-				dither: "FloydSteinberg",
+				loop: this.config.loop,
+				dedupeFrames: this.config.dedupeFrames,
+				colorCount: this.config.colorCount,
+				ditherMode: this.config.ditherMode,
+				dedupeThreshold: getMotionDedupeThreshold(this.config.motionSensitivity),
 			});
 
-			// Calculate effective duration and frame count (excluding trim regions)
 			const effectiveDuration = this.streamingDecoder.getEffectiveDuration(
 				this.config.trimRegions,
 				this.config.speedRegions,
 			);
 			const totalFrames = Math.ceil(effectiveDuration * this.config.frameRate);
-
-			// Calculate frame delay in milliseconds (gif.js uses ms)
 			const frameDelay = Math.round(1000 / this.config.frameRate);
+			const warnings = [
+				effectiveDuration > 15
+					? "Long GIF exports can be large and slow. MP4 may share better."
+					: null,
+			].filter((warning): warning is string => Boolean(warning));
 
-			console.log("[GifExporter] Original duration:", videoInfo.duration, "s");
-			console.log("[GifExporter] Effective duration:", effectiveDuration, "s");
-			console.log("[GifExporter] Total frames to export:", totalFrames);
-			console.log("[GifExporter] Frame rate:", this.config.frameRate, "FPS");
-			console.log("[GifExporter] Frame delay:", frameDelay, "ms");
-			console.log("[GifExporter] Loop:", this.config.loop ? "infinite" : "once");
-			console.log("[GifExporter] Using streaming decode (web-demuxer + VideoDecoder)");
+			this.reportProgress(0, totalFrames, "decoding", undefined, warnings);
+			const canvas = this.renderer.getCanvas();
+			const canvasCtx = canvas.getContext("2d", { willReadFrequently: true });
+			if (!canvasCtx) {
+				throw new Error("Failed to read rendered GIF frames");
+			}
 
 			let frameIndex = 0;
-
-			// Stream decode and process frames — no seeking!
 			await this.streamingDecoder.decodeAll(
 				this.config.frameRate,
 				this.config.trimRegions,
@@ -282,12 +319,21 @@ export class GifExporter {
 					}
 
 					const sourceTimestampUs = sourceTimestampMs * 1000;
+					this.reportProgress(frameIndex, totalFrames, "rendering", undefined, warnings);
 					await this.renderer!.renderFrame(videoFrame, sourceTimestampUs);
 					videoFrame.close();
 
-					this.addRenderedGifFrame(frameDelay);
+					const imageData = canvasCtx.getImageData(0, 0, this.config.width, this.config.height);
+					this.worker?.postMessage(
+						{
+							type: "frame",
+							rgba: imageData.data.buffer,
+							delay: frameDelay,
+						},
+						[imageData.data.buffer],
+					);
 					frameIndex++;
-					this.reportProgress(frameIndex, totalFrames);
+					this.reportProgress(frameIndex, totalFrames, "encoding", undefined, warnings);
 				},
 			);
 
@@ -295,42 +341,24 @@ export class GifExporter {
 				return { success: false, error: "Export cancelled" };
 			}
 
-			// Update progress to show we're now in the finalizing phase
-			if (this.config.onProgress) {
-				this.config.onProgress({
-					currentFrame: totalFrames,
-					totalFrames,
-					percentage: 100,
-					estimatedTimeRemaining: 0,
-					phase: "finalizing",
-				});
-			}
+			this.reportProgress(totalFrames, totalFrames, "finalizing", 0, warnings);
+			const blob = await this.finalizeWorker(totalFrames, warnings);
 
-			// Render the GIF
-			const blob = await new Promise<Blob>((resolve, _reject) => {
-				this.gif!.on("finished", (blob: Blob) => {
-					resolve(blob);
-				});
+			const details: ExportDetails = {
+				format: "gif",
+				width: this.config.width,
+				height: this.config.height,
+				frameRate: this.config.frameRate,
+				elapsedMs: Math.round(performance.now() - this.exportStartedAtMs),
+				fileSizeBytes: blob.size,
+				warnings,
+			};
 
-				// Track rendering progress
-				this.gif!.on("progress", (progress: number) => {
-					if (this.config.onProgress) {
-						this.config.onProgress({
-							currentFrame: totalFrames,
-							totalFrames,
-							percentage: 100,
-							estimatedTimeRemaining: 0,
-							phase: "finalizing",
-							renderProgress: Math.round(progress * 100),
-						});
-					}
-				});
-
-				// gif.js doesn't have a typed 'error' event, but we can catch errors in the try/catch
-				this.gif!.render();
-			});
-
-			return { success: true, blob };
+			return {
+				success: true,
+				blob,
+				details,
+			};
 		} catch (error) {
 			console.error("GIF Export error:", error);
 			return {
@@ -342,20 +370,77 @@ export class GifExporter {
 		}
 	}
 
-	private addRenderedGifFrame(frameDelay: number) {
-		const canvas = this.renderer!.getCanvas();
-		this.gif!.addFrame(canvas, { delay: frameDelay, copy: true });
+	private finalizeWorker(totalFrames: number, warnings: string[]) {
+		return new Promise<Blob>((resolve, reject) => {
+			if (!this.worker) {
+				reject(new Error("GIF worker not initialized"));
+				return;
+			}
+
+			const worker = this.worker;
+			const handleMessage = (event: MessageEvent<GifWorkerMessage>) => {
+				const message = event.data;
+				if (message.type === "progress") {
+					this.reportProgress(
+						totalFrames,
+						totalFrames,
+						"finalizing",
+						Math.round(message.progress * 100),
+						warnings,
+					);
+					return;
+				}
+
+				worker.removeEventListener("message", handleMessage);
+				worker.removeEventListener("error", handleError);
+
+				if (message.type === "error") {
+					reject(new Error(message.error));
+					return;
+				}
+
+				resolve(new Blob([message.buffer], { type: "image/gif" }));
+			};
+
+			const handleError = (event: ErrorEvent) => {
+				worker.removeEventListener("message", handleMessage);
+				worker.removeEventListener("error", handleError);
+				reject(new Error(event.message || "Failed to encode GIF"));
+			};
+
+			worker.addEventListener("message", handleMessage);
+			worker.addEventListener("error", handleError);
+			worker.postMessage({ type: "finalize" });
+		});
 	}
 
-	private reportProgress(currentFrame: number, totalFrames: number) {
-		if (this.config.onProgress) {
-			this.config.onProgress({
-				currentFrame,
-				totalFrames,
-				percentage: totalFrames > 0 ? (currentFrame / totalFrames) * 100 : 100,
-				estimatedTimeRemaining: 0,
-			});
+	private reportProgress(
+		currentFrame: number,
+		totalFrames: number,
+		phase: ExportProgress["phase"],
+		renderProgress?: number,
+		warnings?: string[],
+	) {
+		if (!this.config.onProgress) {
+			return;
 		}
+
+		const elapsedMs = Math.max(performance.now() - this.exportStartedAtMs, 1);
+		const throughputFps = currentFrame > 0 ? (currentFrame / elapsedMs) * 1000 : 0;
+		const remainingFrames = Math.max(totalFrames - currentFrame, 0);
+		const etaSeconds = throughputFps > 0 ? remainingFrames / throughputFps : 0;
+
+		this.config.onProgress({
+			currentFrame,
+			totalFrames,
+			percentage: totalFrames > 0 ? (currentFrame / totalFrames) * 100 : 100,
+			estimatedTimeRemaining: etaSeconds,
+			etaSeconds,
+			throughputFps,
+			phase,
+			renderProgress,
+			warnings,
+		});
 	}
 
 	cancel(): void {
@@ -363,9 +448,7 @@ export class GifExporter {
 		if (this.streamingDecoder) {
 			this.streamingDecoder.cancel();
 		}
-		if (this.gif) {
-			this.gif.abort();
-		}
+		this.worker?.postMessage({ type: "cancel" });
 		this.cleanup();
 	}
 
@@ -388,6 +471,9 @@ export class GifExporter {
 			this.renderer = null;
 		}
 
-		this.gif = null;
+		if (this.worker) {
+			this.worker.terminate();
+			this.worker = null;
+		}
 	}
 }

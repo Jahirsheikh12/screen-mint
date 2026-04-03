@@ -31,6 +31,14 @@ export class StreamingVideoDecoder {
 	private decoder: VideoDecoder | null = null;
 	private cancelled = false;
 	private metadata: DecodedVideoInfo | null = null;
+	private readonly decodeQueueLimit =
+		typeof navigator !== "undefined"
+			? Math.max(8, Math.min(24, (navigator.hardwareConcurrency || 4) * 2))
+			: 10;
+	private readonly decodedFrameBacklogLimit =
+		typeof navigator !== "undefined"
+			? Math.max(16, Math.min(48, (navigator.hardwareConcurrency || 4) * 4))
+			: 24;
 
 	private toLocalFilePath(resourceUrl: string): string | null {
 		if (!resourceUrl.startsWith("file:")) {
@@ -234,7 +242,8 @@ export class StreamingVideoDecoder {
 
 					// Backpressure on both decode queue and decoded frame backlog.
 					while (
-						(this.decoder!.decodeQueueSize > 10 || pendingFrames.length > 24) &&
+						(this.decoder!.decodeQueueSize > this.decodeQueueLimit ||
+							pendingFrames.length > this.decodedFrameBacklogLimit) &&
 						!this.cancelled
 					) {
 						await new Promise((resolve) => setTimeout(resolve, 1));

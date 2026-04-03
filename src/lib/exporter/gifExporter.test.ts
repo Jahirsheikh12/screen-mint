@@ -265,7 +265,7 @@ describe("Property 6: Frame Count Consistency", () => {
 		fc.assert(
 			fc.property(
 				fc.float({ min: 0.5, max: 60, noNaN: true }), // duration in seconds
-				fc.constantFrom(10, 15, 20, 25, 30), // valid frame rates
+				fc.constantFrom(10, 12, 15, 20, 24, 25, 30), // valid frame rates
 				(duration: number, frameRate: number) => {
 					const expectedFrames = calculateExpectedFrameCount(duration, frameRate);
 
@@ -303,7 +303,7 @@ describe("Property 6: Frame Count Consistency", () => {
 			fc.property(
 				fc.float({ min: 5, max: 60, noNaN: true }), // total duration
 				fc.float({ min: 0.5, max: 2, noNaN: true }), // trim duration (smaller than total)
-				fc.constantFrom(10, 15, 20, 25, 30),
+				fc.constantFrom(10, 12, 15, 20, 24, 25, 30),
 				(totalDuration: number, trimDuration: number, frameRate: number) => {
 					const effectiveDuration = totalDuration - trimDuration;
 					const framesWithTrim = calculateExpectedFrameCount(effectiveDuration, frameRate);
@@ -335,7 +335,7 @@ describe("Property 5: Valid GIF Output (Configuration)", () => {
 	it("should generate valid GIF configuration for all frame rates", () => {
 		fc.assert(
 			fc.property(
-				fc.constantFrom(10, 15, 20, 25, 30),
+				fc.constantFrom(10, 12, 15, 20, 24, 25, 30),
 				fc.integer({ min: 100, max: 1920 }),
 				fc.integer({ min: 100, max: 1080 }),
 				fc.boolean(),
@@ -363,8 +363,10 @@ describe("Property 5: Valid GIF Output (Configuration)", () => {
 	it("should calculate correct frame delays for each frame rate", () => {
 		const expectedDelays: Record<number, number> = {
 			10: 100, // 1000ms / 10fps = 100ms
+			12: 83, // 1000ms / 12fps ≈ 83ms
 			15: 67, // 1000ms / 15fps ≈ 67ms
 			20: 50, // 1000ms / 20fps = 50ms
+			24: 42, // 1000ms / 24fps ≈ 42ms
 			25: 40, // 1000ms / 25fps = 40ms
 			30: 33, // 1000ms / 30fps ≈ 33ms
 		};
