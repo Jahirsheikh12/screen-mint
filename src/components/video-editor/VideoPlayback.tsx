@@ -33,48 +33,48 @@ import { KeyboardShortcutOverlay } from "./KeyboardShortcutOverlay";
 import {
 	type AnnotationRegion,
 	type CameraLayoutRegion,
-			type CursorPack,
-			type CursorMovementStyle,
-			type CursorSpringSettings,
-			type CursorStyle,
-			type CursorTelemetryPoint,
-			type CursorTypeMode,
-			DEFAULT_CLICK_HIGHLIGHT_COLOR,
-			DEFAULT_CLICK_HIGHLIGHT_OPACITY,
-			DEFAULT_CLICK_HIGHLIGHT_SIZE,
-			DEFAULT_CURSOR_CLICK_BOUNCE,
-			DEFAULT_CURSOR_COLOR,
-			DEFAULT_CURSOR_IDLE_HIDE_DELAY_MS,
-			DEFAULT_CURSOR_MOTION_BLUR,
-			DEFAULT_CURSOR_MOVEMENT_STYLE,
-			DEFAULT_CURSOR_OPACITY,
-			DEFAULT_CURSOR_SIZE,
-			DEFAULT_CURSOR_SMOOTHING,
-			DEFAULT_CURSOR_SWAY,
-			DEFAULT_CURSOR_SPRING,
-			DEFAULT_CURSOR_STYLE,
-			DEFAULT_CURSOR_TILT,
-			DEFAULT_CURSOR_TRAIL_LENGTH,
-			DEFAULT_CURSOR_TRAIL_OPACITY,
-			DEFAULT_HIGH_QUALITY_SVG_CURSORS,
-			DEFAULT_HIDE_CURSOR_WHEN_IDLE,
-			DEFAULT_KEYBOARD_SHORTCUT_MAX_VISIBLE,
-			DEFAULT_KEYBOARD_SHORTCUT_OPACITY,
-			DEFAULT_KEYBOARD_SHORTCUT_POSITION,
-			DEFAULT_KEYBOARD_SHORTCUT_SCALE,
-			DEFAULT_KEYBOARD_SHORTCUT_THEME,
-			DEFAULT_SMOOTH_CURSOR_MOVEMENT,
-			type KeyboardShortcutCallout,
-			type KeyboardShortcutPosition,
-			type KeyboardShortcutTheme,
-			type PreviewQuality,
-			type SpeedRegion,
-			type TrimRegion,
-			type ZoomDepth,
-			type ZoomFocus,
-			type ZoomRegion,
-			DEFAULT_CURSOR_TYPE_MODE,
-		} from "./types";
+	type CursorMovementStyle,
+	type CursorPack,
+	type CursorSpringSettings,
+	type CursorStyle,
+	type CursorTelemetryPoint,
+	type CursorTypeMode,
+	DEFAULT_CLICK_HIGHLIGHT_COLOR,
+	DEFAULT_CLICK_HIGHLIGHT_OPACITY,
+	DEFAULT_CLICK_HIGHLIGHT_SIZE,
+	DEFAULT_CURSOR_CLICK_BOUNCE,
+	DEFAULT_CURSOR_COLOR,
+	DEFAULT_CURSOR_IDLE_HIDE_DELAY_MS,
+	DEFAULT_CURSOR_MOTION_BLUR,
+	DEFAULT_CURSOR_MOVEMENT_STYLE,
+	DEFAULT_CURSOR_OPACITY,
+	DEFAULT_CURSOR_SIZE,
+	DEFAULT_CURSOR_SMOOTHING,
+	DEFAULT_CURSOR_SPRING,
+	DEFAULT_CURSOR_STYLE,
+	DEFAULT_CURSOR_SWAY,
+	DEFAULT_CURSOR_TILT,
+	DEFAULT_CURSOR_TRAIL_LENGTH,
+	DEFAULT_CURSOR_TRAIL_OPACITY,
+	DEFAULT_CURSOR_TYPE_MODE,
+	DEFAULT_HIDE_CURSOR_WHEN_IDLE,
+	DEFAULT_HIGH_QUALITY_SVG_CURSORS,
+	DEFAULT_KEYBOARD_SHORTCUT_MAX_VISIBLE,
+	DEFAULT_KEYBOARD_SHORTCUT_OPACITY,
+	DEFAULT_KEYBOARD_SHORTCUT_POSITION,
+	DEFAULT_KEYBOARD_SHORTCUT_SCALE,
+	DEFAULT_KEYBOARD_SHORTCUT_THEME,
+	DEFAULT_SMOOTH_CURSOR_MOVEMENT,
+	type KeyboardShortcutCallout,
+	type KeyboardShortcutPosition,
+	type KeyboardShortcutTheme,
+	type PreviewQuality,
+	type SpeedRegion,
+	type TrimRegion,
+	type ZoomDepth,
+	type ZoomFocus,
+	type ZoomRegion,
+} from "./types";
 import {
 	createPlaybackCameraState,
 	evaluatePlaybackCameraFrame,
@@ -85,16 +85,25 @@ import {
 	PixiCursorOverlay,
 	preloadCursorAssets,
 } from "./videoPlayback/cursorRenderer";
-import { resolveCursorV2Config } from "./videoPlayback/cursorV2";
 import {
 	buildCursorSimulationPath,
 	type CursorSimulationPath,
 } from "./videoPlayback/cursorSimulation";
+import { resolveCursorV2Config } from "./videoPlayback/cursorV2";
 import { computeMockupScreenRect, drawDeviceMockup } from "./videoPlayback/deviceMockups";
 import { clampFocusToStage as clampFocusToStageUtil } from "./videoPlayback/focusUtils";
 import { layoutVideoContent as layoutVideoContentUtil } from "./videoPlayback/layoutUtils";
 import { clamp01 } from "./videoPlayback/mathUtils";
 import { updateOverlayIndicator } from "./videoPlayback/overlayUtils";
+import {
+	addPreviewHold,
+	clearPreviewHolds,
+	getActivePreviewHold,
+	type PreviewHoldLease,
+	type PreviewHoldReason,
+	removePreviewHold,
+	resolvePreviewFrameOverlaySource,
+} from "./videoPlayback/previewHoldState";
 import {
 	commitPreviewQualitySwitch,
 	createPreviewQualitySwitchState,
@@ -103,11 +112,16 @@ import {
 	requestPreviewQualitySwitch,
 	rollbackPreviewQualitySwitch,
 } from "./videoPlayback/previewQuality";
+import {
+	hasRenderablePreviewFrame,
+	restorePreviewFrame as restorePreviewVideoFrame,
+} from "./videoPlayback/previewRecovery";
 import { createVideoEventHandlers } from "./videoPlayback/videoEventHandlers";
 import {
 	applyZoomTransform,
 	createMotionBlurState,
 	type MotionBlurState,
+	projectFrameRect,
 } from "./videoPlayback/zoomTransform";
 import { WebcamOverlay } from "./WebcamOverlay";
 
@@ -203,6 +217,12 @@ export interface VideoPlaybackRef {
 	play: () => Promise<void>;
 	pause: () => void;
 	refreshFrame: () => Promise<void>;
+	restorePreviewFrame: (options?: {
+		forceReload?: boolean;
+		resumePlayback?: boolean;
+	}) => Promise<void>;
+	acquirePreviewHold: (reason: PreviewHoldReason) => Promise<string>;
+	releasePreviewHold: (token: string) => void;
 }
 
 const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
@@ -295,12 +315,16 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const containerRef = useRef<HTMLDivElement | null>(null);
 		const appRef = useRef<Application | null>(null);
 		const videoSpriteRef = useRef<Sprite | null>(null);
+		const videoTextureRef = useRef<Texture | null>(null);
 		const videoContainerRef = useRef<Container | null>(null);
 		const cursorContainerRef = useRef<Container | null>(null);
 		const cameraContainerRef = useRef<Container | null>(null);
 		const timeUpdateAnimationRef = useRef<number | null>(null);
 		const [pixiReady, setPixiReady] = useState(false);
 		const [videoReady, setVideoReady] = useState(false);
+		const [cachedPreviewFrameSrc, setCachedPreviewFrameSrc] = useState<string | null>(null);
+		const [activePreviewHoldSrc, setActivePreviewHoldSrc] = useState<string | null>(null);
+		const [previewRendererEpoch, setPreviewRendererEpoch] = useState(0);
 		const [rendererPreviewQuality, setRendererPreviewQuality] = useState(previewQuality);
 		const mockupCanvasRef = useRef<HTMLCanvasElement | null>(null);
 		const overlayRef = useRef<HTMLDivElement | null>(null);
@@ -321,8 +345,13 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const cropBoundsRef = useRef({ startX: 0, endX: 0, startY: 0, endY: 0 });
 		const maskGraphicsRef = useRef<Graphics | null>(null);
 		const isPlayingRef = useRef(isPlaying);
+		const pixiReadyRef = useRef(false);
+		const videoReadyRef = useRef(false);
+		const hasStablePreviewRef = useRef(false);
+		const cachedPreviewFrameRef = useRef<string | null>(null);
 		const isSeekingRef = useRef(false);
 		const allowPlaybackRef = useRef(false);
+		const isPreviewRecoveryInProgressRef = useRef(false);
 		const lockedVideoDimensionsRef = useRef<{
 			width: number;
 			height: number;
@@ -370,6 +399,11 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			restoreTime: number;
 			wasPlaying: boolean;
 		} | null>(null);
+		const previewRecoveryPromiseRef = useRef<Promise<void> | null>(null);
+		const previewHoldTokenRef = useRef(0);
+		const previewHoldsRef = useRef<Map<string, PreviewHoldLease>>(clearPreviewHolds());
+		const previewRendererEpochRef = useRef(0);
+		const previewRendererResetPromiseRef = useRef<Promise<void> | null>(null);
 		const previewQualitySwitchTokenRef = useRef(0);
 		const desiredPreviewQualityRef = useRef(previewQuality);
 		const previewResolution = useMemo(
@@ -437,34 +471,48 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			[],
 		);
 
-		const updateFrameBorderOverlay = useCallback(() => {
-			const frameBorderEl = frameBorderRef.current;
-			const maskRect = baseMaskRef.current;
+		const updateFrameBorderOverlay = useCallback(
+			(transformOverride?: { scale: number; x: number; y: number }) => {
+				const frameBorderEl = frameBorderRef.current;
+				const maskRect = baseMaskRef.current;
 
-			if (!frameBorderEl) {
-				return;
-			}
+				if (!frameBorderEl) {
+					return;
+				}
 
-			const shouldShowBorder =
-				frameBorderEnabled &&
-				frameBorderWidth > 0 &&
-				frameBorderOpacity > 0 &&
-				maskRect.width > 0 &&
-				maskRect.height > 0;
+				const shouldShowBorder =
+					frameBorderEnabled &&
+					frameBorderWidth > 0 &&
+					frameBorderOpacity > 0 &&
+					maskRect.width > 0 &&
+					maskRect.height > 0;
 
-			if (!shouldShowBorder) {
-				frameBorderEl.style.display = "none";
-				return;
-			}
+				if (!shouldShowBorder) {
+					frameBorderEl.style.display = "none";
+					return;
+				}
 
-			frameBorderEl.style.display = "block";
-			frameBorderEl.style.left = `${maskRect.x}px`;
-			frameBorderEl.style.top = `${maskRect.y}px`;
-			frameBorderEl.style.width = `${maskRect.width}px`;
-			frameBorderEl.style.height = `${maskRect.height}px`;
-			frameBorderEl.style.borderRadius = `${borderRadius}px`;
-			frameBorderEl.style.boxShadow = `0 0 0 ${frameBorderWidth}px ${applyOpacityToHex(frameBorderColor, frameBorderOpacity)}`;
-		}, [borderRadius, frameBorderColor, frameBorderEnabled, frameBorderOpacity, frameBorderWidth]);
+				const projectedFrame = projectFrameRect({
+					rect: maskRect,
+					transform: transformOverride ?? {
+						scale: animationStateRef.current.appliedScale,
+						x: animationStateRef.current.x,
+						y: animationStateRef.current.y,
+					},
+					borderRadius,
+					borderWidth: frameBorderWidth,
+				});
+
+				frameBorderEl.style.display = "block";
+				frameBorderEl.style.left = `${projectedFrame.rect.x}px`;
+				frameBorderEl.style.top = `${projectedFrame.rect.y}px`;
+				frameBorderEl.style.width = `${projectedFrame.rect.width}px`;
+				frameBorderEl.style.height = `${projectedFrame.rect.height}px`;
+				frameBorderEl.style.borderRadius = `${projectedFrame.borderRadius}px`;
+				frameBorderEl.style.boxShadow = `0 0 0 ${projectedFrame.borderWidth}px ${applyOpacityToHex(frameBorderColor, frameBorderOpacity)}`;
+			},
+			[borderRadius, frameBorderColor, frameBorderEnabled, frameBorderOpacity, frameBorderWidth],
+		);
 
 		const layoutVideoContent = useCallback(() => {
 			const container = containerRef.current;
@@ -517,7 +565,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				baseOffsetRef.current = result.baseOffset;
 				baseMaskRef.current = result.maskRect;
 				cropBoundsRef.current = result.cropBounds;
-				updateFrameBorderOverlay();
+				updateFrameBorderOverlay({ scale: 1, x: 0, y: 0 });
 
 				// Reset camera container to identity
 				cameraContainer.scale.set(1);
@@ -606,6 +654,259 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			});
 		}, []);
 
+		const waitForPreviewLayerBinding = useCallback(
+			async (timeoutMs = 1_500, previousSprite: Sprite | null = null) => {
+				const deadline = performance.now() + timeoutMs;
+
+				await new Promise<void>((resolve, reject) => {
+					const waitForBinding = () => {
+						if (
+							videoSpriteRef.current &&
+							(previousSprite == null || videoSpriteRef.current !== previousSprite) &&
+							(videoTextureRef.current ?? videoSpriteRef.current.texture)
+						) {
+							resolve();
+							return;
+						}
+
+						if (performance.now() >= deadline) {
+							reject(new Error("Preview recovery timed out while waiting for the preview layer."));
+							return;
+						}
+
+						requestAnimationFrame(waitForBinding);
+					};
+
+					waitForBinding();
+				});
+			},
+			[],
+		);
+
+		const syncPreviewVideoTexture = useCallback(async () => {
+			const video = videoRef.current;
+			const app = appRef.current;
+			if (!video || !app || !hasRenderablePreviewFrame(video)) {
+				return;
+			}
+
+			if (!videoReady) {
+				setVideoReady(true);
+				await waitForPreviewLayerBinding().catch((error) => {
+					console.warn("Preview layer did not rebind immediately after recovery:", error);
+				});
+			}
+
+			const sprite = videoSpriteRef.current;
+			const texture = videoTextureRef.current ?? sprite?.texture ?? null;
+			if (!sprite || !texture) {
+				return;
+			}
+
+			videoTextureRef.current = texture;
+			const source = texture.source as {
+				autoUpdate?: boolean;
+				update?: () => void;
+				updateFrame?: () => void;
+			};
+
+			if ("autoUpdate" in source) {
+				source.autoUpdate = true;
+			}
+			if (typeof source.updateFrame === "function") {
+				source.updateFrame();
+			} else {
+				source.update?.();
+			}
+			texture.update();
+			layoutVideoContentRef.current?.();
+			app.render();
+		}, [videoReady, waitForPreviewLayerBinding]);
+
+		const capturePreviewFrameSnapshot = useCallback(async () => {
+			const app = appRef.current;
+			if (!app || !pixiReadyRef.current || !videoReadyRef.current) {
+				return cachedPreviewFrameRef.current;
+			}
+
+			try {
+				await syncPreviewVideoTexture();
+				app.render();
+				const frameSrc = app.canvas.toDataURL("image/png");
+				cachedPreviewFrameRef.current = frameSrc;
+				setCachedPreviewFrameSrc(frameSrc);
+				return frameSrc;
+			} catch (error) {
+				console.warn("Failed to capture the current preview frame:", error);
+				return cachedPreviewFrameRef.current;
+			}
+		}, [syncPreviewVideoTexture]);
+
+		const syncActivePreviewHoldState = useCallback(() => {
+			const activeHold = getActivePreviewHold(previewHoldsRef.current);
+			setActivePreviewHoldSrc(activeHold?.frameSrc ?? null);
+		}, []);
+
+		const waitForPreviewRendererReset = useCallback(
+			async (previousApp: Application | null, previousSprite: Sprite | null, timeoutMs = 3_000) => {
+				const deadline = performance.now() + timeoutMs;
+
+				await new Promise<void>((resolve, reject) => {
+					const waitForReset = () => {
+						const hasNewApp =
+							appRef.current != null &&
+							appRef.current !== previousApp &&
+							pixiReadyRef.current === true;
+						const hasNewSprite =
+							videoReadyRef.current === false ||
+							(videoSpriteRef.current != null && videoSpriteRef.current !== previousSprite);
+
+						if (hasNewApp && hasNewSprite) {
+							resolve();
+							return;
+						}
+
+						if (performance.now() >= deadline) {
+							reject(
+								new Error("Preview recovery timed out while waiting for the preview renderer."),
+							);
+							return;
+						}
+
+						requestAnimationFrame(waitForReset);
+					};
+
+					waitForReset();
+				});
+			},
+			[],
+		);
+
+		const recreatePreviewRenderer = useCallback(async () => {
+			if (previewRendererResetPromiseRef.current) {
+				return previewRendererResetPromiseRef.current;
+			}
+
+			const resetPromise = (async () => {
+				const video = videoRef.current;
+				if (!video || !hasRenderablePreviewFrame(video)) {
+					return;
+				}
+
+				const previousApp = appRef.current;
+				const previousSprite = videoSpriteRef.current;
+				setPixiReady(false);
+				previewRendererEpochRef.current += 1;
+				setPreviewRendererEpoch(previewRendererEpochRef.current);
+				await waitForPreviewRendererReset(previousApp, previousSprite).catch((error) => {
+					console.warn("Preview renderer did not reset immediately:", error);
+				});
+				await syncPreviewVideoTexture();
+			})().finally(() => {
+				previewRendererResetPromiseRef.current = null;
+			});
+
+			previewRendererResetPromiseRef.current = resetPromise;
+			return resetPromise;
+		}, [syncPreviewVideoTexture, waitForPreviewRendererReset]);
+
+		const acquirePreviewHold = useCallback(
+			async (reason: PreviewHoldReason) => {
+				const frameSrc = await capturePreviewFrameSnapshot();
+				const token = `preview-hold-${++previewHoldTokenRef.current}`;
+
+				if (frameSrc) {
+					previewHoldsRef.current = addPreviewHold(previewHoldsRef.current, {
+						token,
+						reason,
+						frameSrc,
+					});
+					syncActivePreviewHoldState();
+				}
+
+				return token;
+			},
+			[capturePreviewFrameSnapshot, syncActivePreviewHoldState],
+		);
+
+		const releasePreviewHold = useCallback(
+			(token: string) => {
+				previewHoldsRef.current = removePreviewHold(previewHoldsRef.current, token);
+				syncActivePreviewHoldState();
+			},
+			[syncActivePreviewHoldState],
+		);
+
+		const prepareVideoTextureReload = useCallback(() => {
+			if (videoReadyRafRef.current) {
+				cancelAnimationFrame(videoReadyRafRef.current);
+				videoReadyRafRef.current = null;
+			}
+		}, []);
+
+		const restorePreviewFrame = useCallback(
+			async (options: { forceReload?: boolean; resumePlayback?: boolean } = {}) => {
+				if (previewRecoveryPromiseRef.current) {
+					return previewRecoveryPromiseRef.current;
+				}
+
+				const video = videoRef.current;
+				if (!video) {
+					return;
+				}
+
+				const recoveryPromise = (async () => {
+					const resumePlayback =
+						options.resumePlayback ?? (isPlayingRef.current && allowPlaybackRef.current);
+
+					allowPlaybackRef.current = false;
+					isPreviewRecoveryInProgressRef.current = true;
+
+					await restorePreviewVideoFrame(video, {
+						fallbackTime: currentTimeRef.current / 1000,
+						forceReload: options.forceReload,
+						resumePlayback,
+						prepareForReload: prepareVideoTextureReload,
+						redrawFrame: refreshVideoFrame,
+						syncPreviewLayer: recreatePreviewRenderer,
+					});
+
+					if (resumePlayback) {
+						allowPlaybackRef.current = true;
+					}
+				})()
+					.catch(async (error) => {
+						console.warn("Preview recovery did not complete:", error);
+
+						if (!videoPath) {
+							return;
+						}
+
+						try {
+							const availability = await window.electronAPI.checkFileAvailable(videoPath);
+							if (availability.success && availability.exists === false) {
+								onError(
+									`Failed to load video because the source is no longer available: ${videoPath}`,
+								);
+							}
+						} catch (availabilityError) {
+							console.warn(
+								"Failed to confirm whether the preview source is still available:",
+								availabilityError,
+							);
+						}
+					})
+					.finally(() => {
+						isPreviewRecoveryInProgressRef.current = false;
+						previewRecoveryPromiseRef.current = null;
+					});
+
+				previewRecoveryPromiseRef.current = recoveryPromise;
+				return recoveryPromise;
+			},
+			[onError, prepareVideoTextureReload, recreatePreviewRenderer, refreshVideoFrame, videoPath],
+		);
+
 		const beginPreviewQualitySwitch = useCallback((targetQuality: PreviewQuality) => {
 			const coordinator = previewQualitySwitchStateRef.current;
 			const video = videoRef.current;
@@ -690,6 +991,9 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			refreshFrame: async () => {
 				await refreshVideoFrame();
 			},
+			restorePreviewFrame,
+			acquirePreviewHold,
+			releasePreviewHold,
 		}));
 
 		useEffect(() => {
@@ -853,6 +1157,18 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				updateOverlayForRegion(selectedZoom);
 			}
 		}, [isPlaying, pixiReady, videoReady, selectedZoom, updateOverlayForRegion]);
+
+		useEffect(() => {
+			pixiReadyRef.current = pixiReady;
+		}, [pixiReady]);
+
+		useEffect(() => {
+			videoReadyRef.current = videoReady;
+		}, [videoReady]);
+
+		useEffect(() => {
+			cachedPreviewFrameRef.current = cachedPreviewFrameSrc;
+		}, [cachedPreviewFrameSrc]);
 
 		useEffect(() => {
 			trimRegionsRef.current = trimRegions;
@@ -1085,6 +1401,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		useEffect(() => {
 			const container = containerRef.current;
 			if (!container) return;
+			void previewRendererEpoch;
 
 			let mounted = true;
 			let app: Application | null = null;
@@ -1216,7 +1533,13 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				videoSpriteRef.current = null;
 				maskGraphicsRef.current = null;
 			};
-		}, [handlePreviewQualitySwitchFailure, onError, previewResolution, rendererPreviewQuality]);
+		}, [
+			handlePreviewQualitySwitchFailure,
+			onError,
+			previewRendererEpoch,
+			previewResolution,
+			rendererPreviewQuality,
+		]);
 
 		useEffect(() => {
 			const video = videoRef.current;
@@ -1225,6 +1548,11 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			video.pause();
 			video.currentTime = 0;
 			allowPlaybackRef.current = false;
+			hasStablePreviewRef.current = false;
+			cachedPreviewFrameRef.current = null;
+			previewHoldsRef.current = clearPreviewHolds();
+			setCachedPreviewFrameSrc(null);
+			setActivePreviewHoldSrc(null);
 			lockedVideoDimensionsRef.current = null;
 			setVideoReady(false);
 			if (videoReadyRafRef.current) {
@@ -1232,6 +1560,94 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				videoReadyRafRef.current = null;
 			}
 		}, [videoPath]);
+
+		useEffect(() => {
+			if (!videoPath) {
+				return;
+			}
+
+			const captureFrameIfPossible = () => {
+				if (document.visibilityState === "hidden") {
+					return;
+				}
+				void capturePreviewFrameSnapshot();
+			};
+
+			const recoverPreviewIfNeeded = () => {
+				if (document.visibilityState === "hidden") {
+					return;
+				}
+
+				const video = videoRef.current;
+				if (!video || previewRecoveryPromiseRef.current) {
+					return;
+				}
+
+				if (hasRenderablePreviewFrame(video)) {
+					return;
+				}
+
+				void restorePreviewFrame();
+			};
+
+			const handleVisibilityChange = () => {
+				if (document.visibilityState === "hidden") {
+					captureFrameIfPossible();
+					return;
+				}
+				if (document.visibilityState === "visible") {
+					recoverPreviewIfNeeded();
+				}
+			};
+
+			window.addEventListener("blur", captureFrameIfPossible);
+			window.addEventListener("focus", recoverPreviewIfNeeded);
+			document.addEventListener("visibilitychange", handleVisibilityChange);
+
+			return () => {
+				window.removeEventListener("blur", captureFrameIfPossible);
+				window.removeEventListener("focus", recoverPreviewIfNeeded);
+				document.removeEventListener("visibilitychange", handleVisibilityChange);
+			};
+		}, [capturePreviewFrameSnapshot, restorePreviewFrame, videoPath]);
+
+		useEffect(() => {
+			if (!pixiReady || !videoReady) return;
+			hasStablePreviewRef.current = true;
+			void capturePreviewFrameSnapshot();
+		}, [capturePreviewFrameSnapshot, pixiReady, videoReady]);
+
+		useEffect(() => {
+			if (!videoPath || !hasStablePreviewRef.current) {
+				return;
+			}
+
+			if (pixiReady && videoReady) {
+				return;
+			}
+
+			if (previewRecoveryPromiseRef.current || previewRendererResetPromiseRef.current) {
+				return;
+			}
+
+			const healId = window.setTimeout(() => {
+				const video = videoRef.current;
+				if (!video || previewRecoveryPromiseRef.current || previewRendererResetPromiseRef.current) {
+					return;
+				}
+
+				if (hasRenderablePreviewFrame(video)) {
+					void recreatePreviewRenderer();
+					return;
+				}
+
+				void restorePreviewFrame();
+			}, 150);
+
+			return () => {
+				window.clearTimeout(healId);
+			};
+		}, [pixiReady, recreatePreviewRenderer, restorePreviewFrame, videoPath, videoReady]);
 
 		useEffect(() => {
 			if (!pixiReady || !videoReady) return;
@@ -1252,6 +1668,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				(source as { autoUpdate?: boolean }).autoUpdate = true;
 			}
 			const videoTexture = Texture.from(source);
+			videoTextureRef.current = videoTexture;
 
 			const videoSprite = new Sprite(videoTexture);
 			videoSpriteRef.current = videoSprite;
@@ -1284,6 +1701,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				isSeekingRef,
 				isPlayingRef,
 				allowPlaybackRef,
+				suppressEventEmissionRef: isPreviewRecoveryInProgressRef,
 				currentTimeRef,
 				timeUpdateAnimationRef,
 				onPlayStateChange,
@@ -1330,9 +1748,12 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				}
 				videoTexture.destroy(false);
 
+				if (videoTextureRef.current === videoTexture) {
+					videoTextureRef.current = null;
+				}
 				videoSpriteRef.current = null;
 			};
-		}, [pixiReady, videoReady, onPlayStateChange, onTimeUpdate, layoutVideoContent]);
+		}, [layoutVideoContent, onPlayStateChange, onTimeUpdate, pixiReady, videoReady]);
 
 		useEffect(() => {
 			if (!pixiReady || !videoReady) return;
@@ -1375,6 +1796,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				state.x = appliedTransform.x;
 				state.y = appliedTransform.y;
 				state.appliedScale = appliedTransform.scale;
+				updateFrameBorderOverlay(appliedTransform);
 			};
 
 			const ticker = () => {
@@ -1430,7 +1852,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					app.ticker.remove(ticker);
 				}
 			};
-		}, [pixiReady, videoReady]);
+		}, [pixiReady, videoReady, updateFrameBorderOverlay]);
 
 		useEffect(() => {
 			const overlay = cursorOverlayRef.current;
@@ -1573,10 +1995,13 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const handleLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
 			const video = e.currentTarget;
 			onDurationChange(video.duration);
-			video.currentTime = 0;
-			video.pause();
-			allowPlaybackRef.current = false;
-			currentTimeRef.current = 0;
+
+			if (!isPreviewRecoveryInProgressRef.current) {
+				video.currentTime = 0;
+				video.pause();
+				allowPlaybackRef.current = false;
+				currentTimeRef.current = 0;
+			}
 
 			if (videoReadyRafRef.current) {
 				cancelAnimationFrame(videoReadyRafRef.current);
@@ -1705,6 +2130,13 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const backgroundStyle = isImageUrl
 			? { backgroundImage: `url(${resolvedWallpaper || ""})` }
 			: { background: resolvedWallpaper || "" };
+		const fallbackPreviewFrameSrc = resolvePreviewFrameOverlaySource({
+			activePreviewHoldSrc,
+			cachedPreviewFrameSrc,
+			pixiReady,
+			videoReady,
+			hasVideoPath: Boolean(videoPath),
+		});
 
 		return (
 			<div className="relative overflow-hidden w-full h-full">
@@ -1720,6 +2152,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					ref={containerRef}
 					className="absolute inset-0"
 					style={{
+						zIndex: 2,
 						filter: hasVisibleFrameShadow({
 							size: frameShadowSize,
 							opacity: frameShadowOpacity,
@@ -1736,8 +2169,22 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				<div
 					ref={frameBorderRef}
 					className="absolute pointer-events-none"
-					style={{ display: "none" }}
+					style={{ display: "none", zIndex: 1 }}
 				/>
+				{fallbackPreviewFrameSrc && (
+					<img
+						src={fallbackPreviewFrameSrc}
+						alt=""
+						aria-hidden="true"
+						className="absolute inset-0 pointer-events-none select-none"
+						style={{
+							zIndex: 2,
+							width: "100%",
+							height: "100%",
+							objectFit: "fill",
+						}}
+					/>
+				)}
 				{/* Device mockup overlay */}
 				{deviceMockup !== "none" && (
 					<canvas
@@ -1852,9 +2299,17 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				<video
 					ref={videoRef}
 					src={videoPath}
-					className="hidden"
 					preload="metadata"
 					playsInline
+					style={{
+						position: "absolute",
+						width: 1,
+						height: 1,
+						opacity: 0,
+						pointerEvents: "none",
+						left: -10_000,
+						top: 0,
+					}}
 					onLoadedMetadata={handleLoadedMetadata}
 					onDurationChange={(e) => {
 						onDurationChange(e.currentTarget.duration);
@@ -1864,6 +2319,16 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 						const mediaError = videoEl.error;
 						const code = mediaError?.code ?? "unknown";
 						const msg = mediaError?.message ?? "";
+
+						if (isPreviewRecoveryInProgressRef.current) {
+							console.warn("Ignoring transient video error during preview recovery:", {
+								code,
+								message: msg,
+								src: videoEl.src,
+							});
+							return;
+						}
+
 						console.error("Video load error:", {
 							code,
 							message: msg,

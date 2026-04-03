@@ -58,6 +58,27 @@ interface AppliedTransform {
 	y: number;
 }
 
+export interface FrameRect {
+	x: number;
+	y: number;
+	width: number;
+	height: number;
+}
+
+export interface ProjectFrameRectParams {
+	rect: FrameRect;
+	transform: AppliedTransform;
+	borderRadius?: number;
+	borderWidth?: number;
+}
+
+export interface ProjectedFrameRect {
+	rect: FrameRect;
+	scale: number;
+	borderRadius: number;
+	borderWidth: number;
+}
+
 interface FocusFromTransformGeometry {
 	stageSize: { width: number; height: number };
 	baseMask: { x: number; y: number; width: number; height: number };
@@ -133,6 +154,27 @@ export function computeFocusFromTransform({
 	return {
 		cx: (focusStagePxX - baseMask.x) / baseMask.width,
 		cy: (focusStagePxY - baseMask.y) / baseMask.height,
+	};
+}
+
+export function projectFrameRect({
+	rect,
+	transform,
+	borderRadius = 0,
+	borderWidth = 0,
+}: ProjectFrameRectParams): ProjectedFrameRect {
+	const safeScale = Number.isFinite(transform.scale) && transform.scale > 0 ? transform.scale : 1;
+
+	return {
+		rect: {
+			x: rect.x * safeScale + transform.x,
+			y: rect.y * safeScale + transform.y,
+			width: rect.width * safeScale,
+			height: rect.height * safeScale,
+		},
+		scale: safeScale,
+		borderRadius: borderRadius * safeScale,
+		borderWidth: borderWidth * safeScale,
 	};
 }
 

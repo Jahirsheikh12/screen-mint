@@ -87,7 +87,7 @@ import { normalizeCursorSpring, resolveCursorV2Fields } from "./videoPlayback/cu
 import { normalizeWebcamRegion } from "./webcamRegionUtils";
 
 export const PROJECT_VERSION = 8;
-export const DEFAULT_VIDEO_PREVIEW_PADDING = 20;
+export const DEFAULT_VIDEO_PREVIEW_PADDING = 40;
 
 export interface ProjectEditorState {
 	wallpaper: string;

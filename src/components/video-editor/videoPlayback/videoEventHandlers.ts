@@ -6,6 +6,7 @@ interface VideoEventHandlersParams {
 	isSeekingRef: React.MutableRefObject<boolean>;
 	isPlayingRef: React.MutableRefObject<boolean>;
 	allowPlaybackRef: React.MutableRefObject<boolean>;
+	suppressEventEmissionRef?: React.MutableRefObject<boolean>;
 	currentTimeRef: React.MutableRefObject<number>;
 	timeUpdateAnimationRef: React.MutableRefObject<number | null>;
 	onPlayStateChange: (playing: boolean) => void;
@@ -20,6 +21,7 @@ export function createVideoEventHandlers(params: VideoEventHandlersParams) {
 		isSeekingRef,
 		isPlayingRef,
 		allowPlaybackRef,
+		suppressEventEmissionRef,
 		currentTimeRef,
 		timeUpdateAnimationRef,
 		onPlayStateChange,
@@ -28,7 +30,12 @@ export function createVideoEventHandlers(params: VideoEventHandlersParams) {
 		speedRegionsRef,
 	} = params;
 
+	const shouldSuppressEvents = () => suppressEventEmissionRef?.current === true;
+
 	const emitTime = (timeValue: number) => {
+		if (shouldSuppressEvents()) {
+			return;
+		}
 		currentTimeRef.current = timeValue * 1000;
 		onTimeUpdate(timeValue);
 	};
@@ -82,6 +89,10 @@ export function createVideoEventHandlers(params: VideoEventHandlersParams) {
 	}
 
 	const handlePlay = () => {
+		if (shouldSuppressEvents()) {
+			return;
+		}
+
 		if (isSeekingRef.current) {
 			video.pause();
 			return;
@@ -101,6 +112,10 @@ export function createVideoEventHandlers(params: VideoEventHandlersParams) {
 	};
 
 	const handlePause = () => {
+		if (shouldSuppressEvents()) {
+			return;
+		}
+
 		isPlayingRef.current = false;
 		onPlayStateChange(false);
 		if (timeUpdateAnimationRef.current) {
@@ -111,6 +126,10 @@ export function createVideoEventHandlers(params: VideoEventHandlersParams) {
 	};
 
 	const handleSeeked = () => {
+		if (shouldSuppressEvents()) {
+			return;
+		}
+
 		isSeekingRef.current = false;
 
 		const currentTimeMs = video.currentTime * 1000;
@@ -135,6 +154,10 @@ export function createVideoEventHandlers(params: VideoEventHandlersParams) {
 	};
 
 	const handleSeeking = () => {
+		if (shouldSuppressEvents()) {
+			return;
+		}
+
 		isSeekingRef.current = true;
 
 		if (!isPlayingRef.current && !video.paused) {

@@ -14,8 +14,8 @@ import type {
 	CaptionRegion,
 	CaptionSettings,
 	CropRegion,
-	CursorPack,
 	CursorMovementStyle,
+	CursorPack,
 	CursorSpringSettings,
 	CursorStyle,
 	CursorTelemetryPoint,
@@ -39,11 +39,11 @@ import {
 	PixiCursorOverlay,
 	preloadCursorAssets,
 } from "@/components/video-editor/videoPlayback/cursorRenderer";
-import { resolveCursorV2Config } from "@/components/video-editor/videoPlayback/cursorV2";
 import {
 	buildCursorSimulationPath,
 	type CursorSimulationPath,
 } from "@/components/video-editor/videoPlayback/cursorSimulation";
+import { resolveCursorV2Config } from "@/components/video-editor/videoPlayback/cursorV2";
 import {
 	computeMockupScreenRect,
 	drawDeviceMockup,
@@ -53,6 +53,7 @@ import {
 	applyZoomTransform,
 	createMotionBlurState,
 	type MotionBlurState,
+	projectFrameRect,
 } from "@/components/video-editor/videoPlayback/zoomTransform";
 import { getWebcamPixelRect } from "@/components/video-editor/webcamRegionUtils";
 import { getAssetPath, getRenderableAssetUrl } from "@/lib/assetPath";
@@ -238,7 +239,7 @@ export class FrameRenderer {
 			this.cursorOverlay = new PixiCursorOverlay({
 				dotRadius: DEFAULT_CURSOR_CONFIG.dotRadius * (this.config.cursorSize ?? 1.4),
 				smoothingFactor:
-					this.config.smoothMovementEnabled === false ? 0 : this.config.cursorSmoothing ?? 0,
+					this.config.smoothMovementEnabled === false ? 0 : (this.config.cursorSmoothing ?? 0),
 				motionBlur: this.config.cursorMotionBlur ?? 0,
 				clickBounce: this.config.cursorClickBounce ?? DEFAULT_CURSOR_CONFIG.clickBounce,
 				sway: this.config.cursorSway ?? DEFAULT_CURSOR_CONFIG.sway,
@@ -784,15 +785,25 @@ export class FrameRenderer {
 			return;
 		}
 
-		const borderWidth = (this.config.frameBorderWidth || 0) * scaleFactor;
+		const projectedFrame = projectFrameRect({
+			rect: this.layoutCache.maskRect,
+			transform: {
+				scale: this.animationState.appliedScale,
+				x: this.animationState.x,
+				y: this.animationState.y,
+			},
+			borderRadius: (this.config.borderRadius || 0) * scaleFactor,
+			borderWidth: (this.config.frameBorderWidth || 0) * scaleFactor,
+		});
+		const borderWidth = projectedFrame.borderWidth;
 		const borderOpacity = this.config.frameBorderOpacity ?? 0;
 		if (borderWidth <= 0 || borderOpacity <= 0) {
 			return;
 		}
 
 		const color = applyOpacityToHex(this.config.frameBorderColor || "#000000", borderOpacity);
-		const radius = (this.config.borderRadius || 0) * scaleFactor;
-		const mask = this.layoutCache.maskRect;
+		const radius = projectedFrame.borderRadius;
+		const mask = projectedFrame.rect;
 
 		ctx.save();
 		ctx.fillStyle = color;
@@ -877,7 +888,10 @@ export class FrameRenderer {
 			console.warn("[FrameRenderer] No background sprite found during compositing!");
 		}
 
-		// Draw video layer with shadows on top of background
+		// Draw the outside border beneath the video/cursor layer so it never occludes the cursor.
+		this.drawFrameBorder(ctx, canvasScaleFactor);
+
+		// Draw video layer with shadows on top of background and border
 		if (
 			this.config.showShadow &&
 			hasVisibleFrameShadow(shadowSettings) &&
@@ -894,8 +908,6 @@ export class FrameRenderer {
 		} else {
 			ctx.drawImage(videoCanvas, 0, 0, w, h);
 		}
-
-		this.drawFrameBorder(ctx, canvasScaleFactor);
 
 		// Draw device mockup frame on top of video
 		const mockup = this.config.deviceMockup;

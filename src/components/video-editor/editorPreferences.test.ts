@@ -107,7 +107,7 @@ describe("editorPreferences", () => {
 			frameBorderColor: DEFAULT_EDITOR_PREFERENCES.frameBorderColor,
 			frameBorderOpacity: DEFAULT_EDITOR_PREFERENCES.frameBorderOpacity,
 			borderRadius: DEFAULT_EDITOR_PREFERENCES.borderRadius,
-			padding: 20,
+			padding: 40,
 			cropRegion: { x: 0.1, y: 0.2, width: 0.7, height: 0.6 },
 			aspectRatio: "native",
 			webcamRegion: DEFAULT_EDITOR_PREFERENCES.webcamRegion,
@@ -215,7 +215,7 @@ describe("editorPreferences", () => {
 			}),
 		);
 
-		expect(loadEditorPreferences().padding).toBe(20);
+		expect(loadEditorPreferences().padding).toBe(40);
 	});
 
 	it("preserves the last valid custom aspect inputs while typing", () => {

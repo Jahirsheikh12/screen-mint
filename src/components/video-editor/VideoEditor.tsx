@@ -239,9 +239,7 @@ export default function VideoEditor() {
 	const [cursorTypeMode, setCursorTypeMode] = useState(initialEditorPreferences.cursorTypeMode);
 	const [cursorTilt, setCursorTilt] = useState(initialEditorPreferences.cursorTilt);
 	const [hideWhenIdle, setHideWhenIdle] = useState(initialEditorPreferences.hideWhenIdle);
-	const [idleHideDelayMs, setIdleHideDelayMs] = useState(
-		initialEditorPreferences.idleHideDelayMs,
-	);
+	const [idleHideDelayMs, setIdleHideDelayMs] = useState(initialEditorPreferences.idleHideDelayMs);
 	const [smoothMovementEnabled, setSmoothMovementEnabled] = useState(
 		initialEditorPreferences.smoothMovementEnabled,
 	);
@@ -2039,12 +2037,7 @@ export default function VideoEditor() {
 					}
 
 					if (mode === "static") {
-						const { focus } = resolveZoomRegionFocus(
-							region,
-							simulatedCursor,
-							region.focus,
-							0,
-						);
+						const { focus } = resolveZoomRegionFocus(region, simulatedCursor, region.focus, 0);
 						return {
 							...region,
 							mode,
@@ -3509,13 +3502,36 @@ export default function VideoEditor() {
 
 			let keepExportDialogOpen = false;
 			const saveMode = options.saveMode ?? "dialog";
+			let previewRestoreTime = video.currentTime;
+			let shouldResumePreviewPlayback = isPlaying;
+			let previewRestored = false;
+			let previewHoldToken: string | null = null;
+
+			const restorePreviewAfterExport = async (forceReload = false) => {
+				const playback = videoPlaybackRef.current;
+				if (!playback) {
+					return;
+				}
+
+				try {
+					await playback.restorePreviewFrame({
+						forceReload,
+						resumePlayback: shouldResumePreviewPlayback,
+					});
+					previewRestored = true;
+				} catch {
+					// The playback component already reports unrecoverable preview errors.
+				}
+			};
 
 			try {
 				const wasPlaying = isPlaying;
-				const restoreTime = video.currentTime;
+				previewRestoreTime = video.currentTime;
+				shouldResumePreviewPlayback = wasPlaying;
 				if (wasPlaying) {
 					videoPlaybackRef.current?.pause();
 				}
+				previewHoldToken = (await videoPlaybackRef.current?.acquirePreviewHold("export")) ?? null;
 
 				const sourceWidth = video.videoWidth || 1920;
 				const sourceHeight = video.videoHeight || 1080;
@@ -3831,20 +3847,27 @@ export default function VideoEditor() {
 					}
 				}
 
-				if (wasPlaying) {
-					videoPlaybackRef.current?.play();
-				} else {
-					video.currentTime = restoreTime;
-					await videoPlaybackRef.current?.refreshFrame();
-				}
+				await restorePreviewAfterExport(false);
 			} catch (error) {
 				console.error("Export error:", error);
 				const errorMessage = error instanceof Error ? error.message : "Unknown error";
 				setExportError(errorMessage);
 				toast.error(`Export failed: ${errorMessage}`);
 			} finally {
-				if (!isPlaying) {
-					await videoPlaybackRef.current?.refreshFrame().catch(() => undefined);
+				if (!previewRestored) {
+					const playback = videoPlaybackRef.current;
+					if (playback?.video) {
+						playback.video.currentTime = previewRestoreTime;
+					}
+					await playback
+						?.restorePreviewFrame({
+							forceReload: false,
+							resumePlayback: shouldResumePreviewPlayback,
+						})
+						.catch(() => undefined);
+				}
+				if (previewHoldToken) {
+					videoPlaybackRef.current?.releasePreviewHold(previewHoldToken);
 				}
 				setIsExporting(false);
 				exporterRef.current = null;
