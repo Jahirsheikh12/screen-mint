@@ -169,10 +169,6 @@ function getClickHighlightColorNumber(config: CursorRenderConfig) {
 	return parseHexColorToNumber(config.clickHighlightColor, 0xf59e0b);
 }
 
-function usesStyledCursorOverride(cursorStyle: CursorStyle) {
-	return cursorStyle !== "default";
-}
-
 function getNormalizedAnchor(
 	systemAsset: SystemCursorAsset | undefined,
 	fallbackAnchor: { x: number; y: number },
@@ -964,7 +960,7 @@ export class PixiCursorOverlay {
 		this.circleCursorShadowGraphics.visible = visualMode.renderCircleCursor;
 		this.circleCursorGraphics.visible = visualMode.renderCircleCursor;
 
-		if (visualMode.renderCircleCursor || usesStyledCursorOverride(this.config.cursorStyle)) {
+		if (visualMode.renderCircleCursor) {
 			this.drawStyledCursor(
 				px,
 				py,
@@ -972,7 +968,7 @@ export class PixiCursorOverlay {
 				bounceScale,
 				swayRotation,
 				cursorColor,
-				usesStyledCursorOverride(this.config.cursorStyle) ? this.config.cursorStyle : "circle",
+				"circle",
 			);
 		} else if (shadowSprite) {
 			shadowSprite.height = scaledH * bounceScale;
