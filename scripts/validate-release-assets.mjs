@@ -8,8 +8,8 @@ const requiredMetadataFiles = [
 	"latest.yml",
 	"latest-linux.yml",
 	"latest-mac.yml",
-	"latest-mac-arm64.yml",
 ];
+const optionalMetadataFiles = ["latest-mac-arm64.yml"];
 
 function normalizeYamlValue(rawValue) {
 	return rawValue.trim().replace(/^['"]|['"]$/g, "");
@@ -46,7 +46,12 @@ async function main() {
 		}
 	}
 
-	for (const metadataFile of requiredMetadataFiles) {
+	const metadataFilesToValidate = [
+		...requiredMetadataFiles,
+		...optionalMetadataFiles.filter((metadataFile) => entrySet.has(metadataFile)),
+	];
+
+	for (const metadataFile of metadataFilesToValidate) {
 		const metadataPath = path.join(targetDir, metadataFile);
 		const content = await fs.readFile(metadataPath, "utf-8");
 		const references = extractReferencedFiles(content);

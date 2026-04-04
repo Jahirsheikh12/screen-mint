@@ -153,7 +153,6 @@ jobs:
           name: macos-arm64
           path: |
             release/ScreenMint-arm64.*
-            release/latest-mac-arm64.yml
           if-no-files-found: error
 
   build-windows-x64:
