@@ -119,6 +119,7 @@ interface FrameRenderConfig {
 	cursorMovementStyle?: CursorMovementStyle;
 	cursorSpring?: CursorSpringSettings;
 	highQualitySvgCursors?: boolean;
+	cameraSpring?: import("@/components/video-editor/types").CameraSpringSettings;
 	webcamPath?: string | null;
 	webcamRegion?: WebcamRegion;
 	showWebcam?: boolean;
@@ -875,6 +876,7 @@ export class FrameRenderer {
 				baseMask: this.layoutCache.maskRect,
 			},
 			shouldSmooth: true,
+			cameraSpring: this.config.cameraSpring,
 		});
 
 		this.animationState = evaluation.state;

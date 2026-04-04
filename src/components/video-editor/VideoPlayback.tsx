@@ -39,6 +39,7 @@ import {
 	type CursorStyle,
 	type CursorTelemetryPoint,
 	type CursorTypeMode,
+	DEFAULT_CAMERA_SPRING,
 	DEFAULT_CLICK_HIGHLIGHT_COLOR,
 	DEFAULT_CLICK_HIGHLIGHT_OPACITY,
 	DEFAULT_CLICK_HIGHLIGHT_SIZE,
@@ -193,6 +194,7 @@ interface VideoPlaybackProps {
 	cursorMovementStyle?: CursorMovementStyle;
 	cursorSpring?: CursorSpringSettings;
 	highQualitySvgCursors?: boolean;
+	cameraSpring?: import("./types").CameraSpringSettings;
 	webcamPath?: string | null;
 	webcamRegion?: import("./types").WebcamRegion;
 	showWebcam?: boolean;
@@ -295,6 +297,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			cursorMovementStyle = DEFAULT_CURSOR_MOVEMENT_STYLE,
 			cursorSpring = DEFAULT_CURSOR_SPRING,
 			highQualitySvgCursors = DEFAULT_HIGH_QUALITY_SVG_CURSORS,
+			cameraSpring = DEFAULT_CAMERA_SPRING,
 			webcamPath,
 			webcamRegion,
 			showWebcam = true,
@@ -388,6 +391,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const cursorMovementStyleRef = useRef(cursorMovementStyle);
 		const cursorSpringRef = useRef(cursorSpring);
 		const highQualitySvgCursorsRef = useRef(highQualitySvgCursors);
+		const cameraSpringRef = useRef(cameraSpring);
 		const motionBlurStateRef = useRef<MotionBlurState>(createMotionBlurState());
 		const previewQualitySwitchStateRef = useRef<PreviewQualitySwitchState>(
 			createPreviewQualitySwitchState(previewQuality),
@@ -1287,6 +1291,10 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		}, [highQualitySvgCursors]);
 
 		useEffect(() => {
+			cameraSpringRef.current = cameraSpring;
+		}, [cameraSpring]);
+
+		useEffect(() => {
 			if (!pixiReady || !videoReady) return;
 
 			const app = appRef.current;
@@ -1822,6 +1830,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 						baseMask: baseMaskRef.current,
 					},
 					shouldSmooth,
+					cameraSpring: cameraSpringRef.current,
 				});
 				animationStateRef.current = evaluation.state;
 

@@ -423,7 +423,7 @@ export function createCountdownWindow(): BrowserWindow {
 	const primaryDisplay = getScreen().getPrimaryDisplay();
 	const { width, height } = primaryDisplay.workAreaSize;
 
-	const windowSize = 200;
+	const windowSize = 300;
 	const x = Math.floor((width - windowSize) / 2);
 	const y = Math.floor((height - windowSize) / 2);
 

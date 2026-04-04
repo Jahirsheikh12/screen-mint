@@ -102,6 +102,7 @@ import {
 	DEFAULT_CURSOR_SIZE,
 	DEFAULT_CURSOR_SPRING,
 	DEFAULT_CURSOR_TILT,
+	DEFAULT_CAMERA_SPRING,
 	DEFAULT_CURSOR_TRAIL_LENGTH,
 	DEFAULT_CURSOR_TRAIL_OPACITY,
 	DEFAULT_HIGH_QUALITY_SVG_CURSORS,
@@ -287,6 +288,8 @@ interface SettingsPanelProps {
 	onCursorMovementStyleChange?: (style: CursorMovementStyle) => void;
 	cursorSpring?: CursorSpringSettings;
 	onCursorSpringChange?: (spring: CursorSpringSettings) => void;
+	cameraSpring?: import("./types").CameraSpringSettings;
+	onCameraSpringChange?: (spring: import("./types").CameraSpringSettings) => void;
 	highQualitySvgCursors?: boolean;
 	onHighQualitySvgCursorsChange?: (enabled: boolean) => void;
 	cursorColor?: string;
@@ -564,6 +567,8 @@ export default function SettingsPanel({
 	onCursorMovementStyleChange,
 	cursorSpring = DEFAULT_CURSOR_SPRING,
 	onCursorSpringChange,
+	cameraSpring = DEFAULT_CAMERA_SPRING,
+	onCameraSpringChange,
 	highQualitySvgCursors = DEFAULT_HIGH_QUALITY_SVG_CURSORS,
 	onHighQualitySvgCursorsChange,
 	cursorColor = DEFAULT_CURSOR_COLOR,
@@ -1706,6 +1711,66 @@ export default function SettingsPanel({
 									</div>
 								</>
 							)}
+						</SettingsSection>
+
+						<SettingsSection
+							title={tSettings("cursor.cameraTracking", "Camera Tracking")}
+							description="Fine-tune how the camera follows the cursor during zoom."
+						>
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+								<SliderControl
+									label={tSettings("cursor.cameraTension", "Tension")}
+									value={cameraSpring?.tension ?? DEFAULT_CAMERA_SPRING.tension}
+									defaultValue={DEFAULT_CAMERA_SPRING.tension}
+									min={60}
+									max={500}
+									step={1}
+									onChange={(v) =>
+										onCameraSpringChange?.({
+											...(cameraSpring ?? DEFAULT_CAMERA_SPRING),
+											tension: v,
+										})
+									}
+									formatValue={(v) => `${Math.round(v)}`}
+									parseInput={(t) => parseFloat(t)}
+								/>
+							</div>
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+								<SliderControl
+									label={tSettings("cursor.cameraFriction", "Friction")}
+									value={cameraSpring?.friction ?? DEFAULT_CAMERA_SPRING.friction}
+									defaultValue={DEFAULT_CAMERA_SPRING.friction}
+									min={8}
+									max={80}
+									step={1}
+									onChange={(v) =>
+										onCameraSpringChange?.({
+											...(cameraSpring ?? DEFAULT_CAMERA_SPRING),
+											friction: v,
+										})
+									}
+									formatValue={(v) => `${Math.round(v)}`}
+									parseInput={(t) => parseFloat(t)}
+								/>
+							</div>
+							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+								<SliderControl
+									label={tSettings("cursor.cameraMass", "Mass")}
+									value={cameraSpring?.mass ?? DEFAULT_CAMERA_SPRING.mass}
+									defaultValue={DEFAULT_CAMERA_SPRING.mass}
+									min={0.3}
+									max={2.5}
+									step={0.01}
+									onChange={(v) =>
+										onCameraSpringChange?.({
+											...(cameraSpring ?? DEFAULT_CAMERA_SPRING),
+											mass: v,
+										})
+									}
+									formatValue={(v) => `${v.toFixed(2)}`}
+									parseInput={(t) => parseFloat(t)}
+								/>
+							</div>
 						</SettingsSection>
 
 						<SettingsSection

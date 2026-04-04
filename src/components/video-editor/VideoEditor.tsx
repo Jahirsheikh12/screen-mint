@@ -117,6 +117,7 @@ import {
 	DEFAULT_AUDIO_REGION_VOLUME,
 	DEFAULT_BLUR_DATA,
 	DEFAULT_CAMERA_SIZE_DURING_ZOOM,
+	DEFAULT_CAMERA_SPRING,
 	DEFAULT_CAPTION_GENERATION_OPTIONS,
 	DEFAULT_CAPTION_SETTINGS,
 	DEFAULT_CURSOR_FOLLOW_TRACKING,
@@ -254,6 +255,9 @@ export default function VideoEditor() {
 		initialEditorPreferences.cursorMovementStyle,
 	);
 	const [cursorSpring, setCursorSpring] = useState(initialEditorPreferences.cursorSpring);
+	const [cameraSpring, setCameraSpring] = useState(
+		initialEditorPreferences.cameraSpring ?? DEFAULT_CAMERA_SPRING,
+	);
 	const [highQualitySvgCursors, setHighQualitySvgCursors] = useState(
 		initialEditorPreferences.highQualitySvgCursors,
 	);
@@ -598,6 +602,7 @@ export default function VideoEditor() {
 			smoothMovementEnabled,
 			cursorMovementStyle,
 			cursorSpring,
+			cameraSpring,
 			highQualitySvgCursors,
 			cursorColor,
 			cursorOpacity,
@@ -659,6 +664,7 @@ export default function VideoEditor() {
 			setSmoothMovementEnabled(controls.smoothMovementEnabled);
 			setCursorMovementStyle(controls.cursorMovementStyle);
 			setCursorSpring(controls.cursorSpring);
+			setCameraSpring(controls.cameraSpring ?? DEFAULT_CAMERA_SPRING);
 			setHighQualitySvgCursors(controls.highQualitySvgCursors);
 			setCursorColor(controls.cursorColor);
 			setCursorOpacity(controls.cursorOpacity);
@@ -1279,6 +1285,7 @@ export default function VideoEditor() {
 			smoothMovementEnabled,
 			cursorMovementStyle,
 			cursorSpring,
+			cameraSpring,
 			highQualitySvgCursors,
 			cursorColor,
 			cursorOpacity,
@@ -1513,6 +1520,7 @@ export default function VideoEditor() {
 			smoothMovementEnabled,
 			cursorMovementStyle,
 			cursorSpring,
+			cameraSpring,
 			highQualitySvgCursors,
 			cursorColor,
 			cursorOpacity,
@@ -3663,6 +3671,7 @@ export default function VideoEditor() {
 						cursorMovementStyle,
 						cursorSpring,
 						highQualitySvgCursors,
+						cameraSpring,
 						keyboardShortcutPosition,
 						keyboardShortcutTheme,
 						keyboardShortcutScale,
@@ -3783,6 +3792,7 @@ export default function VideoEditor() {
 						cursorMovementStyle,
 						cursorSpring,
 						highQualitySvgCursors,
+						cameraSpring,
 						keyboardShortcutPosition,
 						keyboardShortcutTheme,
 						keyboardShortcutScale,
@@ -3905,6 +3915,7 @@ export default function VideoEditor() {
 			smoothMovementEnabled,
 			cursorMovementStyle,
 			cursorSpring,
+			cameraSpring,
 			highQualitySvgCursors,
 			keyboardShortcutPosition,
 			keyboardShortcutTheme,
@@ -4567,6 +4578,7 @@ export default function VideoEditor() {
 									cursorMovementStyle={cursorMovementStyle}
 									cursorSpring={cursorSpring}
 									highQualitySvgCursors={highQualitySvgCursors}
+									cameraSpring={cameraSpring}
 									webcamPath={resolvedWebcamPath}
 									webcamRegion={webcamRegion}
 									showWebcam={showWebcam}
@@ -4646,6 +4658,8 @@ export default function VideoEditor() {
 							onCursorMovementStyleChange={setCursorMovementStyle}
 							cursorSpring={cursorSpring}
 							onCursorSpringChange={setCursorSpring}
+							cameraSpring={cameraSpring}
+							onCameraSpringChange={setCameraSpring}
 							highQualitySvgCursors={highQualitySvgCursors}
 							onHighQualitySvgCursorsChange={setHighQualitySvgCursors}
 							cursorColor={cursorColor}

@@ -102,6 +102,7 @@ interface GifExporterConfig {
 	cursorMovementStyle?: CursorMovementStyle;
 	cursorSpring?: CursorSpringSettings;
 	highQualitySvgCursors?: boolean;
+	cameraSpring?: import("@/components/video-editor/types").CameraSpringSettings;
 	previewWidth?: number;
 	previewHeight?: number;
 	webcamPath?: string | null;
@@ -265,6 +266,7 @@ export class GifExporter {
 				cursorMovementStyle: this.config.cursorMovementStyle,
 				cursorSpring: this.config.cursorSpring,
 				highQualitySvgCursors: this.config.highQualitySvgCursors,
+				cameraSpring: this.config.cameraSpring,
 				webcamPath: this.config.webcamPath,
 				webcamRegion: this.config.webcamRegion,
 				showWebcam: this.config.showWebcam,

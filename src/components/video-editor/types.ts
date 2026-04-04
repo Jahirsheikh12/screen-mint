@@ -138,6 +138,12 @@ export interface CursorSpringSettings {
 	mass: number;
 }
 
+export interface CameraSpringSettings {
+	tension: number;
+	friction: number;
+	mass: number;
+}
+
 export type CursorPack =
 	| "classic"
 	| "custom"
@@ -240,6 +246,11 @@ export const DEFAULT_CURSOR_SPRING: CursorSpringSettings = {
 	tension: 319.6,
 	friction: 60.49333333333333,
 	mass: 1.0396666666666667,
+};
+export const DEFAULT_CAMERA_SPRING: CameraSpringSettings = {
+	tension: 170,
+	friction: 26,
+	mass: 1.0,
 };
 export const DEFAULT_HIGH_QUALITY_SVG_CURSORS = true;
 export const DEFAULT_CURSOR_COLOR = "#FFFFFF";

@@ -214,15 +214,6 @@
    ══════════════════════════════════════════════════ */
 
 /* ── Grid background ── */
-.hero-grid {
-	background-image:
-		linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-		linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
-	background-size: 64px 64px;
-	mask-image: radial-gradient(ellipse 55% 50% at 50% 40%, black 10%, transparent 70%);
-	-webkit-mask-image: radial-gradient(ellipse 55% 50% at 50% 40%, black 10%, transparent 70%);
-}
-
 /* ── Noise grain texture ── */
 .hero-noise {
 	opacity: 0.025;

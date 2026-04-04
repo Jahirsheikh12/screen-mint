@@ -85,6 +85,7 @@ interface VideoExporterConfig extends ExportConfig {
 	cursorMovementStyle?: CursorMovementStyle;
 	cursorSpring?: CursorSpringSettings;
 	highQualitySvgCursors?: boolean;
+	cameraSpring?: import("@/components/video-editor/types").CameraSpringSettings;
 	audioRegions?: AudioRegion[];
 	previewWidth?: number;
 	previewHeight?: number;
@@ -215,6 +216,7 @@ export class VideoExporter {
 				cursorMovementStyle: this.config.cursorMovementStyle,
 				cursorSpring: this.config.cursorSpring,
 				highQualitySvgCursors: this.config.highQualitySvgCursors,
+				cameraSpring: this.config.cameraSpring,
 				webcamPath: this.config.webcamPath,
 				webcamRegion: this.config.webcamRegion,
 				showWebcam: this.config.showWebcam,

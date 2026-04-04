@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { prefersReducedMotion } from "../hooks/useGSAP";
 import { REPO_URL } from "../lib/links";
 import { GITHUB_SPONSORS_URL } from "../lib/sponsors";
+import { PixelWave } from "./PixelWave";
 
 const WORDS = ["incredible", "cinematic", "stunning", "polished"];
 const CYCLE_MS = 3000;
@@ -189,8 +190,8 @@ export function Hero() {
 		>
 			{/* ── Background ── */}
 
-			{/* Grid */}
-			<div ref={gridRef} className="hero-grid absolute inset-0 pointer-events-none opacity-0" />
+			{/* Animated pixel wave */}
+			<PixelWave ref={gridRef} className="absolute inset-0 pointer-events-none opacity-0" />
 
 			{/* Noise grain */}
 			<div className="hero-noise absolute inset-0 pointer-events-none" />

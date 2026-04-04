@@ -69,6 +69,8 @@ import {
 	DEFAULT_CURSOR_SMOOTHING,
 	DEFAULT_CURSOR_SPRING,
 	DEFAULT_CURSOR_STYLE,
+	DEFAULT_CAMERA_SPRING,
+	type CameraSpringSettings,
 	DEFAULT_CURSOR_SWAY,
 	DEFAULT_CURSOR_TRAIL_LENGTH,
 	DEFAULT_CURSOR_TRAIL_OPACITY,
@@ -99,6 +101,17 @@ import {
 import { normalizeCursorSpring, resolveCursorV2Fields } from "./videoPlayback/cursorV2";
 import { normalizeWebcamRegion } from "./webcamRegionUtils";
 
+function normalizeCameraSpring(
+	candidate: Partial<CameraSpringSettings> | null | undefined,
+): CameraSpringSettings {
+	const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
+	return {
+		tension: isNum(candidate?.tension) ? clamp(candidate.tension, 60, 500) : DEFAULT_CAMERA_SPRING.tension,
+		friction: isNum(candidate?.friction) ? clamp(candidate.friction, 8, 80) : DEFAULT_CAMERA_SPRING.friction,
+		mass: isNum(candidate?.mass) ? clamp(candidate.mass, 0.3, 2.5) : DEFAULT_CAMERA_SPRING.mass,
+	};
+}
+
 export const PROJECT_VERSION = 9;
 export const DEFAULT_VIDEO_PREVIEW_PADDING = 40;
 
@@ -127,6 +140,7 @@ export interface ProjectEditorState {
 	smoothMovementEnabled: boolean;
 	cursorMovementStyle: CursorMovementStyle;
 	cursorSpring: CursorSpringSettings;
+	cameraSpring: import("./types").CameraSpringSettings;
 	highQualitySvgCursors: boolean;
 	cursorColor: string;
 	cursorOpacity: number;
@@ -1141,6 +1155,9 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		smoothMovementEnabled: cursorV2Fields.smoothMovementEnabled,
 		cursorMovementStyle: cursorV2Fields.cursorMovementStyle,
 		cursorSpring: normalizeCursorSpring(cursorV2Fields.cursorSpring, DEFAULT_CURSOR_SPRING),
+		cameraSpring: normalizeCameraSpring(
+			(editor as Partial<ProjectEditorState>).cameraSpring,
+		),
 		highQualitySvgCursors: cursorV2Fields.highQualitySvgCursors,
 		cursorColor: typeof editor.cursorColor === "string" ? editor.cursorColor : DEFAULT_CURSOR_COLOR,
 		cursorOpacity: isFiniteNumber(editor.cursorOpacity)

@@ -29,6 +29,7 @@ type PersistedEditorControls = Pick<
 	| "smoothMovementEnabled"
 	| "cursorMovementStyle"
 	| "cursorSpring"
+	| "cameraSpring"
 	| "highQualitySvgCursors"
 	| "cursorColor"
 	| "cursorOpacity"
@@ -110,6 +111,7 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	smoothMovementEnabled: DEFAULT_EDITOR_CONTROLS.smoothMovementEnabled,
 	cursorMovementStyle: DEFAULT_EDITOR_CONTROLS.cursorMovementStyle,
 	cursorSpring: DEFAULT_EDITOR_CONTROLS.cursorSpring,
+	cameraSpring: DEFAULT_EDITOR_CONTROLS.cameraSpring,
 	highQualitySvgCursors: DEFAULT_EDITOR_CONTROLS.highQualitySvgCursors,
 	cursorColor: DEFAULT_EDITOR_CONTROLS.cursorColor,
 	cursorOpacity: DEFAULT_EDITOR_CONTROLS.cursorOpacity,
@@ -260,6 +262,7 @@ function normalizeEditorControls(
 		smoothMovementEnabled: raw.smoothMovementEnabled ?? fallback.smoothMovementEnabled,
 		cursorMovementStyle: raw.cursorMovementStyle ?? fallback.cursorMovementStyle,
 		cursorSpring: raw.cursorSpring ?? fallback.cursorSpring,
+		cameraSpring: raw.cameraSpring ?? fallback.cameraSpring,
 		highQualitySvgCursors: raw.highQualitySvgCursors ?? fallback.highQualitySvgCursors,
 		cursorColor: raw.cursorColor ?? fallback.cursorColor,
 		cursorOpacity: raw.cursorOpacity ?? fallback.cursorOpacity,
@@ -336,6 +339,7 @@ function normalizeEditorControls(
 		smoothMovementEnabled: normalized.smoothMovementEnabled,
 		cursorMovementStyle: normalized.cursorMovementStyle,
 		cursorSpring: normalized.cursorSpring,
+		cameraSpring: normalized.cameraSpring,
 		highQualitySvgCursors: normalized.highQualitySvgCursors,
 		cursorColor: normalized.cursorColor,
 		cursorOpacity: normalized.cursorOpacity,
