@@ -98,31 +98,102 @@ export interface ResolvedGifExportPlan {
 	estimatedSizeBytes: number;
 }
 
+export function getVideoExportSettingsForPreset(preset: VideoExportPreset): VideoExportSettings {
+	switch (preset) {
+		case "fast-share":
+			return {
+				mode: "preset",
+				preset,
+				resolutionMode: "720p",
+				frameRateMode: "30",
+				bitrateMode: "auto",
+				optimizeForWeb: true,
+			};
+		case "quality":
+			return {
+				mode: "preset",
+				preset,
+				resolutionMode: "1440p",
+				frameRateMode: "auto",
+				bitrateMode: "very-high",
+				optimizeForWeb: true,
+			};
+		case "master":
+			return {
+				mode: "preset",
+				preset,
+				resolutionMode: "source",
+				frameRateMode: "source",
+				bitrateMode: "archive",
+				optimizeForWeb: false,
+			};
+		case "balanced":
+		default:
+			return {
+				mode: "preset",
+				preset: "balanced",
+				resolutionMode: "1080p",
+				frameRateMode: "auto",
+				bitrateMode: "auto",
+				optimizeForWeb: true,
+			};
+	}
+}
+
+export function getGifExportSettingsForPreset(preset: GifExportPreset): GifExportConfig {
+	switch (preset) {
+		case "small-share":
+			return {
+				mode: "preset",
+				preset,
+				resolutionMode: "480p",
+				frameRate: 12,
+				loop: true,
+				dedupeFrames: true,
+				colorCount: 64,
+				ditherMode: "bayer",
+				motionSensitivity: "low",
+				width: 854,
+				height: 480,
+			};
+		case "quality":
+			return {
+				mode: "preset",
+				preset,
+				resolutionMode: "1080p",
+				frameRate: 20,
+				loop: true,
+				dedupeFrames: false,
+				colorCount: 256,
+				ditherMode: "floyd-steinberg",
+				motionSensitivity: "high",
+				width: 1920,
+				height: 1080,
+			};
+		case "balanced":
+		default:
+			return {
+				mode: "preset",
+				preset: "balanced",
+				resolutionMode: "720p",
+				frameRate: 15,
+				loop: true,
+				dedupeFrames: true,
+				colorCount: 128,
+				ditherMode: "bayer",
+				motionSensitivity: "balanced",
+				width: 1280,
+				height: 720,
+			};
+	}
+}
+
 export function getDefaultVideoExportSettings(): VideoExportSettings {
-	return {
-		mode: "preset",
-		preset: "balanced",
-		resolutionMode: "1080p",
-		frameRateMode: "auto",
-		bitrateMode: "auto",
-		optimizeForWeb: true,
-	};
+	return getVideoExportSettingsForPreset("balanced");
 }
 
 export function getDefaultGifExportSettings(): GifExportConfig {
-	return {
-		mode: "preset",
-		preset: "balanced",
-		resolutionMode: "720p",
-		frameRate: 15,
-		loop: true,
-		dedupeFrames: true,
-		colorCount: 128,
-		ditherMode: "bayer",
-		motionSensitivity: "balanced",
-		width: 1280,
-		height: 720,
-	};
+	return getGifExportSettingsForPreset("balanced");
 }
 
 export function mapLegacyExportQualityToVideoSettings(
@@ -130,32 +201,11 @@ export function mapLegacyExportQualityToVideoSettings(
 ): VideoExportSettings {
 	switch (quality) {
 		case "medium":
-			return {
-				mode: "preset",
-				preset: "fast-share",
-				resolutionMode: "720p",
-				frameRateMode: "30",
-				bitrateMode: "auto",
-				optimizeForWeb: true,
-			};
+			return getVideoExportSettingsForPreset("fast-share");
 		case "high":
-			return {
-				mode: "preset",
-				preset: "quality",
-				resolutionMode: "1440p",
-				frameRateMode: "auto",
-				bitrateMode: "very-high",
-				optimizeForWeb: true,
-			};
+			return getVideoExportSettingsForPreset("quality");
 		case "source":
-			return {
-				mode: "preset",
-				preset: "master",
-				resolutionMode: "source",
-				frameRateMode: "source",
-				bitrateMode: "archive",
-				optimizeForWeb: false,
-			};
+			return getVideoExportSettingsForPreset("master");
 		case "good":
 		default:
 			return getDefaultVideoExportSettings();
@@ -270,17 +320,7 @@ function resolveVideoResolutionMode(settings: VideoExportSettings): VideoResolut
 		return settings.resolutionMode;
 	}
 
-	switch (settings.preset) {
-		case "fast-share":
-			return "720p";
-		case "balanced":
-			return "1080p";
-		case "quality":
-			return "1440p";
-		case "master":
-		default:
-			return "source";
-	}
+	return getVideoExportSettingsForPreset(settings.preset).resolutionMode;
 }
 
 function resolveVideoFrameRateMode(settings: VideoExportSettings): VideoExportFrameRateMode {
@@ -288,14 +328,7 @@ function resolveVideoFrameRateMode(settings: VideoExportSettings): VideoExportFr
 		return settings.frameRateMode;
 	}
 
-	switch (settings.preset) {
-		case "fast-share":
-			return settings.frameRateMode === "source" ? "30" : settings.frameRateMode;
-		case "master":
-			return settings.frameRateMode === "auto" ? "source" : settings.frameRateMode;
-		default:
-			return settings.frameRateMode;
-	}
+	return getVideoExportSettingsForPreset(settings.preset).frameRateMode;
 }
 
 function resolveVideoBitrateMode(settings: VideoExportSettings): VideoBitrateMode {
@@ -303,17 +336,7 @@ function resolveVideoBitrateMode(settings: VideoExportSettings): VideoBitrateMod
 		return settings.bitrateMode;
 	}
 
-	switch (settings.preset) {
-		case "fast-share":
-			return "auto";
-		case "balanced":
-			return "auto";
-		case "quality":
-			return settings.bitrateMode === "custom" ? "very-high" : settings.bitrateMode;
-		case "master":
-		default:
-			return settings.bitrateMode === "auto" ? "archive" : settings.bitrateMode;
-	}
+	return getVideoExportSettingsForPreset(settings.preset).bitrateMode;
 }
 
 function resolveFrameRateFromMode(
@@ -530,22 +553,20 @@ export function resolveGifExportPlan(
 	durationMs = 0,
 ): ResolvedGifExportPlan {
 	const warnings: string[] = [];
+	const effectiveSettings =
+		settings.mode === "custom" ? settings : getGifExportSettingsForPreset(settings.preset);
 	const resolutionMode =
-		settings.mode === "custom"
-			? settings.resolutionMode
-			: settings.preset === "small-share"
-				? "480p"
-				: settings.preset === "balanced"
-					? "720p"
-					: "1080p";
+		effectiveSettings.mode === "custom"
+			? effectiveSettings.resolutionMode
+			: getGifExportSettingsForPreset(effectiveSettings.preset).resolutionMode;
 	const { width, height } = resolveGifDimensions(source, aspectRatioValue, resolutionMode);
 	const estimatedSizeBytes = estimateGifSizeBytes(
 		width,
 		height,
-		settings.frameRate,
+		effectiveSettings.frameRate,
 		durationMs,
-		settings.dedupeFrames,
-		settings.colorCount,
+		effectiveSettings.dedupeFrames,
+		effectiveSettings.colorCount,
 	);
 
 	if (durationMs > 15_000) {
@@ -561,15 +582,15 @@ export function resolveGifExportPlan(
 	return {
 		width,
 		height,
-		frameRate: settings.frameRate,
-		preset: settings.preset,
-		mode: settings.mode,
+		frameRate: effectiveSettings.frameRate,
+		preset: effectiveSettings.preset,
+		mode: effectiveSettings.mode,
 		resolutionMode,
-		loop: settings.loop,
-		dedupeFrames: settings.dedupeFrames,
-		colorCount: settings.colorCount,
-		ditherMode: settings.ditherMode,
-		motionSensitivity: settings.motionSensitivity,
+		loop: effectiveSettings.loop,
+		dedupeFrames: effectiveSettings.dedupeFrames,
+		colorCount: effectiveSettings.colorCount,
+		ditherMode: effectiveSettings.ditherMode,
+		motionSensitivity: effectiveSettings.motionSensitivity,
 		warnings,
 		estimatedSizeBytes,
 	};

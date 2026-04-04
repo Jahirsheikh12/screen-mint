@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+	getGifExportSettingsForPreset,
 	getCodecLabel,
 	getDefaultGifExportSettings,
 	getDefaultVideoExportSettings,
+	getVideoExportSettingsForPreset,
 	mapLegacyExportQualityToVideoSettings,
 	resolveGifExportPlan,
 	resolveVideoExportPlan,
@@ -105,7 +107,7 @@ describe("export planner", () => {
 		expect(plan.codecLabel).toBe("H.264 High");
 	});
 
-	it("records preset-driven fallback notes", () => {
+	it("uses preset defaults instead of stale video overrides", () => {
 		const plan = resolveVideoExportPlan(
 			source,
 			{
@@ -116,8 +118,27 @@ describe("export planner", () => {
 			16 / 9,
 		);
 
-		expect(plan.fallbackApplied).toBe(true);
-		expect(plan.fallbackSteps[0]).toContain("30 FPS");
+		expect(plan.frameRateMode).toBe("30");
+		expect(plan.frameRate).toBe(30);
+		expect(plan.fallbackApplied).toBe(false);
+	});
+
+	it("ignores stale custom video controls after switching back to a preset", () => {
+		const plan = resolveVideoExportPlan(
+			source,
+			{
+				...getVideoExportSettingsForPreset("balanced"),
+				frameRateMode: "24",
+				bitrateMode: "custom",
+				customBitrateMbps: 48,
+			},
+			16 / 9,
+		);
+
+		expect(plan.mode).toBe("preset");
+		expect(plan.frameRateMode).toBe("auto");
+		expect(plan.frameRate).toBe(60);
+		expect(plan.bitrateMode).toBe("auto");
 	});
 
 	it("builds preset gif plans with warnings for long heavy exports", () => {
@@ -135,6 +156,29 @@ describe("export planner", () => {
 		expect(plan.colorCount).toBe(128);
 		expect(plan.ditherMode).toBe("bayer");
 		expect(plan.warnings.length).toBeGreaterThan(0);
+	});
+
+	it("ignores stale custom GIF controls after switching back to a preset", () => {
+		const plan = resolveGifExportPlan(
+			source,
+			{
+				...getGifExportSettingsForPreset("balanced"),
+				frameRate: 30,
+				dedupeFrames: false,
+				colorCount: 256,
+				ditherMode: "floyd-steinberg",
+				motionSensitivity: "high",
+			},
+			16 / 9,
+			source.durationMs,
+		);
+
+		expect(plan.mode).toBe("preset");
+		expect(plan.frameRate).toBe(15);
+		expect(plan.dedupeFrames).toBe(true);
+		expect(plan.colorCount).toBe(128);
+		expect(plan.ditherMode).toBe("bayer");
+		expect(plan.motionSensitivity).toBe("balanced");
 	});
 
 	it("builds custom gif plans with explicit quality controls", () => {

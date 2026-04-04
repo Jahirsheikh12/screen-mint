@@ -39,6 +39,8 @@ import {
 	VIDEO_EXPORT_PRESETS,
 	VIDEO_FRAME_RATE_MODE_OPTIONS,
 	VIDEO_RESOLUTION_MODE_OPTIONS,
+	getGifExportSettingsForPreset,
+	getVideoExportSettingsForPreset,
 } from "@/lib/exporter";
 import { cn } from "@/lib/utils";
 import { useScopedT } from "../../contexts/I18nContext";
@@ -183,6 +185,14 @@ export function ExportSettingsDialog({
 	const videoAdvancedEnabled = videoExportSettings.mode === "custom";
 	const gifAdvancedEnabled = gifExportSettings.mode === "custom";
 
+	const handleVideoPresetSelect = (preset: VideoExportSettings["preset"]) => {
+		onVideoExportSettingsChange(getVideoExportSettingsForPreset(preset));
+	};
+
+	const handleGifPresetSelect = (preset: GifExportConfig["preset"]) => {
+		onGifExportSettingsChange(getGifExportSettingsForPreset(preset));
+	};
+
 	return (
 		<>
 			<div
@@ -274,10 +284,7 @@ export function ExportSettingsDialog({
 												description={config.description}
 												selected={videoExportSettings.preset === preset}
 												onClick={() =>
-													onVideoExportSettingsChange({
-														...videoExportSettings,
-														preset: preset as VideoExportSettings["preset"],
-													})
+													handleVideoPresetSelect(preset as VideoExportSettings["preset"])
 												}
 											/>
 										))}
@@ -310,7 +317,12 @@ export function ExportSettingsDialog({
 												<SegmentedButtons
 													value={videoExportSettings.mode}
 													onChange={(mode) =>
-														onVideoExportSettingsChange({ ...videoExportSettings, mode })
+														mode === "preset"
+															? handleVideoPresetSelect(videoExportSettings.preset)
+															: onVideoExportSettingsChange({
+																	...videoExportSettings,
+																	mode,
+																})
 													}
 													options={[
 														{ value: "preset", label: "Preset" },
@@ -463,12 +475,7 @@ export function ExportSettingsDialog({
 												label={config.label.split(" ")[0]}
 												description={config.label}
 												selected={gifExportSettings.preset === preset}
-												onClick={() =>
-													onGifExportSettingsChange({
-														...gifExportSettings,
-														preset: preset as GifExportConfig["preset"],
-													})
-												}
+												onClick={() => handleGifPresetSelect(preset as GifExportConfig["preset"])}
 											/>
 										))}
 									</div>
@@ -500,7 +507,12 @@ export function ExportSettingsDialog({
 												<SegmentedButtons
 													value={gifExportSettings.mode}
 													onChange={(mode) =>
-														onGifExportSettingsChange({ ...gifExportSettings, mode })
+														mode === "preset"
+															? handleGifPresetSelect(gifExportSettings.preset)
+															: onGifExportSettingsChange({
+																	...gifExportSettings,
+																	mode,
+																})
 													}
 													options={[
 														{ value: "preset", label: "Preset" },
