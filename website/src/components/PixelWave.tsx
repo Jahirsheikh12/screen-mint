@@ -18,14 +18,17 @@ export const PixelWave = forwardRef<HTMLDivElement, { className?: string }>(
 		const rafId = useRef(0);
 
 		useEffect(() => {
-			const canvas = canvasRef.current;
-			if (!canvas) return;
+			const canvasElement = canvasRef.current;
+			if (!canvasElement) return;
 
-			const parent = canvas.parentElement;
-			if (!parent) return;
+			const parentElement = canvasElement.parentElement;
+			if (!parentElement) return;
 
-			const ctx = canvas.getContext("2d");
-			if (!ctx) return;
+			const context = canvasElement.getContext("2d");
+			if (!context) return;
+			const canvas = canvasElement;
+			const parent = parentElement;
+			const ctx = context;
 
 			let width = 0;
 			let height = 0;

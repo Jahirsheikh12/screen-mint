@@ -9,9 +9,11 @@ const brandDir = path.join(rootDir, "branding", "source-assets");
 const markSvg = path.join(brandDir, "ScreenMint-Mark.svg");
 const lockupSvg = path.join(brandDir, "ScreenMint.svg");
 const tempDir = path.join(rootDir, ".tmp", "brand-icons");
+const windowsPngDir = path.join(tempDir, "win-png");
 
 const appIconSizes = [16, 32, 64, 128, 256, 512, 1024];
 const builderSizes = [16, 24, 32, 48, 64, 128, 256, 512, 1024];
+const windowsIconSizes = [16, 24, 32, 48, 64, 128, 256];
 
 function ensureDir(filePath) {
 	fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -50,6 +52,10 @@ for (const size of builderSizes) {
 	renderPng(size, path.join(rootDir, "icons", "icons", "png", `${size}x${size}.png`));
 }
 
+for (const size of windowsIconSizes) {
+	renderPng(size, path.join(windowsPngDir, `${size}.png`));
+}
+
 renderPng(32, path.join(rootDir, "website", "public", "images", "screenmint-32.png"));
 copyFile(lockupSvg, path.join(rootDir, "website", "public", "images", "screenmint-logo.svg"));
 copyFile(markSvg, path.join(rootDir, "website", "public", "images", "screenmint-mark.svg"));
@@ -66,12 +72,29 @@ execFileSync(
 		"--ico-name",
 		"icon",
 		"--ico-sizes",
-		builderSizes.join(","),
+		windowsIconSizes.join(","),
 		"--icns",
 		"--icns-name",
 		"icon",
 		"--icns-sizes",
 		[16, 32, 64, 128, 256, 512, 1024].join(","),
+	],
+	{ stdio: "inherit" },
+);
+
+execFileSync(
+	"npx",
+	[
+		"icon-gen",
+		"-i",
+		windowsPngDir,
+		"-o",
+		tempDir,
+		"--ico",
+		"--ico-name",
+		"icon",
+		"--ico-sizes",
+		windowsIconSizes.join(","),
 	],
 	{ stdio: "inherit" },
 );
