@@ -14,7 +14,7 @@ import { DEFAULT_APP_BUSY_STATE } from "../src/lib/updater/types";
 const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const INITIAL_UPDATE_CHECK_DELAY_MS = 15 * 1000;
 const GITHUB_OWNER = "Jahirsheikh12";
-const GITHUB_REPO = "screenmint";
+const GITHUB_REPO = "screen-mint";
 
 type UpdaterPreferences = {
 	automaticDownloads: boolean;

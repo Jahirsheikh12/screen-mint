@@ -5,8 +5,8 @@ Thanks for helping improve ScreenMint.
 ## Setup
 
 ```bash
-git clone https://github.com/Jahirsheikh12/screenmint.git
-cd screenmint
+git clone https://github.com/Jahirsheikh12/screen-mint.git
+cd screen-mint
 npm install
 ```
 
@@ -33,7 +33,7 @@ Recommended checks:
 
 Report bugs and feature requests here:
 
-- https://github.com/Jahirsheikh12/screenmint/issues
+- https://github.com/Jahirsheikh12/screen-mint/issues
 
 ## Sponsorship
 

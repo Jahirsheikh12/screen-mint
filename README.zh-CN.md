@@ -24,8 +24,8 @@ Windows 低于 19041 的版本会回退到 Electron 捕获路径，因此无法�
 ## 本地开发
 
 ```bash
-git clone https://github.com/Jahirsheikh12/screenmint.git
-cd screenmint
+git clone https://github.com/Jahirsheikh12/screen-mint.git
+cd screen-mint
 npm install
 npm run dev
 ```
@@ -65,7 +65,7 @@ ScreenMint 基于 Electron + React + Vite，包含：
 
 ## 项目链接
 
-- GitHub: https://github.com/Jahirsheikh12/screenmint
+- GitHub: https://github.com/Jahirsheikh12/screen-mint
 - 占位主页: https://screenmint.live
 
 ## 许可证

@@ -24,8 +24,8 @@ Windows builds older than 19041 fall back to Electron capture and cannot hide th
 ## Development
 
 ```bash
-git clone https://github.com/Jahirsheikh12/screenmint.git
-cd screenmint
+git clone https://github.com/Jahirsheikh12/screen-mint.git
+cd screen-mint
 npm install
 npm run dev
 ```
@@ -65,7 +65,7 @@ ScreenMint is an Electron + React + Vite desktop app with:
 
 ## Project Links
 
-- GitHub: https://github.com/Jahirsheikh12/screenmint
+- GitHub: https://github.com/Jahirsheikh12/screen-mint
 - Homepage placeholder: https://screenmint.live
 - Sponsor ScreenMint: https://github.com/sponsors/Jahirsheikh12
 

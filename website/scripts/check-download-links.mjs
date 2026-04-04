@@ -30,9 +30,9 @@ if (repoUrl !== "https://github.com/Jahirsheikh12/screen-mint") {
 const linkFileNames = [...linksFile.matchAll(/ScreenMint[-\w.]+\b/g)].map((match) => match[0]);
 const websiteArtifacts = new Set(linkFileNames);
 
-const releaseArtifacts = new Set(
-	[...releaseWorkflowFile.matchAll(/release-assets\/([^\s]+)/g)].map((match) => match[1]),
-);
+const releaseArtifactSelectors = [
+	...releaseWorkflowFile.matchAll(/release-assets\/([^\s]+)/g),
+].map((match) => match[1]);
 
 const expectedArtifacts = [
 	"ScreenMint-arm64.dmg",
@@ -41,11 +41,16 @@ const expectedArtifacts = [
 	"ScreenMint-linux-x64.AppImage",
 ];
 
+function selectorMatchesArtifact(selector, artifact) {
+	const pattern = selector.replaceAll(/[.+?^${}()|[\]\\]/g, "\\$&").split("*").join(".*");
+	return new RegExp(`^${pattern}$`).test(artifact);
+}
+
 for (const artifact of expectedArtifacts) {
 	if (!websiteArtifacts.has(artifact)) {
 		throw new Error(`Website downloads are missing ${artifact}`);
 	}
-	if (!releaseArtifacts.has(artifact)) {
+	if (!releaseArtifactSelectors.some((selector) => selectorMatchesArtifact(selector, artifact))) {
 		throw new Error(`Release workflow is missing ${artifact}`);
 	}
 }
@@ -53,12 +58,6 @@ for (const artifact of expectedArtifacts) {
 if (websiteArtifacts.size !== expectedArtifacts.length) {
 	throw new Error(
 		`Website download link set drifted. Expected ${expectedArtifacts.length} artifacts, found ${websiteArtifacts.size}.`,
-	);
-}
-
-if (releaseArtifacts.size !== expectedArtifacts.length) {
-	throw new Error(
-		`Release workflow artifact set drifted. Expected ${expectedArtifacts.length} artifacts, found ${releaseArtifacts.size}.`,
 	);
 }
 
