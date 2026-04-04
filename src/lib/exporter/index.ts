@@ -7,6 +7,7 @@ export type {
 	SourceVideoMetadata,
 } from "./planner";
 export {
+	getCodecLabel,
 	getDefaultGifExportSettings,
 	getDefaultVideoExportSettings,
 	mapLegacyExportQualityToVideoSettings,

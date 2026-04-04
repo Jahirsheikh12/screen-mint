@@ -337,14 +337,14 @@ function resolveFrameRateFromMode(
 	}
 }
 
-function getCodecCandidates(optimizeForWeb: boolean, mode: VideoExportSettings["mode"]) {
-	if (optimizeForWeb || mode === "custom") {
+function getCodecCandidates(optimizeForWeb: boolean) {
+	if (optimizeForWeb) {
 		return WEB_SAFE_CODEC_CANDIDATES;
 	}
 	return HIGH_QUALITY_CODEC_CANDIDATES;
 }
 
-function getCodecLabel(codec: string): string {
+export function getCodecLabel(codec: string): string {
 	switch (codec) {
 		case "avc1.640033":
 			return "H.264 High";
@@ -422,7 +422,7 @@ export function resolveVideoExportPlan(
 			? clampBitrate(settings.customBitrateMbps * 1_000_000)
 			: clampBitrate(baseBitrate * getBitrateMultiplier(bitrateMode));
 
-	const codecCandidates = getCodecCandidates(settings.optimizeForWeb, settings.mode);
+	const codecCandidates = getCodecCandidates(settings.optimizeForWeb);
 
 	const encoderCandidates: ResolvedVideoEncoderCandidate[] = [];
 	const pushCandidate = (

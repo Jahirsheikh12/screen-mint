@@ -34,6 +34,12 @@ export interface ExportDetails {
 	bitrate?: number;
 	codec?: string;
 	codecLabel?: string;
+	estimatedSizeBytes?: number;
+	colorCount?: GifColorCount;
+	ditherMode?: GifDitherMode;
+	motionSensitivity?: GifMotionSensitivity;
+	loop?: boolean;
+	dedupeFrames?: boolean;
 	fallbackSteps?: string[];
 	elapsedMs?: number;
 	fileSizeBytes?: number;

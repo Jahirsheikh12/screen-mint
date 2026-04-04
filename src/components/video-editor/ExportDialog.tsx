@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import type { ExportDetails, ExportProgress } from "@/lib/exporter";
 import { cn } from "@/lib/utils";
 import { useScopedT } from "../../contexts/I18nContext";
+import { getExportDialogPhaseState } from "./exportUtils";
 
 interface ExportDialogProps {
 	isOpen: boolean;
@@ -85,8 +86,11 @@ export function ExportDialog({
 
 	const formatLabel = exportFormat === "gif" ? "GIF" : "Video";
 
-	const isCompiling = isExporting && progress?.phase === "finalizing" && exportFormat === "gif";
-	const isFinalizing = progress?.phase === "finalizing";
+	const { isGifCompiling, isVideoFinalizing } = getExportDialogPhaseState({
+		isExporting,
+		exportFormat,
+		progress,
+	});
 	const renderProgress = progress?.renderProgress;
 	const etaSeconds = progress?.etaSeconds ?? progress?.estimatedTimeRemaining ?? 0;
 	const throughputFps = progress?.throughputFps;
@@ -95,15 +99,20 @@ export function ExportDialog({
 
 	const getStatusMessage = () => {
 		if (error) return t("export.pleaseTryAgain");
-		if (progress?.phase && progress.phase !== "finalizing") {
-			const phaseLabel = progress.phase.charAt(0).toUpperCase() + progress.phase.slice(1);
-			return `${phaseLabel}${throughputFps ? ` • ${throughputFps.toFixed(1)} fps` : ""}${etaSeconds > 0 ? ` • ETA ${Math.ceil(etaSeconds)}s` : ""}`;
-		}
-		if (isCompiling || isFinalizing) {
+		if (isGifCompiling) {
 			if (renderProgress !== undefined && renderProgress > 0) {
 				return t("export.compilingGifProgress", undefined, { progress: renderProgress });
 			}
 			return t("export.compilingGifWait");
+		}
+		if (isVideoFinalizing) {
+			return `${t("export.finalizingFormat", "Finalizing {{format}}", {
+				format: formatLabel,
+			})}${throughputFps ? ` • ${throughputFps.toFixed(1)} fps` : ""}`;
+		}
+		if (progress?.phase && progress.phase !== "finalizing") {
+			const phaseLabel = progress.phase.charAt(0).toUpperCase() + progress.phase.slice(1);
+			return `${phaseLabel}${throughputFps ? ` • ${throughputFps.toFixed(1)} fps` : ""}${etaSeconds > 0 ? ` • ETA ${Math.ceil(etaSeconds)}s` : ""}`;
 		}
 		return t("export.takeMoment");
 	};
@@ -111,8 +120,25 @@ export function ExportDialog({
 	// Get title based on phase
 	const getTitle = () => {
 		if (error) return t("export.exportFailed");
-		if (isCompiling || isFinalizing) return t("export.compilingGifTitle");
+		if (isGifCompiling) return t("export.compilingGifTitle");
+		if (isVideoFinalizing) {
+			return t("export.finalizingFormat", "Finalizing {{format}}", {
+				format: formatLabel,
+			});
+		}
 		return t("export.exportingFormat", undefined, { format: formatLabel });
+	};
+
+	const getProgressLabel = () => {
+		if (isGifCompiling) {
+			return t("export.compiling");
+		}
+		if (isVideoFinalizing) {
+			return t("export.finalizingFormat", "Finalizing {{format}}", {
+				format: formatLabel,
+			});
+		}
+		return t("export.renderingFrames");
 	};
 
 	const handleClickShowInFolder = async () => {
@@ -133,14 +159,13 @@ export function ExportDialog({
 	};
 
 	// Progress percentage for display
-	const displayPercentage =
-		isCompiling || isFinalizing
-			? renderProgress !== undefined && renderProgress > 0
-				? renderProgress
-				: null
-			: progress
-				? Math.min(progress.percentage, 100)
-				: 0;
+	const displayPercentage = isGifCompiling
+		? renderProgress !== undefined && renderProgress > 0
+			? renderProgress
+			: null
+		: progress
+			? Math.min(progress.percentage, 100)
+			: 0;
 
 	return (
 		<>
@@ -232,6 +257,21 @@ export function ExportDialog({
 											) : null}
 											{typeof details.fileSizeBytes === "number" ? (
 												<div>{(details.fileSizeBytes / 1_000_000).toFixed(1)} MB</div>
+											) : null}
+											{details.format === "gif" &&
+											typeof details.estimatedSizeBytes === "number" ? (
+												<div>
+													Estimated {(details.estimatedSizeBytes / 1_000_000).toFixed(1)} MB
+												</div>
+											) : null}
+											{details.format === "gif" && typeof details.colorCount === "number" ? (
+												<div>{details.colorCount} colors</div>
+											) : null}
+											{details.format === "gif" && details.ditherMode ? (
+												<div>Dither: {details.ditherMode}</div>
+											) : null}
+											{details.format === "gif" && details.motionSensitivity ? (
+												<div>Motion sensitivity: {details.motionSensitivity}</div>
 											) : null}
 											{fallbackSteps.map((step) => (
 												<div key={step} className="mt-1 text-amber-300">
@@ -330,12 +370,10 @@ export function ExportDialog({
 										<div className="flex justify-between text-[10px] font-semibold uppercase tracking-[0.1em] mb-2">
 											<span className="text-slate-500 flex items-center gap-1.5">
 												<div className="w-1 h-1 rounded-full bg-[#F59E0B]" />
-												{isCompiling || isFinalizing
-													? t("export.compiling")
-													: t("export.renderingFrames")}
+												{getProgressLabel()}
 											</span>
 											<span className="font-mono text-slate-300">
-												{isCompiling || isFinalizing ? (
+												{isGifCompiling ? (
 													renderProgress !== undefined && renderProgress > 0 ? (
 														`${renderProgress}%`
 													) : (
@@ -351,7 +389,7 @@ export function ExportDialog({
 										</div>
 
 										<div className="h-2.5 bg-white/[0.04] rounded-full overflow-hidden border border-white/[0.06]">
-											{isCompiling || isFinalizing ? (
+											{isGifCompiling ? (
 												renderProgress !== undefined && renderProgress > 0 ? (
 													<div
 														className="h-full bg-gradient-to-r from-[#F59E0B] to-[#d97706] shadow-[0_0_12px_rgba(245,158,11,0.4)] transition-all duration-500 ease-out rounded-full"
@@ -388,10 +426,16 @@ export function ExportDialog({
 									<div className="grid grid-cols-2 gap-2">
 										<div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
 											<div className="text-[9px] text-slate-500 uppercase tracking-[0.12em] font-semibold mb-1">
-												{isCompiling || isFinalizing ? t("export.status") : t("export.format")}
+												{isGifCompiling || isVideoFinalizing
+													? t("export.status")
+													: t("export.format")}
 											</div>
 											<div className="text-slate-200 font-semibold text-sm">
-												{isCompiling || isFinalizing ? t("export.compilingStatus") : formatLabel}
+												{isGifCompiling
+													? t("export.compilingStatus")
+													: isVideoFinalizing
+														? "Finalizing"
+														: formatLabel}
 											</div>
 										</div>
 										<div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">

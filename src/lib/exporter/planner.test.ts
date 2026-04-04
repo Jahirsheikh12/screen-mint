@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	getCodecLabel,
 	getDefaultGifExportSettings,
 	getDefaultVideoExportSettings,
 	mapLegacyExportQualityToVideoSettings,
@@ -70,6 +71,40 @@ describe("export planner", () => {
 		expect(plan.encoderCandidates.some((candidate) => candidate.height === 1440)).toBe(true);
 	});
 
+	it("preserves source-driven frame rates across common input FPS values", () => {
+		for (const frameRate of [24, 25, 30, 50, 60]) {
+			const plan = resolveVideoExportPlan(
+				{
+					...source,
+					frameRate,
+				},
+				{
+					...getDefaultVideoExportSettings(),
+					mode: "custom",
+					frameRateMode: "source",
+				},
+				16 / 9,
+			);
+
+			expect(plan.frameRate).toBe(frameRate);
+		}
+	});
+
+	it("uses the higher-quality codec ladder for custom exports when web optimization is off", () => {
+		const plan = resolveVideoExportPlan(
+			source,
+			{
+				...getDefaultVideoExportSettings(),
+				mode: "custom",
+				optimizeForWeb: false,
+			},
+			16 / 9,
+		);
+
+		expect(plan.codecCandidates[0]).toBe("avc1.640033");
+		expect(plan.codecLabel).toBe("H.264 High");
+	});
+
 	it("records preset-driven fallback notes", () => {
 		const plan = resolveVideoExportPlan(
 			source,
@@ -125,5 +160,11 @@ describe("export planner", () => {
 		expect(plan.ditherMode).toBe("floyd-steinberg");
 		expect(plan.motionSensitivity).toBe("high");
 		expect(plan.warnings.some((warning) => warning.includes("1080p"))).toBe(true);
+	});
+
+	it("maps codec identifiers to human-readable labels", () => {
+		expect(getCodecLabel("avc1.640033")).toBe("H.264 High");
+		expect(getCodecLabel("avc1.4d401f")).toBe("H.264 Main");
+		expect(getCodecLabel("avc1.42001f")).toBe("H.264 Baseline");
 	});
 });

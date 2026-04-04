@@ -25,6 +25,7 @@ import { AudioProcessor } from "./audioEncoder";
 import { FrameRenderer } from "./frameRenderer";
 import { VideoMuxer } from "./muxer";
 import type { ResolvedVideoEncoderCandidate } from "./planner";
+import { getCodecLabel } from "./planner";
 import { StreamingVideoDecoder } from "./streamingDecoder";
 import type { ExportConfig, ExportProgress, ExportResult } from "./types";
 
@@ -135,6 +136,7 @@ export class VideoExporter {
 	private resolvedCodec: string | undefined;
 	private activeConfig: ActiveVideoExportConfig | null = null;
 	private resolvedFallbackSteps: string[] = [];
+	private readonly encoderSupportCache = new Map<string, boolean>();
 
 	constructor(config: VideoExporterConfig) {
 		this.config = config;
@@ -330,7 +332,7 @@ export class VideoExporter {
 					frameRate: this.activeConfig.frameRate,
 					bitrate: this.activeConfig.bitrate,
 					codec: this.resolvedCodec ?? this.config.codec,
-					codecLabel: this.resolvedCodec,
+					codecLabel: getCodecLabel(this.resolvedCodec ?? this.config.codec ?? "avc1.4d401f"),
 					elapsedMs: Math.round(performance.now() - this.exportStartedAtMs),
 					fileSizeBytes: blob.size,
 					fallbackSteps: this.resolvedFallbackSteps,
@@ -452,16 +454,30 @@ export class VideoExporter {
 		});
 	}
 
-	private getCodecLabel(codec: string): string {
-		switch (codec) {
-			case "avc1.640033":
-				return "H.264 High";
-			case "avc1.4d4033":
-			case "avc1.4d401f":
-				return "H.264 Main";
-			default:
-				return "H.264 Baseline";
+	private getEncoderSupportCacheKey(config: VideoEncoderConfig): string {
+		return JSON.stringify({
+			width: config.width,
+			height: config.height,
+			bitrate: config.bitrate,
+			framerate: config.framerate,
+			codec: config.codec,
+			hardwareAcceleration: config.hardwareAcceleration,
+			bitrateMode: config.bitrateMode,
+			latencyMode: config.latencyMode,
+		});
+	}
+
+	private async isEncoderConfigSupported(config: VideoEncoderConfig): Promise<boolean> {
+		const cacheKey = this.getEncoderSupportCacheKey(config);
+		const cached = this.encoderSupportCache.get(cacheKey);
+		if (cached !== undefined) {
+			return cached;
 		}
+
+		const support = await VideoEncoder.isConfigSupported(config);
+		const isSupported = support.supported === true;
+		this.encoderSupportCache.set(cacheKey, isSupported);
+		return isSupported;
 	}
 
 	private async resolveEncoderCandidate(): Promise<ActiveVideoExportConfig> {
@@ -498,13 +514,13 @@ export class VideoExporter {
 						codec,
 						hardwareAcceleration,
 					};
-					const support = await VideoEncoder.isConfigSupported(encoderConfig);
-					if (support.supported) {
+					const isSupported = await this.isEncoderConfigSupported(encoderConfig);
+					if (isSupported) {
 						this.resolvedCodec = codec;
 						this.resolvedFallbackSteps = [...baseFallbackSteps, ...candidate.fallbackSteps];
 						if (codec !== candidate.codecCandidates[0]) {
 							this.resolvedFallbackSteps.push(
-								`Used ${this.getCodecLabel(codec)} profile for compatibility.`,
+								`Used ${getCodecLabel(codec)} profile for compatibility.`,
 							);
 						}
 						return {
@@ -662,5 +678,6 @@ export class VideoExporter {
 		this.activeConfig = null;
 		this.resolvedFallbackSteps = [];
 		this.resolvedCodec = undefined;
+		this.encoderSupportCache.clear();
 	}
 }

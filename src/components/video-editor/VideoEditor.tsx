@@ -44,6 +44,7 @@ import {
 	GifExporter,
 	resolveGifExportPlan,
 	resolveVideoExportPlan,
+	StreamingVideoDecoder,
 	VideoExporter,
 	type VideoExportSettings,
 } from "@/lib/exporter";
@@ -65,6 +66,12 @@ import {
 	loadEditorPreferences,
 	saveEditorPreferences,
 } from "./editorPreferences";
+import {
+	buildSourceVideoMetadata,
+	mergeGifExportDetails,
+	mergeVideoExportDetails,
+	resolveSourceFrameRate,
+} from "./exportUtils";
 import { getLegacyShadowIntensityFromFrameShadow } from "./frameEffects";
 import { deriveKeyboardShortcutCallouts } from "./keyboardShortcuts";
 import {
@@ -365,6 +372,7 @@ export default function VideoEditor() {
 	const [gifExportSettings, setGifExportSettings] = useState<GifExportConfig>(
 		initialEditorPreferences.gifExportSettings,
 	);
+	const [sourceFrameRate, setSourceFrameRate] = useState(60);
 	const [workspaceLayout, setWorkspaceLayout] = useState<EditorWorkspaceLayout>(
 		initialEditorPreferences.workspaceLayout,
 	);
@@ -420,6 +428,40 @@ export default function VideoEditor() {
 			}),
 		[frameShadowBlur, frameShadowOpacity, frameShadowSize],
 	);
+
+	useEffect(() => {
+		let cancelled = false;
+		const decoder = videoPath ? new StreamingVideoDecoder() : null;
+
+		if (!videoPath) {
+			setSourceFrameRate(60);
+			return;
+		}
+
+		void decoder
+			?.loadMetadata(videoPath)
+			.then((metadata) => {
+				if (cancelled) {
+					return;
+				}
+				setSourceFrameRate(resolveSourceFrameRate(metadata.frameRate));
+			})
+			.catch((error) => {
+				if (cancelled) {
+					return;
+				}
+				console.warn("[VideoEditor] Failed to load source FPS for export planning:", error);
+				setSourceFrameRate(60);
+			})
+			.finally(() => {
+				decoder?.destroy();
+			});
+
+		return () => {
+			cancelled = true;
+			decoder?.destroy();
+		};
+	}, [videoPath]);
 
 	const clearWebcamState = useCallback(() => {
 		setWebcamPath(null);
@@ -3433,13 +3475,14 @@ export default function VideoEditor() {
 		const sourceHeight = video.videoHeight || 1080;
 		const sourceAspectRatio = sourceHeight > 0 ? sourceWidth / sourceHeight : 16 / 9;
 		const aspectRatioValue = getAspectRatioValue(aspectRatio, sourceAspectRatio);
+		const sourceMetadata = buildSourceVideoMetadata({
+			width: sourceWidth,
+			height: sourceHeight,
+			frameRate: sourceFrameRate,
+			durationMs: Math.round(duration * 1000),
+		});
 		const gifPlan = resolveGifExportPlan(
-			{
-				width: sourceWidth,
-				height: sourceHeight,
-				frameRate: 60,
-				durationMs: Math.round(duration * 1000),
-			},
+			sourceMetadata,
 			gifExportSettings,
 			aspectRatioValue,
 			Math.round(duration * 1000),
@@ -3454,7 +3497,14 @@ export default function VideoEditor() {
 				height: gifPlan.height,
 			},
 		};
-	}, [aspectRatio, duration, exportFormat, gifExportSettings, videoExportSettings]);
+	}, [
+		aspectRatio,
+		duration,
+		exportFormat,
+		gifExportSettings,
+		sourceFrameRate,
+		videoExportSettings,
+	]);
 
 	const handleExport = useCallback(
 		async (
@@ -3519,12 +3569,25 @@ export default function VideoEditor() {
 				const sourceHeight = video.videoHeight || 1080;
 				const sourceAspectRatio = sourceHeight > 0 ? sourceWidth / sourceHeight : 16 / 9;
 				const aspectRatioValue = getAspectRatioValue(aspectRatio, sourceAspectRatio);
-				const sourceMetadata = {
+				let exportSourceFrameRate = resolveSourceFrameRate(sourceFrameRate);
+				const metadataDecoder = new StreamingVideoDecoder();
+				try {
+					const metadata = await metadataDecoder.loadMetadata(videoPath);
+					exportSourceFrameRate = resolveSourceFrameRate(metadata.frameRate);
+					if (exportSourceFrameRate !== sourceFrameRate) {
+						setSourceFrameRate(exportSourceFrameRate);
+					}
+				} catch (error) {
+					console.warn("[VideoEditor] Falling back to cached source FPS for export:", error);
+				} finally {
+					metadataDecoder.destroy();
+				}
+				const sourceMetadata = buildSourceVideoMetadata({
 					width: sourceWidth,
 					height: sourceHeight,
-					frameRate: 60,
+					frameRate: exportSourceFrameRate,
 					durationMs: Math.round(duration * 1000),
-				};
+				});
 
 				// Get preview CONTAINER dimensions for scaling
 				const playbackRef = videoPlaybackRef.current;
@@ -3624,16 +3687,7 @@ export default function VideoEditor() {
 					const result = await gifExporter.export();
 
 					if (result.success && result.blob) {
-						setExportDetails(
-							result.details ?? {
-								format: "gif",
-								width: gifPlan.width,
-								height: gifPlan.height,
-								frameRate: gifPlan.frameRate,
-								warnings: gifPlan.warnings,
-								fileSizeBytes: result.blob.size,
-							},
-						);
+						setExportDetails(mergeGifExportDetails(gifPlan, result.details, result.blob.size));
 						const arrayBuffer = await result.blob.arrayBuffer();
 						const timestamp = Date.now();
 						const fileName = `export-${timestamp}.gif`;
@@ -3754,22 +3808,7 @@ export default function VideoEditor() {
 					const result = await exporter.export();
 
 					if (result.success && result.blob) {
-						setExportDetails(
-							result.details ?? {
-								format: "mp4",
-								width: videoPlan.width,
-								height: videoPlan.height,
-								frameRate: videoPlan.frameRate,
-								bitrate: videoPlan.bitrate,
-								codec: videoPlan.codec,
-								codecLabel: videoPlan.codecLabel,
-								warnings: videoPlan.warnings,
-								fallbackApplied: videoPlan.fallbackApplied,
-								fallbackReason: videoPlan.fallbackReason,
-								fallbackSteps: videoPlan.fallbackSteps,
-								fileSizeBytes: result.blob.size,
-							},
-						);
+						setExportDetails(mergeVideoExportDetails(videoPlan, result.details, result.blob.size));
 						const arrayBuffer = await result.blob.arrayBuffer();
 						const timestamp = Date.now();
 						const fileName = `export-${timestamp}.mp4`;
@@ -3895,6 +3934,7 @@ export default function VideoEditor() {
 			captionRegions,
 			captionSettings,
 			duration,
+			sourceFrameRate,
 		],
 	);
 
@@ -4806,12 +4846,12 @@ export default function VideoEditor() {
 				gifExportSettings={gifExportSettings}
 				onGifExportSettingsChange={setGifExportSettings}
 				resolvedVideoPlan={resolveVideoExportPlan(
-					{
+					buildSourceVideoMetadata({
 						width: videoPlaybackRef.current?.video?.videoWidth || 1920,
 						height: videoPlaybackRef.current?.video?.videoHeight || 1080,
-						frameRate: 60,
+						frameRate: sourceFrameRate,
 						durationMs: Math.round(duration * 1000),
-					},
+					}),
 					videoExportSettings,
 					getAspectRatioValue(
 						aspectRatio,
@@ -4820,12 +4860,12 @@ export default function VideoEditor() {
 					),
 				)}
 				resolvedGifPlan={resolveGifExportPlan(
-					{
+					buildSourceVideoMetadata({
 						width: videoPlaybackRef.current?.video?.videoWidth || 1920,
 						height: videoPlaybackRef.current?.video?.videoHeight || 1080,
-						frameRate: 60,
+						frameRate: sourceFrameRate,
 						durationMs: Math.round(duration * 1000),
-					},
+					}),
 					gifExportSettings,
 					getAspectRatioValue(
 						aspectRatio,

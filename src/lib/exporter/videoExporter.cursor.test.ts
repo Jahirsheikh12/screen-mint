@@ -120,4 +120,49 @@ describe("VideoExporter cursor config", () => {
 			}),
 		);
 	});
+
+	it("caches duplicate encoder support probes within one export attempt", async () => {
+		const isConfigSupported = vi.fn().mockResolvedValue({ supported: false });
+		vi.stubGlobal("VideoEncoder", {
+			isConfigSupported,
+		});
+
+		const exporter = new VideoExporter({
+			videoUrl: "file:///tmp/demo.mp4",
+			width: 1280,
+			height: 720,
+			frameRate: 30,
+			bitrate: 8_000_000,
+			codecCandidates: ["avc1.4d401f"],
+			encoderCandidates: [
+				{
+					width: 1280,
+					height: 720,
+					frameRate: 30,
+					bitrate: 8_000_000,
+					codecCandidates: ["avc1.4d401f"],
+					fallbackSteps: [],
+				},
+				{
+					width: 1280,
+					height: 720,
+					frameRate: 30,
+					bitrate: 8_000_000,
+					codecCandidates: ["avc1.4d401f"],
+					fallbackSteps: ["duplicate"],
+				},
+			],
+			wallpaper: "#000000",
+			zoomRegions: [],
+			showShadow: false,
+			shadowIntensity: 0,
+			backgroundBlur: 0,
+			cropRegion: { x: 0, y: 0, width: 1, height: 1 },
+		});
+
+		const result = await exporter.export();
+
+		expect(result.success).toBe(false);
+		expect(isConfigSupported).toHaveBeenCalledTimes(2);
+	});
 });

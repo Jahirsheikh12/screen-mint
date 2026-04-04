@@ -6,7 +6,6 @@ import {
 	FolderOpen,
 	Image,
 	Save,
-	Sparkles,
 	X,
 	Zap,
 } from "lucide-react";
@@ -86,11 +85,11 @@ function OptionGridButton({
 			onClick={onClick}
 			disabled={disabled}
 			className={cn(
-				"rounded-xl border p-3 text-left transition-all duration-200",
+				"rounded-xl border border-white/[0.06] bg-white/[0.03] p-3 text-left transition-all duration-200",
 				selected
-					? "border-[#F59E0B]/40 bg-[#F59E0B]/10 text-white"
-					: "border-white/[0.06] bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]",
-				disabled && "cursor-not-allowed opacity-50 hover:bg-white/[0.03]",
+					? "border-[#F59E0B]/30 bg-[#F59E0B]/8 text-white shadow-[0_0_0_1px_rgba(245,158,11,0.08)]"
+					: "text-slate-300 hover:bg-white/[0.05]",
+				disabled && "cursor-not-allowed opacity-50 hover:bg-white/[0.03] shadow-none",
 			)}
 		>
 			<div className="text-xs font-semibold">{label}</div>
@@ -115,7 +114,7 @@ function SegmentedButtons<T extends string | number>({
 	return (
 		<div
 			className={cn(
-				"grid h-auto w-full rounded-xl border border-white/[0.06] bg-white/[0.03] p-1 gap-1",
+				"grid h-auto w-full rounded-xl border border-white/[0.06] bg-black/20 p-1 gap-1",
 				columnsClassName,
 				disabled && "opacity-55",
 			)}
@@ -188,7 +187,7 @@ export function ExportSettingsDialog({
 		<>
 			<div
 				className={cn(
-					"fixed inset-0 z-[9999] bg-black/70 backdrop-blur-md transition-all",
+					"fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md transition-all",
 					isClosing
 						? "opacity-0 duration-250 ease-in"
 						: "opacity-100 duration-300 ease-out animate-in fade-in",
@@ -199,7 +198,7 @@ export function ExportSettingsDialog({
 			<div className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none">
 				<div
 					className={cn(
-						"pointer-events-auto w-[90vw] max-w-[520px] bg-[#0A0F0D] rounded-2xl shadow-2xl shadow-black/60 border border-white/[0.08] overflow-hidden transition-all",
+						"pointer-events-auto w-[90vw] max-w-[540px] bg-[#0A0F0D] rounded-2xl shadow-2xl shadow-black/60 border border-white/[0.08] overflow-hidden transition-all",
 						isClosing
 							? "opacity-0 scale-95 translate-y-2 duration-200 ease-in"
 							: "opacity-100 scale-100 translate-y-0 duration-300 ease-out animate-in fade-in zoom-in-95 slide-in-from-bottom-3",
@@ -249,15 +248,12 @@ export function ExportSettingsDialog({
 											className={cn(
 												"flex-1 flex items-center justify-center gap-2 rounded-xl border-2 py-3 transition-all duration-200",
 												exportFormat === option.value
-													? "border-[#F59E0B]/40 bg-gradient-to-br from-[#F59E0B]/15 to-[#F59E0B]/5 text-white shadow-lg shadow-[#F59E0B]/10"
+													? "border-[#F59E0B]/30 bg-[#F59E0B]/8 text-white"
 													: "border-white/[0.06] bg-white/[0.03] text-slate-400 hover:border-white/[0.1] hover:bg-white/[0.06] hover:text-slate-200",
 											)}
 										>
 											<Icon className="h-4 w-4" />
 											<span className="text-xs font-semibold">{option.label}</span>
-											{exportFormat === option.value ? (
-												<Sparkles className="ml-0.5 h-3 w-3 text-[#F59E0B]" />
-											) : null}
 										</button>
 									);
 								})}
@@ -288,7 +284,7 @@ export function ExportSettingsDialog({
 									</div>
 								</div>
 
-								<div className="rounded-xl border border-white/[0.06] bg-white/[0.03]">
+								<div className="rounded-xl border border-white/[0.06] bg-black/20">
 									<button
 										type="button"
 										onClick={() => setVideoAdvancedOpen((current) => !current)}
@@ -478,7 +474,7 @@ export function ExportSettingsDialog({
 									</div>
 								</div>
 
-								<div className="rounded-xl border border-white/[0.06] bg-white/[0.03]">
+								<div className="rounded-xl border border-white/[0.06] bg-black/20">
 									<button
 										type="button"
 										onClick={() => setGifAdvancedOpen((current) => !current)}
@@ -687,7 +683,7 @@ export function ExportSettingsDialog({
 
 						<div className="mb-5 h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
 
-						<div className="mb-5 grid grid-cols-2 gap-2">
+						<div className="mb-4 grid grid-cols-2 gap-2">
 							<Button
 								type="button"
 								variant="outline"
@@ -714,20 +710,30 @@ export function ExportSettingsDialog({
 							</Button>
 						</div>
 
-						<Button
-							type="button"
-							size="lg"
-							onClick={() => {
-								onExport();
-								onClose();
-							}}
-							className="flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-[#F59E0B]/30 bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-sm font-semibold text-white shadow-xl shadow-[#F59E0B]/20 transition-all duration-200 hover:scale-[1.01] hover:shadow-[#F59E0B]/30 active:scale-[0.98]"
-						>
-							<Zap className="h-4 w-4" />
-							{tSettings("export.exportVideo", undefined, {
-								format: exportFormat === "gif" ? "GIF" : "Video",
-							})}
-						</Button>
+						<div className="flex items-center justify-between gap-3">
+							<Button
+								type="button"
+								variant="outline"
+								onClick={onClose}
+								className="h-11 px-5 text-xs font-medium bg-white/[0.03] border-white/[0.08] text-slate-400 hover:bg-white/[0.06] hover:text-slate-200 hover:border-white/[0.12] rounded-xl transition-all duration-200"
+							>
+								Cancel
+							</Button>
+							<Button
+								type="button"
+								size="lg"
+								onClick={() => {
+									onExport();
+									onClose();
+								}}
+								className="flex h-11 flex-1 items-center justify-center gap-2.5 rounded-xl border border-[#F59E0B]/30 bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-sm font-semibold text-white shadow-lg shadow-[#F59E0B]/20 transition-all duration-200 hover:scale-[1.01] hover:shadow-[#F59E0B]/30 active:scale-[0.98]"
+							>
+								<Zap className="h-4 w-4" />
+								{tSettings("export.exportVideo", undefined, {
+									format: exportFormat === "gif" ? "GIF" : "Video",
+								})}
+							</Button>
+						</div>
 					</div>
 				</div>
 			</div>
