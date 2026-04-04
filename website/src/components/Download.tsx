@@ -46,6 +46,9 @@ async function detectMacArchitecture(): Promise<MacArchitecture> {
 	if (ua.includes("arm") || ua.includes("aarch64") || ua.includes("apple silicon")) {
 		return "apple-silicon";
 	}
+	if (ua.includes("intel") || ua.includes("x86_64") || ua.includes("x64")) {
+		return "intel";
+	}
 
 	return "unknown";
 }
@@ -102,7 +105,7 @@ function getRecommendedId(platform: Platform, macArch: MacArchitecture): string 
 	if (platform === "macos") {
 		if (macArch === "apple-silicon") return "mac-arm";
 		if (macArch === "intel") return "mac-intel";
-		return "mac-arm";
+		return null;
 	}
 	if (platform === "windows") return "windows";
 	if (platform === "linux") return "linux";
