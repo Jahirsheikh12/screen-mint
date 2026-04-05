@@ -1,5 +1,5 @@
 import gsap from "gsap";
-import { Download, Heart } from "lucide-react";
+import { Download, Heart, MousePointer2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { prefersReducedMotion } from "../hooks/useGSAP";
 import { REPO_URL } from "../lib/links";
@@ -39,13 +39,18 @@ export function Hero() {
 	const subRef = useRef<HTMLParagraphElement>(null);
 	const ctaRef = useRef<HTMLDivElement>(null);
 	const platformRef = useRef<HTMLDivElement>(null);
-	const screenshotRef = useRef<HTMLDivElement>(null);
+	const screenshotWrapRef = useRef<HTMLDivElement>(null);
+	const borderWrapRef = useRef<HTMLDivElement>(null);
 	const glowRef = useRef<HTMLDivElement>(null);
 	const gridRef = useRef<HTMLDivElement>(null);
-	const scrollCueRef = useRef<HTMLDivElement>(null);
+	const floatRecRef = useRef<HTMLDivElement>(null);
+	const floatZoomRef = useRef<HTMLDivElement>(null);
+	const floatTimelineRef = useRef<HTMLDivElement>(null);
+	const primaryBtnRef = useRef<HTMLAnchorElement>(null);
 
 	const [wordIdx, setWordIdx] = useState(0);
 	const cycling = useRef(false);
+	const tiltActive = useRef(false);
 
 	/* ── Word rotation: clean vertical slide ── */
 	const cycleWord = useCallback(() => {
@@ -80,6 +85,75 @@ export function Hero() {
 		return () => clearInterval(id);
 	}, [cycleWord]);
 
+	/* ── Screenshot 3D tilt on mouse move ── */
+	const handleScreenshotMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+		if (prefersReducedMotion()) return;
+		const wrap = screenshotWrapRef.current;
+		if (!wrap) return;
+		tiltActive.current = true;
+
+		const rect = wrap.getBoundingClientRect();
+		const x = (e.clientX - rect.left) / rect.width - 0.5; // -0.5 to 0.5
+		const y = (e.clientY - rect.top) / rect.height - 0.5;
+
+		gsap.to(wrap, {
+			rotateY: x * 6,
+			rotateX: -y * 4 + 2,
+			duration: 0.4,
+			ease: "power2.out",
+			overwrite: "auto",
+		});
+	}, []);
+
+	const handleScreenshotMouseLeave = useCallback(() => {
+		if (!tiltActive.current) return;
+		tiltActive.current = false;
+		const wrap = screenshotWrapRef.current;
+		if (!wrap) return;
+
+		gsap.to(wrap, {
+			rotateY: 0,
+			rotateX: 2,
+			duration: 0.8,
+			ease: "elastic.out(1, 0.5)",
+			overwrite: "auto",
+		});
+	}, []);
+
+	/* ── Magnetic CTA button ── */
+	const handleBtnMouseMove = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
+		if (prefersReducedMotion()) return;
+		const btn = primaryBtnRef.current;
+		if (!btn) return;
+
+		const rect = btn.getBoundingClientRect();
+		const x = e.clientX - rect.left - rect.width / 2;
+		const y = e.clientY - rect.top - rect.height / 2;
+
+		gsap.to(btn, {
+			x: x * 0.15,
+			y: y * 0.15,
+			scale: 1.03,
+			duration: 0.3,
+			ease: "power2.out",
+			overwrite: "auto",
+		});
+	}, []);
+
+	const handleBtnMouseLeave = useCallback(() => {
+		const btn = primaryBtnRef.current;
+		if (!btn) return;
+
+		gsap.to(btn, {
+			x: 0,
+			y: 0,
+			scale: 1,
+			duration: 0.5,
+			ease: "elastic.out(1, 0.6)",
+			overwrite: "auto",
+		});
+	}, []);
+
 	/* ── GSAP entrance choreography ── */
 	useEffect(() => {
 		if (prefersReducedMotion()) return;
@@ -106,25 +180,25 @@ export function Hero() {
 				badgeRef.current,
 				{ opacity: 0, y: 16, filter: "blur(6px)" },
 				{ opacity: 1, y: 0, filter: "blur(0px)", duration: 0.7 },
-				0.2,
+				0.25,
 			);
 
 			/* Headline line 1: clip reveal from bottom */
-			tl.fromTo(line1Ref.current, { y: "105%" }, { y: "0%", duration: 0.9 }, 0.35);
+			tl.fromTo(line1Ref.current, { y: "105%" }, { y: "0%", duration: 0.9 }, 0.45);
 
 			/* Headline line 2: clip reveal from bottom */
-			tl.fromTo(line2Ref.current, { y: "105%" }, { y: "0%", duration: 0.9 }, 0.5);
+			tl.fromTo(line2Ref.current, { y: "105%" }, { y: "0%", duration: 0.9 }, 0.6);
 
 			/* Keyword */
 			tl.fromTo(
 				wordRef.current,
 				{ y: "110%", opacity: 0 },
 				{ y: "0%", opacity: 1, duration: 0.7, ease: "power3.out" },
-				0.7,
+				0.8,
 			);
 
 			/* Subtitle */
-			tl.fromTo(subRef.current, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.7 }, 0.85);
+			tl.fromTo(subRef.current, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.7 }, 1.0);
 
 			/* CTAs */
 			if (ctaRef.current) {
@@ -132,33 +206,61 @@ export function Hero() {
 					ctaRef.current.children,
 					{ opacity: 0, y: 16 },
 					{ opacity: 1, y: 0, duration: 0.6, stagger: 0.08 },
-					1.0,
+					1.05,
 				);
 			}
 
 			/* Platform icons */
 			tl.fromTo(platformRef.current, { opacity: 0 }, { opacity: 1, duration: 0.5 }, 1.15);
 
-			/* Screenshot */
+			/* Screenshot — dramatic entrance */
 			tl.fromTo(
-				screenshotRef.current,
-				{ opacity: 0, y: 120, scale: 0.92 },
-				{ opacity: 1, y: 0, scale: 1, duration: 1.2, ease: "power3.out" },
-				1.1,
+				screenshotWrapRef.current,
+				{ opacity: 0, y: 160, scale: 0.85 },
+				{
+					opacity: 1,
+					y: 0,
+					scale: 1,
+					duration: 1.4,
+					ease: "power3.out",
+				},
+				1.4,
 			);
 
-			/* Scroll cue */
-			tl.fromTo(
-				scrollCueRef.current,
-				{ opacity: 0, y: 8 },
-				{ opacity: 1, y: 0, duration: 0.4 },
-				2.2,
+			/* Border beam ignition */
+			tl.call(
+				() => {
+					borderWrapRef.current?.classList.add("active");
+				},
+				[],
+				1.6,
 			);
+
+			/* Floating elements stagger in */
+			const floats = [floatRecRef.current, floatZoomRef.current, floatTimelineRef.current].filter(
+				Boolean,
+			);
+			if (floats.length > 0) {
+				tl.fromTo(
+					floats,
+					{ opacity: 0, y: 20, scale: 0.9 },
+					{
+						opacity: 1,
+						y: 0,
+						scale: 1,
+						duration: 0.6,
+						stagger: 0.1,
+						ease: "power3.out",
+					},
+					1.8,
+				);
+			}
 
 			/* ── Scroll parallax ── */
 			gsap.to(contentRef.current, {
-				y: -100,
+				y: -120,
 				opacity: 0,
+				scale: 0.97,
 				ease: "none",
 				scrollTrigger: {
 					trigger: sectionRef.current,
@@ -168,8 +270,8 @@ export function Hero() {
 				},
 			});
 
-			gsap.to(screenshotRef.current, {
-				y: -50,
+			gsap.to(screenshotWrapRef.current, {
+				y: -70,
 				ease: "none",
 				scrollTrigger: {
 					trigger: sectionRef.current,
@@ -178,6 +280,7 @@ export function Hero() {
 					scrub: 1.5,
 				},
 			});
+
 		}, sectionRef);
 
 		return () => ctx.revert();
@@ -186,7 +289,7 @@ export function Hero() {
 	return (
 		<section
 			ref={sectionRef}
-			className="relative min-h-screen flex flex-col items-center px-6 pt-36 pb-20 overflow-hidden"
+			className="relative min-h-screen flex flex-col items-center px-6 pt-36 pb-20 overflow-x-clip"
 		>
 			{/* ── Background ── */}
 
@@ -207,7 +310,7 @@ export function Hero() {
 						href={REPO_URL}
 						target="_blank"
 						rel="noopener noreferrer"
-						className="hero-badge group inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-white/[0.06] bg-white/[0.03] text-[12px] text-white/40 tracking-wide backdrop-blur-sm transition-all duration-500"
+						className="hero-badge group inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-white/[0.06] bg-white/[0.03] text-[12px] text-white/40 tracking-wide backdrop-blur-sm"
 					>
 						<span className="relative flex h-2 w-2">
 							<span className="animate-ping absolute inset-0 rounded-full bg-brand-400 opacity-75" />
@@ -263,7 +366,13 @@ export function Hero() {
 
 				{/* CTAs */}
 				<div ref={ctaRef} className="flex items-center justify-center gap-3.5 flex-wrap">
-					<a href="#download" className="hero-btn-primary group">
+					<a
+						ref={primaryBtnRef}
+						href="#download"
+						className="hero-btn-primary group"
+						onMouseMove={handleBtnMouseMove}
+						onMouseLeave={handleBtnMouseLeave}
+					>
 						<span className="hero-btn-bg" />
 						<span className="hero-btn-shine" />
 						<Download
@@ -299,68 +408,85 @@ export function Hero() {
 				</div>
 			</div>
 
-			{/* ── Screenshot ── */}
+			{/* ── Screenshot Stage ── */}
 			<div
-				ref={screenshotRef}
-				className="hero-screenshot-wrap relative z-10 mt-16 w-full max-w-[1100px] mx-auto opacity-0"
+				className="hero-screenshot-wrap relative z-10 mt-20 w-full max-w-[1100px] mx-auto opacity-0"
+				ref={screenshotWrapRef}
+				onMouseMove={handleScreenshotMouseMove}
+				onMouseLeave={handleScreenshotMouseLeave}
+				style={{ transformStyle: "preserve-3d", transform: "rotateX(2deg)" }}
 			>
 				{/* Glow behind screenshot */}
 				<div className="hero-screenshot-glow" />
 
-				<div className="hero-screenshot">
-					{/* Window chrome */}
-					<div className="hero-chrome">
-						<div className="flex items-center gap-[6px]">
-							<span className="w-[10px] h-[10px] rounded-full bg-white/[0.07]" />
-							<span className="w-[10px] h-[10px] rounded-full bg-white/[0.07]" />
-							<span className="w-[10px] h-[10px] rounded-full bg-white/[0.07]" />
-						</div>
-						<div className="flex items-center gap-1.5 px-3 py-0.5 rounded-md bg-white/[0.04]">
-							<svg
-								width="10"
-								height="10"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="2"
-								strokeLinecap="round"
-								className="text-brand-500/40"
-							>
-								<rect x="2" y="3" width="20" height="14" rx="2" />
-								<line x1="8" y1="21" x2="16" y2="21" />
-								<line x1="12" y1="17" x2="12" y2="21" />
-							</svg>
-							<span className="text-[10px] text-white/[0.12] font-mono tracking-widest">
-								ScreenMint
-							</span>
-						</div>
-						<div className="w-[52px]" />
+				{/* Floating UI elements */}
+				<div ref={floatRecRef} className="hero-float hero-float--rec opacity-0">
+					<span className="hero-rec-dot" />
+					<span className="font-mono text-[11px] tracking-wider text-red-400/80">REC</span>
+					<span className="font-mono text-[11px] tracking-wider text-white/30">00:42</span>
+				</div>
+				<div ref={floatZoomRef} className="hero-float hero-float--zoom opacity-0">
+					<MousePointer2 className="w-3.5 h-3.5 text-brand-400/70" strokeWidth={2} />
+					<span className="text-white/45">Auto-zoom</span>
+				</div>
+				<div ref={floatTimelineRef} className="hero-float hero-float--timeline opacity-0">
+					<div className="flex items-center gap-1">
+						<div className="hero-mini-bar w-8 bg-brand-500/60" />
+						<div className="hero-mini-bar w-5 bg-orange-400/50" />
+						<div className="hero-mini-bar w-6 bg-amber-300/40" />
 					</div>
+					<span className="text-white/35 text-[11px]">Timeline</span>
+				</div>
 
-					{/* Image */}
-					<img
-						src="/images/preview.png"
-						alt="ScreenMint editor with timeline, zoom effects, and cursor customization"
-						className="w-full h-auto block"
-						loading="eager"
-					/>
+				{/* Animated border beam wrapper */}
+				<div ref={borderWrapRef} className="hero-border-wrap">
+					<div className="hero-border-inner">
+						<div className="hero-screenshot">
+							{/* Window chrome */}
+							<div className="hero-chrome">
+								<div className="flex items-center gap-[6px]">
+									<span className="w-[10px] h-[10px] rounded-full bg-white/[0.07]" />
+									<span className="w-[10px] h-[10px] rounded-full bg-white/[0.07]" />
+									<span className="w-[10px] h-[10px] rounded-full bg-white/[0.07]" />
+								</div>
+								<div className="flex items-center gap-1.5 px-3 py-0.5 rounded-md bg-white/[0.04]">
+									<svg
+										width="10"
+										height="10"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="2"
+										strokeLinecap="round"
+										className="text-brand-500/40"
+									>
+										<rect x="2" y="3" width="20" height="14" rx="2" />
+										<line x1="8" y1="21" x2="16" y2="21" />
+										<line x1="12" y1="17" x2="12" y2="21" />
+									</svg>
+									<span className="text-[10px] text-white/[0.12] font-mono tracking-widest">
+										ScreenMint
+									</span>
+								</div>
+								<div className="w-[52px]" />
+							</div>
 
-					{/* Gloss overlay */}
-					<div className="hero-gloss" />
+							{/* Image */}
+							<img
+								src="/images/preview.png"
+								alt="ScreenMint editor with timeline, zoom effects, and cursor customization"
+								className="w-full h-auto block"
+								loading="eager"
+							/>
+
+							{/* Gloss overlay */}
+							<div className="hero-gloss" />
+						</div>
+					</div>
 				</div>
 
 				{/* Bottom fade into background */}
 				<div className="hero-screenshot-fade" />
-			</div>
-
-			{/* Scroll cue */}
-			<div
-				ref={scrollCueRef}
-				className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 opacity-0"
-			>
-				<div className="hero-scroll-mouse">
-					<div className="hero-scroll-dot" />
-				</div>
 			</div>
 		</section>
 	);

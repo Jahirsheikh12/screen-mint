@@ -210,10 +210,9 @@
 }
 
 /* ══════════════════════════════════════════════════
-   HERO SECTION — Clean Cinema
+   HERO SECTION — Redesigned Cinema
    ══════════════════════════════════════════════════ */
 
-/* ── Grid background ── */
 /* ── Noise grain texture ── */
 .hero-noise {
 	opacity: 0.025;
@@ -222,7 +221,7 @@
 	background-size: 200px 200px;
 }
 
-/* ── Central ambient glow (the hero's main visual anchor) ── */
+/* ── Central ambient glow ── */
 .hero-glow {
 	width: 1100px;
 	height: 700px;
@@ -303,12 +302,14 @@
 	transition:
 		border-color 0.4s ease,
 		background 0.4s ease,
-		box-shadow 0.4s ease;
+		box-shadow 0.4s ease,
+		transform 0.4s ease;
 }
 .hero-badge:hover {
 	border-color: rgba(245, 158, 11, 0.12);
 	background: rgba(245, 158, 11, 0.04);
 	box-shadow: 0 0 24px rgba(245, 158, 11, 0.06);
+	transform: scale(1.02);
 }
 
 /* ── Primary CTA button ── */
@@ -324,9 +325,7 @@
 	color: #000;
 	cursor: pointer;
 	overflow: hidden;
-	transition:
-		transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-		box-shadow 0.4s ease;
+	transition: box-shadow 0.4s ease;
 }
 
 .hero-btn-bg {
@@ -369,7 +368,6 @@
 }
 
 .hero-btn-primary:hover {
-	transform: translateY(-2px);
 	box-shadow:
 		0 0 0 1px rgba(245, 158, 11, 0.15),
 		0 8px 40px rgba(245, 158, 11, 0.2),
@@ -377,7 +375,6 @@
 }
 
 .hero-btn-primary:active {
-	transform: translateY(0) scale(0.98);
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
@@ -406,9 +403,71 @@
 	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
-/* ── Screenshot wrap ── */
+/* ── Screenshot stage (perspective container) ── */
 .hero-screenshot-wrap {
 	perspective: 1600px;
+}
+
+/* ── Animated border beam ── */
+@property --border-angle {
+	syntax: "<angle>";
+	initial-value: 0deg;
+	inherits: false;
+}
+
+.hero-border-wrap {
+	position: relative;
+	border-radius: 18px;
+	padding: 1.5px;
+	background: conic-gradient(
+		from var(--border-angle),
+		rgba(255, 255, 255, 0.04) 0%,
+		rgba(255, 255, 255, 0.04) 55%,
+		rgba(245, 158, 11, 0.5) 72%,
+		rgba(251, 191, 36, 0.9) 85%,
+		rgba(249, 115, 22, 0.6) 93%,
+		rgba(255, 255, 255, 0.04) 100%
+	);
+	animation: hero-border-rotate 4s linear infinite;
+	animation-play-state: paused;
+}
+
+.hero-border-wrap::before {
+	content: "";
+	position: absolute;
+	inset: -6px;
+	border-radius: 22px;
+	background: conic-gradient(
+		from var(--border-angle),
+		transparent 50%,
+		rgba(245, 158, 11, 0.12) 72%,
+		rgba(251, 191, 36, 0.2) 85%,
+		rgba(245, 158, 11, 0.12) 93%,
+		transparent 100%
+	);
+	filter: blur(16px);
+	z-index: -1;
+	pointer-events: none;
+	animation: hero-border-rotate 4s linear infinite;
+	animation-play-state: paused;
+}
+
+.hero-border-wrap.active,
+.hero-border-wrap.active::before {
+	animation-play-state: running;
+}
+
+@keyframes hero-border-rotate {
+	to {
+		--border-angle: 360deg;
+	}
+}
+
+/* Inner container that masks the conic-gradient to border-only */
+.hero-border-inner {
+	background: #000;
+	border-radius: 16.5px;
+	overflow: hidden;
 }
 
 /* ── Glow behind screenshot ── */
@@ -430,14 +489,10 @@
 /* ── Screenshot card ── */
 .hero-screenshot {
 	position: relative;
-	border-radius: 16px;
 	overflow: hidden;
-	border: 1px solid rgba(255, 255, 255, 0.06);
 	box-shadow:
 		0 25px 80px rgba(0, 0, 0, 0.6),
-		0 8px 30px rgba(0, 0, 0, 0.4),
-		0 0 0 1px rgba(255, 255, 255, 0.03);
-	transform: rotateX(2deg);
+		0 8px 30px rgba(0, 0, 0, 0.4);
 	transform-style: preserve-3d;
 	transition: box-shadow 0.6s ease;
 }
@@ -446,8 +501,7 @@
 	box-shadow:
 		0 35px 100px rgba(0, 0, 0, 0.65),
 		0 12px 40px rgba(0, 0, 0, 0.45),
-		0 0 60px rgba(245, 158, 11, 0.04),
-		0 0 0 1px rgba(255, 255, 255, 0.05);
+		0 0 60px rgba(245, 158, 11, 0.06);
 }
 
 /* ── Window chrome ── */
@@ -480,42 +534,90 @@
 	background: linear-gradient(to top, #000000 5%, transparent);
 }
 
-/* ── Scroll cue ── */
-.hero-scroll-mouse {
-	width: 20px;
-	height: 32px;
-	border: 1.5px solid rgba(255, 255, 255, 0.1);
-	border-radius: 10px;
-	position: relative;
-	display: flex;
-	justify-content: center;
+/* ── Floating UI elements ── */
+.hero-float {
+	position: absolute;
+	display: none;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 16px;
+	border-radius: 14px;
+	border: 1px solid rgba(255, 255, 255, 0.06);
+	background: rgba(255, 255, 255, 0.04);
+	backdrop-filter: blur(16px);
+	-webkit-backdrop-filter: blur(16px);
+	font-size: 12px;
+	font-weight: 500;
+	color: rgba(255, 255, 255, 0.5);
+	pointer-events: none;
+	z-index: 20;
+	box-shadow:
+		0 8px 32px rgba(0, 0, 0, 0.4),
+		0 0 0 1px rgba(255, 255, 255, 0.02);
+	animation: hero-idle-float 6s ease-in-out infinite;
 }
 
-.hero-scroll-dot {
-	width: 2px;
-	height: 5px;
-	background: rgba(255, 255, 255, 0.25);
-	border-radius: 1px;
-	margin-top: 6px;
-	animation: hero-scroll-bounce 2s ease-in-out infinite;
+.hero-float--rec {
+	top: -20px;
+	left: 16px;
+	animation-delay: 0s;
 }
 
-@keyframes hero-scroll-bounce {
-	0% {
-		opacity: 1;
-		transform: translateY(0);
+.hero-float--zoom {
+	top: 40%;
+	right: 16px;
+	animation-delay: -2s;
+}
+
+.hero-float--timeline {
+	bottom: 22%;
+	right: 16px;
+	animation-delay: -4s;
+}
+
+@keyframes hero-idle-float {
+	0%,
+	100% {
+		translate: 0 0;
 	}
 	50% {
-		opacity: 0.2;
-		transform: translateY(8px);
+		translate: 0 -8px;
 	}
+}
+
+/* REC indicator dot */
+.hero-rec-dot {
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: #ef4444;
+	box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+	animation: hero-rec-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes hero-rec-pulse {
+	0%,
 	100% {
 		opacity: 1;
-		transform: translateY(0);
 	}
+	50% {
+		opacity: 0.3;
+	}
+}
+
+/* Mini timeline bars */
+.hero-mini-bar {
+	height: 4px;
+	border-radius: 2px;
 }
 
 /* ── Mobile ── */
+@media (min-width: 768px) {
+	.hero-float {
+		display: flex;
+	}
+}
+
 @media (max-width: 768px) {
 	.hero-headline {
 		font-size: clamp(2.5rem, 10vw, 4rem);
@@ -526,13 +628,18 @@
 		height: 400px;
 	}
 
-	.hero-screenshot {
-		transform: none;
-	}
-
 	.hero-screenshot-glow {
 		inset: -30px -20px;
 		filter: blur(40px);
+	}
+
+	.hero-border-wrap {
+		animation: none;
+		background: rgba(255, 255, 255, 0.06);
+	}
+
+	.hero-border-wrap::before {
+		display: none;
 	}
 }
 
@@ -866,7 +973,10 @@
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
 	.hero-keyword,
-	.hero-scroll-dot,
+	.hero-border-wrap,
+	.hero-border-wrap::before,
+	.hero-float,
+	.hero-rec-dot,
 	.pulse-ring,
 	.feature-card,
 	.magnetic-btn,
