@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MdMonitor } from "react-icons/md";
+import { CaptureAccessNotice } from "@/components/launch/CaptureAccessNotice";
 import { useScopedT } from "@/contexts/I18nContext";
+import { useCaptureSourceAccess } from "@/hooks/useCaptureSourceAccess";
 
 type DisplaySource = {
 	id: string;
@@ -24,28 +26,18 @@ type DisplayTabProps = {
 
 export function DisplayTab({ disabled, onSelectSource }: DisplayTabProps) {
 	const t = useScopedT("launch");
-	const [displays, setDisplays] = useState<DisplaySource[]>([]);
 	const [displayInfo, setDisplayInfo] = useState<DisplayInfo[]>([]);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
-	const [loading, setLoading] = useState(true);
 	const onSelectSourceRef = useRef(onSelectSource);
 	onSelectSourceRef.current = onSelectSource;
-
-	const loadDisplays = useCallback(async () => {
-		try {
-			const sources = await window.electronAPI.getSources({ types: ["screen"] });
-			setDisplays(sources);
-			return sources;
-		} catch {
-			// getSources may fail if no permission granted yet
-			return [];
-		}
-	}, []);
+	const sourceOptions = useMemo<Electron.SourcesOptions>(() => ({ types: ["screen"] }), []);
+	const { sources, loading, loadError, refresh, accessState } = useCaptureSourceAccess(sourceOptions);
+	const displays = sources as DisplaySource[];
 
 	useEffect(() => {
 		let cancelled = false;
 		void (async () => {
-			const sources = await loadDisplays();
+			const sources = displays;
 			if (!cancelled && sources.length > 0) {
 				setSelectedId((prev) => {
 					if (!prev) {
@@ -64,13 +56,11 @@ export function DisplayTab({ disabled, onSelectSource }: DisplayTabProps) {
 			} catch {
 				// getDisplayInfo may not be available on all platforms
 			}
-
-			if (!cancelled) setLoading(false);
 		})();
 		return () => {
 			cancelled = true;
 		};
-	}, [loadDisplays]);
+	}, [displays]);
 
 	const handleSelect = (source: DisplaySource) => {
 		if (disabled) return;
@@ -87,6 +77,46 @@ export function DisplayTab({ disabled, onSelectSource }: DisplayTabProps) {
 			<div className="flex items-center justify-center py-12 text-white/40 text-xs">
 				{t("sourceSelector.loadingSources")}
 			</div>
+		);
+	}
+
+	if (accessState && !accessState.canProbeSources) {
+		return (
+			<CaptureAccessNotice
+				title={t(
+					"permissions.screenPermissionTitle",
+					"Allow Screen & System Audio Recording",
+				)}
+				description={t(
+					"permissions.screenPermissionDescription",
+					"ScreenMint needs macOS Screen & System Audio Recording permission before it can list displays.",
+				)}
+				hint={t(
+					"permissions.screenPermissionHint",
+					"After granting access, quit and reopen ScreenMint, then retry.",
+				)}
+				openSettingsLabel={t("permissions.openSettings", "Open Settings")}
+				retryLabel={t("permissions.retry", "Retry")}
+				onOpenSettings={() => void window.electronAPI.openDisplayCapturePreferences()}
+				onRetry={() => void refresh()}
+			/>
+		);
+	}
+
+	if (loadError) {
+		return (
+			<CaptureAccessNotice
+				title={t("permissions.captureLoadFailedTitle", "Could not load capture sources")}
+				description={t(
+					"permissions.captureLoadFailedDescription",
+					"ScreenMint ran into an unexpected macOS capture error while loading displays.",
+				)}
+				details={loadError}
+				openSettingsLabel={t("permissions.openSettings", "Open Settings")}
+				retryLabel={t("permissions.retry", "Retry")}
+				onOpenSettings={() => void window.electronAPI.openDisplayCapturePreferences()}
+				onRetry={() => void refresh()}
+			/>
 		);
 	}
 

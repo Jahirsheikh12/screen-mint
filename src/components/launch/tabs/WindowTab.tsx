@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { MdMonitor } from "react-icons/md";
+import { CaptureAccessNotice } from "@/components/launch/CaptureAccessNotice";
 import { useScopedT } from "@/contexts/I18nContext";
+import { useCaptureSourceAccess } from "@/hooks/useCaptureSourceAccess";
 import styles from "../LaunchWindow.module.css";
 
 type WindowSource = {
@@ -21,25 +23,12 @@ type WindowTabProps = {
 
 export function WindowTab({ disabled, onSelectSource, onFallbackToDisplay }: WindowTabProps) {
 	const t = useScopedT("launch");
-	const [windows, setWindows] = useState<WindowSource[]>([]);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
-	const [loading, setLoading] = useState(true);
-
-	const loadWindows = useCallback(async () => {
-		try {
-			const sources = await window.electronAPI.getSources({ types: ["window"] });
-			setWindows(sources);
-		} catch {
-			setWindows([]);
-		}
-		setLoading(false);
-	}, []);
-
-	useEffect(() => {
-		void loadWindows();
-		const interval = setInterval(() => void loadWindows(), 3000);
-		return () => clearInterval(interval);
-	}, [loadWindows]);
+	const sourceOptions = useMemo<Electron.SourcesOptions>(() => ({ types: ["window"] }), []);
+	const { sources, loading, loadError, refresh, accessState } = useCaptureSourceAccess(sourceOptions, {
+		refreshIntervalMs: 3000,
+	});
+	const windows = sources as WindowSource[];
 
 	const handleSelect = (source: WindowSource) => {
 		if (disabled) return;
@@ -52,6 +41,46 @@ export function WindowTab({ disabled, onSelectSource, onFallbackToDisplay }: Win
 			<div className="flex items-center justify-center py-12 text-white/40 text-xs">
 				{t("window.loadingWindows")}
 			</div>
+		);
+	}
+
+	if (accessState && !accessState.canProbeSources) {
+		return (
+			<CaptureAccessNotice
+				title={t(
+					"permissions.screenPermissionTitle",
+					"Allow Screen & System Audio Recording",
+				)}
+				description={t(
+					"permissions.windowPermissionDescription",
+					"ScreenMint needs macOS Screen & System Audio Recording permission before it can list windows.",
+				)}
+				hint={t(
+					"permissions.screenPermissionHint",
+					"After granting access, quit and reopen ScreenMint, then retry.",
+				)}
+				openSettingsLabel={t("permissions.openSettings", "Open Settings")}
+				retryLabel={t("permissions.retry", "Retry")}
+				onOpenSettings={() => void window.electronAPI.openDisplayCapturePreferences()}
+				onRetry={() => void refresh()}
+			/>
+		);
+	}
+
+	if (loadError) {
+		return (
+			<CaptureAccessNotice
+				title={t("permissions.captureLoadFailedTitle", "Could not load capture sources")}
+				description={t(
+					"permissions.windowLoadFailedDescription",
+					"ScreenMint ran into an unexpected macOS capture error while loading windows.",
+				)}
+				details={loadError}
+				openSettingsLabel={t("permissions.openSettings", "Open Settings")}
+				retryLabel={t("permissions.retry", "Retry")}
+				onOpenSettings={() => void window.electronAPI.openDisplayCapturePreferences()}
+				onRetry={() => void refresh()}
+			/>
 		);
 	}
 

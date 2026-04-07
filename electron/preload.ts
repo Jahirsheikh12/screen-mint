@@ -156,6 +156,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	requestAccessibilityPermission: () => {
 		return ipcRenderer.invoke("request-accessibility-permission");
 	},
+	getCapturePermissionState: () => {
+		return ipcRenderer.invoke("get-capture-permission-state");
+	},
+	requestMicrophoneAccess: () => {
+		return ipcRenderer.invoke("request-microphone-access");
+	},
 	getScreenRecordingPermissionStatus: () => {
 		return ipcRenderer.invoke("get-screen-recording-permission-status");
 	},
@@ -164,6 +170,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	},
 	openAccessibilityPreferences: () => {
 		return ipcRenderer.invoke("open-accessibility-preferences");
+	},
+	probeCaptureSources: () => {
+		return ipcRenderer.invoke("probe-capture-sources");
+	},
+	getCaptureDiagnostics: () => {
+		return ipcRenderer.invoke("get-capture-diagnostics");
 	},
 	saveExportedVideo: (videoData: ArrayBuffer, fileName: string) => {
 		return ipcRenderer.invoke("save-exported-video", videoData, fileName);

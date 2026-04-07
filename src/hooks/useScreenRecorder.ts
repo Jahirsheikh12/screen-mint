@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import type { CameraSessionState } from "@/components/video-editor/types";
 import { loadCameraPreferences, saveCameraPreferences } from "@/hooks/cameraPreferences";
 import { playAppAudioCue, preloadAppAudioCues } from "@/lib/appAudio";
+import { resolveCaptureSourceAccessState } from "@/lib/recording/capturePermissionState";
 import { resolveCaptureDimensions } from "@/lib/recording/captureSizing";
 import { buildNativeRecordingOptions } from "@/lib/recording/nativeConfig";
 import type { AfterRecordingAction, PostRecordingContext } from "@/lib/recording/postRecording";
@@ -88,7 +89,7 @@ export function useScreenRecorder(
 	const [starting, setStarting] = useState(false);
 	const [countdownActive, setCountdownActive] = useState(false);
 	const [isMacOS, setIsMacOS] = useState(false);
-	const [microphoneEnabled, setMicrophoneEnabled] = useState(false);
+	const [microphoneEnabled, setMicrophoneEnabledState] = useState(false);
 	const [microphoneDeviceId, setMicrophoneDeviceId] = useState<string | undefined>(undefined);
 	const [systemAudioEnabled, setSystemAudioEnabled] = useState(false);
 	const [countdownDelay, setCountdownDelayState] = useState(3);
@@ -147,8 +148,13 @@ export function useScreenRecorder(
 			return true;
 		}
 
-		const screenPermission = await window.electronAPI.getScreenRecordingPermissionStatus();
-		if (!screenPermission.success || screenPermission.status !== "granted") {
+		const capturePermission = await window.electronAPI.getCapturePermissionState();
+		if (!capturePermission.success) {
+			return false;
+		}
+
+		const screenAccess = resolveCaptureSourceAccessState(capturePermission.state);
+		if (!screenAccess.canProbeSources) {
 			await window.electronAPI.openDisplayCapturePreferences();
 			alert(
 				options.startup
@@ -158,12 +164,7 @@ export function useScreenRecorder(
 			return false;
 		}
 
-		const accessibilityPermission = await window.electronAPI.getAccessibilityPermissionStatus();
-		if (!accessibilityPermission.success) {
-			return false;
-		}
-
-		if (accessibilityPermission.trusted) {
+		if (capturePermission.state.accessibilityTrusted) {
 			return true;
 		}
 
@@ -180,6 +181,27 @@ export function useScreenRecorder(
 		);
 
 		return false;
+	}, []);
+
+	const setMicrophoneEnabled = useCallback((enabled: boolean) => {
+		void (async () => {
+			if (!enabled) {
+				setMicrophoneEnabledState(false);
+				return;
+			}
+
+			const platform = await window.electronAPI.getPlatform();
+			if (platform === "darwin") {
+				const microphoneAccess = await window.electronAPI.requestMicrophoneAccess();
+				if (!microphoneAccess.success || !microphoneAccess.granted) {
+					alert("Microphone access was denied. Recording will continue without microphone audio.");
+					setMicrophoneEnabledState(false);
+					return;
+				}
+			}
+
+			setMicrophoneEnabledState(true);
+		})();
 	}, []);
 
 	const resolvedRecordingProfile = resolveRecordingTargetProfile(recordingSettings);
@@ -1080,7 +1102,7 @@ export function useScreenRecorder(
 						alert(
 							"Microphone access was denied. Recording will continue without microphone audio.",
 						);
-						setMicrophoneEnabled(false);
+						setMicrophoneEnabledState(false);
 					}
 				}
 

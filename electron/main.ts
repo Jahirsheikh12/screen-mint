@@ -10,7 +10,6 @@ import {
 	Menu,
 	nativeImage,
 	session,
-	systemPreferences,
 	Tray,
 } from "electron";
 import { getSelectedSourceId, killWgcCaptureProcess, registerIpcHandlers } from "./ipc/handlers";
@@ -414,6 +413,53 @@ function createSourceSelectorWindowWrapper() {
 	return sourceSelectorWindow;
 }
 
+async function promptToMoveAppToApplications() {
+	if (process.platform !== "darwin" || !app.isPackaged) {
+		return;
+	}
+
+	const expectedBundlePath = path.join("/Applications", `${app.getName()}.app`);
+	const currentBundlePath = path.resolve(process.execPath, "../../..");
+
+	if (currentBundlePath === expectedBundlePath) {
+		return;
+	}
+
+	const response = await dialog.showMessageBox({
+		type: "warning",
+		buttons: ["Move to Applications", "Keep Current Location"],
+		defaultId: 0,
+		cancelId: 1,
+		noLink: true,
+		title: "Move ScreenMint to Applications",
+		message: "Move ScreenMint to /Applications for more stable macOS capture permissions.",
+		detail:
+			"Unsigned macOS builds keep Screen Recording permissions more reliably when ScreenMint stays installed at /Applications/ScreenMint.app. Running from Downloads, Desktop, or a mounted DMG can cause repeated prompts and blank source lists.",
+	});
+
+	if (response.response !== 0) {
+		return;
+	}
+
+	try {
+		const moved = app.moveToApplicationsFolder?.();
+		if (!moved) {
+			await dialog.showMessageBox({
+				type: "info",
+				buttons: ["OK"],
+				defaultId: 0,
+				noLink: true,
+				title: "Move ScreenMint Manually",
+				message: "Move ScreenMint to /Applications before using screen capture.",
+				detail:
+					"macOS did not move the app automatically. Drag ScreenMint.app into /Applications, then relaunch it from there.",
+			});
+		}
+	} catch (error) {
+		console.error("Failed to move ScreenMint to /Applications:", error);
+	}
+}
+
 // On macOS, applications and their menu bar stay active until the user quits
 // explicitly with Cmd + Q.
 app.on("before-quit", () => {
@@ -448,16 +494,10 @@ app.whenReady().then(async () => {
 		callback(allowed.includes(permission));
 	});
 
-	if (process.platform === "darwin") {
-		const micStatus = systemPreferences.getMediaAccessStatus("microphone");
-		if (micStatus !== "granted") {
-			await systemPreferences.askForMediaAccess("microphone");
-		}
-	}
-
 	ipcMain.on("hud-overlay-close", () => {
 		app.quit();
 	});
+	await promptToMoveAppToApplications();
 	syncDockIcon();
 	createTray();
 	updateTrayMenu();

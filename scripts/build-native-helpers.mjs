@@ -31,6 +31,10 @@ const helpers = [
 		output: "screenmint-native-cursor-monitor",
 	},
 	{
+		source: "NativeWindowBoundsMonitor.swift",
+		output: "screenmint-window-bounds-monitor",
+	},
+	{
 		source: "AppleSpeechTranscriber.swift",
 		output: "screenmint-apple-speech-helper",
 	},

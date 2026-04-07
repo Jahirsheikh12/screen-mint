@@ -46,11 +46,21 @@ ScreenMint saves editor projects as `.screenmint` files. Project serialization l
 
 ## macOS Note
 
-Local builds are not signed. If macOS quarantines the app, remove the flag with:
+Unsigned macOS builds are most stable when `ScreenMint.app` is moved into `/Applications` before first launch.
+
+If macOS quarantines the app after you move it there, remove the flag with:
 
 ```bash
 xattr -rd com.apple.quarantine /Applications/ScreenMint.app
 ```
+
+If screen capture permissions get stuck or ScreenMint shows blank capture sources, run the targeted reset playbook:
+
+```bash
+bash scripts/reset-macos-capture-state.sh
+```
+
+This resets ScreenMint-only TCC entries for Screen Recording, Microphone, and Accessibility, and removes stale helper/cache state while preserving recordings and saved settings.
 
 ## Architecture
 

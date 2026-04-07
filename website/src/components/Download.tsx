@@ -288,7 +288,7 @@ export function Download() {
 									<div className="flex-1 min-w-0">
 										<p className="text-[13px] font-medium text-white/50">macOS Gatekeeper</p>
 										<p className="text-[11px] text-white/20 mt-0.5">
-											Unsigned app — run this Terminal command to unblock
+											Move ScreenMint.app to /Applications, then run this Terminal command if needed
 										</p>
 									</div>
 									<ChevronDown

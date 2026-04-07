@@ -20,6 +20,12 @@ import {
 } from "electron";
 import type { PostRecordingContext } from "../../src/lib/recording/postRecording";
 import type {
+	CaptureDiagnostics,
+	CapturePermissionState,
+	CaptureSourceProbeResult,
+	HelperBinaryDiagnostics,
+} from "../../src/lib/recording/capturePermissionState";
+import type {
 	SelectedArea,
 	CursorTelemetrySample as SessionCursorTelemetrySample,
 } from "../../src/lib/recording/session";
@@ -54,6 +60,7 @@ const execFileAsync = promisify(execFile);
 const nodeRequire = createRequire(import.meta.url);
 
 const BRAND_NAME = "ScreenMint";
+const APP_BUNDLE_ID = "com.jahirsheikh.screenmint";
 const PROJECT_FILE_EXTENSION = "screenmint";
 const PROJECT_FILE_EXTENSIONS = [PROJECT_FILE_EXTENSION];
 const APP_NAME_ALIASES = ["screenmint"];
@@ -258,6 +265,31 @@ function getMacPrivacySettingsUrl(pane: "screen" | "accessibility") {
 	return pane === "screen"
 		? "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"
 		: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility";
+}
+
+async function pathExists(targetPath: string) {
+	try {
+		await fs.access(targetPath, fsConstants.F_OK);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+function getAppBundlePath() {
+	if (process.platform !== "darwin" || !app.isPackaged) {
+		return null;
+	}
+
+	return path.resolve(process.execPath, "../../..");
+}
+
+function getExpectedApplicationsBundlePath() {
+	if (process.platform !== "darwin") {
+		return null;
+	}
+
+	return path.join("/Applications", `${app.getName()}.app`);
 }
 
 function isAutoRecordingPath(filePath: string) {
@@ -575,6 +607,7 @@ async function ensureNativeWindowBoundsMonitorBinary() {
 		getNativeWindowBoundsMonitorSourcePath(),
 		getNativeWindowBoundsMonitorBinaryPath(),
 		"native window bounds monitor helper",
+		"screenmint-window-bounds-monitor",
 	);
 }
 
@@ -612,6 +645,158 @@ async function getNativeMacWindowSources(options?: { maxAgeMs?: number }) {
 	cachedNativeMacWindowSources = entries;
 	cachedNativeMacWindowSourcesAtMs = now;
 	return entries;
+}
+
+function getScreenRecordingStatus() {
+	if (process.platform !== "darwin") {
+		return "granted";
+	}
+
+	try {
+		return systemPreferences.getMediaAccessStatus("screen");
+	} catch {
+		return "unknown";
+	}
+}
+
+function getMicrophonePermissionStatus() {
+	if (process.platform !== "darwin") {
+		return "granted";
+	}
+
+	try {
+		return systemPreferences.getMediaAccessStatus("microphone");
+	} catch {
+		return "unknown";
+	}
+}
+
+function buildCapturePermissionState(): CapturePermissionState {
+	const bundlePath = getAppBundlePath();
+	const expectedBundlePath = getExpectedApplicationsBundlePath();
+	const installPathMatchesExpected =
+		process.platform !== "darwin" ||
+		!app.isPackaged ||
+		(bundlePath !== null && expectedBundlePath !== null && bundlePath === expectedBundlePath);
+
+	return {
+		platform: process.platform,
+		isPackaged: app.isPackaged,
+		appPath: process.execPath,
+		bundlePath,
+		expectedBundlePath,
+		bundleId: process.platform === "darwin" ? APP_BUNDLE_ID : null,
+		inApplicationsFolder: installPathMatchesExpected,
+		installPathMatchesExpected,
+		screenStatus: getScreenRecordingStatus(),
+		microphoneStatus: getMicrophonePermissionStatus(),
+		accessibilityTrusted:
+			process.platform !== "darwin" ? true : systemPreferences.isTrustedAccessibilityClient(false),
+	};
+}
+
+async function buildHelperBinaryDiagnostics(
+	name: string,
+	sourcePath: string,
+	userDataPath: string,
+	prebundledBinaryName?: string,
+): Promise<HelperBinaryDiagnostics> {
+	const prebundledPath = prebundledBinaryName
+		? getPrebundledNativeHelperPath(prebundledBinaryName)
+		: null;
+	const prebundledExists = prebundledPath ? await pathExists(prebundledPath) : false;
+	const userDataExists = await pathExists(userDataPath);
+	const resolvedPath =
+		prebundledPath && (prebundledExists || app.isPackaged) ? prebundledPath : userDataPath;
+
+	return {
+		name,
+		resolvedPath,
+		sourcePath,
+		prebundledPath,
+		userDataPath,
+		prebundledExists,
+		userDataExists,
+	};
+}
+
+async function probeCaptureSources(): Promise<CaptureSourceProbeResult> {
+	let screenCount = 0;
+	let windowCount = 0;
+	let nativeWindowCount = 0;
+	let desktopError: string | undefined;
+	let nativeWindowError: string | undefined;
+
+	try {
+		const sources = await desktopCapturer.getSources({
+			types: ["screen", "window"],
+			thumbnailSize: { width: 1, height: 1 },
+			fetchWindowIcons: false,
+		});
+		screenCount = sources.filter((source) => source.id.startsWith("screen:")).length;
+		windowCount = sources.filter((source) => source.id.startsWith("window:")).length;
+	} catch (error) {
+		desktopError = String(error);
+	}
+
+	if (process.platform === "darwin") {
+		try {
+			nativeWindowCount = (await getNativeMacWindowSources({ maxAgeMs: 0 })).length;
+		} catch (error) {
+			nativeWindowError = String(error);
+		}
+	}
+
+	return {
+		success: !desktopError && !nativeWindowError,
+		screenCount,
+		windowCount,
+		nativeWindowCount,
+		desktopError,
+		nativeWindowError,
+	};
+}
+
+async function getCaptureDiagnostics(): Promise<CaptureDiagnostics> {
+	const permissionState = buildCapturePermissionState();
+
+	return {
+		permissionState,
+		userDataPath: app.getPath("userData"),
+		helperPaths: await Promise.all([
+			buildHelperBinaryDiagnostics(
+				"screen capture",
+				getNativeCaptureHelperSourcePath(),
+				getNativeCaptureHelperBinaryPath(),
+				"screenmint-screencapturekit-helper",
+			),
+			buildHelperBinaryDiagnostics(
+				"window list",
+				getNativeWindowListSourcePath(),
+				getNativeWindowListBinaryPath(),
+				"screenmint-window-list",
+			),
+			buildHelperBinaryDiagnostics(
+				"window bounds monitor",
+				getNativeWindowBoundsMonitorSourcePath(),
+				getNativeWindowBoundsMonitorBinaryPath(),
+				"screenmint-window-bounds-monitor",
+			),
+			buildHelperBinaryDiagnostics(
+				"cursor assets",
+				getSystemCursorHelperSourcePath(),
+				getSystemCursorHelperBinaryPath(),
+				"screenmint-system-cursors",
+			),
+			buildHelperBinaryDiagnostics(
+				"cursor monitor",
+				getNativeCursorMonitorSourcePath(),
+				getNativeCursorMonitorBinaryPath(),
+				"screenmint-native-cursor-monitor",
+			),
+		]),
+		sourceProbe: await probeCaptureSources(),
+	};
 }
 
 async function getSystemCursorAssets() {
@@ -4061,6 +4246,35 @@ export function registerIpcHandlers(
 		};
 	});
 
+	ipcMain.handle("get-capture-permission-state", async () => {
+		return {
+			success: true,
+			state: buildCapturePermissionState(),
+		};
+	});
+
+	ipcMain.handle("request-microphone-access", async () => {
+		if (process.platform !== "darwin") {
+			return { success: true, granted: true, status: "granted" };
+		}
+
+		try {
+			const granted = await systemPreferences.askForMediaAccess("microphone");
+			return {
+				success: true,
+				granted,
+				status: getMicrophonePermissionStatus(),
+			};
+		} catch (error) {
+			return {
+				success: false,
+				granted: false,
+				status: getMicrophonePermissionStatus(),
+				error: String(error),
+			};
+		}
+	});
+
 	ipcMain.handle("get-screen-recording-permission-status", () => {
 		if (process.platform !== "darwin") {
 			return { success: true, status: "granted" };
@@ -4069,7 +4283,7 @@ export function registerIpcHandlers(
 		try {
 			return {
 				success: true,
-				status: systemPreferences.getMediaAccessStatus("screen"),
+				status: getScreenRecordingStatus(),
 			};
 		} catch (error) {
 			console.error("Failed to get screen recording permission status:", error);
@@ -4102,6 +4316,40 @@ export function registerIpcHandlers(
 		} catch (error) {
 			console.error("Failed to open Accessibility preferences:", error);
 			return { success: false, error: String(error) };
+		}
+	});
+
+	ipcMain.handle("probe-capture-sources", async () => {
+		try {
+			return {
+				success: true,
+				probe: await probeCaptureSources(),
+			};
+		} catch (error) {
+			return {
+				success: false,
+				probe: {
+					success: false,
+					screenCount: 0,
+					windowCount: 0,
+					nativeWindowCount: 0,
+				},
+				error: String(error),
+			};
+		}
+	});
+
+	ipcMain.handle("get-capture-diagnostics", async () => {
+		try {
+			return {
+				success: true,
+				diagnostics: await getCaptureDiagnostics(),
+			};
+		} catch (error) {
+			return {
+				success: false,
+				error: String(error),
+			};
 		}
 	});
 

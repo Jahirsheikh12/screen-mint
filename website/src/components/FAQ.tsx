@@ -43,7 +43,7 @@ const faqs = [
 	{
 		question: "macOS says the app can't be opened?",
 		answer:
-			"This is macOS Gatekeeper blocking unsigned apps. Open Terminal and run: xattr -cr /Applications/ScreenMint.app — this removes the quarantine flag and lets the app launch normally.",
+			"This is macOS Gatekeeper blocking an unsigned app. First move ScreenMint.app into /Applications, then open Terminal and run: xattr -cr /Applications/ScreenMint.app — this removes the quarantine flag from the final install location and lets the app launch normally.",
 	},
 	{
 		question: "How do I contribute?",

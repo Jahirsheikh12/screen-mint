@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MdCheck } from "react-icons/md";
+import { CaptureAccessNotice } from "@/components/launch/CaptureAccessNotice";
 import { useScopedT } from "../../contexts/I18nContext";
+import { useCaptureSourceAccess } from "../../hooks/useCaptureSourceAccess";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
@@ -52,45 +54,33 @@ function parseSourceMetadata(source: ProcessedDesktopSource) {
 
 export function SourceSelector() {
 	const t = useScopedT("launch");
-	const [sources, setSources] = useState<DesktopSource[]>([]);
 	const [selectedSource, setSelectedSource] = useState<DesktopSource | null>(null);
 	const [activeTab, setActiveTab] = useState<"screens" | "windows">("screens");
-	const [loading, setLoading] = useState(true);
+	const sourceOptions = useMemo<Electron.SourcesOptions>(
+		() => ({
+			types: ["screen", "window"],
+			thumbnailSize: { width: 320, height: 180 },
+			fetchWindowIcons: true,
+		}),
+		[],
+	);
+	const { sources: rawSources, loading, loadError, diagnostics, refresh, accessState } =
+		useCaptureSourceAccess(sourceOptions);
+	const sources = rawSources.map((source) => {
+		const metadata = parseSourceMetadata(source);
 
-	useEffect(() => {
-		async function fetchSources() {
-			setLoading(true);
-			try {
-				const rawSources = await window.electronAPI.getSources({
-					types: ["screen", "window"],
-					thumbnailSize: { width: 320, height: 180 },
-					fetchWindowIcons: true,
-				});
-				setSources(
-					rawSources.map((source) => {
-						const metadata = parseSourceMetadata(source);
-
-						return {
-							id: source.id,
-							name: metadata.displayName,
-							thumbnail: source.thumbnail,
-							display_id: source.display_id,
-							appIcon: source.appIcon,
-							originalName: source.name,
-							sourceType: metadata.sourceType,
-							appName: metadata.appName,
-							windowTitle: metadata.windowTitle,
-						};
-					}),
-				);
-			} catch (error) {
-				console.error("Error loading sources:", error);
-			} finally {
-				setLoading(false);
-			}
-		}
-		fetchSources();
-	}, []);
+		return {
+			id: source.id,
+			name: metadata.displayName,
+			thumbnail: source.thumbnail,
+			display_id: source.display_id,
+			appIcon: source.appIcon,
+			originalName: source.name,
+			sourceType: metadata.sourceType,
+			appName: metadata.appName,
+			windowTitle: metadata.windowTitle,
+		};
+	});
 
 	const screenSources = sources.filter((s) => s.id.startsWith("screen:"));
 	const windowSources = sources.filter((s) => s.id.startsWith("window:"));
@@ -125,6 +115,54 @@ export function SourceSelector() {
 					<div className="animate-spin rounded-full h-6 w-6 border-b-2 border-zinc-600 mx-auto mb-2" />
 					<p className="text-xs text-zinc-300">{t("sourceSelector.loadingSources")}</p>
 				</div>
+			</div>
+		);
+	}
+
+	if (accessState && !accessState.canProbeSources) {
+		return (
+			<div
+				className={`min-h-screen flex flex-col items-center justify-center ${styles.glassContainer}`}
+			>
+				<CaptureAccessNotice
+					title={t(
+						"permissions.screenPermissionTitle",
+						"Allow Screen & System Audio Recording",
+					)}
+					description={t(
+						"permissions.sourceSelectorPermissionDescription",
+						"ScreenMint needs macOS Screen & System Audio Recording permission before it can list screens and windows.",
+					)}
+					hint={t(
+						"permissions.screenPermissionHint",
+						"After granting access, quit and reopen ScreenMint, then retry.",
+					)}
+					openSettingsLabel={t("permissions.openSettings", "Open Settings")}
+					retryLabel={t("permissions.retry", "Retry")}
+					onOpenSettings={() => void window.electronAPI.openDisplayCapturePreferences()}
+					onRetry={() => void refresh()}
+				/>
+			</div>
+		);
+	}
+
+	if (loadError) {
+		return (
+			<div
+				className={`min-h-screen flex flex-col items-center justify-center ${styles.glassContainer}`}
+			>
+				<CaptureAccessNotice
+					title={t("permissions.captureLoadFailedTitle", "Could not load capture sources")}
+					description={t(
+						"permissions.captureLoadFailedDescription",
+						"ScreenMint ran into an unexpected macOS capture error while loading sources.",
+					)}
+					details={loadError ?? diagnostics?.sourceProbe.desktopError ?? null}
+					openSettingsLabel={t("permissions.openSettings", "Open Settings")}
+					retryLabel={t("permissions.retry", "Retry")}
+					onOpenSettings={() => void window.electronAPI.openDisplayCapturePreferences()}
+					onRetry={() => void refresh()}
+				/>
 			</div>
 		);
 	}

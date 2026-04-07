@@ -16,6 +16,7 @@ import {
 } from "../ui/dropdown-menu";
 import { HudToolbar } from "./HudToolbar";
 import styles from "./LaunchWindow.module.css";
+import { AreaTab } from "./tabs/AreaTab";
 import { DeviceTab } from "./tabs/DeviceTab";
 import { DisplayTab } from "./tabs/DisplayTab";
 import { WindowTab } from "./tabs/WindowTab";
@@ -41,15 +42,6 @@ export function LaunchWindow() {
 			hud.setMicrophoneDeviceId(hud.selectedMicDeviceId);
 		}
 	}, [hud.selectedMicDeviceId, hud.setMicrophoneDeviceId]);
-
-	// Auto-open display overlay on launch
-	const hasAutoOpened = useRef(false);
-	useEffect(() => {
-		if (hasAutoOpened.current) return;
-		hasAutoOpened.current = true;
-		hud.setMode("display");
-		hud.resizeHudWindow(true);
-	}, [hud.setMode, hud.resizeHudWindow]);
 
 	// Track pause transitions to accumulate paused duration
 	useEffect(() => {
@@ -171,34 +163,6 @@ export function LaunchWindow() {
 	const handleTabClick = useCallback(
 		(tab: HudMode) => {
 			if (hud.recording) return;
-
-			if (tab === "area") {
-				void (async () => {
-					hud.setMode(tab);
-					hud.resizeHudWindow(false);
-					try {
-						let selectedSource = await window.electronAPI.getSelectedSource();
-						if (!selectedSource?.id?.startsWith("screen:")) {
-							const sources = await window.electronAPI.getSources({
-								types: ["screen"],
-							});
-							if (sources.length === 0) {
-								return;
-							}
-							selectedSource = sources[0];
-							await window.electronAPI.selectSource(selectedSource);
-						}
-
-						const displayId = Number(selectedSource.display_id);
-						await window.electronAPI.createAreaOverlay(
-							Number.isFinite(displayId) ? displayId : undefined,
-						);
-					} catch {
-						// ignore source fetch errors
-					}
-				})();
-				return;
-			}
 
 			if (hud.mode === tab && hud.contentPanelVisible) {
 				hud.resizeHudWindow(false);
@@ -354,6 +318,7 @@ export function LaunchWindow() {
 								}}
 							/>
 						)}
+						{hud.mode === "area" && <AreaTab disabled={hud.recording} />}
 						{hud.mode === "device" && <DeviceTab />}
 
 						{/* Divider */}

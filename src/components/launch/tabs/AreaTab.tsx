@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MdCropFree } from "react-icons/md";
+import { CaptureAccessNotice } from "@/components/launch/CaptureAccessNotice";
 import { useScopedT } from "@/contexts/I18nContext";
+import { useCaptureSourceAccess } from "@/hooks/useCaptureSourceAccess";
 import { normalizeSelectedArea } from "@/lib/recording/session";
 
 type AreaTabProps = {
@@ -10,6 +12,8 @@ type AreaTabProps = {
 export function AreaTab({ disabled }: AreaTabProps) {
 	const t = useScopedT("launch");
 	const [hasArea, setHasArea] = useState(false);
+	const sourceOptions = useMemo<Electron.SourcesOptions>(() => ({ types: ["screen"] }), []);
+	const { sources, loading, loadError, refresh, accessState } = useCaptureSourceAccess(sourceOptions);
 	const presets = [
 		{ label: "1920 x 1080", width: 1920, height: 1080 },
 		{ label: "1280 x 720", width: 1280, height: 720 },
@@ -21,7 +25,6 @@ export function AreaTab({ disabled }: AreaTabProps) {
 		if (disabled) return;
 		void (async () => {
 			try {
-				const sources = await window.electronAPI.getSources({ types: ["screen"] });
 				if (sources.length > 0) {
 					await window.electronAPI.selectSource(sources[0]);
 				}
@@ -29,7 +32,55 @@ export function AreaTab({ disabled }: AreaTabProps) {
 				// ignore
 			}
 		})();
-	}, [disabled]);
+	}, [disabled, sources]);
+
+	if (loading && sources.length === 0) {
+		return (
+			<div className="flex items-center justify-center py-12 text-white/40 text-xs">
+				{t("sourceSelector.loadingSources")}
+			</div>
+		);
+	}
+
+	if (accessState && !accessState.canProbeSources) {
+		return (
+			<CaptureAccessNotice
+				title={t(
+					"permissions.screenPermissionTitle",
+					"Allow Screen & System Audio Recording",
+				)}
+				description={t(
+					"permissions.areaPermissionDescription",
+					"ScreenMint needs macOS Screen & System Audio Recording permission before it can select an area.",
+				)}
+				hint={t(
+					"permissions.screenPermissionHint",
+					"After granting access, quit and reopen ScreenMint, then retry.",
+				)}
+				openSettingsLabel={t("permissions.openSettings", "Open Settings")}
+				retryLabel={t("permissions.retry", "Retry")}
+				onOpenSettings={() => void window.electronAPI.openDisplayCapturePreferences()}
+				onRetry={() => void refresh()}
+			/>
+		);
+	}
+
+	if (loadError) {
+		return (
+			<CaptureAccessNotice
+				title={t("permissions.captureLoadFailedTitle", "Could not load capture sources")}
+				description={t(
+					"permissions.areaLoadFailedDescription",
+					"ScreenMint ran into an unexpected macOS capture error while preparing area capture.",
+				)}
+				details={loadError}
+				openSettingsLabel={t("permissions.openSettings", "Open Settings")}
+				retryLabel={t("permissions.retry", "Retry")}
+				onOpenSettings={() => void window.electronAPI.openDisplayCapturePreferences()}
+				onRetry={() => void refresh()}
+			/>
+		);
+	}
 
 	const openAreaSelector = () => {
 		if (disabled) return;

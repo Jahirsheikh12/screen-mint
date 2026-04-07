@@ -5,6 +5,11 @@ import type {
 	CaptionTrack,
 } from "../src/components/video-editor/types";
 import type { PostRecordingContext } from "../src/lib/recording/postRecording";
+import type {
+	CaptureDiagnostics,
+	CapturePermissionState,
+	CaptureSourceProbeResult,
+} from "../src/lib/recording/capturePermissionState";
 import type { SelectedArea } from "../src/lib/recording/session";
 import type { UpdaterState } from "../src/lib/updater/types";
 
@@ -149,6 +154,17 @@ declare global {
 				prompted: boolean;
 				error?: string;
 			}>;
+			getCapturePermissionState: () => Promise<{
+				success: boolean;
+				state: CapturePermissionState;
+				error?: string;
+			}>;
+			requestMicrophoneAccess: () => Promise<{
+				success: boolean;
+				granted: boolean;
+				status: string;
+				error?: string;
+			}>;
 			getScreenRecordingPermissionStatus: () => Promise<{
 				success: boolean;
 				status: string;
@@ -156,6 +172,16 @@ declare global {
 			}>;
 			openDisplayCapturePreferences: () => Promise<{ success: boolean; error?: string }>;
 			openAccessibilityPreferences: () => Promise<{ success: boolean; error?: string }>;
+			probeCaptureSources: () => Promise<{
+				success: boolean;
+				probe: CaptureSourceProbeResult;
+				error?: string;
+			}>;
+			getCaptureDiagnostics: () => Promise<{
+				success: boolean;
+				diagnostics?: CaptureDiagnostics;
+				error?: string;
+			}>;
 			saveExportedVideo: (
 				videoData: ArrayBuffer,
 				fileName: string,
