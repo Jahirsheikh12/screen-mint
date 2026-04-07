@@ -64,33 +64,15 @@ function AppLoadingScreen({ label }: { label: string }) {
 	);
 }
 
+// Read windowType synchronously so the very first render picks the correct component
+// — avoids a frame of AppLoadingScreen / white flash for overlay windows.
+const INITIAL_WINDOW_TYPE = new URLSearchParams(window.location.search).get("windowType") || "";
+
 export default function App() {
-	const [windowType, setWindowType] = useState("");
+	const [windowType] = useState(INITIAL_WINDOW_TYPE);
 	const { t } = useI18n();
 
 	useEffect(() => {
-		const params = new URLSearchParams(window.location.search);
-		const type = params.get("windowType") || "";
-		setWindowType(type);
-
-		if (
-			type === "hud-overlay" ||
-			type === "source-selector" ||
-			type === "countdown" ||
-			type === "area-overlay" ||
-			type === "speaker-notes"
-		) {
-			document.body.style.background = "transparent";
-			document.documentElement.style.background = "transparent";
-			document.getElementById("root")?.style.setProperty("background", "transparent");
-		}
-
-		if (type === "hud-overlay") {
-			document.documentElement.style.overflow = "hidden";
-			document.body.style.overflow = "hidden";
-			document.getElementById("root")?.style.setProperty("overflow", "hidden");
-		}
-
 		loadAllCustomFonts().catch((error) => {
 			console.error("Failed to load custom fonts:", error);
 		});

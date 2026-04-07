@@ -1,4 +1,6 @@
+import { ShieldAlert } from "lucide-react";
 import { Button } from "../ui/button";
+import styles from "./LaunchWindow.module.css";
 
 type CaptureAccessNoticeProps = {
 	title: string;
@@ -22,11 +24,16 @@ export function CaptureAccessNotice({
 	retryLabel = "Retry",
 }: CaptureAccessNoticeProps) {
 	return (
-		<div className="flex flex-col items-center gap-4 px-6 py-8 text-center">
+		<div
+			className={`flex flex-col items-center gap-5 px-6 py-8 text-center ${styles.overlayEnter}`}
+		>
+			<div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 ring-1 ring-amber-500/20">
+				<ShieldAlert size={22} className="text-amber-400" />
+			</div>
 			<div className="max-w-md space-y-2">
 				<h3 className="text-sm font-semibold text-white/90">{title}</h3>
 				<p className="text-xs leading-5 text-white/55">{description}</p>
-				{hint ? <p className="text-[11px] leading-5 text-amber-300/80">{hint}</p> : null}
+				{hint ? <p className="mt-1 text-[11px] leading-5 text-amber-300/80">{hint}</p> : null}
 			</div>
 			<div className="flex flex-wrap items-center justify-center gap-2">
 				{onOpenSettings ? (

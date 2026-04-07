@@ -85,7 +85,7 @@ export function UpdaterDialogs({ windowType }: UpdaterDialogsProps) {
 	const lastToastSignatureRef = useRef<string | null>(null);
 	const busy = isBusy(state.busy);
 
-	const canRenderDialogs = windowType === "editor" || windowType === "hud-overlay";
+	const canRenderDialogs = windowType === "editor";
 	const showUpdateDialog = canRenderDialogs && state.showUpdatePrompt && !state.showWhatsNew;
 	const showWhatsNewDialog = canRenderDialogs && state.showWhatsNew;
 

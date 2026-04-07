@@ -22,16 +22,18 @@ type DisplayInfo = {
 type DisplayTabProps = {
 	disabled: boolean;
 	onSelectSource: (source: DisplaySource) => void;
+	onPermissionDenied?: () => void;
 };
 
-export function DisplayTab({ disabled, onSelectSource }: DisplayTabProps) {
+export function DisplayTab({ disabled, onSelectSource, onPermissionDenied }: DisplayTabProps) {
 	const t = useScopedT("launch");
 	const [displayInfo, setDisplayInfo] = useState<DisplayInfo[]>([]);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const onSelectSourceRef = useRef(onSelectSource);
 	onSelectSourceRef.current = onSelectSource;
 	const sourceOptions = useMemo<Electron.SourcesOptions>(() => ({ types: ["screen"] }), []);
-	const { sources, loading, loadError, refresh, accessState } = useCaptureSourceAccess(sourceOptions);
+	const { sources, loading, loadError, refresh, accessState } =
+		useCaptureSourceAccess(sourceOptions);
 	const displays = sources as DisplaySource[];
 
 	useEffect(() => {
@@ -72,6 +74,14 @@ export function DisplayTab({ disabled, onSelectSource }: DisplayTabProps) {
 		return displayInfo.find((d) => String(d.id) === source.display_id);
 	};
 
+	// Auto-dismiss the overlay when permission is denied — the OS permission prompt
+	// is already visible, so our custom notice is redundant and blocks the view.
+	useEffect(() => {
+		if (accessState && !accessState.canProbeSources && onPermissionDenied) {
+			onPermissionDenied();
+		}
+	}, [accessState, onPermissionDenied]);
+
 	if (loading) {
 		return (
 			<div className="flex items-center justify-center py-12 text-white/40 text-xs">
@@ -81,26 +91,7 @@ export function DisplayTab({ disabled, onSelectSource }: DisplayTabProps) {
 	}
 
 	if (accessState && !accessState.canProbeSources) {
-		return (
-			<CaptureAccessNotice
-				title={t(
-					"permissions.screenPermissionTitle",
-					"Allow Screen & System Audio Recording",
-				)}
-				description={t(
-					"permissions.screenPermissionDescription",
-					"ScreenMint needs macOS Screen & System Audio Recording permission before it can list displays.",
-				)}
-				hint={t(
-					"permissions.screenPermissionHint",
-					"After granting access, quit and reopen ScreenMint, then retry.",
-				)}
-				openSettingsLabel={t("permissions.openSettings", "Open Settings")}
-				retryLabel={t("permissions.retry", "Retry")}
-				onOpenSettings={() => void window.electronAPI.openDisplayCapturePreferences()}
-				onRetry={() => void refresh()}
-			/>
-		);
+		return null;
 	}
 
 	if (loadError) {

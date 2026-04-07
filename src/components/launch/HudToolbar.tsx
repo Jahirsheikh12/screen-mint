@@ -37,6 +37,7 @@ import { SettingsDropdown } from "./SettingsDropdown";
 
 type HudToolbarProps = {
 	mode: HudMode;
+	contentPanelVisible: boolean;
 	onTabClick: (mode: HudMode) => void;
 	recording: boolean;
 	paused: boolean;
@@ -98,6 +99,7 @@ const ND = styles.electronNoDrag;
 
 export function HudToolbar({
 	mode,
+	contentPanelVisible,
 	onTabClick,
 	recording,
 	paused,
@@ -266,7 +268,7 @@ export function HudToolbar({
 			<div className={`${ND} flex items-center rounded-[10px] bg-white/[0.04] p-[3px]`}>
 				{tabs.map((tab) => {
 					const Icon = MODE_ICONS[tab];
-					const isActive = mode === tab;
+					const isActive = mode === tab && contentPanelVisible;
 					return (
 						<button
 							key={tab}

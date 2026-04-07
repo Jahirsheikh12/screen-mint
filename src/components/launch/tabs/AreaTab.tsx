@@ -7,13 +7,15 @@ import { normalizeSelectedArea } from "@/lib/recording/session";
 
 type AreaTabProps = {
 	disabled: boolean;
+	onPermissionDenied?: () => void;
 };
 
-export function AreaTab({ disabled }: AreaTabProps) {
+export function AreaTab({ disabled, onPermissionDenied }: AreaTabProps) {
 	const t = useScopedT("launch");
 	const [hasArea, setHasArea] = useState(false);
 	const sourceOptions = useMemo<Electron.SourcesOptions>(() => ({ types: ["screen"] }), []);
-	const { sources, loading, loadError, refresh, accessState } = useCaptureSourceAccess(sourceOptions);
+	const { sources, loading, loadError, refresh, accessState } =
+		useCaptureSourceAccess(sourceOptions);
 	const presets = [
 		{ label: "1920 x 1080", width: 1920, height: 1080 },
 		{ label: "1280 x 720", width: 1280, height: 720 },
@@ -34,6 +36,14 @@ export function AreaTab({ disabled }: AreaTabProps) {
 		})();
 	}, [disabled, sources]);
 
+	// Auto-dismiss the overlay when permission is denied — the OS permission prompt
+	// is already visible, so our custom notice is redundant and blocks the view.
+	useEffect(() => {
+		if (accessState && !accessState.canProbeSources && onPermissionDenied) {
+			onPermissionDenied();
+		}
+	}, [accessState, onPermissionDenied]);
+
 	if (loading && sources.length === 0) {
 		return (
 			<div className="flex items-center justify-center py-12 text-white/40 text-xs">
@@ -43,26 +53,7 @@ export function AreaTab({ disabled }: AreaTabProps) {
 	}
 
 	if (accessState && !accessState.canProbeSources) {
-		return (
-			<CaptureAccessNotice
-				title={t(
-					"permissions.screenPermissionTitle",
-					"Allow Screen & System Audio Recording",
-				)}
-				description={t(
-					"permissions.areaPermissionDescription",
-					"ScreenMint needs macOS Screen & System Audio Recording permission before it can select an area.",
-				)}
-				hint={t(
-					"permissions.screenPermissionHint",
-					"After granting access, quit and reopen ScreenMint, then retry.",
-				)}
-				openSettingsLabel={t("permissions.openSettings", "Open Settings")}
-				retryLabel={t("permissions.retry", "Retry")}
-				onOpenSettings={() => void window.electronAPI.openDisplayCapturePreferences()}
-				onRetry={() => void refresh()}
-			/>
-		);
+		return null;
 	}
 
 	if (loadError) {

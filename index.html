@@ -8,6 +8,18 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Run before any module scripts — set transparent bg for overlay windows
+      // to prevent the white flash from Tailwind's bg-background on body.
+      (function() {
+        var wt = new URLSearchParams(window.location.search).get('windowType') || '';
+        if (['hud-overlay','source-selector','countdown','area-overlay','speaker-notes'].indexOf(wt) !== -1) {
+          document.documentElement.setAttribute('data-overlay', '');
+          document.documentElement.style.background = 'transparent';
+          document.body.style.background = 'transparent';
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

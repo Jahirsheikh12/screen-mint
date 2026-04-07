@@ -73,6 +73,15 @@
 		user-select: none;
 	}
 
+	/* Overlay windows (HUD, source-selector, countdown, etc.) must be transparent.
+	   The data-overlay attribute is set by an inline script in index.html before
+	   CSS paints, preventing the white flash from bg-background. */
+	html[data-overlay],
+	html[data-overlay] body,
+	html[data-overlay] #root {
+		background: transparent !important;
+	}
+
 	button,
 	input,
 	textarea,

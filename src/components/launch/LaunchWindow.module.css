@@ -115,6 +115,23 @@
 	will-change: box-shadow;
 }
 
+/* HUD toolbar entrance — subtle scale-up + fade on launch */
+@keyframes hud-toolbar-enter {
+	from {
+		opacity: 0;
+		transform: translateY(8px) scale(0.96);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+.hudToolbarEnter {
+	animation: hud-toolbar-enter 0.25s cubic-bezier(0.16, 1, 0.3, 1) 50ms both;
+	will-change: opacity, transform;
+}
+
 /* Custom scrollbar — neutral dark */
 .hudScrollArea::-webkit-scrollbar {
 	width: 4px;

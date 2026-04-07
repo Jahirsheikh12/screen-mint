@@ -160,6 +160,10 @@ export function LaunchWindow() {
 		hud.resizeHudWindow(false);
 	}, [hud.resizeHudWindow]);
 
+	const handlePermissionDenied = useCallback(() => {
+		hud.resizeHudWindow(false);
+	}, [hud.resizeHudWindow]);
+
 	const handleTabClick = useCallback(
 		(tab: HudMode) => {
 			if (hud.recording) return;
@@ -307,7 +311,11 @@ export function LaunchWindow() {
 					>
 						{/* Tab content */}
 						{hud.mode === "display" && (
-							<DisplayTab disabled={hud.recording} onSelectSource={handleSelectSource} />
+							<DisplayTab
+								disabled={hud.recording}
+								onSelectSource={handleSelectSource}
+								onPermissionDenied={handlePermissionDenied}
+							/>
 						)}
 						{hud.mode === "window" && (
 							<WindowTab
@@ -316,9 +324,12 @@ export function LaunchWindow() {
 								onFallbackToDisplay={() => {
 									hud.setMode("display");
 								}}
+								onPermissionDenied={handlePermissionDenied}
 							/>
 						)}
-						{hud.mode === "area" && <AreaTab disabled={hud.recording} />}
+						{hud.mode === "area" && (
+							<AreaTab disabled={hud.recording} onPermissionDenied={handlePermissionDenied} />
+						)}
 						{hud.mode === "device" && <DeviceTab />}
 
 						{/* Divider */}
@@ -436,7 +447,7 @@ export function LaunchWindow() {
 					)}
 
 				{/* Bottom toolbar */}
-				<div className="flex justify-center pointer-events-none">
+				<div className={`flex justify-center pointer-events-none ${styles.hudToolbarEnter}`}>
 					<div
 						className={`${styles.hudBar} ${hud.recording ? styles.recordingGlow : ""} w-fit pointer-events-auto`}
 						style={{
@@ -456,6 +467,7 @@ export function LaunchWindow() {
 					>
 						<HudToolbar
 							mode={hud.mode}
+							contentPanelVisible={hud.contentPanelVisible}
 							onTabClick={handleTabClick}
 							recording={hud.recording}
 							paused={hud.paused}

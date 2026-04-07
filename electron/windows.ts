@@ -201,11 +201,24 @@ export function createHudOverlayWindow(): BrowserWindow {
 		win.setContentProtection(hudOverlayHiddenFromCapture);
 	}
 
-	// Use ready-to-show to ensure first paint is ready before showing — prevents flash
+	// Smooth fade-in on ready — prevents black/white flash on transparent window
 	win.once("ready-to-show", () => {
-		if (!win.isDestroyed()) {
-			win.show();
-		}
+		if (win.isDestroyed()) return;
+		win.setOpacity(0);
+		win.show();
+		const startTime = Date.now();
+		const duration = 150;
+		const fadeIn = setInterval(() => {
+			if (win.isDestroyed()) {
+				clearInterval(fadeIn);
+				return;
+			}
+			const elapsed = Date.now() - startTime;
+			const progress = Math.min(1, elapsed / duration);
+			const eased = 1 - (1 - progress) * (1 - progress);
+			win.setOpacity(eased);
+			if (progress >= 1) clearInterval(fadeIn);
+		}, 16);
 	});
 
 	win.webContents.on("did-finish-load", () => {

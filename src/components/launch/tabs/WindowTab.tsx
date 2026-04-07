@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MdMonitor } from "react-icons/md";
 import { CaptureAccessNotice } from "@/components/launch/CaptureAccessNotice";
 import { useScopedT } from "@/contexts/I18nContext";
@@ -19,15 +19,24 @@ type WindowTabProps = {
 	disabled: boolean;
 	onSelectSource: (source: WindowSource) => void;
 	onFallbackToDisplay: () => void;
+	onPermissionDenied?: () => void;
 };
 
-export function WindowTab({ disabled, onSelectSource, onFallbackToDisplay }: WindowTabProps) {
+export function WindowTab({
+	disabled,
+	onSelectSource,
+	onFallbackToDisplay,
+	onPermissionDenied,
+}: WindowTabProps) {
 	const t = useScopedT("launch");
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const sourceOptions = useMemo<Electron.SourcesOptions>(() => ({ types: ["window"] }), []);
-	const { sources, loading, loadError, refresh, accessState } = useCaptureSourceAccess(sourceOptions, {
-		refreshIntervalMs: 3000,
-	});
+	const { sources, loading, loadError, refresh, accessState } = useCaptureSourceAccess(
+		sourceOptions,
+		{
+			refreshIntervalMs: 3000,
+		},
+	);
 	const windows = sources as WindowSource[];
 
 	const handleSelect = (source: WindowSource) => {
@@ -35,6 +44,14 @@ export function WindowTab({ disabled, onSelectSource, onFallbackToDisplay }: Win
 		setSelectedId(source.id);
 		onSelectSource(source);
 	};
+
+	// Auto-dismiss the overlay when permission is denied — the OS permission prompt
+	// is already visible, so our custom notice is redundant and blocks the view.
+	useEffect(() => {
+		if (accessState && !accessState.canProbeSources && onPermissionDenied) {
+			onPermissionDenied();
+		}
+	}, [accessState, onPermissionDenied]);
 
 	if (loading && windows.length === 0) {
 		return (
@@ -45,26 +62,7 @@ export function WindowTab({ disabled, onSelectSource, onFallbackToDisplay }: Win
 	}
 
 	if (accessState && !accessState.canProbeSources) {
-		return (
-			<CaptureAccessNotice
-				title={t(
-					"permissions.screenPermissionTitle",
-					"Allow Screen & System Audio Recording",
-				)}
-				description={t(
-					"permissions.windowPermissionDescription",
-					"ScreenMint needs macOS Screen & System Audio Recording permission before it can list windows.",
-				)}
-				hint={t(
-					"permissions.screenPermissionHint",
-					"After granting access, quit and reopen ScreenMint, then retry.",
-				)}
-				openSettingsLabel={t("permissions.openSettings", "Open Settings")}
-				retryLabel={t("permissions.retry", "Retry")}
-				onOpenSettings={() => void window.electronAPI.openDisplayCapturePreferences()}
-				onRetry={() => void refresh()}
-			/>
-		);
+		return null;
 	}
 
 	if (loadError) {
