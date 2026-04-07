@@ -10,6 +10,9 @@ const requiredMetadataFiles = [
 	"latest-mac.yml",
 ];
 const optionalMetadataFiles = ["latest-mac-arm64.yml"];
+const requiredMetadataReferences = {
+	"latest-mac.yml": ["ScreenMint-x64", "ScreenMint-arm64"],
+};
 
 function normalizeYamlValue(rawValue) {
 	return rawValue.trim().replace(/^['"]|['"]$/g, "");
@@ -20,7 +23,7 @@ function extractReferencedFiles(content) {
 	const lines = content.split(/\r?\n/);
 
 	for (const line of lines) {
-		const match = line.match(/^\s*(?:path|url):\s*(.+)\s*$/);
+		const match = line.match(/^\s*(?:-\s*)?(?:path|url):\s*(.+)\s*$/);
 		if (!match) {
 			continue;
 		}
@@ -63,6 +66,18 @@ async function main() {
 		for (const reference of references) {
 			if (!entrySet.has(reference)) {
 				throw new Error(`${metadataFile} references missing asset: ${reference}`);
+			}
+		}
+
+		const requiredReferences = requiredMetadataReferences[metadataFile] ?? [];
+		for (const requiredReference of requiredReferences) {
+			const hasRequiredReference = references.some((reference) =>
+				reference.includes(requiredReference),
+			);
+			if (!hasRequiredReference) {
+				throw new Error(
+					`${metadataFile} is missing a required installer reference containing: ${requiredReference}`,
+				);
 			}
 		}
 	}

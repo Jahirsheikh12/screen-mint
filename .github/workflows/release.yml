@@ -112,13 +112,16 @@ jobs:
       - name: Validate macOS x64 bundle
         run: npm run validate:mac-bundle -- release/mac/ScreenMint.app
 
+      - name: Preserve macOS x64 updater metadata
+        run: cp release/latest-mac.yml release/latest-mac-x64.yml
+
       - name: Upload macOS x64 artifact
         uses: actions/upload-artifact@v4
         with:
           name: macos-x64
           path: |
             release/ScreenMint-x64.*
-            release/latest-mac.yml
+            release/latest-mac-x64.yml
           if-no-files-found: error
 
   build-macos-arm64:
@@ -153,12 +156,16 @@ jobs:
       - name: Validate macOS arm64 bundle
         run: npm run validate:mac-bundle -- release/mac-arm64/ScreenMint.app
 
+      - name: Preserve macOS arm64 updater metadata
+        run: cp release/latest-mac.yml release/latest-mac-arm64.yml
+
       - name: Upload macOS arm64 artifact
         uses: actions/upload-artifact@v4
         with:
           name: macos-arm64
           path: |
             release/ScreenMint-arm64.*
+            release/latest-mac-arm64.yml
           if-no-files-found: error
 
   build-windows-x64:
@@ -272,7 +279,13 @@ jobs:
           path: release-assets
 
       - name: Validate updater assets
-        run: node scripts/validate-release-assets.mjs release-assets
+        run: |
+          node scripts/merge-mac-updater-metadata.mjs \
+            release-assets/latest-mac-x64.yml \
+            release-assets/latest-mac-arm64.yml \
+            release-assets/latest-mac.yml
+          node scripts/validate-release-assets.mjs release-assets
+          rm -f release-assets/latest-mac-x64.yml release-assets/latest-mac-arm64.yml
 
       - name: Create or update release
         uses: ncipollo/release-action@v1

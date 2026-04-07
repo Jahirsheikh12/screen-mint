@@ -8,7 +8,7 @@ import { GITHUB_SPONSORS_URL, SPONSOR_MISSION } from "../lib/sponsors";
 type Platform = "macos" | "windows" | "linux" | "unknown";
 type MacArchitecture = "apple-silicon" | "intel" | "unknown";
 
-const XATTR_COMMAND = "xattr -cr /Applications/ScreenMint.app";
+const XATTR_COMMAND = "xattr -rd com.apple.quarantine /Applications/ScreenMint.app";
 
 function detectPlatform(): Platform {
 	const ua = navigator.userAgent.toLowerCase();

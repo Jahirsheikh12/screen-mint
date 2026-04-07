@@ -17,7 +17,7 @@ const commands = [
 	},
 ];
 
-const XATTR_COMMAND = "xattr -cr /Applications/ScreenMint.app";
+const XATTR_COMMAND = "xattr -rd com.apple.quarantine /Applications/ScreenMint.app";
 
 export function QuickStart() {
 	const sectionRef = useRef<HTMLElement>(null);
