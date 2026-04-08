@@ -105,8 +105,8 @@ jobs:
 
       - name: Build macOS x64
         run: |
-          npx tsc
-          npx vite build
+          npm run build:asset-pack
+          npm run build:renderer
           npx electron-builder --mac dmg zip --x64 --publish never
 
       - name: Validate macOS x64 bundle
@@ -149,8 +149,8 @@ jobs:
 
       - name: Build macOS arm64
         run: |
-          npx tsc
-          npx vite build
+          npm run build:asset-pack
+          npm run build:renderer
           npx electron-builder --mac dmg zip --arm64 --publish never
 
       - name: Validate macOS arm64 bundle
@@ -193,8 +193,8 @@ jobs:
         run: |
           npm run build:wgc-capture
           npm run build:cursor-monitor
-          npx tsc
-          npx vite build
+          npm run build:asset-pack
+          npm run build:renderer
           npx electron-builder --win nsis --x64 --publish never
 
       - name: Upload Windows x64 artifact
@@ -228,8 +228,8 @@ jobs:
 
       - name: Build Linux x64
         run: |
-          npx tsc
-          npx vite build
+          npm run build:asset-pack
+          npm run build:renderer
           npx electron-builder --linux AppImage --x64 --publish never
 
       - name: Upload Linux x64 artifact
