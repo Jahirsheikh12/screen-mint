@@ -2,10 +2,12 @@
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
   "appId": "com.jahirsheikh.screenmint",
+  "afterPack": "./scripts/after-pack.cjs",
   "asar": true,
   "asarUnpack": [
-    "node_modules/ffmpeg-static/**",
-    "node_modules/uiohook-napi/**",
+    "node_modules/ffmpeg-static/ffmpeg*",
+    "node_modules/uiohook-napi/build/Release/*.node",
+    "node_modules/uiohook-napi/prebuilds/*/*.node",
     "electron/native/**"
   ],
   "productName": "ScreenMint",
@@ -27,6 +29,8 @@
     "dist",
     "dist-electron",
     "electron/native",
+    "!dist/wallpapers{,/**}",
+    "!**/node_modules/ffmpeg-static/{LICENSE,README.md,example.js,ffmpeg.LICENSE,ffmpeg.README,install.js,types{,/**}}",
     "!*.png",
     "!preview*.png",
     "!*.md",
@@ -36,8 +40,8 @@
   ],
   "extraResources": [
     {
-      "from": "public/wallpapers",
-      "to": "assets/wallpapers"
+      "from": ".tmp/packaged-assets/assets",
+      "to": "assets"
     }
   ],
 

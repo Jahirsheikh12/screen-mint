@@ -36,6 +36,10 @@ Useful commands:
 - `npm run build:mac`
 - `npm run build:win`
 - `npm run build:linux`
+- `npm run version:patch`
+- `npm run version:minor`
+- `npm run version:major`
+- `npm run version:set -- 1.2.3`
 - `npm run lint`
 - `npm run test`
 - `npm run i18n:check`

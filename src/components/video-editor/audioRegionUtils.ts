@@ -1,3 +1,4 @@
+import { getAssetPath } from "@/lib/assetPath";
 import { getBackgroundMusicAssetById } from "@/lib/backgroundMusic";
 import { toFileUrl } from "./projectPersistence";
 import type { AudioRegion, AudioRegionSource, AudioTrackSelection } from "./types";
@@ -21,7 +22,7 @@ export async function resolveAudioSourceUrl(source: AudioRegionSource): Promise<
 			return null;
 		}
 
-		return asset.sourceUrl;
+		return getAssetPath(asset.relativePath);
 	}
 
 	if (source.audioPath?.trim()) {

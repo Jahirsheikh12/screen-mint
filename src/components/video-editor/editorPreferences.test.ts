@@ -207,6 +207,20 @@ describe("editorPreferences", () => {
 		expect(loadEditorPreferences().wallpaper).toBe("/wallpapers/green-blue-waves.jpg");
 	});
 
+	it("normalizes current built-in wallpaper file paths in stored preferences", () => {
+		vi.stubGlobal(
+			"localStorage",
+			createStorageMock({
+				[EDITOR_PREFERENCES_STORAGE_KEY]: JSON.stringify({
+					wallpaper:
+						"/Applications/ScreenMint.app/Contents/Resources/assets/wallpapers/purple-abstract.jpg",
+				}),
+			}),
+		);
+
+		expect(loadEditorPreferences().wallpaper).toBe("/wallpapers/purple-abstract.jpg");
+	});
+
 	it("defaults native aspect ratio preferences to default padding when padding is missing", () => {
 		vi.stubGlobal(
 			"localStorage",

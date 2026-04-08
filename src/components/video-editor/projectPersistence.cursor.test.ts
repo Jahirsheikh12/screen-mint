@@ -94,6 +94,15 @@ describe("cursor project persistence", () => {
 		}
 	});
 
+	it("normalizes absolute built-in wallpaper file paths to logical wallpaper paths", () => {
+		const editor = normalizeProjectEditor({
+			wallpaper:
+				"/Applications/ScreenMint.app/Contents/Resources/assets/wallpapers/pink-abstract.jpg",
+		});
+
+		expect(editor.wallpaper).toBe("/wallpapers/pink-abstract.jpg");
+	});
+
 	it("defaults native aspect ratio projects to default padding when padding is missing", () => {
 		const editor = normalizeProjectEditor({
 			aspectRatio: "native",

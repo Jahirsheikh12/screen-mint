@@ -95,6 +95,13 @@ export const WALLPAPER_RELATIVE_PATHS = BUILT_IN_WALLPAPERS.map(
 export const DEFAULT_WALLPAPER_PATH = WALLPAPER_PATHS[0];
 export const DEFAULT_WALLPAPER_RELATIVE_PATH = WALLPAPER_RELATIVE_PATHS[0];
 
+const BUILT_IN_WALLPAPER_BY_FILENAME = new Map(
+	BUILT_IN_WALLPAPERS.map((wallpaper) => [
+		wallpaper.relativePath.split("/").pop()?.toLowerCase() ?? "",
+		wallpaper.publicPath,
+	]),
+);
+
 export function isRemovedBuiltInWallpaperPath(path: string): boolean {
 	const normalizedPath = path.replace(/\\/g, "/");
 
@@ -109,5 +116,13 @@ export function isRemovedBuiltInWallpaperPath(path: string): boolean {
 }
 
 export function normalizeWallpaperSelection(path: string): string {
-	return isRemovedBuiltInWallpaperPath(path) ? DEFAULT_WALLPAPER_PATH : path;
+	const normalizedPath = path.replace(/\\/g, "/");
+	const filename = normalizedPath.split("/").pop()?.toLowerCase() ?? "";
+	const currentBuiltInPath = BUILT_IN_WALLPAPER_BY_FILENAME.get(filename);
+
+	if (currentBuiltInPath) {
+		return currentBuiltInPath;
+	}
+
+	return isRemovedBuiltInWallpaperPath(normalizedPath) ? DEFAULT_WALLPAPER_PATH : path;
 }

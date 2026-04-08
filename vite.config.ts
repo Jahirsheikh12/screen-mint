@@ -1,12 +1,61 @@
+import fs from "node:fs/promises";
 import path from "node:path";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import electron from "vite-plugin-electron/simple";
 
+function builtInBackgroundMusicDevPlugin() {
+	const audioRoot = path.resolve(__dirname, "src/assets/audio");
+
+	return {
+		name: "screenmint-built-in-background-music-dev",
+		configureServer(server: {
+			middlewares: {
+				use: (
+					route: string,
+					handler: (
+						req: { url?: string },
+						res: {
+							statusCode: number;
+							setHeader: (name: string, value: string) => void;
+							end: (body?: Uint8Array | string) => void;
+						},
+						next: () => void,
+					) => void,
+				) => void;
+			};
+		}) {
+			server.middlewares.use("/background-music", (req, res, next) => {
+				const rawPath = decodeURIComponent((req.url ?? "/").split("?")[0] || "/");
+				const normalizedFileName = rawPath.replace(/^\/+/, "");
+				const resolvedPath = path.resolve(audioRoot, normalizedFileName);
+
+				if (!resolvedPath.startsWith(audioRoot)) {
+					next();
+					return;
+				}
+
+				void (async () => {
+					try {
+						const fileBytes = await fs.readFile(resolvedPath);
+						res.statusCode = 200;
+						res.setHeader("Content-Type", "audio/mpeg");
+						res.setHeader("Cache-Control", "no-store");
+						res.end(fileBytes);
+					} catch {
+						next();
+					}
+				})();
+			});
+		},
+	};
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
 	plugins: [
 		react(),
+		builtInBackgroundMusicDevPlugin(),
 		electron({
 			main: {
 				// Shortcut of `build.lib.entry`.
