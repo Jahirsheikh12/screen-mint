@@ -2,6 +2,14 @@ import { contextBridge, ipcRenderer } from "electron";
 import type { SelectedArea } from "../src/lib/recording/session";
 import type { UpdaterState } from "../src/lib/updater/types";
 
+const assetBasePathSync = (() => {
+	try {
+		return ipcRenderer.sendSync("get-asset-base-path-sync") as string | null;
+	} catch {
+		return null;
+	}
+})();
+
 contextBridge.exposeInMainWorld("electronAPI", {
 	hudOverlayHide: () => {
 		ipcRenderer.send("hud-overlay-hide");
@@ -16,7 +24,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		return ipcRenderer.invoke("set-hud-overlay-capture-protection", enabled);
 	},
 	getAssetBasePath: async () => {
-		return await ipcRenderer.invoke("get-asset-base-path");
+		return assetBasePathSync ?? (await ipcRenderer.invoke("get-asset-base-path"));
+	},
+	getAssetBasePathSync: () => {
+		return assetBasePathSync;
 	},
 	readLocalFile: (filePath: string) => {
 		return ipcRenderer.invoke("read-local-file", filePath);

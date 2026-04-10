@@ -38,6 +38,8 @@ declare global {
 	// Used in Renderer process, expose in `preload.ts`
 	interface Window {
 		electronAPI: {
+			getAssetBasePath: () => Promise<string | null>;
+			getAssetBasePathSync: () => string | null;
 			getSources: (opts: Electron.SourcesOptions) => Promise<ProcessedDesktopSource[]>;
 			switchToEditor: () => Promise<void>;
 			switchToHud: () => Promise<void>;

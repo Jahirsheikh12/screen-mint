@@ -25,7 +25,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getAssetPath, getRenderableAssetUrl } from "@/lib/assetPath";
+import { getDisplayAssetUrl, getDisplayAssetUrlSync } from "@/lib/assetPath";
 import { type BackgroundMusicMood, BUILT_IN_BACKGROUND_MUSIC } from "@/lib/backgroundMusic";
 import { cn } from "@/lib/utils";
 import { BUILT_IN_WALLPAPERS, WALLPAPER_PATHS, WALLPAPER_RELATIVE_PATHS } from "@/lib/wallpapers";
@@ -206,6 +206,51 @@ function getBackgroundTabForWallpaper(value: string): BackgroundTab {
 	}
 
 	return "image";
+}
+
+let cachedBuiltInWallpaperPreviewPaths: string[] | null = null;
+let builtInWallpaperPreviewPathsPromise: Promise<string[]> | null = null;
+
+function canUseCurrentWallpaperPreviewPaths(paths: string[]): boolean {
+	if (typeof window !== "undefined" && window.location.protocol.startsWith("http")) {
+		return true;
+	}
+
+	return paths.every((path) => path.startsWith("file://"));
+}
+
+function loadBuiltInWallpaperPreviewPaths(): Promise<string[]> {
+	if (
+		cachedBuiltInWallpaperPreviewPaths &&
+		canUseCurrentWallpaperPreviewPaths(cachedBuiltInWallpaperPreviewPaths)
+	) {
+		return Promise.resolve(cachedBuiltInWallpaperPreviewPaths);
+	}
+
+	if (!builtInWallpaperPreviewPathsPromise) {
+		builtInWallpaperPreviewPathsPromise = Promise.all(
+			WALLPAPER_RELATIVE_PATHS.map((path) => getDisplayAssetUrl(path)),
+		)
+			.then((resolved) => {
+				cachedBuiltInWallpaperPreviewPaths = resolved;
+				return resolved;
+			})
+			.catch(() => WALLPAPER_PATHS);
+	}
+
+	return builtInWallpaperPreviewPathsPromise;
+}
+
+function getInitialBuiltInWallpaperPreviewPaths(): string[] {
+	if (cachedBuiltInWallpaperPreviewPaths) {
+		return cachedBuiltInWallpaperPreviewPaths;
+	}
+
+	const initialPreviewPaths = WALLPAPER_RELATIVE_PATHS.map((path) => getDisplayAssetUrlSync(path));
+	if (canUseCurrentWallpaperPreviewPaths(initialPreviewPaths)) {
+		cachedBuiltInWallpaperPreviewPaths = initialPreviewPaths;
+	}
+	return initialPreviewPaths;
 }
 
 function groupBuiltInTracksByMood() {
@@ -684,7 +729,9 @@ export default function SettingsPanel({
 	const tSettings = useScopedT("settings");
 	const { t } = useI18n();
 	const initialEditorPreferences = useMemo(() => editorPreferencesService.load(), []);
-	const [wallpaperPreviewPaths, setWallpaperPreviewPaths] = useState<string[]>([]);
+	const [wallpaperPreviewPaths, setWallpaperPreviewPaths] = useState<string[]>(
+		getInitialBuiltInWallpaperPreviewPaths,
+	);
 	const [customImages, setCustomImages] = useState<string[]>(
 		initialEditorPreferences.customWallpapers,
 	);
@@ -701,18 +748,11 @@ export default function SettingsPanel({
 
 	useEffect(() => {
 		let mounted = true;
-		(async () => {
-			try {
-				const resolved = await Promise.all(
-					WALLPAPER_RELATIVE_PATHS.map(async (path) =>
-						getRenderableAssetUrl(await getAssetPath(path)),
-					),
-				);
-				if (mounted) setWallpaperPreviewPaths(resolved);
-			} catch {
-				if (mounted) setWallpaperPreviewPaths(WALLPAPER_PATHS);
+		void loadBuiltInWallpaperPreviewPaths().then((resolved) => {
+			if (mounted) {
+				setWallpaperPreviewPaths(resolved);
 			}
-		})();
+		});
 		return () => {
 			mounted = false;
 		};

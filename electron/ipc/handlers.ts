@@ -18,13 +18,13 @@ import {
 	shell,
 	systemPreferences,
 } from "electron";
-import type { PostRecordingContext } from "../../src/lib/recording/postRecording";
 import type {
 	CaptureDiagnostics,
 	CapturePermissionState,
 	CaptureSourceProbeResult,
 	HelperBinaryDiagnostics,
 } from "../../src/lib/recording/capturePermissionState";
+import type { PostRecordingContext } from "../../src/lib/recording/postRecording";
 import type {
 	SelectedArea,
 	CursorTelemetrySample as SessionCursorTelemetrySample,
@@ -52,8 +52,8 @@ import {
 	updateSpeakerNotesWindow,
 } from "../windows";
 import {
-	shouldRecordCursorMoveSample,
 	type CursorMoveSampleCandidate,
+	shouldRecordCursorMoveSample,
 } from "./cursorTelemetryUtils";
 
 const execFileAsync = promisify(execFile);
@@ -4353,8 +4353,7 @@ export function registerIpcHandlers(
 		}
 	});
 
-	// Return base path for assets so renderer can resolve file:// paths in production
-	ipcMain.handle("get-asset-base-path", () => {
+	const resolveAssetBasePath = () => {
 		try {
 			if (app.isPackaged) {
 				const assetPath = path.join(process.resourcesPath, "assets");
@@ -4366,6 +4365,15 @@ export function registerIpcHandlers(
 			console.error("Failed to resolve asset base path:", err);
 			return null;
 		}
+	};
+
+	// Return base path for assets so renderer can resolve file:// paths in production
+	ipcMain.handle("get-asset-base-path", () => {
+		return resolveAssetBasePath();
+	});
+
+	ipcMain.on("get-asset-base-path-sync", (event) => {
+		event.returnValue = resolveAssetBasePath();
 	});
 
 	ipcMain.handle("read-local-file", async (_, filePath: string) => {
