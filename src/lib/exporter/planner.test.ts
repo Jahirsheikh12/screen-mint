@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
-	getGifExportSettingsForPreset,
 	getCodecLabel,
 	getDefaultGifExportSettings,
 	getDefaultVideoExportSettings,
+	getGifExportSettingsForPreset,
 	getVideoExportSettingsForPreset,
 	mapLegacyExportQualityToVideoSettings,
 	resolveGifExportPlan,

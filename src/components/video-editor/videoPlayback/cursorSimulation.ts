@@ -527,8 +527,7 @@ function classifyCursorIntent(args: {
 function hasRecentInteractionActivity(samples: CursorTelemetryPoint[], timeMs: number) {
 	const latestInteraction = findLatestInteractionSample(samples, timeMs);
 	return Boolean(
-		latestInteraction &&
-			timeMs - latestInteraction.timeMs <= CURSOR_ACTIVITY_INTERACTION_WINDOW_MS,
+		latestInteraction && timeMs - latestInteraction.timeMs <= CURSOR_ACTIVITY_INTERACTION_WINDOW_MS,
 	);
 }
 

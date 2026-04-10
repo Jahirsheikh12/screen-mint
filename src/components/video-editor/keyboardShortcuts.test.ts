@@ -59,10 +59,7 @@ describe("keyboardShortcuts", () => {
 
 	it("ignores plain typing without modifiers", () => {
 		const callouts = deriveKeyboardShortcutCallouts(
-			[
-				key(0, "keydown", "a", { keycode: 30 }),
-				key(50, "keyup", "a", { keycode: 30 }),
-			],
+			[key(0, "keydown", "a", { keycode: 30 }), key(50, "keyup", "a", { keycode: 30 })],
 			"win32",
 			1000,
 		);
@@ -120,8 +117,22 @@ describe("keyboardShortcuts", () => {
 
 	it("returns only the latest visible stack entries", () => {
 		const callouts = [
-			{ id: "one", startMs: 0, endMs: 1000, keys: ["ctrl", "1"], labels: ["Ctrl", "1"], platform: "win32" as const },
-			{ id: "two", startMs: 100, endMs: 1100, keys: ["ctrl", "2"], labels: ["Ctrl", "2"], platform: "win32" as const },
+			{
+				id: "one",
+				startMs: 0,
+				endMs: 1000,
+				keys: ["ctrl", "1"],
+				labels: ["Ctrl", "1"],
+				platform: "win32" as const,
+			},
+			{
+				id: "two",
+				startMs: 100,
+				endMs: 1100,
+				keys: ["ctrl", "2"],
+				labels: ["Ctrl", "2"],
+				platform: "win32" as const,
+			},
 		];
 
 		const states = getKeyboardShortcutRenderStates(callouts, 500, 1);

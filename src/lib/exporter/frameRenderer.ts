@@ -44,10 +44,10 @@ import {
 	type CursorSimulationPath,
 } from "@/components/video-editor/videoPlayback/cursorSimulation";
 import { resolveCursorV2Config } from "@/components/video-editor/videoPlayback/cursorV2";
-import {
-	computeMockupScreenRect,
-	drawDeviceMockup,
-} from "@/components/video-editor/videoPlayback/deviceMockups";
+// import {
+// 	computeMockupScreenRect,
+// 	drawDeviceMockup,
+// } from "@/components/video-editor/videoPlayback/deviceMockups";
 import { calculateVideoLayoutGeometry } from "@/components/video-editor/videoPlayback/layoutUtils";
 import {
 	applyZoomTransform,
@@ -71,6 +71,7 @@ interface FrameRenderConfig {
 	frameShadowOpacity?: number;
 	frameShadowBlur?: number;
 	backgroundBlur: number;
+	hideBackground?: boolean;
 	zoomMotionBlur?: number;
 	connectZooms?: boolean;
 	deviceMockup?: DeviceMockup;
@@ -340,6 +341,11 @@ export class FrameRenderer {
 	}
 
 	private async setupBackground(): Promise<void> {
+		if (this.config.hideBackground) {
+			this.backgroundCanvas = null;
+			return;
+		}
+
 		const wallpaper = await this.resolveWallpaperForExport(this.config.wallpaper);
 
 		// Create background canvas for separate rendering (not affected by zoom)
@@ -902,7 +908,7 @@ export class FrameRenderer {
 		ctx.clearRect(0, 0, w, h);
 
 		// Step 1: Draw background layer (with optional blur, not affected by zoom)
-		if (this.backgroundCanvas) {
+		if (this.backgroundCanvas && !this.config.hideBackground) {
 			if (this.config.backgroundBlur > 0) {
 				ctx.save();
 				ctx.filter = `blur(${this.config.backgroundBlur * 3}px)`;
@@ -911,7 +917,7 @@ export class FrameRenderer {
 			} else {
 				ctx.drawImage(this.backgroundCanvas, 0, 0, w, h);
 			}
-		} else {
+		} else if (!this.config.hideBackground) {
 			console.warn("[FrameRenderer] No background sprite found during compositing!");
 		}
 
@@ -936,16 +942,7 @@ export class FrameRenderer {
 			ctx.drawImage(videoCanvas, 0, 0, w, h);
 		}
 
-		// Draw device mockup frame on top of video
-		const mockup = this.config.deviceMockup;
-		if (mockup && mockup !== "none" && this.layoutCache) {
-			const mask = this.layoutCache.maskRect;
-			const videoAR = mask.width / mask.height;
-			const screenRect = computeMockupScreenRect(mockup, w, h, videoAR);
-			if (screenRect) {
-				drawDeviceMockup(ctx, mockup, w, h, screenRect);
-			}
-		}
+		// Device mockups are temporarily disabled in exported video.
 	}
 
 	getCanvas(): HTMLCanvasElement {

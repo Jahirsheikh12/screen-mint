@@ -32,6 +32,7 @@ interface RendererHarness {
 	config: {
 		showShadow: boolean;
 		backgroundBlur: number;
+		hideBackground?: boolean;
 		deviceMockup?: string;
 		frameBorderEnabled?: boolean;
 		frameBorderWidth?: number;
@@ -283,5 +284,70 @@ describe("FrameRenderer frame border", () => {
 			"shadow-composite",
 		]);
 		drawFrameBorderSpy.mockRestore();
+	});
+
+	it("skips drawing the background layer when hideBackground is enabled", () => {
+		const renderer = new FrameRenderer({
+			videoWidth: 1920,
+			videoHeight: 1080,
+			width: 1280,
+			height: 720,
+			wallpaper: "#000000",
+			zoomRegions: [],
+			showShadow: false,
+			shadowIntensity: 0,
+			backgroundBlur: 0,
+			hideBackground: true,
+			cropRegion: { x: 0, y: 0, width: 1, height: 1 },
+			frameBorderEnabled: false,
+		});
+		const rendererHarness = renderer as unknown as RendererHarness;
+		const drawOrder: string[] = [];
+		const videoCanvas = {} as HTMLCanvasElement;
+		const backgroundCanvas = {} as HTMLCanvasElement;
+		const compositeCtx = {
+			clearRect: vi.fn(() => drawOrder.push("clear")),
+			drawImage: vi.fn((image: CanvasImageSource) => {
+				if (image === backgroundCanvas) {
+					drawOrder.push("background");
+					return;
+				}
+				if (image === videoCanvas) {
+					drawOrder.push("video");
+				}
+			}),
+		} as unknown as CanvasRenderingContext2D;
+
+		rendererHarness.layoutCache = {
+			stageSize: { width: 1280, height: 720 },
+			frameRect: { x: 0, y: 0, width: 1280, height: 720 },
+			videoSize: { width: 1920, height: 1080 },
+			baseScale: 1,
+			baseOffset: { x: 0, y: 0 },
+			maskRect: { x: 0, y: 0, width: 1280, height: 720 },
+		};
+		rendererHarness.animationState = {
+			scale: 1,
+			appliedScale: 1,
+			focusX: 0.5,
+			focusY: 0.5,
+			focusVelocityX: 0,
+			focusVelocityY: 0,
+			smoothTimeFactor: 1,
+			progress: 1,
+			x: 0,
+			y: 0,
+			lastUpdateMs: 0,
+			lastPlaybackTimeMs: 0,
+		};
+		rendererHarness.compositeCanvas = { width: 1280, height: 720 };
+		rendererHarness.compositeCtx = compositeCtx;
+		rendererHarness.app = { canvas: videoCanvas };
+		rendererHarness.backgroundCanvas = backgroundCanvas;
+		rendererHarness.config.hideBackground = true;
+
+		rendererHarness.compositeWithShadows();
+
+		expect(drawOrder).toEqual(["clear", "video"]);
 	});
 });

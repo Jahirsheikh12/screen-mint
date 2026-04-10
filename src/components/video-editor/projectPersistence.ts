@@ -32,6 +32,7 @@ import {
 	type AudioRegion,
 	type AudioSourceType,
 	type CameraLayoutRegion,
+	type CameraSpringSettings,
 	type CaptionGenerationOptions,
 	type CaptionRegion,
 	type CaptionSettings,
@@ -53,6 +54,7 @@ import {
 	DEFAULT_BLUR_DATA,
 	DEFAULT_CAMERA_LAYOUT_MODE,
 	DEFAULT_CAMERA_SIZE_DURING_ZOOM,
+	DEFAULT_CAMERA_SPRING,
 	DEFAULT_CAPTION_GENERATION_OPTIONS,
 	DEFAULT_CAPTION_SETTINGS,
 	DEFAULT_CLICK_HIGHLIGHT_COLOR,
@@ -69,8 +71,6 @@ import {
 	DEFAULT_CURSOR_SMOOTHING,
 	DEFAULT_CURSOR_SPRING,
 	DEFAULT_CURSOR_STYLE,
-	DEFAULT_CAMERA_SPRING,
-	type CameraSpringSettings,
 	DEFAULT_CURSOR_SWAY,
 	DEFAULT_CURSOR_TRAIL_LENGTH,
 	DEFAULT_CURSOR_TRAIL_OPACITY,
@@ -106,8 +106,12 @@ function normalizeCameraSpring(
 ): CameraSpringSettings {
 	const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
 	return {
-		tension: isNum(candidate?.tension) ? clamp(candidate.tension, 60, 500) : DEFAULT_CAMERA_SPRING.tension,
-		friction: isNum(candidate?.friction) ? clamp(candidate.friction, 8, 80) : DEFAULT_CAMERA_SPRING.friction,
+		tension: isNum(candidate?.tension)
+			? clamp(candidate.tension, 60, 500)
+			: DEFAULT_CAMERA_SPRING.tension,
+		friction: isNum(candidate?.friction)
+			? clamp(candidate.friction, 8, 80)
+			: DEFAULT_CAMERA_SPRING.friction,
 		mass: isNum(candidate?.mass) ? clamp(candidate.mass, 0.3, 2.5) : DEFAULT_CAMERA_SPRING.mass,
 	};
 }
@@ -117,6 +121,7 @@ export const DEFAULT_VIDEO_PREVIEW_PADDING = 40;
 
 export interface ProjectEditorState {
 	wallpaper: string;
+	hideBackground: boolean;
 	shadowIntensity: number;
 	frameShadowSize: number;
 	frameShadowOpacity: number;
@@ -1114,6 +1119,7 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 			typeof editor.wallpaper === "string"
 				? normalizeWallpaperSelection(editor.wallpaper)
 				: WALLPAPER_PATHS[0],
+		hideBackground: typeof editor.hideBackground === "boolean" ? editor.hideBackground : false,
 		shadowIntensity: normalizedShadowIntensity,
 		frameShadowSize: normalizedFrameShadow.size,
 		frameShadowOpacity: normalizedFrameShadow.opacity,
@@ -1155,9 +1161,7 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		smoothMovementEnabled: cursorV2Fields.smoothMovementEnabled,
 		cursorMovementStyle: cursorV2Fields.cursorMovementStyle,
 		cursorSpring: normalizeCursorSpring(cursorV2Fields.cursorSpring, DEFAULT_CURSOR_SPRING),
-		cameraSpring: normalizeCameraSpring(
-			(editor as Partial<ProjectEditorState>).cameraSpring,
-		),
+		cameraSpring: normalizeCameraSpring((editor as Partial<ProjectEditorState>).cameraSpring),
 		highQualitySvgCursors: cursorV2Fields.highQualitySvgCursors,
 		cursorColor: typeof editor.cursorColor === "string" ? editor.cursorColor : DEFAULT_CURSOR_COLOR,
 		cursorOpacity: isFiniteNumber(editor.cursorOpacity)

@@ -1,2938 +1,2938 @@
 {
-  "version": 2,
-  "samples": [
-    {
-      "timeMs": 1,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 34,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 70,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 105,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 141,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 180,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 217,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 252,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 287,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 325,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 363,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 401,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 439,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 472,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 510,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 545,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 583,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 621,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 659,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 692,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 730,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 767,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 803,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 836,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 872,
-      "cx": 0.8281609233924753,
-      "cy": 0.8930383789119201,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 907,
-      "cx": 0.8273029512899744,
-      "cy": 0.896011147883644,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 941,
-      "cx": 0.8255870070849728,
-      "cy": 0.8989839168553678,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 974,
-      "cx": 0.823871062879971,
-      "cy": 0.9004703013412297,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1008,
-      "cx": 0.8221551186749694,
-      "cy": 0.9034430703129536,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1042,
-      "cx": 0.818723230264966,
-      "cy": 0.9064158392846775,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1076,
-      "cx": 0.7989898719074463,
-      "cy": 0.9227660686291587,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1112,
-      "cx": 0.7792565135499266,
-      "cy": 0.9346571445160541,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1145,
-      "cx": 0.7380738526298856,
-      "cy": 0.9539801428322592,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1179,
-      "cx": 0.7028969964273506,
-      "cy": 0.9643848342332927,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1214,
-      "cx": 0.6548505586873027,
-      "cy": 0.9837078325494978,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1247,
-      "cx": 0.5982243999222463,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1281,
-      "cx": 0.5450301295671933,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1314,
-      "cx": 0.48583005449463434,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1349,
-      "cx": 0.4429314493695916,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1382,
-      "cx": 0.3665719322470155,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1416,
-      "cx": 0.32796318763447707,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1450,
-      "cx": 0.28506458250943434,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1487,
-      "cx": 0.25846744733190785,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1520,
-      "cx": 0.2310123400518805,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1554,
-      "cx": 0.22758045164187707,
-      "cy": 0.9970852929222551,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1589,
-      "cx": 0.2250065353343745,
-      "cy": 0.9911397549788075,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1622,
-      "cx": 0.21814275851436768,
-      "cy": 0.9628984497474308,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1657,
-      "cx": 0.21042100959186,
-      "cy": 0.9301979910584683,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1690,
-      "cx": 0.2026992606693523,
-      "cy": 0.8841200719967486,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1724,
-      "cx": 0.19411953964434375,
-      "cy": 0.8098008477036521,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1758,
-      "cx": 0.18210793020933178,
-      "cy": 0.7057539336933171,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1792,
-      "cx": 0.17181226497932153,
-      "cy": 0.6240027869709109,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1826,
-      "cx": 0.16237457185181214,
-      "cy": 0.5377924867909191,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1862,
-      "cx": 0.1555107950318053,
-      "cy": 0.4649596469836846,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1895,
-      "cx": 0.15122093451930102,
-      "cy": 0.3906404226905882,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1929,
-      "cx": 0.15122093451930102,
-      "cy": 0.32375312082680135,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1962,
-      "cx": 0.15122093451930102,
-      "cy": 0.24646112756198107,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 1997,
-      "cx": 0.15636876713430614,
-      "cy": 0.16322359635371306,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2031,
-      "cx": 0.17352820918432324,
-      "cy": 0.09187714103234047,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2065,
-      "cx": 0.18468184651683436,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2102,
-      "cx": 0.19840940015684802,
-      "cy": 0.029448992626139463,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2137,
-      "cx": 0.2232905911293728,
-      "cy": 0,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2170,
-      "cx": 0.2842066104069335,
-      "cy": 0,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2204,
-      "cx": 0.34683857388949585,
-      "cy": 0,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2237,
-      "cx": 0.42662997942207537,
-      "cy": 0,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2271,
-      "cx": 0.4926938313146412,
-      "cy": 0,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2305,
-      "cx": 0.5107112454671591,
-      "cy": 0,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2341,
-      "cx": 0.5107112454671591,
-      "cy": 0,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2376,
-      "cx": 0.5107112454671591,
-      "cy": 0,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2414,
-      "cx": 0.5107112454671591,
-      "cy": 0,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2451,
-      "cx": 0.5107112454671591,
-      "cy": 0,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2489,
-      "cx": 0.5107112454671591,
-      "cy": 0,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2522,
-      "cx": 0.5175750222871659,
-      "cy": 0,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2555,
-      "cx": 0.5313025759271797,
-      "cy": 0.020530685710967892,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2588,
-      "cx": 0.5415982411571899,
-      "cy": 0.11120013934854554,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2622,
-      "cx": 0.5415982411571899,
-      "cy": 0.12011844626371712,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2659,
-      "cx": 0.5424562132596907,
-      "cy": 0.12309121523544098,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2694,
-      "cx": 0.5424562132596907,
-      "cy": 0.12309121523544098,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2732,
-      "cx": 0.5424562132596907,
-      "cy": 0.12309121523544098,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2769,
-      "cx": 0.5424562132596907,
-      "cy": 0.12309121523544098,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2802,
-      "cx": 0.5433141853621916,
-      "cy": 0.12160483074957905,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2837,
-      "cx": 0.5544678226947027,
-      "cy": 0.11417290832026941,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2870,
-      "cx": 0.5767750973597249,
-      "cy": 0.10079544794751205,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2904,
-      "cx": 0.6085200651522565,
-      "cy": 0.07849968065958311,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2938,
-      "cx": 0.6402650329447882,
-      "cy": 0.06512222028682575,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 2971,
-      "cx": 0.6677201402248155,
-      "cy": 0.057690297857516115,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3005,
-      "cx": 0.6805897217623283,
-      "cy": 0.053231144399930326,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3038,
-      "cx": 0.6831636380698309,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3072,
-      "cx": 0.6917433590948394,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3106,
-      "cx": 0.7089028011448565,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3141,
-      "cx": 0.7406477689373882,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3175,
-      "cx": 0.7972739277024445,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3208,
-      "cx": 0.8307348396999779,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3242,
-      "cx": 0.8727754727225198,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3275,
-      "cx": 0.8976566636950445,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3309,
-      "cx": 0.901088552105048,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3347,
-      "cx": 0.901088552105048,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3383,
-      "cx": 0.901088552105048,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3419,
-      "cx": 0.901088552105048,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3457,
-      "cx": 0.901088552105048,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3495,
-      "cx": 0.901088552105048,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3530,
-      "cx": 0.901088552105048,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3564,
-      "cx": 0.901088552105048,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3600,
-      "cx": 0.901088552105048,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3638,
-      "cx": 0.901088552105048,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3672,
-      "cx": 0.901088552105048,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3708,
-      "cx": 0.901088552105048,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3747,
-      "cx": 0.901088552105048,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3785,
-      "cx": 0.901088552105048,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3819,
-      "cx": 0.901088552105048,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3854,
-      "cx": 0.901088552105048,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3890,
-      "cx": 0.901088552105048,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3925,
-      "cx": 0.9019465242075488,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3960,
-      "cx": 0.9036624684125505,
-      "cy": 0.053231144399930326,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 3994,
-      "cx": 0.9053784126175523,
-      "cy": 0.05620391337165418,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4028,
-      "cx": 0.9070943568225539,
-      "cy": 0.05917668234337804,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4061,
-      "cx": 0.9088103010275557,
-      "cy": 0.0621494513151019,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4095,
-      "cx": 0.9096682731300565,
-      "cy": 0.06363583580096382,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4132,
-      "cx": 0.9096682731300565,
-      "cy": 0.06363583580096382,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4170,
-      "cx": 0.9096682731300565,
-      "cy": 0.06363583580096382,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4208,
-      "cx": 0.9096682731300565,
-      "cy": 0.06363583580096382,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4245,
-      "cx": 0.9096682731300565,
-      "cy": 0.06363583580096382,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4283,
-      "cx": 0.9096682731300565,
-      "cy": 0.06363583580096382,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4320,
-      "cx": 0.9096682731300565,
-      "cy": 0.06363583580096382,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4358,
-      "cx": 0.9096682731300565,
-      "cy": 0.06363583580096382,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4396,
-      "cx": 0.9096682731300565,
-      "cy": 0.06363583580096382,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4432,
-      "cx": 0.9096682731300565,
-      "cy": 0.06363583580096382,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4468,
-      "cx": 0.9096682731300565,
-      "cy": 0.06363583580096382,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4504,
-      "cx": 0.9096682731300565,
-      "cy": 0.06363583580096382,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4542,
-      "cx": 0.9096682731300565,
-      "cy": 0.06363583580096382,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4576,
-      "cx": 0.9096682731300565,
-      "cy": 0.06512222028682575,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4610,
-      "cx": 0.9096682731300565,
-      "cy": 0.06958137374441155,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4644,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4679,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4716,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4751,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4788,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4825,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4863,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4901,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4937,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 4975,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5009,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5045,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5083,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5120,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5154,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5189,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5224,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5258,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5291,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5327,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5363,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5397,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5434,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5472,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5508,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5546,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5583,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5620,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5658,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5691,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5726,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5762,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5801,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5839,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5875,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5910,
-      "cx": 0.9096682731300565,
-      "cy": 0.0725541427161354,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5943,
-      "cx": 0.9070943568225539,
-      "cy": 0.07701329617372119,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 5977,
-      "cx": 0.9036624684125505,
-      "cy": 0.08444521860303084,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6012,
-      "cx": 0.8942247752850411,
-      "cy": 0.09930906346165012,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6046,
-      "cx": 0.8796392495425266,
-      "cy": 0.11417290832026941,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6080,
-      "cx": 0.8659116959025129,
-      "cy": 0.1245775997213029,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6115,
-      "cx": 0.8436044212374907,
-      "cy": 0.14241421355164605,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6149,
-      "cx": 0.8015637882149488,
-      "cy": 0.15876444289612726,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6186,
-      "cx": 0.770676792524918,
-      "cy": 0.16768274981129885,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6219,
-      "cx": 0.7320680479123796,
-      "cy": 0.16768274981129885,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6252,
-      "cx": 0.6908853869923386,
-      "cy": 0.1557916739244034,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6285,
-      "cx": 0.6256795072022736,
-      "cy": 0.12903675317888869,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6320,
-      "cx": 0.5733432089497215,
-      "cy": 0.11120013934854554,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6355,
-      "cx": 0.5252967712096737,
-      "cy": 0.09484991000406433,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6389,
-      "cx": 0.48068222187962917,
-      "cy": 0.07998606514544504,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6423,
-      "cx": 0.4412155051645899,
-      "cy": 0.06660860477268768,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6456,
-      "cx": 0.41719228629456595,
-      "cy": 0.06066306682923997,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6488,
-      "cx": 0.37944151378452834,
-      "cy": 0.06066306682923997,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6522,
-      "cx": 0.351986406504501,
-      "cy": 0.06066306682923997,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6557,
-      "cx": 0.3313950760444805,
-      "cy": 0.06066306682923997,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6591,
-      "cx": 0.32195738291697107,
-      "cy": 0.06066306682923997,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6624,
-      "cx": 0.31509360609696424,
-      "cy": 0.06066306682923997,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6658,
-      "cx": 0.298792136149448,
-      "cy": 0.06066306682923997,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6690,
-      "cx": 0.26275730784441215,
-      "cy": 0.06066306682923997,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6725,
-      "cx": 0.22071667482187024,
-      "cy": 0.06066306682923997,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6758,
-      "cx": 0.18210793020933178,
-      "cy": 0.06066306682923997,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6792,
-      "cx": 0.1211919109317711,
-      "cy": 0.06066306682923997,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6825,
-      "cx": 0.08515708262673521,
-      "cy": 0.06066306682923997,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6859,
-      "cx": 0.06199183585921214,
-      "cy": 0.05471752888579225,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6892,
-      "cx": 0.05941791955170957,
-      "cy": 0.05471752888579225,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6930,
-      "cx": 0.05941791955170957,
-      "cy": 0.05471752888579225,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 6968,
-      "cx": 0.05941791955170957,
-      "cy": 0.05471752888579225,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 7006,
-      "cx": 0.05941791955170957,
-      "cy": 0.05471752888579225,
-      "interactionType": "click",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 7006,
-      "cx": 0.05941791955170957,
-      "cy": 0.05471752888579225,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 7042,
-      "cx": 0.05941791955170957,
-      "cy": 0.05471752888579225,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 7055,
-      "cx": 0.05941791955170957,
-      "cy": 0.05471752888579225,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 7080,
-      "cx": 0.05941791955170957,
-      "cy": 0.05471752888579225,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 7095,
-      "cx": 0.05941791955170957,
-      "cy": 0.05471752888579225,
-      "interactionType": "mouseup",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 7117,
-      "cx": 0.05941791955170957,
-      "cy": 0.05471752888579225,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 7155,
-      "cx": 0.05941791955170957,
-      "cy": 0.05471752888579225,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 7193,
-      "cx": 0.05941791955170957,
-      "cy": 0.05471752888579225,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 7228,
-      "cx": 0.05941791955170957,
-      "cy": 0.05471752888579225,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 7266,
-      "cx": 0.05941791955170957,
-      "cy": 0.05471752888579225,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 7303,
-      "cx": 0.05941791955170957,
-      "cy": 0.05471752888579225,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 7341,
-      "cx": 0.05941791955170957,
-      "cy": 0.05471752888579225,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 7379,
-      "cx": 0.05941791955170957,
-      "cy": 0.05471752888579225,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 7416,
-      "cx": 0.05941791955170957,
-      "cy": 0.05471752888579225,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 7451,
-      "cx": 0.05855994744920872,
-      "cy": 0.053231144399930326,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 7455,
-      "cx": 0.05855994744920872,
-      "cy": 0.053231144399930326,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 7486,
-      "cx": 0.05684400324420701,
-      "cy": 0.0517447599140684,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 7519,
-      "cx": 0.054270086936704445,
-      "cy": 0.05025837542820647,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 7555,
-      "cx": 0.05255414273170274,
-      "cy": 0.05025837542820647,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 7588,
-      "cx": 0.051696170629201885,
-      "cy": 0.04877199094234454,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 7622,
-      "cx": 0.04998022642420018,
-      "cy": 0.04728560645648261,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 7655,
-      "cx": 0.049122254321699324,
-      "cy": 0.04579922197062068,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 7688,
-      "cx": 0.04740631011669761,
-      "cy": 0.044312837484758755,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 7723,
-      "cx": 0.0456903659116959,
-      "cy": 0.044312837484758755,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 7759,
-      "cx": 0.04483239380919505,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 7772,
-      "cx": 0.043974421706694196,
-      "cy": 0.04282645299889683,
-      "interactionType": "click",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 7792,
-      "cx": 0.043116449604193335,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 7827,
-      "cx": 0.03968456119418992,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 7862,
-      "cx": 0.03453672857918479,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 7896,
-      "cx": 0.021667147041671973,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 7929,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 7955,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 7963,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 7995,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8031,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8066,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8099,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8132,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8166,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8201,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8237,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8275,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8309,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8342,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8375,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8409,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8442,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8476,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8511,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8545,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8584,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8622,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8638,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "mouseup",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8659,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8692,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8727,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8761,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8796,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8830,
-      "cx": 0,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "text"
-    },
-    {
-      "timeMs": 8853,
-      "cx": 0.025957007554176247,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 8865,
-      "cx": 0.03968456119418992,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 8898,
-      "cx": 0.10574841308675573,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 8934,
-      "cx": 0.15036296241680017,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 8968,
-      "cx": 0.1666644323643164,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 9005,
-      "cx": 0.16752240446681727,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 9043,
-      "cx": 0.16752240446681727,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 9071,
-      "cx": 0.16752240446681727,
-      "cy": 0.04282645299889683,
-      "interactionType": "click",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 9078,
-      "cx": 0.16752240446681727,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 9116,
-      "cx": 0.16752240446681727,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 9151,
-      "cx": 0.16752240446681727,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 9158,
-      "cx": 0.16752240446681727,
-      "cy": 0.04282645299889683,
-      "interactionType": "mouseup",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 9187,
-      "cx": 0.16752240446681727,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 9224,
-      "cx": 0.16752240446681727,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 9258,
-      "cx": 0.16752240446681727,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 9294,
-      "cx": 0.16752240446681727,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 9328,
-      "cx": 0.16752240446681727,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 9361,
-      "cx": 0.16752240446681727,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 9396,
-      "cx": 0.16838037656931812,
-      "cy": 0.04282645299889683,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 9430,
-      "cx": 0.17009632077431983,
-      "cy": 0.044312837484758755,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 9465,
-      "cx": 0.17095429287682068,
-      "cy": 0.04728560645648261,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 9499,
-      "cx": 0.17352820918432324,
-      "cy": 0.05025837542820647,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 9534,
-      "cx": 0.18124995810683092,
-      "cy": 0.0621494513151019,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 9569,
-      "cx": 0.20784709328435744,
-      "cy": 0.10674098589095976,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 9603,
-      "cx": 0.26790514045941727,
-      "cy": 0.19741043952853743,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 9604,
-      "cx": 0.26790514045941727,
-      "cy": 0.19741043952853743,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 9637,
-      "cx": 0.304797940866954,
-      "cy": 0.25537943447715267,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 9671,
-      "cx": 0.345980601786995,
-      "cy": 0.34010335017128257,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 9704,
-      "cx": 0.36228207173451127,
-      "cy": 0.3876676537188643,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 9738,
-      "cx": 0.38287340219453175,
-      "cy": 0.44860941763920337,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 9771,
-      "cx": 0.39660095583454547,
-      "cy": 0.48725541427161356,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 9806,
-      "cx": 0.41461836998706336,
-      "cy": 0.5422516402485049,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 9839,
-      "cx": 0.42491403521707366,
-      "cy": 0.5838704058526389,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 9872,
-      "cx": 0.4369256446520856,
-      "cy": 0.625489171456773,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 9907,
-      "cx": 0.44807928198459673,
-      "cy": 0.6745398594902166,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 9940,
-      "cx": 0.4575169751121061,
-      "cy": 0.7265633164953841,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 9954,
-      "cx": 0.45923291931710786,
-      "cy": 0.7339952389246938,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 9974,
-      "cx": 0.46266480772711127,
-      "cy": 0.7622365441560703,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10007,
-      "cx": 0.4652387240346138,
-      "cy": 0.8142600011612379,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10041,
-      "cx": 0.4652387240346138,
-      "cy": 0.8484468443360622,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10075,
-      "cx": 0.4652387240346138,
-      "cy": 0.8856064564826105,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10110,
-      "cx": 0.4652387240346138,
-      "cy": 0.9257388376008825,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10143,
-      "cx": 0.4600908914196087,
-      "cy": 0.9822214480636359,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10178,
-      "cx": 0.44893725408709756,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10211,
-      "cx": 0.4240560631145728,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10245,
-      "cx": 0.4068966210645557,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10278,
-      "cx": 0.399174872142048,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10312,
-      "cx": 0.3983169000395472,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10346,
-      "cx": 0.3983169000395472,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10381,
-      "cx": 0.4000328442445489,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10415,
-      "cx": 0.40775459316705653,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10450,
-      "cx": 0.4369256446520856,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10484,
-      "cx": 0.4901199150071386,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10519,
-      "cx": 0.546746073772195,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10553,
-      "cx": 0.5664794321297146,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10586,
-      "cx": 0.570769292642219,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10621,
-      "cx": 0.5767750973597249,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10657,
-      "cx": 0.5810649578722292,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10690,
-      "cx": 0.5965084557172445,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10725,
-      "cx": 0.6050881767422531,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10759,
-      "cx": 0.6085200651522565,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10793,
-      "cx": 0.6136678977672617,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10828,
-      "cx": 0.6213896466897694,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10861,
-      "cx": 0.6273954514072754,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10895,
-      "cx": 0.6282534235097762,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10928,
-      "cx": 0.629111395612277,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 10966,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11002,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11040,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11075,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11077,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "click",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11113,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11151,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11184,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11208,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "mouseup",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11219,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11257,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11291,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11328,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11360,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11395,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11428,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11461,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11494,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11530,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11564,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11597,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11635,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11672,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11706,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11739,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11771,
-      "cx": 0.6299693677147779,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11807,
-      "cx": 0.629111395612277,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11840,
-      "cx": 0.629111395612277,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11873,
-      "cx": 0.629111395612277,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11908,
-      "cx": 0.6282534235097762,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11941,
-      "cx": 0.6282534235097762,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 11974,
-      "cx": 0.6282534235097762,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 12008,
-      "cx": 0.6273954514072754,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 12041,
-      "cx": 0.6256795072022736,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 12074,
-      "cx": 0.623105590894771,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 12107,
-      "cx": 0.6196737024847676,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 12142,
-      "cx": 0.6162418140747642,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 12177,
-      "cx": 0.6136678977672617,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 12211,
-      "cx": 0.6102360093572582,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 12245,
-      "cx": 0.6085200651522565,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 12278,
-      "cx": 0.605946148844754,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 12312,
-      "cx": 0.6050881767422531,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 12346,
-      "cx": 0.6016562883322497,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 12380,
-      "cx": 0.599940344127248,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 12413,
-      "cx": 0.5982243999222463,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 12447,
-      "cx": 0.5973664278197455,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 12454,
-      "cx": 0.5965084557172445,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 12481,
-      "cx": 0.5956504836147437,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 12516,
-      "cx": 0.5947925115122429,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 12553,
-      "cx": 0.5939345394097421,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 12587,
-      "cx": 0.5922185952047403,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 12619,
-      "cx": 0.5862127904872343,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 12654,
-      "cx": 0.5827809020772309,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 12689,
-      "cx": 0.5793490136672275,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 12723,
-      "cx": 0.5750591531547232,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 12757,
-      "cx": 0.5716272647447198,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 12790,
-      "cx": 0.569911320539718,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 12823,
-      "cx": 0.5630475437197112,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 12855,
-      "cx": 0.5381663527471865,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 12857,
-      "cx": 0.5381663527471865,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 12891,
-      "cx": 0.5175750222871659,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 12904,
-      "cx": 0.5132851617746617,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 12924,
-      "cx": 0.5072793570571557,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 12959,
-      "cx": 0.5021315244421506,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 12992,
-      "cx": 0.4969836918271454,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13026,
-      "cx": 0.4961257197246446,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13054,
-      "cx": 0.493551803417142,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 13059,
-      "cx": 0.4918358592121403,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 13095,
-      "cx": 0.4901199150071386,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "arrow"
-    },
-    {
-      "timeMs": 13103,
-      "cx": 0.4884039708021369,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13128,
-      "cx": 0.48583005449463434,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13161,
-      "cx": 0.4746764171621232,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13195,
-      "cx": 0.452369142497101,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13231,
-      "cx": 0.44807928198459673,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13268,
-      "cx": 0.44807928198459673,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13304,
-      "cx": 0.45494305880460356,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13338,
-      "cx": 0.4926938313146412,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13371,
-      "cx": 0.5313025759271797,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13405,
-      "cx": 0.5767750973597249,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13438,
-      "cx": 0.5939345394097421,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13477,
-      "cx": 0.5947925115122429,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13515,
-      "cx": 0.5947925115122429,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13548,
-      "cx": 0.5947925115122429,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13582,
-      "cx": 0.5956504836147437,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13620,
-      "cx": 0.5956504836147437,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13657,
-      "cx": 0.5956504836147437,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13693,
-      "cx": 0.5956504836147437,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13729,
-      "cx": 0.5956504836147437,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13766,
-      "cx": 0.5956504836147437,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13804,
-      "cx": 0.5956504836147437,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13816,
-      "cx": 0.5956504836147437,
-      "cy": 1,
-      "interactionType": "click",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13838,
-      "cx": 0.5956504836147437,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13876,
-      "cx": 0.5956504836147437,
-      "cy": 1,
-      "interactionType": "mouseup",
-      "cursorType": "pointer"
-    },
-    {
-      "timeMs": 13876,
-      "cx": 0.5956504836147437,
-      "cy": 1,
-      "interactionType": "move",
-      "cursorType": "pointer"
-    }
-  ]
+	"version": 2,
+	"samples": [
+		{
+			"timeMs": 1,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 34,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 70,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 105,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 141,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 180,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 217,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 252,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 287,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 325,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 363,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 401,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 439,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 472,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 510,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 545,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 583,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 621,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 659,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 692,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 730,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 767,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 803,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 836,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 872,
+			"cx": 0.8281609233924753,
+			"cy": 0.8930383789119201,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 907,
+			"cx": 0.8273029512899744,
+			"cy": 0.896011147883644,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 941,
+			"cx": 0.8255870070849728,
+			"cy": 0.8989839168553678,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 974,
+			"cx": 0.823871062879971,
+			"cy": 0.9004703013412297,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1008,
+			"cx": 0.8221551186749694,
+			"cy": 0.9034430703129536,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1042,
+			"cx": 0.818723230264966,
+			"cy": 0.9064158392846775,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1076,
+			"cx": 0.7989898719074463,
+			"cy": 0.9227660686291587,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1112,
+			"cx": 0.7792565135499266,
+			"cy": 0.9346571445160541,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1145,
+			"cx": 0.7380738526298856,
+			"cy": 0.9539801428322592,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1179,
+			"cx": 0.7028969964273506,
+			"cy": 0.9643848342332927,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1214,
+			"cx": 0.6548505586873027,
+			"cy": 0.9837078325494978,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1247,
+			"cx": 0.5982243999222463,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1281,
+			"cx": 0.5450301295671933,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1314,
+			"cx": 0.48583005449463434,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1349,
+			"cx": 0.4429314493695916,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1382,
+			"cx": 0.3665719322470155,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1416,
+			"cx": 0.32796318763447707,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1450,
+			"cx": 0.28506458250943434,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1487,
+			"cx": 0.25846744733190785,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1520,
+			"cx": 0.2310123400518805,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1554,
+			"cx": 0.22758045164187707,
+			"cy": 0.9970852929222551,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1589,
+			"cx": 0.2250065353343745,
+			"cy": 0.9911397549788075,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1622,
+			"cx": 0.21814275851436768,
+			"cy": 0.9628984497474308,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1657,
+			"cx": 0.21042100959186,
+			"cy": 0.9301979910584683,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1690,
+			"cx": 0.2026992606693523,
+			"cy": 0.8841200719967486,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1724,
+			"cx": 0.19411953964434375,
+			"cy": 0.8098008477036521,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1758,
+			"cx": 0.18210793020933178,
+			"cy": 0.7057539336933171,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1792,
+			"cx": 0.17181226497932153,
+			"cy": 0.6240027869709109,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1826,
+			"cx": 0.16237457185181214,
+			"cy": 0.5377924867909191,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1862,
+			"cx": 0.1555107950318053,
+			"cy": 0.4649596469836846,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1895,
+			"cx": 0.15122093451930102,
+			"cy": 0.3906404226905882,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1929,
+			"cx": 0.15122093451930102,
+			"cy": 0.32375312082680135,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1962,
+			"cx": 0.15122093451930102,
+			"cy": 0.24646112756198107,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 1997,
+			"cx": 0.15636876713430614,
+			"cy": 0.16322359635371306,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2031,
+			"cx": 0.17352820918432324,
+			"cy": 0.09187714103234047,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2065,
+			"cx": 0.18468184651683436,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2102,
+			"cx": 0.19840940015684802,
+			"cy": 0.029448992626139463,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2137,
+			"cx": 0.2232905911293728,
+			"cy": 0,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2170,
+			"cx": 0.2842066104069335,
+			"cy": 0,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2204,
+			"cx": 0.34683857388949585,
+			"cy": 0,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2237,
+			"cx": 0.42662997942207537,
+			"cy": 0,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2271,
+			"cx": 0.4926938313146412,
+			"cy": 0,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2305,
+			"cx": 0.5107112454671591,
+			"cy": 0,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2341,
+			"cx": 0.5107112454671591,
+			"cy": 0,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2376,
+			"cx": 0.5107112454671591,
+			"cy": 0,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2414,
+			"cx": 0.5107112454671591,
+			"cy": 0,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2451,
+			"cx": 0.5107112454671591,
+			"cy": 0,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2489,
+			"cx": 0.5107112454671591,
+			"cy": 0,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2522,
+			"cx": 0.5175750222871659,
+			"cy": 0,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2555,
+			"cx": 0.5313025759271797,
+			"cy": 0.020530685710967892,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2588,
+			"cx": 0.5415982411571899,
+			"cy": 0.11120013934854554,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2622,
+			"cx": 0.5415982411571899,
+			"cy": 0.12011844626371712,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2659,
+			"cx": 0.5424562132596907,
+			"cy": 0.12309121523544098,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2694,
+			"cx": 0.5424562132596907,
+			"cy": 0.12309121523544098,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2732,
+			"cx": 0.5424562132596907,
+			"cy": 0.12309121523544098,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2769,
+			"cx": 0.5424562132596907,
+			"cy": 0.12309121523544098,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2802,
+			"cx": 0.5433141853621916,
+			"cy": 0.12160483074957905,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2837,
+			"cx": 0.5544678226947027,
+			"cy": 0.11417290832026941,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2870,
+			"cx": 0.5767750973597249,
+			"cy": 0.10079544794751205,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2904,
+			"cx": 0.6085200651522565,
+			"cy": 0.07849968065958311,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2938,
+			"cx": 0.6402650329447882,
+			"cy": 0.06512222028682575,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 2971,
+			"cx": 0.6677201402248155,
+			"cy": 0.057690297857516115,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3005,
+			"cx": 0.6805897217623283,
+			"cy": 0.053231144399930326,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3038,
+			"cx": 0.6831636380698309,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3072,
+			"cx": 0.6917433590948394,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3106,
+			"cx": 0.7089028011448565,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3141,
+			"cx": 0.7406477689373882,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3175,
+			"cx": 0.7972739277024445,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3208,
+			"cx": 0.8307348396999779,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3242,
+			"cx": 0.8727754727225198,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3275,
+			"cx": 0.8976566636950445,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3309,
+			"cx": 0.901088552105048,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3347,
+			"cx": 0.901088552105048,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3383,
+			"cx": 0.901088552105048,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3419,
+			"cx": 0.901088552105048,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3457,
+			"cx": 0.901088552105048,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3495,
+			"cx": 0.901088552105048,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3530,
+			"cx": 0.901088552105048,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3564,
+			"cx": 0.901088552105048,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3600,
+			"cx": 0.901088552105048,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3638,
+			"cx": 0.901088552105048,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3672,
+			"cx": 0.901088552105048,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3708,
+			"cx": 0.901088552105048,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3747,
+			"cx": 0.901088552105048,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3785,
+			"cx": 0.901088552105048,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3819,
+			"cx": 0.901088552105048,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3854,
+			"cx": 0.901088552105048,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3890,
+			"cx": 0.901088552105048,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3925,
+			"cx": 0.9019465242075488,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3960,
+			"cx": 0.9036624684125505,
+			"cy": 0.053231144399930326,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 3994,
+			"cx": 0.9053784126175523,
+			"cy": 0.05620391337165418,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4028,
+			"cx": 0.9070943568225539,
+			"cy": 0.05917668234337804,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4061,
+			"cx": 0.9088103010275557,
+			"cy": 0.0621494513151019,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4095,
+			"cx": 0.9096682731300565,
+			"cy": 0.06363583580096382,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4132,
+			"cx": 0.9096682731300565,
+			"cy": 0.06363583580096382,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4170,
+			"cx": 0.9096682731300565,
+			"cy": 0.06363583580096382,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4208,
+			"cx": 0.9096682731300565,
+			"cy": 0.06363583580096382,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4245,
+			"cx": 0.9096682731300565,
+			"cy": 0.06363583580096382,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4283,
+			"cx": 0.9096682731300565,
+			"cy": 0.06363583580096382,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4320,
+			"cx": 0.9096682731300565,
+			"cy": 0.06363583580096382,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4358,
+			"cx": 0.9096682731300565,
+			"cy": 0.06363583580096382,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4396,
+			"cx": 0.9096682731300565,
+			"cy": 0.06363583580096382,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4432,
+			"cx": 0.9096682731300565,
+			"cy": 0.06363583580096382,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4468,
+			"cx": 0.9096682731300565,
+			"cy": 0.06363583580096382,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4504,
+			"cx": 0.9096682731300565,
+			"cy": 0.06363583580096382,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4542,
+			"cx": 0.9096682731300565,
+			"cy": 0.06363583580096382,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4576,
+			"cx": 0.9096682731300565,
+			"cy": 0.06512222028682575,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4610,
+			"cx": 0.9096682731300565,
+			"cy": 0.06958137374441155,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4644,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4679,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4716,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4751,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4788,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4825,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4863,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4901,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4937,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 4975,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5009,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5045,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5083,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5120,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5154,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5189,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5224,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5258,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5291,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5327,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5363,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5397,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5434,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5472,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5508,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5546,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5583,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5620,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5658,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5691,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5726,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5762,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5801,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5839,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5875,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5910,
+			"cx": 0.9096682731300565,
+			"cy": 0.0725541427161354,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5943,
+			"cx": 0.9070943568225539,
+			"cy": 0.07701329617372119,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 5977,
+			"cx": 0.9036624684125505,
+			"cy": 0.08444521860303084,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6012,
+			"cx": 0.8942247752850411,
+			"cy": 0.09930906346165012,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6046,
+			"cx": 0.8796392495425266,
+			"cy": 0.11417290832026941,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6080,
+			"cx": 0.8659116959025129,
+			"cy": 0.1245775997213029,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6115,
+			"cx": 0.8436044212374907,
+			"cy": 0.14241421355164605,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6149,
+			"cx": 0.8015637882149488,
+			"cy": 0.15876444289612726,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6186,
+			"cx": 0.770676792524918,
+			"cy": 0.16768274981129885,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6219,
+			"cx": 0.7320680479123796,
+			"cy": 0.16768274981129885,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6252,
+			"cx": 0.6908853869923386,
+			"cy": 0.1557916739244034,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6285,
+			"cx": 0.6256795072022736,
+			"cy": 0.12903675317888869,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6320,
+			"cx": 0.5733432089497215,
+			"cy": 0.11120013934854554,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6355,
+			"cx": 0.5252967712096737,
+			"cy": 0.09484991000406433,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6389,
+			"cx": 0.48068222187962917,
+			"cy": 0.07998606514544504,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6423,
+			"cx": 0.4412155051645899,
+			"cy": 0.06660860477268768,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6456,
+			"cx": 0.41719228629456595,
+			"cy": 0.06066306682923997,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6488,
+			"cx": 0.37944151378452834,
+			"cy": 0.06066306682923997,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6522,
+			"cx": 0.351986406504501,
+			"cy": 0.06066306682923997,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6557,
+			"cx": 0.3313950760444805,
+			"cy": 0.06066306682923997,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6591,
+			"cx": 0.32195738291697107,
+			"cy": 0.06066306682923997,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6624,
+			"cx": 0.31509360609696424,
+			"cy": 0.06066306682923997,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6658,
+			"cx": 0.298792136149448,
+			"cy": 0.06066306682923997,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6690,
+			"cx": 0.26275730784441215,
+			"cy": 0.06066306682923997,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6725,
+			"cx": 0.22071667482187024,
+			"cy": 0.06066306682923997,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6758,
+			"cx": 0.18210793020933178,
+			"cy": 0.06066306682923997,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6792,
+			"cx": 0.1211919109317711,
+			"cy": 0.06066306682923997,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6825,
+			"cx": 0.08515708262673521,
+			"cy": 0.06066306682923997,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6859,
+			"cx": 0.06199183585921214,
+			"cy": 0.05471752888579225,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6892,
+			"cx": 0.05941791955170957,
+			"cy": 0.05471752888579225,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6930,
+			"cx": 0.05941791955170957,
+			"cy": 0.05471752888579225,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 6968,
+			"cx": 0.05941791955170957,
+			"cy": 0.05471752888579225,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 7006,
+			"cx": 0.05941791955170957,
+			"cy": 0.05471752888579225,
+			"interactionType": "click",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 7006,
+			"cx": 0.05941791955170957,
+			"cy": 0.05471752888579225,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 7042,
+			"cx": 0.05941791955170957,
+			"cy": 0.05471752888579225,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 7055,
+			"cx": 0.05941791955170957,
+			"cy": 0.05471752888579225,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 7080,
+			"cx": 0.05941791955170957,
+			"cy": 0.05471752888579225,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 7095,
+			"cx": 0.05941791955170957,
+			"cy": 0.05471752888579225,
+			"interactionType": "mouseup",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 7117,
+			"cx": 0.05941791955170957,
+			"cy": 0.05471752888579225,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 7155,
+			"cx": 0.05941791955170957,
+			"cy": 0.05471752888579225,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 7193,
+			"cx": 0.05941791955170957,
+			"cy": 0.05471752888579225,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 7228,
+			"cx": 0.05941791955170957,
+			"cy": 0.05471752888579225,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 7266,
+			"cx": 0.05941791955170957,
+			"cy": 0.05471752888579225,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 7303,
+			"cx": 0.05941791955170957,
+			"cy": 0.05471752888579225,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 7341,
+			"cx": 0.05941791955170957,
+			"cy": 0.05471752888579225,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 7379,
+			"cx": 0.05941791955170957,
+			"cy": 0.05471752888579225,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 7416,
+			"cx": 0.05941791955170957,
+			"cy": 0.05471752888579225,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 7451,
+			"cx": 0.05855994744920872,
+			"cy": 0.053231144399930326,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 7455,
+			"cx": 0.05855994744920872,
+			"cy": 0.053231144399930326,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 7486,
+			"cx": 0.05684400324420701,
+			"cy": 0.0517447599140684,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 7519,
+			"cx": 0.054270086936704445,
+			"cy": 0.05025837542820647,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 7555,
+			"cx": 0.05255414273170274,
+			"cy": 0.05025837542820647,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 7588,
+			"cx": 0.051696170629201885,
+			"cy": 0.04877199094234454,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 7622,
+			"cx": 0.04998022642420018,
+			"cy": 0.04728560645648261,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 7655,
+			"cx": 0.049122254321699324,
+			"cy": 0.04579922197062068,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 7688,
+			"cx": 0.04740631011669761,
+			"cy": 0.044312837484758755,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 7723,
+			"cx": 0.0456903659116959,
+			"cy": 0.044312837484758755,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 7759,
+			"cx": 0.04483239380919505,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 7772,
+			"cx": 0.043974421706694196,
+			"cy": 0.04282645299889683,
+			"interactionType": "click",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 7792,
+			"cx": 0.043116449604193335,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 7827,
+			"cx": 0.03968456119418992,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 7862,
+			"cx": 0.03453672857918479,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 7896,
+			"cx": 0.021667147041671973,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 7929,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 7955,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 7963,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 7995,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8031,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8066,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8099,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8132,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8166,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8201,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8237,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8275,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8309,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8342,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8375,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8409,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8442,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8476,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8511,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8545,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8584,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8622,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8638,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "mouseup",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8659,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8692,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8727,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8761,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8796,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8830,
+			"cx": 0,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "text"
+		},
+		{
+			"timeMs": 8853,
+			"cx": 0.025957007554176247,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 8865,
+			"cx": 0.03968456119418992,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 8898,
+			"cx": 0.10574841308675573,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 8934,
+			"cx": 0.15036296241680017,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 8968,
+			"cx": 0.1666644323643164,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 9005,
+			"cx": 0.16752240446681727,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 9043,
+			"cx": 0.16752240446681727,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 9071,
+			"cx": 0.16752240446681727,
+			"cy": 0.04282645299889683,
+			"interactionType": "click",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 9078,
+			"cx": 0.16752240446681727,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 9116,
+			"cx": 0.16752240446681727,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 9151,
+			"cx": 0.16752240446681727,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 9158,
+			"cx": 0.16752240446681727,
+			"cy": 0.04282645299889683,
+			"interactionType": "mouseup",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 9187,
+			"cx": 0.16752240446681727,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 9224,
+			"cx": 0.16752240446681727,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 9258,
+			"cx": 0.16752240446681727,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 9294,
+			"cx": 0.16752240446681727,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 9328,
+			"cx": 0.16752240446681727,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 9361,
+			"cx": 0.16752240446681727,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 9396,
+			"cx": 0.16838037656931812,
+			"cy": 0.04282645299889683,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 9430,
+			"cx": 0.17009632077431983,
+			"cy": 0.044312837484758755,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 9465,
+			"cx": 0.17095429287682068,
+			"cy": 0.04728560645648261,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 9499,
+			"cx": 0.17352820918432324,
+			"cy": 0.05025837542820647,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 9534,
+			"cx": 0.18124995810683092,
+			"cy": 0.0621494513151019,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 9569,
+			"cx": 0.20784709328435744,
+			"cy": 0.10674098589095976,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 9603,
+			"cx": 0.26790514045941727,
+			"cy": 0.19741043952853743,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 9604,
+			"cx": 0.26790514045941727,
+			"cy": 0.19741043952853743,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 9637,
+			"cx": 0.304797940866954,
+			"cy": 0.25537943447715267,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 9671,
+			"cx": 0.345980601786995,
+			"cy": 0.34010335017128257,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 9704,
+			"cx": 0.36228207173451127,
+			"cy": 0.3876676537188643,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 9738,
+			"cx": 0.38287340219453175,
+			"cy": 0.44860941763920337,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 9771,
+			"cx": 0.39660095583454547,
+			"cy": 0.48725541427161356,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 9806,
+			"cx": 0.41461836998706336,
+			"cy": 0.5422516402485049,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 9839,
+			"cx": 0.42491403521707366,
+			"cy": 0.5838704058526389,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 9872,
+			"cx": 0.4369256446520856,
+			"cy": 0.625489171456773,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 9907,
+			"cx": 0.44807928198459673,
+			"cy": 0.6745398594902166,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 9940,
+			"cx": 0.4575169751121061,
+			"cy": 0.7265633164953841,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 9954,
+			"cx": 0.45923291931710786,
+			"cy": 0.7339952389246938,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 9974,
+			"cx": 0.46266480772711127,
+			"cy": 0.7622365441560703,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10007,
+			"cx": 0.4652387240346138,
+			"cy": 0.8142600011612379,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10041,
+			"cx": 0.4652387240346138,
+			"cy": 0.8484468443360622,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10075,
+			"cx": 0.4652387240346138,
+			"cy": 0.8856064564826105,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10110,
+			"cx": 0.4652387240346138,
+			"cy": 0.9257388376008825,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10143,
+			"cx": 0.4600908914196087,
+			"cy": 0.9822214480636359,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10178,
+			"cx": 0.44893725408709756,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10211,
+			"cx": 0.4240560631145728,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10245,
+			"cx": 0.4068966210645557,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10278,
+			"cx": 0.399174872142048,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10312,
+			"cx": 0.3983169000395472,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10346,
+			"cx": 0.3983169000395472,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10381,
+			"cx": 0.4000328442445489,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10415,
+			"cx": 0.40775459316705653,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10450,
+			"cx": 0.4369256446520856,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10484,
+			"cx": 0.4901199150071386,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10519,
+			"cx": 0.546746073772195,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10553,
+			"cx": 0.5664794321297146,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10586,
+			"cx": 0.570769292642219,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10621,
+			"cx": 0.5767750973597249,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10657,
+			"cx": 0.5810649578722292,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10690,
+			"cx": 0.5965084557172445,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10725,
+			"cx": 0.6050881767422531,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10759,
+			"cx": 0.6085200651522565,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10793,
+			"cx": 0.6136678977672617,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10828,
+			"cx": 0.6213896466897694,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10861,
+			"cx": 0.6273954514072754,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10895,
+			"cx": 0.6282534235097762,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10928,
+			"cx": 0.629111395612277,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 10966,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11002,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11040,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11075,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11077,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "click",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11113,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11151,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11184,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11208,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "mouseup",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11219,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11257,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11291,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11328,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11360,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11395,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11428,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11461,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11494,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11530,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11564,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11597,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11635,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11672,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11706,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11739,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11771,
+			"cx": 0.6299693677147779,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11807,
+			"cx": 0.629111395612277,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11840,
+			"cx": 0.629111395612277,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11873,
+			"cx": 0.629111395612277,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11908,
+			"cx": 0.6282534235097762,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11941,
+			"cx": 0.6282534235097762,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 11974,
+			"cx": 0.6282534235097762,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 12008,
+			"cx": 0.6273954514072754,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 12041,
+			"cx": 0.6256795072022736,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 12074,
+			"cx": 0.623105590894771,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 12107,
+			"cx": 0.6196737024847676,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 12142,
+			"cx": 0.6162418140747642,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 12177,
+			"cx": 0.6136678977672617,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 12211,
+			"cx": 0.6102360093572582,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 12245,
+			"cx": 0.6085200651522565,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 12278,
+			"cx": 0.605946148844754,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 12312,
+			"cx": 0.6050881767422531,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 12346,
+			"cx": 0.6016562883322497,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 12380,
+			"cx": 0.599940344127248,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 12413,
+			"cx": 0.5982243999222463,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 12447,
+			"cx": 0.5973664278197455,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 12454,
+			"cx": 0.5965084557172445,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 12481,
+			"cx": 0.5956504836147437,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 12516,
+			"cx": 0.5947925115122429,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 12553,
+			"cx": 0.5939345394097421,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 12587,
+			"cx": 0.5922185952047403,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 12619,
+			"cx": 0.5862127904872343,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 12654,
+			"cx": 0.5827809020772309,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 12689,
+			"cx": 0.5793490136672275,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 12723,
+			"cx": 0.5750591531547232,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 12757,
+			"cx": 0.5716272647447198,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 12790,
+			"cx": 0.569911320539718,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 12823,
+			"cx": 0.5630475437197112,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 12855,
+			"cx": 0.5381663527471865,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 12857,
+			"cx": 0.5381663527471865,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 12891,
+			"cx": 0.5175750222871659,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 12904,
+			"cx": 0.5132851617746617,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 12924,
+			"cx": 0.5072793570571557,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 12959,
+			"cx": 0.5021315244421506,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 12992,
+			"cx": 0.4969836918271454,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13026,
+			"cx": 0.4961257197246446,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13054,
+			"cx": 0.493551803417142,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 13059,
+			"cx": 0.4918358592121403,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 13095,
+			"cx": 0.4901199150071386,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "arrow"
+		},
+		{
+			"timeMs": 13103,
+			"cx": 0.4884039708021369,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13128,
+			"cx": 0.48583005449463434,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13161,
+			"cx": 0.4746764171621232,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13195,
+			"cx": 0.452369142497101,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13231,
+			"cx": 0.44807928198459673,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13268,
+			"cx": 0.44807928198459673,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13304,
+			"cx": 0.45494305880460356,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13338,
+			"cx": 0.4926938313146412,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13371,
+			"cx": 0.5313025759271797,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13405,
+			"cx": 0.5767750973597249,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13438,
+			"cx": 0.5939345394097421,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13477,
+			"cx": 0.5947925115122429,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13515,
+			"cx": 0.5947925115122429,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13548,
+			"cx": 0.5947925115122429,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13582,
+			"cx": 0.5956504836147437,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13620,
+			"cx": 0.5956504836147437,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13657,
+			"cx": 0.5956504836147437,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13693,
+			"cx": 0.5956504836147437,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13729,
+			"cx": 0.5956504836147437,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13766,
+			"cx": 0.5956504836147437,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13804,
+			"cx": 0.5956504836147437,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13816,
+			"cx": 0.5956504836147437,
+			"cy": 1,
+			"interactionType": "click",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13838,
+			"cx": 0.5956504836147437,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13876,
+			"cx": 0.5956504836147437,
+			"cy": 1,
+			"interactionType": "mouseup",
+			"cursorType": "pointer"
+		},
+		{
+			"timeMs": 13876,
+			"cx": 0.5956504836147437,
+			"cy": 1,
+			"interactionType": "move",
+			"cursorType": "pointer"
+		}
+	]
 }

@@ -1,9 +1,19 @@
-import { type CameraSpringSettings, DEFAULT_CAMERA_SPRING, type ZoomFocus, type ZoomRegion } from "../types";
-import { ZOOM_DEPTH_SCALES } from "../types";
+import {
+	type CameraSpringSettings,
+	DEFAULT_CAMERA_SPRING,
+	ZOOM_DEPTH_SCALES,
+	type ZoomFocus,
+	type ZoomRegion,
+} from "../types";
 import { DEFAULT_FOCUS } from "./constants";
 import type { CursorMotionSnapshot, CursorSimulationPath } from "./cursorSimulation";
 import { evaluateCursorMotionSnapshot } from "./cursorSimulation";
-import { type SpringConfig, type SpringState, createSpringState, stepSpringValue } from "./motionSmoothing";
+import {
+	createSpringState,
+	type SpringConfig,
+	type SpringState,
+	stepSpringValue,
+} from "./motionSmoothing";
 import { resolveZoomRegionFocus } from "./smartZoomController";
 import { findDominantRegion } from "./zoomRegionUtils";
 import { computeFocusFromTransform, computeZoomTransform, smoothZoomValue } from "./zoomTransform";
@@ -80,7 +90,10 @@ function getSubstepDeltaMs(deltaMs: number) {
 		return [];
 	}
 
-	const stepCount = Math.max(1, Math.min(CAMERA_MAX_SUBSTEPS, Math.ceil(deltaMs / CAMERA_FIXED_STEP_MS)));
+	const stepCount = Math.max(
+		1,
+		Math.min(CAMERA_MAX_SUBSTEPS, Math.ceil(deltaMs / CAMERA_FIXED_STEP_MS)),
+	);
 	const stepDeltaMs = deltaMs / stepCount;
 	return Array.from({ length: stepCount }, () => stepDeltaMs);
 }
@@ -111,9 +124,13 @@ function resolveCameraTargets(args: {
 		playbackTimeMs,
 		previousPlaybackTimeMs,
 	);
-	const { region, strength, blendedScale, transition } = findDominantRegion(zoomRegions, playbackTimeMs, {
-		connectZooms,
-	});
+	const { region, strength, blendedScale, transition } = findDominantRegion(
+		zoomRegions,
+		playbackTimeMs,
+		{
+			connectZooms,
+		},
+	);
 
 	let targetScaleFactor = 1;
 	let targetFocus = DEFAULT_FOCUS;
@@ -339,7 +356,11 @@ export function evaluatePlaybackCameraFrame(args: {
 						cy: newFocusY,
 					};
 				}
-				steppedScale = smoothZoomValue(steppedScale, finalTargets.targetScaleFactor, stepDeltaSeconds);
+				steppedScale = smoothZoomValue(
+					steppedScale,
+					finalTargets.targetScaleFactor,
+					stepDeltaSeconds,
+				);
 				steppedProgress = smoothZoomValue(
 					steppedProgress,
 					finalTargets.targetProgress,

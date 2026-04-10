@@ -58,7 +58,9 @@ function deriveIntentAwareTargetFocus(
 } {
 	const lookAheadScale = tracking.lookAheadMs / 1000;
 	const shouldLead =
-		cursor.confidence !== "low" && !cursor.isDiscontinuous && cursor.speed >= PREDICTION_SPEED_THRESHOLD;
+		cursor.confidence !== "low" &&
+		!cursor.isDiscontinuous &&
+		cursor.speed >= PREDICTION_SPEED_THRESHOLD;
 	const predictedFocus = {
 		cx: shouldLead ? cursor.cx + cursor.velocityX * lookAheadScale : cursor.cx,
 		cy: shouldLead ? cursor.cy + cursor.velocityY * lookAheadScale : cursor.cy,

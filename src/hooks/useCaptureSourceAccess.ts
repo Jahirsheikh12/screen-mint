@@ -37,7 +37,7 @@ export function useCaptureSourceAccess(
 			if (!accessState.canProbeSources) {
 				setSources([]);
 				const diagnosticsResult = await window.electronAPI.getCaptureDiagnostics();
-				setDiagnostics(diagnosticsResult.success ? diagnosticsResult.diagnostics ?? null : null);
+				setDiagnostics(diagnosticsResult.success ? (diagnosticsResult.diagnostics ?? null) : null);
 				return;
 			}
 
@@ -46,7 +46,9 @@ export function useCaptureSourceAccess(
 
 			if (permissionResult.state.platform === "darwin" && nextSources.length === 0) {
 				const diagnosticsResult = await window.electronAPI.getCaptureDiagnostics();
-				const nextDiagnostics = diagnosticsResult.success ? diagnosticsResult.diagnostics ?? null : null;
+				const nextDiagnostics = diagnosticsResult.success
+					? (diagnosticsResult.diagnostics ?? null)
+					: null;
 				setDiagnostics(nextDiagnostics);
 				setLoadError(summarizeCaptureProbeFailure(nextDiagnostics));
 				return;
@@ -59,7 +61,7 @@ export function useCaptureSourceAccess(
 
 			try {
 				const diagnosticsResult = await window.electronAPI.getCaptureDiagnostics();
-				setDiagnostics(diagnosticsResult.success ? diagnosticsResult.diagnostics ?? null : null);
+				setDiagnostics(diagnosticsResult.success ? (diagnosticsResult.diagnostics ?? null) : null);
 			} catch {
 				setDiagnostics(null);
 			}

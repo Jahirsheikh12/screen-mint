@@ -58,6 +58,7 @@ interface GifExporterConfig {
 	frameShadowOpacity?: number;
 	frameShadowBlur?: number;
 	backgroundBlur: number;
+	hideBackground?: boolean;
 	zoomMotionBlur?: number;
 	connectZooms?: boolean;
 	deviceMockup?: DeviceMockup;
@@ -218,6 +219,7 @@ export class GifExporter {
 				frameShadowOpacity: this.config.frameShadowOpacity,
 				frameShadowBlur: this.config.frameShadowBlur,
 				backgroundBlur: this.config.backgroundBlur,
+				hideBackground: this.config.hideBackground,
 				zoomMotionBlur: this.config.zoomMotionBlur,
 				connectZooms: this.config.connectZooms,
 				deviceMockup: this.config.deviceMockup,

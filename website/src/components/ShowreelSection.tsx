@@ -34,9 +34,12 @@ export function ShowreelSection() {
 		const spacer = spacerRef.current;
 		if (!section || !sticky || !track || !spacer) return;
 
+		const LEAD_IN = window.innerHeight * 0.5;
+		const SLOWNESS = 1.8; // >1 means more scroll distance per px of horizontal travel
+
 		const updateSpacer = () => {
 			const distance = track.scrollWidth - window.innerWidth;
-			spacer.style.height = `${Math.max(0, distance)}px`;
+			spacer.style.height = `${Math.max(0, distance) * SLOWNESS + LEAD_IN}px`;
 		};
 		updateSpacer();
 		window.addEventListener("resize", updateSpacer);
@@ -54,8 +57,8 @@ export function ShowreelSection() {
 				ease: "none",
 				scrollTrigger: {
 					trigger: section,
-					start: "top 95%",
-					end: "top top",
+					start: "top 90%",
+					end: "top 20%",
 					scrub: true,
 				},
 			});
@@ -66,9 +69,9 @@ export function ShowreelSection() {
 				ease: "none",
 				scrollTrigger: {
 					trigger: section,
-					start: "top top",
+					start: () => `top top-=${LEAD_IN}`,
 					end: "bottom bottom",
-					scrub: 1,
+					scrub: 1.5,
 					invalidateOnRefresh: true,
 					onUpdate: (self) => {
 						const progress = self.progress;

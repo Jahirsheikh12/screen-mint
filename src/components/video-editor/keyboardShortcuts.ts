@@ -66,7 +66,9 @@ export function normalizeKeyboardTelemetry(
 	samples: KeyboardTelemetrySample[],
 ): KeyboardTelemetrySample[] {
 	return samples
-		.filter((sample): sample is KeyboardTelemetrySample => Boolean(sample && typeof sample === "object"))
+		.filter((sample): sample is KeyboardTelemetrySample =>
+			Boolean(sample && typeof sample === "object"),
+		)
 		.map((sample): KeyboardTelemetrySample => {
 			const key = normalizeKey(sample.key) ?? "unknown";
 			return {
@@ -97,7 +99,8 @@ function getOrderedShortcutKeys(
 	sample: Pick<KeyboardTelemetrySample, "altKey" | "ctrlKey" | "metaKey" | "shiftKey" | "key">,
 	platform: KeyboardPlatform,
 ) {
-	const modifierOrder = platform === "darwin" ? ["meta", "ctrl", "alt", "shift"] : ["ctrl", "alt", "shift", "meta"];
+	const modifierOrder =
+		platform === "darwin" ? ["meta", "ctrl", "alt", "shift"] : ["ctrl", "alt", "shift", "meta"];
 	const keys = modifierOrder.filter((modifier) => {
 		if (modifier === "ctrl") return sample.ctrlKey;
 		if (modifier === "alt") return sample.altKey;
@@ -257,7 +260,9 @@ export function getKeyboardShortcutRenderStates(
 	});
 }
 
-export function getKeyboardShortcutPositionStyle(position: KeyboardShortcutPosition): CSSProperties {
+export function getKeyboardShortcutPositionStyle(
+	position: KeyboardShortcutPosition,
+): CSSProperties {
 	switch (position) {
 		case "top-left":
 			return { top: 0, left: 0, alignItems: "flex-start" };
@@ -403,15 +408,18 @@ export function renderKeyboardShortcutCalloutsCanvas(
 
 	const measured = renderStates.map((state) => ({
 		state,
-		metrics: measureKeyboardShortcutCallout(ctx, state.callout.labels, containerWidth, options.scale),
+		metrics: measureKeyboardShortcutCallout(
+			ctx,
+			state.callout.labels,
+			containerWidth,
+			options.scale,
+		),
 	}));
 	const totalHeight =
 		measured.reduce((sum, entry) => sum + entry.metrics.height, 0) +
 		Math.max(0, measured.length - 1) * stackGap;
 	const isBottomAligned = options.position.startsWith("bottom");
-	let currentY = isBottomAligned
-		? containerHeight - verticalMargin - totalHeight
-		: verticalMargin;
+	let currentY = isBottomAligned ? containerHeight - verticalMargin - totalHeight : verticalMargin;
 
 	for (const { state, metrics } of measured) {
 		let x = sideMargin;

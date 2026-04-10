@@ -1,5 +1,5 @@
 import { Application, Graphics, Sprite } from "pixi.js";
-import { getAspectRatioValue, type AspectRatio } from "@/utils/aspectRatioUtils";
+import { type AspectRatio, getAspectRatioValue } from "@/utils/aspectRatioUtils";
 import type { CropRegion, CursorTelemetryPoint } from "../types";
 
 interface LayoutParams {

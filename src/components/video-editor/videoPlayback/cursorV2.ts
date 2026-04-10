@@ -12,8 +12,8 @@ import {
 	DEFAULT_CURSOR_SPRING as DEFAULT_CURSOR_SPRING_SETTINGS,
 	DEFAULT_CURSOR_TILT,
 	DEFAULT_CURSOR_TYPE_MODE,
-	DEFAULT_HIGH_QUALITY_SVG_CURSORS,
 	DEFAULT_HIDE_CURSOR_WHEN_IDLE,
+	DEFAULT_HIGH_QUALITY_SVG_CURSORS,
 	DEFAULT_SMOOTH_CURSOR_MOVEMENT,
 } from "../types";
 import type { CursorMotionSnapshot } from "./cursorSimulation";
@@ -80,7 +80,9 @@ export function normalizeCursorSpring(
 	fallback: CursorSpringSettings = DEFAULT_CURSOR_SPRING_SETTINGS,
 ): CursorSpringSettings {
 	return {
-		tension: isFiniteNumber(candidate?.tension) ? clamp(candidate.tension, 120, 700) : fallback.tension,
+		tension: isFiniteNumber(candidate?.tension)
+			? clamp(candidate.tension, 120, 700)
+			: fallback.tension,
 		friction: isFiniteNumber(candidate?.friction)
 			? clamp(candidate.friction, 20, 100)
 			: fallback.friction,
@@ -100,9 +102,15 @@ export function resolveCursorV2Fields(args: {
 	legacyCursorSmoothing?: unknown;
 	legacyCursorSway?: unknown;
 }): CursorV2Fields {
-	const legacySmoothing = isFiniteNumber(args.legacyCursorSmoothing) ? args.legacyCursorSmoothing : 0;
-	const legacySway = isFiniteNumber(args.legacyCursorSway) ? args.legacyCursorSway : DEFAULT_CURSOR_TILT * 2;
-	const legacySpring = springConfigToCursorSpring(getCursorSpringConfig(clamp(legacySmoothing, 0, 2)));
+	const legacySmoothing = isFiniteNumber(args.legacyCursorSmoothing)
+		? args.legacyCursorSmoothing
+		: 0;
+	const legacySway = isFiniteNumber(args.legacyCursorSway)
+		? args.legacyCursorSway
+		: DEFAULT_CURSOR_TILT * 2;
+	const legacySpring = springConfigToCursorSpring(
+		getCursorSpringConfig(clamp(legacySmoothing, 0, 2)),
+	);
 	const fallbackSpring = normalizeCursorSpring(args.cursorSpring, legacySpring);
 
 	return {
@@ -166,7 +174,9 @@ export function resolveCursorMovementSpringConfig(
 	return cursorSpringToSpringConfig(CURSOR_MOVEMENT_PRESETS[cursorMovementStyle]);
 }
 
-export function resolveCursorV2Config(args: CursorV2Fields & { cursorPack?: CursorPack }): ResolvedCursorV2Config {
+export function resolveCursorV2Config(
+	args: CursorV2Fields & { cursorPack?: CursorPack },
+): ResolvedCursorV2Config {
 	return {
 		...args,
 		cursorPack: args.cursorPack ?? DEFAULT_CURSOR_PACK,

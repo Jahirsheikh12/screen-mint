@@ -97,6 +97,16 @@
 	"javascript": { "formatter": { "quoteStyle": "double" } },
 	"overrides": [
 		{
+			"includes": ["*.d.ts"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noNamespace": "off"
+					}
+				}
+			}
+		},
+		{
 			"includes": ["*.ts", "*.tsx", "*.mts", "*.cts"],
 			"linter": {
 				"rules": {

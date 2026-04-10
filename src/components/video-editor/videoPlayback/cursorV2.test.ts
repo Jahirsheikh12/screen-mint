@@ -9,9 +9,7 @@ import {
 	resolveCursorVisualMode,
 } from "./cursorV2";
 
-function createMotionSnapshot(
-	overrides: Partial<CursorMotionSnapshot> = {},
-): CursorMotionSnapshot {
+function createMotionSnapshot(overrides: Partial<CursorMotionSnapshot> = {}): CursorMotionSnapshot {
 	return {
 		timeMs: 0,
 		cx: 0.5,

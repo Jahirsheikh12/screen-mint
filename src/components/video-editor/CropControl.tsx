@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { getAspectRatioValue, type AspectRatio } from "@/utils/aspectRatioUtils";
+import { type AspectRatio, getAspectRatioValue } from "@/utils/aspectRatioUtils";
 import { composeCropRegions, invertCropRegionWithinBase } from "./videoPlayback/layoutUtils";
 
 interface CropRegion {

@@ -39,7 +39,7 @@ import {
 } from "./audioRegionUtils";
 import { ColorPicker } from "./ColorPicker";
 import { CropControl } from "./CropControl";
-import { loadEditorPreferences, saveEditorPreferences } from "./editorPreferences";
+import { editorPreferencesService } from "./editorPreferencesService";
 import {
 	DEFAULT_FRAME_BORDER_COLOR,
 	DEFAULT_FRAME_BORDER_ENABLED,
@@ -67,8 +67,8 @@ import type {
 	CaptionStyle,
 	CaptionStylePreset,
 	CropRegion,
-	CursorPack,
 	CursorMovementStyle,
+	CursorPack,
 	CursorSpringSettings,
 	CursorTypeMode,
 	FigureData,
@@ -89,6 +89,7 @@ import {
 	DEFAULT_AUDIO_FADE_IN_MS,
 	DEFAULT_AUDIO_FADE_OUT_MS,
 	DEFAULT_AUDIO_REGION_VOLUME,
+	DEFAULT_CAMERA_SPRING,
 	DEFAULT_CAPTION_GENERATION_OPTIONS,
 	DEFAULT_CLICK_HIGHLIGHT_COLOR,
 	DEFAULT_CLICK_HIGHLIGHT_OPACITY,
@@ -102,11 +103,11 @@ import {
 	DEFAULT_CURSOR_SIZE,
 	DEFAULT_CURSOR_SPRING,
 	DEFAULT_CURSOR_TILT,
-	DEFAULT_CAMERA_SPRING,
 	DEFAULT_CURSOR_TRAIL_LENGTH,
 	DEFAULT_CURSOR_TRAIL_OPACITY,
-	DEFAULT_HIGH_QUALITY_SVG_CURSORS,
+	DEFAULT_CURSOR_TYPE_MODE,
 	DEFAULT_HIDE_CURSOR_WHEN_IDLE,
+	DEFAULT_HIGH_QUALITY_SVG_CURSORS,
 	DEFAULT_KEYBOARD_SHORTCUT_DISPLAY_MS,
 	DEFAULT_KEYBOARD_SHORTCUT_MAX_VISIBLE,
 	DEFAULT_KEYBOARD_SHORTCUT_OPACITY,
@@ -115,17 +116,14 @@ import {
 	DEFAULT_KEYBOARD_SHORTCUT_THEME,
 	DEFAULT_PREVIEW_QUALITY,
 	DEFAULT_SMOOTH_CURSOR_MOVEMENT,
-	DEFAULT_CURSOR_TYPE_MODE,
 	DEFAULT_ZOOM_MODE,
 	DEFAULT_ZOOM_MOTION_BLUR,
-	DEVICE_MOCKUP_OPTIONS,
 	KEYBOARD_SHORTCUT_POSITION_OPTIONS,
 	KEYBOARD_SHORTCUT_THEME_OPTIONS,
 	PREVIEW_QUALITY_OPTIONS,
 	SPEED_OPTIONS,
 } from "./types";
 import { cursorPackPreviewUrls } from "./videoPlayback/cursorAssetPacks";
-import { renderMockupPreview } from "./videoPlayback/deviceMockups";
 
 const GRADIENTS = [
 	"linear-gradient(135deg, #03045e 0%, #0077b6 42%, #90e0ef 100%)",
@@ -254,6 +252,8 @@ interface SettingsPanelProps {
 	onFrameShadowBlurChange?: (blur: number) => void;
 	backgroundBlur?: number;
 	onBackgroundBlurChange?: (amount: number) => void;
+	hideBackground?: boolean;
+	onHideBackgroundChange?: (hidden: boolean) => void;
 	zoomMotionBlur?: number;
 	onZoomMotionBlurChange?: (amount: number) => void;
 	connectZooms?: boolean;
@@ -502,19 +502,19 @@ function TabHeader({
 	);
 }
 
-function MockupPreviewCanvas({ mockup }: { mockup: import("./types").DeviceMockup }) {
-	const canvasRef = useRef<HTMLCanvasElement>(null);
-
-	useEffect(() => {
-		const canvas = canvasRef.current;
-		if (!canvas) return;
-		canvas.width = 120;
-		canvas.height = 90;
-		renderMockupPreview(canvas, mockup);
-	}, [mockup]);
-
-	return <canvas ref={canvasRef} className="w-full h-full" />;
-}
+// function MockupPreviewCanvas({ mockup }: { mockup: import("./types").DeviceMockup }) {
+// 	const canvasRef = useRef<HTMLCanvasElement>(null);
+//
+// 	useEffect(() => {
+// 		const canvas = canvasRef.current;
+// 		if (!canvas) return;
+// 		canvas.width = 120;
+// 		canvas.height = 90;
+// 		renderMockupPreview(canvas, mockup);
+// 	}, [mockup]);
+//
+// 	return <canvas ref={canvasRef} className="w-full h-full" />;
+// }
 
 export default function SettingsPanel({
 	selected,
@@ -537,6 +537,8 @@ export default function SettingsPanel({
 	onFrameShadowBlurChange,
 	backgroundBlur = 0,
 	onBackgroundBlurChange,
+	hideBackground = false,
+	onHideBackgroundChange,
 	zoomMotionBlur = 0,
 	onZoomMotionBlurChange,
 	connectZooms = true,
@@ -599,8 +601,6 @@ export default function SettingsPanel({
 	onKeyboardShortcutDisplayMsChange,
 	keyboardShortcutMaxVisible = DEFAULT_KEYBOARD_SHORTCUT_MAX_VISIBLE,
 	onKeyboardShortcutMaxVisibleChange,
-	deviceMockup = "none",
-	onDeviceMockupChange,
 	frameBorderEnabled = DEFAULT_FRAME_BORDER_ENABLED,
 	onFrameBorderEnabledChange,
 	frameBorderWidth = DEFAULT_FRAME_BORDER_WIDTH,
@@ -617,7 +617,6 @@ export default function SettingsPanel({
 	baseCropRegion,
 	onCropChange,
 	aspectRatio,
-	onAspectRatioChange,
 	videoElement,
 	selectedAnnotationId,
 	annotationRegions = [],
@@ -684,16 +683,12 @@ export default function SettingsPanel({
 }: SettingsPanelProps) {
 	const tSettings = useScopedT("settings");
 	const { t } = useI18n();
-	const initialEditorPreferences = useMemo(() => loadEditorPreferences(), []);
+	const initialEditorPreferences = useMemo(() => editorPreferencesService.load(), []);
 	const [wallpaperPreviewPaths, setWallpaperPreviewPaths] = useState<string[]>([]);
 	const [customImages, setCustomImages] = useState<string[]>(
 		initialEditorPreferences.customWallpapers,
 	);
 	const [showLegacyCursorSettings, setShowLegacyCursorSettings] = useState(false);
-	const removeBackgroundStateRef = useRef<{
-		aspectRatio: AspectRatio;
-		padding: number;
-	} | null>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const hasUsableCaptionAudio =
 		!captionModelStatus || captionModelStatus.availableSourceAudios.length > 0;
@@ -796,8 +791,14 @@ export default function SettingsPanel({
 	}, [customImages, selected]);
 
 	useEffect(() => {
-		saveEditorPreferences({ customWallpapers: customImages });
+		editorPreferencesService.scheduleSave({ customWallpapers: customImages });
 	}, [customImages]);
+
+	useEffect(() => {
+		return () => {
+			editorPreferencesService.flush();
+		};
+	}, []);
 
 	const zoomEnabled = Boolean(selectedZoomDepth);
 	const trimEnabled = Boolean(selectedTrimId);
@@ -1192,21 +1193,12 @@ export default function SettingsPanel({
 										{tSettings("effects.removeBackground")}
 									</div>
 									<div className="text-[10px] text-slate-500 mt-0.5">
-										Strip background for native aspect ratio
+										Hide wallpaper, color, and gradient backgrounds
 									</div>
 								</div>
 								<Switch
-									checked={aspectRatio === "native" && padding === 0}
-									onCheckedChange={(checked) => {
-										if (checked) {
-											removeBackgroundStateRef.current = {
-												aspectRatio,
-												padding,
-											};
-											onAspectRatioChange?.("native");
-											onPaddingChange?.(0);
-										}
-									}}
+									checked={hideBackground}
+									onCheckedChange={(checked) => onHideBackgroundChange?.(checked)}
 									className="data-[state=checked]:bg-[#F59E0B] scale-90"
 								/>
 							</div>
@@ -1414,6 +1406,8 @@ export default function SettingsPanel({
 							</Button>
 						</SettingsSection>
 
+						{/* Device mockups are temporarily disabled in the video editor. */}
+						{/*
 						<SettingsSection
 							title="Device Mockup"
 							description="Wrap your recording in a device frame"
@@ -1460,6 +1454,7 @@ export default function SettingsPanel({
 								))}
 							</div>
 						</SettingsSection>
+						*/}
 					</TabContent>
 				)}
 
@@ -1516,11 +1511,7 @@ export default function SettingsPanel({
 										step={50}
 										onChange={(v) => onIdleHideDelayMsChange?.(Math.round(v))}
 										formatValue={(v) => `${(v / 1000).toFixed(1)}s`}
-										parseInput={(t) =>
-											Math.round(
-												parseFloat(t.replace(/s$/i, "").trim()) * 1000,
-											)
-										}
+										parseInput={(t) => Math.round(parseFloat(t.replace(/s$/i, "").trim()) * 1000)}
 									/>
 								</div>
 							)}
@@ -1547,21 +1538,21 @@ export default function SettingsPanel({
 											key={option.value}
 											type="button"
 											onClick={() => onCursorTypeModeChange?.(option.value)}
-										className={cn(
-											"flex items-start gap-3 rounded-xl border p-3 text-left transition-all duration-200",
-											cursorTypeMode === option.value
-												? "border-[#F59E0B]/55 bg-[#F59E0B]/10 shadow-[0_0_0_1px_rgba(245,158,11,0.2)]"
-												: "border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06]",
-										)}
-									>
-										<div
 											className={cn(
-												"mt-1 h-4 w-4 rounded-full border",
+												"flex items-start gap-3 rounded-xl border p-3 text-left transition-all duration-200",
 												cursorTypeMode === option.value
-													? "border-[#F59E0B] bg-[#F59E0B]"
-													: "border-white/15 bg-transparent",
+													? "border-[#F59E0B]/55 bg-[#F59E0B]/10 shadow-[0_0_0_1px_rgba(245,158,11,0.2)]"
+													: "border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06]",
 											)}
-										/>
+										>
+											<div
+												className={cn(
+													"mt-1 h-4 w-4 rounded-full border",
+													cursorTypeMode === option.value
+														? "border-[#F59E0B] bg-[#F59E0B]"
+														: "border-white/15 bg-transparent",
+												)}
+											/>
 											<div>
 												<div className="text-[15px] font-semibold text-slate-100">
 													{option.label}
@@ -1620,21 +1611,21 @@ export default function SettingsPanel({
 											key={option.value}
 											type="button"
 											onClick={() => onCursorMovementStyleChange?.(option.value)}
-										className={cn(
-											"flex items-start gap-3 rounded-xl border p-3 text-left transition-all duration-200",
-											cursorMovementStyle === option.value
-												? "border-[#F59E0B]/55 bg-[#F59E0B]/10 shadow-[0_0_0_1px_rgba(245,158,11,0.2)]"
-												: "border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06]",
-										)}
-									>
-										<div
 											className={cn(
-												"mt-1 h-4 w-4 rounded-full border",
+												"flex items-start gap-3 rounded-xl border p-3 text-left transition-all duration-200",
 												cursorMovementStyle === option.value
-													? "border-[#F59E0B] bg-[#F59E0B]"
-													: "border-white/15 bg-transparent",
+													? "border-[#F59E0B]/55 bg-[#F59E0B]/10 shadow-[0_0_0_1px_rgba(245,158,11,0.2)]"
+													: "border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06]",
 											)}
-										/>
+										>
+											<div
+												className={cn(
+													"mt-1 h-4 w-4 rounded-full border",
+													cursorMovementStyle === option.value
+														? "border-[#F59E0B] bg-[#F59E0B]"
+														: "border-white/15 bg-transparent",
+												)}
+											/>
 											<div>
 												<div className="text-[15px] font-semibold text-slate-100">
 													{option.label}
@@ -1672,9 +1663,7 @@ export default function SettingsPanel({
 											min={120}
 											max={700}
 											step={1}
-											onChange={(v) =>
-												onCursorSpringChange?.({ ...cursorSpring, tension: v })
-											}
+											onChange={(v) => onCursorSpringChange?.({ ...cursorSpring, tension: v })}
 											formatValue={(v) => `${Math.round(v)}`}
 											parseInput={(t) => parseFloat(t)}
 										/>
@@ -1687,9 +1676,7 @@ export default function SettingsPanel({
 											min={20}
 											max={100}
 											step={1}
-											onChange={(v) =>
-												onCursorSpringChange?.({ ...cursorSpring, friction: v })
-											}
+											onChange={(v) => onCursorSpringChange?.({ ...cursorSpring, friction: v })}
 											formatValue={(v) => `${Math.round(v)}`}
 											parseInput={(t) => parseFloat(t)}
 										/>
@@ -1702,9 +1689,7 @@ export default function SettingsPanel({
 											min={0.5}
 											max={1.6}
 											step={0.01}
-											onChange={(v) =>
-												onCursorSpringChange?.({ ...cursorSpring, mass: v })
-											}
+											onChange={(v) => onCursorSpringChange?.({ ...cursorSpring, mass: v })}
 											formatValue={(v) => `${v.toFixed(2)}`}
 											parseInput={(t) => parseFloat(t)}
 										/>
@@ -1805,7 +1790,8 @@ export default function SettingsPanel({
 										{tSettings("cursor.legacySettings", "Advanced Settings")}
 									</div>
 									<div className="mt-0.5 text-[10px] text-slate-500">
-										Optional cursor appearance and compatibility controls for fine-tuning special cases.
+										Optional cursor appearance and compatibility controls for fine-tuning special
+										cases.
 									</div>
 								</div>
 								{showLegacyCursorSettings ? (
@@ -1818,7 +1804,10 @@ export default function SettingsPanel({
 
 						{showLegacyCursorSettings && (
 							<>
-								<SettingsSection title="Legacy Visibility" description="Compatibility controls for older projects">
+								<SettingsSection
+									title="Legacy Visibility"
+									description="Compatibility controls for older projects"
+								>
 									<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 										<div>
 											<div className="text-xs font-medium text-slate-300">
@@ -1836,240 +1825,240 @@ export default function SettingsPanel({
 									</div>
 								</SettingsSection>
 
-						<SettingsSection title="Appearance" description="Customize how your cursor looks">
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<div className="text-xs font-medium text-slate-300 mb-2">
-									{tSettings("cursor.pack")}
-								</div>
-								<div className="grid grid-cols-5 gap-1.5">
-									{CURSOR_PACK_OPTIONS.map((opt) => (
-										<button
-											key={opt.value}
-											type="button"
-											onClick={() => onCursorPackChange?.(opt.value)}
-											className={cn(
-												"group relative flex flex-col items-center gap-1 p-1.5 rounded-lg transition-all duration-200 cursor-pointer",
-												cursorPack === opt.value
-													? "bg-gradient-to-b from-[#F59E0B]/20 to-[#d97706]/10 ring-1 ring-[#F59E0B]/60 shadow-sm shadow-[#F59E0B]/10"
-													: "bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.04] hover:border-white/[0.1]",
-											)}
-											title={opt.label}
-										>
-											<div
-												className={cn(
-													"w-8 h-8 flex items-center justify-center rounded-md transition-transform duration-200 group-hover:scale-110",
-													cursorPack === opt.value
-														? "drop-shadow-[0_0_4px_rgba(245,158,11,0.3)]"
-														: "",
-												)}
+								<SettingsSection title="Appearance" description="Customize how your cursor looks">
+									<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+										<div className="text-xs font-medium text-slate-300 mb-2">
+											{tSettings("cursor.pack")}
+										</div>
+										<div className="grid grid-cols-5 gap-1.5">
+											{CURSOR_PACK_OPTIONS.map((opt) => (
+												<button
+													key={opt.value}
+													type="button"
+													onClick={() => onCursorPackChange?.(opt.value)}
+													className={cn(
+														"group relative flex flex-col items-center gap-1 p-1.5 rounded-lg transition-all duration-200 cursor-pointer",
+														cursorPack === opt.value
+															? "bg-gradient-to-b from-[#F59E0B]/20 to-[#d97706]/10 ring-1 ring-[#F59E0B]/60 shadow-sm shadow-[#F59E0B]/10"
+															: "bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.04] hover:border-white/[0.1]",
+													)}
+													title={opt.label}
+												>
+													<div
+														className={cn(
+															"w-8 h-8 flex items-center justify-center rounded-md transition-transform duration-200 group-hover:scale-110",
+															cursorPack === opt.value
+																? "drop-shadow-[0_0_4px_rgba(245,158,11,0.3)]"
+																: "",
+														)}
+													>
+														<img
+															src={cursorPackPreviewUrls[opt.value]}
+															alt={opt.label}
+															className="w-6 h-6 object-contain pointer-events-none"
+															draggable={false}
+														/>
+													</div>
+													<span
+														className={cn(
+															"text-[8px] font-medium leading-tight text-center truncate w-full",
+															cursorPack === opt.value
+																? "text-[#F59E0B]"
+																: "text-slate-500 group-hover:text-slate-300",
+														)}
+													>
+														{opt.label}
+													</span>
+												</button>
+											))}
+										</div>
+									</div>
+
+									<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+										<div className="flex items-center justify-between mb-2.5">
+											<span className="text-[11px] font-medium text-slate-300">Cursor Color</span>
+											<button
+												type="button"
+												onClick={() => onCursorColorChange?.(DEFAULT_CURSOR_COLOR)}
+												className="text-[10px] text-slate-600 hover:text-[#F59E0B] transition-colors duration-200 cursor-pointer"
 											>
-												<img
-													src={cursorPackPreviewUrls[opt.value]}
-													alt={opt.label}
-													className="w-6 h-6 object-contain pointer-events-none"
-													draggable={false}
+												Reset
+											</button>
+										</div>
+										<div className="flex items-center gap-2">
+											<label className="relative w-8 h-8 rounded-lg border border-white/[0.08] cursor-pointer overflow-hidden group hover:border-[#F59E0B]/40 transition-colors duration-200">
+												<div
+													className="absolute inset-[3px] rounded-[5px]"
+													style={{ backgroundColor: cursorColor }}
 												/>
-											</div>
-											<span
-												className={cn(
-													"text-[8px] font-medium leading-tight text-center truncate w-full",
-													cursorPack === opt.value
-														? "text-[#F59E0B]"
-														: "text-slate-500 group-hover:text-slate-300",
-												)}
-											>
-												{opt.label}
+												<input
+													type="color"
+													value={cursorColor}
+													onChange={(e) => onCursorColorChange?.(e.target.value)}
+													className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+												/>
+											</label>
+											<input
+												type="text"
+												value={cursorColor}
+												onChange={(e) => onCursorColorChange?.(e.target.value)}
+												className="flex-1 h-8 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 text-[11px] text-slate-200 font-mono tracking-wider focus:outline-none focus:border-[#F59E0B]/40 focus:ring-1 focus:ring-[#F59E0B]/20 transition-all duration-200"
+											/>
+										</div>
+									</div>
+
+									<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+										<SliderControl
+											label="Cursor Opacity"
+											value={cursorOpacity}
+											defaultValue={DEFAULT_CURSOR_OPACITY}
+											min={0.1}
+											max={1}
+											step={0.05}
+											onChange={(v) => onCursorOpacityChange?.(v)}
+											formatValue={(v) => `${Math.round(v * 100)}%`}
+											parseInput={(t) => parseFloat(t.replace(/%$/, "")) / 100}
+										/>
+									</div>
+								</SettingsSection>
+
+								<SettingsSection
+									title="Motion"
+									description="Fine-tune motion blur and trail effects"
+								>
+									<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+										<SliderControl
+											label={tSettings("effects.cursorMotionBlur")}
+											value={cursorMotionBlur}
+											defaultValue={DEFAULT_CURSOR_MOTION_BLUR}
+											min={0}
+											max={2}
+											step={0.05}
+											onChange={(v) => onCursorMotionBlurChange?.(v)}
+											formatValue={(v) => `${v.toFixed(2)}×`}
+											parseInput={(t) => parseFloat(t.replace(/×$/, ""))}
+										/>
+									</div>
+
+									<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+										<SliderControl
+											label="Trail Length"
+											value={cursorTrailLength}
+											defaultValue={DEFAULT_CURSOR_TRAIL_LENGTH}
+											min={0}
+											max={20}
+											step={1}
+											onChange={(v) => onCursorTrailLengthChange?.(v)}
+											formatValue={(v) => (v <= 0 ? "Off" : `${v}`)}
+											parseInput={(t) => {
+												if (t.trim().toLowerCase() === "off") return 0;
+												return parseInt(t, 10);
+											}}
+										/>
+									</div>
+
+									{cursorTrailLength > 0 && (
+										<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200 animate-in fade-in slide-in-from-top-1 duration-200">
+											<SliderControl
+												label="Trail Opacity"
+												value={cursorTrailOpacity}
+												defaultValue={DEFAULT_CURSOR_TRAIL_OPACITY}
+												min={0.05}
+												max={1}
+												step={0.05}
+												onChange={(v) => onCursorTrailOpacityChange?.(v)}
+												formatValue={(v) => `${Math.round(v * 100)}%`}
+												parseInput={(t) => parseFloat(t.replace(/%$/, "")) / 100}
+											/>
+										</div>
+									)}
+								</SettingsSection>
+
+								<SettingsSection
+									title="Click Effects"
+									description="Visual feedback when clicking"
+									accentColor="amber"
+								>
+									<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+										<SliderControl
+											label={tSettings("effects.cursorClickBounce")}
+											value={cursorClickBounce}
+											defaultValue={DEFAULT_CURSOR_CLICK_BOUNCE}
+											min={0}
+											max={5}
+											step={0.05}
+											onChange={(v) => onCursorClickBounceChange?.(v)}
+											formatValue={(v) => `${v.toFixed(2)}×`}
+											parseInput={(t) => parseFloat(t.replace(/×$/, ""))}
+										/>
+									</div>
+
+									<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+										<div className="flex items-center justify-between mb-2.5">
+											<span className="text-[11px] font-medium text-slate-300">
+												Click Highlight Color
 											</span>
-										</button>
-									))}
-								</div>
-							</div>
+											<button
+												type="button"
+												onClick={() => onClickHighlightColorChange?.(DEFAULT_CLICK_HIGHLIGHT_COLOR)}
+												className="text-[10px] text-slate-600 hover:text-[#F59E0B] transition-colors duration-200 cursor-pointer"
+											>
+												Reset
+											</button>
+										</div>
+										<div className="flex items-center gap-2">
+											<label className="relative w-8 h-8 rounded-lg border border-white/[0.08] cursor-pointer overflow-hidden group hover:border-[#F59E0B]/40 transition-colors duration-200">
+												<div
+													className="absolute inset-[3px] rounded-[5px]"
+													style={{ backgroundColor: clickHighlightColor }}
+												/>
+												<input
+													type="color"
+													value={clickHighlightColor}
+													onChange={(e) => onClickHighlightColorChange?.(e.target.value)}
+													className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+												/>
+											</label>
+											<input
+												type="text"
+												value={clickHighlightColor}
+												onChange={(e) => onClickHighlightColorChange?.(e.target.value)}
+												className="flex-1 h-8 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 text-[11px] text-slate-200 font-mono tracking-wider focus:outline-none focus:border-[#F59E0B]/40 focus:ring-1 focus:ring-[#F59E0B]/20 transition-all duration-200"
+											/>
+										</div>
+									</div>
 
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<div className="flex items-center justify-between mb-2.5">
-									<span className="text-[11px] font-medium text-slate-300">Cursor Color</span>
-									<button
-										type="button"
-										onClick={() => onCursorColorChange?.(DEFAULT_CURSOR_COLOR)}
-										className="text-[10px] text-slate-600 hover:text-[#F59E0B] transition-colors duration-200 cursor-pointer"
-									>
-										Reset
-									</button>
-								</div>
-								<div className="flex items-center gap-2">
-									<label className="relative w-8 h-8 rounded-lg border border-white/[0.08] cursor-pointer overflow-hidden group hover:border-[#F59E0B]/40 transition-colors duration-200">
-										<div
-											className="absolute inset-[3px] rounded-[5px]"
-											style={{ backgroundColor: cursorColor }}
+									<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+										<SliderControl
+											label="Click Highlight Size"
+											value={clickHighlightSize}
+											defaultValue={DEFAULT_CLICK_HIGHLIGHT_SIZE}
+											min={0}
+											max={3}
+											step={0.1}
+											onChange={(v) => onClickHighlightSizeChange?.(v)}
+											formatValue={(v) => (v <= 0 ? "Off" : `${v.toFixed(1)}×`)}
+											parseInput={(t) => {
+												if (t.trim().toLowerCase() === "off") return 0;
+												return parseFloat(t.replace(/×$/, ""));
+											}}
 										/>
-										<input
-											type="color"
-											value={cursorColor}
-											onChange={(e) => onCursorColorChange?.(e.target.value)}
-											className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+									</div>
+
+									<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+										<SliderControl
+											label="Click Highlight Opacity"
+											value={clickHighlightOpacity}
+											defaultValue={DEFAULT_CLICK_HIGHLIGHT_OPACITY}
+											min={0}
+											max={1}
+											step={0.05}
+											onChange={(v) => onClickHighlightOpacityChange?.(v)}
+											formatValue={(v) => `${Math.round(v * 100)}%`}
+											parseInput={(t) => parseFloat(t.replace(/%$/, "")) / 100}
 										/>
-									</label>
-									<input
-										type="text"
-										value={cursorColor}
-										onChange={(e) => onCursorColorChange?.(e.target.value)}
-										className="flex-1 h-8 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 text-[11px] text-slate-200 font-mono tracking-wider focus:outline-none focus:border-[#F59E0B]/40 focus:ring-1 focus:ring-[#F59E0B]/20 transition-all duration-200"
-									/>
-								</div>
-							</div>
-
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<SliderControl
-									label="Cursor Opacity"
-									value={cursorOpacity}
-									defaultValue={DEFAULT_CURSOR_OPACITY}
-									min={0.1}
-									max={1}
-									step={0.05}
-									onChange={(v) => onCursorOpacityChange?.(v)}
-									formatValue={(v) => `${Math.round(v * 100)}%`}
-									parseInput={(t) => parseFloat(t.replace(/%$/, "")) / 100}
-								/>
-							</div>
-						</SettingsSection>
-
-						<SettingsSection
-							title="Motion"
-							description="Fine-tune motion blur and trail effects"
-						>
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<SliderControl
-									label={tSettings("effects.cursorMotionBlur")}
-									value={cursorMotionBlur}
-									defaultValue={DEFAULT_CURSOR_MOTION_BLUR}
-									min={0}
-									max={2}
-									step={0.05}
-									onChange={(v) => onCursorMotionBlurChange?.(v)}
-									formatValue={(v) => `${v.toFixed(2)}×`}
-									parseInput={(t) => parseFloat(t.replace(/×$/, ""))}
-								/>
-							</div>
-
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<SliderControl
-									label="Trail Length"
-									value={cursorTrailLength}
-									defaultValue={DEFAULT_CURSOR_TRAIL_LENGTH}
-									min={0}
-									max={20}
-									step={1}
-									onChange={(v) => onCursorTrailLengthChange?.(v)}
-									formatValue={(v) => (v <= 0 ? "Off" : `${v}`)}
-									parseInput={(t) => {
-										if (t.trim().toLowerCase() === "off") return 0;
-										return parseInt(t, 10);
-									}}
-								/>
-							</div>
-
-							{cursorTrailLength > 0 && (
-								<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200 animate-in fade-in slide-in-from-top-1 duration-200">
-									<SliderControl
-										label="Trail Opacity"
-										value={cursorTrailOpacity}
-										defaultValue={DEFAULT_CURSOR_TRAIL_OPACITY}
-										min={0.05}
-										max={1}
-										step={0.05}
-										onChange={(v) => onCursorTrailOpacityChange?.(v)}
-										formatValue={(v) => `${Math.round(v * 100)}%`}
-										parseInput={(t) => parseFloat(t.replace(/%$/, "")) / 100}
-									/>
-								</div>
-							)}
-						</SettingsSection>
-
-						<SettingsSection
-							title="Click Effects"
-							description="Visual feedback when clicking"
-							accentColor="amber"
-						>
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<SliderControl
-									label={tSettings("effects.cursorClickBounce")}
-									value={cursorClickBounce}
-									defaultValue={DEFAULT_CURSOR_CLICK_BOUNCE}
-									min={0}
-									max={5}
-									step={0.05}
-									onChange={(v) => onCursorClickBounceChange?.(v)}
-									formatValue={(v) => `${v.toFixed(2)}×`}
-									parseInput={(t) => parseFloat(t.replace(/×$/, ""))}
-								/>
-							</div>
-
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<div className="flex items-center justify-between mb-2.5">
-									<span className="text-[11px] font-medium text-slate-300">
-										Click Highlight Color
-									</span>
-									<button
-										type="button"
-										onClick={() => onClickHighlightColorChange?.(DEFAULT_CLICK_HIGHLIGHT_COLOR)}
-										className="text-[10px] text-slate-600 hover:text-[#F59E0B] transition-colors duration-200 cursor-pointer"
-									>
-										Reset
-									</button>
-								</div>
-								<div className="flex items-center gap-2">
-									<label className="relative w-8 h-8 rounded-lg border border-white/[0.08] cursor-pointer overflow-hidden group hover:border-[#F59E0B]/40 transition-colors duration-200">
-										<div
-											className="absolute inset-[3px] rounded-[5px]"
-											style={{ backgroundColor: clickHighlightColor }}
-										/>
-										<input
-											type="color"
-											value={clickHighlightColor}
-											onChange={(e) => onClickHighlightColorChange?.(e.target.value)}
-											className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-										/>
-									</label>
-									<input
-										type="text"
-										value={clickHighlightColor}
-										onChange={(e) => onClickHighlightColorChange?.(e.target.value)}
-										className="flex-1 h-8 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 text-[11px] text-slate-200 font-mono tracking-wider focus:outline-none focus:border-[#F59E0B]/40 focus:ring-1 focus:ring-[#F59E0B]/20 transition-all duration-200"
-									/>
-								</div>
-							</div>
-
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<SliderControl
-									label="Click Highlight Size"
-									value={clickHighlightSize}
-									defaultValue={DEFAULT_CLICK_HIGHLIGHT_SIZE}
-									min={0}
-									max={3}
-									step={0.1}
-									onChange={(v) => onClickHighlightSizeChange?.(v)}
-									formatValue={(v) => (v <= 0 ? "Off" : `${v.toFixed(1)}×`)}
-									parseInput={(t) => {
-										if (t.trim().toLowerCase() === "off") return 0;
-										return parseFloat(t.replace(/×$/, ""));
-									}}
-								/>
-							</div>
-
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<SliderControl
-									label="Click Highlight Opacity"
-									value={clickHighlightOpacity}
-									defaultValue={DEFAULT_CLICK_HIGHLIGHT_OPACITY}
-									min={0}
-									max={1}
-									step={0.05}
-									onChange={(v) => onClickHighlightOpacityChange?.(v)}
-									formatValue={(v) => `${Math.round(v * 100)}%`}
-									parseInput={(t) => parseFloat(t.replace(/%$/, "")) / 100}
-								/>
-							</div>
-						</SettingsSection>
+									</div>
+								</SettingsSection>
 							</>
 						)}
 					</TabContent>

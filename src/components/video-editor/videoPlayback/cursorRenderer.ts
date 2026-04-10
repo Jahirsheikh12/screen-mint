@@ -21,17 +21,17 @@ import {
 } from "./cursorSimulation";
 import { computeCursorSwayRotation } from "./cursorSway";
 import {
-	createSpringState,
-	type SpringConfig,
-	getCursorSpringConfig,
-	resetSpringState,
-	stepSpringValue,
-} from "./motionSmoothing";
-import {
 	getCursorTiltRotation,
 	getCursorVisibilityOpacity,
 	resolveCursorVisualMode,
 } from "./cursorV2";
+import {
+	createSpringState,
+	getCursorSpringConfig,
+	resetSpringState,
+	type SpringConfig,
+	stepSpringValue,
+} from "./motionSmoothing";
 
 type CursorAssetKey = CursorType;
 
@@ -551,7 +551,9 @@ export class SmoothedCursorState {
 	private xSpring = createSpringState(0.5);
 	private ySpring = createSpringState(0.5);
 
-	constructor(config: Pick<CursorRenderConfig, "smoothingFactor" | "trailLength" | "springConfig">) {
+	constructor(
+		config: Pick<CursorRenderConfig, "smoothingFactor" | "trailLength" | "springConfig">,
+	) {
 		this.smoothingFactor = config.smoothingFactor;
 		this.springConfig = config.springConfig;
 		this.trailLength = config.trailLength;
@@ -587,7 +589,8 @@ export class SmoothedCursorState {
 		this.lastTimeMs = timeMs;
 
 		const springConfig =
-			this.springConfig ?? (this.smoothingFactor > 0 ? getCursorSpringConfig(this.smoothingFactor) : null);
+			this.springConfig ??
+			(this.smoothingFactor > 0 ? getCursorSpringConfig(this.smoothingFactor) : null);
 		if (!springConfig) {
 			this.snapTo(targetX, targetY, timeMs);
 			return;
@@ -903,7 +906,10 @@ export class PixiCursorOverlay {
 		this.container.visible = visibilityOpacity > 0.001;
 		this.container.alpha = visibilityOpacity;
 		if (!this.container.visible) {
-			this.lastRenderedPoint = { px: viewport.x + this.state.x * viewport.width, py: viewport.y + this.state.y * viewport.height };
+			this.lastRenderedPoint = {
+				px: viewport.x + this.state.x * viewport.width,
+				py: viewport.y + this.state.y * viewport.height,
+			};
 			this.lastRenderedTimeMs = timeMs;
 			return;
 		}
@@ -961,15 +967,7 @@ export class PixiCursorOverlay {
 		this.circleCursorGraphics.visible = visualMode.renderCircleCursor;
 
 		if (visualMode.renderCircleCursor) {
-			this.drawStyledCursor(
-				px,
-				py,
-				scaledH,
-				bounceScale,
-				swayRotation,
-				cursorColor,
-				"circle",
-			);
+			this.drawStyledCursor(px, py, scaledH, bounceScale, swayRotation, cursorColor, "circle");
 		} else if (shadowSprite) {
 			shadowSprite.height = scaledH * bounceScale;
 			shadowSprite.width = scaledH * bounceScale * asset.aspectRatio;
@@ -1055,11 +1053,7 @@ export class PixiCursorOverlay {
 				this.circleCursorGraphics.drawCircle(0, 0, radius);
 				this.circleCursorGraphics.endFill();
 				this.circleCursorGraphics.beginFill(0xffffff, 0.3 * alpha);
-				this.circleCursorGraphics.drawCircle(
-					-highlightOffset,
-					-highlightOffset,
-					highlightRadius,
-				);
+				this.circleCursorGraphics.drawCircle(-highlightOffset, -highlightOffset, highlightRadius);
 				this.circleCursorGraphics.endFill();
 				break;
 			}
@@ -1068,7 +1062,11 @@ export class PixiCursorOverlay {
 
 	private drawTrail(viewport: CursorViewportRect, cursorHeight: number, color: number) {
 		this.trailGraphics.clear();
-		if (this.config.trailLength <= 0 || this.config.trailOpacity <= 0 || this.state.trail.length === 0) {
+		if (
+			this.config.trailLength <= 0 ||
+			this.config.trailOpacity <= 0 ||
+			this.state.trail.length === 0
+		) {
 			return;
 		}
 
@@ -1112,7 +1110,9 @@ export class PixiCursorOverlay {
 			targetRotation,
 			deltaMs,
 			getCursorSwaySpringConfig(
-				this.config.springConfig ? this.config.springConfig.damping / 40 : this.config.smoothingFactor,
+				this.config.springConfig
+					? this.config.springConfig.damping / 40
+					: this.config.smoothingFactor,
 			),
 		);
 

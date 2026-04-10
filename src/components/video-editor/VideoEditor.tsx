@@ -12,7 +12,7 @@ import {
 	Trash2,
 	Undo2,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
 	type ImperativePanelGroupHandle,
 	Panel,
@@ -36,9 +36,7 @@ import { useShortcuts } from "@/contexts/ShortcutsContext";
 import { type AppLocale, SUPPORTED_LOCALES } from "@/i18n/config";
 import { getBackgroundMusicAssetById } from "@/lib/backgroundMusic";
 import {
-	type ExportDetails,
 	type ExportFormat,
-	type ExportProgress,
 	type ExportSettings,
 	type GifExportConfig,
 	GifExporter,
@@ -48,7 +46,6 @@ import {
 	VideoExporter,
 	type VideoExportSettings,
 } from "@/lib/exporter";
-import type { PostRecordingContext } from "@/lib/recording/postRecording";
 import { matchesShortcut } from "@/lib/shortcuts";
 import { type AspectRatio, getAspectRatioValue } from "@/utils/aspectRatioUtils";
 import {
@@ -58,14 +55,18 @@ import {
 	loadAudioSelectionDurationMs,
 	resolveAudioSourceUrl,
 } from "./audioRegionUtils";
+import { ConfirmActionDialog, PresetNameDialog } from "./EditorDialogs";
 import { ExportDialog } from "./ExportDialog";
 import { ExportSettingsDialog } from "./ExportSettingsDialog";
+import { editorPersistenceService } from "./editorPersistenceService";
+import { type EditorPreset, type EditorWorkspaceLayout } from "./editorPreferences";
+import { editorPreferencesService } from "./editorPreferencesService";
 import {
-	type EditorPreset,
-	type EditorWorkspaceLayout,
-	loadEditorPreferences,
-	saveEditorPreferences,
-} from "./editorPreferences";
+	type ConfirmDialogState,
+	createInitialEditorSessionState,
+	editorSessionReducer,
+} from "./editorSession";
+import { createExportProgressThrottler } from "./exportProgressThrottler";
 import {
 	buildSourceVideoMetadata,
 	mergeGifExportDetails,
@@ -80,7 +81,6 @@ import {
 	resolvePostRecordingAutoZoomDecision,
 } from "./postRecordingAutoZoomUtils";
 import {
-	createProjectData,
 	DEFAULT_VIDEO_PREVIEW_PADDING,
 	deriveNextId,
 	fromFileUrl,
@@ -210,16 +210,21 @@ function LanguageSwitcher() {
 export default function VideoEditor() {
 	const { t } = useI18n();
 	const tSettings = useScopedT("settings");
-	const initialEditorPreferences = useMemo(() => loadEditorPreferences(), []);
+	const initialEditorPreferences = useMemo(() => editorPreferencesService.load(), []);
+	const [sessionState, dispatchSession] = useReducer(
+		editorSessionReducer,
+		undefined,
+		createInitialEditorSessionState,
+	);
 	const [videoPath, setVideoPath] = useState<string | null>(null);
 	const [videoSourcePath, setVideoSourcePath] = useState<string | null>(null);
-	const [currentProjectPath, setCurrentProjectPath] = useState<string | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [currentTime, setCurrentTime] = useState(0);
 	const [duration, setDuration] = useState(0);
 	const [wallpaper, setWallpaper] = useState<string>(initialEditorPreferences.wallpaper);
+	const [hideBackground, setHideBackground] = useState(initialEditorPreferences.hideBackground);
 	const [frameShadowSize, setFrameShadowSize] = useState(initialEditorPreferences.frameShadowSize);
 	const [frameShadowOpacity, setFrameShadowOpacity] = useState(
 		initialEditorPreferences.frameShadowOpacity,
@@ -341,7 +346,6 @@ export default function VideoEditor() {
 	const [captionGenerationProgress, setCaptionGenerationProgress] =
 		useState<CaptionGenerationProgress | null>(null);
 	const [captionModelStatus, setCaptionModelStatus] = useState<CaptionModelStatus | null>(null);
-	const [isTranscribing, setIsTranscribing] = useState(false);
 	const [webcamPath, setWebcamPath] = useState<string | null>(null);
 	const [missingWebcamPath, setMissingWebcamPath] = useState<string | null>(null);
 	const [missingAudioPathsById, setMissingAudioPathsById] = useState<Record<string, string>>({});
@@ -361,11 +365,6 @@ export default function VideoEditor() {
 	const [cameraLayouts, setCameraLayouts] = useState<CameraLayoutRegion[]>([]);
 	const [selectedCameraLayoutId, setSelectedCameraLayoutId] = useState<string | null>(null);
 	const [webcamSelected, setWebcamSelected] = useState(false);
-	const [isExporting, setIsExporting] = useState(false);
-	const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
-	const [exportError, setExportError] = useState<string | null>(null);
-	const [showExportDialog, setShowExportDialog] = useState(false);
-	const [showExportSettings, setShowExportSettings] = useState(false);
 	const [aspectRatio, setAspectRatio] = useState<AspectRatio>(initialEditorPreferences.aspectRatio);
 	const [videoExportSettings, setVideoExportSettings] = useState<VideoExportSettings>(
 		initialEditorPreferences.videoExportSettings,
@@ -382,14 +381,6 @@ export default function VideoEditor() {
 	);
 	const [customPresets, setCustomPresets] = useState<EditorPreset[]>(
 		initialEditorPreferences.presets,
-	);
-	const [exportDetails, setExportDetails] = useState<ExportDetails | null>(null);
-	const [exportedFilePath, setExportedFilePath] = useState<string | undefined>(undefined);
-	const [hasPendingExportSave, setHasPendingExportSave] = useState(false);
-	const [lastSavedSnapshot, setLastSavedSnapshot] = useState<string | null>(null);
-	const [showQuickShare, setShowQuickShare] = useState(false);
-	const [postRecordingContext, setPostRecordingContext] = useState<PostRecordingContext | null>(
-		null,
 	);
 	const [cursorTelemetryLoadSettled, setCursorTelemetryLoadSettled] = useState(false);
 	const [postRecordingAutoZoomBootstrap, setPostRecordingAutoZoomBootstrap] =
@@ -419,6 +410,19 @@ export default function VideoEditor() {
 	const audioAvailabilityRequestRef = useRef(0);
 	const handledPostRecordingContextRef = useRef<string | null>(null);
 	const resolvedWebcamPath = missingWebcamPath ? null : webcamPath;
+	const currentProjectPath = sessionState.currentProjectPath;
+	const isExporting = sessionState.isExporting;
+	const exportProgress = sessionState.exportProgress;
+	const exportError = sessionState.exportError;
+	const showExportDialog = sessionState.modals.exportDialogOpen;
+	const showExportSettings = sessionState.modals.exportSettingsOpen;
+	const exportDetails = sessionState.exportDetails;
+	const exportedFilePath = sessionState.exportedFilePath;
+	const hasPendingExportSave = sessionState.hasPendingExportSave;
+	const lastSavedSnapshot = sessionState.lastSavedSnapshot;
+	const showQuickShare = sessionState.modals.quickShareOpen;
+	const postRecordingContext = sessionState.postRecordingContext;
+	const isTranscribing = sessionState.isTranscribing;
 	const selectedAudioRegion = selectedAudioId
 		? (audioRegions.find((region) => region.id === selectedAudioId) ?? null)
 		: null;
@@ -523,6 +527,7 @@ export default function VideoEditor() {
 		() =>
 			normalizeProjectEditor({
 				wallpaper,
+				hideBackground,
 				shadowIntensity,
 				frameShadowSize,
 				frameShadowOpacity,
@@ -580,6 +585,7 @@ export default function VideoEditor() {
 			}),
 		[
 			wallpaper,
+			hideBackground,
 			shadowIntensity,
 			frameShadowSize,
 			frameShadowOpacity,
@@ -643,6 +649,7 @@ export default function VideoEditor() {
 			options: { includeTimeline?: boolean } = {},
 		) => {
 			setWallpaper(controls.wallpaper);
+			setHideBackground(controls.hideBackground);
 			setFrameShadowSize(controls.frameShadowSize);
 			setFrameShadowOpacity(controls.frameShadowOpacity);
 			setFrameShadowBlur(controls.frameShadowBlur);
@@ -681,6 +688,7 @@ export default function VideoEditor() {
 			setKeyboardShortcutOpacity(controls.keyboardShortcutOpacity);
 			setKeyboardShortcutDisplayMs(controls.keyboardShortcutDisplayMs);
 			setKeyboardShortcutMaxVisible(controls.keyboardShortcutMaxVisible);
+			setDeviceMockup(controls.deviceMockup);
 			setFrameBorderEnabled(controls.frameBorderEnabled);
 			setFrameBorderWidth(controls.frameBorderWidth);
 			setFrameBorderColor(controls.frameBorderColor);
@@ -949,7 +957,7 @@ export default function VideoEditor() {
 			setError(null);
 			setVideoSourcePath(sourcePath);
 			setVideoPath(toFileUrl(sourcePath));
-			setCurrentProjectPath(path ?? null);
+			dispatchSession({ type: "set-current-project-path", path: path ?? null });
 			applyEditorControls(normalizedEditor, { includeTimeline: true });
 			setWebcamPath(normalizedEditor.webcamPath ?? null);
 			await syncWebcamAvailability(normalizedEditor.webcamPath ?? null, { quiet: false });
@@ -997,7 +1005,13 @@ export default function VideoEditor() {
 					0,
 				) + 1;
 
-			setLastSavedSnapshot(JSON.stringify(createProjectData(sourcePath, normalizedEditor)));
+			dispatchSession({
+				type: "set-last-saved-snapshot",
+				snapshot: editorPersistenceService.buildProjectArtifacts({
+					sourcePath,
+					editor: normalizedEditor,
+				}).projectSnapshot,
+			});
 			return true;
 		},
 		[applyEditorControls, syncWebcamAvailability],
@@ -1008,9 +1022,11 @@ export default function VideoEditor() {
 		if (!sourcePath) {
 			return null;
 		}
-		return JSON.stringify(
-			createProjectData(sourcePath, {
+		return editorPersistenceService.buildProjectArtifacts({
+			sourcePath,
+			editor: {
 				wallpaper,
+				hideBackground,
 				shadowIntensity,
 				frameShadowSize,
 				frameShadowOpacity,
@@ -1077,12 +1093,13 @@ export default function VideoEditor() {
 				exportFormat,
 				videoExportSettings,
 				gifExportSettings,
-			}),
-		);
+			},
+		}).projectSnapshot;
 	}, [
 		videoPath,
 		videoSourcePath,
 		wallpaper,
+		hideBackground,
 		shadowIntensity,
 		frameShadowSize,
 		frameShadowOpacity,
@@ -1179,12 +1196,11 @@ export default function VideoEditor() {
 		historyFutureRef.current = [];
 	}, [buildHistorySnapshot, cloneSnapshot]);
 
-	const hasUnsavedChanges = Boolean(
-		currentProjectPath &&
-			currentProjectSnapshot &&
-			lastSavedSnapshot &&
-			currentProjectSnapshot !== lastSavedSnapshot,
-	);
+	const hasUnsavedChanges = editorPersistenceService.hasUnsavedChanges({
+		currentProjectPath,
+		currentProjectSnapshot,
+		lastSavedSnapshot,
+	});
 
 	useEffect(() => {
 		async function loadInitialData() {
@@ -1204,8 +1220,8 @@ export default function VideoEditor() {
 						const sourcePath = fromFileUrl(result.path);
 						setVideoSourcePath(sourcePath);
 						setVideoPath(toFileUrl(sourcePath));
-						setCurrentProjectPath(null);
-						setLastSavedSnapshot(null);
+						dispatchSession({ type: "set-current-project-path", path: null });
+						dispatchSession({ type: "set-last-saved-snapshot", snapshot: null });
 						setAspectRatio("native");
 						setPadding(DEFAULT_VIDEO_PREVIEW_PADDING);
 
@@ -1224,7 +1240,10 @@ export default function VideoEditor() {
 
 				const postRecordingResult = await window.electronAPI.getPostRecordingContext();
 				if (postRecordingResult.success) {
-					setPostRecordingContext(postRecordingResult.context ?? null);
+					dispatchSession({
+						type: "set-post-recording-context",
+						context: postRecordingResult.context ?? null,
+					});
 				}
 			} catch (err) {
 				setError("Error loading video: " + String(err));
@@ -1262,8 +1281,9 @@ export default function VideoEditor() {
 	}, [videoPath]);
 
 	useEffect(() => {
-		saveEditorPreferences({
+		editorPreferencesService.scheduleSave({
 			wallpaper,
+			hideBackground,
 			shadowIntensity,
 			frameShadowSize,
 			frameShadowOpacity,
@@ -1325,6 +1345,7 @@ export default function VideoEditor() {
 		});
 	}, [
 		wallpaper,
+		hideBackground,
 		shadowIntensity,
 		frameShadowSize,
 		frameShadowOpacity,
@@ -1349,6 +1370,7 @@ export default function VideoEditor() {
 		smoothMovementEnabled,
 		cursorMovementStyle,
 		cursorSpring,
+		cameraSpring,
 		highQualitySvgCursors,
 		cursorColor,
 		cursorOpacity,
@@ -1384,6 +1406,12 @@ export default function VideoEditor() {
 		customPresets,
 	]);
 
+	useEffect(() => {
+		return () => {
+			editorPreferencesService.flush();
+		};
+	}, []);
+
 	const saveProject = useCallback(
 		async (forceSaveAs: boolean) => {
 			if (!videoPath) {
@@ -1397,85 +1425,82 @@ export default function VideoEditor() {
 				return;
 			}
 
-			const projectData = createProjectData(sourcePath, {
-				wallpaper,
-				shadowIntensity,
-				frameShadowSize,
-				frameShadowOpacity,
-				frameShadowBlur,
-				backgroundBlur,
-				zoomMotionBlur,
-				connectZooms,
-				showCursor,
-				loopCursor,
-				cursorSize,
-				cursorSmoothing,
-				cursorMotionBlur,
-				cursorClickBounce,
-				cursorSway,
-				cursorStyle,
-				cursorPack,
-				cursorTypeMode,
-				cursorTilt,
-				hideWhenIdle,
-				idleHideDelayMs,
-				smoothMovementEnabled,
-				cursorMovementStyle,
-				cursorSpring,
-				cameraSpring,
-				highQualitySvgCursors,
-				cursorColor,
-				cursorOpacity,
-				clickHighlightColor,
-				clickHighlightSize,
-				clickHighlightOpacity,
-				cursorTrailLength,
-				cursorTrailOpacity,
-				showKeyboardShortcuts,
-				keyboardShortcutPosition,
-				keyboardShortcutTheme,
-				keyboardShortcutScale,
-				keyboardShortcutOpacity,
-				keyboardShortcutDisplayMs,
-				keyboardShortcutMaxVisible,
-				deviceMockup,
-				frameBorderEnabled,
-				frameBorderWidth,
-				frameBorderColor,
-				frameBorderOpacity,
-				borderRadius,
-				padding,
-				cropRegion,
-				zoomRegions,
-				trimRegions,
-				cutPoints,
-				speedRegions,
-				annotationRegions,
-				audioRegions,
-				aspectRatio,
-				webcamPath: webcamPath ?? undefined,
-				webcamRegion,
-				showWebcam,
-				mirrorWebcam,
-				cameraSizeDuringZoom,
-				cameraLayouts,
-				captionTrack,
-				captionSettings,
-				captionGenerationOptions,
-				exportFormat,
-				videoExportSettings,
-				gifExportSettings,
+			const projectArtifacts = editorPersistenceService.buildProjectArtifacts({
+				sourcePath,
+				editor: {
+					wallpaper,
+					hideBackground,
+					shadowIntensity,
+					frameShadowSize,
+					frameShadowOpacity,
+					frameShadowBlur,
+					backgroundBlur,
+					zoomMotionBlur,
+					connectZooms,
+					showCursor,
+					loopCursor,
+					cursorSize,
+					cursorSmoothing,
+					cursorMotionBlur,
+					cursorClickBounce,
+					cursorSway,
+					cursorStyle,
+					cursorPack,
+					cursorTypeMode,
+					cursorTilt,
+					hideWhenIdle,
+					idleHideDelayMs,
+					smoothMovementEnabled,
+					cursorMovementStyle,
+					cursorSpring,
+					cameraSpring,
+					highQualitySvgCursors,
+					cursorColor,
+					cursorOpacity,
+					clickHighlightColor,
+					clickHighlightSize,
+					clickHighlightOpacity,
+					cursorTrailLength,
+					cursorTrailOpacity,
+					showKeyboardShortcuts,
+					keyboardShortcutPosition,
+					keyboardShortcutTheme,
+					keyboardShortcutScale,
+					keyboardShortcutOpacity,
+					keyboardShortcutDisplayMs,
+					keyboardShortcutMaxVisible,
+					deviceMockup,
+					frameBorderEnabled,
+					frameBorderWidth,
+					frameBorderColor,
+					frameBorderOpacity,
+					borderRadius,
+					padding,
+					cropRegion,
+					zoomRegions,
+					trimRegions,
+					cutPoints,
+					speedRegions,
+					annotationRegions,
+					audioRegions,
+					aspectRatio,
+					webcamPath: webcamPath ?? undefined,
+					webcamRegion,
+					showWebcam,
+					mirrorWebcam,
+					cameraSizeDuringZoom,
+					cameraLayouts,
+					captionTrack,
+					captionSettings,
+					captionGenerationOptions,
+					exportFormat,
+					videoExportSettings,
+					gifExportSettings,
+				},
 			});
-
-			const fileNameBase =
-				sourcePath
-					.split(/[\\/]/)
-					.pop()
-					?.replace(/\.[^.]+$/, "") || `project-${Date.now()}`;
-			const projectSnapshot = JSON.stringify(projectData);
 			const result = await window.electronAPI.saveProjectFile(
-				projectData,
-				fileNameBase,
+				projectArtifacts.projectData,
+				projectArtifacts.fileNameBase,
 				forceSaveAs ? undefined : (currentProjectPath ?? undefined),
 			);
 
@@ -1490,9 +1515,12 @@ export default function VideoEditor() {
 			}
 
 			if (result.path) {
-				setCurrentProjectPath(result.path);
+				dispatchSession({ type: "set-current-project-path", path: result.path });
 			}
-			setLastSavedSnapshot(projectSnapshot);
+			dispatchSession({
+				type: "set-last-saved-snapshot",
+				snapshot: projectArtifacts.projectSnapshot,
+			});
 
 			toast.success(`Project saved to ${result.path}`);
 		},
@@ -1501,6 +1529,7 @@ export default function VideoEditor() {
 			videoSourcePath,
 			currentProjectPath,
 			wallpaper,
+			hideBackground,
 			shadowIntensity,
 			frameShadowSize,
 			frameShadowOpacity,
@@ -1572,6 +1601,7 @@ export default function VideoEditor() {
 
 	useEffect(() => {
 		const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+			editorPreferencesService.flush();
 			if (!hasUnsavedChanges) {
 				return;
 			}
@@ -3054,7 +3084,7 @@ export default function VideoEditor() {
 
 	const handleAutoTranscribe = useCallback(async () => {
 		if (!videoPath || isTranscribing) return;
-		setIsTranscribing(true);
+		dispatchSession({ type: "set-transcribing", value: true });
 		setCaptionGenerationProgress({
 			stage: "bootstrap",
 			percentage: 0,
@@ -3110,7 +3140,7 @@ export default function VideoEditor() {
 			setCaptionGenerationProgress(null);
 			toast.error(getFriendlyCaptionErrorMessage(error));
 		} finally {
-			setIsTranscribing(false);
+			dispatchSession({ type: "set-transcribing", value: false });
 		}
 	}, [captionGenerationOptions, getFriendlyCaptionErrorMessage, isTranscribing, t, videoPath]);
 
@@ -3232,7 +3262,7 @@ export default function VideoEditor() {
 
 	const handleCancelCaptionGeneration = useCallback(async () => {
 		await window.electronAPI.cancelCaptionGeneration();
-		setIsTranscribing(false);
+		dispatchSession({ type: "set-transcribing", value: false });
 		setCaptionGenerationProgress(null);
 		toast.info(t("editor.captions.cancelled", "Caption generation cancelled"));
 	}, [t]);
@@ -3537,18 +3567,22 @@ export default function VideoEditor() {
 				return;
 			}
 
-			setIsExporting(true);
-			setExportProgress(null);
-			setExportError(null);
+			dispatchSession({ type: "set-exporting", value: true });
+			dispatchSession({ type: "set-export-progress", progress: null });
+			dispatchSession({ type: "set-export-error", error: null });
+			dispatchSession({ type: "set-exported-file-path", path: undefined });
 			pendingExportSaveRef.current = null;
-			setHasPendingExportSave(false);
+			dispatchSession({ type: "set-pending-export-save", value: false });
 
-			let keepExportDialogOpen = false;
+			let keepExportDialogOpen = true;
 			const saveMode = options.saveMode ?? "dialog";
 			let previewRestoreTime = video.currentTime;
 			let shouldResumePreviewPlayback = isPlaying;
 			let previewRestored = false;
 			let previewHoldToken: string | null = null;
+			const progressThrottler = createExportProgressThrottler((progress) => {
+				dispatchSession({ type: "set-export-progress", progress });
+			});
 
 			const restorePreviewAfterExport = async (forceReload = false) => {
 				const playback = videoPlaybackRef.current;
@@ -3568,7 +3602,7 @@ export default function VideoEditor() {
 			};
 
 			try {
-				setExportDetails(null);
+				dispatchSession({ type: "set-export-details", details: null });
 				const wasPlaying = isPlaying;
 				previewRestoreTime = video.currentTime;
 				shouldResumePreviewPlayback = wasPlaying;
@@ -3635,9 +3669,10 @@ export default function VideoEditor() {
 						frameShadowOpacity,
 						frameShadowBlur,
 						backgroundBlur,
+						hideBackground,
 						zoomMotionBlur,
 						connectZooms,
-						deviceMockup,
+						deviceMockup: "none",
 						frameBorderEnabled,
 						frameBorderWidth,
 						frameBorderColor,
@@ -3691,16 +3726,18 @@ export default function VideoEditor() {
 						cameraLayouts,
 						captionRegions,
 						captionSettings,
-						onProgress: (progress: ExportProgress) => {
-							setExportProgress(progress);
-						},
+						onProgress: progressThrottler.push,
 					});
 
 					exporterRef.current = gifExporter as unknown as VideoExporter;
 					const result = await gifExporter.export();
 
 					if (result.success && result.blob) {
-						setExportDetails(mergeGifExportDetails(gifPlan, result.details, result.blob.size));
+						progressThrottler.flush();
+						dispatchSession({
+							type: "set-export-details",
+							details: mergeGifExportDetails(gifPlan, result.details, result.blob.size),
+						});
 						const arrayBuffer = await result.blob.arrayBuffer();
 						const timestamp = Date.now();
 						const fileName = `export-${timestamp}.gif`;
@@ -3712,22 +3749,29 @@ export default function VideoEditor() {
 
 						if ("canceled" in saveResult && saveResult.canceled) {
 							pendingExportSaveRef.current = { arrayBuffer, fileName };
-							setHasPendingExportSave(true);
-							setExportError(
-								"Save dialog canceled. Click Save Again to save without re-rendering.",
-							);
+							dispatchSession({ type: "set-pending-export-save", value: true });
+							dispatchSession({
+								type: "set-export-error",
+								error: "Save dialog canceled. Click Save Again to save without re-rendering.",
+							});
 							toast.info("Save canceled. You can save again without re-exporting.");
 							keepExportDialogOpen = true;
 						} else if (saveResult.success && saveResult.path) {
 							showExportSuccessToast(saveResult.path);
-							setExportedFilePath(saveResult.path);
+							dispatchSession({ type: "set-exported-file-path", path: saveResult.path });
 							await options.onSaved?.(saveResult.path);
 						} else {
-							setExportError(saveResult.message || "Failed to save GIF");
+							dispatchSession({
+								type: "set-export-error",
+								error: saveResult.message || "Failed to save GIF",
+							});
 							toast.error(saveResult.message || "Failed to save GIF");
 						}
 					} else {
-						setExportError(result.error || "GIF export failed");
+						dispatchSession({
+							type: "set-export-error",
+							error: result.error || "GIF export failed",
+						});
 						toast.error(result.error || "GIF export failed");
 					}
 				} else {
@@ -3757,9 +3801,10 @@ export default function VideoEditor() {
 						frameShadowOpacity,
 						frameShadowBlur,
 						backgroundBlur,
+						hideBackground,
 						zoomMotionBlur,
 						connectZooms,
-						deviceMockup,
+						deviceMockup: "none",
 						frameBorderEnabled,
 						frameBorderWidth,
 						frameBorderColor,
@@ -3813,16 +3858,18 @@ export default function VideoEditor() {
 						cameraLayouts,
 						captionRegions,
 						captionSettings,
-						onProgress: (progress: ExportProgress) => {
-							setExportProgress(progress);
-						},
+						onProgress: progressThrottler.push,
 					});
 
 					exporterRef.current = exporter;
 					const result = await exporter.export();
 
 					if (result.success && result.blob) {
-						setExportDetails(mergeVideoExportDetails(videoPlan, result.details, result.blob.size));
+						progressThrottler.flush();
+						dispatchSession({
+							type: "set-export-details",
+							details: mergeVideoExportDetails(videoPlan, result.details, result.blob.size),
+						});
 						const arrayBuffer = await result.blob.arrayBuffer();
 						const timestamp = Date.now();
 						const fileName = `export-${timestamp}.mp4`;
@@ -3834,22 +3881,29 @@ export default function VideoEditor() {
 
 						if ("canceled" in saveResult && saveResult.canceled) {
 							pendingExportSaveRef.current = { arrayBuffer, fileName };
-							setHasPendingExportSave(true);
-							setExportError(
-								"Save dialog canceled. Click Save Again to save without re-rendering.",
-							);
+							dispatchSession({ type: "set-pending-export-save", value: true });
+							dispatchSession({
+								type: "set-export-error",
+								error: "Save dialog canceled. Click Save Again to save without re-rendering.",
+							});
 							toast.info("Save canceled. You can save again without re-exporting.");
 							keepExportDialogOpen = true;
 						} else if (saveResult.success && saveResult.path) {
 							showExportSuccessToast(saveResult.path);
-							setExportedFilePath(saveResult.path);
+							dispatchSession({ type: "set-exported-file-path", path: saveResult.path });
 							await options.onSaved?.(saveResult.path);
 						} else {
-							setExportError(saveResult.message || "Failed to save video");
+							dispatchSession({
+								type: "set-export-error",
+								error: saveResult.message || "Failed to save video",
+							});
 							toast.error(saveResult.message || "Failed to save video");
 						}
 					} else {
-						setExportError(result.error || "Export failed");
+						dispatchSession({
+							type: "set-export-error",
+							error: result.error || "Export failed",
+						});
 						toast.error(result.error || "Export failed");
 					}
 				}
@@ -3858,9 +3912,10 @@ export default function VideoEditor() {
 			} catch (error) {
 				console.error("Export error:", error);
 				const errorMessage = error instanceof Error ? error.message : "Unknown error";
-				setExportError(errorMessage);
+				dispatchSession({ type: "set-export-error", error: errorMessage });
 				toast.error(`Export failed: ${errorMessage}`);
 			} finally {
+				progressThrottler.flush();
 				if (!previewRestored) {
 					const playback = videoPlaybackRef.current;
 					if (playback?.video) {
@@ -3876,10 +3931,10 @@ export default function VideoEditor() {
 				if (previewHoldToken) {
 					videoPlaybackRef.current?.releasePreviewHold(previewHoldToken);
 				}
-				setIsExporting(false);
+				dispatchSession({ type: "set-exporting", value: false });
 				exporterRef.current = null;
-				setShowExportDialog(keepExportDialogOpen);
-				setExportProgress(null);
+				dispatchSession({ type: "set-export-dialog-open", value: keepExportDialogOpen });
+				dispatchSession({ type: "set-export-progress", progress: null });
 			}
 		},
 		[
@@ -3892,6 +3947,7 @@ export default function VideoEditor() {
 			frameShadowOpacity,
 			frameShadowBlur,
 			backgroundBlur,
+			hideBackground,
 			zoomMotionBlur,
 			connectZooms,
 			showCursor,
@@ -3927,7 +3983,6 @@ export default function VideoEditor() {
 			keyboardShortcutOpacity,
 			keyboardShortcutMaxVisible,
 			audioRegions,
-			deviceMockup,
 			frameBorderEnabled,
 			frameBorderWidth,
 			frameBorderColor,
@@ -3960,8 +4015,11 @@ export default function VideoEditor() {
 		}
 
 		if (hasPendingExportSave) {
-			setShowExportDialog(true);
-			setExportError("Save dialog canceled. Click Save Again to save without re-rendering.");
+			dispatchSession({ type: "set-export-dialog-open", value: true });
+			dispatchSession({
+				type: "set-export-error",
+				error: "Save dialog canceled. Click Save Again to save without re-rendering.",
+			});
 			return;
 		}
 
@@ -3970,8 +4028,8 @@ export default function VideoEditor() {
 			return;
 		}
 
-		setShowExportDialog(true);
-		setExportError(null);
+		dispatchSession({ type: "set-export-dialog-open", value: true });
+		dispatchSession({ type: "set-export-error", error: null });
 
 		// Start export immediately
 		handleExport(settings);
@@ -3983,9 +4041,9 @@ export default function VideoEditor() {
 			return;
 		}
 
-		setShowQuickShare(false);
-		setShowExportDialog(true);
-		setExportError(null);
+		dispatchSession({ type: "set-quick-share-open", value: false });
+		dispatchSession({ type: "set-export-dialog-open", value: true });
+		dispatchSession({ type: "set-export-error", error: null });
 		await handleExport(settings, {
 			saveMode: "recordings",
 			onSaved: async (filePath) => {
@@ -4000,12 +4058,12 @@ export default function VideoEditor() {
 	}, [buildDefaultExportSettings, handleExport]);
 
 	const handleQuickShareSave = useCallback(() => {
-		setShowQuickShare(false);
+		dispatchSession({ type: "set-quick-share-open", value: false });
 		handleOpenExportDialog();
 	}, [handleOpenExportDialog]);
 
 	const handleQuickShareEdit = useCallback(() => {
-		setShowQuickShare(false);
+		dispatchSession({ type: "set-quick-share-open", value: false });
 	}, []);
 
 	const cycleWorkspaceLayout = useCallback(() => {
@@ -4025,8 +4083,11 @@ export default function VideoEditor() {
 	);
 
 	const handleSavePreset = useCallback(() => {
-		const input = window.prompt("Name this preset", "My preset");
-		const name = input?.trim();
+		dispatchSession({ type: "open-preset-dialog", name: "My preset" });
+	}, []);
+
+	const handleConfirmSavePreset = useCallback(() => {
+		const name = sessionState.modals.presetDialog.name.trim();
 		if (!name) {
 			return;
 		}
@@ -4038,36 +4099,49 @@ export default function VideoEditor() {
 		};
 
 		setCustomPresets((prev) => [...prev, preset]);
+		dispatchSession({ type: "close-preset-dialog" });
 		toast.success(`Saved ${name} preset.`);
-	}, [buildCurrentPresetControls]);
+	}, [buildCurrentPresetControls, sessionState.modals.presetDialog.name]);
 
-	const handleDeletePreset = useCallback((presetId: string) => {
-		setCustomPresets((prev) => {
-			const target = prev.find((preset) => preset.id === presetId);
+	const handleDeletePreset = useCallback(
+		(presetId: string) => {
+			const target = customPresets.find((preset) => preset.id === presetId);
 			if (!target) {
-				return prev;
+				return;
 			}
 
-			if (!window.confirm(`Delete preset "${target.name}"?`)) {
-				return prev;
-			}
-
-			toast.success(`Deleted ${target.name} preset.`);
-			return prev.filter((preset) => preset.id !== presetId);
-		});
-	}, []);
+			dispatchSession({
+				type: "open-confirm-dialog",
+				dialog: {
+					kind: "delete-preset",
+					title: "Delete preset?",
+					description: `Delete the preset "${target.name}"?`,
+					confirmLabel: "Delete preset",
+					payload: presetId,
+					tone: "danger",
+				},
+			});
+		},
+		[customPresets],
+	);
 
 	const handleDeleteProject = useCallback(async () => {
-		const confirmDelete = window.confirm(
-			[
+		const dialog: ConfirmDialogState = {
+			kind: "delete-project",
+			title: "Delete project?",
+			description: [
 				"Delete this ScreenMint project and any managed recording media?",
 				"",
 				"Imported files outside the ScreenMint recordings folder will be kept.",
 			].join("\n"),
-		);
-		if (!confirmDelete) {
-			return;
-		}
+			confirmLabel: "Delete project",
+			tone: "danger",
+		};
+		dispatchSession({ type: "open-confirm-dialog", dialog });
+	}, []);
+
+	const confirmDeleteProject = useCallback(async () => {
+		dispatchSession({ type: "close-confirm-dialog" });
 
 		const result = await window.electronAPI.deleteProjectAndMedia({
 			projectPath: currentProjectPath,
@@ -4098,6 +4172,27 @@ export default function VideoEditor() {
 
 		await window.electronAPI.switchToHud();
 	}, [currentProjectPath, videoSourcePath, webcamPath]);
+
+	const handleConfirmDialogAction = useCallback(async () => {
+		const dialog = sessionState.modals.confirmDialog;
+		if (!dialog) {
+			return;
+		}
+
+		if (dialog.kind === "delete-preset" && dialog.payload) {
+			const target = customPresets.find((preset) => preset.id === dialog.payload);
+			setCustomPresets((prev) => prev.filter((preset) => preset.id !== dialog.payload));
+			dispatchSession({ type: "close-confirm-dialog" });
+			if (target) {
+				toast.success(`Deleted ${target.name} preset.`);
+			}
+			return;
+		}
+
+		if (dialog.kind === "delete-project") {
+			await confirmDeleteProject();
+		}
+	}, [confirmDeleteProject, customPresets, sessionState.modals.confirmDialog]);
 
 	useEffect(() => {
 		if (loading || error || !videoPath || !postRecordingContext) {
@@ -4132,19 +4227,19 @@ export default function VideoEditor() {
 					await handleExportToClipboard();
 					break;
 				case "export-share-link":
-					setShowQuickShare(true);
-					toast.info("Share links need a backend before they can be enabled.");
+					dispatchSession({ type: "set-quick-share-open", value: true });
+					toast.info("Share links are not available yet. Opening Quick Share instead.");
 					break;
 				case "create-project":
 				default:
 					if (postRecordingContext.openQuickShare) {
-						setShowQuickShare(true);
+						dispatchSession({ type: "set-quick-share-open", value: true });
 					}
 					break;
 			}
 
 			await window.electronAPI.clearPostRecordingContext();
-			setPostRecordingContext(null);
+			dispatchSession({ type: "set-post-recording-context", context: null });
 		})();
 	}, [
 		duration,
@@ -4161,17 +4256,18 @@ export default function VideoEditor() {
 		if (exporterRef.current) {
 			exporterRef.current.cancel();
 			toast.info("Export canceled");
-			setShowExportDialog(false);
-			setIsExporting(false);
-			setExportProgress(null);
-			setExportError(null);
-			setExportedFilePath(undefined);
+			dispatchSession({ type: "set-export-dialog-open", value: false });
+			dispatchSession({ type: "set-exporting", value: false });
+			dispatchSession({ type: "set-export-progress", progress: null });
+			dispatchSession({ type: "set-export-error", error: null });
+			dispatchSession({ type: "set-exported-file-path", path: undefined });
 		}
 	}, []);
 
 	const handleExportDialogClose = useCallback(() => {
-		setShowExportDialog(false);
-		setExportedFilePath(undefined);
+		dispatchSession({ type: "set-export-dialog-open", value: false });
+		dispatchSession({ type: "set-exported-file-path", path: undefined });
+		dispatchSession({ type: "set-export-error", error: null });
 	}, []);
 
 	const handleRetrySaveExport = useCallback(async () => {
@@ -4186,23 +4282,25 @@ export default function VideoEditor() {
 		);
 
 		if ("canceled" in saveResult && saveResult.canceled) {
-			setExportError("Save dialog canceled. Click Save Again to save without re-rendering.");
+			dispatchSession({
+				type: "set-export-error",
+				error: "Save dialog canceled. Click Save Again to save without re-rendering.",
+			});
 			toast.info("Save canceled. You can try again.");
 			return;
 		}
 
 		if (saveResult.success && saveResult.path) {
 			pendingExportSaveRef.current = null;
-			setHasPendingExportSave(false);
-			setExportError(null);
-			setExportedFilePath(saveResult.path);
+			dispatchSession({ type: "set-pending-export-save", value: false });
+			dispatchSession({ type: "set-export-error", error: null });
+			dispatchSession({ type: "set-exported-file-path", path: saveResult.path });
 			showExportSuccessToast(saveResult.path);
-			setShowExportDialog(false);
 			return;
 		}
 
 		const errorMessage = saveResult.message || "Failed to save video";
-		setExportError(errorMessage);
+		dispatchSession({ type: "set-export-error", error: errorMessage });
 		toast.error(errorMessage);
 	}, [showExportSuccessToast]);
 
@@ -4467,7 +4565,7 @@ export default function VideoEditor() {
 					{/* Export button - amber */}
 					<button
 						type="button"
-						onClick={() => setShowExportSettings(true)}
+						onClick={() => dispatchSession({ type: "set-export-settings-open", value: true })}
 						className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-white font-semibold text-xs transition bg-[#f59e0b] hover:bg-[#d97706] cursor-pointer shadow-lg shadow-amber-500/20"
 						title="Export"
 					>
@@ -4523,6 +4621,7 @@ export default function VideoEditor() {
 									onPlayStateChange={setIsPlaying}
 									onError={setError}
 									wallpaper={wallpaper}
+									hideBackground={hideBackground}
 									zoomRegions={effectiveZoomRegions}
 									selectedZoomId={selectedZoomId}
 									onSelectZoom={handleSelectZoom}
@@ -4536,7 +4635,6 @@ export default function VideoEditor() {
 									backgroundBlur={backgroundBlur}
 									zoomMotionBlur={zoomMotionBlur}
 									connectZooms={connectZooms}
-									deviceMockup={deviceMockup}
 									frameBorderEnabled={frameBorderEnabled}
 									frameBorderWidth={frameBorderWidth}
 									frameBorderColor={frameBorderColor}
@@ -4627,6 +4725,8 @@ export default function VideoEditor() {
 							frameShadowBlur={frameShadowBlur}
 							onFrameShadowBlurChange={setFrameShadowBlur}
 							backgroundBlur={backgroundBlur}
+							hideBackground={hideBackground}
+							onHideBackgroundChange={setHideBackground}
 							onBackgroundBlurChange={setBackgroundBlur}
 							zoomMotionBlur={zoomMotionBlur}
 							onZoomMotionBlurChange={setZoomMotionBlur}
@@ -4694,8 +4794,6 @@ export default function VideoEditor() {
 							onKeyboardShortcutDisplayMsChange={setKeyboardShortcutDisplayMs}
 							keyboardShortcutMaxVisible={keyboardShortcutMaxVisible}
 							onKeyboardShortcutMaxVisibleChange={setKeyboardShortcutMaxVisible}
-							deviceMockup={deviceMockup}
-							onDeviceMockupChange={setDeviceMockup}
 							frameBorderEnabled={frameBorderEnabled}
 							onFrameBorderEnabledChange={setFrameBorderEnabled}
 							frameBorderWidth={frameBorderWidth}
@@ -4856,7 +4954,7 @@ export default function VideoEditor() {
 
 			<ExportSettingsDialog
 				isOpen={showExportSettings}
-				onClose={() => setShowExportSettings(false)}
+				onClose={() => dispatchSession({ type: "set-export-settings-open", value: false })}
 				exportFormat={exportFormat}
 				onExportFormatChange={setExportFormat}
 				videoExportSettings={videoExportSettings}
@@ -4913,11 +5011,24 @@ export default function VideoEditor() {
 
 			<QuickShareDialog
 				isOpen={showQuickShare}
-				onClose={() => setShowQuickShare(false)}
+				onClose={() => dispatchSession({ type: "set-quick-share-open", value: false })}
 				onSave={handleQuickShareSave}
 				onCopy={() => void handleExportToClipboard()}
 				onEdit={handleQuickShareEdit}
-				shareDisabledReason="Share links need a backend before they can be enabled."
+			/>
+
+			<PresetNameDialog
+				isOpen={sessionState.modals.presetDialog.isOpen}
+				name={sessionState.modals.presetDialog.name}
+				onNameChange={(name) => dispatchSession({ type: "set-preset-dialog-name", name })}
+				onCancel={() => dispatchSession({ type: "close-preset-dialog" })}
+				onConfirm={handleConfirmSavePreset}
+			/>
+
+			<ConfirmActionDialog
+				dialog={sessionState.modals.confirmDialog}
+				onCancel={() => dispatchSession({ type: "close-confirm-dialog" })}
+				onConfirm={() => void handleConfirmDialogAction()}
 			/>
 		</div>
 	);

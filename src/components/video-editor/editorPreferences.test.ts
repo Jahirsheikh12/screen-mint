@@ -61,6 +61,7 @@ describe("editorPreferences", () => {
 			createStorageMock({
 				[EDITOR_PREFERENCES_STORAGE_KEY]: JSON.stringify({
 					wallpaper: "#123456",
+					hideBackground: true,
 					backgroundBlur: 3.5,
 					showCursor: false,
 					previewQuality: "medium",
@@ -78,6 +79,7 @@ describe("editorPreferences", () => {
 
 		expect(loadEditorPreferences()).toMatchObject({
 			wallpaper: "#123456",
+			hideBackground: true,
 			shadowIntensity: DEFAULT_EDITOR_PREFERENCES.shadowIntensity,
 			frameShadowSize: DEFAULT_EDITOR_PREFERENCES.frameShadowSize,
 			frameShadowOpacity: DEFAULT_EDITOR_PREFERENCES.frameShadowOpacity,

@@ -65,12 +65,11 @@ export function KeyboardShortcutOverlay({
 					key={callout.id}
 					style={{
 						display: "inline-flex",
-						alignSelf:
-							position.endsWith("right")
-								? "flex-end"
-								: position.endsWith("center")
-									? "center"
-									: "flex-start",
+						alignSelf: position.endsWith("right")
+							? "flex-end"
+							: position.endsWith("center")
+								? "center"
+								: "flex-start",
 						alignItems: "center",
 						gap: `${keyGap}px`,
 						padding: `${bubblePaddingY}px ${bubblePaddingX}px`,
@@ -90,7 +89,10 @@ export function KeyboardShortcutOverlay({
 					}}
 				>
 					{callout.labels.map((label, index) => (
-						<div key={`${callout.id}-${label}-${index + 1}`} style={{ display: "flex", alignItems: "center", gap: `${keyGap}px` }}>
+						<div
+							key={`${callout.id}-${label}-${index + 1}`}
+							style={{ display: "flex", alignItems: "center", gap: `${keyGap}px` }}
+						>
 							<div
 								style={{
 									padding: `${keyPaddingY}px ${keyPaddingX}px`,

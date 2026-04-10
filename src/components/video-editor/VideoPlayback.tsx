@@ -91,7 +91,7 @@ import {
 	type CursorSimulationPath,
 } from "./videoPlayback/cursorSimulation";
 import { resolveCursorV2Config } from "./videoPlayback/cursorV2";
-import { computeMockupScreenRect, drawDeviceMockup } from "./videoPlayback/deviceMockups";
+// import { computeMockupScreenRect, drawDeviceMockup } from "./videoPlayback/deviceMockups";
 import { clampFocusToStage as clampFocusToStageUtil } from "./videoPlayback/focusUtils";
 import { layoutVideoContent as layoutVideoContentUtil } from "./videoPlayback/layoutUtils";
 import { clamp01 } from "./videoPlayback/mathUtils";
@@ -145,9 +145,9 @@ interface VideoPlaybackProps {
 	previewQuality: PreviewQuality;
 	onPreviewQualitySwitchFailed?: (fallbackQuality: PreviewQuality) => void;
 	backgroundBlur?: number;
+	hideBackground?: boolean;
 	zoomMotionBlur?: number;
 	connectZooms?: boolean;
-	deviceMockup?: import("./types").DeviceMockup;
 	frameBorderEnabled?: boolean;
 	frameBorderWidth?: number;
 	frameBorderColor?: string;
@@ -248,9 +248,9 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			previewQuality,
 			onPreviewQualitySwitchFailed,
 			backgroundBlur = 0,
+			hideBackground = false,
 			zoomMotionBlur = 0,
 			connectZooms = true,
-			deviceMockup = "none",
 			frameBorderEnabled = false,
 			frameBorderWidth = 0,
 			frameBorderColor = "#000000",
@@ -329,7 +329,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const [activePreviewHoldSrc, setActivePreviewHoldSrc] = useState<string | null>(null);
 		const [previewRendererEpoch, setPreviewRendererEpoch] = useState(0);
 		const [rendererPreviewQuality, setRendererPreviewQuality] = useState(previewQuality);
-		const mockupCanvasRef = useRef<HTMLCanvasElement | null>(null);
+		// const mockupCanvasRef = useRef<HTMLCanvasElement | null>(null);
 		const overlayRef = useRef<HTMLDivElement | null>(null);
 		const focusIndicatorRef = useRef<HTMLDivElement | null>(null);
 		const frameBorderRef = useRef<HTMLDivElement | null>(null);
@@ -2096,38 +2096,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			};
 		}, []);
 
-		// Device mockup overlay rendering
-		const drawMockupOverlay = useCallback(() => {
-			const canvas = mockupCanvasRef.current;
-			const container = containerRef.current;
-			if (!canvas || !container) return;
-
-			const w = container.clientWidth;
-			const h = container.clientHeight;
-			if (!w || !h) return;
-
-			canvas.width = w;
-			canvas.height = h;
-			const ctx = canvas.getContext("2d");
-			if (!ctx) return;
-			ctx.clearRect(0, 0, w, h);
-
-			if (deviceMockup === "none") return;
-
-			const mask = baseMaskRef.current;
-			if (!mask.width || !mask.height) return;
-
-			const videoAR = mask.width / mask.height;
-			const screenRect = computeMockupScreenRect(deviceMockup, w, h, videoAR);
-			if (!screenRect) return;
-
-			drawDeviceMockup(ctx, deviceMockup, w, h, screenRect);
-		}, [deviceMockup]);
-
-		// biome-ignore lint/correctness/useExhaustiveDependencies: padding/borderRadius/cropRegion are component props that affect layout
-		useEffect(() => {
-			drawMockupOverlay();
-		}, [drawMockupOverlay, padding, borderRadius, cropRegion]);
+		// Device mockups are temporarily disabled in the video editor preview.
 
 		const isImageUrl = Boolean(
 			resolvedWallpaper &&
@@ -2150,13 +2119,15 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		return (
 			<div className="relative overflow-hidden w-full h-full">
 				{/* Background layer */}
-				<div
-					className="absolute inset-0 bg-cover bg-center"
-					style={{
-						...backgroundStyle,
-						filter: backgroundBlur > 0 ? `blur(${backgroundBlur}px)` : "none",
-					}}
-				/>
+				{!hideBackground && (
+					<div
+						className="absolute inset-0 bg-cover bg-center"
+						style={{
+							...backgroundStyle,
+							filter: backgroundBlur > 0 ? `blur(${backgroundBlur}px)` : "none",
+						}}
+					/>
+				)}
 				<div
 					ref={containerRef}
 					className="absolute inset-0"
@@ -2194,14 +2165,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 						}}
 					/>
 				)}
-				{/* Device mockup overlay */}
-				{deviceMockup !== "none" && (
-					<canvas
-						ref={mockupCanvasRef}
-						className="absolute inset-0 pointer-events-none"
-						style={{ zIndex: 1 }}
-					/>
-				)}
+				{/* Device mockup overlay is temporarily disabled in the video editor preview. */}
 				{/* Only render overlay after PIXI and video are fully initialized */}
 				{pixiReady && videoReady && (
 					<div

@@ -325,10 +325,14 @@ export class ScreenMintUpdater {
 		const lastShownVersion = this.preferences.lastShownWhatsNewVersion;
 		const lastLaunchedVersion = this.preferences.lastLaunchedVersion;
 
-		if (pendingVersion === currentVersion && lastShownVersion !== currentVersion) {
+		if (
+			pendingVersion &&
+			compareVersions(currentVersion, pendingVersion) >= 0 &&
+			lastShownVersion !== pendingVersion
+		) {
 			return {
 				showWhatsNew: true,
-				whatsNewVersion: currentVersion,
+				whatsNewVersion: pendingVersion,
 				whatsNewReleaseName: this.preferences.pendingWhatsNewReleaseName,
 				whatsNewReleaseNotes: this.preferences.pendingWhatsNewReleaseNotes,
 			};

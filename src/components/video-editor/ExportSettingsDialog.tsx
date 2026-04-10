@@ -35,12 +35,12 @@ import {
 	GIF_FRAME_RATES,
 	GIF_MOTION_SENSITIVITY_OPTIONS,
 	GIF_RESOLUTION_MODE_OPTIONS,
+	getGifExportSettingsForPreset,
+	getVideoExportSettingsForPreset,
 	VIDEO_BITRATE_MODE_OPTIONS,
 	VIDEO_EXPORT_PRESETS,
 	VIDEO_FRAME_RATE_MODE_OPTIONS,
 	VIDEO_RESOLUTION_MODE_OPTIONS,
-	getGifExportSettingsForPreset,
-	getVideoExportSettingsForPreset,
 } from "@/lib/exporter";
 import { cn } from "@/lib/utils";
 import { useScopedT } from "../../contexts/I18nContext";

@@ -45,4 +45,9 @@ describe("frame effects project persistence", () => {
 		expect(result.frameBorderOpacity).toBe(0.65);
 		expect(result.shadowIntensity).toBeGreaterThan(0);
 	});
+
+	it("defaults hideBackground to false and preserves explicit values", () => {
+		expect(normalizeProjectEditor({}).hideBackground).toBe(false);
+		expect(normalizeProjectEditor({ hideBackground: true }).hideBackground).toBe(true);
+	});
 });

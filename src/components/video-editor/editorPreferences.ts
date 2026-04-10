@@ -6,6 +6,7 @@ import { DEFAULT_PREVIEW_QUALITY, type PreviewQuality } from "./types";
 type PersistedEditorControls = Pick<
 	ProjectEditorState,
 	| "wallpaper"
+	| "hideBackground"
 	| "shadowIntensity"
 	| "frameShadowSize"
 	| "frameShadowOpacity"
@@ -82,12 +83,21 @@ export interface EditorPreferences extends PersistedEditorControls {
 	presets: EditorPreset[];
 }
 
+export interface EditorPreferencesService {
+	load(): EditorPreferences;
+	save(preferences: Partial<EditorPreferences>): void;
+	scheduleSave(preferences: Partial<EditorPreferences>): void;
+	flush(): void;
+	cancel(): void;
+}
+
 export const EDITOR_PREFERENCES_STORAGE_KEY = "screenmint.editor.preferences";
 
 const DEFAULT_EDITOR_CONTROLS = normalizeProjectEditor({});
 
 export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	wallpaper: DEFAULT_EDITOR_CONTROLS.wallpaper,
+	hideBackground: DEFAULT_EDITOR_CONTROLS.hideBackground,
 	shadowIntensity: DEFAULT_EDITOR_CONTROLS.shadowIntensity,
 	frameShadowSize: DEFAULT_EDITOR_CONTROLS.frameShadowSize,
 	frameShadowOpacity: DEFAULT_EDITOR_CONTROLS.frameShadowOpacity,
@@ -239,6 +249,7 @@ function normalizeEditorControls(
 
 	const candidate: PartialEditorControls = {
 		wallpaper: raw.wallpaper ?? fallback.wallpaper,
+		hideBackground: raw.hideBackground ?? fallback.hideBackground,
 		shadowIntensity: raw.shadowIntensity ?? fallback.shadowIntensity,
 		frameShadowSize: raw.frameShadowSize ?? fallback.frameShadowSize,
 		frameShadowOpacity: raw.frameShadowOpacity ?? fallback.frameShadowOpacity,
@@ -316,6 +327,7 @@ function normalizeEditorControls(
 
 	return {
 		wallpaper: normalized.wallpaper,
+		hideBackground: normalized.hideBackground,
 		shadowIntensity: normalized.shadowIntensity,
 		frameShadowSize: normalized.frameShadowSize,
 		frameShadowOpacity: normalized.frameShadowOpacity,

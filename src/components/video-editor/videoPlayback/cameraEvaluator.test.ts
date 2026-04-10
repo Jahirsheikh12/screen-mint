@@ -77,7 +77,10 @@ describe("cameraEvaluator parity", () => {
 		);
 		expect(fixture).toBeTruthy();
 
-		const path = buildCursorSimulationPath(fixture?.cursorTelemetry ?? [], fixture?.durationMs ?? 0);
+		const path = buildCursorSimulationPath(
+			fixture?.cursorTelemetry ?? [],
+			fixture?.durationMs ?? 0,
+		);
 		let highFpsState = createPlaybackCameraState();
 		let lowFpsState = createPlaybackCameraState();
 

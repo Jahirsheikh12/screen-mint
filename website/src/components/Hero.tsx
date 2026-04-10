@@ -256,28 +256,42 @@ export function Hero() {
 				);
 			}
 
-			/* ── Scroll parallax ── */
+			/* ── Scroll parallax ──
+			 * Both triggers start at the very top of the section and use an
+			 * instant scrub. This avoids two problems:
+			 *   1. A "delayed start" trigger (e.g. "30% top") + scrub lerp causes
+			 *      the screenshot to suddenly snap to a new y when the trigger
+			 *      first engages, leaving a visible gap above the image.
+			 *   2. `scrub: <number>` on top of Lenis smooth-scroll double-eases
+			 *      and feels jittery. Lenis already smooths the scroll value, so
+			 *      `scrub: true` (instant) tracks cleanly.
+			 * `immediateRender: false` keeps the entrance timeline's y/scale
+			 * baseline intact — the parallax tween only takes over once it
+			 * actually receives a scroll update.
+			 */
 			gsap.to(contentRef.current, {
 				y: -120,
 				opacity: 0,
 				scale: 0.97,
 				ease: "none",
+				immediateRender: false,
 				scrollTrigger: {
 					trigger: sectionRef.current,
 					start: "top top",
 					end: "50% top",
-					scrub: 1,
+					scrub: true,
 				},
 			});
 
 			gsap.to(screenshotWrapRef.current, {
-				y: -70,
+				yPercent: -8,
 				ease: "none",
+				immediateRender: false,
 				scrollTrigger: {
 					trigger: sectionRef.current,
-					start: "30% top",
+					start: "top top",
 					end: "bottom top",
-					scrub: 1.5,
+					scrub: true,
 				},
 			});
 

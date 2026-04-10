@@ -74,13 +74,8 @@ export function ExportDialog({
 	useEffect(() => {
 		if (!isExporting && progress && progress.percentage >= 100 && !error) {
 			setShowSuccess(true);
-			const timer = setTimeout(() => {
-				setShowSuccess(false);
-				onClose();
-			}, 2000);
-			return () => clearTimeout(timer);
 		}
-	}, [isExporting, progress, error, onClose]);
+	}, [isExporting, progress, error]);
 
 	if (!isOpen && !isVisible) return null;
 
@@ -227,6 +222,15 @@ export function ExportDialog({
 						{showSuccess && (
 							<div className="animate-in fade-in zoom-in-95 duration-300">
 								<div className="flex flex-col items-center text-center py-2">
+									<div className="mb-4 flex w-full justify-end">
+										<button
+											type="button"
+											onClick={onClose}
+											className="rounded-xl p-2 text-white/40 transition-all duration-200 active:scale-95 hover:bg-white/[0.06] hover:text-white"
+										>
+											<X className="w-4 h-4" />
+										</button>
+									</div>
 									<div className="relative mb-4">
 										<div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#F59E0B]/20 to-[#d97706]/10 border border-[#F59E0B]/25 flex items-center justify-center">
 											<CheckCircle2 className="w-8 h-8 text-[#F59E0B]" />
@@ -286,7 +290,7 @@ export function ExportDialog({
 										</div>
 									) : null}
 									{exportedFilePath && (
-										<>
+										<div className="mt-2 flex flex-col items-center gap-3">
 											<Button
 												variant="secondary"
 												onClick={handleClickShowInFolder}
@@ -298,7 +302,13 @@ export function ExportDialog({
 											<span className="text-[10px] text-slate-500 break-all max-w-xs mt-3 font-mono">
 												{exportedFilePath.split("/").pop()}
 											</span>
-										</>
+											<Button
+												onClick={onClose}
+												className="bg-[#F59E0B] text-black hover:bg-[#d97706]"
+											>
+												Done
+											</Button>
+										</div>
 									)}
 								</div>
 							</div>
@@ -482,7 +492,7 @@ export function ExportDialog({
 							</div>
 						)}
 
-						{/* Idle success message (after export, before auto-close) */}
+						{/* Idle success message (after export completes) */}
 						{showSuccess && (
 							<div className="text-center pt-2 animate-in fade-in zoom-in-95 duration-200">
 								<p className="text-sm text-slate-300 font-medium">

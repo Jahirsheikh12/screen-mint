@@ -1,4 +1,4 @@
-import { Copy, Download, Edit3, Link2, X } from "lucide-react";
+import { Copy, Download, Edit3, X } from "lucide-react";
 
 type QuickShareDialogProps = {
 	isOpen: boolean;
@@ -6,7 +6,6 @@ type QuickShareDialogProps = {
 	onSave: () => void;
 	onCopy: () => void;
 	onEdit: () => void;
-	shareDisabledReason?: string | null;
 };
 
 export function QuickShareDialog({
@@ -15,7 +14,6 @@ export function QuickShareDialog({
 	onSave,
 	onCopy,
 	onEdit,
-	shareDisabledReason,
 }: QuickShareDialogProps) {
 	if (!isOpen) {
 		return null;
@@ -41,7 +39,7 @@ export function QuickShareDialog({
 					</button>
 				</div>
 
-				<div className="grid grid-cols-2 gap-3">
+				<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
 					<button
 						type="button"
 						onClick={onSave}
@@ -70,18 +68,6 @@ export function QuickShareDialog({
 						<Edit3 className="mb-3 h-5 w-5 text-amber-400" />
 						<div className="text-sm font-semibold text-white">Edit</div>
 						<div className="mt-1 text-xs text-slate-400">Open the recording in the editor.</div>
-					</button>
-					<button
-						type="button"
-						disabled
-						title={shareDisabledReason ?? undefined}
-						className="cursor-not-allowed rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-left opacity-55"
-					>
-						<Link2 className="mb-3 h-5 w-5 text-slate-500" />
-						<div className="text-sm font-semibold text-white/80">Share</div>
-						<div className="mt-1 text-xs text-slate-500">
-							{shareDisabledReason ?? "Share links need a backend before they can be enabled."}
-						</div>
 					</button>
 				</div>
 			</div>

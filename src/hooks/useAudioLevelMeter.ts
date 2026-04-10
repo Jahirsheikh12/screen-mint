@@ -24,7 +24,9 @@ export function useAudioLevelMeter(options: AudioLevelMeterOptions) {
 				streamRef.current = null;
 			}
 			if (audioContextRef.current) {
-				audioContextRef.current.close().catch(() => {});
+				audioContextRef.current.close().catch(() => {
+					// Ignore close failures during teardown.
+				});
 				audioContextRef.current = null;
 			}
 			analyserRef.current = null;
