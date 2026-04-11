@@ -290,6 +290,10 @@ declare global {
 			copyTextToClipboard: (
 				text: string,
 			) => Promise<{ success: boolean; message?: string; error?: string }>;
+			copyExportedToClipboard: (
+				videoData: ArrayBuffer,
+				fileName: string,
+			) => Promise<{ success: boolean; path?: string; error?: string }>;
 			deleteProjectAndMedia: (payload: {
 				projectPath?: string | null;
 				videoPath?: string | null;

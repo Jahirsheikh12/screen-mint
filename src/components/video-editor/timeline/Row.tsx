@@ -1,5 +1,6 @@
 import type { RowDefinition } from "dnd-timeline";
 import { useRow, useTimelineContext } from "dnd-timeline";
+import type { LucideIcon } from "lucide-react";
 import { Plus } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 
@@ -12,6 +13,7 @@ interface RowProps extends RowDefinition {
 	onAddEffect?: (clickTimeMs?: number) => void;
 	addLabel?: string;
 	variant?: "default" | "clip" | "zoom";
+	icon?: LucideIcon;
 }
 
 export default function Row({
@@ -24,6 +26,7 @@ export default function Row({
 	onAddEffect,
 	addLabel,
 	variant = "default",
+	icon: Icon,
 }: RowProps) {
 	const { setNodeRef, rowWrapperStyle, rowStyle } = useRow({ id });
 	const { sidebarWidth, range, pixelsToValue } = useTimelineContext();
@@ -75,15 +78,29 @@ export default function Row({
 				? "border-b border-[#1a1810] bg-[#141210] relative group/row"
 				: "border-b border-[#18181b] bg-[#141416] relative group/row";
 
+	const iconPadding = Icon ? 48 : 0;
+
 	return (
 		<div
 			ref={rowRef}
 			className={bgClass}
-			style={{ ...rowWrapperStyle, minHeight: variant === "clip" ? 52 : 48, marginBottom: 2 }}
+			style={{
+				...rowWrapperStyle,
+				minHeight: variant === "clip" ? 52 : 48,
+				marginBottom: 2,
+				paddingLeft: iconPadding,
+			}}
 			onMouseEnter={() => setIsHovered(true)}
 			onMouseLeave={() => setIsHovered(false)}
 			onMouseMove={handleMouseMove}
 		>
+			{Icon && (
+				<div className="absolute left-1.5 top-1/2 -translate-y-1/2 z-20 pointer-events-none select-none">
+					<div className="w-9 h-9 rounded-xl border border-white/10 bg-white/[0.03] flex items-center justify-center">
+						<Icon className="w-4 h-4 text-slate-400" />
+					</div>
+				</div>
+			)}
 			{label && (
 				<div
 					className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[9px] font-semibold uppercase tracking-widest z-20 pointer-events-none select-none"
@@ -105,7 +122,7 @@ export default function Row({
 			{isHovered && !isOverItem && onAddEffect && (
 				<div
 					className="absolute top-1/2 -translate-y-1/2 z-30 pointer-events-auto animate-in fade-in zoom-in-90 duration-150"
-					style={{ left: `${Math.max(40, mouseX - 28)}px` }}
+					style={{ left: `${Math.max(iconPadding + 8, mouseX - 28)}px` }}
 				>
 					<button
 						type="button"

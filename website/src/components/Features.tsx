@@ -119,9 +119,7 @@ function FeatureCard({
 				<h3 className="text-[18px] md:text-[20px] font-semibold tracking-[-0.02em] text-white mb-2 group-hover:text-brand-400 transition-colors duration-300">
 					{title}
 				</h3>
-				<p className="text-[14px] text-white/30 leading-relaxed max-w-[480px]">
-					{description}
-				</p>
+				<p className="text-[14px] text-white/30 leading-relaxed max-w-[480px]">{description}</p>
 			</div>
 		</div>
 	);

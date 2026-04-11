@@ -77,6 +77,16 @@ export function ExportDialog({
 		}
 	}, [isExporting, progress, error]);
 
+	// Auto-close after successful export with a file saved
+	useEffect(() => {
+		if (showSuccess && exportedFilePath && !isExporting) {
+			const timer = setTimeout(() => {
+				onClose();
+			}, 2500);
+			return () => clearTimeout(timer);
+		}
+	}, [showSuccess, exportedFilePath, isExporting, onClose]);
+
 	if (!isOpen && !isVisible) return null;
 
 	const formatLabel = exportFormat === "gif" ? "GIF" : "Video";
@@ -368,7 +378,9 @@ export function ExportDialog({
 											<h3 className="text-[15px] font-semibold text-white tracking-tight">
 												{getTitle()}
 											</h3>
-											<p className="text-[11px] text-slate-500 mt-0.5">{getStatusMessage()}</p>
+											<p className="text-[11px] text-slate-500 mt-0.5 min-h-[16px]">
+												{getStatusMessage()}
+											</p>
 										</div>
 									</div>
 								</div>
@@ -382,7 +394,7 @@ export function ExportDialog({
 												<div className="w-1 h-1 rounded-full bg-[#F59E0B]" />
 												{getProgressLabel()}
 											</span>
-											<span className="font-mono text-slate-300">
+											<span className="font-mono text-slate-300 tabular-nums min-w-[3.5ch] text-right">
 												{isGifCompiling ? (
 													renderProgress !== undefined && renderProgress > 0 ? (
 														`${renderProgress}%`
@@ -433,49 +445,49 @@ export function ExportDialog({
 									</div>
 
 									{/* Stats */}
-									<div className="grid grid-cols-2 gap-2">
+									<div className="grid grid-cols-3 gap-2">
 										<div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
 											<div className="text-[9px] text-slate-500 uppercase tracking-[0.12em] font-semibold mb-1">
-												{isGifCompiling || isVideoFinalizing
-													? t("export.status")
-													: t("export.format")}
+												{t("export.format")}
 											</div>
-											<div className="text-slate-200 font-semibold text-sm">
-												{isGifCompiling
-													? t("export.compilingStatus")
-													: isVideoFinalizing
-														? "Finalizing"
-														: formatLabel}
-											</div>
+											<div className="text-slate-200 font-semibold text-sm">{formatLabel}</div>
 										</div>
 										<div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
 											<div className="text-[9px] text-slate-500 uppercase tracking-[0.12em] font-semibold mb-1">
 												{t("export.frames")}
 											</div>
-											<div className="text-slate-200 font-semibold text-sm font-mono">
-												{progress.currentFrame} <span className="text-slate-500">/</span>{" "}
+											<div className="text-slate-200 font-semibold text-sm font-mono tabular-nums">
+												{progress.currentFrame}
+												<span className="text-slate-500"> / </span>
 												{progress.totalFrames}
 											</div>
 										</div>
+										<div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
+											<div className="text-[9px] text-slate-500 uppercase tracking-[0.12em] font-semibold mb-1">
+												ETA
+											</div>
+											<div className="text-slate-200 font-semibold text-sm font-mono tabular-nums">
+												{etaSeconds > 0 ? `${Math.ceil(etaSeconds)}s` : "—"}
+											</div>
+										</div>
 									</div>
-									<div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3 text-[11px] text-slate-300">
+
+									{/* Phase & throughput bar */}
+									<div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3 text-[11px] text-slate-300 min-h-[52px]">
 										<div className="flex items-center justify-between">
-											<span>{progress.phase ? progress.phase : "rendering"}</span>
-											<span>
-												{displayPercentage !== null ? `${displayPercentage}%` : "working"}
+											<span className="capitalize">
+												{progress.phase ? progress.phase : "rendering"}
+											</span>
+											<span className="font-mono tabular-nums min-w-[5ch] text-right">
+												{displayPercentage !== null ? `${displayPercentage}%` : "—"}
 											</span>
 										</div>
-										{throughputFps ? (
-											<div className="mt-1 text-slate-500">
-												{throughputFps.toFixed(1)} fps throughput
-											</div>
-										) : null}
-										{etaSeconds > 0 ? (
-											<div className="mt-1 text-slate-500">ETA {Math.ceil(etaSeconds)} seconds</div>
-										) : null}
-										{warnings.length > 0 ? (
+										<div className="mt-1 text-slate-500 min-h-[16px]">
+											{throughputFps ? `${throughputFps.toFixed(1)} fps throughput` : "\u00A0"}
+										</div>
+										{warnings.length > 0 && (
 											<div className="mt-1 text-amber-200">{warnings[0]}</div>
-										) : null}
+										)}
 									</div>
 
 									{/* Cancel button */}

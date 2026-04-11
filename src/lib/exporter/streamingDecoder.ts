@@ -158,6 +158,7 @@ export class StreamingVideoDecoder {
 		trimRegions: TrimRegion[] | undefined,
 		speedRegions: SpeedRegion[] | undefined,
 		onFrame: OnFrameCallback,
+		forceSoftwareDecode = false,
 	): Promise<void> {
 		if (!this.demuxer || !this.metadata) {
 			throw new Error("Must call loadMetadata() before decodeAll()");
@@ -165,7 +166,8 @@ export class StreamingVideoDecoder {
 
 		const decoderConfig = await this.demuxer.getDecoderConfig("video");
 		const codec = this.metadata.codec.toLowerCase();
-		const shouldPreferSoftwareDecode = codec.includes("av01") || codec.includes("av1");
+		const shouldPreferSoftwareDecode =
+			codec.includes("av01") || codec.includes("av1") || forceSoftwareDecode;
 		const segments = this.splitBySpeed(
 			this.computeSegments(this.metadata.duration, trimRegions),
 			speedRegions,

@@ -1,7 +1,7 @@
-import { access } from "node:fs/promises";
-import { constants as fsConstants } from "node:fs";
-import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { constants as fsConstants } from "node:fs";
+import { access } from "node:fs/promises";
+import path from "node:path";
 
 const appBundles = process.argv.slice(2);
 
@@ -79,7 +79,9 @@ async function validateAppBundle(appBundlePath) {
 	}
 
 	if (existingHelpers.length === 0) {
-		throw new Error(`[validate-mac-bundle] No embedded ScreenMint helpers found in: ${helpersRoot}`);
+		throw new Error(
+			`[validate-mac-bundle] No embedded ScreenMint helpers found in: ${helpersRoot}`,
+		);
 	}
 
 	for (const helperPath of existingHelpers) {

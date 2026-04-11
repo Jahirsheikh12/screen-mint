@@ -65,12 +65,13 @@ export type ExportQuality = "medium" | "good" | "high" | "source";
 
 // GIF Export Types
 export type ExportFormat = "mp4" | "gif";
+export type ExportDestination = "file" | "clipboard" | "link";
 
 export type VideoExportMode = "preset" | "custom";
 export type VideoExportPreset = "fast-share" | "balanced" | "quality" | "master";
 export type VideoResolutionMode = "720p" | "1080p" | "1440p" | "2160p" | "source";
 export type VideoExportFrameRateMode = "auto" | "24" | "30" | "48" | "60" | "source";
-export type VideoBitrateMode = "auto" | "high" | "very-high" | "archive" | "custom";
+export type VideoBitrateMode = "auto" | "high" | "very-high" | "archive" | "custom" | "bpp";
 
 export interface VideoExportSettings {
 	mode: VideoExportMode;
@@ -79,6 +80,8 @@ export interface VideoExportSettings {
 	frameRateMode: VideoExportFrameRateMode;
 	bitrateMode: VideoBitrateMode;
 	customBitrateMbps?: number;
+	bitsPerPixel?: number;
+	forceFFmpegDecoder?: boolean;
 	optimizeForWeb: boolean;
 }
 
@@ -108,9 +111,35 @@ export interface GifExportConfig {
 
 export interface ExportSettings {
 	format: ExportFormat;
+	destination: ExportDestination;
 	video: VideoExportSettings;
 	gif: GifExportConfig;
 }
+
+export type VideoQualityLabel = "potato" | "web" | "social" | "maximum";
+
+export const VIDEO_QUALITY_TO_PRESET: Record<VideoQualityLabel, VideoExportPreset> = {
+	potato: "fast-share",
+	web: "balanced",
+	social: "quality",
+	maximum: "master",
+};
+
+export const VIDEO_PRESET_TO_QUALITY: Record<VideoExportPreset, VideoQualityLabel> = {
+	"fast-share": "potato",
+	balanced: "web",
+	quality: "social",
+	master: "maximum",
+};
+
+export type GifQualityLabel = "potato" | "web" | "social" | "maximum";
+
+export const GIF_QUALITY_TO_PRESET: Record<GifQualityLabel, GifExportPreset> = {
+	potato: "small-share",
+	web: "balanced",
+	social: "quality",
+	maximum: "quality",
+};
 
 export const GIF_SIZE_PRESETS: Record<GifSizePreset, { maxHeight: number; label: string }> = {
 	medium: { maxHeight: 720, label: "Medium (720p)" },

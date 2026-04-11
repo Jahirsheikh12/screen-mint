@@ -101,6 +101,7 @@ interface VideoExporterConfig extends ExportConfig {
 	codecCandidates?: readonly string[];
 	encoderCandidates?: readonly ResolvedVideoEncoderCandidate[];
 	fallbackSteps?: string[];
+	forceFFmpegDecoder?: boolean;
 	onProgress?: (progress: ExportProgress) => void;
 }
 
@@ -287,6 +288,7 @@ export class VideoExporter {
 					frameIndex++;
 					this.reportProgress(frameIndex, totalFrames);
 				},
+				this.config.forceFFmpegDecoder,
 			);
 
 			if (this.cancelled) {

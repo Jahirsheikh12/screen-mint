@@ -143,9 +143,9 @@ export function SponsorSection() {
 						Support the roadmap without changing what makes ScreenMint special.
 					</h3>
 					<p className="text-[15px] text-white/30 leading-relaxed max-w-xl mx-auto mb-6">
-						GitHub Sponsors stays the primary home for recurring support. It helps fund bug
-						fixes, platform support, and future releases without gating the app behind accounts,
-						telemetry, or paywalls.
+						GitHub Sponsors stays the primary home for recurring support. It helps fund bug fixes,
+						platform support, and future releases without gating the app behind accounts, telemetry,
+						or paywalls.
 					</p>
 					<a
 						href={GITHUB_SPONSORS_URL}
@@ -191,10 +191,17 @@ export function SponsorSection() {
 								)}
 
 								<div className="flex items-center gap-3 mb-4">
-									<div className={`flex items-center justify-center w-9 h-9 rounded-xl ${
-										isPopular ? "bg-brand-500/10 border border-brand-500/20" : "bg-white/[0.04] border border-white/[0.06]"
-									}`}>
-										<Icon className={`w-4 h-4 ${isPopular ? "text-brand-400" : "text-white/30 group-hover:text-white/60"} transition-colors`} strokeWidth={1.5} />
+									<div
+										className={`flex items-center justify-center w-9 h-9 rounded-xl ${
+											isPopular
+												? "bg-brand-500/10 border border-brand-500/20"
+												: "bg-white/[0.04] border border-white/[0.06]"
+										}`}
+									>
+										<Icon
+											className={`w-4 h-4 ${isPopular ? "text-brand-400" : "text-white/30 group-hover:text-white/60"} transition-colors`}
+											strokeWidth={1.5}
+										/>
 									</div>
 									<p className="text-[11px] font-medium uppercase tracking-[0.18em] text-brand-400/70">
 										GitHub Sponsors
@@ -240,9 +247,7 @@ export function SponsorSection() {
 									<h4 className="text-[16px] font-semibold tracking-[-0.02em] text-white mb-2">
 										{product.name}
 									</h4>
-									<p className="text-[13px] leading-relaxed text-white/25">
-										{product.description}
-									</p>
+									<p className="text-[13px] leading-relaxed text-white/25">{product.description}</p>
 								</a>
 							))}
 						</div>

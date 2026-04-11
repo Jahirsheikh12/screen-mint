@@ -4569,6 +4569,35 @@ export function registerIpcHandlers(
 	});
 
 	ipcMain.handle(
+		"copy-exported-to-clipboard",
+		async (_, videoData: ArrayBuffer, fileName: string) => {
+			try {
+				const ext = fileName.toLowerCase().endsWith(".gif") ? "gif" : "mp4";
+				const tmpPath = path.join(
+					app.getPath("temp"),
+					`screenmint-clipboard-${Date.now()}.${ext}`,
+				);
+				await fs.writeFile(tmpPath, Buffer.from(videoData));
+
+				if (process.platform === "darwin") {
+					const plistContent = `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><array><string>${tmpPath}</string></array></plist>`;
+					clipboard.writeBuffer(
+						"NSFilenamesPboardType",
+						Buffer.from(plistContent, "utf8"),
+					);
+				} else {
+					clipboard.writeText(tmpPath);
+				}
+
+				return { success: true, path: tmpPath };
+			} catch (error) {
+				console.error("Failed to copy exported file to clipboard:", error);
+				return { success: false, error: String(error) };
+			}
+		},
+	);
+
+	ipcMain.handle(
 		"delete-project-and-media",
 		async (
 			_,

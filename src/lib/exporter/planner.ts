@@ -75,6 +75,7 @@ export interface ResolvedVideoExportPlan {
 	frameRateMode: VideoExportFrameRateMode;
 	bitrateMode: VideoBitrateMode;
 	optimizeForWeb: boolean;
+	forceFFmpegDecoder: boolean;
 	warnings: string[];
 	fallbackApplied: boolean;
 	fallbackReason?: string;
@@ -310,6 +311,8 @@ function getBitrateMultiplier(mode: VideoBitrateMode): number {
 			return 1.6;
 		case "archive":
 			return 2.1;
+		case "bpp":
+			return 1;
 		default:
 			return 1;
 	}
@@ -441,9 +444,11 @@ export function resolveVideoExportPlan(
 
 	const baseBitrate = estimateVideoBitrate(width, height, frameRate, settings.preset);
 	const bitrate =
-		bitrateMode === "custom" && typeof settings.customBitrateMbps === "number"
-			? clampBitrate(settings.customBitrateMbps * 1_000_000)
-			: clampBitrate(baseBitrate * getBitrateMultiplier(bitrateMode));
+		bitrateMode === "bpp" && typeof settings.bitsPerPixel === "number"
+			? clampBitrate(settings.bitsPerPixel * width * height * frameRate)
+			: bitrateMode === "custom" && typeof settings.customBitrateMbps === "number"
+				? clampBitrate(settings.customBitrateMbps * 1_000_000)
+				: clampBitrate(baseBitrate * getBitrateMultiplier(bitrateMode));
 
 	const codecCandidates = getCodecCandidates(settings.optimizeForWeb);
 
@@ -455,16 +460,20 @@ export function resolveVideoExportPlan(
 		candidateSteps: string[],
 	) => {
 		const candidateBitrate =
-			bitrateMode === "custom" && typeof settings.customBitrateMbps === "number"
-				? clampBitrate(settings.customBitrateMbps * 1_000_000)
-				: clampBitrate(
-						estimateVideoBitrate(
-							candidateWidth,
-							candidateHeight,
-							candidateFrameRate,
-							settings.preset,
-						) * getBitrateMultiplier(bitrateMode),
-					);
+			bitrateMode === "bpp" && typeof settings.bitsPerPixel === "number"
+				? clampBitrate(
+						settings.bitsPerPixel * candidateWidth * candidateHeight * candidateFrameRate,
+					)
+				: bitrateMode === "custom" && typeof settings.customBitrateMbps === "number"
+					? clampBitrate(settings.customBitrateMbps * 1_000_000)
+					: clampBitrate(
+							estimateVideoBitrate(
+								candidateWidth,
+								candidateHeight,
+								candidateFrameRate,
+								settings.preset,
+							) * getBitrateMultiplier(bitrateMode),
+						);
 
 		const duplicate = encoderCandidates.some(
 			(candidate) =>
@@ -527,6 +536,7 @@ export function resolveVideoExportPlan(
 		frameRateMode,
 		bitrateMode,
 		optimizeForWeb: settings.optimizeForWeb,
+		forceFFmpegDecoder: settings.forceFFmpegDecoder ?? false,
 		warnings,
 		fallbackApplied: fallbackSteps.length > 0,
 		fallbackReason: fallbackSteps[0],

@@ -294,7 +294,6 @@ export function Hero() {
 					scrub: true,
 				},
 			});
-
 		}, sectionRef);
 
 		return () => ctx.revert();

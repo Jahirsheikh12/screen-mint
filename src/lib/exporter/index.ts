@@ -20,6 +20,7 @@ export {
 export { StreamingVideoDecoder } from "./streamingDecoder";
 export type {
 	ExportConfig,
+	ExportDestination,
 	ExportDetails,
 	ExportFormat,
 	ExportPhase,
@@ -34,6 +35,7 @@ export type {
 	GifExportPreset,
 	GifFrameRate,
 	GifMotionSensitivity,
+	GifQualityLabel,
 	GifResolutionMode,
 	GifSizePreset,
 	VideoBitrateMode,
@@ -42,6 +44,7 @@ export type {
 	VideoExportPreset,
 	VideoExportSettings,
 	VideoFrameData,
+	VideoQualityLabel,
 	VideoResolutionMode,
 } from "./types";
 export {
@@ -50,6 +53,7 @@ export {
 	GIF_EXPORT_PRESETS,
 	GIF_FRAME_RATES,
 	GIF_MOTION_SENSITIVITY_OPTIONS,
+	GIF_QUALITY_TO_PRESET,
 	GIF_RESOLUTION_MODE_OPTIONS,
 	GIF_SIZE_PRESETS,
 	isValidGifFrameRate,
@@ -57,6 +61,8 @@ export {
 	VIDEO_BITRATE_MODE_OPTIONS,
 	VIDEO_EXPORT_PRESETS,
 	VIDEO_FRAME_RATE_MODE_OPTIONS,
+	VIDEO_PRESET_TO_QUALITY,
+	VIDEO_QUALITY_TO_PRESET,
 	VIDEO_RESOLUTION_MODE_OPTIONS,
 } from "./types";
 export { VideoFileDecoder } from "./videoDecoder";

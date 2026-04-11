@@ -144,15 +144,10 @@ export function ShowreelSection() {
 				>
 					<div className="px-[max(24px,calc((100vw-1152px)/2))] mb-6">
 						<p className="section-eyebrow mb-3">Showreel</p>
-						<h2 className="section-headline">
-							See it in action
-						</h2>
+						<h2 className="section-headline">See it in action</h2>
 					</div>
 
-					<div
-						ref={trackRef}
-						className="flex gap-6 pl-[max(24px,calc((100vw-1152px)/2))]"
-					>
+					<div ref={trackRef} className="flex gap-6 pl-[max(24px,calc((100vw-1152px)/2))]">
 						{showcaseItems.map((item) => (
 							<div
 								key={item.title}
@@ -163,9 +158,7 @@ export function ShowreelSection() {
 										<div className="w-2.5 h-2.5 rounded-full bg-white/[0.06] transition-colors group-hover:bg-[#ff5f57]" />
 										<div className="w-2.5 h-2.5 rounded-full bg-white/[0.06] transition-colors group-hover:bg-[#febc2e]" />
 										<div className="w-2.5 h-2.5 rounded-full bg-white/[0.06] transition-colors group-hover:bg-[#28c840]" />
-										<span className="ml-2 text-[10px] text-white/10 font-mono">
-											{item.title}
-										</span>
+										<span className="ml-2 text-[10px] text-white/10 font-mono">{item.title}</span>
 									</div>
 									<div className="relative aspect-video overflow-hidden">
 										<img
@@ -177,9 +170,7 @@ export function ShowreelSection() {
 									</div>
 								</div>
 								<div className="mt-4 px-1">
-									<h3 className="text-[16px] font-semibold text-white/80 mb-1">
-										{item.title}
-									</h3>
+									<h3 className="text-[16px] font-semibold text-white/80 mb-1">{item.title}</h3>
 									<p className="text-[14px] text-white/25">{item.description}</p>
 								</div>
 							</div>
@@ -193,9 +184,7 @@ export function ShowreelSection() {
 							<div
 								key={item.title}
 								className={`h-1.5 rounded-full transition-all duration-500 ${
-									i === activeIndex
-										? "w-8 bg-brand-500"
-										: "w-1.5 bg-white/10"
+									i === activeIndex ? "w-8 bg-brand-500" : "w-1.5 bg-white/10"
 								}`}
 							/>
 						))}

@@ -30,9 +30,9 @@ if (repoUrl !== "https://github.com/Jahirsheikh12/screen-mint") {
 const linkFileNames = [...linksFile.matchAll(/ScreenMint[-\w.]+\b/g)].map((match) => match[0]);
 const websiteArtifacts = new Set(linkFileNames);
 
-const releaseArtifactSelectors = [
-	...releaseWorkflowFile.matchAll(/release-assets\/([^\s]+)/g),
-].map((match) => match[1]);
+const releaseArtifactSelectors = [...releaseWorkflowFile.matchAll(/release-assets\/([^\s]+)/g)].map(
+	(match) => match[1],
+);
 
 const expectedArtifacts = [
 	"ScreenMint-arm64.dmg",
@@ -42,7 +42,10 @@ const expectedArtifacts = [
 ];
 
 function selectorMatchesArtifact(selector, artifact) {
-	const pattern = selector.replaceAll(/[.+?^${}()|[\]\\]/g, "\\$&").split("*").join(".*");
+	const pattern = selector
+		.replaceAll(/[.+?^${}()|[\]\\]/g, "\\$&")
+		.split("*")
+		.join(".*");
 	return new RegExp(`^${pattern}$`).test(artifact);
 }
 

@@ -1,4 +1,5 @@
 import type {
+	ExportDestination,
 	ExportFormat,
 	ExportQuality,
 	GifExportConfig,
@@ -186,6 +187,7 @@ export interface ProjectEditorState {
 	captionSettings: CaptionSettings;
 	captionGenerationOptions: CaptionGenerationOptions;
 	exportFormat: ExportFormat;
+	exportDestination: ExportDestination;
 	videoExportSettings: VideoExportSettings;
 	gifExportSettings: GifExportConfig;
 }
@@ -1239,6 +1241,10 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		audioRegions: normalizedAudioRegions,
 		aspectRatio: normalizedAspectRatio,
 		exportFormat: editor.exportFormat === "gif" ? "gif" : "mp4",
+		exportDestination:
+			editor.exportDestination === "clipboard" || editor.exportDestination === "link"
+				? editor.exportDestination
+				: "file",
 		videoExportSettings: normalizedVideoExportSettings,
 		gifExportSettings: normalizedGifExportSettings,
 		webcamPath: typeof editor.webcamPath === "string" ? editor.webcamPath : undefined,

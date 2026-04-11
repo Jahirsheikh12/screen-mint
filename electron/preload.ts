@@ -324,6 +324,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	copyTextToClipboard: (text: string) => {
 		return ipcRenderer.invoke("copy-text-to-clipboard", text);
 	},
+	copyExportedToClipboard: (videoData: ArrayBuffer, fileName: string) => {
+		return ipcRenderer.invoke("copy-exported-to-clipboard", videoData, fileName);
+	},
 	deleteProjectAndMedia: (payload: {
 		projectPath?: string | null;
 		videoPath?: string | null;

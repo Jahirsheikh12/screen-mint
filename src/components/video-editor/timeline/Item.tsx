@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import glassStyles from "./ItemGlass.module.css";
+import WaveformCanvas from "./WaveformCanvas";
 
 interface ItemProps {
 	id: string;
@@ -19,6 +20,10 @@ interface ItemProps {
 	variant?: "zoom" | "trim" | "annotation" | "speed" | "audio" | "camera" | "caption" | "clip";
 	clipDuration?: string;
 	clipSpeed?: string;
+	waveformData?: Float32Array | null;
+	sourceStartMs?: number;
+	sourceEndMs?: number;
+	sourceDurationMs?: number;
 }
 
 // Map zoom depth to multiplier labels
@@ -53,6 +58,10 @@ export default function Item({
 	variant = "zoom",
 	clipDuration,
 	clipSpeed,
+	waveformData,
+	sourceStartMs,
+	sourceEndMs,
+	sourceDurationMs,
 	children,
 }: ItemProps) {
 	const { setNodeRef, attributes, listeners, itemStyle, itemContentStyle } = useItem({
@@ -222,18 +231,43 @@ export default function Item({
 						}}
 						title="Resize right"
 					/>
+					{/* Waveform visualization for clips with audio */}
+					{isClip &&
+						waveformData &&
+						sourceStartMs != null &&
+						sourceEndMs != null &&
+						sourceDurationMs != null &&
+						sourceDurationMs > 0 && (
+							<WaveformCanvas
+								waveformData={waveformData}
+								sourceStartMs={sourceStartMs}
+								sourceEndMs={sourceEndMs}
+								sourceDurationMs={sourceDurationMs}
+							/>
+						)}
 					{/* Content */}
-					<div className="relative z-10 flex flex-col items-center justify-center text-white/90 opacity-80 group-hover:opacity-100 transition-opacity select-none overflow-hidden">
+					<div
+						className="relative z-10 flex flex-col items-center justify-center text-white/90 opacity-80 group-hover:opacity-100 transition-opacity select-none overflow-hidden"
+						style={isClip && waveformData ? { textShadow: "0 1px 3px rgba(0,0,0,0.7)" } : undefined}
+					>
 						{isClip ? (
 							<div className="flex items-center gap-2">
-								<span className="text-[11px] text-white/40 font-medium">{children}</span>
+								<span
+									className={`text-[11px] font-medium ${waveformData ? "text-white/70" : "text-white/40"}`}
+								>
+									{children}
+								</span>
 								{clipDuration && (
 									<span className="text-[12px] font-semibold tracking-tight whitespace-nowrap">
 										{clipDuration}
 									</span>
 								)}
 								{clipSpeed && (
-									<span className="text-[11px] text-white/50 whitespace-nowrap">⏱ {clipSpeed}</span>
+									<span
+										className={`text-[11px] whitespace-nowrap ${waveformData ? "text-white/70" : "text-white/50"}`}
+									>
+										⏱ {clipSpeed}
+									</span>
 								)}
 								{!clipDuration && !clipSpeed && (
 									<span className="text-[9px] tabular-nums tracking-tight whitespace-nowrap opacity-50">

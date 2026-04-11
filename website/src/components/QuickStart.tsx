@@ -171,9 +171,9 @@ export function QuickStart() {
 								</span>
 							</div>
 							<p className="text-[12px] text-white/30 leading-relaxed mb-3">
-								Move ScreenMint.app into /Applications first. If macOS still blocks the app
-								because it&apos;s downloaded from the internet, run this command in Terminal to
-								remove the quarantine flag from the final install location.
+								Move ScreenMint.app into /Applications first. If macOS still blocks the app because
+								it&apos;s downloaded from the internet, run this command in Terminal to remove the
+								quarantine flag from the final install location.
 							</p>
 						</div>
 						<div className="command-block flex items-center justify-between px-5 py-3 bg-black/40 border-t border-white/[0.04]">

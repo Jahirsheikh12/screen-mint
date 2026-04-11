@@ -2,8 +2,10 @@ import type { Range, Span } from "dnd-timeline";
 import { useTimelineContext } from "dnd-timeline";
 import {
 	Camera,
+	Captions,
 	Check,
 	ChevronDown,
+	Clapperboard,
 	Gauge,
 	Layers,
 	MessageSquare,
@@ -12,8 +14,11 @@ import {
 	Play,
 	Plus,
 	Scissors,
+	Search,
 	SkipBack,
 	SkipForward,
+	Volume2,
+	VolumeOff,
 	WandSparkles,
 	ZoomIn,
 	ZoomOut,
@@ -37,9 +42,11 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useShortcuts } from "@/contexts/ShortcutsContext";
-import { matchesShortcut } from "@/lib/shortcuts";
+import { formatBinding, matchesShortcut } from "@/lib/shortcuts";
 import { cn } from "@/lib/utils";
+import { useWaveformData } from "@/lib/waveform/extractWaveform";
 import {
 	ASPECT_RATIOS,
 	type AspectRatio,
@@ -74,6 +81,7 @@ const AUDIO_ROW_ID = "row-audio";
 const CAMERA_ROW_ID = "row-camera";
 const CAPTION_ROW_ID = "row-caption";
 const FALLBACK_RANGE_MS = 1000;
+const ICON_SIDEBAR_WIDTH = 48;
 
 type AdditionalLayerType = "annotation" | "camera" | "speed" | "audio" | "caption";
 
@@ -147,6 +155,10 @@ interface TimelineEditorProps {
 	onSkipForward?: () => void;
 	onSkipBack?: () => void;
 	playbackSpeed?: number;
+	videoPath?: string | null;
+	hasAudio?: boolean;
+	clipVolume?: number;
+	onClipVolumeChange?: (volume: number) => void;
 }
 
 interface TimelineScaleConfig {
@@ -299,7 +311,7 @@ function PlaybackCursor({
 			if (!timelineRef.current || !onSeek) return;
 
 			const rect = timelineRef.current.getBoundingClientRect();
-			const clickX = e.clientX - rect.left - sidebarWidth;
+			const clickX = e.clientX - rect.left - sidebarWidth - ICON_SIDEBAR_WIDTH;
 
 			// Allow dragging outside to 0 or max, but clamp the value
 			const relativeMs = pixelsToValue(clickX);
@@ -363,7 +375,8 @@ function PlaybackCursor({
 		<div
 			className="absolute top-0 bottom-0 z-50 group/cursor"
 			style={{
-				[sideProperty === "right" ? "marginRight" : "marginLeft"]: `${sidebarWidth - 1}px`,
+				[sideProperty === "right" ? "marginRight" : "marginLeft"]:
+					`${sidebarWidth + ICON_SIDEBAR_WIDTH - 1}px`,
 				pointerEvents: "none",
 			}}
 		>
@@ -466,7 +479,8 @@ function TimelineAxis({
 		<div
 			className="h-8 bg-[#0c0c0f] border-b border-white/5 relative overflow-hidden select-none"
 			style={{
-				[sideProperty === "right" ? "marginRight" : "marginLeft"]: `${sidebarWidth}px`,
+				[sideProperty === "right" ? "marginRight" : "marginLeft"]:
+					`${sidebarWidth + ICON_SIDEBAR_WIDTH}px`,
 			}}
 		>
 			{/* Minor Ticks */}
@@ -551,6 +565,8 @@ function Timeline({
 	trimMode = false,
 	onSplitClip,
 	onDeleteSegment,
+	waveformData,
+	sourceDurationMs,
 }: {
 	items: TimelineRenderItem[];
 	videoDurationMs: number;
@@ -588,6 +604,8 @@ function Timeline({
 	trimMode?: boolean;
 	onSplitClip?: (timeMs: number) => void;
 	onDeleteSegment?: (startMs: number, endMs: number) => void;
+	waveformData?: Float32Array | null;
+	sourceDurationMs?: number;
 }) {
 	const { setTimelineRef, style, sidebarWidth, direction, range, pixelsToValue } =
 		useTimelineContext();
@@ -607,7 +625,7 @@ function Timeline({
 		(e: React.MouseEvent) => {
 			if (!localTimelineRef.current) return;
 			const rect = localTimelineRef.current.getBoundingClientRect();
-			const x = e.clientX - rect.left - sidebarWidth;
+			const x = e.clientX - rect.left - sidebarWidth - ICON_SIDEBAR_WIDTH;
 			if (x >= 0) {
 				setGhostX(x);
 			} else {
@@ -626,7 +644,7 @@ function Timeline({
 			if (videoDurationMs <= 0) return;
 
 			const rect = e.currentTarget.getBoundingClientRect();
-			const clickX = e.clientX - rect.left - sidebarWidth;
+			const clickX = e.clientX - rect.left - sidebarWidth - ICON_SIDEBAR_WIDTH;
 
 			if (clickX < 0) return;
 
@@ -700,7 +718,8 @@ function Timeline({
 				<div
 					className="absolute top-0 bottom-0 z-40 pointer-events-none"
 					style={{
-						[sideProperty === "right" ? "marginRight" : "marginLeft"]: `${sidebarWidth}px`,
+						[sideProperty === "right" ? "marginRight" : "marginLeft"]:
+							`${sidebarWidth + ICON_SIDEBAR_WIDTH}px`,
 					}}
 				>
 					<div
@@ -718,7 +737,13 @@ function Timeline({
 			)}
 
 			{/* Clip Layer - shows segments (splits visible as gaps) */}
-			<Row id={CLIP_ROW_ID} isEmpty={clipItems.length === 0} hint="" variant="clip">
+			<Row
+				id={CLIP_ROW_ID}
+				isEmpty={clipItems.length === 0}
+				hint=""
+				variant="clip"
+				icon={Clapperboard}
+			>
 				{clipItems.map((item) => (
 					<Item
 						id={item.id}
@@ -735,6 +760,10 @@ function Timeline({
 						variant="clip"
 						clipDuration={item.clipDuration}
 						clipSpeed={item.clipSpeed}
+						waveformData={waveformData}
+						sourceStartMs={item.sourceStart}
+						sourceEndMs={item.sourceEnd}
+						sourceDurationMs={sourceDurationMs}
 					>
 						{item.label}
 					</Item>
@@ -749,6 +778,7 @@ function Timeline({
 				onAddEffect={onAddZoom}
 				addLabel="Zoom"
 				variant="zoom"
+				icon={Search}
 			>
 				{zoomItems.map((item) => (
 					<Item
@@ -775,6 +805,7 @@ function Timeline({
 					hint="Hover to add annotation"
 					onAddEffect={onAddAnnotation}
 					addLabel="Annotation"
+					icon={MessageSquare}
 				>
 					{annotationItems.map((item) => (
 						<Item
@@ -800,6 +831,7 @@ function Timeline({
 					hint="Hover to add camera layout"
 					onAddEffect={onAddCameraLayout}
 					addLabel="Camera"
+					icon={Camera}
 				>
 					{cameraItems.map((item) => (
 						<Item
@@ -825,6 +857,7 @@ function Timeline({
 					hint="Hover to add speed"
 					onAddEffect={onAddSpeed}
 					addLabel="Speed"
+					icon={Gauge}
 				>
 					{speedItems.map((item) => (
 						<Item
@@ -851,6 +884,7 @@ function Timeline({
 					hint="Hover to add audio"
 					onAddEffect={onAddAudio}
 					addLabel="Audio"
+					icon={Music}
 				>
 					{audioItems.map((item) => (
 						<Item
@@ -876,6 +910,7 @@ function Timeline({
 					hint="Hover to add caption"
 					onAddEffect={onAddCaption}
 					addLabel="Caption"
+					icon={Captions}
 				>
 					{captionItems.map((item) => (
 						<Item
@@ -951,10 +986,16 @@ export default function TimelineEditor({
 	onSkipForward,
 	onSkipBack,
 	playbackSpeed = 1,
+	videoPath,
+	hasAudio = false,
+	clipVolume = 1,
+	onClipVolumeChange,
 }: TimelineEditorProps) {
 	const initialEditorPreferences = useMemo(() => loadEditorPreferences(), []);
+	const prevVolumeRef = useRef(clipVolume || 1);
 	const totalMs = useMemo(() => Math.max(0, Math.round(videoDuration * 1000)), [videoDuration]);
 	const currentTimeMs = useMemo(() => Math.round(currentTime * 1000), [currentTime]);
+	const waveformData = useWaveformData(videoPath ?? null, hasAudio);
 
 	// Source-to-display time mapping for ripple-delete (timeline collapses trimmed gaps)
 	const sortedTrimRegions = useMemo(
@@ -2133,123 +2174,183 @@ export default function TimelineEditor({
 					</DropdownMenu>
 				</div>
 
+				{/* Volume control - only when video has audio */}
+				{hasAudio && (
+					<div className="flex items-center gap-1 z-10 ml-1 group/vol">
+						<Tooltip content={clipVolume === 0 ? "Unmute" : "Mute"} side="bottom">
+							<Button
+								variant="ghost"
+								size="icon"
+								className="h-7 w-7 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+								onClick={() => {
+									if (clipVolume === 0) {
+										onClipVolumeChange?.(prevVolumeRef.current > 0 ? prevVolumeRef.current : 1);
+									} else {
+										prevVolumeRef.current = clipVolume;
+										onClipVolumeChange?.(0);
+									}
+								}}
+							>
+								{clipVolume === 0 ? (
+									<VolumeOff className="w-3.5 h-3.5" />
+								) : (
+									<Volume2 className="w-3.5 h-3.5" />
+								)}
+							</Button>
+						</Tooltip>
+						<Tooltip content={`Volume: ${Math.round(clipVolume * 100)}%`} side="bottom">
+							<input
+								type="range"
+								min="0"
+								max="1"
+								step="0.01"
+								value={clipVolume}
+								onChange={(e) => onClipVolumeChange?.(Number.parseFloat(e.target.value))}
+								className="w-16 h-1 accent-amber-500 cursor-pointer opacity-60 group-hover/vol:opacity-100 transition-opacity"
+							/>
+						</Tooltip>
+					</div>
+				)}
+
 				{/* Center: Play controls only - absolutely centered */}
 				<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
 					<div className="flex items-center gap-0.5 pointer-events-auto">
-						<Button
-							onClick={onSkipBack}
-							variant="ghost"
-							size="icon"
-							className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
-							title="Skip Back"
+						<Tooltip content="Skip Back" shortcut="5s" side="bottom">
+							<Button
+								onClick={onSkipBack}
+								variant="ghost"
+								size="icon"
+								className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+							>
+								<SkipBack className="w-4 h-4" />
+							</Button>
+						</Tooltip>
+						<Tooltip
+							content={isPlaying ? "Pause" : "Play"}
+							shortcut={formatBinding(keyShortcuts.playPause, isMac)}
+							side="bottom"
 						>
-							<SkipBack className="w-4 h-4" />
-						</Button>
-						<Button
-							onClick={onTogglePlayPause}
-							variant="ghost"
-							size="icon"
-							className={cn(
-								"h-8 w-8 transition-all",
-								isPlaying
-									? "text-white hover:text-white/80 hover:bg-white/10"
-									: "text-slate-400 hover:text-white hover:bg-white/10",
-							)}
-							title={isPlaying ? "Pause" : "Play"}
-						>
-							{isPlaying ? (
-								<Pause className="w-4 h-4 fill-current" />
-							) : (
-								<Play className="w-4 h-4 fill-current" />
-							)}
-						</Button>
-						<Button
-							onClick={onSkipForward}
-							variant="ghost"
-							size="icon"
-							className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
-							title="Skip Forward"
-						>
-							<SkipForward className="w-4 h-4" />
-						</Button>
+							<Button
+								onClick={onTogglePlayPause}
+								variant="ghost"
+								size="icon"
+								className={cn(
+									"h-8 w-8 transition-all",
+									isPlaying
+										? "text-white hover:text-white/80 hover:bg-white/10"
+										: "text-slate-400 hover:text-white hover:bg-white/10",
+								)}
+							>
+								{isPlaying ? (
+									<Pause className="w-4 h-4 fill-current" />
+								) : (
+									<Play className="w-4 h-4 fill-current" />
+								)}
+							</Button>
+						</Tooltip>
+						<Tooltip content="Skip Forward" shortcut="5s" side="bottom">
+							<Button
+								onClick={onSkipForward}
+								variant="ghost"
+								size="icon"
+								className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+							>
+								<SkipForward className="w-4 h-4" />
+							</Button>
+						</Tooltip>
 					</div>
 				</div>
 
 				{/* Right: Cut, Zoom, Speed, Zoom slider, Aspect ratio */}
 				<div className="ml-auto flex items-center gap-0.5 z-10">
-					<Button
-						onClick={handleSuggestZooms}
-						variant="ghost"
-						size="icon"
-						className="h-8 w-8 text-amber-400/80 hover:text-amber-300 hover:bg-amber-400/10 transition-all"
-						title="Auto Zoom (suggest zooms from cursor telemetry)"
-					>
-						<WandSparkles className="w-4 h-4" />
-					</Button>
+					<Tooltip content="Auto Zoom" side="bottom">
+						<Button
+							onClick={handleSuggestZooms}
+							variant="ghost"
+							size="icon"
+							className="h-8 w-8 text-amber-400/80 hover:text-amber-300 hover:bg-amber-400/10 transition-all"
+						>
+							<WandSparkles className="w-4 h-4" />
+						</Button>
+					</Tooltip>
 
-					<Button
-						onClick={() => setTrimMode((prev) => !prev)}
-						variant="ghost"
-						size="icon"
-						className={cn(
-							"h-8 w-8 transition-all",
-							trimMode
-								? "text-red-400 bg-red-500/15 hover:text-red-300 hover:bg-red-500/25 ring-1 ring-red-500/30"
-								: "text-slate-400 hover:text-white hover:bg-white/10",
-						)}
-						title={trimMode ? "Disable Trim Mode (T)" : "Enable Trim Mode (T)"}
+					<Tooltip
+						content={trimMode ? "Disable Trim Mode" : "Trim Mode"}
+						shortcut={formatBinding(keyShortcuts.addTrim, isMac)}
+						side="bottom"
 					>
-						<Scissors className="w-4 h-4" />
-					</Button>
+						<Button
+							onClick={() => setTrimMode((prev) => !prev)}
+							variant="ghost"
+							size="icon"
+							className={cn(
+								"h-8 w-8 transition-all",
+								trimMode
+									? "text-red-400 bg-red-500/15 hover:text-red-300 hover:bg-red-500/25 ring-1 ring-red-500/30"
+									: "text-slate-400 hover:text-white hover:bg-white/10",
+							)}
+						>
+							<Scissors className="w-4 h-4" />
+						</Button>
+					</Tooltip>
 
 					<div className="w-[1px] h-5 bg-white/10 mx-1" />
 
-					<Button
-						onClick={handleTimelineZoomIn}
-						variant="ghost"
-						size="icon"
-						className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
-						title="Zoom In Timeline"
+					<Tooltip
+						content="Zoom In"
+						shortcut={isMac ? "⌘ + Scroll" : "Ctrl + Scroll"}
+						side="bottom"
 					>
-						<ZoomIn className="w-4 h-4" />
-					</Button>
-					<Button
-						onClick={handleTimelineZoomOut}
-						variant="ghost"
-						size="icon"
-						className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
-						title="Zoom Out Timeline"
-					>
-						<ZoomOut className="w-4 h-4" />
-					</Button>
+						<Button
+							onClick={handleTimelineZoomIn}
+							variant="ghost"
+							size="icon"
+							className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+						>
+							<ZoomIn className="w-4 h-4" />
+						</Button>
+					</Tooltip>
+					<Tooltip content="Zoom Out" side="bottom">
+						<Button
+							onClick={handleTimelineZoomOut}
+							variant="ghost"
+							size="icon"
+							className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+						>
+							<ZoomOut className="w-4 h-4" />
+						</Button>
+					</Tooltip>
 
 					<div className="w-[1px] h-5 bg-white/10 mx-1" />
 
-					<span className="text-[11px] text-slate-400 font-medium tabular-nums px-1">
-						{playbackSpeed}x
-					</span>
+					<Tooltip content="Playback Speed" side="bottom">
+						<span className="text-[11px] text-slate-400 font-medium tabular-nums px-1">
+							{playbackSpeed}x
+						</span>
+					</Tooltip>
 
 					<div className="w-[1px] h-5 bg-white/10 mx-1" />
 
-					<input
-						type="range"
-						min="0.25"
-						max="8"
-						step="0.25"
-						value={timelineZoomLevel}
-						onChange={(e) => {
-							const newZoom = Number.parseFloat(e.target.value);
-							const center = (range.start + range.end) / 2;
-							const newHalfSpan = displayTotalMs / newZoom / 2;
-							setRange({
-								start: Math.max(0, center - newHalfSpan),
-								end: Math.min(displayTotalMs, center + newHalfSpan),
-							});
-							setTimelineZoomLevel(newZoom);
-						}}
-						className="w-20 h-1 accent-white/60 cursor-pointer"
-						title="Timeline Zoom"
-					/>
+					<Tooltip content="Timeline Zoom" side="bottom">
+						<input
+							type="range"
+							min="0.25"
+							max="8"
+							step="0.25"
+							value={timelineZoomLevel}
+							onChange={(e) => {
+								const newZoom = Number.parseFloat(e.target.value);
+								const center = (range.start + range.end) / 2;
+								const newHalfSpan = displayTotalMs / newZoom / 2;
+								setRange({
+									start: Math.max(0, center - newHalfSpan),
+									end: Math.min(displayTotalMs, center + newHalfSpan),
+								});
+								setTimelineZoomLevel(newZoom);
+							}}
+							className="w-20 h-1 accent-white/60 cursor-pointer"
+						/>
+					</Tooltip>
 
 					<div className="w-[1px] h-5 bg-white/10 mx-1" />
 					<DropdownMenu>
@@ -2375,6 +2476,8 @@ export default function TimelineEditor({
 						trimMode={trimMode}
 						onSplitClip={wrappedOnSplitClip}
 						onDeleteSegment={onDeleteSegment}
+						waveformData={waveformData}
+						sourceDurationMs={totalMs}
 					/>
 				</TimelineWrapper>
 			</div>

@@ -14,6 +14,7 @@ import {
 	Palette,
 	Pause,
 	Play,
+	Shuffle,
 	Sparkles,
 	Trash2,
 	Upload,
@@ -25,6 +26,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTooltip } from "@/components/ui/tooltip";
 import { getDisplayAssetUrl, getDisplayAssetUrlSync } from "@/lib/assetPath";
 import { type BackgroundMusicMood, BUILT_IN_BACKGROUND_MUSIC } from "@/lib/backgroundMusic";
 import { cn } from "@/lib/utils";
@@ -125,55 +127,60 @@ import {
 } from "./types";
 import { cursorPackPreviewUrls } from "./videoPlayback/cursorAssetPacks";
 
-const GRADIENTS = [
-	"linear-gradient(135deg, #03045e 0%, #0077b6 42%, #90e0ef 100%)",
-	"linear-gradient(135deg, #0b090a 0%, #161a1d 38%, #e5383b 100%)",
-	"linear-gradient(145deg, #14213d 0%, #fca311 52%, #ffe8b6 100%)",
-	"linear-gradient(135deg, #081c15 0%, #1b4332 44%, #95d5b2 100%)",
-	"linear-gradient(140deg, #2b2d42 0%, #8d99ae 48%, #edf2f4 100%)",
-	"linear-gradient(135deg, #240046 0%, #7b2cbf 45%, #c77dff 100%)",
-	"linear-gradient(130deg, #3d0000 0%, #9d0208 44%, #ffba08 100%)",
-	"linear-gradient(145deg, #001219 0%, #005f73 42%, #ee9b00 100%)",
-	"linear-gradient(135deg, #111827 0%, #1f2937 40%, #f59e0b 100%)",
-	"linear-gradient(150deg, #1a1a40 0%, #4c1d95 42%, #f472b6 100%)",
-	"radial-gradient(circle at 20% 20%, #fefae0 0%, #dda15e 42%, #6b705c 100%)",
-	"radial-gradient(circle at 50% 25%, #f8f9fa 0%, #cdb4db 40%, #5a189a 100%)",
-	"radial-gradient(circle at 78% 18%, #f1faee 0%, #a8dadc 40%, #1d3557 100%)",
-	"radial-gradient(circle at 28% 30%, #fff1e6 0%, #ff7f51 42%, #7b2d26 100%)",
-	"radial-gradient(circle at 65% 32%, #fff7ed 0%, #fb7185 38%, #7c2d12 100%)",
-	"linear-gradient(135deg, #023047 0%, #219ebc 46%, #ffb703 100%)",
-	"linear-gradient(135deg, #0f0c29 0%, #302b63 44%, #f27121 100%)",
-	"linear-gradient(145deg, #2f3e46 0%, #52796f 40%, #cad2c5 100%)",
-	"linear-gradient(130deg, #1b263b 0%, #415a77 44%, #e0e1dd 100%)",
-	"linear-gradient(140deg, #10002b 0%, #5a189a 46%, #ff6d00 100%)",
-	"linear-gradient(135deg, #2d033b 0%, #810ca8 42%, #e5b8f4 100%)",
-	"linear-gradient(145deg, #1f2421 0%, #216869 42%, #9cc5a1 100%)",
-	"linear-gradient(135deg, #3c096c 0%, #7b2cbf 44%, #ff8500 100%)",
-	"linear-gradient(140deg, #0d1b2a 0%, #1b263b 42%, #778da9 100%)",
-	"linear-gradient(135deg, #3a5a40 0%, #588157 40%, #dad7cd 100%)",
-	"linear-gradient(145deg, #2b2d42 0%, #ef233c 42%, #ffd166 100%)",
-	"linear-gradient(135deg, #001d3d 0%, #003566 40%, #ffc300 100%)",
-	"linear-gradient(135deg, #0a1128 0%, #1282a2 46%, #f0f3bd 100%)",
-	"linear-gradient(145deg, #2d00f7 0%, #6a00f4 38%, #ff8500 100%)",
-	"linear-gradient(135deg, #004b23 0%, #38b000 42%, #ccff33 100%)",
-	"linear-gradient(140deg, #590d22 0%, #a4133c 44%, #ffccd5 100%)",
-	"linear-gradient(145deg, #14281d 0%, #355834 40%, #c2c5aa 100%)",
-	"linear-gradient(135deg, #03071e 0%, #6a040f 44%, #faa307 100%)",
-	"linear-gradient(150deg, #1d3557 0%, #457b9d 40%, #f1faee 100%)",
-	"linear-gradient(135deg, #22577a 0%, #38a3a5 42%, #c7f9cc 100%)",
-	"linear-gradient(145deg, #3c1642 0%, #086375 40%, #f5dd90 100%)",
-	"linear-gradient(140deg, #2f1847 0%, #624763 38%, #f9c784 100%)",
-	"radial-gradient(circle at 22% 24%, #fff8e7 0%, #ffd166 36%, #118ab2 100%)",
-	"radial-gradient(circle at 72% 20%, #f8f9ff 0%, #b8c0ff 40%, #7209b7 100%)",
-	"radial-gradient(circle at 30% 70%, #fef2f2 0%, #fda4af 34%, #7f1d1d 100%)",
-	"radial-gradient(circle at 80% 32%, #f1fff8 0%, #95d5b2 38%, #081c15 100%)",
-	"radial-gradient(circle at 46% 18%, #fff7f0 0%, #ffb4a2 40%, #6d6875 100%)",
-	"linear-gradient(135deg, #283618 0%, #606c38 40%, #fefae0 100%)",
-	"linear-gradient(145deg, #1e1e24 0%, #92140c 42%, #ffcf99 100%)",
-	"linear-gradient(135deg, #001524 0%, #15616d 44%, #ffecd1 100%)",
-	"linear-gradient(140deg, #0d1321 0%, #1d2d44 42%, #f0ebd8 100%)",
-	"linear-gradient(145deg, #201e1f 0%, #4f5d75 40%, #ef8354 100%)",
+interface GradientPreset {
+	from: string;
+	to: string;
+	angle: number;
+}
+
+const GRADIENT_PRESETS: GradientPreset[] = [
+	{ from: "#0f4c35", to: "#2dd4a0", angle: 135 },
+	{ from: "#f7971e", to: "#ffd200", angle: 140 },
+	{ from: "#c850c0", to: "#4158d0", angle: 135 },
+	{ from: "#2c3ec9", to: "#8b5cf6", angle: 145 },
+	{ from: "#7c3aed", to: "#ec4899", angle: 135 },
+	{ from: "#e84393", to: "#fd79a8", angle: 130 },
+	{ from: "#f56545", to: "#ff9a76", angle: 140 },
+	{ from: "#ff6b35", to: "#f7c948", angle: 135 },
+	{ from: "#ef4444", to: "#f97316", angle: 145 },
+	{ from: "#2563eb", to: "#f97316", angle: 135 },
+	{ from: "#059669", to: "#14b8a6", angle: 140 },
+	{ from: "#e84393", to: "#fad0c4", angle: 135 },
+	{ from: "#1e3a5f", to: "#4a90d9", angle: 145 },
+	{ from: "#fbc2eb", to: "#f5e6cc", angle: 130 },
+	{ from: "#4f46e5", to: "#7c3aed", angle: 135 },
+	{ from: "#f97316", to: "#fb923c", angle: 140 },
+	{ from: "#06b6d4", to: "#ec4899", angle: 135 },
+	{ from: "#f59e0b", to: "#fbbf24", angle: 145 },
+	{ from: "#a3e635", to: "#d946ef", angle: 150 },
 ];
+
+function presetToGradientCss(preset: GradientPreset): string {
+	return `linear-gradient(${preset.angle}deg, ${preset.from} 0%, ${preset.to} 100%)`;
+}
+
+function parseGradientString(css: string): { from: string; to: string; angle: number } | null {
+	const match = css.match(
+		/linear-gradient\((\d+)deg,\s*(#[0-9a-fA-F]{3,8})\s*\d*%?,\s*(#[0-9a-fA-F]{3,8})\s*\d*%?\)/,
+	);
+	if (match) {
+		return { angle: Number.parseInt(match[1]), from: match[2], to: match[3] };
+	}
+	// Try parsing multi-stop gradients — take first and last colors
+	const multiMatch = css.match(
+		/linear-gradient\((\d+)deg,\s*(#[0-9a-fA-F]{3,8})\s*\d*%?(?:,\s*#[0-9a-fA-F]{3,8}\s*\d*%?)*,\s*(#[0-9a-fA-F]{3,8})\s*\d*%?\)/,
+	);
+	if (multiMatch) {
+		return {
+			angle: Number.parseInt(multiMatch[1]),
+			from: multiMatch[2],
+			to: multiMatch[3],
+		};
+	}
+	return null;
+}
+
+const GRADIENTS = GRADIENT_PRESETS.map(presetToGradientCss);
 
 type BackgroundTab = "image" | "color" | "gradient";
 
@@ -779,9 +786,22 @@ export default function SettingsPanel({
 	const [selectedColor, setSelectedColor] = useState(
 		isHexWallpaper(selected) ? selected : "#ADADAD",
 	);
-	const [gradient, setGradient] = useState<string>(
-		GRADIENTS.includes(selected) ? selected : GRADIENTS[0],
-	);
+	const initialGradientState = (() => {
+		if (selected.startsWith("linear-gradient") || selected.startsWith("radial-gradient")) {
+			const parsed = parseGradientString(selected);
+			if (parsed) return parsed;
+		}
+		return {
+			from: GRADIENT_PRESETS[0].from,
+			to: GRADIENT_PRESETS[0].to,
+			angle: GRADIENT_PRESETS[0].angle,
+		};
+	})();
+	const [gradientFromColor, setGradientFromColor] = useState(initialGradientState.from);
+	const [gradientToColor, setGradientToColor] = useState(initialGradientState.to);
+	const [gradientAngle, setGradientAngle] = useState(initialGradientState.angle);
+	const [gradientNoise, setGradientNoise] = useState(0);
+	const gradient = `linear-gradient(${gradientAngle}deg, ${gradientFromColor} 0%, ${gradientToColor} 100%)`;
 	const [backgroundTab, setBackgroundTab] = useState<BackgroundTab>(() =>
 		getBackgroundTabForWallpaper(selected),
 	);
@@ -821,8 +841,13 @@ export default function SettingsPanel({
 			setSelectedColor(selected);
 		}
 
-		if (GRADIENTS.includes(selected)) {
-			setGradient(selected);
+		if (selected.startsWith("linear-gradient") || selected.startsWith("radial-gradient")) {
+			const parsed = parseGradientString(selected);
+			if (parsed) {
+				setGradientFromColor(parsed.from);
+				setGradientToColor(parsed.to);
+				setGradientAngle(parsed.angle);
+			}
 		}
 
 		if (selected.startsWith("data:image") && !customImages.includes(selected)) {
@@ -1132,33 +1157,15 @@ export default function SettingsPanel({
 						)}
 						{sidebarTabs
 							.filter((tab) => group.ids.includes(tab.id))
-							.map((tab) => {
-								const isActive = activeTab === tab.id;
-								return (
-									<button
-										key={tab.id}
-										type="button"
-										onClick={() => setActiveTab(tab.id)}
-										title={tab.label}
-										className={cn(
-											"relative flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-300 ease-out group",
-											isActive
-												? "bg-gradient-to-br from-[#F59E0B] to-[#d97706] text-white shadow-lg shadow-[#F59E0B]/25 scale-105"
-												: "text-slate-500 hover:text-slate-200 hover:bg-white/[0.06] hover:scale-105 active:scale-95",
-										)}
-									>
-										<tab.icon
-											className={cn(
-												"w-[18px] h-[18px] transition-transform duration-300",
-												isActive && "drop-shadow-sm",
-											)}
-										/>
-										{isActive && (
-											<div className="absolute inset-0 rounded-lg bg-[#F59E0B]/10 animate-pulse pointer-events-none" />
-										)}
-									</button>
-								);
-							})}
+							.map((tab) => (
+								<SidebarTabButton
+									key={tab.id}
+									icon={tab.icon}
+									label={tab.label}
+									isActive={activeTab === tab.id}
+									onClick={() => setActiveTab(tab.id)}
+								/>
+							))}
 					</div>
 				))}
 			</div>
@@ -2276,7 +2283,14 @@ export default function SettingsPanel({
 								</TabsTrigger>
 							</TabsList>
 
-							<div className="max-h-[min(300px,40vh)] overflow-y-auto custom-scrollbar">
+							<div
+								className={cn(
+									"overflow-y-auto custom-scrollbar",
+									backgroundTab === "gradient"
+										? "max-h-[min(520px,65vh)]"
+										: "max-h-[min(300px,40vh)]",
+								)}
+							>
 								<TabsContent value="image" className="mt-0 space-y-2">
 									<input
 										type="file"
@@ -2381,25 +2395,234 @@ export default function SettingsPanel({
 								</TabsContent>
 
 								<TabsContent value="gradient" className="mt-0">
-									<div className="grid grid-cols-7 gap-1.5">
-										{GRADIENTS.map((g, idx) => (
-											<div
-												key={g}
-												className={cn(
-													"aspect-square w-9 h-9 rounded-lg border-2 overflow-hidden cursor-pointer transition-all duration-200 shadow-sm hover:scale-105",
-													gradient === g
-														? "border-[#F59E0B] ring-1 ring-[#F59E0B]/30"
-														: "border-white/10 hover:border-[#F59E0B]/40 opacity-80 hover:opacity-100 bg-white/5",
-												)}
-												style={{ background: g }}
-												aria-label={`Gradient ${idx + 1}`}
-												onClick={() => {
-													setGradient(g);
-													onWallpaperChange(g);
+									<div className="flex flex-col gap-3 px-0.5">
+										{/* Gradient Preview */}
+										<div
+											className="w-full rounded-xl overflow-hidden relative"
+											style={{
+												height: 130,
+												background: gradient,
+											}}
+										>
+											{gradientNoise > 0 && (
+												<svg
+													className="absolute inset-0 w-full h-full pointer-events-none"
+													style={{
+														opacity: gradientNoise / 100,
+														mixBlendMode: "overlay",
+													}}
+												>
+													<filter id="gradient-noise-filter">
+														<feTurbulence
+															type="fractalNoise"
+															baseFrequency="0.65"
+															numOctaves="3"
+															stitchTiles="stitch"
+														/>
+														<feColorMatrix type="saturate" values="0" />
+													</filter>
+													<rect width="100%" height="100%" filter="url(#gradient-noise-filter)" />
+												</svg>
+											)}
+										</div>
+
+										{/* From / To Color Inputs */}
+										<div className="border-t border-dashed border-white/[0.08] pt-3">
+											<div className="grid grid-cols-2 gap-3">
+												<div className="flex flex-col gap-1.5">
+													<span className="text-[10px] text-slate-500 font-medium">From</span>
+													<div className="flex items-center gap-1.5 h-8 rounded-lg border border-white/[0.08] bg-white/[0.04] px-1.5">
+														<label className="relative w-6 h-6 rounded-md overflow-hidden shrink-0 cursor-pointer border border-white/10">
+															<div
+																className="absolute inset-0 rounded-md"
+																style={{
+																	backgroundColor: gradientFromColor,
+																}}
+															/>
+															<input
+																type="color"
+																value={gradientFromColor}
+																onChange={(e) => {
+																	setGradientFromColor(e.target.value);
+																	onWallpaperChange(
+																		`linear-gradient(${gradientAngle}deg, ${e.target.value} 0%, ${gradientToColor} 100%)`,
+																	);
+																}}
+																className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+															/>
+														</label>
+														<input
+															type="text"
+															value={gradientFromColor.toUpperCase()}
+															onChange={(e) => {
+																let val = e.target.value;
+																if (!val.startsWith("#")) val = `#${val}`;
+																val = `#${val
+																	.replace(/^#/, "")
+																	.replace(/[^0-9A-Fa-f]/g, "")
+																	.slice(0, 6)}`;
+																setGradientFromColor(val);
+															}}
+															onBlur={() => {
+																if (/^#[0-9A-Fa-f]{6}$/i.test(gradientFromColor)) {
+																	onWallpaperChange(
+																		`linear-gradient(${gradientAngle}deg, ${gradientFromColor} 0%, ${gradientToColor} 100%)`,
+																	);
+																} else {
+																	setGradientFromColor(initialGradientState.from);
+																}
+															}}
+															onKeyDown={(e) => {
+																if (e.key === "Enter") {
+																	(e.target as HTMLInputElement).blur();
+																}
+															}}
+															className="flex-1 text-[11px] font-mono text-slate-200 bg-transparent outline-none uppercase tracking-wider min-w-0"
+														/>
+													</div>
+												</div>
+												<div className="flex flex-col gap-1.5">
+													<span className="text-[10px] text-slate-500 font-medium">To</span>
+													<div className="flex items-center gap-1.5 h-8 rounded-lg border border-white/[0.08] bg-white/[0.04] px-1.5">
+														<label className="relative w-6 h-6 rounded-md overflow-hidden shrink-0 cursor-pointer border border-white/10">
+															<div
+																className="absolute inset-0 rounded-md"
+																style={{
+																	backgroundColor: gradientToColor,
+																}}
+															/>
+															<input
+																type="color"
+																value={gradientToColor}
+																onChange={(e) => {
+																	setGradientToColor(e.target.value);
+																	onWallpaperChange(
+																		`linear-gradient(${gradientAngle}deg, ${gradientFromColor} 0%, ${e.target.value} 100%)`,
+																	);
+																}}
+																className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+															/>
+														</label>
+														<input
+															type="text"
+															value={gradientToColor.toUpperCase()}
+															onChange={(e) => {
+																let val = e.target.value;
+																if (!val.startsWith("#")) val = `#${val}`;
+																val = `#${val
+																	.replace(/^#/, "")
+																	.replace(/[^0-9A-Fa-f]/g, "")
+																	.slice(0, 6)}`;
+																setGradientToColor(val);
+															}}
+															onBlur={() => {
+																if (/^#[0-9A-Fa-f]{6}$/i.test(gradientToColor)) {
+																	onWallpaperChange(
+																		`linear-gradient(${gradientAngle}deg, ${gradientFromColor} 0%, ${gradientToColor} 100%)`,
+																	);
+																} else {
+																	setGradientToColor(initialGradientState.to);
+																}
+															}}
+															onKeyDown={(e) => {
+																if (e.key === "Enter") {
+																	(e.target as HTMLInputElement).blur();
+																}
+															}}
+															className="flex-1 text-[11px] font-mono text-slate-200 bg-transparent outline-none uppercase tracking-wider min-w-0"
+														/>
+													</div>
+												</div>
+											</div>
+										</div>
+
+										{/* Angle Slider */}
+										<div className="border-t border-dashed border-white/[0.08] pt-3">
+											<SliderControl
+												label="Angle"
+												value={gradientAngle}
+												defaultValue={135}
+												min={0}
+												max={360}
+												step={1}
+												onChange={(v) => {
+													setGradientAngle(v);
+													onWallpaperChange(
+														`linear-gradient(${v}deg, ${gradientFromColor} 0%, ${gradientToColor} 100%)`,
+													);
 												}}
-												role="button"
+												formatValue={(v) => `${v}°`}
+												parseInput={(t) => {
+													const n = Number.parseInt(t);
+													return Number.isNaN(n) ? null : n;
+												}}
 											/>
-										))}
+										</div>
+
+										{/* Noise Slider */}
+										<div className="border-t border-dashed border-white/[0.08] pt-3">
+											<SliderControl
+												label="Noise"
+												value={gradientNoise}
+												defaultValue={0}
+												min={0}
+												max={100}
+												step={1}
+												onChange={(v) => setGradientNoise(v)}
+												formatValue={(v) => `${v}%`}
+												parseInput={(t) => {
+													const n = Number.parseInt(t);
+													return Number.isNaN(n) ? null : n;
+												}}
+											/>
+										</div>
+
+										{/* Preset Grid */}
+										<div className="border-t border-dashed border-white/[0.08] pt-3">
+											<div className="grid grid-cols-7 gap-2">
+												{/* Randomize button */}
+												<button
+													type="button"
+													onClick={() => {
+														const idx = Math.floor(Math.random() * GRADIENT_PRESETS.length);
+														const preset = GRADIENT_PRESETS[idx];
+														setGradientFromColor(preset.from);
+														setGradientToColor(preset.to);
+														setGradientAngle(preset.angle);
+														onWallpaperChange(presetToGradientCss(preset));
+													}}
+													className="aspect-square rounded-lg border-2 border-dashed border-white/20 flex items-center justify-center cursor-pointer transition-all duration-200 hover:border-[#F59E0B]/50 hover:bg-white/[0.04] text-slate-500 hover:text-[#F59E0B]"
+													title="Randomize gradient"
+												>
+													<Shuffle className="w-3.5 h-3.5" />
+												</button>
+												{GRADIENT_PRESETS.map((preset, idx) => {
+													const css = presetToGradientCss(preset);
+													const isSelected =
+														gradientFromColor === preset.from && gradientToColor === preset.to;
+													return (
+														<div
+															key={`preset-${idx}`}
+															className={cn(
+																"aspect-square rounded-lg border-2 overflow-hidden cursor-pointer transition-all duration-200 shadow-sm hover:scale-105",
+																isSelected
+																	? "border-[#F59E0B] ring-1 ring-[#F59E0B]/30"
+																	: "border-white/10 hover:border-[#F59E0B]/40 opacity-80 hover:opacity-100",
+															)}
+															style={{ background: css }}
+															aria-label={`Gradient preset ${idx + 1}`}
+															onClick={() => {
+																setGradientFromColor(preset.from);
+																setGradientToColor(preset.to);
+																setGradientAngle(preset.angle);
+																onWallpaperChange(css);
+															}}
+															role="button"
+														/>
+													);
+												})}
+											</div>
+										</div>
 									</div>
 								</TabsContent>
 							</div>
@@ -3760,5 +3983,49 @@ export default function SettingsPanel({
 				</>
 			)}
 		</div>
+	);
+}
+
+function SidebarTabButton({
+	icon: Icon,
+	label,
+	isActive,
+	onClick,
+}: {
+	icon: React.ComponentType<{ className?: string }>;
+	label: string;
+	isActive: boolean;
+	onClick: () => void;
+}) {
+	const { triggerRef, onMouseEnter, onMouseLeave } = useTooltip({
+		content: label,
+		side: "right",
+		delayMs: 300,
+	});
+
+	return (
+		<button
+			ref={triggerRef as React.Ref<HTMLButtonElement>}
+			type="button"
+			onClick={onClick}
+			onMouseEnter={onMouseEnter}
+			onMouseLeave={onMouseLeave}
+			className={cn(
+				"relative flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-300 ease-out group",
+				isActive
+					? "bg-gradient-to-br from-[#F59E0B] to-[#d97706] text-white shadow-lg shadow-[#F59E0B]/25 scale-105"
+					: "text-slate-500 hover:text-slate-200 hover:bg-white/[0.06] hover:scale-105 active:scale-95",
+			)}
+		>
+			<Icon
+				className={cn(
+					"w-[18px] h-[18px] transition-transform duration-300",
+					isActive && "drop-shadow-sm",
+				)}
+			/>
+			{isActive && (
+				<div className="absolute inset-0 rounded-lg bg-[#F59E0B]/10 animate-pulse pointer-events-none" />
+			)}
+		</button>
 	);
 }

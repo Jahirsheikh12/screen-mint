@@ -24,10 +24,7 @@ export interface CursorMoveSamplePolicy {
 	heartbeatIntervalMs?: number;
 }
 
-function boundsEqual(
-	left?: CursorTelemetryBoundsLike,
-	right?: CursorTelemetryBoundsLike,
-) {
+function boundsEqual(left?: CursorTelemetryBoundsLike, right?: CursorTelemetryBoundsLike) {
 	if (!left && !right) {
 		return true;
 	}
@@ -84,10 +81,7 @@ export function shouldRecordCursorMoveSample(
 	}
 
 	const elapsedMs = next.timeMs - previous.timeMs;
-	if (
-		typeof policy.heartbeatIntervalMs === "number" &&
-		policy.heartbeatIntervalMs > 0
-	) {
+	if (typeof policy.heartbeatIntervalMs === "number" && policy.heartbeatIntervalMs > 0) {
 		return elapsedMs >= policy.heartbeatIntervalMs;
 	}
 

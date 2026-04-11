@@ -60,6 +60,7 @@ type PersistedEditorControls = Pick<
 	| "mirrorWebcam"
 	| "cameraSizeDuringZoom"
 	| "exportFormat"
+	| "exportDestination"
 	| "videoExportSettings"
 	| "gifExportSettings"
 >;
@@ -151,6 +152,7 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	mirrorWebcam: DEFAULT_EDITOR_CONTROLS.mirrorWebcam,
 	cameraSizeDuringZoom: DEFAULT_EDITOR_CONTROLS.cameraSizeDuringZoom,
 	exportFormat: DEFAULT_EDITOR_CONTROLS.exportFormat,
+	exportDestination: DEFAULT_EDITOR_CONTROLS.exportDestination,
 	videoExportSettings: DEFAULT_EDITOR_CONTROLS.videoExportSettings,
 	gifExportSettings: DEFAULT_EDITOR_CONTROLS.gifExportSettings,
 	previewQuality: DEFAULT_PREVIEW_QUALITY,
@@ -304,6 +306,7 @@ function normalizeEditorControls(
 		mirrorWebcam: raw.mirrorWebcam ?? fallback.mirrorWebcam,
 		cameraSizeDuringZoom: raw.cameraSizeDuringZoom ?? fallback.cameraSizeDuringZoom,
 		exportFormat: raw.exportFormat ?? fallback.exportFormat,
+		exportDestination: raw.exportDestination ?? fallback.exportDestination,
 		videoExportSettings:
 			raw.videoExportSettings ?? mapLegacyExportQualityToVideoSettings(legacyRaw.exportQuality),
 		gifExportSettings: raw.gifExportSettings ?? {
@@ -381,6 +384,7 @@ function normalizeEditorControls(
 		mirrorWebcam: normalized.mirrorWebcam,
 		cameraSizeDuringZoom: normalized.cameraSizeDuringZoom,
 		exportFormat: normalized.exportFormat,
+		exportDestination: normalized.exportDestination,
 		videoExportSettings: normalized.videoExportSettings,
 		gifExportSettings: normalized.gifExportSettings,
 	};

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+	type CursorMoveSampleCandidate,
 	hasCursorGeometryChange,
 	shouldRecordCursorMoveSample,
-	type CursorMoveSampleCandidate,
 } from "../../electron/ipc/cursorTelemetryUtils";
 
 const baseSample: CursorMoveSampleCandidate = {

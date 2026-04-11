@@ -117,8 +117,22 @@ export function Navbar() {
 				{ opacity: 1, x: 0, duration: 0.3, stagger: 0.04, ease: "power2.out", delay: 0.1 },
 			);
 		} else {
-			gsap.to(menu, { opacity: 0, y: -8, duration: 0.2, ease: "power2.in", onComplete: () => { gsap.set(menu, { display: "none" }); } });
-			gsap.to(backdrop, { opacity: 0, duration: 0.2, onComplete: () => { gsap.set(backdrop, { display: "none" }); } });
+			gsap.to(menu, {
+				opacity: 0,
+				y: -8,
+				duration: 0.2,
+				ease: "power2.in",
+				onComplete: () => {
+					gsap.set(menu, { display: "none" });
+				},
+			});
+			gsap.to(backdrop, {
+				opacity: 0,
+				duration: 0.2,
+				onComplete: () => {
+					gsap.set(backdrop, { display: "none" });
+				},
+			});
 		}
 	}, [mobileOpen]);
 
@@ -150,10 +164,7 @@ export function Navbar() {
 				/>
 
 				{/* Logo */}
-				<a
-					href="#"
-					className="relative z-10 flex items-center gap-2.5 group"
-				>
+				<a href="#" className="relative z-10 flex items-center gap-2.5 group">
 					<span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.04] border border-white/[0.06]">
 						<img
 							src="/images/screenmint-mark.svg"

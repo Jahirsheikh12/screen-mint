@@ -64,8 +64,14 @@ export function SourceSelector() {
 		}),
 		[],
 	);
-	const { sources: rawSources, loading, loadError, diagnostics, refresh, accessState } =
-		useCaptureSourceAccess(sourceOptions);
+	const {
+		sources: rawSources,
+		loading,
+		loadError,
+		diagnostics,
+		refresh,
+		accessState,
+	} = useCaptureSourceAccess(sourceOptions);
 	const sources = rawSources.map((source) => {
 		const metadata = parseSourceMetadata(source);
 
@@ -125,10 +131,7 @@ export function SourceSelector() {
 				className={`min-h-screen flex flex-col items-center justify-center ${styles.glassContainer}`}
 			>
 				<CaptureAccessNotice
-					title={t(
-						"permissions.screenPermissionTitle",
-						"Allow Screen & System Audio Recording",
-					)}
+					title={t("permissions.screenPermissionTitle", "Allow Screen & System Audio Recording")}
 					description={t(
 						"permissions.sourceSelectorPermissionDescription",
 						"ScreenMint needs macOS Screen & System Audio Recording permission before it can list screens and windows.",

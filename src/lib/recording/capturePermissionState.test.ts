@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
-	resolveCaptureSourceAccessState,
-	summarizeCaptureProbeFailure,
 	type CaptureDiagnostics,
 	type CapturePermissionState,
+	resolveCaptureSourceAccessState,
+	summarizeCaptureProbeFailure,
 } from "./capturePermissionState";
 
 const baseState: CapturePermissionState = {
