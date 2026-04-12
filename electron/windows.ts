@@ -26,9 +26,12 @@ let hudOverlayHiddenFromCapture = true;
 let hudOverlayCaptureProtectionLoaded = false;
 let countdownWindow: BrowserWindow | null = null;
 let areaOverlayWindow: BrowserWindow | null = null;
-let highlightOverlayWindow: BrowserWindow | null = null;
 let speakerNotesWindow: BrowserWindow | null = null;
 let hudCompactLayout: HudCompactLayout = DEFAULT_HUD_COMPACT_LAYOUT;
+let hudContentVisible = false;
+let hudDropdownExpanded = false;
+
+const HUD_DROPDOWN_EXPAND_HEIGHT = 640;
 
 const HUD_OVERLAY_SETTINGS_FILE = path.join(app.getPath("userData"), "hud-overlay-settings.json");
 
@@ -76,12 +79,21 @@ function getScreen() {
 	return nodeRequire("electron").screen as typeof import("electron").screen;
 }
 
+function getCursorDisplayWorkArea() {
+	try {
+		const cursor = getScreen().getCursorScreenPoint();
+		return getScreen().getDisplayNearestPoint(cursor).workArea;
+	} catch {
+		return getScreen().getPrimaryDisplay().workArea;
+	}
+}
+
 function getHudOverlayWorkArea() {
 	if (hudOverlayWindow && !hudOverlayWindow.isDestroyed()) {
 		return getScreen().getDisplayMatching(hudOverlayWindow.getBounds()).workArea;
 	}
 
-	return getScreen().getPrimaryDisplay().workArea;
+	return getCursorDisplayWorkArea();
 }
 
 function applyHudCompactBounds(): void {
@@ -101,6 +113,28 @@ function applyHudCompactBounds(): void {
 	}
 
 	hudOverlayWindow.setBounds(bounds);
+}
+
+function applyHudDropdownExpandedBounds(): void {
+	if (!hudOverlayWindow || hudOverlayWindow.isDestroyed()) {
+		return;
+	}
+
+	const workArea = getHudOverlayWorkArea();
+	const compactBounds = computeHudCompactBounds(workArea, hudCompactLayout);
+	const safeBottomMargin = 5;
+	const desiredHeight = Math.min(
+		HUD_DROPDOWN_EXPAND_HEIGHT,
+		Math.max(compactBounds.height, workArea.height - safeBottomMargin),
+	);
+	const y = Math.max(workArea.y, workArea.y + workArea.height - desiredHeight - safeBottomMargin);
+
+	hudOverlayWindow.setBounds({
+		x: compactBounds.x,
+		y,
+		width: compactBounds.width,
+		height: desiredHeight,
+	});
 }
 
 function pinOverlayWindow(win: BrowserWindow, allowFullscreenVisibility = true): void {
@@ -161,7 +195,12 @@ ipcMain.handle(
 		}
 
 		hudCompactLayout = { width, height };
-		if (!hudContentVisible) {
+		if (hudContentVisible) {
+			return;
+		}
+		if (hudDropdownExpanded) {
+			applyHudDropdownExpandedBounds();
+		} else {
 			applyHudCompactBounds();
 		}
 	},
@@ -169,11 +208,9 @@ ipcMain.handle(
 
 export function createHudOverlayWindow(): BrowserWindow {
 	loadHudOverlayCaptureProtectionSetting();
+	bindDisplayChangeListeners();
 
-	const compactBounds = computeHudCompactBounds(
-		getScreen().getPrimaryDisplay().workArea,
-		hudCompactLayout,
-	);
+	const compactBounds = computeHudCompactBounds(getCursorDisplayWorkArea(), hudCompactLayout);
 
 	const win = new BrowserWindow({
 		width: compactBounds.width,
@@ -226,6 +263,14 @@ export function createHudOverlayWindow(): BrowserWindow {
 	});
 
 	hudOverlayWindow = win;
+
+	win.on("restore", () => {
+		moveHudToCursorDisplay();
+	});
+
+	win.on("show", () => {
+		moveHudToCursorDisplay();
+	});
 
 	win.on("closed", () => {
 		if (hudOverlayWindow === win) {
@@ -312,17 +357,21 @@ export function createEditorWindow(): BrowserWindow {
 }
 
 export function createSourceSelectorWindow(): BrowserWindow {
-	const { width, height } = getScreen().getPrimaryDisplay().workAreaSize;
+	const cursorWorkArea = getCursorDisplayWorkArea();
+	const winWidth = Math.min(760, Math.max(640, Math.round(cursorWorkArea.width * 0.6)));
+	const winHeight = Math.min(620, Math.max(520, Math.round(cursorWorkArea.height * 0.7)));
 
 	const win = new BrowserWindow({
-		width: 620,
-		height: 420,
-		minHeight: 350,
-		maxHeight: 500,
-		x: Math.round((width - 620) / 2),
-		y: Math.round((height - 420) / 2),
+		width: winWidth,
+		height: winHeight,
+		minWidth: 580,
+		minHeight: 480,
+		maxWidth: 960,
+		maxHeight: 780,
+		x: Math.round(cursorWorkArea.x + (cursorWorkArea.width - winWidth) / 2),
+		y: Math.round(cursorWorkArea.y + (cursorWorkArea.height - winHeight) / 2),
 		frame: false,
-		resizable: false,
+		resizable: true,
 		alwaysOnTop: true,
 		transparent: true,
 		show: false,
@@ -433,12 +482,13 @@ export function closeSpeakerNotesWindow(): void {
 }
 
 export function createCountdownWindow(): BrowserWindow {
-	const primaryDisplay = getScreen().getPrimaryDisplay();
-	const { width, height } = primaryDisplay.workAreaSize;
+	const cursor = getScreen().getCursorScreenPoint();
+	const targetDisplay = getScreen().getDisplayNearestPoint(cursor);
+	const { width, height, x: workX, y: workY } = targetDisplay.workArea;
 
-	const windowSize = 300;
-	const x = Math.floor((width - windowSize) / 2);
-	const y = Math.floor((height - windowSize) / 2);
+	const windowSize = Math.max(240, Math.min(420, Math.round(Math.min(width, height) * 0.2)));
+	const x = Math.floor(workX + (width - windowSize) / 2);
+	const y = Math.floor(workY + (height - windowSize) / 2);
 
 	const win = new BrowserWindow({
 		width: windowSize,
@@ -517,6 +567,7 @@ export function createAreaOverlayWindow(displayId?: number): BrowserWindow {
 			bounds.width === targetDisplay.bounds.width &&
 			bounds.height === targetDisplay.bounds.height
 		) {
+			unlockAreaOverlayWindow();
 			areaOverlayWindow.focus();
 			return areaOverlayWindow;
 		}
@@ -549,6 +600,11 @@ export function createAreaOverlayWindow(displayId?: number): BrowserWindow {
 
 	areaOverlayWindow = win;
 	pinOverlayWindow(win);
+	// Exclude the area overlay from screen capture so the amber border is visible
+	// on-screen but never baked into the recorded video.
+	if (isHudOverlayCaptureProtectionSupported()) {
+		win.setContentProtection(true);
+	}
 
 	win.webContents.on("did-finish-load", () => {
 		if (!win.isDestroyed()) {
@@ -580,62 +636,106 @@ export function closeAreaOverlayWindow(): void {
 	}
 }
 
-export function createHighlightOverlayWindow(rect: {
-	x: number;
-	y: number;
-	width: number;
-	height: number;
-}): BrowserWindow {
-	closeHighlightOverlayWindow();
-
-	const borderWidth = 3;
-	const win = new BrowserWindow({
-		x: rect.x - borderWidth,
-		y: rect.y - borderWidth,
-		width: rect.width + borderWidth * 2,
-		height: rect.height + borderWidth * 2,
-		frame: false,
-		transparent: true,
-		resizable: false,
-		alwaysOnTop: true,
-		skipTaskbar: true,
-		hasShadow: false,
-		focusable: false,
-		show: true,
-		webPreferences: {
-			nodeIntegration: false,
-			contextIsolation: true,
-		},
-	});
-
-	win.setIgnoreMouseEvents(true);
-	pinOverlayWindow(win);
-
-	// Render a colored border using inline HTML
-	win.loadURL(
-		`data:text/html,<html><body style="margin:0;padding:0;background:transparent;overflow:hidden;"><div style="position:fixed;inset:0;border:${borderWidth}px solid rgba(245,158,11,0.6);border-radius:4px;pointer-events:none;"></div></body></html>`,
-	);
-
-	highlightOverlayWindow = win;
-
-	win.on("closed", () => {
-		if (highlightOverlayWindow === win) {
-			highlightOverlayWindow = null;
-		}
-	});
-
-	return win;
+export function lockAreaOverlayWindow(): void {
+	if (!areaOverlayWindow || areaOverlayWindow.isDestroyed()) return;
+	areaOverlayWindow.setIgnoreMouseEvents(true, { forward: true });
+	areaOverlayWindow.setFocusable(false);
+	areaOverlayWindow.webContents.send("area-overlay-phase", "locked");
 }
 
-export function closeHighlightOverlayWindow(): void {
-	if (highlightOverlayWindow && !highlightOverlayWindow.isDestroyed()) {
-		highlightOverlayWindow.close();
-		highlightOverlayWindow = null;
-	}
+export function unlockAreaOverlayWindow(): void {
+	if (!areaOverlayWindow || areaOverlayWindow.isDestroyed()) return;
+	areaOverlayWindow.setIgnoreMouseEvents(false);
+	areaOverlayWindow.setFocusable(true);
+	areaOverlayWindow.focus();
+	areaOverlayWindow.webContents.send("area-overlay-phase", "selecting");
 }
 
 // Resize HUD window — toggle between slim toolbar and fullscreen overlay
-let hudContentVisible = false;
+
+let displayChangeListenersBound = false;
+
+function refreshOverlaysForDisplayChange(): void {
+	moveHudToCursorDisplay();
+
+	if (areaOverlayWindow && !areaOverlayWindow.isDestroyed()) {
+		const display = getScreen().getDisplayMatching(areaOverlayWindow.getBounds());
+		areaOverlayWindow.setBounds({
+			x: display.bounds.x,
+			y: display.bounds.y,
+			width: display.bounds.width,
+			height: display.bounds.height,
+		});
+		areaOverlayWindow.webContents.send("display-metrics-changed");
+	}
+
+	if (countdownWindow && !countdownWindow.isDestroyed()) {
+		const display = getScreen().getDisplayMatching(countdownWindow.getBounds());
+		const { width: waw, height: wah, x: wax, y: way } = display.workArea;
+		const size = Math.max(240, Math.min(420, Math.round(Math.min(waw, wah) * 0.2)));
+		countdownWindow.setBounds({
+			width: size,
+			height: size,
+			x: Math.floor(wax + (waw - size) / 2),
+			y: Math.floor(way + (wah - size) / 2),
+		});
+	}
+}
+
+function bindDisplayChangeListeners(): void {
+	if (displayChangeListenersBound) return;
+	displayChangeListenersBound = true;
+	const screen = getScreen();
+	screen.on("display-metrics-changed", refreshOverlaysForDisplayChange);
+	screen.on("display-added", refreshOverlaysForDisplayChange);
+	screen.on("display-removed", refreshOverlaysForDisplayChange);
+}
+
+function moveHudToCursorDisplay(): void {
+	if (!hudOverlayWindow || hudOverlayWindow.isDestroyed()) return;
+	if (hudContentVisible) return;
+
+	const workArea = getCursorDisplayWorkArea();
+	if (hudDropdownExpanded) {
+		const compactBounds = computeHudCompactBounds(workArea, hudCompactLayout);
+		const safeBottomMargin = 5;
+		const desiredHeight = Math.min(
+			HUD_DROPDOWN_EXPAND_HEIGHT,
+			Math.max(compactBounds.height, workArea.height - safeBottomMargin),
+		);
+		const y = Math.max(workArea.y, workArea.y + workArea.height - desiredHeight - safeBottomMargin);
+		hudOverlayWindow.setBounds({
+			x: compactBounds.x,
+			y,
+			width: compactBounds.width,
+			height: desiredHeight,
+		});
+	} else {
+		const bounds = computeHudCompactBounds(workArea, hudCompactLayout);
+		hudOverlayWindow.setBounds(bounds);
+	}
+}
+
+ipcMain.handle("hud-recenter-on-cursor", () => {
+	moveHudToCursorDisplay();
+});
+
+ipcMain.handle("hud-set-dropdown-expanded", (_event, expanded: boolean) => {
+	if (!hudOverlayWindow || hudOverlayWindow.isDestroyed()) return;
+
+	const next = Boolean(expanded);
+	if (next === hudDropdownExpanded) return;
+	hudDropdownExpanded = next;
+
+	// Don't fight the fullscreen content overlay — it owns the bounds while open.
+	if (hudContentVisible) return;
+
+	if (hudDropdownExpanded) {
+		applyHudDropdownExpandedBounds();
+	} else {
+		applyHudCompactBounds();
+	}
+});
 
 ipcMain.handle("resize-hud-window", (_event, contentVisible: boolean) => {
 	if (!hudOverlayWindow || hudOverlayWindow.isDestroyed()) return;
@@ -656,6 +756,8 @@ ipcMain.handle("resize-hud-window", (_event, contentVisible: boolean) => {
 			width: workArea.width,
 			height: workArea.height,
 		});
+	} else if (hudDropdownExpanded) {
+		applyHudDropdownExpandedBounds();
 	} else {
 		applyHudCompactBounds();
 	}

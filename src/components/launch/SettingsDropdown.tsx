@@ -13,6 +13,7 @@ import {
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { notifyHudDropdownToggle } from "./hudDropdownExpansion";
 import styles from "./LaunchWindow.module.css";
 
 type SettingsDropdownProps = {
@@ -24,8 +25,7 @@ type SettingsDropdownProps = {
 	onUpdateSettings: (update: Partial<HudSettings>) => void;
 };
 
-const DROPDOWN_CLASSES =
-	"border-white/[0.08] bg-[rgba(28,28,30,0.97)] text-white/90 backdrop-blur-2xl shadow-xl shadow-black/40";
+const DROPDOWN_CLASSES = "border-white/10 bg-[#1c1c1e] text-white/90 shadow-xl shadow-black/50";
 
 export function SettingsDropdown({
 	hudSettings,
@@ -41,14 +41,14 @@ export function SettingsDropdown({
 	const supportsSpeakerNotes = platform !== null;
 
 	return (
-		<DropdownMenu>
+		<DropdownMenu onOpenChange={notifyHudDropdownToggle}>
 			<DropdownMenuTrigger asChild>
 				<button
 					type="button"
 					title="Settings"
 					className={`flex items-center justify-center rounded-lg w-8 h-8 text-white/25 hover:text-white/55 hover:bg-white/[0.05] transition-colors cursor-pointer ${styles.electronNoDrag}`}
 				>
-					<Settings size={14} />
+					<Settings size={14} strokeWidth={2.5} />
 				</button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent

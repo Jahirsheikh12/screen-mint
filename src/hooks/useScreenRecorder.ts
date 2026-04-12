@@ -638,7 +638,7 @@ export function useScreenRecorder(
 				clearCurrentWebcam: clearCurrentPaths,
 			});
 			resetSegmentBuffers();
-			await window.electronAPI.closeHighlightOverlay();
+			await window.electronAPI.closeAreaOverlay();
 			await window.electronAPI.clearCurrentWebcamPath();
 		},
 		[resetSegmentBuffers],
@@ -825,7 +825,7 @@ export function useScreenRecorder(
 				wgcRecording.current = false;
 				cleanupCapturedMedia();
 				void window.electronAPI.setRecordingState(false);
-				void window.electronAPI.closeHighlightOverlay();
+				void window.electronAPI.closeAreaOverlay();
 				void discardCurrentArtifacts(true);
 				pendingActionRef.current = null;
 				dispatchSession({ type: "reset" });
@@ -1005,6 +1005,10 @@ export function useScreenRecorder(
 						dispatchSession({ type: "resume" });
 					}
 					window.electronAPI?.setRecordingState(true);
+
+					if (captureMode === "area" && recordingSettings?.highlightArea && effectiveSelectedArea) {
+						void window.electronAPI.lockAreaOverlay();
+					}
 
 					if (!isResumingNative && webcamEnabled) {
 						void startWebcamRecording();
@@ -1303,6 +1307,10 @@ export function useScreenRecorder(
 			});
 			window.electronAPI?.setRecordingState(true);
 
+			if (captureMode === "area" && recordingSettings?.highlightArea && effectiveSelectedArea) {
+				void window.electronAPI.lockAreaOverlay();
+			}
+
 			if (webcamEnabled) {
 				void startWebcamRecording();
 			} else {
@@ -1330,6 +1338,7 @@ export function useScreenRecorder(
 		microphoneEnabled,
 		preparePermissions,
 		recordSegment,
+		recordingSettings?.highlightArea,
 		resolvedRecordingProfile.frameRate,
 		resolvedRecordingProfile.height,
 		resolvedRecordingProfile.preferHardwareEncoding,
@@ -1366,7 +1375,7 @@ export function useScreenRecorder(
 				}
 
 				resetSegmentBuffers();
-				await window.electronAPI.closeHighlightOverlay();
+				await window.electronAPI.closeAreaOverlay();
 				await window.electronAPI.setPostRecordingContext({
 					action: recordingSettings?.afterRecordingAction ?? "create-project",
 					openQuickShare: Boolean(recordingSettings?.openQuickShare),
@@ -1414,7 +1423,7 @@ export function useScreenRecorder(
 			});
 			resetSegmentBuffers();
 			if (recordingSettings?.highlightArea) {
-				await window.electronAPI.closeHighlightOverlay();
+				await window.electronAPI.closeAreaOverlay();
 			}
 			pendingActionRef.current = null;
 			dispatchSession({ type: "reset" });
@@ -1472,9 +1481,6 @@ export function useScreenRecorder(
 					webcamRecorder.current.pause();
 				}
 				dispatchSession({ type: "pause" });
-				if (recordingSettings?.highlightArea) {
-					void window.electronAPI.closeHighlightOverlay();
-				}
 			} else if (mediaRecorder.current.state === "paused") {
 				mediaRecorder.current.resume();
 				if (webcamRecorder.current?.state === "paused") {
@@ -1498,13 +1504,7 @@ export function useScreenRecorder(
 		})().catch((error) => {
 			console.error("Failed to toggle pause for native recording:", error);
 		});
-	}, [
-		recording,
-		recordingSettings?.highlightArea,
-		starting,
-		stopActiveNativeSegment,
-		startRecording,
-	]);
+	}, [recording, starting, stopActiveNativeSegment, startRecording]);
 
 	const retakeRecording = useCallback(() => {
 		if (!recording || starting || finalizingRecordingRef.current) {

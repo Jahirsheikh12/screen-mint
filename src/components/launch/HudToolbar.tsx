@@ -1,7 +1,7 @@
 import { Languages } from "lucide-react";
 import { BsRecordCircle } from "react-icons/bs";
 import { FaPause, FaPlay, FaRegStopCircle } from "react-icons/fa";
-import { FaFolderOpen } from "react-icons/fa6";
+// import { FaFolderOpen } from "react-icons/fa6"; // re-enable when file options are restored
 import { FiMinus, FiRotateCcw, FiTrash2, FiX } from "react-icons/fi";
 import {
 	MdCropFree,
@@ -11,7 +11,7 @@ import {
 	MdMonitor,
 	MdVideocam,
 	MdVideocamOff,
-	MdVideoFile,
+	// MdVideoFile, // re-enable when file options are restored
 	MdVolumeOff,
 	MdVolumeUp,
 	MdWindow,
@@ -32,6 +32,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { notifyHudDropdownToggle } from "./hudDropdownExpansion";
 import styles from "./LaunchWindow.module.css";
 import { SettingsDropdown } from "./SettingsDropdown";
 
@@ -90,8 +91,7 @@ const MODE_ICONS: Record<HudMode, React.ComponentType<{ size?: number; className
 	device: MdDevices,
 };
 
-const DROPDOWN_CLASSES =
-	"border-white/[0.08] bg-[rgba(28,28,30,0.97)] text-white/90 backdrop-blur-2xl shadow-xl shadow-black/40";
+const DROPDOWN_CLASSES = "border-white/10 bg-[#1c1c1e] text-white/90 shadow-xl shadow-black/50";
 
 const LOCALE_LABELS: Record<string, string> = { en: "EN", es: "ES", "zh-CN": "\u4E2D\u6587" };
 
@@ -125,8 +125,8 @@ export function HudToolbar({
 	selectedMicDeviceId,
 	setSelectedMicDeviceId,
 	audioLevel,
-	onOpenVideoFile,
-	onOpenProject,
+	// onOpenVideoFile, // re-enable when file options are restored
+	// onOpenProject, // re-enable when file options are restored
 	onHide,
 	onClose,
 	hudSettings,
@@ -155,7 +155,7 @@ export function HudToolbar({
 	/* ── Recording state: compact bar ── */
 	if (recording) {
 		return (
-			<div className="flex items-center gap-1.5 px-2.5 py-[7px]">
+			<div className="flex flex-nowrap items-center gap-1.5 whitespace-nowrap px-2.5 py-[7px]">
 				{/* Timer chip */}
 				<div
 					className={`flex shrink-0 items-center gap-2 rounded-lg px-2.5 py-1.5 ${
@@ -172,24 +172,24 @@ export function HudToolbar({
 					</span>
 				</div>
 
-				<div className="h-4 w-px bg-white/[0.06] mx-0.5" />
+				<div className="h-4 w-px bg-white/[0.06] mx-0.5 shrink-0" />
 
 				{/* Control buttons */}
-				<div className={`${ND} flex items-center gap-1`}>
-					{/* Pause / Resume */}
+				<div className={`${ND} flex shrink-0 items-center gap-1`}>
+					{/* Pause / Resume — icon-only to stay i18n-safe */}
 					<button
 						type="button"
 						onClick={onTogglePause}
 						disabled={actionBusy}
 						title={paused ? t("recording.resumeRecording") : t("recording.pauseRecording")}
-						className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-all ${
+						aria-label={paused ? t("recording.resumeRecording") : t("recording.pauseRecording")}
+						className={`flex items-center justify-center rounded-lg w-7 h-7 transition-all ${
 							paused
 								? "bg-yellow-500/[0.1] text-yellow-400 hover:bg-yellow-500/[0.18]"
 								: "bg-white/[0.05] text-white/55 hover:bg-white/[0.1] hover:text-white/80"
 						} ${actionBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
 					>
-						{paused ? <FaPlay size={9} /> : <FaPause size={9} />}
-						<span>{paused ? t("recording.resumeRecording") : t("recording.pauseRecording")}</span>
+						{paused ? <FaPlay size={10} /> : <FaPause size={10} />}
 					</button>
 
 					{/* Retake */}
@@ -200,7 +200,7 @@ export function HudToolbar({
 						title={t("recording.retakeRecording")}
 						className={`flex items-center justify-center rounded-lg w-7 h-7 text-white/40 transition-all hover:bg-white/[0.08] hover:text-white/70 ${actionBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
 					>
-						<FiRotateCcw size={12} />
+						<FiRotateCcw size={12} strokeWidth={2.75} />
 					</button>
 
 					{/* Delete */}
@@ -211,21 +211,21 @@ export function HudToolbar({
 						title={t("recording.deleteRecording")}
 						className={`flex items-center justify-center rounded-lg w-7 h-7 text-white/30 transition-all hover:bg-red-500/[0.08] hover:text-red-400/80 ${actionBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
 					>
-						<FiTrash2 size={12} />
+						<FiTrash2 size={12} strokeWidth={2.75} />
 					</button>
 				</div>
 
-				<div className="h-4 w-px bg-white/[0.06] mx-0.5" />
+				<div className="h-4 w-px bg-white/[0.06] mx-0.5 shrink-0" />
 
 				{/* Stop button — prominent */}
 				<button
 					type="button"
 					onClick={onToggleRecording}
 					disabled={actionBusy}
-					className={`${ND} flex items-center gap-1.5 rounded-lg bg-red-500/[0.12] px-3 py-1.5 text-[11px] font-semibold text-red-400 transition-all hover:bg-red-500/[0.22] hover:text-red-300 ${actionBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+					className={`${ND} flex shrink-0 items-center gap-1.5 rounded-lg bg-red-500/[0.12] px-3 py-1.5 text-[11px] font-semibold text-red-400 transition-all hover:bg-red-500/[0.22] hover:text-red-300 ${actionBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
 				>
 					<FaRegStopCircle size={10} />
-					<span>{t("recording.stopRecording")}</span>
+					<span className="max-w-[120px] truncate">{t("recording.stopRecording")}</span>
 				</button>
 
 				{/* Minimize */}
@@ -235,7 +235,7 @@ export function HudToolbar({
 					title={t("recording.hideHud")}
 					className={`${ND} flex items-center justify-center rounded-lg w-7 h-7 text-white/20 transition-colors hover:bg-white/[0.06] hover:text-white/45 cursor-pointer ml-0.5`}
 				>
-					<FiMinus size={12} />
+					<FiMinus size={12} strokeWidth={3} />
 				</button>
 			</div>
 		);
@@ -244,8 +244,10 @@ export function HudToolbar({
 	/* ── Idle state: full toolbar ── */
 	return (
 		<div
+			className="whitespace-nowrap"
 			style={{
 				display: "flex",
+				flexWrap: "nowrap",
 				alignItems: "center",
 				gap: 6,
 				padding: "6px 10px",
@@ -259,13 +261,13 @@ export function HudToolbar({
 				title={t("recording.closeApp")}
 				className={`${ND} flex items-center justify-center rounded-lg p-2 text-white/25 hover:text-red-400 hover:bg-white/[0.06] transition-colors cursor-pointer`}
 			>
-				<FiX size={14} />
+				<FiX size={14} strokeWidth={2.75} />
 			</button>
 
-			<div className="h-4 w-px bg-white/[0.06] mx-0.5" />
+			<div className="h-4 w-px bg-white/[0.06] mx-0.5 shrink-0" />
 
 			{/* Segmented tab control */}
-			<div className={`${ND} flex items-center rounded-[10px] bg-white/[0.04] p-[3px]`}>
+			<div className={`${ND} flex shrink-0 items-center rounded-[10px] bg-white/[0.04] p-[3px]`}>
 				{tabs.map((tab) => {
 					const Icon = MODE_ICONS[tab];
 					const isActive = mode === tab && contentPanelVisible;
@@ -275,20 +277,20 @@ export function HudToolbar({
 							type="button"
 							onClick={() => onTabClick(tab)}
 							disabled={recording}
-							className={`flex items-center gap-1.5 rounded-[7px] px-2.5 py-[6px] text-[11px] font-medium transition-all ${
+							className={`flex shrink-0 items-center gap-1.5 rounded-[7px] px-2.5 py-[6px] text-[11px] font-medium transition-all ${
 								isActive
 									? "bg-white/[0.1] text-white/90 shadow-sm"
 									: "text-white/35 hover:text-white/60"
 							} cursor-pointer`}
 						>
-							<Icon size={13} />
-							<span>{t(`tabs.${tab}`)}</span>
+							<Icon size={13} className="shrink-0" />
+							<span className="max-w-[88px] truncate">{t(`tabs.${tab}`)}</span>
 						</button>
 					);
 				})}
 			</div>
 
-			<div className="h-4 w-px bg-white/[0.06] mx-0.5" />
+			<div className="h-4 w-px bg-white/[0.06] mx-0.5 shrink-0" />
 
 			{showQuickRecord && (
 				<>
@@ -296,24 +298,25 @@ export function HudToolbar({
 						type="button"
 						onClick={onQuickRecord}
 						disabled={quickRecordDisabled}
-						className={`${ND} flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-semibold transition-all ${
+						title={t("recording.startRecording")}
+						className={`${ND} flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-semibold transition-all ${
 							quickRecordDisabled
 								? "cursor-not-allowed bg-red-500/15 text-white/30"
 								: "cursor-pointer bg-red-500 text-white shadow-lg shadow-red-500/20 hover:bg-red-600"
 						}`}
 					>
-						<BsRecordCircle size={12} />
-						<span>{t("recording.startRecording")}</span>
+						<BsRecordCircle size={12} className="shrink-0" />
+						<span className="max-w-[88px] truncate">{t("recording.record")}</span>
 					</button>
 
-					<div className="h-4 w-px bg-white/[0.06] mx-0.5" />
+					<div className="h-4 w-px bg-white/[0.06] mx-0.5 shrink-0" />
 				</>
 			)}
 
 			{/* Media controls */}
-			<div className={`${ND} flex items-center`}>
+			<div className={`${ND} flex shrink-0 items-center`}>
 				{/* Camera dropdown */}
-				<DropdownMenu>
+				<DropdownMenu onOpenChange={notifyHudDropdownToggle}>
 					<DropdownMenuTrigger asChild>
 						<button
 							type="button"
@@ -378,7 +381,7 @@ export function HudToolbar({
 				</DropdownMenu>
 
 				{/* Microphone dropdown */}
-				<DropdownMenu>
+				<DropdownMenu onOpenChange={notifyHudDropdownToggle}>
 					<DropdownMenuTrigger asChild>
 						<button
 							type="button"
@@ -460,10 +463,12 @@ export function HudToolbar({
 				</button>
 			</div>
 
-			<div className="h-4 w-px bg-white/[0.06] mx-0.5" />
+			<div className="h-4 w-px bg-white/[0.06] mx-0.5 shrink-0" />
 
 			{/* Right utilities */}
-			<div className={`${ND} flex items-center`}>
+			<div className={`${ND} flex shrink-0 items-center`}>
+				{/* File options temporarily hidden — keep wired for future re-enable */}
+				{/*
 				<button
 					type="button"
 					onClick={onOpenVideoFile}
@@ -480,16 +485,17 @@ export function HudToolbar({
 				>
 					<FaFolderOpen size={12} />
 				</button>
+				*/}
 
 				{/* Language selector */}
-				<DropdownMenu>
+				<DropdownMenu onOpenChange={notifyHudDropdownToggle}>
 					<DropdownMenuTrigger asChild>
 						<button
 							type="button"
 							title="Language"
 							className="flex items-center justify-center rounded-lg w-8 h-8 text-white/25 hover:text-white/55 hover:bg-white/[0.05] transition-colors cursor-pointer"
 						>
-							<Languages size={13} />
+							<Languages size={13} strokeWidth={2.5} />
 						</button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent
@@ -517,11 +523,11 @@ export function HudToolbar({
 					title={t("recording.hideHud")}
 					className="flex items-center justify-center rounded-lg w-8 h-8 text-white/25 hover:text-white/55 hover:bg-white/[0.05] transition-colors cursor-pointer"
 				>
-					<FiMinus size={14} />
+					<FiMinus size={14} strokeWidth={3} />
 				</button>
 			</div>
 
-			<div className="h-4 w-px bg-white/[0.06] mx-0.5" />
+			<div className="h-4 w-px bg-white/[0.06] mx-0.5 shrink-0" />
 
 			{/* Settings gear */}
 			<SettingsDropdown

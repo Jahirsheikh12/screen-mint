@@ -41,18 +41,76 @@ function isDragActive(d: DragState) {
 	return d.kind !== "idle" && d.kind !== "draw-pending";
 }
 
+type AspectLock = { ratio: number; label: string } | null;
+
+const ASPECT_PRESETS: { id: string; label: string; ratio: number | null }[] = [
+	{ id: "free", label: "Free", ratio: null },
+	{ id: "16:9", label: "16:9", ratio: 16 / 9 },
+	{ id: "4:3", label: "4:3", ratio: 4 / 3 },
+	{ id: "1:1", label: "1:1", ratio: 1 },
+	{ id: "9:16", label: "9:16", ratio: 9 / 16 },
+];
+
+type Phase = "selecting" | "locked";
+
 export function AreaSelectionOverlay() {
 	const t = useScopedT("launch");
 	const [rect, setRect] = useState<Rect>({ x: 120, y: 120, width: 800, height: 450 });
 	const [display, setDisplay] = useState<DisplayInfo | null>(null);
 	const [drag, setDrag] = useState<DragState>(IDLE);
 	const [shiftKey, setShiftKey] = useState(false);
+	const [aspectLock, setAspectLock] = useState<AspectLock>(null);
+	const [phase, setPhase] = useState<Phase>("selecting");
+
+	useEffect(() => {
+		const off = window.electronAPI.onAreaOverlayPhase?.((nextPhase) => {
+			setPhase(nextPhase);
+			if (nextPhase === "selecting") {
+				setDrag(IDLE);
+			}
+		});
+		return () => {
+			off?.();
+		};
+	}, []);
 	const widthRef = useRef<HTMLInputElement>(null);
 	const heightRef = useRef<HTMLInputElement>(null);
 
 	// ── Initialise display info and restore existing area ─────────────────
 	useEffect(() => {
 		let cancelled = false;
+		const refreshDisplay = async () => {
+			const info = await window.electronAPI.getDisplayInfo();
+			if (cancelled) return;
+			const source = await window.electronAPI.getSelectedSource();
+			if (cancelled) return;
+			const displayId = Number(source?.display_id);
+			const found =
+				info.success && Number.isFinite(displayId)
+					? (info.displays.find((d) => d.id === displayId) ?? null)
+					: null;
+			if (found) {
+				setDisplay((prev) => {
+					if (
+						prev &&
+						prev.id === found.id &&
+						prev.x === found.x &&
+						prev.y === found.y &&
+						prev.width === found.width &&
+						prev.height === found.height
+					) {
+						return prev;
+					}
+					return found;
+				});
+			}
+		};
+
+		const onResize = () => {
+			void refreshDisplay();
+		};
+		window.addEventListener("resize", onResize);
+
 		void (async () => {
 			const [source, info, areaRes] = await Promise.all([
 				window.electronAPI.getSelectedSource(),
@@ -105,6 +163,7 @@ export function AreaSelectionOverlay() {
 		})();
 		return () => {
 			cancelled = true;
+			window.removeEventListener("resize", onResize);
 		};
 	}, []);
 
@@ -152,14 +211,14 @@ export function AreaSelectionOverlay() {
 					next.height = Math.max(MIN_SIZE, s.height + dy);
 				}
 
-				// Shift + corner = 16:9 aspect ratio lock
-				if (shiftKey && h.length === 2) {
-					const ratio = 16 / 9;
-					if (next.width / next.height > ratio) {
-						next.width = Math.round(next.height * ratio);
+				// Aspect ratio lock — sticky preset takes precedence, shift+corner falls back to 16:9
+				const lockedRatio = aspectLock?.ratio ?? (shiftKey && h.length === 2 ? 16 / 9 : null);
+				if (lockedRatio) {
+					if (next.width / next.height > lockedRatio) {
+						next.width = Math.round(next.height * lockedRatio);
 						if (h.includes("w")) next.x = rightEdge - next.width;
 					} else {
-						next.height = Math.round(next.width / ratio);
+						next.height = Math.round(next.width / lockedRatio);
 						if (h.includes("n")) next.y = bottomEdge - next.height;
 					}
 				}
@@ -206,7 +265,7 @@ export function AreaSelectionOverlay() {
 			window.removeEventListener("pointerup", onUp);
 			window.removeEventListener("blur", onBlur);
 		};
-	}, [display, drag, shiftKey]);
+	}, [aspectLock, display, drag, shiftKey]);
 
 	// ── Track Shift key for aspect-ratio lock ─────────────────────────────
 	useEffect(() => {
@@ -243,7 +302,8 @@ export function AreaSelectionOverlay() {
 				display.id,
 			);
 			await window.electronAPI.setSelectedArea(area);
-			await window.electronAPI.closeAreaOverlay();
+			setPhase("locked");
+			await window.electronAPI.lockAreaOverlay();
 		})();
 	}, [display, rect]);
 
@@ -305,6 +365,37 @@ export function AreaSelectionOverlay() {
 					display,
 				),
 			);
+		},
+		[display],
+	);
+
+	const applyAspectPreset = useCallback(
+		(preset: { id: string; label: string; ratio: number | null }) => {
+			if (preset.ratio == null) {
+				setAspectLock(null);
+				return;
+			}
+			setAspectLock({ ratio: preset.ratio, label: preset.label });
+			if (!display) return;
+			setRect((r) => {
+				let w = r.width;
+				let h = Math.round(w / preset.ratio!);
+				if (h > display.height) {
+					h = display.height;
+					w = Math.round(h * preset.ratio!);
+				}
+				const cx = r.x + r.width / 2;
+				const cy = r.y + r.height / 2;
+				return clampRect(
+					{
+						x: Math.round(cx - w / 2),
+						y: Math.round(cy - h / 2),
+						width: w,
+						height: h,
+					},
+					display,
+				);
+			});
 		},
 		[display],
 	);
@@ -462,8 +553,8 @@ export function AreaSelectionOverlay() {
 	const panelPos = useMemo(() => {
 		const vw = display?.width ?? window.innerWidth;
 		const vh = display?.height ?? window.innerHeight;
-		const pw = 480;
-		const ph = 52;
+		const pw = 720;
+		const ph = 60;
 		const gap = 16;
 
 		const left = clamp(rect.x + rect.width / 2, pw / 2 + gap, vw - pw / 2 - gap);
@@ -474,6 +565,49 @@ export function AreaSelectionOverlay() {
 
 	const active = isDragActive(drag);
 	const showPanel = drag.kind !== "draw" && drag.kind !== "draw-pending";
+
+	if (phase === "locked") {
+		return (
+			<div
+				className="fixed inset-0"
+				style={{ pointerEvents: "none", background: "transparent" }}
+			>
+				<svg className="absolute inset-0 h-full w-full">
+					<title>Selected recording area</title>
+					<defs>
+						<mask id="area-mask-locked">
+							<rect width="100%" height="100%" fill="white" />
+							<rect
+								x={rect.x}
+								y={rect.y}
+								width={rect.width}
+								height={rect.height}
+								fill="black"
+							/>
+						</mask>
+					</defs>
+					{/* Dark mask over the non-recorded area — same visual as selection phase */}
+					<rect width="100%" height="100%" fill="rgba(0,0,0,0.5)" mask="url(#area-mask-locked)" />
+					{/* Selection border */}
+					<rect
+						x={rect.x}
+						y={rect.y}
+						width={rect.width}
+						height={rect.height}
+						fill="none"
+						stroke="rgba(245,158,11,0.9)"
+						strokeWidth={2}
+					/>
+					{/* Corner brackets */}
+					<g fill="none" stroke="#F59E0B" strokeWidth={BRACKET_W} strokeLinecap="square">
+						{bracketPaths.map((d) => (
+							<path key={d} d={d} />
+						))}
+					</g>
+				</svg>
+			</div>
+		);
+	}
 
 	return (
 		<div
@@ -645,27 +779,14 @@ export function AreaSelectionOverlay() {
 						top: panelPos.top,
 						transform: "translateX(-50%)",
 					}}
-					className="flex items-center gap-2.5 whitespace-nowrap rounded-2xl border border-amber-500/15 bg-[linear-gradient(180deg,rgba(8,13,11,0.97)_0%,rgba(8,11,10,0.94)_100%)] px-3 py-2.5 text-xs text-white shadow-[0_18px_48px_rgba(0,0,0,0.38)] backdrop-blur-2xl"
+					className="flex items-center gap-2 whitespace-nowrap rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(18,18,22,0.97)_0%,rgba(10,10,13,0.96)_100%)] px-3 py-2 text-xs text-white shadow-[0_24px_60px_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,255,255,0.04)_inset] backdrop-blur-2xl"
 					onPointerDown={(e) => e.stopPropagation()}
 				>
-					{/* Size readout */}
-					<div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-2.5 py-1.5">
-						<span className="text-[10px] font-medium uppercase tracking-widest text-white/35">
-							Size
-						</span>
-						<span className="font-semibold tabular-nums leading-none text-white/90">
-							{t("area.areaSize", "{{width}} \u00d7 {{height}}", {
-								width: Math.round(rect.width),
-								height: Math.round(rect.height),
-							})}
-						</span>
-					</div>
-
-					{/* Dimension inputs */}
+					{/* Dimension inputs (W × H) */}
 					{display && (
-						<div className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-2 py-1.5">
-							<label className="flex items-center gap-1.5 rounded-lg border border-white/8 bg-black/20 px-2 py-1 text-[11px] text-white/60">
-								<span className="font-semibold tracking-widest text-white/35">W</span>
+						<div className="flex items-center gap-1 rounded-xl border border-white/[0.08] bg-white/[0.04] px-1.5 py-1">
+							<label className="flex items-center gap-1.5 rounded-lg bg-black/30 px-2 py-1 text-[11px]">
+								<span className="font-semibold tracking-widest text-white/30">W</span>
 								<input
 									ref={widthRef}
 									type="number"
@@ -677,11 +798,12 @@ export function AreaSelectionOverlay() {
 										if (e.key === "Enter") (e.target as HTMLInputElement).blur();
 										if (e.key.startsWith("Arrow")) e.stopPropagation();
 									}}
-									className="w-14 bg-transparent text-right font-semibold text-white outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+									className="w-14 bg-transparent text-right font-semibold tabular-nums text-white outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
 								/>
 							</label>
-							<label className="flex items-center gap-1.5 rounded-lg border border-white/8 bg-black/20 px-2 py-1 text-[11px] text-white/60">
-								<span className="font-semibold tracking-widest text-white/35">H</span>
+							<span className="text-white/25 text-[11px] select-none">×</span>
+							<label className="flex items-center gap-1.5 rounded-lg bg-black/30 px-2 py-1 text-[11px]">
+								<span className="font-semibold tracking-widest text-white/30">H</span>
 								<input
 									ref={heightRef}
 									type="number"
@@ -693,19 +815,53 @@ export function AreaSelectionOverlay() {
 										if (e.key === "Enter") (e.target as HTMLInputElement).blur();
 										if (e.key.startsWith("Arrow")) e.stopPropagation();
 									}}
-									className="w-14 bg-transparent text-right font-semibold text-white outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+									className="w-14 bg-transparent text-right font-semibold tabular-nums text-white outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
 								/>
 							</label>
 						</div>
 					)}
 
-					<div className="h-7 w-px bg-white/10" />
+					{/* Position chip */}
+					<div className="flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.04] px-2.5 py-1.5">
+						<span className="text-[10px] font-semibold uppercase tracking-widest text-white/30">
+							Pos
+						</span>
+						<span className="font-semibold tabular-nums leading-none text-white/85">
+							{Math.round(rect.x)}, {Math.round(rect.y)}
+						</span>
+					</div>
 
-					<div className="flex items-center gap-2">
+					<div className="h-7 w-px bg-white/[0.06]" />
+
+					{/* Aspect ratio presets */}
+					<div className="flex items-center gap-0.5 rounded-xl border border-white/[0.08] bg-white/[0.04] p-0.5">
+						{ASPECT_PRESETS.map((preset) => {
+							const active =
+								(preset.ratio == null && aspectLock == null) || aspectLock?.label === preset.label;
+							return (
+								<button
+									key={preset.id}
+									type="button"
+									onClick={() => applyAspectPreset(preset)}
+									className={`rounded-lg px-2 py-1 text-[10.5px] font-semibold tracking-wide transition-all ${
+										active
+											? "bg-gradient-to-b from-amber-400/25 to-amber-500/15 text-amber-300 shadow-[0_0_0_1px_rgba(245,158,11,0.35)]"
+											: "text-white/55 hover:bg-white/[0.06] hover:text-white/90"
+									}`}
+								>
+									{preset.label}
+								</button>
+							);
+						})}
+					</div>
+
+					<div className="h-7 w-px bg-white/[0.06]" />
+
+					<div className="flex items-center gap-1.5">
 						<button
 							type="button"
 							onClick={closeOverlay}
-							className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5 text-white/70 transition-colors hover:bg-white/[0.09] hover:text-white"
+							className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 text-white/70 transition-all hover:bg-white/[0.08] hover:text-white"
 						>
 							<FiX size={13} />
 							<span className="font-medium">{t("area.cancelSelection")}</span>
@@ -713,9 +869,9 @@ export function AreaSelectionOverlay() {
 						<button
 							type="button"
 							onClick={confirmSelection}
-							className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-3.5 py-1.5 font-semibold text-[#1a0f00] transition-colors hover:bg-amber-400"
+							className="flex items-center gap-1.5 rounded-xl border border-amber-500/60 bg-gradient-to-b from-amber-300 to-amber-500 px-3.5 py-1.5 font-semibold text-[#1a0f00] shadow-[0_4px_14px_rgba(245,158,11,0.35),0_1px_0_rgba(255,255,255,0.4)_inset] transition-all hover:from-amber-200 hover:to-amber-400"
 						>
-							<FiCheck size={13} />
+							<FiCheck size={13} strokeWidth={3} />
 							<span>{t("area.confirmSelection")}</span>
 						</button>
 					</div>

@@ -1,14 +1,22 @@
-import { useEffect, useMemo, useState } from "react";
-import { MdCheck } from "react-icons/md";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FiCheck, FiMonitor, FiSearch, FiSquare, FiX } from "react-icons/fi";
 import { CaptureAccessNotice } from "@/components/launch/CaptureAccessNotice";
 import { useScopedT } from "../../contexts/I18nContext";
 import { useCaptureSourceAccess } from "../../hooks/useCaptureSourceAccess";
-import { Button } from "../ui/button";
-import { Card } from "../ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import styles from "./SourceSelector.module.css";
 
-interface DesktopSource {
+type ProcessedDesktopSource = {
+	id: string;
+	name: string;
+	thumbnail: string | null;
+	display_id: string;
+	appIcon: string | null;
+	sourceType?: "screen" | "window";
+	appName?: string;
+	windowTitle?: string;
+};
+
+type DesktopSource = {
 	id: string;
 	name: string;
 	thumbnail: string | null;
@@ -18,7 +26,9 @@ interface DesktopSource {
 	sourceType: "screen" | "window";
 	appName?: string;
 	windowTitle?: string;
-}
+};
+
+type TabKey = "screens" | "windows";
 
 function parseSourceMetadata(source: ProcessedDesktopSource) {
 	if (source.sourceType === "window" && (source.appName || source.windowTitle)) {
@@ -35,7 +45,6 @@ function parseSourceMetadata(source: ProcessedDesktopSource) {
 		const [appNamePart, ...windowTitleParts] = source.name.split(" — ");
 		const appName = appNamePart?.trim() || undefined;
 		const windowTitle = windowTitleParts.join(" — ").trim() || source.name.trim();
-
 		return {
 			sourceType,
 			appName,
@@ -52,14 +61,31 @@ function parseSourceMetadata(source: ProcessedDesktopSource) {
 	};
 }
 
+function SkeletonGrid() {
+	return (
+		<div className={styles.skeletonGrid}>
+			{Array.from({ length: 6 }, (_, i) => `sk-${i}`).map((key) => (
+				<div key={key} className={styles.skeletonCard}>
+					<div className={styles.skeletonThumb} />
+					<div className={styles.skeletonText} />
+				</div>
+			))}
+		</div>
+	);
+}
+
 export function SourceSelector() {
 	const t = useScopedT("launch");
-	const [selectedSource, setSelectedSource] = useState<DesktopSource | null>(null);
-	const [activeTab, setActiveTab] = useState<"screens" | "windows">("screens");
+	const [selectedId, setSelectedId] = useState<string | null>(null);
+	const [activeTab, setActiveTab] = useState<TabKey>("screens");
+	const [search, setSearch] = useState("");
+	const [focusIndex, setFocusIndex] = useState(0);
+	const gridRef = useRef<HTMLDivElement>(null);
+
 	const sourceOptions = useMemo<Electron.SourcesOptions>(
 		() => ({
 			types: ["screen", "window"],
-			thumbnailSize: { width: 320, height: 180 },
+			thumbnailSize: { width: 480, height: 270 },
 			fetchWindowIcons: true,
 		}),
 		[],
@@ -72,250 +98,359 @@ export function SourceSelector() {
 		refresh,
 		accessState,
 	} = useCaptureSourceAccess(sourceOptions);
-	const sources = rawSources.map((source) => {
-		const metadata = parseSourceMetadata(source);
 
-		return {
-			id: source.id,
-			name: metadata.displayName,
-			thumbnail: source.thumbnail,
-			display_id: source.display_id,
-			appIcon: source.appIcon,
-			originalName: source.name,
-			sourceType: metadata.sourceType,
-			appName: metadata.appName,
-			windowTitle: metadata.windowTitle,
-		};
-	});
+	const sources: DesktopSource[] = useMemo(
+		() =>
+			rawSources.map((source) => {
+				const metadata = parseSourceMetadata(source);
+				return {
+					id: source.id,
+					name: metadata.displayName,
+					thumbnail: source.thumbnail,
+					display_id: source.display_id,
+					appIcon: source.appIcon,
+					originalName: source.name,
+					sourceType: metadata.sourceType,
+					appName: metadata.appName,
+					windowTitle: metadata.windowTitle,
+				};
+			}),
+		[rawSources],
+	);
 
-	const screenSources = sources.filter((s) => s.id.startsWith("screen:"));
-	const windowSources = sources.filter((s) => s.id.startsWith("window:"));
+	const screenSources = useMemo(() => sources.filter((s) => s.sourceType === "screen"), [sources]);
+	const windowSources = useMemo(() => sources.filter((s) => s.sourceType === "window"), [sources]);
+
+	const visibleSources = useMemo(() => {
+		const list = activeTab === "screens" ? screenSources : windowSources;
+		const q = search.trim().toLowerCase();
+		if (!q) return list;
+		return list.filter(
+			(s) =>
+				s.name.toLowerCase().includes(q) ||
+				s.appName?.toLowerCase().includes(q) ||
+				s.originalName.toLowerCase().includes(q),
+		);
+	}, [activeTab, screenSources, windowSources, search]);
 
 	useEffect(() => {
-		if (loading) {
-			return;
-		}
-
+		if (loading) return;
 		if (screenSources.length === 0 && windowSources.length > 0) {
 			setActiveTab("windows");
-			return;
-		}
-
-		if (windowSources.length === 0 && screenSources.length > 0) {
+		} else if (windowSources.length === 0 && screenSources.length > 0) {
 			setActiveTab("screens");
 		}
 	}, [loading, screenSources.length, windowSources.length]);
 
-	const handleSourceSelect = (source: DesktopSource) => setSelectedSource(source);
-	const handleShare = async () => {
-		if (selectedSource) await window.electronAPI.selectSource(selectedSource);
-	};
+	useEffect(() => {
+		setFocusIndex(0);
+		setSelectedId(null);
+	}, [activeTab]);
 
-	if (loading) {
-		return (
-			<div
-				className={`h-full flex items-center justify-center ${styles.glassContainer}`}
-				style={{ minHeight: "100vh" }}
-			>
-				<div className="text-center">
-					<div className="animate-spin rounded-full h-6 w-6 border-b-2 border-zinc-600 mx-auto mb-2" />
-					<p className="text-xs text-zinc-300">{t("sourceSelector.loadingSources")}</p>
-				</div>
-			</div>
-		);
-	}
+	useEffect(() => {
+		if (focusIndex >= visibleSources.length) {
+			setFocusIndex(Math.max(0, visibleSources.length - 1));
+		}
+	}, [visibleSources.length, focusIndex]);
+
+	const handleShare = useCallback(async () => {
+		const target = visibleSources.find((s) => s.id === selectedId);
+		if (target) await window.electronAPI.selectSource(target);
+	}, [selectedId, visibleSources]);
+
+	const handleCancel = useCallback(() => {
+		window.close();
+	}, []);
+
+	useEffect(() => {
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key === "Escape") {
+				e.preventDefault();
+				handleCancel();
+				return;
+			}
+			if (e.key === "Enter") {
+				if (selectedId) {
+					e.preventDefault();
+					void handleShare();
+				} else if (visibleSources[focusIndex]) {
+					e.preventDefault();
+					setSelectedId(visibleSources[focusIndex].id);
+				}
+				return;
+			}
+			if (e.key === "Tab") {
+				e.preventDefault();
+				setActiveTab((prev) => (prev === "screens" ? "windows" : "screens"));
+				return;
+			}
+			if (!visibleSources.length) return;
+
+			const cols = Math.max(
+				1,
+				Math.floor((gridRef.current?.clientWidth ?? 0) / (activeTab === "screens" ? 232 : 192)),
+			);
+
+			const moveFocus = (next: number) => {
+				const clamped = Math.max(0, Math.min(visibleSources.length - 1, next));
+				setFocusIndex(clamped);
+				setSelectedId(visibleSources[clamped]?.id ?? null);
+			};
+
+			if (e.key === "ArrowRight") {
+				e.preventDefault();
+				moveFocus(focusIndex + 1);
+			} else if (e.key === "ArrowLeft") {
+				e.preventDefault();
+				moveFocus(focusIndex - 1);
+			} else if (e.key === "ArrowDown") {
+				e.preventDefault();
+				moveFocus(focusIndex + cols);
+			} else if (e.key === "ArrowUp") {
+				e.preventDefault();
+				moveFocus(focusIndex - cols);
+			}
+		};
+		window.addEventListener("keydown", onKey);
+		return () => window.removeEventListener("keydown", onKey);
+	}, [activeTab, focusIndex, handleCancel, handleShare, selectedId, visibleSources]);
+
+	const onCardClick = useCallback(
+		(source: DesktopSource, index: number) => {
+			if (selectedId === source.id) {
+				void handleShare();
+				return;
+			}
+			setSelectedId(source.id);
+			setFocusIndex(index);
+		},
+		[handleShare, selectedId],
+	);
 
 	if (accessState && !accessState.canProbeSources) {
 		return (
-			<div
-				className={`min-h-screen flex flex-col items-center justify-center ${styles.glassContainer}`}
-			>
-				<CaptureAccessNotice
-					title={t("permissions.screenPermissionTitle", "Allow Screen & System Audio Recording")}
-					description={t(
-						"permissions.sourceSelectorPermissionDescription",
-						"ScreenMint needs macOS Screen & System Audio Recording permission before it can list screens and windows.",
-					)}
-					hint={t(
-						"permissions.screenPermissionHint",
-						"After granting access, quit and reopen ScreenMint, then retry.",
-					)}
-					openSettingsLabel={t("permissions.openSettings", "Open Settings")}
-					retryLabel={t("permissions.retry", "Retry")}
-					onOpenSettings={() => void window.electronAPI.openDisplayCapturePreferences()}
-					onRetry={() => void refresh()}
-				/>
+			<div className={styles.shell}>
+				<div className={styles.permissionWrap}>
+					<CaptureAccessNotice
+						title={t("permissions.screenPermissionTitle", "Allow Screen & System Audio Recording")}
+						description={t(
+							"permissions.sourceSelectorPermissionDescription",
+							"ScreenMint needs macOS Screen & System Audio Recording permission before it can list screens and windows.",
+						)}
+						hint={t(
+							"permissions.screenPermissionHint",
+							"After granting access, quit and reopen ScreenMint, then retry.",
+						)}
+						openSettingsLabel={t("permissions.openSettings", "Open Settings")}
+						retryLabel={t("permissions.retry", "Retry")}
+						onOpenSettings={() => void window.electronAPI.openDisplayCapturePreferences()}
+						onRetry={() => void refresh()}
+					/>
+				</div>
 			</div>
 		);
 	}
 
 	if (loadError) {
 		return (
-			<div
-				className={`min-h-screen flex flex-col items-center justify-center ${styles.glassContainer}`}
-			>
-				<CaptureAccessNotice
-					title={t("permissions.captureLoadFailedTitle", "Could not load capture sources")}
-					description={t(
-						"permissions.captureLoadFailedDescription",
-						"ScreenMint ran into an unexpected macOS capture error while loading sources.",
-					)}
-					details={loadError ?? diagnostics?.sourceProbe.desktopError ?? null}
-					openSettingsLabel={t("permissions.openSettings", "Open Settings")}
-					retryLabel={t("permissions.retry", "Retry")}
-					onOpenSettings={() => void window.electronAPI.openDisplayCapturePreferences()}
-					onRetry={() => void refresh()}
-				/>
+			<div className={styles.shell}>
+				<div className={styles.permissionWrap}>
+					<CaptureAccessNotice
+						title={t("permissions.captureLoadFailedTitle", "Could not load capture sources")}
+						description={t(
+							"permissions.captureLoadFailedDescription",
+							"ScreenMint ran into an unexpected macOS capture error while loading sources.",
+						)}
+						details={loadError ?? diagnostics?.sourceProbe.desktopError ?? null}
+						openSettingsLabel={t("permissions.openSettings", "Open Settings")}
+						retryLabel={t("permissions.retry", "Retry")}
+						onOpenSettings={() => void window.electronAPI.openDisplayCapturePreferences()}
+						onRetry={() => void refresh()}
+					/>
+				</div>
 			</div>
 		);
 	}
 
+	const isMac =
+		typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform ?? "");
+	const cmdLabel = isMac ? "↵" : "↵";
+
 	return (
-		<div
-			className={`min-h-screen flex flex-col items-center justify-center ${styles.glassContainer}`}
-		>
-			<div className="flex-1 flex flex-col w-full max-w-xl" style={{ padding: 0 }}>
-				<Tabs
-					value={activeTab}
-					onValueChange={(value) => setActiveTab(value as "screens" | "windows")}
-				>
-					<TabsList className="grid grid-cols-2 mb-3 bg-zinc-900/40 rounded-full">
-						<TabsTrigger
-							value="screens"
-							className="data-[state=active]:bg-[#F59E0B] data-[state=active]:text-white text-zinc-200 rounded-full text-xs py-1"
-						>
-							{t("sourceSelector.screens")} ({screenSources.length})
-						</TabsTrigger>
-						<TabsTrigger
-							value="windows"
-							className="data-[state=active]:bg-[#F59E0B] data-[state=active]:text-white text-zinc-200 rounded-full text-xs py-1"
-						>
-							{t("sourceSelector.windows")} ({windowSources.length})
-						</TabsTrigger>
-					</TabsList>
-					<div className="h-72 flex flex-col justify-stretch">
-						<TabsContent value="screens" className="h-full">
-							<div
-								className={`grid grid-cols-2 gap-2 h-full overflow-y-auto pr-1 relative ${styles.sourceGridScroll}`}
-							>
-								{screenSources.length === 0 && (
-									<div className="col-span-2 text-center text-xs text-zinc-500 py-8">
-										No screens available
-									</div>
-								)}
-								{screenSources.map((source) => (
-									<Card
-										key={source.id}
-										className={`${styles.sourceCard} ${selectedSource?.id === source.id ? styles.selected : ""} cursor-pointer h-fit p-2 scale-95`}
-										style={{ margin: 8, width: "90%", maxWidth: 220 }}
-										onClick={() => handleSourceSelect(source)}
-									>
-										<div className="p-1">
-											<div className="relative mb-1">
-												<img
-													src={source.thumbnail || ""}
-													alt={source.name}
-													className="w-full aspect-video object-cover rounded border border-zinc-800"
-												/>
-												{selectedSource?.id === source.id && (
-													<div className="absolute -top-1 -right-1">
-														<div className="w-4 h-4 bg-[#F59E0B] rounded-full flex items-center justify-center shadow-md">
-															<MdCheck className={styles.icon} />
-														</div>
-													</div>
-												)}
-											</div>
-											<div className={styles.name + " truncate"}>{source.name}</div>
-										</div>
-									</Card>
-								))}
-							</div>
-						</TabsContent>
-						<TabsContent value="windows" className="h-full">
-							<p className="text-[10px] text-zinc-500 mb-1 px-1">
-								{t("sourceSelector.windowsNote")}
-							</p>
-							<div
-								className={`grid grid-cols-2 gap-2 h-full overflow-y-auto pr-1 relative ${styles.sourceGridScroll}`}
-							>
-								{windowSources.length === 0 && (
-									<div className="col-span-2 text-center text-xs text-zinc-500 py-8">
-										No windows available
-									</div>
-								)}
-								{windowSources.map((source) => (
-									<Card
-										key={source.id}
-										className={`${styles.sourceCard} ${selectedSource?.id === source.id ? styles.selected : ""} cursor-pointer h-fit p-2 scale-95`}
-										style={{ margin: 8, width: "90%", maxWidth: 220 }}
-										onClick={() => handleSourceSelect(source)}
-									>
-										<div className="p-1">
-											<div className="relative mb-1">
-												{source.thumbnail ? (
-													<img
-														src={source.thumbnail}
-														alt={source.name}
-														className="w-full aspect-video object-cover rounded border border-gray-700"
-													/>
-												) : (
-													<div className="w-full aspect-video rounded border border-gray-700 bg-zinc-900/80 flex flex-col items-center justify-center text-zinc-400 gap-2">
-														{source.appIcon ? (
-															<img
-																src={source.appIcon}
-																alt="App icon"
-																className="w-8 h-8 rounded-md"
-															/>
-														) : (
-															<div className="w-8 h-8 rounded-md bg-zinc-800 border border-zinc-700" />
-														)}
-														<div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-															{t("sourceSelector.windowPlaceholder")}
-														</div>
-													</div>
-												)}
-												{selectedSource?.id === source.id && (
-													<div className="absolute -top-1 -right-1">
-														<div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center shadow-md">
-															<MdCheck className={styles.icon} />
-														</div>
-													</div>
-												)}
-											</div>
-											<div className="flex items-center gap-1">
-												{source.appIcon && (
-													<img
-														src={source.appIcon}
-														alt="App icon"
-														className={styles.icon + " flex-shrink-0"}
-													/>
-												)}
-												<div className={styles.name + " truncate"}>{source.name}</div>
-											</div>
-										</div>
-									</Card>
-								))}
-							</div>
-						</TabsContent>
+		<div className={styles.shell}>
+			<div className={`${styles.header} ${styles.dragHandle}`}>
+				<div className={styles.titleBlock}>
+					<div className={styles.title}>{t("sourceSelector.title", "Choose what to share")}</div>
+					<div className={styles.subtitle}>
+						{t("sourceSelector.subtitle", "Pick a screen or window to start recording")}
 					</div>
-				</Tabs>
+				</div>
+				<button
+					type="button"
+					className={`${styles.closeBtn} ${styles.noDrag}`}
+					onClick={handleCancel}
+					aria-label={t("sourceSelector.cancel")}
+				>
+					<FiX size={14} />
+				</button>
 			</div>
-			<div className="border-t border-zinc-800 p-2 w-full max-w-xl">
-				<div className="flex justify-center gap-2">
-					<Button
-						variant="outline"
-						onClick={() => window.close()}
-						className="px-4 py-1 text-xs bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-700"
+
+			<div className={`${styles.tabBar} ${styles.noDrag}`}>
+				<div className={styles.tabsList}>
+					<button
+						type="button"
+						className={`${styles.tabBtn} ${activeTab === "screens" ? styles.tabBtnActive : ""}`}
+						onClick={() => setActiveTab("screens")}
 					>
+						<FiMonitor size={13} />
+						{t("sourceSelector.screens")}
+						<span className={styles.tabCount}>{screenSources.length}</span>
+					</button>
+					<button
+						type="button"
+						className={`${styles.tabBtn} ${activeTab === "windows" ? styles.tabBtnActive : ""}`}
+						onClick={() => setActiveTab("windows")}
+					>
+						<FiSquare size={13} />
+						{t("sourceSelector.windows")}
+						<span className={styles.tabCount}>{windowSources.length}</span>
+					</button>
+				</div>
+				{activeTab === "windows" && (
+					<div className={styles.searchWrap}>
+						<FiSearch className={styles.searchIcon} size={13} />
+						<input
+							type="text"
+							value={search}
+							onChange={(e) => setSearch(e.target.value)}
+							placeholder={t("sourceSelector.searchPlaceholder", "Search windows…")}
+							className={styles.searchInput}
+						/>
+					</div>
+				)}
+			</div>
+
+			{activeTab === "windows" && !loading && windowSources.length > 0 && (
+				<p className={styles.windowsNote}>{t("sourceSelector.windowsNote")}</p>
+			)}
+
+			<div className={styles.gridScroll} ref={gridRef}>
+				{loading && <SkeletonGrid />}
+				{!loading && visibleSources.length === 0 && (
+					<div className={styles.emptyState}>
+						<div className={styles.emptyIcon}>
+							{activeTab === "screens" ? <FiMonitor size={24} /> : <FiSquare size={24} />}
+						</div>
+						<div className={styles.emptyTitle}>
+							{search
+								? t("sourceSelector.noMatches", "No matches")
+								: activeTab === "screens"
+									? t("sourceSelector.noScreens", "No screens detected")
+									: t("sourceSelector.noWindows", "No windows available")}
+						</div>
+						<div className={styles.emptyHint}>
+							{search
+								? t("sourceSelector.noMatchesHint", "Try a different search term.")
+								: activeTab === "screens"
+									? t(
+											"sourceSelector.noScreensHint",
+											"Connect a display or grant screen recording permission.",
+										)
+									: t(
+											"sourceSelector.noWindowsHint",
+											"Open an app and bring its window to the front, then retry.",
+										)}
+						</div>
+					</div>
+				)}
+				{!loading && visibleSources.length > 0 && (
+					<div className={`${styles.grid} ${activeTab === "screens" ? styles.gridScreens : ""}`}>
+						{visibleSources.map((source, index) => {
+							const isSelected = selectedId === source.id;
+							const isFocused = focusIndex === index;
+							return (
+								<button
+									key={source.id}
+									type="button"
+									className={`${styles.card} ${isSelected ? styles.cardSelected : ""} ${
+										isFocused && !isSelected ? styles.cardFocused : ""
+									}`}
+									onClick={() => onCardClick(source, index)}
+									onDoubleClick={() => {
+										setSelectedId(source.id);
+										void handleShare();
+									}}
+								>
+									<div className={styles.thumbWrap}>
+										{source.thumbnail ? (
+											<img
+												src={source.thumbnail}
+												alt={source.name}
+												className={styles.thumb}
+												draggable={false}
+											/>
+										) : (
+											<div className={styles.thumbPlaceholder}>
+												<div className={styles.placeholderIcon}>
+													{source.appIcon ? (
+														<img src={source.appIcon} alt="" />
+													) : (
+														<FiSquare size={20} />
+													)}
+												</div>
+												<div className={styles.placeholderLabel}>
+													{t("sourceSelector.windowPlaceholder")}
+												</div>
+											</div>
+										)}
+										<div className={styles.checkBadge}>
+											<FiCheck size={12} strokeWidth={3} />
+										</div>
+									</div>
+									<div className={styles.cardMeta}>
+										{source.appIcon && source.thumbnail && (
+											<img src={source.appIcon} alt="" className={styles.appIcon} />
+										)}
+										<div className={styles.cardName}>{source.name}</div>
+									</div>
+								</button>
+							);
+						})}
+					</div>
+				)}
+			</div>
+
+			<div className={styles.footer}>
+				<div className={styles.kbdHint}>
+					<span className={styles.kbdGroup}>
+						<kbd className={styles.kbd}>↑</kbd>
+						<kbd className={styles.kbd}>↓</kbd>
+						<kbd className={styles.kbd}>←</kbd>
+						<kbd className={styles.kbd}>→</kbd>
+						{t("sourceSelector.kbdNavigate", "navigate")}
+					</span>
+					<span className={styles.kbdGroup}>
+						<kbd className={styles.kbd}>{cmdLabel}</kbd>
+						{t("sourceSelector.kbdShare", "share")}
+					</span>
+					<span className={styles.kbdGroup}>
+						<kbd className={styles.kbd}>esc</kbd>
+						{t("sourceSelector.kbdClose", "close")}
+					</span>
+				</div>
+				<div className={styles.actions}>
+					<button type="button" className={styles.btnGhost} onClick={handleCancel}>
 						{t("sourceSelector.cancel")}
-					</Button>
-					<Button
-						onClick={handleShare}
-						disabled={!selectedSource}
-						className="px-4 py-1 text-xs bg-[#F59E0B] text-white hover:bg-[#F59E0B]/80 disabled:opacity-50 disabled:bg-zinc-700"
+					</button>
+					<button
+						type="button"
+						className={styles.btnPrimary}
+						onClick={() => void handleShare()}
+						disabled={!selectedId}
 					>
+						<FiCheck size={13} strokeWidth={3} />
 						{t("sourceSelector.share")}
-					</Button>
+					</button>
 				</div>
 			</div>
 		</div>

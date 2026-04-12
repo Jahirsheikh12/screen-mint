@@ -385,24 +385,25 @@ declare global {
 			/** Area overlay */
 			createAreaOverlay: (displayId?: number) => Promise<{ success: boolean }>;
 			closeAreaOverlay: () => Promise<{ success: boolean }>;
+			lockAreaOverlay: () => Promise<{ success: boolean }>;
+			unlockAreaOverlay: () => Promise<{ success: boolean }>;
+			onAreaOverlayPhase: (callback: (phase: "selecting" | "locked") => void) => () => void;
 			/** Desktop icons (macOS) */
 			hideDesktopIcons: () => Promise<{ success: boolean; error?: string }>;
 			showDesktopIcons: () => Promise<{ success: boolean; error?: string }>;
 			/** Dock icon (macOS) */
 			hideDockIcon: () => Promise<{ success: boolean }>;
 			showDockIcon: () => Promise<{ success: boolean }>;
-			/** Highlight overlay */
-			createHighlightOverlay: (rect: {
-				x: number;
-				y: number;
-				width: number;
-				height: number;
-			}) => Promise<{ success: boolean }>;
-			closeHighlightOverlay: () => Promise<{ success: boolean }>;
 			/** Resize HUD window */
 			resizeHudWindow: (contentVisible: boolean) => Promise<void>;
 			/** Sync compact HUD layout so the main process can tighten the window hitbox */
 			syncHudCompactLayout: (layout: { width: number; height: number }) => Promise<void>;
+			/** Expand HUD window vertically while a dropdown is open */
+			setHudDropdownExpanded: (expanded: boolean) => Promise<void>;
+			/** Reposition the HUD onto the display containing the cursor */
+			recenterHudOnCursor: () => Promise<void>;
+			/** Default the active capture source to the display under the cursor */
+			autoSelectCursorDisplay: () => Promise<{ success: boolean; source?: SelectedCaptureSource; error?: string }>;
 		};
 	}
 

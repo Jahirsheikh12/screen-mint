@@ -41,14 +41,14 @@ import { getScreenMintUpdater } from "../updater";
 import {
 	closeAreaOverlayWindow,
 	closeCountdownWindow,
-	closeHighlightOverlayWindow,
 	closeSpeakerNotesWindow,
 	createAreaOverlayWindow,
 	createCountdownWindow,
-	createHighlightOverlayWindow,
 	createHudOverlayWindow,
 	createSpeakerNotesWindow,
 	getCountdownWindow,
+	lockAreaOverlayWindow,
+	unlockAreaOverlayWindow,
 	updateSpeakerNotesWindow,
 } from "../windows";
 import {
@@ -108,6 +108,7 @@ type WindowBounds = {
 };
 
 let selectedSource: SelectedSource | null = null;
+let userExplicitlySelectedSource = false;
 let selectedArea: SelectedArea | null = null;
 
 function notifySelectedAreaChanged(): void {
@@ -3344,6 +3345,7 @@ export function registerIpcHandlers(
 
 	ipcMain.handle("select-source", (_, source: SelectedSource) => {
 		selectedSource = source;
+		userExplicitlySelectedSource = true;
 		if (!getSelectedAreaForSource(source)) {
 			selectedArea = null;
 		}
@@ -3354,6 +3356,36 @@ export function registerIpcHandlers(
 			sourceSelectorWin.close();
 		}
 		return selectedSource;
+	});
+
+	ipcMain.handle("auto-select-cursor-display", async () => {
+		if (userExplicitlySelectedSource && selectedSource) {
+			return { success: true, source: selectedSource };
+		}
+		try {
+			const cursor = getScreen().getCursorScreenPoint();
+			const targetDisplay = getScreen().getDisplayNearestPoint(cursor);
+			const sources = await desktopCapturer.getSources({
+				types: ["screen"],
+				thumbnailSize: { width: 1, height: 1 },
+				fetchWindowIcons: false,
+			});
+			const match =
+				sources.find((s) => Number(s.display_id) === targetDisplay.id) ?? sources[0];
+			if (!match) {
+				return { success: false };
+			}
+			selectedSource = {
+				id: match.id,
+				name: match.name,
+				display_id: String(targetDisplay.id),
+			} as SelectedSource;
+			selectedArea = null;
+			notifySelectedAreaChanged();
+			return { success: true, source: selectedSource };
+		} catch (error) {
+			return { success: false, error: String(error) };
+		}
 	});
 
 	ipcMain.handle("get-selected-source", () => {
@@ -5351,18 +5383,15 @@ export function registerIpcHandlers(
 	});
 
 	// ---------------------------------------------------------------------------
-	// Highlight overlay
+	// Area overlay lock state (locked = click-through preview during recording)
 	// ---------------------------------------------------------------------------
-	ipcMain.handle(
-		"create-highlight-overlay",
-		(_, rect: { x: number; y: number; width: number; height: number }) => {
-			createHighlightOverlayWindow(rect);
-			return { success: true };
-		},
-	);
+	ipcMain.handle("lock-area-overlay", () => {
+		lockAreaOverlayWindow();
+		return { success: true };
+	});
 
-	ipcMain.handle("close-highlight-overlay", () => {
-		closeHighlightOverlayWindow();
+	ipcMain.handle("unlock-area-overlay", () => {
+		unlockAreaOverlayWindow();
 		return { success: true };
 	});
 }

@@ -22,7 +22,7 @@ import { DisplayTab } from "./tabs/DisplayTab";
 import { WindowTab } from "./tabs/WindowTab";
 
 const DROPDOWN_CLASSES =
-	"border-white/[0.08] bg-[rgba(28,28,30,0.97)] text-white/90 backdrop-blur-2xl shadow-xl shadow-black/40";
+	"border-white/10 bg-[#1c1c1e] text-white/90 shadow-xl shadow-black/50";
 
 export function LaunchWindow() {
 	const hud = useHudState();
@@ -107,19 +107,6 @@ export function LaunchWindow() {
 			hud.resizeHudWindow(false);
 		}
 	}, [hud.recording, hud.countdownActive, hud.resizeHudWindow]);
-
-	useEffect(() => {
-		if (
-			hud.hudSettings.highlightArea &&
-			hud.selectedArea &&
-			(hud.mode === "area" || hud.sessionState.captureMode === "area")
-		) {
-			void window.electronAPI.createHighlightOverlay(hud.selectedArea.bounds);
-			return;
-		}
-
-		void window.electronAPI.closeHighlightOverlay();
-	}, [hud.hudSettings.highlightArea, hud.mode, hud.selectedArea, hud.sessionState.captureMode]);
 
 	const openVideoFile = useCallback(async () => {
 		const result = await window.electronAPI.openVideoFilePicker();
@@ -333,9 +320,13 @@ export function LaunchWindow() {
 						{hud.mode === "device" && <DeviceTab />}
 
 						{/* Divider */}
-						{hud.mode !== "device" && <div className="mx-6 h-px bg-white/[0.05]" />}
+						{hud.mode !== "device" && hud.mode !== "area" && (
+							<div className="mx-6 h-px bg-white/[0.05]" />
+						)}
 
-						{/* Record button — unified pill with inline dropdown trigger */}
+						{/* Record button — unified pill with inline dropdown trigger.
+						    Area mode uses the dedicated Quick Record button in HudToolbar. */}
+						{hud.mode !== "area" && (
 						<div className="flex justify-center py-5 px-6">
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
@@ -407,6 +398,7 @@ export function LaunchWindow() {
 								</DropdownMenuContent>
 							</DropdownMenu>
 						</div>
+						)}
 					</div>
 				</div>
 			)}
@@ -423,12 +415,10 @@ export function LaunchWindow() {
 							className={`${styles.electronNoDrag} pointer-events-auto`}
 							style={{
 								borderRadius: 16,
-								border: "1px solid rgba(255,255,255,0.08)",
-								background: "rgba(18,18,20,0.9)",
+								border: "1px solid rgba(255,255,255,0.1)",
+								background: "#161618",
 								padding: 6,
-								boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-								backdropFilter: "blur(20px)",
-								WebkitBackdropFilter: "blur(20px)",
+								boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
 							}}
 						>
 							<div className="relative h-[84px] w-[140px] overflow-hidden rounded-[12px] bg-black">
@@ -449,20 +439,16 @@ export function LaunchWindow() {
 				{/* Bottom toolbar */}
 				<div className={`flex justify-center pointer-events-none ${styles.hudToolbarEnter}`}>
 					<div
-						className={`${styles.hudBar} ${hud.recording ? styles.recordingGlow : ""} w-fit pointer-events-auto`}
+						className={`${styles.hudBar} ${hud.recording ? styles.recordingGlow : ""} w-fit max-w-full pointer-events-auto`}
 						style={{
 							borderRadius: 14,
-							background: hud.recording
-								? "linear-gradient(180deg, rgba(30,18,18,0.88) 0%, rgba(22,16,16,0.92) 100%)"
-								: "linear-gradient(180deg, rgba(28,28,30,0.82) 0%, rgba(20,20,22,0.88) 100%)",
-							backdropFilter: "blur(40px) saturate(180%)",
-							WebkitBackdropFilter: "blur(40px) saturate(180%)",
+							background: hud.recording ? "#1a1112" : "#161618",
 							border: hud.recording
-								? "1px solid rgba(239,68,68,0.12)"
-								: "1px solid rgba(255,255,255,0.07)",
+								? "1px solid rgba(239,68,68,0.18)"
+								: "1px solid rgba(255,255,255,0.1)",
 							boxShadow: hud.recording
-								? undefined
-								: "0 8px 40px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(255,255,255,0.04)",
+								? "0 10px 40px rgba(0,0,0,0.55)"
+								: "0 10px 40px rgba(0,0,0,0.5)",
 						}}
 					>
 						<HudToolbar

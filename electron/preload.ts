@@ -398,19 +398,27 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	// Area overlay
 	createAreaOverlay: (displayId?: number) => ipcRenderer.invoke("create-area-overlay", displayId),
 	closeAreaOverlay: () => ipcRenderer.invoke("close-area-overlay"),
+	lockAreaOverlay: () => ipcRenderer.invoke("lock-area-overlay"),
+	unlockAreaOverlay: () => ipcRenderer.invoke("unlock-area-overlay"),
+	onAreaOverlayPhase: (callback: (phase: "selecting" | "locked") => void) => {
+		const listener = (_event: Electron.IpcRendererEvent, phase: "selecting" | "locked") =>
+			callback(phase);
+		ipcRenderer.on("area-overlay-phase", listener);
+		return () => ipcRenderer.removeListener("area-overlay-phase", listener);
+	},
 	// Desktop icons (macOS)
 	hideDesktopIcons: () => ipcRenderer.invoke("hide-desktop-icons"),
 	showDesktopIcons: () => ipcRenderer.invoke("show-desktop-icons"),
 	// Dock icon (macOS)
 	hideDockIcon: () => ipcRenderer.invoke("hide-dock-icon"),
 	showDockIcon: () => ipcRenderer.invoke("show-dock-icon"),
-	// Highlight overlay
-	createHighlightOverlay: (rect: { x: number; y: number; width: number; height: number }) =>
-		ipcRenderer.invoke("create-highlight-overlay", rect),
-	closeHighlightOverlay: () => ipcRenderer.invoke("close-highlight-overlay"),
 	// Resize HUD
 	resizeHudWindow: (contentVisible: boolean) =>
 		ipcRenderer.invoke("resize-hud-window", contentVisible),
 	syncHudCompactLayout: (layout: { width: number; height: number }) =>
 		ipcRenderer.invoke("sync-hud-compact-layout", layout),
+	setHudDropdownExpanded: (expanded: boolean) =>
+		ipcRenderer.invoke("hud-set-dropdown-expanded", expanded),
+	recenterHudOnCursor: () => ipcRenderer.invoke("hud-recenter-on-cursor"),
+	autoSelectCursorDisplay: () => ipcRenderer.invoke("auto-select-cursor-display"),
 });

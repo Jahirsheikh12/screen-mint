@@ -34,7 +34,7 @@ export const DEFAULT_HUD_SETTINGS: HudSettings = {
 	hiddenFromCapture: true,
 	hideDesktopIcons: false,
 	hideDockIcon: false,
-	highlightArea: false,
+	highlightArea: true,
 	openQuickShare: false,
 	speakerNotesEnabled: false,
 	speakerNotesText: "",
@@ -146,6 +146,14 @@ export function useHudState() {
 				// Use defaults
 			}
 		})();
+	}, []);
+
+	// Reposition HUD onto cursor's display + auto-select that display as the
+	// default capture source so the user can record their current screen
+	// without opening the source picker.
+	useEffect(() => {
+		void window.electronAPI.recenterHudOnCursor?.();
+		void window.electronAPI.autoSelectCursorDisplay?.();
 	}, []);
 
 	useEffect(() => {
