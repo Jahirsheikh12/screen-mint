@@ -14,7 +14,12 @@ import {
 } from "electron";
 import { getSelectedSourceId, killWgcCaptureProcess, registerIpcHandlers } from "./ipc/handlers";
 import { getScreenMintUpdater } from "./updater";
-import { createEditorWindow, createHudOverlayWindow, createSourceSelectorWindow } from "./windows";
+import {
+	createEditorWindow,
+	createHudOverlayWindow,
+	createSourceSelectorWindow,
+	fadeOutAndDestroyWindow,
+} from "./windows";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -86,7 +91,24 @@ ipcMain.on("set-has-unsaved-changes", (_event, hasChanges: boolean) => {
 });
 
 function createWindow() {
+	createHudOverlayWindowWrapper();
+}
+
+function createHudOverlayWindowWrapper() {
+	if (mainWindow && !mainWindow.isDestroyed()) {
+		closeEditorWindowBypassingUnsavedPrompt(mainWindow);
+	}
+	mainWindow = null;
+	editorHasUnsavedChanges = false;
 	mainWindow = createHudOverlayWindow();
+
+	mainWindow.on("closed", () => {
+		if (mainWindow?.isDestroyed()) {
+			mainWindow = null;
+		}
+	});
+
+	return mainWindow;
 }
 
 function focusOrCreateMainWindow() {
@@ -362,10 +384,17 @@ function updateTrayMenu(recording: boolean = false) {
 }
 
 function createEditorWindowWrapper() {
-	if (mainWindow) {
-		closeEditorWindowBypassingUnsavedPrompt(mainWindow);
-		mainWindow = null;
+	if (mainWindow && !mainWindow.isDestroyed()) {
+		const outgoing = mainWindow;
+		if (!isEditorWindow(outgoing)) {
+			// HUD → Editor transition: fade the HUD out smoothly in parallel
+			// with the editor's fade-in. Avoids macOS's shrink-to-dock animation.
+			void fadeOutAndDestroyWindow(outgoing, 160);
+		} else {
+			closeEditorWindowBypassingUnsavedPrompt(outgoing);
+		}
 	}
+	mainWindow = null;
 	mainWindow = createEditorWindow();
 	editorHasUnsavedChanges = false;
 
@@ -509,6 +538,7 @@ app.whenReady().then(async () => {
 	registerIpcHandlers(
 		createEditorWindowWrapper,
 		createSourceSelectorWindowWrapper,
+		createHudOverlayWindowWrapper,
 		() => mainWindow,
 		() => sourceSelectorWindow,
 		(recording: boolean, sourceName: string) => {

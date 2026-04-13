@@ -1229,26 +1229,61 @@ export default function VideoEditor() {
 				}
 
 				if (!restoredProject) {
-					const result = await window.electronAPI.getCurrentVideoPath();
-					if (result.success && result.path) {
-						const sourcePath = fromFileUrl(result.path);
-						setVideoSourcePath(sourcePath);
-						setVideoPath(toFileUrl(sourcePath));
-						dispatchSession({ type: "set-current-project-path", path: null });
-						dispatchSession({ type: "set-last-saved-snapshot", snapshot: null });
-						setAspectRatio("native");
-						setPadding(DEFAULT_VIDEO_PREVIEW_PADDING);
+					// If we were launched from a stop-recording transition, the main
+					// process is still finalizing the video in the background. Wait
+					// for that to resolve so we get the real final path.
+					const initialContextResult = await window.electronAPI.getPostRecordingContext();
+					const awaitingFinalization =
+						initialContextResult.success &&
+						initialContextResult.context != null &&
+						!initialContextResult.context.recordingPath;
 
-						const webcamResult = await window.electronAPI.getCurrentWebcamPath();
-						if (webcamResult.success && webcamResult.path) {
-							setWebcamPath(webcamResult.path);
-							await syncWebcamAvailability(webcamResult.path, { quiet: false });
-							setShowWebcam(true);
+					if (awaitingFinalization) {
+						const finalized = await window.electronAPI.awaitRecordingFinalized();
+						if (!finalized.success || !finalized.path) {
+							setError(
+								"Error finalizing recording: " +
+									String(finalized.error ?? finalized.message ?? "unknown error"),
+							);
 						} else {
-							clearWebcamState();
+							const sourcePath = fromFileUrl(finalized.path);
+							setVideoSourcePath(sourcePath);
+							setVideoPath(toFileUrl(sourcePath));
+							dispatchSession({ type: "set-current-project-path", path: null });
+							dispatchSession({ type: "set-last-saved-snapshot", snapshot: null });
+							setAspectRatio("native");
+							setPadding(DEFAULT_VIDEO_PREVIEW_PADDING);
+
+							if (finalized.webcamPath) {
+								setWebcamPath(finalized.webcamPath);
+								await syncWebcamAvailability(finalized.webcamPath, { quiet: false });
+								setShowWebcam(true);
+							} else {
+								clearWebcamState();
+							}
 						}
 					} else {
-						setError("No video to load. Please record or select a video.");
+						const result = await window.electronAPI.getCurrentVideoPath();
+						if (result.success && result.path) {
+							const sourcePath = fromFileUrl(result.path);
+							setVideoSourcePath(sourcePath);
+							setVideoPath(toFileUrl(sourcePath));
+							dispatchSession({ type: "set-current-project-path", path: null });
+							dispatchSession({ type: "set-last-saved-snapshot", snapshot: null });
+							setAspectRatio("native");
+							setPadding(DEFAULT_VIDEO_PREVIEW_PADDING);
+
+							const webcamResult = await window.electronAPI.getCurrentWebcamPath();
+							if (webcamResult.success && webcamResult.path) {
+								setWebcamPath(webcamResult.path);
+								await syncWebcamAvailability(webcamResult.path, { quiet: false });
+								setShowWebcam(true);
+							} else {
+								clearWebcamState();
+							}
+						} else {
+							setError("No video to load. Please record or select a video.");
+						}
 					}
 				}
 
@@ -3804,10 +3839,7 @@ export default function VideoEditor() {
 						} else {
 							const saveResult =
 								saveMode === "recordings"
-									? await window.electronAPI.saveExportedVideoToRecordings(
-											arrayBuffer,
-											fileName,
-										)
+									? await window.electronAPI.saveExportedVideoToRecordings(arrayBuffer, fileName)
 									: await window.electronAPI.saveExportedVideo(arrayBuffer, fileName);
 
 							if ("canceled" in saveResult && saveResult.canceled) {
@@ -3963,10 +3995,7 @@ export default function VideoEditor() {
 						} else {
 							const saveResult =
 								saveMode === "recordings"
-									? await window.electronAPI.saveExportedVideoToRecordings(
-											arrayBuffer,
-											fileName,
-										)
+									? await window.electronAPI.saveExportedVideoToRecordings(arrayBuffer, fileName)
 									: await window.electronAPI.saveExportedVideo(arrayBuffer, fileName);
 
 							if ("canceled" in saveResult && saveResult.canceled) {
@@ -4462,658 +4491,662 @@ export default function VideoEditor() {
 
 			{/* Real editor — fades in once loading is done */}
 			{!loading && (
-			<div
-				className="flex flex-col h-full text-slate-200 selection:bg-[#f59e0b]/30 transition-opacity duration-300 ease-out"
-				style={{ opacity: editorReady ? 1 : 0 }}
-			>
-			{/* Header Bar - matches Screen Studio reference */}
-			<div
-				className="relative h-11 flex-shrink-0 bg-[#111114] border-b border-white/5 flex items-center px-4 z-50"
-				style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
-			>
-				{/* Left: macOS traffic lights spacer + action icons */}
 				<div
-					className="flex items-center gap-0.5 ml-[72px]"
-					style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
+					className="flex flex-col h-full text-slate-200 selection:bg-[#f59e0b]/30 transition-opacity duration-300 ease-out"
+					style={{ opacity: editorReady ? 1 : 0 }}
 				>
-					<Tooltip content="Save Project" shortcut={isMac ? "⌘ + S" : "Ctrl + S"} side="bottom">
-						<button
-							type="button"
-							onClick={() => void handleSaveProject()}
-							className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
-						>
-							<Save className="h-4 w-4" />
-						</button>
-					</Tooltip>
-					<Tooltip content="Open Recordings Folder" side="bottom">
-						<button
-							type="button"
-							onClick={() => void openRecordingsFolder()}
-							className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
-						>
-							<FolderOpen className="h-4 w-4" />
-						</button>
-					</Tooltip>
-					<Tooltip content="Keyboard Shortcuts" side="bottom">
-						<button
-							type="button"
-							className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
-							onClick={openConfig}
-						>
-							<Keyboard className="h-4 w-4" />
-						</button>
-					</Tooltip>
-					<Tooltip content="Delete Project" side="bottom">
-						<button
-							type="button"
-							className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-red-400/80 hover:text-white cursor-pointer"
-							onClick={() => void handleDeleteProject()}
-						>
-							<Trash2 className="h-4 w-4" />
-						</button>
-					</Tooltip>
-				</div>
-
-				{/* Center: Project filename */}
-				<div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
-					<span className="text-[13px] font-medium text-white/60 truncate max-w-[400px]">
-						{currentProjectPath
-							? currentProjectPath
-									.split(/[\\/]/)
-									.pop()
-									?.replace(/\.[^.]+$/, "") || "Untitled"
-							: videoSourcePath
-								? videoSourcePath
-										.split(/[\\/]/)
-										.pop()
-										?.replace(/\.[^.]+$/, "") || "Untitled"
-								: "ScreenMint"}
-					</span>
-				</div>
-
-				{/* Right: Undo/Redo, Presets, Layout, Settings, Export */}
-				<div
-					className="ml-auto flex items-center gap-0.5"
-					style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
-				>
-					{/* Undo / Redo */}
-					<Tooltip content="Undo" shortcut={isMac ? "⌘ + Z" : "Ctrl + Z"} side="bottom">
-						<button
-							type="button"
-							onClick={handleUndo}
-							className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/8 hover:text-white cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-							disabled={historyPastRef.current.length === 0}
-						>
-							<Undo2 className="h-4 w-4" />
-						</button>
-					</Tooltip>
-					<Tooltip content="Redo" shortcut={isMac ? "⌘ + ⇧ + Z" : "Ctrl + Y"} side="bottom">
-						<button
-							type="button"
-							onClick={handleRedo}
-							className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/8 hover:text-white cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-							disabled={historyFutureRef.current.length === 0}
-						>
-							<Redo2 className="h-4 w-4" />
-						</button>
-					</Tooltip>
-
-					<div className="w-[1px] h-5 bg-white/10 mx-1" />
-
-					{/* Presets dropdown */}
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<button
-								type="button"
-								className="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-slate-300 transition hover:bg-white/8 hover:text-white cursor-pointer"
-							>
-								<Sparkles className="h-3.5 w-3.5" />
-								<span className="text-xs font-medium">Presets</span>
-								<ChevronDown className="h-3 w-3 text-slate-500" />
-							</button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end" className="bg-[#1a1a1a] border-white/10 min-w-[160px]">
-							<DropdownMenuLabel className="text-[11px] font-medium text-white/45">
-								Apply preset
-							</DropdownMenuLabel>
-							{allPresets.map((preset) => (
-								<DropdownMenuItem
-									key={preset.id}
-									onSelect={() => applyPreset(preset)}
-									className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer"
-								>
-									{preset.name}
-								</DropdownMenuItem>
-							))}
-							<DropdownMenuSeparator className="bg-white/10" />
-							<DropdownMenuItem
-								onSelect={handleSavePreset}
-								className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer"
-							>
-								Save current as preset...
-							</DropdownMenuItem>
-							<DropdownMenuSub>
-								<DropdownMenuSubTrigger
-									disabled={customPresets.length === 0}
-									className="text-slate-300"
-								>
-									Delete preset
-								</DropdownMenuSubTrigger>
-								<DropdownMenuSubContent className="min-w-[180px] border-white/10 bg-[#1a1a1a]">
-									{customPresets.length === 0 ? (
-										<DropdownMenuItem disabled className="text-slate-500">
-											No saved presets
-										</DropdownMenuItem>
-									) : (
-										customPresets.map((preset) => (
-											<DropdownMenuItem
-												key={`delete-${preset.id}`}
-												onSelect={() => handleDeletePreset(preset.id)}
-												className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer"
-											>
-												{preset.name}
-											</DropdownMenuItem>
-										))
-									)}
-								</DropdownMenuSubContent>
-							</DropdownMenuSub>
-						</DropdownMenuContent>
-					</DropdownMenu>
-
-					{/* Layout toggle */}
-					<Tooltip content="Toggle Layout" side="bottom">
-						<button
-							type="button"
-							className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
-							onClick={cycleWorkspaceLayout}
-						>
-							<SplitSquareHorizontal className="h-4 w-4" />
-						</button>
-					</Tooltip>
-
-					{/* Language Switcher */}
-					<LanguageSwitcher />
-
-					<div className="w-[1px] h-5 bg-white/10 mx-1" />
-
-					{/* Export button - amber */}
-					<Tooltip
-						content="Export Video or GIF"
-						shortcut={isMac ? "⌘ + E" : "Ctrl + E"}
-						side="bottom"
+					{/* Header Bar - matches Screen Studio reference */}
+					<div
+						className="relative h-11 flex-shrink-0 bg-[#111114] border-b border-white/5 flex items-center px-4 z-50"
+						style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
 					>
-						<button
-							type="button"
-							onClick={() => dispatchSession({ type: "set-export-settings-open", value: true })}
-							className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-white font-semibold text-xs transition bg-[#f59e0b] hover:bg-[#d97706] cursor-pointer shadow-lg shadow-amber-500/20"
+						{/* Left: macOS traffic lights spacer + action icons */}
+						<div
+							className="flex items-center gap-0.5 ml-[72px]"
+							style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
 						>
-							<Download className="h-3.5 w-3.5" />
-							<span>Export</span>
-						</button>
-					</Tooltip>
-				</div>
-			</div>
+							<Tooltip content="Save Project" shortcut={isMac ? "⌘ + S" : "Ctrl + S"} side="bottom">
+								<button
+									type="button"
+									onClick={() => void handleSaveProject()}
+									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
+								>
+									<Save className="h-4 w-4" />
+								</button>
+							</Tooltip>
+							<Tooltip content="Open Recordings Folder" side="bottom">
+								<button
+									type="button"
+									onClick={() => void openRecordingsFolder()}
+									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
+								>
+									<FolderOpen className="h-4 w-4" />
+								</button>
+							</Tooltip>
+							<Tooltip content="Keyboard Shortcuts" side="bottom">
+								<button
+									type="button"
+									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
+									onClick={openConfig}
+								>
+									<Keyboard className="h-4 w-4" />
+								</button>
+							</Tooltip>
+							<Tooltip content="Delete Project" side="bottom">
+								<button
+									type="button"
+									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-red-400/80 hover:text-white cursor-pointer"
+									onClick={() => void handleDeleteProject()}
+								>
+									<Trash2 className="h-4 w-4" />
+								</button>
+							</Tooltip>
+						</div>
 
-			<PanelGroup ref={panelGroupRef} direction="vertical" className="flex-1 min-h-0">
-				{/* Top section: Video preview + Settings sidebar */}
-				<Panel defaultSize={65} minSize={35}>
-					<div className="flex h-full pb-0 gap-3 pr-3 pl-3 pt-3">
-						{/* Video preview area */}
-						<div className="flex-1 min-w-0 flex flex-col overflow-hidden rounded-xl">
-							{missingWebcamPath && (
-								<div className="mx-3 mt-3 rounded-lg border border-amber-400/20 bg-amber-400/10 px-3 py-2.5 text-xs text-amber-100">
-									<div className="flex items-center justify-between gap-3">
-										<div className="min-w-0">
-											<div className="font-semibold text-amber-50">
-												{t("settings.webcam.missingTitle", "Webcam source missing")}
+						{/* Center: Project filename */}
+						<div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+							<span className="text-[13px] font-medium text-white/60 truncate max-w-[400px]">
+								{currentProjectPath
+									? currentProjectPath
+											.split(/[\\/]/)
+											.pop()
+											?.replace(/\.[^.]+$/, "") || "Untitled"
+									: videoSourcePath
+										? videoSourcePath
+												.split(/[\\/]/)
+												.pop()
+												?.replace(/\.[^.]+$/, "") || "Untitled"
+										: "ScreenMint"}
+							</span>
+						</div>
+
+						{/* Right: Undo/Redo, Presets, Layout, Settings, Export */}
+						<div
+							className="ml-auto flex items-center gap-0.5"
+							style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
+						>
+							{/* Undo / Redo */}
+							<Tooltip content="Undo" shortcut={isMac ? "⌘ + Z" : "Ctrl + Z"} side="bottom">
+								<button
+									type="button"
+									onClick={handleUndo}
+									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/8 hover:text-white cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+									disabled={historyPastRef.current.length === 0}
+								>
+									<Undo2 className="h-4 w-4" />
+								</button>
+							</Tooltip>
+							<Tooltip content="Redo" shortcut={isMac ? "⌘ + ⇧ + Z" : "Ctrl + Y"} side="bottom">
+								<button
+									type="button"
+									onClick={handleRedo}
+									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/8 hover:text-white cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+									disabled={historyFutureRef.current.length === 0}
+								>
+									<Redo2 className="h-4 w-4" />
+								</button>
+							</Tooltip>
+
+							<div className="w-[1px] h-5 bg-white/10 mx-1" />
+
+							{/* Presets dropdown */}
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<button
+										type="button"
+										className="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-slate-300 transition hover:bg-white/8 hover:text-white cursor-pointer"
+									>
+										<Sparkles className="h-3.5 w-3.5" />
+										<span className="text-xs font-medium">Presets</span>
+										<ChevronDown className="h-3 w-3 text-slate-500" />
+									</button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent
+									align="end"
+									className="bg-[#1a1a1a] border-white/10 min-w-[160px]"
+								>
+									<DropdownMenuLabel className="text-[11px] font-medium text-white/45">
+										Apply preset
+									</DropdownMenuLabel>
+									{allPresets.map((preset) => (
+										<DropdownMenuItem
+											key={preset.id}
+											onSelect={() => applyPreset(preset)}
+											className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer"
+										>
+											{preset.name}
+										</DropdownMenuItem>
+									))}
+									<DropdownMenuSeparator className="bg-white/10" />
+									<DropdownMenuItem
+										onSelect={handleSavePreset}
+										className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer"
+									>
+										Save current as preset...
+									</DropdownMenuItem>
+									<DropdownMenuSub>
+										<DropdownMenuSubTrigger
+											disabled={customPresets.length === 0}
+											className="text-slate-300"
+										>
+											Delete preset
+										</DropdownMenuSubTrigger>
+										<DropdownMenuSubContent className="min-w-[180px] border-white/10 bg-[#1a1a1a]">
+											{customPresets.length === 0 ? (
+												<DropdownMenuItem disabled className="text-slate-500">
+													No saved presets
+												</DropdownMenuItem>
+											) : (
+												customPresets.map((preset) => (
+													<DropdownMenuItem
+														key={`delete-${preset.id}`}
+														onSelect={() => handleDeletePreset(preset.id)}
+														className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer"
+													>
+														{preset.name}
+													</DropdownMenuItem>
+												))
+											)}
+										</DropdownMenuSubContent>
+									</DropdownMenuSub>
+								</DropdownMenuContent>
+							</DropdownMenu>
+
+							{/* Layout toggle */}
+							<Tooltip content="Toggle Layout" side="bottom">
+								<button
+									type="button"
+									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
+									onClick={cycleWorkspaceLayout}
+								>
+									<SplitSquareHorizontal className="h-4 w-4" />
+								</button>
+							</Tooltip>
+
+							{/* Language Switcher */}
+							<LanguageSwitcher />
+
+							<div className="w-[1px] h-5 bg-white/10 mx-1" />
+
+							{/* Export button - amber */}
+							<Tooltip
+								content="Export Video or GIF"
+								shortcut={isMac ? "⌘ + E" : "Ctrl + E"}
+								side="bottom"
+							>
+								<button
+									type="button"
+									onClick={() => dispatchSession({ type: "set-export-settings-open", value: true })}
+									className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-white font-semibold text-xs transition bg-[#f59e0b] hover:bg-[#d97706] cursor-pointer shadow-lg shadow-amber-500/20"
+								>
+									<Download className="h-3.5 w-3.5" />
+									<span>Export</span>
+								</button>
+							</Tooltip>
+						</div>
+					</div>
+
+					<PanelGroup ref={panelGroupRef} direction="vertical" className="flex-1 min-h-0">
+						{/* Top section: Video preview + Settings sidebar */}
+						<Panel defaultSize={65} minSize={35}>
+							<div className="flex h-full pb-0 gap-3 pr-3 pl-3 pt-3">
+								{/* Video preview area */}
+								<div className="flex-1 min-w-0 flex flex-col overflow-hidden rounded-xl">
+									{missingWebcamPath && (
+										<div className="mx-3 mt-3 rounded-lg border border-amber-400/20 bg-amber-400/10 px-3 py-2.5 text-xs text-amber-100">
+											<div className="flex items-center justify-between gap-3">
+												<div className="min-w-0">
+													<div className="font-semibold text-amber-50">
+														{t("settings.webcam.missingTitle", "Webcam source missing")}
+													</div>
+													<div className="mt-1 truncate text-amber-100/80">{missingWebcamPath}</div>
+												</div>
+												<div className="flex shrink-0 items-center gap-2">
+													<button
+														type="button"
+														onClick={() => void handleRelinkMissingWebcam()}
+														className="rounded-md border border-amber-300/30 bg-amber-300/15 px-2.5 py-1 text-[11px] font-semibold text-amber-50 hover:bg-amber-300/25"
+													>
+														{t("settings.webcam.relink", "Relink webcam")}
+													</button>
+													<button
+														type="button"
+														onClick={() => void handleRemoveWebcamFromProject()}
+														className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-slate-200 hover:bg-white/10"
+													>
+														{t("settings.webcam.remove", "Remove webcam")}
+													</button>
+												</div>
 											</div>
-											<div className="mt-1 truncate text-amber-100/80">{missingWebcamPath}</div>
 										</div>
-										<div className="flex shrink-0 items-center gap-2">
-											<button
-												type="button"
-												onClick={() => void handleRelinkMissingWebcam()}
-												className="rounded-md border border-amber-300/30 bg-amber-300/15 px-2.5 py-1 text-[11px] font-semibold text-amber-50 hover:bg-amber-300/25"
-											>
-												{t("settings.webcam.relink", "Relink webcam")}
-											</button>
-											<button
-												type="button"
-												onClick={() => void handleRemoveWebcamFromProject()}
-												className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-slate-200 hover:bg-white/10"
-											>
-												{t("settings.webcam.remove", "Remove webcam")}
-											</button>
-										</div>
+									)}
+									<div className="relative w-full h-full">
+										<VideoPlayback
+											key={videoPath || "no-video"}
+											aspectRatio={aspectRatio}
+											ref={videoPlaybackRef}
+											videoPath={videoPath || ""}
+											onDurationChange={setDuration}
+											onTimeUpdate={setCurrentTime}
+											currentTime={currentTime}
+											onPlayStateChange={setIsPlaying}
+											onError={setError}
+											wallpaper={wallpaper}
+											hideBackground={hideBackground}
+											zoomRegions={effectiveZoomRegions}
+											selectedZoomId={selectedZoomId}
+											onSelectZoom={handleSelectZoom}
+											onZoomFocusChange={handleZoomFocusChange}
+											isPlaying={isPlaying}
+											frameShadowSize={frameShadowSize}
+											frameShadowOpacity={frameShadowOpacity}
+											frameShadowBlur={frameShadowBlur}
+											previewQuality={previewQuality}
+											onPreviewQualitySwitchFailed={handlePreviewQualitySwitchFailed}
+											backgroundBlur={backgroundBlur}
+											zoomMotionBlur={zoomMotionBlur}
+											connectZooms={connectZooms}
+											frameBorderEnabled={frameBorderEnabled}
+											frameBorderWidth={frameBorderWidth}
+											frameBorderColor={frameBorderColor}
+											frameBorderOpacity={frameBorderOpacity}
+											borderRadius={borderRadius}
+											padding={padding}
+											cropRegion={effectiveCropRegion}
+											trimRegions={trimRegions}
+											speedRegions={speedRegions}
+											annotationRegions={annotationRegions}
+											selectedAnnotationId={selectedAnnotationId}
+											onSelectAnnotation={handleSelectAnnotation}
+											onAnnotationPositionChange={handleAnnotationPositionChange}
+											onAnnotationSizeChange={handleAnnotationSizeChange}
+											cursorTelemetry={effectiveCursorTelemetry}
+											keyboardShortcutCallouts={keyboardShortcutCallouts}
+											showKeyboardShortcuts={showKeyboardShortcuts}
+											keyboardShortcutPosition={keyboardShortcutPosition}
+											keyboardShortcutTheme={keyboardShortcutTheme}
+											keyboardShortcutScale={keyboardShortcutScale}
+											keyboardShortcutOpacity={keyboardShortcutOpacity}
+											keyboardShortcutMaxVisible={keyboardShortcutMaxVisible}
+											showCursor={showCursor}
+											cursorSize={cursorSize}
+											cursorSmoothing={cursorSmoothing}
+											cursorMotionBlur={cursorMotionBlur}
+											cursorClickBounce={cursorClickBounce}
+											cursorSway={cursorSway}
+											cursorStyle={cursorStyle}
+											cursorPack={cursorPack}
+											cursorColor={cursorColor}
+											cursorOpacity={cursorOpacity}
+											clickHighlightColor={clickHighlightColor}
+											clickHighlightSize={clickHighlightSize}
+											clickHighlightOpacity={clickHighlightOpacity}
+											cursorTrailLength={cursorTrailLength}
+											cursorTrailOpacity={cursorTrailOpacity}
+											cursorTypeMode={cursorTypeMode}
+											cursorTilt={cursorTilt}
+											hideWhenIdle={hideWhenIdle}
+											idleHideDelayMs={idleHideDelayMs}
+											smoothMovementEnabled={smoothMovementEnabled}
+											cursorMovementStyle={cursorMovementStyle}
+											cursorSpring={cursorSpring}
+											highQualitySvgCursors={highQualitySvgCursors}
+											cameraSpring={cameraSpring}
+											webcamPath={resolvedWebcamPath}
+											webcamRegion={webcamRegion}
+											showWebcam={showWebcam}
+											mirrorWebcam={mirrorWebcam}
+											cameraSizeDuringZoom={cameraSizeDuringZoom}
+											cameraLayouts={cameraLayouts}
+											onWebcamPositionChange={handleWebcamPositionChange}
+											onWebcamSizeChange={handleWebcamSizeChange}
+											webcamSelected={webcamSelected}
+											selectedCameraLayoutId={selectedCameraLayoutId}
+											onSelectWebcam={handleSelectWebcam}
+											captionRegions={captionRegions}
+											captionSettings={captionSettings}
+										/>
 									</div>
 								</div>
-							)}
-							<div className="relative w-full h-full">
-								<VideoPlayback
-									key={videoPath || "no-video"}
-									aspectRatio={aspectRatio}
-									ref={videoPlaybackRef}
-									videoPath={videoPath || ""}
-									onDurationChange={setDuration}
-									onTimeUpdate={setCurrentTime}
-									currentTime={currentTime}
-									onPlayStateChange={setIsPlaying}
-									onError={setError}
-									wallpaper={wallpaper}
-									hideBackground={hideBackground}
-									zoomRegions={effectiveZoomRegions}
-									selectedZoomId={selectedZoomId}
-									onSelectZoom={handleSelectZoom}
-									onZoomFocusChange={handleZoomFocusChange}
-									isPlaying={isPlaying}
-									frameShadowSize={frameShadowSize}
-									frameShadowOpacity={frameShadowOpacity}
-									frameShadowBlur={frameShadowBlur}
+
+								{/* Right section: settings sidebar */}
+								<SettingsPanel
+									selected={wallpaper}
+									onWallpaperChange={setWallpaper}
 									previewQuality={previewQuality}
-									onPreviewQualitySwitchFailed={handlePreviewQualitySwitchFailed}
+									onPreviewQualityChange={setPreviewQuality}
+									selectedZoomDepth={
+										selectedZoomId ? zoomRegions.find((z) => z.id === selectedZoomId)?.depth : null
+									}
+									selectedZoomMode={
+										selectedZoomId
+											? (zoomRegions.find((z) => z.id === selectedZoomId)?.mode ??
+												DEFAULT_ZOOM_MODE)
+											: null
+									}
+									onZoomDepthChange={(depth) => selectedZoomId && handleZoomDepthChange(depth)}
+									onZoomModeChange={handleZoomModeChange}
+									selectedZoomId={selectedZoomId}
+									onZoomDelete={handleZoomDelete}
+									selectedTrimId={selectedTrimId}
+									onTrimDelete={handleTrimDelete}
+									frameShadowSize={frameShadowSize}
+									onFrameShadowSizeChange={setFrameShadowSize}
+									frameShadowOpacity={frameShadowOpacity}
+									onFrameShadowOpacityChange={setFrameShadowOpacity}
+									frameShadowBlur={frameShadowBlur}
+									onFrameShadowBlurChange={setFrameShadowBlur}
 									backgroundBlur={backgroundBlur}
+									hideBackground={hideBackground}
+									onHideBackgroundChange={setHideBackground}
+									onBackgroundBlurChange={setBackgroundBlur}
 									zoomMotionBlur={zoomMotionBlur}
+									onZoomMotionBlurChange={setZoomMotionBlur}
 									connectZooms={connectZooms}
-									frameBorderEnabled={frameBorderEnabled}
-									frameBorderWidth={frameBorderWidth}
-									frameBorderColor={frameBorderColor}
-									frameBorderOpacity={frameBorderOpacity}
-									borderRadius={borderRadius}
-									padding={padding}
-									cropRegion={effectiveCropRegion}
-									trimRegions={trimRegions}
-									speedRegions={speedRegions}
-									annotationRegions={annotationRegions}
-									selectedAnnotationId={selectedAnnotationId}
-									onSelectAnnotation={handleSelectAnnotation}
-									onAnnotationPositionChange={handleAnnotationPositionChange}
-									onAnnotationSizeChange={handleAnnotationSizeChange}
-									cursorTelemetry={effectiveCursorTelemetry}
-									keyboardShortcutCallouts={keyboardShortcutCallouts}
-									showKeyboardShortcuts={showKeyboardShortcuts}
-									keyboardShortcutPosition={keyboardShortcutPosition}
-									keyboardShortcutTheme={keyboardShortcutTheme}
-									keyboardShortcutScale={keyboardShortcutScale}
-									keyboardShortcutOpacity={keyboardShortcutOpacity}
-									keyboardShortcutMaxVisible={keyboardShortcutMaxVisible}
+									onConnectZoomsChange={setConnectZooms}
 									showCursor={showCursor}
+									onShowCursorChange={setShowCursor}
+									loopCursor={loopCursor}
+									onLoopCursorChange={setLoopCursor}
 									cursorSize={cursorSize}
+									onCursorSizeChange={setCursorSize}
 									cursorSmoothing={cursorSmoothing}
+									onCursorSmoothingChange={setCursorSmoothing}
 									cursorMotionBlur={cursorMotionBlur}
+									onCursorMotionBlurChange={setCursorMotionBlur}
 									cursorClickBounce={cursorClickBounce}
+									onCursorClickBounceChange={setCursorClickBounce}
 									cursorSway={cursorSway}
-									cursorStyle={cursorStyle}
+									onCursorSwayChange={setCursorSway}
 									cursorPack={cursorPack}
-									cursorColor={cursorColor}
-									cursorOpacity={cursorOpacity}
-									clickHighlightColor={clickHighlightColor}
-									clickHighlightSize={clickHighlightSize}
-									clickHighlightOpacity={clickHighlightOpacity}
-									cursorTrailLength={cursorTrailLength}
-									cursorTrailOpacity={cursorTrailOpacity}
+									onCursorPackChange={setCursorPack}
 									cursorTypeMode={cursorTypeMode}
+									onCursorTypeModeChange={setCursorTypeMode}
 									cursorTilt={cursorTilt}
+									onCursorTiltChange={setCursorTilt}
 									hideWhenIdle={hideWhenIdle}
+									onHideWhenIdleChange={setHideWhenIdle}
 									idleHideDelayMs={idleHideDelayMs}
+									onIdleHideDelayMsChange={setIdleHideDelayMs}
 									smoothMovementEnabled={smoothMovementEnabled}
+									onSmoothMovementEnabledChange={setSmoothMovementEnabled}
 									cursorMovementStyle={cursorMovementStyle}
+									onCursorMovementStyleChange={setCursorMovementStyle}
 									cursorSpring={cursorSpring}
-									highQualitySvgCursors={highQualitySvgCursors}
+									onCursorSpringChange={setCursorSpring}
 									cameraSpring={cameraSpring}
-									webcamPath={resolvedWebcamPath}
-									webcamRegion={webcamRegion}
+									onCameraSpringChange={setCameraSpring}
+									highQualitySvgCursors={highQualitySvgCursors}
+									onHighQualitySvgCursorsChange={setHighQualitySvgCursors}
+									cursorColor={cursorColor}
+									onCursorColorChange={setCursorColor}
+									cursorOpacity={cursorOpacity}
+									onCursorOpacityChange={setCursorOpacity}
+									clickHighlightColor={clickHighlightColor}
+									onClickHighlightColorChange={setClickHighlightColor}
+									clickHighlightSize={clickHighlightSize}
+									onClickHighlightSizeChange={setClickHighlightSize}
+									clickHighlightOpacity={clickHighlightOpacity}
+									onClickHighlightOpacityChange={setClickHighlightOpacity}
+									cursorTrailLength={cursorTrailLength}
+									onCursorTrailLengthChange={setCursorTrailLength}
+									cursorTrailOpacity={cursorTrailOpacity}
+									onCursorTrailOpacityChange={setCursorTrailOpacity}
+									showKeyboardShortcuts={showKeyboardShortcuts}
+									onShowKeyboardShortcutsChange={setShowKeyboardShortcuts}
+									keyboardShortcutPosition={keyboardShortcutPosition}
+									onKeyboardShortcutPositionChange={setKeyboardShortcutPosition}
+									keyboardShortcutTheme={keyboardShortcutTheme}
+									onKeyboardShortcutThemeChange={setKeyboardShortcutTheme}
+									keyboardShortcutScale={keyboardShortcutScale}
+									onKeyboardShortcutScaleChange={setKeyboardShortcutScale}
+									keyboardShortcutOpacity={keyboardShortcutOpacity}
+									onKeyboardShortcutOpacityChange={setKeyboardShortcutOpacity}
+									keyboardShortcutDisplayMs={keyboardShortcutDisplayMs}
+									onKeyboardShortcutDisplayMsChange={setKeyboardShortcutDisplayMs}
+									keyboardShortcutMaxVisible={keyboardShortcutMaxVisible}
+									onKeyboardShortcutMaxVisibleChange={setKeyboardShortcutMaxVisible}
+									frameBorderEnabled={frameBorderEnabled}
+									onFrameBorderEnabledChange={setFrameBorderEnabled}
+									frameBorderWidth={frameBorderWidth}
+									onFrameBorderWidthChange={setFrameBorderWidth}
+									frameBorderColor={frameBorderColor}
+									onFrameBorderColorChange={setFrameBorderColor}
+									frameBorderOpacity={frameBorderOpacity}
+									onFrameBorderOpacityChange={setFrameBorderOpacity}
+									borderRadius={borderRadius}
+									onBorderRadiusChange={setBorderRadius}
+									padding={padding}
+									onPaddingChange={setPadding}
+									cropRegion={cropRegion}
+									baseCropRegion={legacyCaptureCorrectionCrop}
+									onCropChange={setCropRegion}
+									aspectRatio={aspectRatio}
+									onAspectRatioChange={setAspectRatio}
+									videoElement={videoPlaybackRef.current?.video || null}
+									selectedAnnotationId={selectedAnnotationId}
+									annotationRegions={annotationRegions}
+									onAnnotationContentChange={handleAnnotationContentChange}
+									onAnnotationTypeChange={handleAnnotationTypeChange}
+									onAnnotationStyleChange={handleAnnotationStyleChange}
+									onAnnotationFigureDataChange={handleAnnotationFigureDataChange}
+									onAnnotationBlurDataChange={handleAnnotationBlurDataChange}
+									onAnnotationDelete={handleAnnotationDelete}
+									webcamPath={webcamPath}
+									webcamMissing={Boolean(missingWebcamPath)}
+									missingWebcamPath={missingWebcamPath}
 									showWebcam={showWebcam}
 									mirrorWebcam={mirrorWebcam}
 									cameraSizeDuringZoom={cameraSizeDuringZoom}
-									cameraLayouts={cameraLayouts}
-									onWebcamPositionChange={handleWebcamPositionChange}
-									onWebcamSizeChange={handleWebcamSizeChange}
-									webcamSelected={webcamSelected}
+									onShowWebcamChange={setShowWebcam}
+									webcamRegion={webcamRegion}
+									onWebcamRegionChange={handleWebcamRegionChange}
+									onResetRecommendedWebcam={handleResetRecommendedWebcam}
+									onResetSelectedCameraLayout={handleResetSelectedCameraLayout}
+									onRelinkMissingWebcam={() => void handleRelinkMissingWebcam()}
+									onRemoveMissingWebcam={() => void handleRemoveWebcamFromProject()}
+									onMirrorWebcamChange={setMirrorWebcam}
 									selectedCameraLayoutId={selectedCameraLayoutId}
-									onSelectWebcam={handleSelectWebcam}
+									cameraLayouts={cameraLayouts}
+									onCameraLayoutChange={handleCameraLayoutChange}
+									cameraSelected={webcamSelected}
+									onCameraSizeDuringZoomChange={setCameraSizeDuringZoom}
+									selectedSpeedId={selectedSpeedId}
+									selectedSpeedValue={
+										selectedSpeedId
+											? (speedRegions.find((r) => r.id === selectedSpeedId)?.speed ?? null)
+											: null
+									}
+									onSpeedChange={handleSpeedChange}
+									onSpeedDelete={handleSpeedDelete}
+									audioRegions={audioRegions}
+									selectedAudioId={selectedAudioId}
+									onAudioAddAtPlayhead={handleAudioAdded}
+									onReplaceSelectedAudio={handleReplaceSelectedAudioSource}
+									onAudioVolumeChange={handleAudioVolumeChange}
+									onAudioFadeChange={handleAudioFadeChange}
+									onAudioLoopChange={handleAudioLoopChange}
+									onAudioDelete={handleAudioDelete}
+									missingAudioPath={missingSelectedAudioPath}
+									onRelinkMissingAudio={handleRelinkMissingAudio}
+									onRemoveMissingAudio={handleRemoveMissingAudio}
 									captionRegions={captionRegions}
+									captionGenerationOptions={captionGenerationOptions}
+									captionGenerationProgress={captionGenerationProgress}
+									captionModelStatus={captionModelStatus}
 									captionSettings={captionSettings}
+									selectedCaptionId={selectedCaptionId}
+									onSelectCaption={setSelectedCaptionId}
+									onCaptionTextChange={handleCaptionTextChange}
+									onCaptionDelete={handleCaptionDelete}
+									onDeleteAllCaptions={handleDeleteAllCaptions}
+									onCaptionSplit={handleCaptionSplit}
+									onCaptionMergeNext={handleCaptionMergeNext}
+									onCaptionStylePresetChange={handleCaptionStylePresetChange}
+									onCaptionSettingsChange={handleCaptionSettingsChange}
+									onCaptionStyleChange={handleCaptionStyleChange}
+									onCaptionGenerationOptionsChange={handleCaptionGenerationOptionsChange}
+									onCaptionExport={handleTranscriptExport}
+									isTranscribing={isTranscribing}
+									onAutoTranscribe={handleAutoTranscribe}
+									onCancelCaptionGeneration={handleCancelCaptionGeneration}
 								/>
 							</div>
-						</div>
+						</Panel>
 
-						{/* Right section: settings sidebar */}
-						<SettingsPanel
-							selected={wallpaper}
-							onWallpaperChange={setWallpaper}
-							previewQuality={previewQuality}
-							onPreviewQualityChange={setPreviewQuality}
-							selectedZoomDepth={
-								selectedZoomId ? zoomRegions.find((z) => z.id === selectedZoomId)?.depth : null
-							}
-							selectedZoomMode={
-								selectedZoomId
-									? (zoomRegions.find((z) => z.id === selectedZoomId)?.mode ?? DEFAULT_ZOOM_MODE)
-									: null
-							}
-							onZoomDepthChange={(depth) => selectedZoomId && handleZoomDepthChange(depth)}
-							onZoomModeChange={handleZoomModeChange}
-							selectedZoomId={selectedZoomId}
-							onZoomDelete={handleZoomDelete}
-							selectedTrimId={selectedTrimId}
-							onTrimDelete={handleTrimDelete}
-							frameShadowSize={frameShadowSize}
-							onFrameShadowSizeChange={setFrameShadowSize}
-							frameShadowOpacity={frameShadowOpacity}
-							onFrameShadowOpacityChange={setFrameShadowOpacity}
-							frameShadowBlur={frameShadowBlur}
-							onFrameShadowBlurChange={setFrameShadowBlur}
-							backgroundBlur={backgroundBlur}
-							hideBackground={hideBackground}
-							onHideBackgroundChange={setHideBackground}
-							onBackgroundBlurChange={setBackgroundBlur}
-							zoomMotionBlur={zoomMotionBlur}
-							onZoomMotionBlurChange={setZoomMotionBlur}
-							connectZooms={connectZooms}
-							onConnectZoomsChange={setConnectZooms}
-							showCursor={showCursor}
-							onShowCursorChange={setShowCursor}
-							loopCursor={loopCursor}
-							onLoopCursorChange={setLoopCursor}
-							cursorSize={cursorSize}
-							onCursorSizeChange={setCursorSize}
-							cursorSmoothing={cursorSmoothing}
-							onCursorSmoothingChange={setCursorSmoothing}
-							cursorMotionBlur={cursorMotionBlur}
-							onCursorMotionBlurChange={setCursorMotionBlur}
-							cursorClickBounce={cursorClickBounce}
-							onCursorClickBounceChange={setCursorClickBounce}
-							cursorSway={cursorSway}
-							onCursorSwayChange={setCursorSway}
-							cursorPack={cursorPack}
-							onCursorPackChange={setCursorPack}
-							cursorTypeMode={cursorTypeMode}
-							onCursorTypeModeChange={setCursorTypeMode}
-							cursorTilt={cursorTilt}
-							onCursorTiltChange={setCursorTilt}
-							hideWhenIdle={hideWhenIdle}
-							onHideWhenIdleChange={setHideWhenIdle}
-							idleHideDelayMs={idleHideDelayMs}
-							onIdleHideDelayMsChange={setIdleHideDelayMs}
-							smoothMovementEnabled={smoothMovementEnabled}
-							onSmoothMovementEnabledChange={setSmoothMovementEnabled}
-							cursorMovementStyle={cursorMovementStyle}
-							onCursorMovementStyleChange={setCursorMovementStyle}
-							cursorSpring={cursorSpring}
-							onCursorSpringChange={setCursorSpring}
-							cameraSpring={cameraSpring}
-							onCameraSpringChange={setCameraSpring}
-							highQualitySvgCursors={highQualitySvgCursors}
-							onHighQualitySvgCursorsChange={setHighQualitySvgCursors}
-							cursorColor={cursorColor}
-							onCursorColorChange={setCursorColor}
-							cursorOpacity={cursorOpacity}
-							onCursorOpacityChange={setCursorOpacity}
-							clickHighlightColor={clickHighlightColor}
-							onClickHighlightColorChange={setClickHighlightColor}
-							clickHighlightSize={clickHighlightSize}
-							onClickHighlightSizeChange={setClickHighlightSize}
-							clickHighlightOpacity={clickHighlightOpacity}
-							onClickHighlightOpacityChange={setClickHighlightOpacity}
-							cursorTrailLength={cursorTrailLength}
-							onCursorTrailLengthChange={setCursorTrailLength}
-							cursorTrailOpacity={cursorTrailOpacity}
-							onCursorTrailOpacityChange={setCursorTrailOpacity}
-							showKeyboardShortcuts={showKeyboardShortcuts}
-							onShowKeyboardShortcutsChange={setShowKeyboardShortcuts}
-							keyboardShortcutPosition={keyboardShortcutPosition}
-							onKeyboardShortcutPositionChange={setKeyboardShortcutPosition}
-							keyboardShortcutTheme={keyboardShortcutTheme}
-							onKeyboardShortcutThemeChange={setKeyboardShortcutTheme}
-							keyboardShortcutScale={keyboardShortcutScale}
-							onKeyboardShortcutScaleChange={setKeyboardShortcutScale}
-							keyboardShortcutOpacity={keyboardShortcutOpacity}
-							onKeyboardShortcutOpacityChange={setKeyboardShortcutOpacity}
-							keyboardShortcutDisplayMs={keyboardShortcutDisplayMs}
-							onKeyboardShortcutDisplayMsChange={setKeyboardShortcutDisplayMs}
-							keyboardShortcutMaxVisible={keyboardShortcutMaxVisible}
-							onKeyboardShortcutMaxVisibleChange={setKeyboardShortcutMaxVisible}
-							frameBorderEnabled={frameBorderEnabled}
-							onFrameBorderEnabledChange={setFrameBorderEnabled}
-							frameBorderWidth={frameBorderWidth}
-							onFrameBorderWidthChange={setFrameBorderWidth}
-							frameBorderColor={frameBorderColor}
-							onFrameBorderColorChange={setFrameBorderColor}
-							frameBorderOpacity={frameBorderOpacity}
-							onFrameBorderOpacityChange={setFrameBorderOpacity}
-							borderRadius={borderRadius}
-							onBorderRadiusChange={setBorderRadius}
-							padding={padding}
-							onPaddingChange={setPadding}
-							cropRegion={cropRegion}
-							baseCropRegion={legacyCaptureCorrectionCrop}
-							onCropChange={setCropRegion}
-							aspectRatio={aspectRatio}
-							onAspectRatioChange={setAspectRatio}
-							videoElement={videoPlaybackRef.current?.video || null}
-							selectedAnnotationId={selectedAnnotationId}
-							annotationRegions={annotationRegions}
-							onAnnotationContentChange={handleAnnotationContentChange}
-							onAnnotationTypeChange={handleAnnotationTypeChange}
-							onAnnotationStyleChange={handleAnnotationStyleChange}
-							onAnnotationFigureDataChange={handleAnnotationFigureDataChange}
-							onAnnotationBlurDataChange={handleAnnotationBlurDataChange}
-							onAnnotationDelete={handleAnnotationDelete}
-							webcamPath={webcamPath}
-							webcamMissing={Boolean(missingWebcamPath)}
-							missingWebcamPath={missingWebcamPath}
-							showWebcam={showWebcam}
-							mirrorWebcam={mirrorWebcam}
-							cameraSizeDuringZoom={cameraSizeDuringZoom}
-							onShowWebcamChange={setShowWebcam}
-							webcamRegion={webcamRegion}
-							onWebcamRegionChange={handleWebcamRegionChange}
-							onResetRecommendedWebcam={handleResetRecommendedWebcam}
-							onResetSelectedCameraLayout={handleResetSelectedCameraLayout}
-							onRelinkMissingWebcam={() => void handleRelinkMissingWebcam()}
-							onRemoveMissingWebcam={() => void handleRemoveWebcamFromProject()}
-							onMirrorWebcamChange={setMirrorWebcam}
-							selectedCameraLayoutId={selectedCameraLayoutId}
-							cameraLayouts={cameraLayouts}
-							onCameraLayoutChange={handleCameraLayoutChange}
-							cameraSelected={webcamSelected}
-							onCameraSizeDuringZoomChange={setCameraSizeDuringZoom}
-							selectedSpeedId={selectedSpeedId}
-							selectedSpeedValue={
-								selectedSpeedId
-									? (speedRegions.find((r) => r.id === selectedSpeedId)?.speed ?? null)
-									: null
-							}
-							onSpeedChange={handleSpeedChange}
-							onSpeedDelete={handleSpeedDelete}
-							audioRegions={audioRegions}
-							selectedAudioId={selectedAudioId}
-							onAudioAddAtPlayhead={handleAudioAdded}
-							onReplaceSelectedAudio={handleReplaceSelectedAudioSource}
-							onAudioVolumeChange={handleAudioVolumeChange}
-							onAudioFadeChange={handleAudioFadeChange}
-							onAudioLoopChange={handleAudioLoopChange}
-							onAudioDelete={handleAudioDelete}
-							missingAudioPath={missingSelectedAudioPath}
-							onRelinkMissingAudio={handleRelinkMissingAudio}
-							onRemoveMissingAudio={handleRemoveMissingAudio}
-							captionRegions={captionRegions}
-							captionGenerationOptions={captionGenerationOptions}
-							captionGenerationProgress={captionGenerationProgress}
-							captionModelStatus={captionModelStatus}
-							captionSettings={captionSettings}
-							selectedCaptionId={selectedCaptionId}
-							onSelectCaption={setSelectedCaptionId}
-							onCaptionTextChange={handleCaptionTextChange}
-							onCaptionDelete={handleCaptionDelete}
-							onDeleteAllCaptions={handleDeleteAllCaptions}
-							onCaptionSplit={handleCaptionSplit}
-							onCaptionMergeNext={handleCaptionMergeNext}
-							onCaptionStylePresetChange={handleCaptionStylePresetChange}
-							onCaptionSettingsChange={handleCaptionSettingsChange}
-							onCaptionStyleChange={handleCaptionStyleChange}
-							onCaptionGenerationOptionsChange={handleCaptionGenerationOptionsChange}
-							onCaptionExport={handleTranscriptExport}
-							isTranscribing={isTranscribing}
-							onAutoTranscribe={handleAutoTranscribe}
-							onCancelCaptionGeneration={handleCancelCaptionGeneration}
-						/>
-					</div>
-				</Panel>
+						<PanelResizeHandle className="h-3 bg-[#0c0c0f]/80 hover:bg-[#0c0c0f] transition-colors flex items-center justify-center mx-4">
+							<div className="w-8 h-1 bg-white/20 rounded-full"></div>
+						</PanelResizeHandle>
 
-				<PanelResizeHandle className="h-3 bg-[#0c0c0f]/80 hover:bg-[#0c0c0f] transition-colors flex items-center justify-center mx-4">
-					<div className="w-8 h-1 bg-white/20 rounded-full"></div>
-				</PanelResizeHandle>
+						{/* Full-width Timeline section */}
+						<Panel defaultSize={35} minSize={15}>
+							<div className="h-full min-h-0 mx-4 mb-4 bg-[#0c0c0f] rounded-2xl border border-white/5 shadow-lg overflow-hidden flex flex-col">
+								<TimelineEditor
+									videoDuration={duration}
+									currentTime={currentTime}
+									videoPath={videoPath}
+									hasAudio={videoHasAudio}
+									clipVolume={clipVolume}
+									onClipVolumeChange={setClipVolume}
+									onSeek={handleSeek}
+									cursorTelemetry={effectiveCursorTelemetry}
+									zoomRegions={effectiveZoomRegions}
+									onZoomAdded={handleZoomAdded}
+									onZoomSuggested={handleZoomSuggested}
+									onZoomSpanChange={handleZoomSpanChange}
+									onZoomDelete={handleZoomDelete}
+									selectedZoomId={selectedZoomId}
+									onSelectZoom={handleSelectZoom}
+									trimRegions={trimRegions}
+									cutPoints={cutPoints}
+									onSplitClip={handleSplitClip}
+									onDeleteSegment={handleDeleteSegment}
+									onTrimAdded={handleTrimAdded}
+									onTrimSpanChange={handleTrimSpanChange}
+									onTrimDelete={handleTrimDelete}
+									selectedTrimId={selectedTrimId}
+									onSelectTrim={handleSelectTrim}
+									speedRegions={speedRegions}
+									onSpeedAdded={handleSpeedAdded}
+									onSpeedSpanChange={handleSpeedSpanChange}
+									onSpeedDelete={handleSpeedDelete}
+									selectedSpeedId={selectedSpeedId}
+									onSelectSpeed={handleSelectSpeed}
+									audioRegions={audioRegions}
+									onAudioAdded={handleAudioAdded}
+									onAudioSpanChange={handleAudioSpanChange}
+									onAudioDelete={handleAudioDelete}
+									selectedAudioId={selectedAudioId}
+									onSelectAudio={handleSelectAudio}
+									annotationRegions={annotationRegions}
+									onAnnotationAdded={handleAnnotationAdded}
+									onAnnotationSpanChange={handleAnnotationSpanChange}
+									onAnnotationDelete={handleAnnotationDelete}
+									selectedAnnotationId={selectedAnnotationId}
+									onSelectAnnotation={handleSelectAnnotation}
+									cameraLayouts={cameraLayouts}
+									onCameraLayoutAdded={handleCameraLayoutAdded}
+									onCameraLayoutSpanChange={handleCameraLayoutSpanChange}
+									onCameraLayoutDelete={handleCameraLayoutDelete}
+									selectedCameraLayoutId={selectedCameraLayoutId}
+									onSelectCameraLayout={handleSelectCameraLayout}
+									captionRegions={captionRegions}
+									onCaptionAdded={handleCaptionAdded}
+									onCaptionSpanChange={handleCaptionSpanChange}
+									onCaptionDelete={handleCaptionDelete}
+									selectedCaptionId={selectedCaptionId}
+									onSelectCaption={setSelectedCaptionId}
+									aspectRatio={aspectRatio}
+									onAspectRatioChange={setAspectRatio}
+									isPlaying={isPlaying}
+									onTogglePlayPause={togglePlayPause}
+									onSkipBack={() => handleSeek(Math.max(0, currentTime - 5))}
+									onSkipForward={() => handleSeek(Math.min(duration, currentTime + 5))}
+									playbackSpeed={DEFAULT_PLAYBACK_SPEED}
+								/>
+							</div>
+						</Panel>
+					</PanelGroup>
 
-				{/* Full-width Timeline section */}
-				<Panel defaultSize={35} minSize={15}>
-					<div className="h-full min-h-0 mx-4 mb-4 bg-[#0c0c0f] rounded-2xl border border-white/5 shadow-lg overflow-hidden flex flex-col">
-						<TimelineEditor
-							videoDuration={duration}
-							currentTime={currentTime}
-							videoPath={videoPath}
-							hasAudio={videoHasAudio}
-							clipVolume={clipVolume}
-							onClipVolumeChange={setClipVolume}
-							onSeek={handleSeek}
-							cursorTelemetry={effectiveCursorTelemetry}
-							zoomRegions={effectiveZoomRegions}
-							onZoomAdded={handleZoomAdded}
-							onZoomSuggested={handleZoomSuggested}
-							onZoomSpanChange={handleZoomSpanChange}
-							onZoomDelete={handleZoomDelete}
-							selectedZoomId={selectedZoomId}
-							onSelectZoom={handleSelectZoom}
-							trimRegions={trimRegions}
-							cutPoints={cutPoints}
-							onSplitClip={handleSplitClip}
-							onDeleteSegment={handleDeleteSegment}
-							onTrimAdded={handleTrimAdded}
-							onTrimSpanChange={handleTrimSpanChange}
-							onTrimDelete={handleTrimDelete}
-							selectedTrimId={selectedTrimId}
-							onSelectTrim={handleSelectTrim}
-							speedRegions={speedRegions}
-							onSpeedAdded={handleSpeedAdded}
-							onSpeedSpanChange={handleSpeedSpanChange}
-							onSpeedDelete={handleSpeedDelete}
-							selectedSpeedId={selectedSpeedId}
-							onSelectSpeed={handleSelectSpeed}
-							audioRegions={audioRegions}
-							onAudioAdded={handleAudioAdded}
-							onAudioSpanChange={handleAudioSpanChange}
-							onAudioDelete={handleAudioDelete}
-							selectedAudioId={selectedAudioId}
-							onSelectAudio={handleSelectAudio}
-							annotationRegions={annotationRegions}
-							onAnnotationAdded={handleAnnotationAdded}
-							onAnnotationSpanChange={handleAnnotationSpanChange}
-							onAnnotationDelete={handleAnnotationDelete}
-							selectedAnnotationId={selectedAnnotationId}
-							onSelectAnnotation={handleSelectAnnotation}
-							cameraLayouts={cameraLayouts}
-							onCameraLayoutAdded={handleCameraLayoutAdded}
-							onCameraLayoutSpanChange={handleCameraLayoutSpanChange}
-							onCameraLayoutDelete={handleCameraLayoutDelete}
-							selectedCameraLayoutId={selectedCameraLayoutId}
-							onSelectCameraLayout={handleSelectCameraLayout}
-							captionRegions={captionRegions}
-							onCaptionAdded={handleCaptionAdded}
-							onCaptionSpanChange={handleCaptionSpanChange}
-							onCaptionDelete={handleCaptionDelete}
-							selectedCaptionId={selectedCaptionId}
-							onSelectCaption={setSelectedCaptionId}
-							aspectRatio={aspectRatio}
-							onAspectRatioChange={setAspectRatio}
-							isPlaying={isPlaying}
-							onTogglePlayPause={togglePlayPause}
-							onSkipBack={() => handleSeek(Math.max(0, currentTime - 5))}
-							onSkipForward={() => handleSeek(Math.min(duration, currentTime + 5))}
-							playbackSpeed={DEFAULT_PLAYBACK_SPEED}
-						/>
-					</div>
-				</Panel>
-			</PanelGroup>
+					<ExportSettingsDialog
+						isOpen={showExportSettings}
+						onClose={() => dispatchSession({ type: "set-export-settings-open", value: false })}
+						exportFormat={exportFormat}
+						onExportFormatChange={setExportFormat}
+						exportDestination={exportDestination}
+						onExportDestinationChange={setExportDestination}
+						videoExportSettings={videoExportSettings}
+						onVideoExportSettingsChange={setVideoExportSettings}
+						gifExportSettings={gifExportSettings}
+						onGifExportSettingsChange={setGifExportSettings}
+						resolvedVideoPlan={resolveVideoExportPlan(
+							buildSourceVideoMetadata({
+								width: videoPlaybackRef.current?.video?.videoWidth || 1920,
+								height: videoPlaybackRef.current?.video?.videoHeight || 1080,
+								frameRate: sourceFrameRate,
+								durationMs: Math.round(duration * 1000),
+							}),
+							videoExportSettings,
+							getAspectRatioValue(
+								aspectRatio,
+								(videoPlaybackRef.current?.video?.videoWidth || 1920) /
+									(videoPlaybackRef.current?.video?.videoHeight || 1080),
+							),
+						)}
+						resolvedGifPlan={resolveGifExportPlan(
+							buildSourceVideoMetadata({
+								width: videoPlaybackRef.current?.video?.videoWidth || 1920,
+								height: videoPlaybackRef.current?.video?.videoHeight || 1080,
+								frameRate: sourceFrameRate,
+								durationMs: Math.round(duration * 1000),
+							}),
+							gifExportSettings,
+							getAspectRatioValue(
+								aspectRatio,
+								(videoPlaybackRef.current?.video?.videoWidth || 1920) /
+									(videoPlaybackRef.current?.video?.videoHeight || 1080),
+							),
+							Math.round(duration * 1000),
+						)}
+						onExport={handleOpenExportDialog}
+					/>
 
-			<ExportSettingsDialog
-				isOpen={showExportSettings}
-				onClose={() => dispatchSession({ type: "set-export-settings-open", value: false })}
-				exportFormat={exportFormat}
-				onExportFormatChange={setExportFormat}
-				exportDestination={exportDestination}
-				onExportDestinationChange={setExportDestination}
-				videoExportSettings={videoExportSettings}
-				onVideoExportSettingsChange={setVideoExportSettings}
-				gifExportSettings={gifExportSettings}
-				onGifExportSettingsChange={setGifExportSettings}
-				resolvedVideoPlan={resolveVideoExportPlan(
-					buildSourceVideoMetadata({
-						width: videoPlaybackRef.current?.video?.videoWidth || 1920,
-						height: videoPlaybackRef.current?.video?.videoHeight || 1080,
-						frameRate: sourceFrameRate,
-						durationMs: Math.round(duration * 1000),
-					}),
-					videoExportSettings,
-					getAspectRatioValue(
-						aspectRatio,
-						(videoPlaybackRef.current?.video?.videoWidth || 1920) /
-							(videoPlaybackRef.current?.video?.videoHeight || 1080),
-					),
-				)}
-				resolvedGifPlan={resolveGifExportPlan(
-					buildSourceVideoMetadata({
-						width: videoPlaybackRef.current?.video?.videoWidth || 1920,
-						height: videoPlaybackRef.current?.video?.videoHeight || 1080,
-						frameRate: sourceFrameRate,
-						durationMs: Math.round(duration * 1000),
-					}),
-					gifExportSettings,
-					getAspectRatioValue(
-						aspectRatio,
-						(videoPlaybackRef.current?.video?.videoWidth || 1920) /
-							(videoPlaybackRef.current?.video?.videoHeight || 1080),
-					),
-					Math.round(duration * 1000),
-				)}
-				onExport={handleOpenExportDialog}
-			/>
+					<ExportDialog
+						isOpen={showExportDialog}
+						onClose={handleExportDialogClose}
+						progress={exportProgress}
+						isExporting={isExporting}
+						error={exportError}
+						onCancel={handleCancelExport}
+						onRetrySave={handleRetrySaveExport}
+						canRetrySave={hasPendingExportSave}
+						exportFormat={exportFormat}
+						details={exportDetails}
+						exportedFilePath={exportedFilePath}
+					/>
 
-			<ExportDialog
-				isOpen={showExportDialog}
-				onClose={handleExportDialogClose}
-				progress={exportProgress}
-				isExporting={isExporting}
-				error={exportError}
-				onCancel={handleCancelExport}
-				onRetrySave={handleRetrySaveExport}
-				canRetrySave={hasPendingExportSave}
-				exportFormat={exportFormat}
-				details={exportDetails}
-				exportedFilePath={exportedFilePath}
-			/>
+					<QuickShareDialog
+						isOpen={showQuickShare}
+						onClose={() => dispatchSession({ type: "set-quick-share-open", value: false })}
+						onSave={handleQuickShareSave}
+						onCopy={() => void handleExportToClipboard()}
+						onEdit={handleQuickShareEdit}
+					/>
 
-			<QuickShareDialog
-				isOpen={showQuickShare}
-				onClose={() => dispatchSession({ type: "set-quick-share-open", value: false })}
-				onSave={handleQuickShareSave}
-				onCopy={() => void handleExportToClipboard()}
-				onEdit={handleQuickShareEdit}
-			/>
+					<PresetNameDialog
+						isOpen={sessionState.modals.presetDialog.isOpen}
+						name={sessionState.modals.presetDialog.name}
+						onNameChange={(name) => dispatchSession({ type: "set-preset-dialog-name", name })}
+						onCancel={() => dispatchSession({ type: "close-preset-dialog" })}
+						onConfirm={handleConfirmSavePreset}
+					/>
 
-			<PresetNameDialog
-				isOpen={sessionState.modals.presetDialog.isOpen}
-				name={sessionState.modals.presetDialog.name}
-				onNameChange={(name) => dispatchSession({ type: "set-preset-dialog-name", name })}
-				onCancel={() => dispatchSession({ type: "close-preset-dialog" })}
-				onConfirm={handleConfirmSavePreset}
-			/>
-
-			<ConfirmActionDialog
-				dialog={sessionState.modals.confirmDialog}
-				onCancel={() => dispatchSession({ type: "close-confirm-dialog" })}
-				onConfirm={() => void handleConfirmDialogAction()}
-			/>
-			</div>
+					<ConfirmActionDialog
+						dialog={sessionState.modals.confirmDialog}
+						onCancel={() => dispatchSession({ type: "close-confirm-dialog" })}
+						onConfirm={() => void handleConfirmDialogAction()}
+					/>
+				</div>
 			)}
 		</div>
 	);

@@ -358,16 +358,16 @@ export function createEditorWindow(): BrowserWindow {
 
 export function createSourceSelectorWindow(): BrowserWindow {
 	const cursorWorkArea = getCursorDisplayWorkArea();
-	const winWidth = Math.min(760, Math.max(640, Math.round(cursorWorkArea.width * 0.6)));
-	const winHeight = Math.min(620, Math.max(520, Math.round(cursorWorkArea.height * 0.7)));
+	const winWidth = Math.min(820, Math.max(720, Math.round(cursorWorkArea.width * 0.6)));
+	const winHeight = Math.min(680, Math.max(580, Math.round(cursorWorkArea.height * 0.72)));
 
 	const win = new BrowserWindow({
 		width: winWidth,
 		height: winHeight,
-		minWidth: 580,
-		minHeight: 480,
-		maxWidth: 960,
-		maxHeight: 780,
+		minWidth: 640,
+		minHeight: 540,
+		maxWidth: 1040,
+		maxHeight: 820,
 		x: Math.round(cursorWorkArea.x + (cursorWorkArea.width - winWidth) / 2),
 		y: Math.round(cursorWorkArea.y + (cursorWorkArea.height - winHeight) / 2),
 		frame: false,
@@ -549,6 +549,40 @@ export function closeCountdownWindow(): void {
 
 export function getHudOverlayWindow(): BrowserWindow | null {
 	return hudOverlayWindow;
+}
+
+export function fadeOutAndDestroyWindow(win: BrowserWindow | null, duration = 160): Promise<void> {
+	return new Promise((resolve) => {
+		if (!win || win.isDestroyed()) {
+			resolve();
+			return;
+		}
+		try {
+			win.setIgnoreMouseEvents(true);
+		} catch {
+			// Some window types may not support this; ignore.
+		}
+		const startTime = Date.now();
+		const startOpacity = win.getOpacity();
+		const interval = setInterval(() => {
+			if (win.isDestroyed()) {
+				clearInterval(interval);
+				resolve();
+				return;
+			}
+			const elapsed = Date.now() - startTime;
+			const progress = Math.min(1, elapsed / duration);
+			const eased = progress * progress;
+			win.setOpacity(startOpacity * (1 - eased));
+			if (progress >= 1) {
+				clearInterval(interval);
+				if (!win.isDestroyed()) {
+					win.destroy();
+				}
+				resolve();
+			}
+		}, 16);
+	});
 }
 
 export function createAreaOverlayWindow(displayId?: number): BrowserWindow {

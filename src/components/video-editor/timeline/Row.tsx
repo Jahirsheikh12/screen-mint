@@ -30,6 +30,7 @@ export default function Row({
 }: RowProps) {
 	const { setNodeRef, rowWrapperStyle, rowStyle } = useRow({ id });
 	const { sidebarWidth, range, pixelsToValue } = useTimelineContext();
+	const iconPadding = sidebarWidth;
 	const [isHovered, setIsHovered] = useState(false);
 	const [isOverItem, setIsOverItem] = useState(false);
 	const [mouseX, setMouseX] = useState(0);
@@ -77,8 +78,6 @@ export default function Row({
 			: variant === "clip"
 				? "border-b border-[#1a1810] bg-[#141210] relative group/row"
 				: "border-b border-[#18181b] bg-[#141416] relative group/row";
-
-	const iconPadding = Icon ? 48 : 0;
 
 	return (
 		<div

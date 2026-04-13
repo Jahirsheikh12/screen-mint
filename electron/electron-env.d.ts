@@ -106,6 +106,20 @@ declare global {
 				microphoneSegments?: Array<{ path: string; durationMs: number }>;
 				selectedArea?: SelectedArea | null;
 			}) => Promise<{ success: boolean; path?: string; message?: string; error?: string }>;
+			triggerFinalizeRecordingSession: (payload: {
+				videoSegments: Array<{ path: string; durationMs: number }>;
+				webcamSegments?: Array<{ path: string; durationMs: number }>;
+				microphoneSegments?: Array<{ path: string; durationMs: number }>;
+				selectedArea?: SelectedArea | null;
+			}) => Promise<{ success: boolean }>;
+			awaitRecordingFinalized: () => Promise<{
+				success: boolean;
+				path?: string;
+				webcamPath?: string | null;
+				microphonePath?: string | null;
+				message?: string;
+				error?: string;
+			}>;
 			discardRecordingArtifacts: (payload: {
 				paths: string[];
 				clearCurrentVideo?: boolean;
@@ -403,7 +417,11 @@ declare global {
 			/** Reposition the HUD onto the display containing the cursor */
 			recenterHudOnCursor: () => Promise<void>;
 			/** Default the active capture source to the display under the cursor */
-			autoSelectCursorDisplay: () => Promise<{ success: boolean; source?: SelectedCaptureSource; error?: string }>;
+			autoSelectCursorDisplay: () => Promise<{
+				success: boolean;
+				source?: SelectedCaptureSource;
+				error?: string;
+			}>;
 		};
 	}
 

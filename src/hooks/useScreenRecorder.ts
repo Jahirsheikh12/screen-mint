@@ -1363,24 +1363,55 @@ export function useScreenRecorder(
 				const selectedArea =
 					sessionRef.current.captureMode === "area" ? sessionRef.current.selectedArea : null;
 				const webcamSegment = await stopWebcamRecordingRef.current();
-				const finalized = await window.electronAPI.finalizeRecordingSession({
+
+				// Retake path: keep the old behavior (fully synchronous finalize) because we
+				// immediately start a new recording and don't open the editor.
+				if (nextAction === "retake") {
+					const finalized = await window.electronAPI.finalizeRecordingSession({
+						videoSegments: recordingSegmentsRef.current,
+						webcamSegments: webcamSegment ? [webcamSegment] : [],
+						microphoneSegments: microphoneSegmentsRef.current,
+						selectedArea,
+					});
+					if (!finalized.success || !finalized.path) {
+						throw new Error(finalized.error ?? finalized.message ?? "Failed to finalize session");
+					}
+					resetSegmentBuffers();
+					await window.electronAPI.closeAreaOverlay();
+					await window.electronAPI.setPostRecordingContext({
+						action: recordingSettings?.afterRecordingAction ?? "create-project",
+						openQuickShare: Boolean(recordingSettings?.openQuickShare),
+						autoCreateZooms: Boolean(recordingSettings?.autoCreateZooms),
+						recordingPath: finalized.path,
+						webcamPath: webcamSegment?.path ?? null,
+						projectPath: null,
+					} satisfies PostRecordingContext);
+					pendingActionRef.current = null;
+					dispatchSession({ type: "reset" });
+					dispatchSession({ type: "clear-pending-action" });
+					await startRecording();
+					return;
+				}
+
+				// Optimistic stop path: kick off finalization in the background and
+				// immediately hand the user off to the editor. The editor awaits the
+				// finalized result via awaitRecordingFinalized().
+				await window.electronAPI.triggerFinalizeRecordingSession({
 					videoSegments: recordingSegmentsRef.current,
 					webcamSegments: webcamSegment ? [webcamSegment] : [],
 					microphoneSegments: microphoneSegmentsRef.current,
 					selectedArea,
 				});
 
-				if (!finalized.success || !finalized.path) {
-					throw new Error(finalized.error ?? finalized.message ?? "Failed to finalize session");
-				}
-
 				resetSegmentBuffers();
-				await window.electronAPI.closeAreaOverlay();
+				// Seed the post-recording context now so the editor picks up user
+				// preferences on mount. The main process will populate recordingPath
+				// and webcamPath once finalization completes.
 				await window.electronAPI.setPostRecordingContext({
 					action: recordingSettings?.afterRecordingAction ?? "create-project",
 					openQuickShare: Boolean(recordingSettings?.openQuickShare),
 					autoCreateZooms: Boolean(recordingSettings?.autoCreateZooms),
-					recordingPath: finalized.path,
+					recordingPath: null,
 					webcamPath: webcamSegment?.path ?? null,
 					projectPath: null,
 				} satisfies PostRecordingContext);
@@ -1388,11 +1419,10 @@ export function useScreenRecorder(
 				dispatchSession({ type: "reset" });
 				dispatchSession({ type: "clear-pending-action" });
 
-				if (nextAction === "retake") {
-					await startRecording();
-					return;
-				}
-
+				// Open editor immediately. switchToEditor closes the current main
+				// window (the HUD), so we don't need a separate hide step. Don't
+				// await the area-overlay close — let it tear down in the background.
+				void window.electronAPI.closeAreaOverlay();
 				await window.electronAPI.switchToEditor();
 			} finally {
 				finalizingRecordingRef.current = false;
@@ -1441,14 +1471,14 @@ export function useScreenRecorder(
 			pendingActionRef.current = "stop";
 
 			if (nativeScreenRecording.current) {
-				await playAppAudioCue("recording-stop");
+				void playAppAudioCue("recording-stop");
 				await stopActiveNativeSegment(false);
 				await finalizeSessionRef.current("stop");
 				return;
 			}
 
 			if (sessionRef.current.phase === "paused" && mediaRecorder.current == null) {
-				await playAppAudioCue("recording-stop");
+				void playAppAudioCue("recording-stop");
 				await finalizeSessionRef.current("stop");
 				return;
 			}
@@ -1458,7 +1488,7 @@ export function useScreenRecorder(
 				mediaRecorder.current?.state === "paused"
 			) {
 				browserSessionStopPending.current = true;
-				await playAppAudioCue("recording-stop");
+				void playAppAudioCue("recording-stop");
 				cleanupCapturedMedia();
 				await window.electronAPI.setRecordingState(false);
 				mediaRecorder.current.stop();

@@ -97,6 +97,17 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	}) => {
 		return ipcRenderer.invoke("finalize-recording-session", payload);
 	},
+	triggerFinalizeRecordingSession: (payload: {
+		videoSegments: Array<{ path: string; durationMs: number }>;
+		webcamSegments?: Array<{ path: string; durationMs: number }>;
+		microphoneSegments?: Array<{ path: string; durationMs: number }>;
+		selectedArea?: unknown;
+	}) => {
+		return ipcRenderer.invoke("trigger-finalize-recording-session", payload);
+	},
+	awaitRecordingFinalized: () => {
+		return ipcRenderer.invoke("await-recording-finalized");
+	},
 	discardRecordingArtifacts: (payload: {
 		paths: string[];
 		clearCurrentVideo?: boolean;

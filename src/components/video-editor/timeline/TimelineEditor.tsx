@@ -311,7 +311,7 @@ function PlaybackCursor({
 			if (!timelineRef.current || !onSeek) return;
 
 			const rect = timelineRef.current.getBoundingClientRect();
-			const clickX = e.clientX - rect.left - sidebarWidth - ICON_SIDEBAR_WIDTH;
+			const clickX = e.clientX - rect.left - sidebarWidth;
 
 			// Allow dragging outside to 0 or max, but clamp the value
 			const relativeMs = pixelsToValue(clickX);
@@ -375,8 +375,7 @@ function PlaybackCursor({
 		<div
 			className="absolute top-0 bottom-0 z-50 group/cursor"
 			style={{
-				[sideProperty === "right" ? "marginRight" : "marginLeft"]:
-					`${sidebarWidth + ICON_SIDEBAR_WIDTH - 1}px`,
+				[sideProperty === "right" ? "marginRight" : "marginLeft"]: `${sidebarWidth - 1}px`,
 				pointerEvents: "none",
 			}}
 		>
@@ -479,8 +478,7 @@ function TimelineAxis({
 		<div
 			className="h-8 bg-[#0c0c0f] border-b border-white/5 relative overflow-hidden select-none"
 			style={{
-				[sideProperty === "right" ? "marginRight" : "marginLeft"]:
-					`${sidebarWidth + ICON_SIDEBAR_WIDTH}px`,
+				[sideProperty === "right" ? "marginRight" : "marginLeft"]: `${sidebarWidth}px`,
 			}}
 		>
 			{/* Minor Ticks */}
@@ -607,7 +605,7 @@ function Timeline({
 	waveformData?: Float32Array | null;
 	sourceDurationMs?: number;
 }) {
-	const { setTimelineRef, style, sidebarWidth, direction, range, pixelsToValue } =
+	const { setTimelineRef, setSidebarRef, style, sidebarWidth, direction, range, pixelsToValue } =
 		useTimelineContext();
 	const sideProperty = direction === "rtl" ? "right" : "left";
 	const localTimelineRef = useRef<HTMLDivElement | null>(null);
@@ -625,7 +623,7 @@ function Timeline({
 		(e: React.MouseEvent) => {
 			if (!localTimelineRef.current) return;
 			const rect = localTimelineRef.current.getBoundingClientRect();
-			const x = e.clientX - rect.left - sidebarWidth - ICON_SIDEBAR_WIDTH;
+			const x = e.clientX - rect.left - sidebarWidth;
 			if (x >= 0) {
 				setGhostX(x);
 			} else {
@@ -644,7 +642,7 @@ function Timeline({
 			if (videoDurationMs <= 0) return;
 
 			const rect = e.currentTarget.getBoundingClientRect();
-			const clickX = e.clientX - rect.left - sidebarWidth - ICON_SIDEBAR_WIDTH;
+			const clickX = e.clientX - rect.left - sidebarWidth;
 
 			if (clickX < 0) return;
 
@@ -705,6 +703,23 @@ function Timeline({
 			onMouseMove={handleTimelineMouseMove}
 			onMouseLeave={handleTimelineMouseLeave}
 		>
+			{/* Hidden element whose width is measured by dnd-timeline as the sidebar width.
+			    Reserves ICON_SIDEBAR_WIDTH of horizontal space so items are positioned within
+			    (timelineWidth - ICON_SIDEBAR_WIDTH), leaving room for the absolute icon column
+			    on each row and preventing the right edge from being clipped. */}
+			<div
+				ref={setSidebarRef}
+				aria-hidden
+				style={{
+					position: "absolute",
+					top: 0,
+					left: 0,
+					width: ICON_SIDEBAR_WIDTH,
+					height: 0,
+					visibility: "hidden",
+					pointerEvents: "none",
+				}}
+			/>
 			<TimelineAxis videoDurationMs={videoDurationMs} currentTimeMs={currentTimeMs} />
 			<PlaybackCursor
 				currentTimeMs={currentTimeMs}
@@ -718,8 +733,7 @@ function Timeline({
 				<div
 					className="absolute top-0 bottom-0 z-40 pointer-events-none"
 					style={{
-						[sideProperty === "right" ? "marginRight" : "marginLeft"]:
-							`${sidebarWidth + ICON_SIDEBAR_WIDTH}px`,
+						[sideProperty === "right" ? "marginRight" : "marginLeft"]: `${sidebarWidth}px`,
 					}}
 				>
 					<div

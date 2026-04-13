@@ -33,7 +33,7 @@ const KeyframeMarkers: React.FC<KeyframeMarkersProps> = ({
 			if (!timelineRef.current) return;
 
 			const rect = timelineRef.current.getBoundingClientRect();
-			const clickX = e.clientX - rect.left - sidebarWidth - 48;
+			const clickX = e.clientX - rect.left - sidebarWidth;
 			const relativeMs = pixelsToValue(clickX);
 			const absoluteMs = Math.max(0, Math.min(range.start + relativeMs, videoDurationMs));
 
@@ -77,7 +77,7 @@ const KeyframeMarkers: React.FC<KeyframeMarkersProps> = ({
 						key={kf.id}
 						className={`absolute top-8 cursor-grab active:cursor-grabbing ${isSelected ? "ring-2 ring-[#F59E0B]" : ""}`}
 						style={{
-							left: `${sidebarWidth + 48 + offset - 8}px`,
+							left: `${sidebarWidth + offset - 8}px`,
 							zIndex: isDragging ? 50 : 40,
 							transition: isDragging ? "none" : "left 0.1s ease-out",
 						}}

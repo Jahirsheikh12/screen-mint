@@ -14,6 +14,11 @@ type ProcessedDesktopSource = {
 	sourceType?: "screen" | "window";
 	appName?: string;
 	windowTitle?: string;
+	width?: number;
+	height?: number;
+	scaleFactor?: number;
+	isPrimary?: boolean;
+	isInternal?: boolean;
 };
 
 type DesktopSource = {
@@ -26,9 +31,16 @@ type DesktopSource = {
 	sourceType: "screen" | "window";
 	appName?: string;
 	windowTitle?: string;
+	width?: number;
+	height?: number;
+	isPrimary?: boolean;
+	isInternal?: boolean;
 };
 
 type TabKey = "screens" | "windows";
+
+const DISPLAY_CARD_MIN = 260;
+const WINDOW_CARD_MIN = 220;
 
 function parseSourceMetadata(source: ProcessedDesktopSource) {
 	if (source.sourceType === "window" && (source.appName || source.windowTitle)) {
@@ -61,16 +73,177 @@ function parseSourceMetadata(source: ProcessedDesktopSource) {
 	};
 }
 
-function SkeletonGrid() {
+function filterByQuery(list: DesktopSource[], query: string): DesktopSource[] {
+	if (!query) return list;
+	const q = query.trim().toLowerCase();
+	if (!q) return list;
+	return list.filter(
+		(s) =>
+			s.name.toLowerCase().includes(q) ||
+			s.appName?.toLowerCase().includes(q) ||
+			s.originalName.toLowerCase().includes(q),
+	);
+}
+
+function SkeletonGrid({ variant }: { variant: TabKey }) {
+	if (variant === "screens") {
+		return (
+			<div className={`${styles.skeletonGrid} ${styles.skeletonGridScreens}`}>
+				{Array.from({ length: 4 }, (_, i) => `sk-d-${i}`).map((key) => (
+					<div key={key} className={styles.skeletonDisplay}>
+						<div className={styles.skeletonDisplayBezel}>
+							<div className={styles.skeletonDisplayScreen} />
+						</div>
+						<div className={styles.skeletonDisplayMeta} />
+					</div>
+				))}
+			</div>
+		);
+	}
 	return (
-		<div className={styles.skeletonGrid}>
-			{Array.from({ length: 6 }, (_, i) => `sk-${i}`).map((key) => (
-				<div key={key} className={styles.skeletonCard}>
-					<div className={styles.skeletonThumb} />
-					<div className={styles.skeletonText} />
+		<div className={`${styles.skeletonGrid} ${styles.skeletonGridWindows}`}>
+			{Array.from({ length: 6 }, (_, i) => `sk-w-${i}`).map((key) => (
+				<div key={key} className={styles.skeletonWindow}>
+					<div className={styles.skeletonWindowChrome} />
+					<div className={styles.skeletonWindowThumb} />
+					<div className={styles.skeletonWindowMeta} />
 				</div>
 			))}
 		</div>
+	);
+}
+
+type DisplayCardProps = {
+	source: DesktopSource;
+	selected: boolean;
+	focused: boolean;
+	onClick: () => void;
+	onDoubleClick: () => void;
+	primaryLabel: string;
+};
+
+function DisplayCard({
+	source,
+	selected,
+	focused,
+	onClick,
+	onDoubleClick,
+	primaryLabel,
+}: DisplayCardProps) {
+	const resolution =
+		source.width && source.height ? `${source.width} × ${source.height}` : null;
+
+	return (
+		<button
+			type="button"
+			className={`${styles.displayCard} ${selected ? styles.displayCardSelected : ""} ${
+				focused && !selected ? styles.displayCardFocused : ""
+			}`}
+			onClick={onClick}
+			onDoubleClick={onDoubleClick}
+		>
+			<div className={styles.displayBezel}>
+				<div className={styles.displayScreen}>
+					{source.thumbnail ? (
+						<img
+							src={source.thumbnail}
+							alt={source.name}
+							className={styles.displayThumb}
+							draggable={false}
+						/>
+					) : (
+						<div className={styles.displayThumbPlaceholder}>
+							<FiMonitor size={28} />
+						</div>
+					)}
+				</div>
+				<div className={styles.displayCheck}>
+					<FiCheck size={13} strokeWidth={3.5} />
+				</div>
+			</div>
+			<div className={styles.displayStand} />
+			<div className={styles.displayBase} />
+			<div className={styles.displayMeta}>
+				<span className={styles.displayName}>{source.name}</span>
+				{source.isPrimary && <span className={styles.displayBadgePrimary}>{primaryLabel}</span>}
+				{resolution && <span className={styles.displayResolution}>{resolution}</span>}
+			</div>
+		</button>
+	);
+}
+
+type WindowCardProps = {
+	source: DesktopSource;
+	selected: boolean;
+	focused: boolean;
+	onClick: () => void;
+	onDoubleClick: () => void;
+	untitledLabel: string;
+};
+
+function WindowCard({
+	source,
+	selected,
+	focused,
+	onClick,
+	onDoubleClick,
+	untitledLabel,
+}: WindowCardProps) {
+	const appName = source.appName ?? source.name;
+	const titleLine = source.windowTitle && source.windowTitle !== appName ? source.windowTitle : "";
+
+	return (
+		<button
+			type="button"
+			className={`${styles.windowCard} ${selected ? styles.windowCardSelected : ""} ${
+				focused && !selected ? styles.windowCardFocused : ""
+			}`}
+			onClick={onClick}
+			onDoubleClick={onDoubleClick}
+		>
+			<div className={styles.windowChromeBar}>
+				<span className={`${styles.chromeDot} ${styles.chromeDotRed}`} />
+				<span className={`${styles.chromeDot} ${styles.chromeDotYellow}`} />
+				<span className={`${styles.chromeDot} ${styles.chromeDotGreen}`} />
+				<span className={styles.windowChromeTitle}>{titleLine || appName}</span>
+			</div>
+			<div className={styles.windowThumbWrap}>
+				{source.thumbnail ? (
+					<img
+						src={source.thumbnail}
+						alt={source.name}
+						className={styles.windowThumb}
+						draggable={false}
+					/>
+				) : (
+					<div className={styles.windowThumbPlaceholder}>
+						<div className={styles.windowPlaceholderIcon}>
+							{source.appIcon ? (
+								<img src={source.appIcon} alt="" />
+							) : (
+								<FiSquare size={20} />
+							)}
+						</div>
+					</div>
+				)}
+				<div className={styles.windowCheck}>
+					<FiCheck size={12} strokeWidth={3.5} />
+				</div>
+			</div>
+			<div className={styles.windowMeta}>
+				{source.appIcon ? (
+					<img src={source.appIcon} alt="" className={styles.windowAppIcon} />
+				) : (
+					<div className={styles.windowAppIconFallback}>
+						<FiSquare size={11} />
+					</div>
+				)}
+				<div className={styles.windowTextBlock}>
+					<span className={styles.windowAppName}>{appName || untitledLabel}</span>
+					{titleLine && <span className={styles.windowTitle}>{titleLine}</span>}
+				</div>
+			</div>
+		</button>
 	);
 }
 
@@ -113,6 +286,10 @@ export function SourceSelector() {
 					sourceType: metadata.sourceType,
 					appName: metadata.appName,
 					windowTitle: metadata.windowTitle,
+					width: source.width,
+					height: source.height,
+					isPrimary: source.isPrimary,
+					isInternal: source.isInternal,
 				};
 			}),
 		[rawSources],
@@ -121,17 +298,19 @@ export function SourceSelector() {
 	const screenSources = useMemo(() => sources.filter((s) => s.sourceType === "screen"), [sources]);
 	const windowSources = useMemo(() => sources.filter((s) => s.sourceType === "window"), [sources]);
 
-	const visibleSources = useMemo(() => {
-		const list = activeTab === "screens" ? screenSources : windowSources;
-		const q = search.trim().toLowerCase();
-		if (!q) return list;
-		return list.filter(
-			(s) =>
-				s.name.toLowerCase().includes(q) ||
-				s.appName?.toLowerCase().includes(q) ||
-				s.originalName.toLowerCase().includes(q),
-		);
-	}, [activeTab, screenSources, windowSources, search]);
+	const filteredScreens = useMemo(
+		() => filterByQuery(screenSources, search),
+		[screenSources, search],
+	);
+	const filteredWindows = useMemo(
+		() => filterByQuery(windowSources, search),
+		[windowSources, search],
+	);
+
+	const visibleSources = activeTab === "screens" ? filteredScreens : filteredWindows;
+	const otherTabHasMatches =
+		search.trim().length > 0 &&
+		(activeTab === "screens" ? filteredWindows.length > 0 : filteredScreens.length > 0);
 
 	useEffect(() => {
 		if (loading) return;
@@ -144,8 +323,7 @@ export function SourceSelector() {
 
 	useEffect(() => {
 		setFocusIndex(0);
-		setSelectedId(null);
-	}, [activeTab]);
+	}, [activeTab, search]);
 
 	useEffect(() => {
 		if (focusIndex >= visibleSources.length) {
@@ -186,10 +364,8 @@ export function SourceSelector() {
 			}
 			if (!visibleSources.length) return;
 
-			const cols = Math.max(
-				1,
-				Math.floor((gridRef.current?.clientWidth ?? 0) / (activeTab === "screens" ? 232 : 192)),
-			);
+			const cardWidth = activeTab === "screens" ? DISPLAY_CARD_MIN : WINDOW_CARD_MIN;
+			const cols = Math.max(1, Math.floor((gridRef.current?.clientWidth ?? 0) / cardWidth));
 
 			const moveFocus = (next: number) => {
 				const clamped = Math.max(0, Math.min(visibleSources.length - 1, next));
@@ -225,6 +401,14 @@ export function SourceSelector() {
 			setFocusIndex(index);
 		},
 		[handleShare, selectedId],
+	);
+
+	const onCardDoubleClick = useCallback(
+		(source: DesktopSource) => {
+			setSelectedId(source.id);
+			void handleShare();
+		},
+		[handleShare],
 	);
 
 	if (accessState && !accessState.canProbeSources) {
@@ -272,14 +456,18 @@ export function SourceSelector() {
 		);
 	}
 
-	const isMac =
-		typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform ?? "");
-	const cmdLabel = isMac ? "↵" : "↵";
+	const primaryLabel = t("sourceSelector.primary", "Primary");
+	const untitledLabel = t("sourceSelector.untitledWindow", "Untitled window");
+	const showSearchHint = search.trim().length > 0 && otherTabHasMatches;
 
 	return (
 		<div className={styles.shell}>
 			<div className={`${styles.header} ${styles.dragHandle}`}>
 				<div className={styles.titleBlock}>
+					<div className={styles.eyebrow}>
+						<span className={styles.eyebrowDot} />
+						{t("sourceSelector.eyebrow", "Ready to record")}
+					</div>
 					<div className={styles.title}>{t("sourceSelector.title", "Choose what to share")}</div>
 					<div className={styles.subtitle}>
 						{t("sourceSelector.subtitle", "Pick a screen or window to start recording")}
@@ -289,57 +477,81 @@ export function SourceSelector() {
 					type="button"
 					className={`${styles.closeBtn} ${styles.noDrag}`}
 					onClick={handleCancel}
-					aria-label={t("sourceSelector.cancel")}
+					aria-label={t("sourceSelector.cancel", "Cancel")}
 				>
-					<FiX size={14} />
+					<FiX size={15} />
 				</button>
 			</div>
 
-			<div className={`${styles.tabBar} ${styles.noDrag}`}>
-				<div className={styles.tabsList}>
+			<div className={`${styles.controlsRow} ${styles.noDrag}`}>
+				<div className={styles.tabsList} role="tablist">
 					<button
 						type="button"
+						role="tab"
+						aria-selected={activeTab === "screens"}
 						className={`${styles.tabBtn} ${activeTab === "screens" ? styles.tabBtnActive : ""}`}
 						onClick={() => setActiveTab("screens")}
 					>
-						<FiMonitor size={13} />
-						{t("sourceSelector.screens")}
-						<span className={styles.tabCount}>{screenSources.length}</span>
+						<span className={styles.tabIcon}>
+							<FiMonitor size={15} />
+						</span>
+						{t("sourceSelector.screens", "Screens")}
+						<span className={styles.tabCount}>{filteredScreens.length}</span>
+						{search.trim().length > 0 &&
+							activeTab !== "screens" &&
+							filteredScreens.length > 0 && <span className={styles.tabMatchDot} />}
 					</button>
 					<button
 						type="button"
+						role="tab"
+						aria-selected={activeTab === "windows"}
 						className={`${styles.tabBtn} ${activeTab === "windows" ? styles.tabBtnActive : ""}`}
 						onClick={() => setActiveTab("windows")}
 					>
-						<FiSquare size={13} />
-						{t("sourceSelector.windows")}
-						<span className={styles.tabCount}>{windowSources.length}</span>
+						<span className={styles.tabIcon}>
+							<FiSquare size={14} />
+						</span>
+						{t("sourceSelector.windows", "Windows")}
+						<span className={styles.tabCount}>{filteredWindows.length}</span>
+						{search.trim().length > 0 &&
+							activeTab !== "windows" &&
+							filteredWindows.length > 0 && <span className={styles.tabMatchDot} />}
 					</button>
 				</div>
-				{activeTab === "windows" && (
-					<div className={styles.searchWrap}>
-						<FiSearch className={styles.searchIcon} size={13} />
-						<input
-							type="text"
-							value={search}
-							onChange={(e) => setSearch(e.target.value)}
-							placeholder={t("sourceSelector.searchPlaceholder", "Search windows…")}
-							className={styles.searchInput}
-						/>
-					</div>
-				)}
+				<div className={styles.searchWrap}>
+					<FiSearch className={styles.searchIcon} size={14} />
+					<input
+						type="text"
+						value={search}
+						onChange={(e) => setSearch(e.target.value)}
+						placeholder={t("sourceSelector.searchPlaceholder", "Search displays and windows…")}
+						className={styles.searchInput}
+					/>
+					{search && (
+						<button
+							type="button"
+							className={styles.searchClearBtn}
+							onClick={() => setSearch("")}
+							aria-label="Clear search"
+						>
+							<FiX size={11} strokeWidth={3} />
+						</button>
+					)}
+				</div>
 			</div>
 
-			{activeTab === "windows" && !loading && windowSources.length > 0 && (
-				<p className={styles.windowsNote}>{t("sourceSelector.windowsNote")}</p>
-			)}
-
 			<div className={styles.gridScroll} ref={gridRef}>
-				{loading && <SkeletonGrid />}
+				{showSearchHint && (
+					<div className={styles.searchHint}>
+						<span className={styles.searchHintDot} />
+						{t("sourceSelector.searchingAllSources", "Searching all sources")}
+					</div>
+				)}
+				{loading && <SkeletonGrid variant={activeTab} />}
 				{!loading && visibleSources.length === 0 && (
 					<div className={styles.emptyState}>
 						<div className={styles.emptyIcon}>
-							{activeTab === "screens" ? <FiMonitor size={24} /> : <FiSquare size={24} />}
+							{activeTab === "screens" ? <FiMonitor size={26} /> : <FiSquare size={24} />}
 						</div>
 						<div className={styles.emptyTitle}>
 							{search
@@ -363,59 +575,34 @@ export function SourceSelector() {
 						</div>
 					</div>
 				)}
-				{!loading && visibleSources.length > 0 && (
-					<div className={`${styles.grid} ${activeTab === "screens" ? styles.gridScreens : ""}`}>
-						{visibleSources.map((source, index) => {
-							const isSelected = selectedId === source.id;
-							const isFocused = focusIndex === index;
-							return (
-								<button
-									key={source.id}
-									type="button"
-									className={`${styles.card} ${isSelected ? styles.cardSelected : ""} ${
-										isFocused && !isSelected ? styles.cardFocused : ""
-									}`}
-									onClick={() => onCardClick(source, index)}
-									onDoubleClick={() => {
-										setSelectedId(source.id);
-										void handleShare();
-									}}
-								>
-									<div className={styles.thumbWrap}>
-										{source.thumbnail ? (
-											<img
-												src={source.thumbnail}
-												alt={source.name}
-												className={styles.thumb}
-												draggable={false}
-											/>
-										) : (
-											<div className={styles.thumbPlaceholder}>
-												<div className={styles.placeholderIcon}>
-													{source.appIcon ? (
-														<img src={source.appIcon} alt="" />
-													) : (
-														<FiSquare size={20} />
-													)}
-												</div>
-												<div className={styles.placeholderLabel}>
-													{t("sourceSelector.windowPlaceholder")}
-												</div>
-											</div>
-										)}
-										<div className={styles.checkBadge}>
-											<FiCheck size={12} strokeWidth={3} />
-										</div>
-									</div>
-									<div className={styles.cardMeta}>
-										{source.appIcon && source.thumbnail && (
-											<img src={source.appIcon} alt="" className={styles.appIcon} />
-										)}
-										<div className={styles.cardName}>{source.name}</div>
-									</div>
-								</button>
-							);
-						})}
+				{!loading && visibleSources.length > 0 && activeTab === "screens" && (
+					<div className={styles.displayGrid}>
+						{visibleSources.map((source, index) => (
+							<DisplayCard
+								key={source.id}
+								source={source}
+								selected={selectedId === source.id}
+								focused={focusIndex === index}
+								onClick={() => onCardClick(source, index)}
+								onDoubleClick={() => onCardDoubleClick(source)}
+								primaryLabel={primaryLabel}
+							/>
+						))}
+					</div>
+				)}
+				{!loading && visibleSources.length > 0 && activeTab === "windows" && (
+					<div className={styles.windowGrid}>
+						{visibleSources.map((source, index) => (
+							<WindowCard
+								key={source.id}
+								source={source}
+								selected={selectedId === source.id}
+								focused={focusIndex === index}
+								onClick={() => onCardClick(source, index)}
+								onDoubleClick={() => onCardDoubleClick(source)}
+								untitledLabel={untitledLabel}
+							/>
+						))}
 					</div>
 				)}
 			</div>
@@ -430,7 +617,11 @@ export function SourceSelector() {
 						{t("sourceSelector.kbdNavigate", "navigate")}
 					</span>
 					<span className={styles.kbdGroup}>
-						<kbd className={styles.kbd}>{cmdLabel}</kbd>
+						<kbd className={styles.kbd}>tab</kbd>
+						{t("sourceSelector.kbdSwitch", "switch tab")}
+					</span>
+					<span className={styles.kbdGroup}>
+						<kbd className={styles.kbd}>↵</kbd>
 						{t("sourceSelector.kbdShare", "share")}
 					</span>
 					<span className={styles.kbdGroup}>
@@ -440,7 +631,7 @@ export function SourceSelector() {
 				</div>
 				<div className={styles.actions}>
 					<button type="button" className={styles.btnGhost} onClick={handleCancel}>
-						{t("sourceSelector.cancel")}
+						{t("sourceSelector.cancel", "Cancel")}
 					</button>
 					<button
 						type="button"
@@ -448,8 +639,8 @@ export function SourceSelector() {
 						onClick={() => void handleShare()}
 						disabled={!selectedId}
 					>
-						<FiCheck size={13} strokeWidth={3} />
-						{t("sourceSelector.share")}
+						<FiCheck size={14} strokeWidth={3.5} />
+						{t("sourceSelector.share", "Share")}
 					</button>
 				</div>
 			</div>

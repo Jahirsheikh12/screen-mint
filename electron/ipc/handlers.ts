@@ -44,7 +44,6 @@ import {
 	closeSpeakerNotesWindow,
 	createAreaOverlayWindow,
 	createCountdownWindow,
-	createHudOverlayWindow,
 	createSpeakerNotesWindow,
 	getCountdownWindow,
 	lockAreaOverlayWindow,
@@ -122,6 +121,16 @@ function notifySelectedAreaChanged(): void {
 }
 let currentProjectPath: string | null = null;
 let postRecordingContext: PostRecordingContext | null = null;
+type FinalizeResult = {
+	success: boolean;
+	path?: string;
+	webcamPath?: string | null;
+	microphonePath?: string | null;
+	message?: string;
+	error?: string;
+};
+let pendingFinalizationPromise: Promise<FinalizeResult> | null = null;
+let lastFinalizationResult: FinalizeResult | null = null;
 let nativeScreenRecordingActive = false;
 let currentVideoPath: string | null = null;
 let currentWebcamPath: string | null = null;
@@ -1775,11 +1784,13 @@ async function cropVideoToArea(videoPath: string, area: SelectedArea, outputPath
 			"-c:v",
 			"libx264",
 			"-preset",
-			"veryfast",
+			"ultrafast",
+			"-tune",
+			"zerolatency",
 			"-pix_fmt",
 			"yuv420p",
 			"-c:a",
-			"aac",
+			"copy",
 			"-movflags",
 			"+faststart",
 			outputPath,
@@ -1817,10 +1828,50 @@ async function finalizeRecordingSession(payload: {
 		videoSegmentPaths.length === 1
 			? videoSegmentPaths[0]
 			: path.join(recordingsDir, `recording-${Date.now()}-merged.mp4`);
-	const mergedVideoPath = await concatenateMediaSegments(videoSegmentPaths, finalVideoPathBase, [
-		"-c",
-		"copy",
-	]);
+
+	const webcamSegmentPaths =
+		payload.webcamSegments
+			?.filter((segment) => typeof segment.path === "string" && segment.path.trim().length > 0)
+			.map((segment) => segment.path) ?? [];
+	const webcamOutputPath =
+		webcamSegmentPaths.length === 1
+			? webcamSegmentPaths[0]
+			: path.join(recordingsDir, `webcam-${Date.now()}-merged.webm`);
+
+	const microphoneSegmentPaths =
+		payload.microphoneSegments
+			?.filter((segment) => typeof segment.path === "string" && segment.path.trim().length > 0)
+			.map((segment) => segment.path) ?? [];
+	const microphoneOutputPath = path.join(recordingsDir, `recording-${Date.now()}-mic.m4a`);
+
+	// Run independent muxes and cursor reads in parallel.
+	const [mergedVideoPath, finalWebcamPath, finalMicrophonePath, mergedCursorSamples] =
+		await Promise.all([
+			concatenateMediaSegments(videoSegmentPaths, finalVideoPathBase, ["-c", "copy"]),
+			webcamSegmentPaths.length > 0
+				? concatenateMediaSegments(webcamSegmentPaths, webcamOutputPath, ["-c", "copy"])
+				: Promise.resolve<string | null>(null),
+			microphoneSegmentPaths.length > 0
+				? concatenateMediaSegments(microphoneSegmentPaths, microphoneOutputPath, ["-c:a", "aac"])
+				: Promise.resolve<string | null>(null),
+			(async () => {
+				const perSegment = await Promise.all(
+					normalizedVideoSegments.map(async (segment) => ({
+						durationMs: segment.durationMs,
+						samples: await readCursorTelemetrySamples(segment.path),
+					})),
+				);
+				return perSegment.flatMap((entry, entryIndex, entries) => {
+					const offsetMs = entries
+						.slice(0, entryIndex)
+						.reduce((total, candidate) => total + Math.max(0, candidate.durationMs), 0);
+					return entry.samples.map((sample) => ({
+						...sample,
+						timeMs: Math.max(0, sample.timeMs + offsetMs),
+					}));
+				});
+			})(),
+		]);
 
 	let finalVideoPath = mergedVideoPath;
 	if (payload.selectedArea) {
@@ -1835,59 +1886,10 @@ async function finalizeRecordingSession(payload: {
 		}
 	}
 
-	const mergedCursorSamples = (
-		await Promise.all(
-			normalizedVideoSegments.map(async (segment) => ({
-				durationMs: segment.durationMs,
-				samples: await readCursorTelemetrySamples(segment.path),
-			})),
-		)
-	).flatMap((entry, entryIndex, entries) => {
-		const offsetMs = entries
-			.slice(0, entryIndex)
-			.reduce((total, candidate) => total + Math.max(0, candidate.durationMs), 0);
-		return entry.samples.map((sample) => ({
-			...sample,
-			timeMs: Math.max(0, sample.timeMs + offsetMs),
-		}));
-	});
-
 	await writeCursorTelemetrySamples(finalVideoPath, mergedCursorSamples);
 
-	const webcamSegmentPaths =
-		payload.webcamSegments
-			?.filter((segment) => typeof segment.path === "string" && segment.path.trim().length > 0)
-			.map((segment) => segment.path) ?? [];
-
-	if (webcamSegmentPaths.length > 0) {
-		const webcamOutputPath =
-			webcamSegmentPaths.length === 1
-				? webcamSegmentPaths[0]
-				: path.join(recordingsDir, `webcam-${Date.now()}-merged.webm`);
-		const finalWebcamPath = await concatenateMediaSegments(webcamSegmentPaths, webcamOutputPath, [
-			"-c",
-			"copy",
-		]);
-		currentWebcamPath = finalWebcamPath;
-	} else {
-		currentWebcamPath = null;
-	}
-
-	const microphoneSegmentPaths =
-		payload.microphoneSegments
-			?.filter((segment) => typeof segment.path === "string" && segment.path.trim().length > 0)
-			.map((segment) => segment.path) ?? [];
-
-	if (microphoneSegmentPaths.length > 0) {
-		const microphoneOutputPath = path.join(recordingsDir, `recording-${Date.now()}-mic.m4a`);
-		currentMicrophoneAudioPath = await concatenateMediaSegments(
-			microphoneSegmentPaths,
-			microphoneOutputPath,
-			["-c:a", "aac"],
-		);
-	} else {
-		currentMicrophoneAudioPath = null;
-	}
+	currentWebcamPath = finalWebcamPath;
+	currentMicrophoneAudioPath = finalMicrophonePath;
 
 	const filesToDiscard = [
 		...videoSegmentPaths.filter((segmentPath) => segmentPath !== finalVideoPath),
@@ -1896,7 +1898,12 @@ async function finalizeRecordingSession(payload: {
 	];
 	await discardRecordingArtifacts(filesToDiscard);
 
-	return await finalizeStoredVideo(finalVideoPath);
+	const stored = await finalizeStoredVideo(finalVideoPath);
+	return {
+		...stored,
+		webcamPath: currentWebcamPath,
+		microphonePath: currentMicrophoneAudioPath,
+	};
 }
 
 const CURSOR_TELEMETRY_VERSION = 4;
@@ -3161,6 +3168,7 @@ async function startInteractionCapture() {
 export function registerIpcHandlers(
 	createEditorWindow: () => void,
 	createSourceSelectorWindow: () => BrowserWindow,
+	createHudOverlay: () => BrowserWindow,
 	getMainWindow: () => BrowserWindow | null,
 	getSourceSelectorWindow: () => BrowserWindow | null,
 	onRecordingStateChange?: (recording: boolean, sourceName: string) => void,
@@ -3193,15 +3201,27 @@ export function registerIpcHandlers(
 		);
 		const ownAppName = normalizeDesktopSourceName(app.getName());
 
+		const allDisplays = getScreen().getAllDisplays();
+		const primaryDisplayId = getScreen().getPrimaryDisplay().id;
+		const displayInfoMap = new Map(allDisplays.map((d) => [String(d.id), d]));
+
 		const screenSources = electronSources
 			.filter((source) => source.id.startsWith("screen:"))
-			.map((source) => ({
-				id: source.id,
-				name: source.name,
-				display_id: source.display_id,
-				thumbnail: source.thumbnail ? source.thumbnail.toDataURL() : null,
-				appIcon: source.appIcon ? source.appIcon.toDataURL() : null,
-			}));
+			.map((source) => {
+				const info = displayInfoMap.get(String(source.display_id));
+				return {
+					id: source.id,
+					name: source.name,
+					display_id: source.display_id,
+					thumbnail: source.thumbnail ? source.thumbnail.toDataURL() : null,
+					appIcon: source.appIcon ? source.appIcon.toDataURL() : null,
+					width: info?.size.width,
+					height: info?.size.height,
+					scaleFactor: info?.scaleFactor,
+					isPrimary: info ? info.id === primaryDisplayId : undefined,
+					isInternal: info?.internal,
+				};
+			});
 
 		if (process.platform !== "darwin" || !includeWindows) {
 			const windowSources = electronSources
@@ -3370,8 +3390,7 @@ export function registerIpcHandlers(
 				thumbnailSize: { width: 1, height: 1 },
 				fetchWindowIcons: false,
 			});
-			const match =
-				sources.find((s) => Number(s.display_id) === targetDisplay.id) ?? sources[0];
+			const match = sources.find((s) => Number(s.display_id) === targetDisplay.id) ?? sources[0];
 			if (!match) {
 				return { success: false };
 			}
@@ -3426,11 +3445,7 @@ export function registerIpcHandlers(
 	});
 
 	ipcMain.handle("switch-to-hud", () => {
-		const mainWin = getMainWindow();
-		if (mainWin) {
-			mainWin.close();
-		}
-		createHudOverlayWindow();
+		createHudOverlay();
 	});
 
 	ipcMain.handle(
@@ -3995,6 +4010,62 @@ export function registerIpcHandlers(
 			}
 		},
 	);
+
+	ipcMain.handle(
+		"trigger-finalize-recording-session",
+		(
+			_,
+			payload: {
+				videoSegments: RecordingSegmentPayload[];
+				webcamSegments?: RecordingSegmentPayload[];
+				microphoneSegments?: RecordingSegmentPayload[];
+				selectedArea?: SelectedArea | null;
+			},
+		) => {
+			lastFinalizationResult = null;
+			pendingFinalizationPromise = (async (): Promise<FinalizeResult> => {
+				try {
+					const result = await finalizeRecordingSession(payload);
+					const finalized: FinalizeResult = {
+						success: true,
+						path: result.path,
+						webcamPath: result.webcamPath ?? null,
+						microphonePath: result.microphonePath ?? null,
+						message: result.message,
+					};
+					if (postRecordingContext) {
+						postRecordingContext = {
+							...postRecordingContext,
+							recordingPath: result.path ?? postRecordingContext.recordingPath ?? null,
+							webcamPath: result.webcamPath ?? postRecordingContext.webcamPath ?? null,
+						};
+					}
+					lastFinalizationResult = finalized;
+					return finalized;
+				} catch (error) {
+					console.error("Failed to finalize recording session:", error);
+					const errResult: FinalizeResult = {
+						success: false,
+						message: "Failed to finalize recording session",
+						error: String(error),
+					};
+					lastFinalizationResult = errResult;
+					return errResult;
+				}
+			})();
+			return { success: true };
+		},
+	);
+
+	ipcMain.handle("await-recording-finalized", async () => {
+		if (pendingFinalizationPromise) {
+			return await pendingFinalizationPromise;
+		}
+		if (lastFinalizationResult) {
+			return lastFinalizationResult;
+		}
+		return { success: false, error: "No pending finalization" } satisfies FinalizeResult;
+	});
 
 	ipcMain.handle(
 		"discard-recording-artifacts",
@@ -4605,18 +4676,12 @@ export function registerIpcHandlers(
 		async (_, videoData: ArrayBuffer, fileName: string) => {
 			try {
 				const ext = fileName.toLowerCase().endsWith(".gif") ? "gif" : "mp4";
-				const tmpPath = path.join(
-					app.getPath("temp"),
-					`screenmint-clipboard-${Date.now()}.${ext}`,
-				);
+				const tmpPath = path.join(app.getPath("temp"), `screenmint-clipboard-${Date.now()}.${ext}`);
 				await fs.writeFile(tmpPath, Buffer.from(videoData));
 
 				if (process.platform === "darwin") {
 					const plistContent = `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><array><string>${tmpPath}</string></array></plist>`;
-					clipboard.writeBuffer(
-						"NSFilenamesPboardType",
-						Buffer.from(plistContent, "utf8"),
-					);
+					clipboard.writeBuffer("NSFilenamesPboardType", Buffer.from(plistContent, "utf8"));
 				} else {
 					clipboard.writeText(tmpPath);
 				}
