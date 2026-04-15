@@ -155,7 +155,7 @@ export function Navbar() {
 					className="absolute inset-0 pointer-events-none"
 					style={{
 						opacity: 1,
-						background: "rgba(0, 0, 0, 0.65)",
+						background: "rgba(18, 18, 18, 0.72)",
 						backdropFilter: "blur(40px) saturate(180%)",
 						WebkitBackdropFilter: "blur(40px) saturate(180%)",
 						border: "1px solid rgba(255, 255, 255, 0.08)",
@@ -207,7 +207,7 @@ export function Navbar() {
 						href={GITHUB_SPONSORS_URL}
 						target="_blank"
 						rel="noopener noreferrer"
-						className="ml-2 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-brand-500 text-black text-[13px] font-semibold hover:bg-brand-400 active:scale-[0.97] transition-all duration-200"
+						className="ml-2 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-brand-500 text-[#121212] text-[13px] font-semibold hover:bg-brand-400 active:scale-[0.97] transition-all duration-200"
 					>
 						<Heart className="w-3.5 h-3.5" strokeWidth={2.5} />
 						Sponsor
@@ -228,7 +228,7 @@ export function Navbar() {
 			{/* Mobile backdrop */}
 			<div
 				ref={backdropRef}
-				className="md:hidden fixed inset-0 bg-black/60 z-40"
+				className="md:hidden fixed inset-0 bg-[#121212]/70 z-40"
 				style={{ display: "none" }}
 				onClick={closeMobile}
 			/>
@@ -239,7 +239,7 @@ export function Navbar() {
 				className="md:hidden absolute top-20 left-4 right-4 rounded-2xl px-5 py-4 space-y-1 z-50"
 				style={{
 					display: "none",
-					background: "rgba(0, 0, 0, 0.9)",
+					background: "rgba(18, 18, 18, 0.94)",
 					backdropFilter: "blur(40px) saturate(180%)",
 					WebkitBackdropFilter: "blur(40px) saturate(180%)",
 					border: "1px solid rgba(255, 255, 255, 0.08)",
@@ -265,7 +265,7 @@ export function Navbar() {
 						target="_blank"
 						rel="noopener noreferrer"
 						onClick={closeMobile}
-						className="mobile-nav-link block text-center px-4 py-2.5 rounded-full bg-brand-500 text-black text-sm font-semibold"
+						className="mobile-nav-link block text-center px-4 py-2.5 rounded-full bg-brand-500 text-[#121212] text-sm font-semibold"
 					>
 						Sponsor ScreenMint
 					</a>

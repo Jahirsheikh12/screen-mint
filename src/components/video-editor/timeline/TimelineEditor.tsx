@@ -91,7 +91,7 @@ const ADDITIONAL_LAYER_OPTIONS: {
 	icon: typeof Camera;
 }[] = [
 	{ type: "annotation", label: "Annotation", icon: MessageSquare },
-	{ type: "camera", label: "Camera", icon: Camera },
+	{ type: "camera", label: "Layouts", icon: Camera },
 	{ type: "speed", label: "Speed", icon: Gauge },
 	{ type: "audio", label: "Audio", icon: Music },
 	{ type: "caption", label: "Caption", icon: MessageSquare },
@@ -842,9 +842,9 @@ function Timeline({
 				<Row
 					id={CAMERA_ROW_ID}
 					isEmpty={cameraItems.length === 0}
-					hint="Hover to add camera layout"
+					hint="Add a layout to change camera position, size, or visibility over time"
 					onAddEffect={onAddCameraLayout}
-					addLabel="Camera"
+					addLabel="Layouts"
 					icon={Camera}
 				>
 					{cameraItems.map((item) => (
@@ -1900,7 +1900,6 @@ export default function TimelineEditor({
 		const captions: TimelineRenderItem[] = captionRegions
 			.map((region) => {
 				const preview = region.text.trim() || "Caption";
-				const label = preview.length > 20 ? `${preview.substring(0, 20)}...` : preview;
 				return {
 					id: region.id,
 					rowId: CAPTION_ROW_ID,
@@ -1908,7 +1907,7 @@ export default function TimelineEditor({
 						start: sourceToDisplay(region.startMs),
 						end: sourceToDisplay(region.endMs),
 					},
-					label,
+					label: preview,
 					variant: "caption" as const,
 				};
 			})

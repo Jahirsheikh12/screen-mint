@@ -3,14 +3,19 @@ export interface BuiltInWallpaper {
 	label: string;
 	relativePath: string;
 	publicPath: string;
+	thumbRelativePath: string;
+	thumbPublicPath: string;
 }
 
 function createBuiltInWallpaper(id: string, label: string, fileName: string): BuiltInWallpaper {
+	const thumbFileName = `${fileName.replace(/\.[^.]+$/, "")}.webp`;
 	return {
 		id,
 		label,
 		relativePath: `wallpapers/${fileName}`,
 		publicPath: `/wallpapers/${fileName}`,
+		thumbRelativePath: `wallpapers/thumbs/${thumbFileName}`,
+		thumbPublicPath: `/wallpapers/thumbs/${thumbFileName}`,
 	};
 }
 
@@ -91,6 +96,9 @@ export const BUILT_IN_WALLPAPERS: BuiltInWallpaper[] = [
 export const WALLPAPER_PATHS = BUILT_IN_WALLPAPERS.map((wallpaper) => wallpaper.publicPath);
 export const WALLPAPER_RELATIVE_PATHS = BUILT_IN_WALLPAPERS.map(
 	(wallpaper) => wallpaper.relativePath,
+);
+export const WALLPAPER_THUMB_RELATIVE_PATHS = BUILT_IN_WALLPAPERS.map(
+	(wallpaper) => wallpaper.thumbRelativePath,
 );
 export const DEFAULT_WALLPAPER_PATH = WALLPAPER_PATHS[0];
 export const DEFAULT_WALLPAPER_RELATIVE_PATH = WALLPAPER_RELATIVE_PATHS[0];

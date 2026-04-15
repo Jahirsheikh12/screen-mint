@@ -35,7 +35,9 @@
 		"noMicrophone": "无麦克风",
 		"noSystemAudio": "无系统音频",
 		"systemAudio": "系统音频",
-		"microphone": "麦克风"
+		"microphone": "麦克风",
+		"language": "语言",
+		"finalizing": "正在完成…"
 	},
 	"tabs": {
 		"display": "显示器",
@@ -103,7 +105,25 @@
 		"windowsNote": "仅可录制可见（非最小化）窗口。",
 		"windowPlaceholder": "窗口",
 		"cancel": "取消",
-		"share": "共享"
+		"share": "共享",
+		"title": "选择要共享的内容",
+		"subtitle": "选择一个屏幕或窗口以开始录制",
+		"searchPlaceholder": "搜索显示器和窗口…",
+		"searchingAllSources": "正在搜索所有源",
+		"primary": "主屏幕",
+		"external": "外接",
+		"internal": "内建",
+		"untitledWindow": "未命名窗口",
+		"noMatches": "没有匹配结果",
+		"noMatchesHint": "试试其他搜索词。",
+		"noScreens": "未检测到屏幕",
+		"noScreensHint": "请连接显示器或授予屏幕录制权限。",
+		"noWindows": "没有可用窗口",
+		"noWindowsHint": "请先打开一个应用并将其窗口置于前台，然后重试。",
+		"kbdNavigate": "导航",
+		"kbdShare": "共享",
+		"kbdClose": "关闭",
+		"kbdSwitch": "切换标签"
 	},
 	"permissions": {
 		"screenRecordingNeeded": "ScreenMint 需要屏幕录制权限才能开始。系统设置已打开。启用后请退出并重新打开 ScreenMint。",

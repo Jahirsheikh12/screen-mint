@@ -3169,7 +3169,7 @@ export function registerIpcHandlers(
 	createEditorWindow: () => void,
 	createSourceSelectorWindow: () => BrowserWindow,
 	createHudOverlay: () => BrowserWindow,
-	getMainWindow: () => BrowserWindow | null,
+	_getMainWindow: () => BrowserWindow | null,
 	getSourceSelectorWindow: () => BrowserWindow | null,
 	onRecordingStateChange?: (recording: boolean, sourceName: string) => void,
 ) {
@@ -3437,10 +3437,6 @@ export function registerIpcHandlers(
 	});
 
 	ipcMain.handle("switch-to-editor", () => {
-		const mainWin = getMainWindow();
-		if (mainWin) {
-			mainWin.close();
-		}
 		createEditorWindow();
 	});
 

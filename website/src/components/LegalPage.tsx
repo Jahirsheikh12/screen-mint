@@ -10,7 +10,7 @@ export function LegalPage({ page }: { page: FundingPage }) {
 	const content = getFundingPageContent(page);
 
 	return (
-		<div className="min-h-screen bg-black px-6 pb-16 pt-12 text-white">
+		<div className="min-h-screen bg-[#121212] px-6 pb-16 pt-12 text-white">
 			<div className="mx-auto max-w-4xl">
 				<div className="mb-10 flex flex-wrap items-center justify-between gap-4">
 					<a

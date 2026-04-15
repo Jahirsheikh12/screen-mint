@@ -57,11 +57,16 @@ import {
 	loadAudioSelectionDurationMs,
 	resolveAudioSourceUrl,
 } from "./audioRegionUtils";
+import { applyPresetToSettings } from "./captionPresets";
 import { ConfirmActionDialog, PresetNameDialog } from "./EditorDialogs";
 import { ExportDialog } from "./ExportDialog";
 import { ExportSettingsDialog } from "./ExportSettingsDialog";
 import { editorPersistenceService } from "./editorPersistenceService";
-import { type EditorPreset, type EditorWorkspaceLayout } from "./editorPreferences";
+import {
+	DEFAULT_EDITOR_PREFERENCES,
+	type EditorPreset,
+	type EditorWorkspaceLayout,
+} from "./editorPreferences";
 import { editorPreferencesService } from "./editorPreferencesService";
 import {
 	type ConfirmDialogState,
@@ -104,10 +109,13 @@ import {
 	type CaptionGenerationOptions,
 	type CaptionGenerationProgress,
 	type CaptionModelStatus,
+	type CaptionPositionOverride,
 	type CaptionRegion,
+	type CaptionSegment,
 	type CaptionSettings,
 	type CaptionStylePreset,
 	type CaptionTrack,
+	type CaptionUserPreset,
 	type CropRegion,
 	type CursorTelemetryPoint,
 	clampFocusToDepth,
@@ -141,8 +149,8 @@ import {
 	type ZoomMode,
 	type ZoomRegion,
 } from "./types";
-import VideoPlayback, { VideoPlaybackRef } from "./VideoPlayback";
 import { VideoEditorSkeleton } from "./VideoEditorSkeleton";
+import VideoPlayback, { VideoPlaybackRef } from "./VideoPlayback";
 import {
 	buildLoopedCursorTelemetry,
 	getDisplayedTimelineWindowMs,
@@ -213,7 +221,23 @@ function LanguageSwitcher() {
 export default function VideoEditor() {
 	const { t } = useI18n();
 	const tSettings = useScopedT("settings");
-	const initialEditorPreferences = useMemo(() => editorPreferencesService.load(), []);
+	// Editor control values (wallpaper, cursor, frame, export, etc.) always start
+	// from defaults for every new session. The only settings we restore from
+	// localStorage are genuine app-level prefs (preview quality, workspace layout,
+	// custom aspect inputs, custom wallpaper library) and the user's saved presets.
+	// Users can re-apply a preset to bring back their preferred settings.
+	const initialEditorPreferences = useMemo(() => {
+		const stored = editorPreferencesService.load();
+		return {
+			...DEFAULT_EDITOR_PREFERENCES,
+			previewQuality: stored.previewQuality,
+			workspaceLayout: stored.workspaceLayout,
+			customAspectWidth: stored.customAspectWidth,
+			customAspectHeight: stored.customAspectHeight,
+			customWallpapers: stored.customWallpapers,
+			presets: stored.presets,
+		};
+	}, []);
 	const [sessionState, dispatchSession] = useReducer(
 		editorSessionReducer,
 		undefined,
@@ -353,6 +377,7 @@ export default function VideoEditor() {
 	const [captionGenerationProgress, setCaptionGenerationProgress] =
 		useState<CaptionGenerationProgress | null>(null);
 	const [captionModelStatus, setCaptionModelStatus] = useState<CaptionModelStatus | null>(null);
+	const [isEditingCaptionPosition, setIsEditingCaptionPosition] = useState(false);
 	const [webcamPath, setWebcamPath] = useState<string | null>(null);
 	const [missingWebcamPath, setMissingWebcamPath] = useState<string | null>(null);
 	const [missingAudioPathsById, setMissingAudioPathsById] = useState<Record<string, string>>({});
@@ -1251,6 +1276,10 @@ export default function VideoEditor() {
 							setVideoPath(toFileUrl(sourcePath));
 							dispatchSession({ type: "set-current-project-path", path: null });
 							dispatchSession({ type: "set-last-saved-snapshot", snapshot: null });
+							// Reset every editor control (and timeline data) to defaults so
+							// a brand-new recording never inherits the previous video's
+							// tweaks. Users restore prior settings via presets.
+							applyEditorControls(normalizeProjectEditor({}), { includeTimeline: true });
 							setAspectRatio("native");
 							setPadding(DEFAULT_VIDEO_PREVIEW_PADDING);
 
@@ -1270,6 +1299,7 @@ export default function VideoEditor() {
 							setVideoPath(toFileUrl(sourcePath));
 							dispatchSession({ type: "set-current-project-path", path: null });
 							dispatchSession({ type: "set-last-saved-snapshot", snapshot: null });
+							applyEditorControls(normalizeProjectEditor({}), { includeTimeline: true });
 							setAspectRatio("native");
 							setPadding(DEFAULT_VIDEO_PREVIEW_PADDING);
 
@@ -1302,7 +1332,7 @@ export default function VideoEditor() {
 		}
 
 		loadInitialData();
-	}, [applyLoadedProject, clearWebcamState, syncWebcamAvailability]);
+	}, [applyEditorControls, applyLoadedProject, clearWebcamState, syncWebcamAvailability]);
 
 	// Crossfade skeleton → editor when loading finishes
 	useEffect(() => {
@@ -1344,133 +1374,17 @@ export default function VideoEditor() {
 		})();
 	}, [videoPath]);
 
+	// Only genuine app-level preferences and user-saved presets persist across
+	// sessions. Per-video editor controls (wallpaper, cursor, frame, export,
+	// etc.) intentionally do NOT get written here — every new recording should
+	// open with default settings. Users re-use prior settings via presets.
 	useEffect(() => {
 		editorPreferencesService.scheduleSave({
-			wallpaper,
-			hideBackground,
-			shadowIntensity,
-			frameShadowSize,
-			frameShadowOpacity,
-			frameShadowBlur,
-			backgroundBlur,
-			zoomMotionBlur,
-			connectZooms,
-			showCursor,
 			previewQuality,
-			loopCursor,
-			cursorSize,
-			cursorSmoothing,
-			cursorMotionBlur,
-			cursorClickBounce,
-			cursorSway,
-			cursorStyle,
-			cursorPack,
-			cursorTypeMode,
-			cursorTilt,
-			hideWhenIdle,
-			idleHideDelayMs,
-			smoothMovementEnabled,
-			cursorMovementStyle,
-			cursorSpring,
-			cameraSpring,
-			highQualitySvgCursors,
-			cursorColor,
-			cursorOpacity,
-			clickHighlightColor,
-			clickHighlightSize,
-			clickHighlightOpacity,
-			cursorTrailLength,
-			cursorTrailOpacity,
-			showKeyboardShortcuts,
-			keyboardShortcutPosition,
-			keyboardShortcutTheme,
-			keyboardShortcutScale,
-			keyboardShortcutOpacity,
-			keyboardShortcutDisplayMs,
-			keyboardShortcutMaxVisible,
-			deviceMockup,
-			frameBorderEnabled,
-			frameBorderWidth,
-			frameBorderColor,
-			frameBorderOpacity,
-			borderRadius,
-			padding,
-			cropRegion,
-			aspectRatio,
-			webcamRegion,
-			showWebcam,
-			mirrorWebcam,
-			cameraSizeDuringZoom,
-			exportFormat,
-			exportDestination,
-			videoExportSettings,
-			gifExportSettings,
 			workspaceLayout,
 			presets: customPresets,
 		});
-	}, [
-		wallpaper,
-		hideBackground,
-		shadowIntensity,
-		frameShadowSize,
-		frameShadowOpacity,
-		frameShadowBlur,
-		backgroundBlur,
-		zoomMotionBlur,
-		connectZooms,
-		showCursor,
-		previewQuality,
-		loopCursor,
-		cursorSize,
-		cursorSmoothing,
-		cursorMotionBlur,
-		cursorClickBounce,
-		cursorSway,
-		cursorStyle,
-		cursorPack,
-		cursorTypeMode,
-		cursorTilt,
-		hideWhenIdle,
-		idleHideDelayMs,
-		smoothMovementEnabled,
-		cursorMovementStyle,
-		cursorSpring,
-		cameraSpring,
-		highQualitySvgCursors,
-		cursorColor,
-		cursorOpacity,
-		clickHighlightColor,
-		clickHighlightSize,
-		clickHighlightOpacity,
-		cursorTrailLength,
-		cursorTrailOpacity,
-		showKeyboardShortcuts,
-		keyboardShortcutPosition,
-		keyboardShortcutTheme,
-		keyboardShortcutScale,
-		keyboardShortcutOpacity,
-		keyboardShortcutDisplayMs,
-		keyboardShortcutMaxVisible,
-		deviceMockup,
-		frameBorderEnabled,
-		frameBorderWidth,
-		frameBorderColor,
-		frameBorderOpacity,
-		borderRadius,
-		padding,
-		cropRegion,
-		aspectRatio,
-		webcamRegion,
-		showWebcam,
-		mirrorWebcam,
-		cameraSizeDuringZoom,
-		exportFormat,
-		exportDestination,
-		videoExportSettings,
-		gifExportSettings,
-		workspaceLayout,
-		customPresets,
-	]);
+	}, [previewQuality, workspaceLayout, customPresets]);
 
 	useEffect(() => {
 		return () => {
@@ -2625,7 +2539,7 @@ export default function VideoEditor() {
 				id,
 				startMs: Math.round(span.start),
 				endMs: Math.round(span.end),
-				mode: "fullscreen",
+				mode: "default",
 			};
 			setCameraLayouts((prev) => [...prev, newLayout]);
 			handleSelectCameraLayout(id);
@@ -3064,6 +2978,51 @@ export default function VideoEditor() {
 			style: { ...prev.style, ...partial },
 		}));
 	}, []);
+
+	const handleApplyCaptionPreset = useCallback((preset: CaptionUserPreset) => {
+		setCaptionSettings((prev) => applyPresetToSettings(prev, preset));
+	}, []);
+
+	const handleToggleCaptionPositionEditing = useCallback((next: boolean) => {
+		setIsEditingCaptionPosition(next);
+	}, []);
+
+	const handleCaptionPositionOverrideChange = useCallback(
+		(override: CaptionPositionOverride | null) => {
+			setCaptionSettings((prev) => ({ ...prev, positionOverride: override }));
+		},
+		[],
+	);
+
+	const handleCaptionImport = useCallback(
+		(segments: CaptionSegment[], mode: "replace" | "append") => {
+			if (segments.length === 0) return;
+			setCaptionTrack((prev) => {
+				const existing = prev?.segments ?? [];
+				const nextSegments =
+					mode === "replace"
+						? segments
+						: [...existing, ...segments].sort((a, b) => a.startMs - b.startMs);
+				const base: CaptionTrack = prev ?? {
+					backend: "whisper.cpp",
+					model: captionGenerationOptions.model,
+					language: captionGenerationOptions.language ?? "auto",
+					prompt: captionGenerationOptions.prompt ?? "",
+					sourceAudio: captionGenerationOptions.preferredSourceAudio ?? "microphone",
+					status: "ready",
+					segments: [],
+				};
+				return {
+					...base,
+					status: "ready",
+					error: undefined,
+					generatedAt: new Date().toISOString(),
+					segments: nextSegments,
+				};
+			});
+		},
+		[captionGenerationOptions],
+	);
 
 	const getFriendlyCaptionErrorMessage = useCallback(
 		(error: unknown) => {
@@ -4805,6 +4764,8 @@ export default function VideoEditor() {
 											onSelectWebcam={handleSelectWebcam}
 											captionRegions={captionRegions}
 											captionSettings={captionSettings}
+											isEditingCaptionPosition={isEditingCaptionPosition}
+											onCaptionPositionOverrideChange={handleCaptionPositionOverrideChange}
 										/>
 									</div>
 								</div>
@@ -4987,6 +4948,10 @@ export default function VideoEditor() {
 									onCaptionStyleChange={handleCaptionStyleChange}
 									onCaptionGenerationOptionsChange={handleCaptionGenerationOptionsChange}
 									onCaptionExport={handleTranscriptExport}
+									onCaptionImport={handleCaptionImport}
+									onApplyCaptionPreset={handleApplyCaptionPreset}
+									isEditingCaptionPosition={isEditingCaptionPosition}
+									onToggleCaptionPositionEditing={handleToggleCaptionPositionEditing}
 									isTranscribing={isTranscribing}
 									onAutoTranscribe={handleAutoTranscribe}
 									onCancelCaptionGeneration={handleCancelCaptionGeneration}

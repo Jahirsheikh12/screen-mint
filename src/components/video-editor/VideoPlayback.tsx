@@ -208,6 +208,10 @@ interface VideoPlaybackProps {
 	onSelectWebcam?: () => void;
 	captionRegions?: import("./types").CaptionRegion[];
 	captionSettings?: import("./types").CaptionSettings;
+	isEditingCaptionPosition?: boolean;
+	onCaptionPositionOverrideChange?: (
+		override: import("./types").CaptionPositionOverride | null,
+	) => void;
 }
 
 export interface VideoPlaybackRef {
@@ -311,6 +315,8 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			onSelectWebcam,
 			captionRegions = [],
 			captionSettings,
+			isEditingCaptionPosition = false,
+			onCaptionPositionOverrideChange,
 		},
 		ref,
 	) => {
@@ -2253,6 +2259,8 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 								currentTimeMs={Math.round(currentTime * 1000)}
 								containerWidth={overlayRef.current?.clientWidth || 800}
 								containerHeight={overlayRef.current?.clientHeight || 600}
+								isEditing={isEditingCaptionPosition}
+								onPositionOverrideChange={onCaptionPositionOverrideChange}
 							/>
 						)}
 						{showKeyboardShortcuts && (

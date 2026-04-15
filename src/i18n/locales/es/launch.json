@@ -35,7 +35,9 @@
 		"noMicrophone": "Sin micrófono",
 		"noSystemAudio": "Sin audio del sistema",
 		"systemAudio": "Audio del sistema",
-		"microphone": "Micrófono"
+		"microphone": "Micrófono",
+		"language": "Idioma",
+		"finalizing": "Finalizando…"
 	},
 	"tabs": {
 		"display": "Pantalla",

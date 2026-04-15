@@ -18,15 +18,22 @@ module.exports = {
 					900: "#78350f",
 					950: "#451a03",
 				},
+				surface: {
+					0: "#121212",
+					1: "#1a1a1a",
+					2: "#1f1f1f",
+					3: "#242424",
+					4: "#2a2a2a",
+				},
 			},
 			backgroundImage: {
 				"brand-gradient": "linear-gradient(135deg, #d97706, #F59E0B)",
 			},
 			boxShadow: {
-				"glow-sm": "0 0 12px rgba(245, 158, 11, 0.2)",
-				"glow-md": "0 0 24px rgba(245, 158, 11, 0.25)",
-				"glow-lg": "0 0 40px rgba(245, 158, 11, 0.3)",
-				"glow-xl": "0 0 60px rgba(245, 158, 11, 0.35)",
+				"glow-sm": "0 0 12px rgba(245, 158, 11, 0.25)",
+				"glow-md": "0 0 24px rgba(245, 158, 11, 0.3)",
+				"glow-lg": "0 0 40px rgba(245, 158, 11, 0.35)",
+				"glow-xl": "0 0 60px rgba(245, 158, 11, 0.4)",
 			},
 			keyframes: {
 				"accordion-down": {

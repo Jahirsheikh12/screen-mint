@@ -151,7 +151,7 @@ export function SponsorSection() {
 						href={GITHUB_SPONSORS_URL}
 						target="_blank"
 						rel="noopener noreferrer"
-						className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-500 px-7 py-3.5 text-[15px] font-semibold text-black transition-all duration-300 hover:bg-brand-400 hover:shadow-glow-md active:scale-[0.97]"
+						className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-500 px-7 py-3.5 text-[15px] font-semibold text-[#121212] transition-all duration-300 hover:bg-brand-400 hover:shadow-glow-md active:scale-[0.97]"
 					>
 						<Heart className="w-4 h-4" strokeWidth={2.5} />
 						Sponsor on GitHub
@@ -185,7 +185,7 @@ export function SponsorSection() {
 								/>
 
 								{isPopular && (
-									<span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-brand-500 px-3 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-black">
+									<span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-brand-500 px-3 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#121212]">
 										Popular
 									</span>
 								)}

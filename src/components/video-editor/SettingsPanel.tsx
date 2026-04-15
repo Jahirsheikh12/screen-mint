@@ -7,7 +7,6 @@ import {
 	Crop,
 	Gauge,
 	Keyboard,
-	Loader2,
 	MessageSquare,
 	MousePointer2,
 	Music,
@@ -30,7 +29,11 @@ import { useTooltip } from "@/components/ui/tooltip";
 import { getDisplayAssetUrl, getDisplayAssetUrlSync } from "@/lib/assetPath";
 import { type BackgroundMusicMood, BUILT_IN_BACKGROUND_MUSIC } from "@/lib/backgroundMusic";
 import { cn } from "@/lib/utils";
-import { BUILT_IN_WALLPAPERS, WALLPAPER_PATHS, WALLPAPER_RELATIVE_PATHS } from "@/lib/wallpapers";
+import {
+	BUILT_IN_WALLPAPERS,
+	WALLPAPER_PATHS,
+	WALLPAPER_THUMB_RELATIVE_PATHS,
+} from "@/lib/wallpapers";
 import { type AspectRatio } from "@/utils/aspectRatioUtils";
 import { useI18n, useScopedT } from "../../contexts/I18nContext";
 import { AnnotationSettingsPanel } from "./AnnotationSettingsPanel";
@@ -41,6 +44,7 @@ import {
 } from "./audioRegionUtils";
 import { ColorPicker } from "./ColorPicker";
 import { CropControl } from "./CropControl";
+import { CaptionsTab } from "./captions/CaptionsTab";
 import { editorPreferencesService } from "./editorPreferencesService";
 import {
 	DEFAULT_FRAME_BORDER_COLOR,
@@ -65,9 +69,11 @@ import type {
 	CaptionGenerationProgress,
 	CaptionModelStatus,
 	CaptionRegion,
+	CaptionSegment,
 	CaptionSettings,
 	CaptionStyle,
 	CaptionStylePreset,
+	CaptionUserPreset,
 	CropRegion,
 	CursorMovementStyle,
 	CursorPack,
@@ -84,7 +90,6 @@ import type {
 } from "./types";
 import {
 	CAMERA_ZOOM_SCALE_DISABLED,
-	CAPTION_STYLE_PRESETS,
 	CURSOR_MOVEMENT_STYLE_OPTIONS,
 	CURSOR_PACK_OPTIONS,
 	CURSOR_TYPE_MODE_OPTIONS,
@@ -92,7 +97,6 @@ import {
 	DEFAULT_AUDIO_FADE_OUT_MS,
 	DEFAULT_AUDIO_REGION_VOLUME,
 	DEFAULT_CAMERA_SPRING,
-	DEFAULT_CAPTION_GENERATION_OPTIONS,
 	DEFAULT_CLICK_HIGHLIGHT_COLOR,
 	DEFAULT_CLICK_HIGHLIGHT_OPACITY,
 	DEFAULT_CLICK_HIGHLIGHT_SIZE,
@@ -215,6 +219,10 @@ function getBackgroundTabForWallpaper(value: string): BackgroundTab {
 	return "image";
 }
 
+// Preview tiles in the Background picker use pre-generated 192×192 WebP
+// thumbnails so opening the panel never has to decode the full-resolution
+// wallpapers (which are several MB each). The canonical selected value
+// still references the full-resolution path.
 let cachedBuiltInWallpaperPreviewPaths: string[] | null = null;
 let builtInWallpaperPreviewPathsPromise: Promise<string[]> | null = null;
 
@@ -236,7 +244,7 @@ function loadBuiltInWallpaperPreviewPaths(): Promise<string[]> {
 
 	if (!builtInWallpaperPreviewPathsPromise) {
 		builtInWallpaperPreviewPathsPromise = Promise.all(
-			WALLPAPER_RELATIVE_PATHS.map((path) => getDisplayAssetUrl(path)),
+			WALLPAPER_THUMB_RELATIVE_PATHS.map((path) => getDisplayAssetUrl(path)),
 		)
 			.then((resolved) => {
 				cachedBuiltInWallpaperPreviewPaths = resolved;
@@ -253,7 +261,9 @@ function getInitialBuiltInWallpaperPreviewPaths(): string[] {
 		return cachedBuiltInWallpaperPreviewPaths;
 	}
 
-	const initialPreviewPaths = WALLPAPER_RELATIVE_PATHS.map((path) => getDisplayAssetUrlSync(path));
+	const initialPreviewPaths = WALLPAPER_THUMB_RELATIVE_PATHS.map((path) =>
+		getDisplayAssetUrlSync(path),
+	);
 	if (canUseCurrentWallpaperPreviewPaths(initialPreviewPaths)) {
 		cachedBuiltInWallpaperPreviewPaths = initialPreviewPaths;
 	}
@@ -454,6 +464,10 @@ interface SettingsPanelProps {
 	onCaptionStyleChange?: (style: Partial<CaptionStyle>) => void;
 	onCaptionGenerationOptionsChange?: (options: Partial<CaptionGenerationOptions>) => void;
 	onCaptionExport?: (format: "srt" | "vtt" | "txt") => void;
+	onCaptionImport?: (segments: CaptionSegment[], mode: "replace" | "append") => void;
+	onApplyCaptionPreset?: (preset: CaptionUserPreset) => void;
+	isEditingCaptionPosition?: boolean;
+	onToggleCaptionPositionEditing?: (next: boolean) => void;
 	isTranscribing?: boolean;
 	onAutoTranscribe?: () => void;
 	onCancelCaptionGeneration?: () => void;
@@ -729,6 +743,10 @@ export default function SettingsPanel({
 	onCaptionStyleChange,
 	onCaptionGenerationOptionsChange,
 	onCaptionExport,
+	onCaptionImport,
+	onApplyCaptionPreset,
+	isEditingCaptionPosition = false,
+	onToggleCaptionPositionEditing,
 	isTranscribing = false,
 	onAutoTranscribe,
 	onCancelCaptionGeneration,
@@ -746,10 +764,6 @@ export default function SettingsPanel({
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const hasUsableCaptionAudio =
 		!captionModelStatus || captionModelStatus.availableSourceAudios.length > 0;
-	const selectedCaptionBackend =
-		captionGenerationOptions?.preferredBackend ??
-		DEFAULT_CAPTION_GENERATION_OPTIONS.preferredBackend;
-	const isAppleSpeechSelected = selectedCaptionBackend === "apple-speech";
 	const supportsAppleSpeech =
 		captionModelStatus?.availableBackends.includes("apple-speech") ?? false;
 
@@ -2346,38 +2360,43 @@ export default function SettingsPanel({
 											const wallpaperValue = WALLPAPER_PATHS[index] ?? previewPath;
 											const isSelected = (() => {
 												if (!selected) return false;
-												if (selected === wallpaperValue || selected === previewPath) return true;
+												if (selected === wallpaperValue) return true;
 												try {
 													const clean = (s: string) =>
 														s.replace(/^file:\/\//, "").replace(/^\//, "");
 													if (clean(selected).endsWith(clean(wallpaperValue))) return true;
 													if (clean(wallpaperValue).endsWith(clean(selected))) return true;
-													if (clean(selected).endsWith(clean(previewPath))) return true;
-													if (clean(previewPath).endsWith(clean(selected))) return true;
 												} catch {
 													return false;
 												}
 												return false;
 											})();
+											const label = wallpaper?.label ?? `Wallpaper ${index + 1}`;
 											return (
-												<div
+												<button
+													type="button"
 													key={wallpaperValue}
 													className={cn(
-														"aspect-square w-9 h-9 rounded-lg border-2 overflow-hidden cursor-pointer transition-all duration-200 shadow-sm hover:scale-105",
+														"aspect-square w-9 h-9 rounded-lg border-2 overflow-hidden cursor-pointer transition-all duration-200 shadow-sm hover:scale-105 p-0 bg-white/5",
 														isSelected
 															? "border-[#F59E0B] ring-1 ring-[#F59E0B]/30"
-															: "border-white/10 hover:border-[#F59E0B]/40 opacity-80 hover:opacity-100 bg-white/5",
+															: "border-white/10 hover:border-[#F59E0B]/40 opacity-80 hover:opacity-100",
 													)}
-													aria-label={wallpaper?.label ?? `Wallpaper ${index + 1}`}
-													title={wallpaper?.label ?? `Wallpaper ${index + 1}`}
-													style={{
-														backgroundImage: `url(${previewPath})`,
-														backgroundSize: "cover",
-														backgroundPosition: "center",
-													}}
+													aria-label={label}
+													title={label}
 													onClick={() => onWallpaperChange(wallpaperValue)}
-													role="button"
-												/>
+												>
+													<img
+														src={previewPath}
+														alt=""
+														width={36}
+														height={36}
+														loading="lazy"
+														decoding="async"
+														draggable={false}
+														className="h-full w-full object-cover"
+													/>
+												</button>
 											);
 										})}
 									</div>
@@ -3121,448 +3140,34 @@ export default function SettingsPanel({
 
 				{/* Captions tab */}
 				{activeTab === "captions" && captionSettings && (
-					<TabContent>
-						<TabHeader
-							title={t("editor.captions.title", "Captions")}
-							description="Generate and style captions from your recording audio"
-							badge={
-								captionRegions.length > 0
-									? `${captionRegions.length} caption${captionRegions.length !== 1 ? "s" : ""}`
-									: undefined
-							}
-						/>
-
-						<SettingsSection title="Display" description="Toggle caption visibility in your export">
-							<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<div>
-									<div className="text-xs font-medium text-slate-300">
-										{t("editor.captions.showCaptions", "Show Captions")}
-									</div>
-									<div className="text-[10px] text-slate-500 mt-0.5">
-										Overlay captions on the video
-									</div>
-								</div>
-								<Switch
-									checked={captionSettings.enabled}
-									onCheckedChange={(enabled) => onCaptionSettingsChange?.({ enabled })}
-									className="data-[state=checked]:bg-[#F59E0B] scale-90"
-								/>
-							</div>
-						</SettingsSection>
-
-						<SettingsSection
-							title="Transcription"
-							description="Generate captions from your recording audio"
-						>
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] space-y-2">
-								<div className="flex items-center justify-between">
-									<div>
-										<div className="text-xs font-medium text-slate-300">
-											{t("editor.captions.localTranscript", "Local Transcript")}
-										</div>
-										<div className="text-[10px] text-slate-500 mt-0.5">
-											{!hasUsableCaptionAudio
-												? t(
-														"editor.captions.noAudioAvailable",
-														"No microphone or video audio was found for this recording",
-													)
-												: captionModelStatus?.downloadedModels.length
-													? t("editor.captions.modelsReady", "Models ready: {{models}}", {
-															models: captionModelStatus.downloadedModels.join(", "),
-														})
-													: t(
-															"editor.captions.noLocalModel",
-															"No local Whisper model downloaded yet",
-														)}
-										</div>
-										{supportsAppleSpeech && (
-											<div className="text-[10px] text-slate-500 mt-0.5">
-												{t(
-													"editor.captions.appleSpeechAvailable",
-													"Apple Speech is also available on this Mac for fixed-language voice tracks.",
-												)}
-											</div>
-										)}
-									</div>
-									{isTranscribing && (
-										<div className="text-[10px] uppercase tracking-wider text-[#F59E0B]">
-											{captionGenerationProgress?.message ||
-												t("editor.captions.working", "Working...")}
-										</div>
-									)}
-								</div>
-
-								<div className="grid grid-cols-3 gap-2">
-									<select
-										value={selectedCaptionBackend}
-										onChange={(event) =>
-											onCaptionGenerationOptionsChange?.({
-												preferredBackend: event.target.value as
-													| "auto"
-													| "whisper.cpp"
-													| "apple-speech",
-											})
-										}
-										className="h-9 rounded-lg border border-white/5 bg-white/5 px-3 text-xs text-slate-200 outline-none"
-									>
-										<option value="auto">{t("editor.captions.backendAuto", "Automatic")}</option>
-										<option value="whisper.cpp">
-											{t("editor.captions.backendWhisper", "Whisper")}
-										</option>
-										{supportsAppleSpeech && (
-											<option value="apple-speech">
-												{t("editor.captions.backendAppleSpeech", "Apple Speech")}
-											</option>
-										)}
-									</select>
-									<select
-										value={
-											captionGenerationOptions?.model ?? DEFAULT_CAPTION_GENERATION_OPTIONS.model
-										}
-										disabled={isAppleSpeechSelected}
-										onChange={(event) =>
-											onCaptionGenerationOptionsChange?.({
-												model: event.target.value as "base" | "small" | "medium",
-											})
-										}
-										className="h-9 rounded-lg border border-white/5 bg-white/5 px-3 text-xs text-slate-200 outline-none"
-									>
-										<option value="base">{t("editor.captions.modelBase", "Base")}</option>
-										<option value="small">{t("editor.captions.modelSmall", "Small")}</option>
-										<option value="medium">{t("editor.captions.modelMedium", "Medium")}</option>
-									</select>
-									<select
-										value={
-											captionModelStatus?.availableSourceAudios.includes(
-												captionGenerationOptions?.preferredSourceAudio ?? "microphone",
-											)
-												? (captionGenerationOptions?.preferredSourceAudio ?? "microphone")
-												: "mixed"
-										}
-										onChange={(event) =>
-											onCaptionGenerationOptionsChange?.({
-												preferredSourceAudio: event.target.value as "microphone" | "mixed",
-											})
-										}
-										className="h-9 rounded-lg border border-white/5 bg-white/5 px-3 text-xs text-slate-200 outline-none"
-									>
-										{captionModelStatus?.availableSourceAudios.includes("microphone") && (
-											<option value="microphone">
-												{t("editor.captions.sourceMicrophone", "Microphone")}
-											</option>
-										)}
-										<option value="mixed">{t("editor.captions.sourceMixed", "Mixed Audio")}</option>
-									</select>
-								</div>
-
-								<input
-									type="text"
-									value={captionGenerationOptions?.language ?? "auto"}
-									onChange={(event) =>
-										onCaptionGenerationOptionsChange?.({ language: event.target.value || "auto" })
-									}
-									placeholder={t("editor.captions.languagePlaceholder", "Language (auto)")}
-									className="w-full h-9 rounded-lg border border-white/5 bg-white/5 px-3 text-xs text-slate-200 outline-none"
-								/>
-								<textarea
-									value={captionGenerationOptions?.prompt ?? ""}
-									disabled={isAppleSpeechSelected}
-									onChange={(event) =>
-										onCaptionGenerationOptionsChange?.({ prompt: event.target.value })
-									}
-									placeholder={t(
-										"editor.captions.promptPlaceholder",
-										"Optional prompt to bias names or terminology",
-									)}
-									className="w-full min-h-[72px] rounded-lg border border-white/5 bg-white/5 px-3 py-2 text-xs text-slate-200 outline-none resize-none"
-								/>
-								{isAppleSpeechSelected && (
-									<div className="text-[10px] text-slate-500">
-										{t(
-											"editor.captions.appleSpeechHint",
-											"Apple Speech works best with microphone audio and a fixed language. Prompt bias is only used by Whisper.",
-										)}
-									</div>
-								)}
-
-								<Button
-									type="button"
-									onClick={onAutoTranscribe}
-									disabled={isTranscribing || !hasUsableCaptionAudio}
-									className="w-full h-9 rounded-lg border border-[#F59E0B]/30 bg-[#F59E0B]/10 text-[#F59E0B] hover:bg-[#F59E0B]/20 text-xs font-semibold"
-								>
-									{isTranscribing ? (
-										<>
-											<Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-											{captionGenerationProgress?.message ||
-												t("editor.captions.transcribing", "Transcribing...")}
-										</>
-									) : (
-										<>
-											<Captions className="w-3.5 h-3.5 mr-1.5" />
-											{t("editor.captions.generateTranscript", "Generate Transcript")}
-										</>
-									)}
-								</Button>
-
-								{isTranscribing && (
-									<Button
-										type="button"
-										onClick={onCancelCaptionGeneration}
-										className="w-full h-8 rounded-lg border border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20 text-xs font-semibold"
-									>
-										{t("editor.captions.cancelGeneration", "Cancel Generation")}
-									</Button>
-								)}
-
-								<div className="grid grid-cols-3 gap-1.5">
-									<Button
-										type="button"
-										onClick={() => onCaptionExport?.("srt")}
-										disabled={captionRegions.length === 0}
-										className="h-8 rounded-xl border border-white/[0.06] bg-white/[0.04] text-[10px] text-slate-300 hover:bg-white/[0.08] transition-colors duration-200"
-									>
-										{t("editor.captions.exportSrt", "Export SRT")}
-									</Button>
-									<Button
-										type="button"
-										onClick={() => onCaptionExport?.("vtt")}
-										disabled={captionRegions.length === 0}
-										className="h-8 rounded-xl border border-white/[0.06] bg-white/[0.04] text-[10px] text-slate-300 hover:bg-white/[0.08] transition-colors duration-200"
-									>
-										{t("editor.captions.exportVtt", "Export VTT")}
-									</Button>
-									<Button
-										type="button"
-										onClick={() => onCaptionExport?.("txt")}
-										disabled={captionRegions.length === 0}
-										className="h-8 rounded-xl border border-white/[0.06] bg-white/[0.04] text-[10px] text-slate-300 hover:bg-white/[0.08] transition-colors duration-200"
-									>
-										{t("editor.captions.exportTxt", "Export TXT")}
-									</Button>
-								</div>
-							</div>
-						</SettingsSection>
-
-						<SettingsSection title="Styling" description="Customize caption appearance and layout">
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<label className="text-xs font-medium text-slate-300 mb-2 block">
-									{t("editor.captions.stylePreset", "Style Preset")}
-								</label>
-								<div className="grid grid-cols-3 gap-1.5">
-									{(Object.keys(CAPTION_STYLE_PRESETS) as CaptionStylePreset[]).map((preset) => (
-										<Button
-											key={preset}
-											type="button"
-											onClick={() => onCaptionStylePresetChange?.(preset)}
-											className={cn(
-												"h-8 rounded-lg border shadow-sm transition-all duration-200 justify-center",
-												captionSettings.style.preset === preset
-													? "border-[#F59E0B] bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-white shadow-sm shadow-[#F59E0B]/20"
-													: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08]",
-											)}
-										>
-											<span className="text-[10px] font-semibold capitalize">{preset}</span>
-										</Button>
-									))}
-								</div>
-							</div>
-
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<label className="text-xs font-medium text-slate-300 mb-2 block">
-									{t("editor.captions.position", "Position")}
-								</label>
-								<div className="grid grid-cols-3 gap-1.5">
-									{(["top", "center", "bottom"] as const).map((pos) => (
-										<Button
-											key={pos}
-											type="button"
-											onClick={() => onCaptionSettingsChange?.({ position: pos })}
-											className={cn(
-												"h-8 rounded-lg border shadow-sm transition-all duration-200 justify-center",
-												captionSettings.position === pos
-													? "border-[#F59E0B] bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-white shadow-sm shadow-[#F59E0B]/20"
-													: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08]",
-											)}
-										>
-											<span className="text-[10px] font-semibold capitalize">{pos}</span>
-										</Button>
-									))}
-								</div>
-							</div>
-
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<SliderControl
-									label={t("editor.captions.fontSize", "Font Size")}
-									value={captionSettings.style.fontSize}
-									defaultValue={28}
-									min={14}
-									max={64}
-									step={1}
-									onChange={(v) => onCaptionStyleChange?.({ fontSize: v })}
-									formatValue={(v) => `${v}px`}
-									parseInput={(t) => parseFloat(t.replace(/px$/, ""))}
-								/>
-							</div>
-
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<label className="text-xs font-medium text-slate-300 mb-2 block">
-									{t("editor.captions.textColor", "Text Color")}
-								</label>
-								<ColorPicker
-									color={captionSettings.style.color}
-									onChange={(color) => onCaptionStyleChange?.({ color: color.hex })}
-									colors={[
-										"#FFFFFF",
-										"#FFD700",
-										"#00FF88",
-										"#FF6B6B",
-										"#00BFFF",
-										"#FF69B4",
-										"#000000",
-										"#F59E0B",
-									]}
-								/>
-							</div>
-
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<SliderControl
-									label={t("editor.captions.backgroundOpacity", "Background Opacity")}
-									value={captionSettings.style.backgroundOpacity}
-									defaultValue={0.7}
-									min={0}
-									max={1}
-									step={0.05}
-									onChange={(v) => onCaptionStyleChange?.({ backgroundOpacity: v })}
-									formatValue={(v) => `${Math.round(v * 100)}%`}
-									parseInput={(t) => parseFloat(t.replace(/%$/, "")) / 100}
-								/>
-							</div>
-
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<SliderControl
-									label={t("editor.captions.outlineWidth", "Outline Width")}
-									value={captionSettings.style.outlineWidth}
-									defaultValue={0}
-									min={0}
-									max={5}
-									step={0.5}
-									onChange={(v) => onCaptionStyleChange?.({ outlineWidth: v })}
-									formatValue={(v) => `${v}px`}
-									parseInput={(t) => parseFloat(t.replace(/px$/, ""))}
-								/>
-							</div>
-
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<SliderControl
-									label={t("editor.captions.wordsPerLine", "Words Per Line")}
-									value={captionSettings.maxWordsPerLine}
-									defaultValue={6}
-									min={1}
-									max={12}
-									step={1}
-									onChange={(v) => onCaptionSettingsChange?.({ maxWordsPerLine: v })}
-									formatValue={(v) => `${v}`}
-									parseInput={(t) => parseFloat(t)}
-								/>
-							</div>
-
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
-								<SliderControl
-									label={t("editor.captions.safeArea", "Safe Area")}
-									value={captionSettings.safeAreaInset}
-									defaultValue={8}
-									min={2}
-									max={20}
-									step={1}
-									onChange={(v) => onCaptionSettingsChange?.({ safeAreaInset: v })}
-									formatValue={(v) => `${v}%`}
-									parseInput={(t) => parseFloat(t.replace(/%$/, ""))}
-								/>
-							</div>
-						</SettingsSection>
-
-						{/* Caption list */}
-						{captionRegions.length > 0 && (
-							<SettingsSection title="Caption List" description="Edit individual caption segments">
-								<div className="rounded-xl bg-white/[0.04] border border-white/[0.06] overflow-hidden">
-									<div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.04]">
-										<label className="text-xs font-medium text-slate-300">
-											{t("editor.captions.title", "Captions")} ({captionRegions.length})
-										</label>
-										<Button
-											type="button"
-											onClick={onDeleteAllCaptions}
-											className="h-6 px-2 rounded-lg border border-red-500/20 bg-red-500/8 text-red-400 hover:bg-red-500/15 text-[10px] transition-colors duration-200"
-										>
-											<Trash2 className="w-3 h-3 mr-1" />
-											{t("editor.captions.clearAll", "Clear All")}
-										</Button>
-									</div>
-									<div className="flex flex-col gap-0.5 max-h-48 overflow-y-auto custom-scrollbar p-1.5">
-										{captionRegions.map((caption) => (
-											<div
-												key={caption.id}
-												onClick={() => onSelectCaption?.(caption.id)}
-												className={cn(
-													"flex items-start gap-2 p-2 rounded-xl border cursor-pointer transition-all duration-200",
-													selectedCaptionId === caption.id
-														? "border-[#F59E0B]/30 bg-[#F59E0B]/8 shadow-sm shadow-[#F59E0B]/10"
-														: "border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/[0.08]",
-												)}
-											>
-												<div className="flex-1 min-w-0">
-													<div className="text-[10px] text-slate-500 mb-1 font-mono">
-														{(caption.startMs / 1000).toFixed(2)}s -{" "}
-														{(caption.endMs / 1000).toFixed(2)}s
-													</div>
-													<textarea
-														value={caption.text}
-														onChange={(e) => onCaptionTextChange?.(caption.id, e.target.value)}
-														onClick={(e) => e.stopPropagation()}
-														className="w-full min-h-[54px] text-[11px] text-slate-300 bg-transparent border-none outline-none resize-none"
-														placeholder={t("editor.captions.captionPlaceholder", "Caption text...")}
-													/>
-													<div className="flex gap-1.5 mt-1">
-														<Button
-															type="button"
-															onClick={(event) => {
-																event.stopPropagation();
-																onCaptionSplit?.(caption.id);
-															}}
-															className="h-6 px-2 rounded-lg border border-white/[0.06] bg-white/[0.04] text-[10px] text-slate-300 hover:bg-white/[0.08] transition-colors duration-200"
-														>
-															{t("editor.captions.split", "Split")}
-														</Button>
-														<Button
-															type="button"
-															onClick={(event) => {
-																event.stopPropagation();
-																onCaptionMergeNext?.(caption.id);
-															}}
-															className="h-6 px-2 rounded-lg border border-white/[0.06] bg-white/[0.04] text-[10px] text-slate-300 hover:bg-white/[0.08] transition-colors duration-200"
-														>
-															{t("editor.captions.mergeNext", "Merge Next")}
-														</Button>
-													</div>
-												</div>
-												<button
-													type="button"
-													onClick={(e) => {
-														e.stopPropagation();
-														onCaptionDelete?.(caption.id);
-													}}
-													className="shrink-0 p-1 text-slate-500 hover:text-red-400 transition-colors duration-200 rounded-md hover:bg-red-500/10"
-												>
-													<X className="w-3 h-3" />
-												</button>
-											</div>
-										))}
-									</div>
-								</div>
-							</SettingsSection>
-						)}
-					</TabContent>
+					<CaptionsTab
+						captionRegions={captionRegions}
+						captionSettings={captionSettings}
+						captionGenerationOptions={captionGenerationOptions}
+						captionGenerationProgress={captionGenerationProgress}
+						captionModelStatus={captionModelStatus}
+						isTranscribing={isTranscribing}
+						selectedCaptionId={selectedCaptionId}
+						isEditingCaptionPosition={isEditingCaptionPosition}
+						onToggleCaptionPositionEditing={(next) => onToggleCaptionPositionEditing?.(next)}
+						onCaptionSettingsChange={(partial) => onCaptionSettingsChange?.(partial)}
+						onCaptionStyleChange={(partial) => onCaptionStyleChange?.(partial)}
+						onCaptionStylePresetChange={onCaptionStylePresetChange}
+						onApplyCaptionPreset={(preset) => onApplyCaptionPreset?.(preset)}
+						onCaptionGenerationOptionsChange={onCaptionGenerationOptionsChange}
+						onCaptionTextChange={onCaptionTextChange}
+						onCaptionDelete={onCaptionDelete}
+						onDeleteAllCaptions={onDeleteAllCaptions}
+						onCaptionSplit={onCaptionSplit}
+						onCaptionMergeNext={onCaptionMergeNext}
+						onSelectCaption={onSelectCaption}
+						onAutoTranscribe={onAutoTranscribe}
+						onCancelCaptionGeneration={onCancelCaptionGeneration}
+						onCaptionExport={onCaptionExport}
+						onCaptionImport={onCaptionImport}
+						hasUsableCaptionAudio={hasUsableCaptionAudio}
+						supportsAppleSpeech={supportsAppleSpeech}
+					/>
 				)}
 
 				{/* Webcam tab */}

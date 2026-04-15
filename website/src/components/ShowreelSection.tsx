@@ -153,8 +153,8 @@ export function ShowreelSection() {
 								key={item.title}
 								className="showreel-card group flex-shrink-0 w-[75vw] max-w-[960px]"
 							>
-								<div className="relative rounded-xl overflow-hidden border border-white/[0.05] bg-black transition-all duration-500 group-hover:border-brand-500/15">
-									<div className="flex items-center gap-2 px-4 py-2.5 bg-black border-b border-white/[0.04]">
+								<div className="relative rounded-xl overflow-hidden border border-white/[0.06] bg-[#121212] transition-all duration-500 group-hover:border-brand-500/15">
+									<div className="flex items-center gap-2 px-4 py-2.5 bg-[#0d0d0d] border-b border-white/[0.05]">
 										<div className="w-2.5 h-2.5 rounded-full bg-white/[0.06] transition-colors group-hover:bg-[#ff5f57]" />
 										<div className="w-2.5 h-2.5 rounded-full bg-white/[0.06] transition-colors group-hover:bg-[#febc2e]" />
 										<div className="w-2.5 h-2.5 rounded-full bg-white/[0.06] transition-colors group-hover:bg-[#28c840]" />

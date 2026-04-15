@@ -144,9 +144,31 @@ function pinOverlayWindow(win: BrowserWindow, allowFullscreenVisibility = true):
 }
 
 ipcMain.on("hud-overlay-hide", () => {
-	if (hudOverlayWindow && !hudOverlayWindow.isDestroyed()) {
-		hudOverlayWindow.minimize();
+	const win = hudOverlayWindow;
+	if (!win || win.isDestroyed()) {
+		return;
 	}
+
+	const duration = 140;
+	const startTime = Date.now();
+	const startOpacity = win.getOpacity();
+	const interval = setInterval(() => {
+		if (!win || win.isDestroyed()) {
+			clearInterval(interval);
+			return;
+		}
+		const elapsed = Date.now() - startTime;
+		const progress = Math.min(1, elapsed / duration);
+		const eased = progress * progress;
+		win.setOpacity(startOpacity * (1 - eased));
+		if (progress >= 1) {
+			clearInterval(interval);
+			if (!win.isDestroyed()) {
+				win.minimize();
+				win.setOpacity(startOpacity);
+			}
+		}
+	}, 16);
 });
 
 ipcMain.handle("get-hud-overlay-capture-protection", () => {

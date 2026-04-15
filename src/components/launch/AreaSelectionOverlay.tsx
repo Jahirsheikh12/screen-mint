@@ -568,22 +568,13 @@ export function AreaSelectionOverlay() {
 
 	if (phase === "locked") {
 		return (
-			<div
-				className="fixed inset-0"
-				style={{ pointerEvents: "none", background: "transparent" }}
-			>
+			<div className="fixed inset-0" style={{ pointerEvents: "none", background: "transparent" }}>
 				<svg className="absolute inset-0 h-full w-full">
 					<title>Selected recording area</title>
 					<defs>
 						<mask id="area-mask-locked">
 							<rect width="100%" height="100%" fill="white" />
-							<rect
-								x={rect.x}
-								y={rect.y}
-								width={rect.width}
-								height={rect.height}
-								fill="black"
-							/>
+							<rect x={rect.x} y={rect.y} width={rect.width} height={rect.height} fill="black" />
 						</mask>
 					</defs>
 					{/* Dark mask over the non-recorded area — same visual as selection phase */}

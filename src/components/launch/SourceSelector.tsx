@@ -130,8 +130,7 @@ function DisplayCard({
 	onDoubleClick,
 	primaryLabel,
 }: DisplayCardProps) {
-	const resolution =
-		source.width && source.height ? `${source.width} × ${source.height}` : null;
+	const resolution = source.width && source.height ? `${source.width} × ${source.height}` : null;
 
 	return (
 		<button
@@ -218,11 +217,7 @@ function WindowCard({
 				) : (
 					<div className={styles.windowThumbPlaceholder}>
 						<div className={styles.windowPlaceholderIcon}>
-							{source.appIcon ? (
-								<img src={source.appIcon} alt="" />
-							) : (
-								<FiSquare size={20} />
-							)}
+							{source.appIcon ? <img src={source.appIcon} alt="" /> : <FiSquare size={20} />}
 						</div>
 					</div>
 				)}
@@ -497,9 +492,9 @@ export function SourceSelector() {
 						</span>
 						{t("sourceSelector.screens", "Screens")}
 						<span className={styles.tabCount}>{filteredScreens.length}</span>
-						{search.trim().length > 0 &&
-							activeTab !== "screens" &&
-							filteredScreens.length > 0 && <span className={styles.tabMatchDot} />}
+						{search.trim().length > 0 && activeTab !== "screens" && filteredScreens.length > 0 && (
+							<span className={styles.tabMatchDot} />
+						)}
 					</button>
 					<button
 						type="button"
@@ -513,9 +508,9 @@ export function SourceSelector() {
 						</span>
 						{t("sourceSelector.windows", "Windows")}
 						<span className={styles.tabCount}>{filteredWindows.length}</span>
-						{search.trim().length > 0 &&
-							activeTab !== "windows" &&
-							filteredWindows.length > 0 && <span className={styles.tabMatchDot} />}
+						{search.trim().length > 0 && activeTab !== "windows" && filteredWindows.length > 0 && (
+							<span className={styles.tabMatchDot} />
+						)}
 					</button>
 				</div>
 				<div className={styles.searchWrap}>

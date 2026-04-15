@@ -572,23 +572,46 @@ export const DEFAULT_ZOOM_DEPTH: ZoomDepth = 3;
 // ── Captions ──
 
 export type CaptionStylePreset = "classic" | "boxed" | "karaoke" | "outline" | "neon" | "minimal";
-export type CaptionAnimationMode = "static" | "active-word";
+export type CaptionAnimationMode =
+	| "static"
+	| "active-word"
+	| "fade"
+	| "pop"
+	| "typewriter"
+	| "karaoke-fill";
 export type CaptionBackend = "whisper.cpp" | "apple-speech";
 export type CaptionBackendPreference = "auto" | CaptionBackend;
 export type CaptionModel = "base" | "small" | "medium";
 export type CaptionTrackStatus = "idle" | "generating" | "ready" | "error";
 export type CaptionSourceAudio = "microphone" | "mixed";
 
+export const CAPTION_ANIMATION_MODES: CaptionAnimationMode[] = [
+	"static",
+	"active-word",
+	"fade",
+	"pop",
+	"typewriter",
+	"karaoke-fill",
+];
+
 export interface CaptionStyle {
 	preset: CaptionStylePreset;
 	fontSize: number;
 	fontFamily: string;
 	fontWeight: "normal" | "bold" | "800";
+	fontStyle: "normal" | "italic";
 	color: string;
+	highlightColor: string;
 	backgroundColor: string;
 	backgroundOpacity: number;
+	borderRadius: number;
 	outlineColor: string;
 	outlineWidth: number;
+	shadowColor: string;
+	shadowBlur: number;
+	shadowOffsetY: number;
+	letterSpacing: number;
+	lineHeight: number;
 	textTransform: "none" | "uppercase";
 }
 
@@ -613,15 +636,29 @@ export type CaptionRegion = CaptionSegment;
 
 export type CaptionPosition = "top" | "center" | "bottom";
 
+export interface CaptionPositionOverride {
+	xPercent: number;
+	yPercent: number;
+}
+
 export interface CaptionSettings {
 	style: CaptionStyle;
 	position: CaptionPosition;
+	positionOverride: CaptionPositionOverride | null;
 	enabled: boolean;
 	animationMode: CaptionAnimationMode;
 	maxLines: number;
 	maxWordsPerLine: number;
 	safeAreaInset: number;
 	showTranscriptPanel: boolean;
+}
+
+export interface CaptionUserPreset {
+	id: string;
+	name: string;
+	createdAt: string;
+	style: CaptionStyle;
+	animationMode: CaptionAnimationMode;
 }
 
 export interface CaptionTrack {
@@ -673,78 +710,100 @@ function getDefaultCaptionFontFamily() {
 	return "Inter, system-ui, sans-serif";
 }
 
+const BASE_CAPTION_STYLE: Omit<CaptionStyle, "preset"> = {
+	fontSize: 28,
+	fontFamily: getDefaultCaptionFontFamily(),
+	fontWeight: "bold",
+	fontStyle: "normal",
+	color: "#ffffff",
+	highlightColor: "#F59E0B",
+	backgroundColor: "#000000",
+	backgroundOpacity: 0.7,
+	borderRadius: 6,
+	outlineColor: "#000000",
+	outlineWidth: 0,
+	shadowColor: "#000000",
+	shadowBlur: 0,
+	shadowOffsetY: 0,
+	letterSpacing: 0,
+	lineHeight: 1.3,
+	textTransform: "none",
+};
+
 export const CAPTION_STYLE_PRESETS: Record<CaptionStylePreset, CaptionStyle> = {
 	classic: {
+		...BASE_CAPTION_STYLE,
 		preset: "classic",
 		fontSize: 28,
-		fontFamily: getDefaultCaptionFontFamily(),
-		fontWeight: "bold",
 		color: "#ffffff",
+		highlightColor: "#F59E0B",
 		backgroundColor: "#000000",
 		backgroundOpacity: 0.7,
-		outlineColor: "#000000",
-		outlineWidth: 0,
-		textTransform: "none",
 	},
 	boxed: {
+		...BASE_CAPTION_STYLE,
 		preset: "boxed",
 		fontSize: 26,
-		fontFamily: getDefaultCaptionFontFamily(),
 		fontWeight: "bold",
 		color: "#ffffff",
+		highlightColor: "#ffffff",
 		backgroundColor: "#F59E0B",
-		backgroundOpacity: 0.9,
-		outlineColor: "#000000",
-		outlineWidth: 0,
+		backgroundOpacity: 0.95,
+		borderRadius: 10,
 		textTransform: "uppercase",
 	},
 	karaoke: {
+		...BASE_CAPTION_STYLE,
 		preset: "karaoke",
 		fontSize: 32,
-		fontFamily: getDefaultCaptionFontFamily(),
 		fontWeight: "800",
-		color: "#FFD700",
+		color: "#ffffff",
+		highlightColor: "#F59E0B",
 		backgroundColor: "#000000",
-		backgroundOpacity: 0.5,
+		backgroundOpacity: 0.55,
+		borderRadius: 8,
 		outlineColor: "#000000",
 		outlineWidth: 2,
 		textTransform: "uppercase",
 	},
 	outline: {
+		...BASE_CAPTION_STYLE,
 		preset: "outline",
 		fontSize: 30,
-		fontFamily: getDefaultCaptionFontFamily(),
 		fontWeight: "bold",
 		color: "#ffffff",
+		highlightColor: "#F59E0B",
 		backgroundColor: "transparent",
 		backgroundOpacity: 0,
 		outlineColor: "#000000",
 		outlineWidth: 3,
-		textTransform: "none",
 	},
 	neon: {
+		...BASE_CAPTION_STYLE,
 		preset: "neon",
 		fontSize: 28,
-		fontFamily: getDefaultCaptionFontFamily(),
 		fontWeight: "800",
 		color: "#00FF88",
+		highlightColor: "#ffffff",
 		backgroundColor: "#000000",
 		backgroundOpacity: 0.4,
 		outlineColor: "#00FF88",
 		outlineWidth: 1,
+		shadowColor: "#00FF88",
+		shadowBlur: 12,
 		textTransform: "uppercase",
 	},
 	minimal: {
+		...BASE_CAPTION_STYLE,
 		preset: "minimal",
 		fontSize: 24,
-		fontFamily: getDefaultCaptionFontFamily(),
 		fontWeight: "normal",
 		color: "#ffffff",
+		highlightColor: "#F59E0B",
 		backgroundColor: "transparent",
 		backgroundOpacity: 0,
 		outlineColor: "#000000",
 		outlineWidth: 1,
-		textTransform: "none",
 	},
 };
 
@@ -753,6 +812,7 @@ export const DEFAULT_CAPTION_STYLE: CaptionStyle = { ...CAPTION_STYLE_PRESETS.cl
 export const DEFAULT_CAPTION_SETTINGS: CaptionSettings = {
 	style: DEFAULT_CAPTION_STYLE,
 	position: "bottom",
+	positionOverride: null,
 	enabled: false,
 	animationMode: "active-word",
 	maxLines: 2,

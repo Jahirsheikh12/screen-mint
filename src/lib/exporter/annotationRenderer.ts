@@ -1,4 +1,8 @@
-import { createCaptionRenderBlock, hexToRgba } from "@/components/video-editor/captionLayout";
+import {
+	createCaptionRenderBlock,
+	getCaptionPlacement,
+	hexToRgba,
+} from "@/components/video-editor/captionLayout";
 import type {
 	AnnotationRegion,
 	ArrowDirection,
@@ -365,44 +369,56 @@ export function renderCaptions(
 ): void {
 	const renderBlock = createCaptionRenderBlock(captions, settings, currentTimeMs);
 	if (!renderBlock) return;
+	if (renderBlock.blockOpacity <= 0.001) return;
 
-	const { style, position } = settings;
+	const { style } = settings;
 	const scaleFactor = canvasWidth / 1920;
 	const fontSize = Math.max(12, Math.round(style.fontSize * scaleFactor));
 	const padX = Math.round(16 * scaleFactor);
 	const padY = Math.round(8 * scaleFactor);
-	const borderRadius = Math.round(6 * scaleFactor);
+	const borderRadius = Math.round(style.borderRadius * scaleFactor);
 	const wordGap = Math.max(4, Math.round(fontSize * 0.18));
 	const lineGap = Math.max(2, Math.round(fontSize * 0.12));
+	const letterSpacing = style.letterSpacing * scaleFactor;
 	const inactiveColor = hexToRgba(style.color, 0.58);
+	const visibleLines = renderBlock.lines
+		.map((line) => ({
+			words: line.words.filter((word) => word.isVisible),
+		}))
+		.filter((line) => line.words.length > 0);
+	if (visibleLines.length === 0) return;
 
 	ctx.save();
-	ctx.font = `${style.fontWeight} ${fontSize}px ${style.fontFamily}`;
-	ctx.textAlign = "center";
+	ctx.globalAlpha = clamp(renderBlock.blockOpacity, 0, 1);
+	const fontStyleToken = style.fontStyle === "italic" ? "italic " : "";
+	ctx.font = `${fontStyleToken}${style.fontWeight} ${fontSize}px ${style.fontFamily}`;
+	ctx.textAlign = "left";
 	ctx.textBaseline = "middle";
-	const lineHeight = fontSize * 1.3;
-	const lineWidths = renderBlock.lines.map((line) => {
-		return line.words.reduce((total, word, index) => {
-			const text = style.textTransform === "uppercase" ? word.text.toUpperCase() : word.text;
-			const next = total + ctx.measureText(text).width;
-			return index === line.words.length - 1 ? next : next + wordGap;
-		}, 0);
-	});
-	const blockHeight =
-		renderBlock.lines.length * lineHeight +
-		Math.max(0, renderBlock.lines.length - 1) * lineGap +
-		padY * 2;
-	const blockWidth = Math.min(canvasWidth * 0.85, Math.max(...lineWidths, 0) + padX * 2);
+	const lineHeight = fontSize * style.lineHeight;
 
-	// Position
-	const cx = canvasWidth / 2;
-	let cy: number;
-	if (position === "top") {
-		cy = canvasHeight * (settings.safeAreaInset / 100) + blockHeight / 2;
-	} else if (position === "center") {
-		cy = canvasHeight / 2;
-	} else {
-		cy = canvasHeight * (1 - settings.safeAreaInset / 100) - blockHeight / 2;
+	const computeWordWidth = (text: string) => ctx.measureText(text).width;
+	const lineWidths = visibleLines.map((line) =>
+		line.words.reduce((total, word, index) => {
+			const text = style.textTransform === "uppercase" ? word.text.toUpperCase() : word.text;
+			const wordWidth = computeWordWidth(text) + Math.max(0, (text.length - 1) * letterSpacing);
+			const next = total + wordWidth;
+			return index === line.words.length - 1 ? next : next + wordGap;
+		}, 0),
+	);
+	const blockHeight =
+		visibleLines.length * lineHeight + Math.max(0, visibleLines.length - 1) * lineGap + padY * 2;
+	const blockWidthMax = canvasWidth * 0.85;
+	const blockWidth = Math.min(blockWidthMax, Math.max(...lineWidths, 0) + padX * 2);
+
+	const placement = getCaptionPlacement(settings, canvasWidth, canvasHeight, blockHeight);
+	const cx = placement.cx;
+	const cy = placement.cy;
+
+	// Apply pop scale around block center
+	if (renderBlock.blockScale !== 1) {
+		ctx.translate(cx, cy);
+		ctx.scale(renderBlock.blockScale, renderBlock.blockScale);
+		ctx.translate(-cx, -cy);
 	}
 
 	const bx = cx - blockWidth / 2;
@@ -421,36 +437,120 @@ export function renderCaptions(
 		ctx.strokeStyle = style.outlineColor;
 		ctx.lineWidth = outlineWidth * 2;
 		ctx.lineJoin = "round";
+		ctx.miterLimit = 2;
 	}
 
+	// Shadow setup (applied per fillText call)
+	const applyShadow = () => {
+		if (style.shadowBlur > 0 || style.shadowOffsetY !== 0) {
+			ctx.shadowColor = style.shadowColor;
+			ctx.shadowBlur = Math.max(0, style.shadowBlur * scaleFactor);
+			ctx.shadowOffsetX = 0;
+			ctx.shadowOffsetY = style.shadowOffsetY * scaleFactor;
+		} else {
+			ctx.shadowColor = "transparent";
+			ctx.shadowBlur = 0;
+			ctx.shadowOffsetX = 0;
+			ctx.shadowOffsetY = 0;
+		}
+	};
+
+	const drawWordText = (
+		text: string,
+		startX: number,
+		y: number,
+		fillStyle: string | CanvasGradient,
+	) => {
+		if (letterSpacing === 0) {
+			if (outlineWidth > 0) {
+				ctx.strokeStyle = style.outlineColor;
+				ctx.shadowColor = "transparent";
+				ctx.strokeText(text, startX, y);
+			}
+			applyShadow();
+			ctx.fillStyle = fillStyle;
+			ctx.fillText(text, startX, y);
+			return;
+		}
+		let x = startX;
+		for (const char of text) {
+			if (outlineWidth > 0) {
+				ctx.strokeStyle = style.outlineColor;
+				ctx.shadowColor = "transparent";
+				ctx.strokeText(char, x, y);
+			}
+			applyShadow();
+			ctx.fillStyle = fillStyle;
+			ctx.fillText(char, x, y);
+			x += ctx.measureText(char).width + letterSpacing;
+		}
+	};
+
 	let yCursor = by + padY + lineHeight / 2;
-	for (let lineIndex = 0; lineIndex < renderBlock.lines.length; lineIndex++) {
-		const line = renderBlock.lines[lineIndex];
+	for (let lineIndex = 0; lineIndex < visibleLines.length; lineIndex++) {
+		const line = visibleLines[lineIndex];
 		const lineWidth = lineWidths[lineIndex] ?? 0;
 		let xCursor = cx - lineWidth / 2;
 
 		for (const word of line.words) {
 			const text = style.textTransform === "uppercase" ? word.text.toUpperCase() : word.text;
-			const metrics = ctx.measureText(text);
-			const drawX = xCursor + metrics.width / 2;
-			const isHighlighted = settings.animationMode === "active-word" && word.isActive;
+			const wordWidth = computeWordWidth(text) + Math.max(0, (text.length - 1) * letterSpacing);
 
-			if (outlineWidth > 0) {
-				ctx.strokeText(text, drawX, yCursor);
-			}
+			const fillStyle = resolveWordFillStyle(
+				ctx,
+				word,
+				settings.animationMode,
+				style.color,
+				style.highlightColor,
+				inactiveColor,
+				xCursor,
+				wordWidth,
+			);
 
-			ctx.fillStyle =
-				settings.animationMode === "active-word"
-					? isHighlighted
-						? style.color
-						: inactiveColor
-					: style.color;
-			ctx.fillText(text, drawX, yCursor);
-			xCursor += metrics.width + wordGap;
+			drawWordText(text, xCursor, yCursor, fillStyle);
+			xCursor += wordWidth + wordGap;
 		}
 
 		yCursor += lineHeight + lineGap;
 	}
 
 	ctx.restore();
+}
+
+function resolveWordFillStyle(
+	ctx: CanvasRenderingContext2D,
+	word: { isActive: boolean; isPast: boolean; wordProgress: number },
+	mode: CaptionSettings["animationMode"],
+	baseColor: string,
+	highlightColor: string,
+	inactiveColor: string,
+	wordX: number,
+	wordWidth: number,
+): string | CanvasGradient {
+	switch (mode) {
+		case "active-word":
+			if (word.isActive) return highlightColor;
+			if (word.isPast) return baseColor;
+			return inactiveColor;
+		case "typewriter":
+			return word.isActive ? highlightColor : baseColor;
+		case "karaoke-fill": {
+			const progress = clamp(word.wordProgress, 0, 1);
+			const gradient = ctx.createLinearGradient(wordX, 0, wordX + wordWidth, 0);
+			gradient.addColorStop(0, highlightColor);
+			gradient.addColorStop(progress, highlightColor);
+			gradient.addColorStop(progress, baseColor);
+			gradient.addColorStop(1, baseColor);
+			return gradient;
+		}
+		case "fade":
+		case "pop":
+		case "static":
+		default:
+			return baseColor;
+	}
+}
+
+function clamp(value: number, min: number, max: number) {
+	return Math.min(max, Math.max(min, value));
 }

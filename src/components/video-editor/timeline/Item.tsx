@@ -247,7 +247,10 @@ export default function Item({
 						)}
 					{/* Content */}
 					<div
-						className="relative z-10 flex flex-col items-center justify-center text-white/90 opacity-80 group-hover:opacity-100 transition-opacity select-none overflow-hidden"
+						className={cn(
+							"relative z-10 flex flex-col items-center justify-center text-white/90 opacity-80 group-hover:opacity-100 transition-opacity select-none overflow-hidden",
+							isCaption && "w-full px-3 min-w-0",
+						)}
 						style={isClip && waveformData ? { textShadow: "0 1px 3px rgba(0,0,0,0.7)" } : undefined}
 					>
 						{isClip ? (
@@ -277,7 +280,7 @@ export default function Item({
 							</div>
 						) : (
 							<>
-								<div className="flex items-center gap-1.5">
+								<div className={cn("flex items-center gap-1.5", isCaption && "w-full min-w-0")}>
 									{isZoom ? (
 										<>
 											<ZoomIn className="w-3.5 h-3.5 shrink-0" />
@@ -310,6 +313,16 @@ export default function Item({
 										<>
 											<Camera className="w-3.5 h-3.5 shrink-0" />
 											<span className="text-[11px] font-semibold tracking-tight whitespace-nowrap">
+												{children}
+											</span>
+										</>
+									) : isCaption ? (
+										<>
+											<MessageSquare className="w-3.5 h-3.5 shrink-0" />
+											<span
+												className="text-[10px] font-medium tracking-tight truncate text-white/95 flex-1 min-w-0 text-left"
+												title={typeof children === "string" ? children : undefined}
+											>
 												{children}
 											</span>
 										</>

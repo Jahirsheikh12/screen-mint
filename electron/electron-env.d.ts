@@ -14,6 +14,7 @@ import type { SelectedArea } from "../src/lib/recording/session";
 import type { UpdaterState } from "../src/lib/updater/types";
 
 declare global {
+	// biome-ignore lint/style/noNamespace: ambient Electron env typings augment NodeJS here.
 	namespace NodeJS {
 		interface ProcessEnv {
 			/**

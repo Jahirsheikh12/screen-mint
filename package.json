@@ -15,10 +15,11 @@
 	"version": "1.0.3",
 	"type": "module",
 	"scripts": {
-		"dev": "vite",
+		"dev": "npm run wallpapers:thumbs && vite",
 		"postinstall": "npm run rebuild:native",
 		"brand:generate": "node scripts/generate-brand-assets.mjs",
-		"build:asset-pack": "node scripts/build-packaged-assets.mjs",
+		"wallpapers:thumbs": "node scripts/generate-wallpaper-thumbs.mjs",
+		"build:asset-pack": "npm run wallpapers:thumbs && node scripts/build-packaged-assets.mjs",
 		"build:renderer": "tsc && vite build && node scripts/prepare-packaged-dist.mjs",
 		"build": "npm run build:native-helpers && npm run build:asset-pack && npm run build:renderer && electron-builder --publish never",
 		"version:show": "node scripts/bump-version.mjs --show",

@@ -506,11 +506,74 @@ function normalizeCaptionWords(
 	});
 }
 
+const VALID_CAPTION_ANIMATION_MODES: CaptionSettings["animationMode"][] = [
+	"static",
+	"active-word",
+	"fade",
+	"pop",
+	"typewriter",
+	"karaoke-fill",
+];
+
+function normalizeCaptionStyle(candidate: unknown): CaptionSettings["style"] {
+	const defaults = DEFAULT_CAPTION_SETTINGS.style;
+	if (!candidate || typeof candidate !== "object") {
+		return { ...defaults };
+	}
+	const style = candidate as Partial<CaptionSettings["style"]>;
+	const pickString = (value: unknown, fallback: string) =>
+		typeof value === "string" && value.trim().length > 0 ? value : fallback;
+	const pickNumber = (value: unknown, fallback: number) =>
+		isFiniteNumber(value) ? value : fallback;
+	return {
+		preset:
+			style.preset === "classic" ||
+			style.preset === "boxed" ||
+			style.preset === "karaoke" ||
+			style.preset === "outline" ||
+			style.preset === "neon" ||
+			style.preset === "minimal"
+				? style.preset
+				: defaults.preset,
+		fontSize: clamp(pickNumber(style.fontSize, defaults.fontSize), 10, 120),
+		fontFamily: pickString(style.fontFamily, defaults.fontFamily),
+		fontWeight:
+			style.fontWeight === "normal" || style.fontWeight === "bold" || style.fontWeight === "800"
+				? style.fontWeight
+				: defaults.fontWeight,
+		fontStyle: style.fontStyle === "italic" ? "italic" : "normal",
+		color: pickString(style.color, defaults.color),
+		highlightColor: pickString(style.highlightColor, defaults.highlightColor),
+		backgroundColor: pickString(style.backgroundColor, defaults.backgroundColor),
+		backgroundOpacity: clamp(pickNumber(style.backgroundOpacity, defaults.backgroundOpacity), 0, 1),
+		borderRadius: clamp(pickNumber(style.borderRadius, defaults.borderRadius), 0, 48),
+		outlineColor: pickString(style.outlineColor, defaults.outlineColor),
+		outlineWidth: clamp(pickNumber(style.outlineWidth, defaults.outlineWidth), 0, 10),
+		shadowColor: pickString(style.shadowColor, defaults.shadowColor),
+		shadowBlur: clamp(pickNumber(style.shadowBlur, defaults.shadowBlur), 0, 60),
+		shadowOffsetY: clamp(pickNumber(style.shadowOffsetY, defaults.shadowOffsetY), -20, 20),
+		letterSpacing: clamp(pickNumber(style.letterSpacing, defaults.letterSpacing), -4, 12),
+		lineHeight: clamp(pickNumber(style.lineHeight, defaults.lineHeight), 0.8, 2.4),
+		textTransform: style.textTransform === "uppercase" ? "uppercase" : "none",
+	};
+}
+
+function normalizeCaptionPositionOverride(candidate: unknown): CaptionSettings["positionOverride"] {
+	if (!candidate || typeof candidate !== "object") return null;
+	const value = candidate as Partial<NonNullable<CaptionSettings["positionOverride"]>>;
+	if (!isFiniteNumber(value.xPercent) || !isFiniteNumber(value.yPercent)) return null;
+	return {
+		xPercent: clamp(value.xPercent, 0, 100),
+		yPercent: clamp(value.yPercent, 0, 100),
+	};
+}
+
 function normalizeCaptionSettings(candidate: unknown): CaptionSettings {
 	if (!candidate || typeof candidate !== "object") {
 		return {
 			...DEFAULT_CAPTION_SETTINGS,
 			style: { ...DEFAULT_CAPTION_SETTINGS.style },
+			positionOverride: null,
 		};
 	}
 
@@ -523,13 +586,14 @@ function normalizeCaptionSettings(candidate: unknown): CaptionSettings {
 			settings.position === "bottom"
 				? settings.position
 				: "bottom",
-		style: {
-			...DEFAULT_CAPTION_SETTINGS.style,
-			...(settings.style && typeof settings.style === "object" ? settings.style : {}),
-		},
+		positionOverride: normalizeCaptionPositionOverride(settings.positionOverride),
+		style: normalizeCaptionStyle(settings.style),
 		animationMode:
-			settings.animationMode === "static" || settings.animationMode === "active-word"
-				? settings.animationMode
+			typeof settings.animationMode === "string" &&
+			VALID_CAPTION_ANIMATION_MODES.includes(
+				settings.animationMode as CaptionSettings["animationMode"],
+			)
+				? (settings.animationMode as CaptionSettings["animationMode"])
 				: DEFAULT_CAPTION_SETTINGS.animationMode,
 		maxLines: isFiniteNumber(settings.maxLines)
 			? clamp(Math.round(settings.maxLines), 1, 4)
