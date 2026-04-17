@@ -1,13 +1,12 @@
 import { Application, BlurFilter, Container, Graphics, Sprite, Texture } from "pixi.js";
 import { MotionBlurFilter } from "pixi-filters/motion-blur";
-import { resolveCameraLayoutState } from "@/components/video-editor/cameraLayouts";
+import { resolveWebcamRenderModel } from "@/components/video-editor/cameraLayouts";
 import {
 	applyOpacityToHex,
 	buildFrameShadowFilter,
 	hasVisibleFrameShadow,
 } from "@/components/video-editor/frameEffects";
 import { renderKeyboardShortcutCalloutsCanvas } from "@/components/video-editor/keyboardShortcuts";
-import { toFileUrl } from "@/components/video-editor/projectPersistence";
 import type {
 	AnnotationRegion,
 	CameraLayoutRegion,
@@ -55,10 +54,10 @@ import {
 	type MotionBlurState,
 	projectFrameRect,
 } from "@/components/video-editor/videoPlayback/zoomTransform";
-import { getWebcamPixelRect } from "@/components/video-editor/webcamRegionUtils";
 import { getAssetPath, getRenderableAssetUrl } from "@/lib/assetPath";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import { renderAnnotations, renderCaptions } from "./annotationRenderer";
+import { StreamingVideoFrameProvider } from "./streamingDecoder";
 
 interface FrameRenderConfig {
 	width: number;
@@ -168,7 +167,8 @@ export class FrameRenderer {
 	private currentVideoTime = 0;
 	private lastMotionVector = { x: 0, y: 0 };
 	private cursorOverlay: PixiCursorOverlay | null = null;
-	private webcamVideo: HTMLVideoElement | null = null;
+	private webcamFrameProvider: StreamingVideoFrameProvider | null = null;
+	private webcamSourceSize: { width: number; height: number } | null = null;
 	private cursorSimulationPath: CursorSimulationPath | null = null;
 
 	constructor(config: FrameRenderConfig) {
@@ -322,21 +322,24 @@ export class FrameRenderer {
 			this.cursorContainer.addChild(this.cursorOverlay.container);
 		}
 
-		// Setup webcam video if available
+		// Setup sequential webcam frame provider if available
 		if (this.config.webcamPath) {
-			this.webcamVideo = document.createElement("video");
-			const webcamSrc = this.config.webcamPath.startsWith("file://")
-				? this.config.webcamPath
-				: toFileUrl(this.config.webcamPath);
-			this.webcamVideo.src = webcamSrc;
-			this.webcamVideo.muted = true;
-			this.webcamVideo.playsInline = true;
-			this.webcamVideo.preload = "auto";
-			await new Promise<void>((resolve) => {
-				this.webcamVideo!.addEventListener("loadeddata", () => resolve(), { once: true });
-				this.webcamVideo!.addEventListener("error", () => resolve(), { once: true });
-				this.webcamVideo!.load();
-			});
+			try {
+				this.webcamFrameProvider = new StreamingVideoFrameProvider();
+				const webcamInfo = await this.webcamFrameProvider.loadMetadata(this.config.webcamPath);
+				this.webcamSourceSize = {
+					width: webcamInfo.width,
+					height: webcamInfo.height,
+				};
+			} catch (error) {
+				console.warn(
+					"[FrameRenderer] Webcam decode setup failed; continuing without webcam.",
+					error,
+				);
+				this.webcamFrameProvider?.destroy();
+				this.webcamFrameProvider = null;
+				this.webcamSourceSize = null;
+			}
 		}
 	}
 
@@ -508,22 +511,45 @@ export class FrameRenderer {
 
 	private drawWebcamFrame(
 		ctx: CanvasRenderingContext2D,
-		video: HTMLVideoElement,
+		frame: CanvasImageSource,
+		sourceCrop: { x: number; y: number; width: number; height: number } | null,
 		x: number,
 		y: number,
 		width: number,
 		height: number,
 		mirror: boolean,
 	) {
+		const drawFrame = () => {
+			if (sourceCrop) {
+				ctx.drawImage(
+					frame,
+					sourceCrop.x,
+					sourceCrop.y,
+					sourceCrop.width,
+					sourceCrop.height,
+					0,
+					0,
+					width,
+					height,
+				);
+				return;
+			}
+
+			ctx.drawImage(frame, 0, 0, width, height);
+		};
+
 		if (!mirror) {
-			ctx.drawImage(video, x, y, width, height);
+			ctx.save();
+			ctx.translate(x, y);
+			drawFrame();
+			ctx.restore();
 			return;
 		}
 
 		ctx.save();
 		ctx.translate(x + width, y);
 		ctx.scale(-1, 1);
-		ctx.drawImage(video, 0, 0, width, height);
+		drawFrame();
 		ctx.restore();
 	}
 
@@ -680,76 +706,114 @@ export class FrameRenderer {
 		}
 
 		const compositeCtx = this.compositeCtx;
-		const webcamVideo = this.webcamVideo;
-		if (compositeCtx && webcamVideo && this.config.webcamRegion) {
-			const resolvedCameraState = resolveCameraLayoutState({
-				timeMs,
-				webcamRegion: this.config.webcamRegion,
-				showWebcam: this.config.showWebcam ?? true,
-				mirrorWebcam: this.config.mirrorWebcam,
-				cameraLayouts: this.config.cameraLayouts,
-				zoomRegions: this.config.zoomRegions,
-				connectZooms: this.config.connectZooms,
-				cameraSizeDuringZoom: this.config.cameraSizeDuringZoom,
-			});
+		if (compositeCtx && this.webcamFrameProvider && this.config.webcamRegion) {
+			const webcamFrame = await this.webcamFrameProvider.getFrameAt(timeMs);
+			if (webcamFrame) {
+				try {
+					const webcamModel = resolveWebcamRenderModel({
+						timeMs,
+						webcamRegion: this.config.webcamRegion,
+						showWebcam: this.config.showWebcam ?? true,
+						mirrorWebcam: this.config.mirrorWebcam,
+						cameraLayouts: this.config.cameraLayouts,
+						zoomRegions: this.config.zoomRegions,
+						connectZooms: this.config.connectZooms,
+						cameraSizeDuringZoom: this.config.cameraSizeDuringZoom,
+						containerWidth: this.config.width,
+						containerHeight: this.config.height,
+						sourceSize: this.webcamSourceSize,
+						compositionRect: {
+							x: 0,
+							y: 0,
+							width: this.config.width,
+							height: this.config.height,
+						},
+						contentRect: this.layoutCache?.maskRect ?? {
+							x: 0,
+							y: 0,
+							width: this.config.width,
+							height: this.config.height,
+						},
+					});
 
-			if (resolvedCameraState.mode !== "hidden") {
-				webcamVideo.currentTime = timeMs / 1000;
-				await new Promise<void>((resolve) => {
-					if (webcamVideo.readyState >= 2) {
-						resolve();
-					} else {
-						webcamVideo.addEventListener("seeked", () => resolve(), { once: true });
+					if (webcamModel.mode !== "hidden" && webcamModel.opacity > 0) {
+						const { displayRect } = webcamModel;
+						compositeCtx.save();
+						compositeCtx.globalAlpha = webcamModel.opacity;
+
+						if (webcamModel.mode !== "fullscreen" && webcamModel.shadowOpacity > 0) {
+							compositeCtx.save();
+							compositeCtx.beginPath();
+							if (webcamModel.clipShape === "circle") {
+								compositeCtx.ellipse(
+									displayRect.x + displayRect.width / 2,
+									displayRect.y + displayRect.height / 2,
+									displayRect.width / 2,
+									displayRect.height / 2,
+									0,
+									0,
+									Math.PI * 2,
+								);
+							} else {
+								compositeCtx.roundRect(
+									displayRect.x,
+									displayRect.y,
+									displayRect.width,
+									displayRect.height,
+									webcamModel.borderRadiusPx,
+								);
+							}
+							compositeCtx.fillStyle = `rgba(0, 0, 0, ${webcamModel.shadowOpacity})`;
+							compositeCtx.shadowColor = `rgba(0, 0, 0, ${webcamModel.shadowOpacity})`;
+							compositeCtx.shadowBlur = webcamModel.shadowBlurPx;
+							compositeCtx.shadowOffsetX = 0;
+							compositeCtx.shadowOffsetY = webcamModel.shadowOffsetYPx;
+							compositeCtx.fill();
+							compositeCtx.restore();
+						}
+
+						compositeCtx.beginPath();
+						if (webcamModel.clipShape === "circle") {
+							compositeCtx.ellipse(
+								displayRect.x + displayRect.width / 2,
+								displayRect.y + displayRect.height / 2,
+								displayRect.width / 2,
+								displayRect.height / 2,
+								0,
+								0,
+								Math.PI * 2,
+							);
+						} else {
+							compositeCtx.roundRect(
+								displayRect.x,
+								displayRect.y,
+								displayRect.width,
+								displayRect.height,
+								webcamModel.borderRadiusPx,
+							);
+						}
+						compositeCtx.clip();
+						this.drawWebcamFrame(
+							compositeCtx,
+							webcamFrame,
+							webcamModel.sourceCrop,
+							displayRect.x,
+							displayRect.y,
+							displayRect.width,
+							displayRect.height,
+							webcamModel.mirror,
+						);
+
+						if (webcamModel.borderWidthPx > 0) {
+							compositeCtx.strokeStyle = webcamModel.region.borderColor;
+							compositeCtx.lineWidth = webcamModel.borderWidthPx;
+							compositeCtx.stroke();
+						}
+
+						compositeCtx.restore();
 					}
-				});
-
-				if (resolvedCameraState.mode === "fullscreen") {
-					compositeCtx.save();
-					this.drawWebcamFrame(
-						compositeCtx,
-						webcamVideo,
-						0,
-						0,
-						this.config.width,
-						this.config.height,
-						resolvedCameraState.mirror,
-					);
-					compositeCtx.restore();
-				} else {
-					const region = resolvedCameraState.region;
-					const {
-						x: wx,
-						y: wy,
-						width: ww,
-						height: wh,
-					} = getWebcamPixelRect(region, this.config.width, this.config.height);
-
-					compositeCtx.save();
-					compositeCtx.globalAlpha = region.opacity;
-					compositeCtx.beginPath();
-					if (region.shape === "circle") {
-						compositeCtx.ellipse(wx + ww / 2, wy + wh / 2, ww / 2, wh / 2, 0, 0, Math.PI * 2);
-					} else {
-						compositeCtx.roundRect(wx, wy, ww, wh, region.borderRadius);
-					}
-					compositeCtx.clip();
-					this.drawWebcamFrame(
-						compositeCtx,
-						webcamVideo,
-						wx,
-						wy,
-						ww,
-						wh,
-						resolvedCameraState.mirror,
-					);
-
-					if (region.borderWidth > 0) {
-						compositeCtx.strokeStyle = region.borderColor;
-						compositeCtx.lineWidth = region.borderWidth;
-						compositeCtx.stroke();
-					}
-
-					compositeCtx.restore();
+				} finally {
+					webcamFrame.close();
 				}
 			}
 		}
@@ -980,6 +1044,11 @@ export class FrameRenderer {
 			this.cursorOverlay.destroy();
 			this.cursorOverlay = null;
 		}
+		if (this.webcamFrameProvider) {
+			this.webcamFrameProvider.destroy();
+			this.webcamFrameProvider = null;
+		}
+		this.webcamSourceSize = null;
 		this.shadowCanvas = null;
 		this.shadowCtx = null;
 		this.compositeCanvas = null;

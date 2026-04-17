@@ -532,3 +532,312 @@ export class StreamingVideoDecoder {
 		}
 	}
 }
+
+export class StreamingVideoFrameProvider {
+	private demuxer: WebDemuxer | null = null;
+	private decoder: VideoDecoder | null = null;
+	private cancelled = false;
+	private metadata: DecodedVideoInfo | null = null;
+	private readonly decodeQueueLimit =
+		typeof navigator !== "undefined"
+			? Math.max(8, Math.min(24, (navigator.hardwareConcurrency || 4) * 2))
+			: 10;
+	private readonly decodedFrameBacklogLimit =
+		typeof navigator !== "undefined"
+			? Math.max(16, Math.min(48, (navigator.hardwareConcurrency || 4) * 4))
+			: 24;
+	private pendingFrames: VideoFrame[] = [];
+	private frameResolve: ((frame: VideoFrame | null) => void) | null = null;
+	private decodeError: Error | null = null;
+	private decodeDone = false;
+	private feedPromise: Promise<void> | null = null;
+	private reader: ReadableStreamDefaultReader<EncodedVideoChunk | null> | null = null;
+	private currentFrame: VideoFrame | null = null;
+	private currentFrameSec = 0;
+	private nextFrame: VideoFrame | null = null;
+	private nextFrameSec = 0;
+
+	private toLocalFilePath(resourceUrl: string): string | null {
+		if (!resourceUrl.startsWith("file:")) {
+			return null;
+		}
+
+		try {
+			const url = new URL(resourceUrl);
+			let filePath = decodeURIComponent(url.pathname);
+			if (/^\/[A-Za-z]:/.test(filePath)) {
+				filePath = filePath.slice(1);
+			}
+			return filePath;
+		} catch {
+			return resourceUrl.replace(/^file:\/\//, "");
+		}
+	}
+
+	private inferMimeType(fileName: string): string {
+		const extension = fileName.split(".").pop()?.toLowerCase();
+		switch (extension) {
+			case "mov":
+				return "video/quicktime";
+			case "webm":
+				return "video/webm";
+			case "mkv":
+				return "video/x-matroska";
+			case "avi":
+				return "video/x-msvideo";
+			case "mp4":
+			default:
+				return "video/mp4";
+		}
+	}
+
+	private async loadVideoFile(resourceUrl: string): Promise<File> {
+		const filename = resourceUrl.split("/").pop() || "video";
+		const localFilePath = this.toLocalFilePath(resourceUrl);
+
+		if (localFilePath) {
+			const result = await window.electronAPI.readLocalFile(localFilePath);
+			if (!result.success || !result.data) {
+				throw new Error(result.error || "Failed to read local video file");
+			}
+
+			const bytes = result.data instanceof Uint8Array ? result.data : new Uint8Array(result.data);
+			const arrayBuffer = bytes.buffer.slice(
+				bytes.byteOffset,
+				bytes.byteOffset + bytes.byteLength,
+			) as ArrayBuffer;
+			return new File([arrayBuffer], filename, { type: this.inferMimeType(filename) });
+		}
+
+		const response = await fetch(resourceUrl);
+		if (!response.ok) {
+			throw new Error(`Failed to load video resource: ${response.status} ${response.statusText}`);
+		}
+
+		const blob = await response.blob();
+		return new File([blob], filename, { type: blob.type || this.inferMimeType(filename) });
+	}
+
+	private resolveVideoResourceUrl(videoUrl: string): string {
+		if (/^(blob:|data:|https?:|file:)/i.test(videoUrl)) {
+			return videoUrl;
+		}
+
+		if (videoUrl.startsWith("/")) {
+			return `file://${encodeURI(videoUrl)}`;
+		}
+
+		return videoUrl;
+	}
+
+	async loadMetadata(videoUrl: string): Promise<DecodedVideoInfo> {
+		const resourceUrl = this.resolveVideoResourceUrl(videoUrl);
+		const wasmUrl = new URL("./wasm/web-demuxer.wasm", window.location.href).href;
+		this.demuxer = new WebDemuxer({ wasmFilePath: wasmUrl });
+		const file = await this.loadVideoFile(resourceUrl);
+		await this.demuxer.load(file);
+
+		const mediaInfo = await this.demuxer.getMediaInfo();
+		const videoStream = mediaInfo.streams.find((stream) => stream.codec_type_string === "video");
+		const audioStream = mediaInfo.streams.find((stream) => stream.codec_type_string === "audio");
+
+		let frameRate = 60;
+		if (videoStream?.avg_frame_rate) {
+			const parts = videoStream.avg_frame_rate.split("/");
+			if (parts.length === 2) {
+				const numerator = parseInt(parts[0], 10);
+				const denominator = parseInt(parts[1], 10);
+				if (denominator > 0 && numerator > 0) {
+					frameRate = numerator / denominator;
+				}
+			}
+		}
+
+		this.metadata = {
+			width: videoStream?.width || 1920,
+			height: videoStream?.height || 1080,
+			duration: mediaInfo.duration,
+			streamDuration:
+				typeof videoStream?.duration === "number" && Number.isFinite(videoStream.duration)
+					? videoStream.duration
+					: undefined,
+			frameRate,
+			codec: videoStream?.codec_string || "unknown",
+			hasAudio: !!audioStream,
+			audioCodec: audioStream?.codec_string,
+		};
+
+		return this.metadata;
+	}
+
+	private async ensureStarted() {
+		if (this.feedPromise) {
+			return;
+		}
+
+		if (!this.demuxer || !this.metadata) {
+			throw new Error("Must call loadMetadata() before getFrameAt()");
+		}
+
+		const decoderConfig = await this.demuxer.getDecoderConfig("video");
+		this.decoder = new VideoDecoder({
+			output: (frame) => {
+				if (this.frameResolve) {
+					const resolve = this.frameResolve;
+					this.frameResolve = null;
+					resolve(frame);
+				} else {
+					this.pendingFrames.push(frame);
+				}
+			},
+			error: (error) => {
+				this.decodeError = new Error(`VideoDecoder error: ${error.message}`);
+				if (this.frameResolve) {
+					const resolve = this.frameResolve;
+					this.frameResolve = null;
+					resolve(null);
+				}
+			},
+		});
+		this.decoder.configure(decoderConfig);
+
+		const readEndSec = Math.max(this.metadata.duration, this.metadata.streamDuration ?? 0) + 0.5;
+		this.reader = this.demuxer.read("video", 0, readEndSec).getReader();
+
+		this.feedPromise = (async () => {
+			try {
+				while (!this.cancelled) {
+					const { done, value: chunk } = await this.reader!.read();
+					if (done || !chunk) {
+						break;
+					}
+
+					while (
+						(this.decoder!.decodeQueueSize > this.decodeQueueLimit ||
+							this.pendingFrames.length > this.decodedFrameBacklogLimit) &&
+						!this.cancelled
+					) {
+						await new Promise((resolve) => setTimeout(resolve, 1));
+					}
+
+					if (this.cancelled) {
+						break;
+					}
+
+					this.decoder!.decode(chunk);
+				}
+
+				if (!this.cancelled && this.decoder?.state === "configured") {
+					await this.decoder.flush();
+				}
+			} catch (error) {
+				this.decodeError = error instanceof Error ? error : new Error(String(error));
+			} finally {
+				this.decodeDone = true;
+				if (this.frameResolve) {
+					const resolve = this.frameResolve;
+					this.frameResolve = null;
+					resolve(null);
+				}
+			}
+		})();
+	}
+
+	private async getNextFrame(): Promise<VideoFrame | null> {
+		if (this.decodeError) {
+			throw this.decodeError;
+		}
+
+		if (this.pendingFrames.length > 0) {
+			return this.pendingFrames.shift() ?? null;
+		}
+
+		if (this.decodeDone) {
+			return null;
+		}
+
+		return new Promise((resolve) => {
+			this.frameResolve = resolve;
+		});
+	}
+
+	private async ensurePrimed() {
+		await this.ensureStarted();
+
+		if (!this.currentFrame) {
+			this.currentFrame = await this.getNextFrame();
+			this.currentFrameSec = this.currentFrame ? this.currentFrame.timestamp / 1_000_000 : 0;
+		}
+
+		if (this.currentFrame && !this.nextFrame) {
+			this.nextFrame = await this.getNextFrame();
+			this.nextFrameSec = this.nextFrame ? this.nextFrame.timestamp / 1_000_000 : 0;
+		}
+	}
+
+	async getFrameAt(sourceTimestampMs: number): Promise<VideoFrame | null> {
+		await this.ensurePrimed();
+		if (!this.currentFrame) {
+			return null;
+		}
+
+		const targetSec = Math.max(0, sourceTimestampMs / 1000);
+		while (this.nextFrame) {
+			const handoffBoundarySec = (this.currentFrameSec + this.nextFrameSec) / 2;
+			if (targetSec < handoffBoundarySec) {
+				break;
+			}
+
+			this.currentFrame.close();
+			this.currentFrame = this.nextFrame;
+			this.currentFrameSec = this.nextFrameSec;
+			this.nextFrame = await this.getNextFrame();
+			this.nextFrameSec = this.nextFrame ? this.nextFrame.timestamp / 1_000_000 : 0;
+		}
+
+		return this.currentFrame
+			? new VideoFrame(this.currentFrame, { timestamp: this.currentFrame.timestamp })
+			: null;
+	}
+
+	destroy(): void {
+		this.cancelled = true;
+		this.currentFrame?.close();
+		this.currentFrame = null;
+		this.nextFrame?.close();
+		this.nextFrame = null;
+		for (const frame of this.pendingFrames) {
+			frame.close();
+		}
+		this.pendingFrames.length = 0;
+
+		if (this.decoder) {
+			try {
+				if (this.decoder.state === "configured") {
+					this.decoder.close();
+				}
+			} catch {
+				/* ignore */
+			}
+			this.decoder = null;
+		}
+
+		if (this.reader) {
+			try {
+				void this.reader.cancel();
+			} catch {
+				/* ignore */
+			}
+			this.reader = null;
+		}
+
+		if (this.demuxer) {
+			try {
+				this.demuxer.destroy();
+			} catch {
+				/* ignore */
+			}
+			this.demuxer = null;
+		}
+	}
+}

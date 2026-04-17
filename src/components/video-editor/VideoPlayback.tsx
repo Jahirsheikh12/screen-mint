@@ -27,7 +27,7 @@ import {
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import { AnnotationOverlay } from "./AnnotationOverlay";
 import { CaptionOverlay } from "./CaptionOverlay";
-import { resolveCameraLayoutState } from "./cameraLayouts";
+import { type PixelRect, resolveWebcamRenderModel } from "./cameraLayouts";
 import { applyOpacityToHex, buildFrameShadowFilter, hasVisibleFrameShadow } from "./frameEffects";
 import { KeyboardShortcutOverlay } from "./KeyboardShortcutOverlay";
 import {
@@ -231,6 +231,21 @@ export interface VideoPlaybackRef {
 	releasePreviewHold: (token: string) => void;
 }
 
+interface PreviewGeometry {
+	stageRect: PixelRect;
+	frameRect: PixelRect;
+	maskRect: PixelRect;
+}
+
+function rectsEqual(left: PixelRect, right: PixelRect) {
+	return (
+		left.x === right.x &&
+		left.y === right.y &&
+		left.width === right.width &&
+		left.height === right.height
+	);
+}
+
 const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 	(
 		{
@@ -335,6 +350,9 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const [activePreviewHoldSrc, setActivePreviewHoldSrc] = useState<string | null>(null);
 		const [previewRendererEpoch, setPreviewRendererEpoch] = useState(0);
 		const [rendererPreviewQuality, setRendererPreviewQuality] = useState(previewQuality);
+		const [previewGeometry, setPreviewGeometry] = useState<PreviewGeometry | null>(null);
+		const [isPreviewQualitySwitching, setIsPreviewQualitySwitching] = useState(false);
+		const [isPreviewRecoveryActive, setIsPreviewRecoveryActive] = useState(false);
 		// const mockupCanvasRef = useRef<HTMLCanvasElement | null>(null);
 		const overlayRef = useRef<HTMLDivElement | null>(null);
 		const focusIndicatorRef = useRef<HTMLDivElement | null>(null);
@@ -423,12 +441,20 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		useEffect(() => {
 			desiredPreviewQualityRef.current = previewQuality;
 		}, [previewQuality]);
-		const resolvedCameraState = useMemo(() => {
+		const webcamStageRect = previewGeometry?.stageRect ?? {
+			x: 0,
+			y: 0,
+			width: stageSizeRef.current.width || 800,
+			height: stageSizeRef.current.height || 600,
+		};
+		const webcamCompositionRect = previewGeometry?.frameRect ?? webcamStageRect;
+		const webcamContentRect = previewGeometry?.maskRect ?? webcamCompositionRect;
+		const resolvedWebcamModel = useMemo(() => {
 			if (!webcamRegion) {
 				return null;
 			}
 
-			return resolveCameraLayoutState({
+			return resolveWebcamRenderModel({
 				timeMs: Math.round(currentTime * 1000),
 				webcamRegion,
 				showWebcam,
@@ -437,6 +463,10 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				zoomRegions,
 				connectZooms,
 				cameraSizeDuringZoom,
+				containerWidth: webcamStageRect.width,
+				containerHeight: webcamStageRect.height,
+				compositionRect: webcamCompositionRect,
+				contentRect: webcamContentRect,
 			});
 		}, [
 			cameraLayouts,
@@ -445,6 +475,10 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			currentTime,
 			mirrorWebcam,
 			showWebcam,
+			webcamCompositionRect,
+			webcamContentRect,
+			webcamStageRect.height,
+			webcamStageRect.width,
 			webcamRegion,
 			zoomRegions,
 		]);
@@ -575,6 +609,29 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				baseOffsetRef.current = result.baseOffset;
 				baseMaskRef.current = result.maskRect;
 				cropBoundsRef.current = result.cropBounds;
+				setPreviewGeometry((current) => {
+					const nextGeometry: PreviewGeometry = {
+						stageRect: {
+							x: 0,
+							y: 0,
+							width: result.stageSize.width,
+							height: result.stageSize.height,
+						},
+						frameRect: result.frameRect,
+						maskRect: result.maskRect,
+					};
+
+					if (
+						current &&
+						rectsEqual(current.stageRect, nextGeometry.stageRect) &&
+						rectsEqual(current.frameRect, nextGeometry.frameRect) &&
+						rectsEqual(current.maskRect, nextGeometry.maskRect)
+					) {
+						return current;
+					}
+
+					return nextGeometry;
+				});
 				updateFrameBorderOverlay({ scale: 1, x: 0, y: 0 });
 
 				// Reset camera container to identity
@@ -871,6 +928,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 
 					allowPlaybackRef.current = false;
 					isPreviewRecoveryInProgressRef.current = true;
+					setIsPreviewRecoveryActive(true);
 
 					await restorePreviewVideoFrame(video, {
 						fallbackTime: currentTimeRef.current / 1000,
@@ -909,6 +967,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					.finally(() => {
 						isPreviewRecoveryInProgressRef.current = false;
 						previewRecoveryPromiseRef.current = null;
+						setIsPreviewRecoveryActive(false);
 					});
 
 				previewRecoveryPromiseRef.current = recoveryPromise;
@@ -932,6 +991,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			};
 
 			allowPlaybackRef.current = false;
+			setIsPreviewQualitySwitching(true);
 			if (video && !video.paused) {
 				video.pause();
 			}
@@ -1050,6 +1110,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					);
 					previewQualitySwitchStateRef.current = state;
 					pendingPreviewQualitySwitchRef.current = null;
+					setIsPreviewQualitySwitching(false);
 
 					if (!startQuality && pendingSwitch.wasPlaying) {
 						allowPlaybackRef.current = true;
@@ -1063,6 +1124,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					}
 				} catch (error) {
 					if (!cancelled && pendingPreviewQualitySwitchRef.current?.token === switchToken) {
+						setIsPreviewQualitySwitching(false);
 						handlePreviewQualitySwitchFailure(error, pendingSwitch.targetQuality);
 					}
 				}
@@ -1567,6 +1629,9 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			previewHoldsRef.current = clearPreviewHolds();
 			setCachedPreviewFrameSrc(null);
 			setActivePreviewHoldSrc(null);
+			setPreviewGeometry(null);
+			setIsPreviewQualitySwitching(false);
+			setIsPreviewRecoveryActive(false);
 			lockedVideoDimensionsRef.current = null;
 			setVideoReady(false);
 			if (videoReadyRafRef.current) {
@@ -2121,6 +2186,8 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			videoReady,
 			hasVideoPath: Boolean(videoPath),
 		});
+		const isPreviewWebcamHeld =
+			activePreviewHoldSrc !== null || isPreviewQualitySwitching || isPreviewRecoveryActive;
 
 		return (
 			<div className="relative overflow-hidden w-full h-full">
@@ -2233,20 +2300,20 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 								/>
 							));
 						})()}
-						{webcamPath && resolvedCameraState && resolvedCameraState.mode !== "hidden" && (
+						{webcamPath && resolvedWebcamModel && resolvedWebcamModel.mode !== "hidden" && (
 							<WebcamOverlay
 								webcamPath={webcamPath}
-								webcamRegion={resolvedCameraState.region}
-								mode={resolvedCameraState.mode}
+								renderModel={resolvedWebcamModel}
+								compositionRect={webcamCompositionRect}
 								currentTime={currentTime}
-								containerWidth={overlayRef.current?.clientWidth || 800}
-								containerHeight={overlayRef.current?.clientHeight || 600}
+								isPlaying={isPlaying}
+								isHeld={isPreviewWebcamHeld}
+								playbackRate={videoRef.current?.playbackRate ?? 1}
 								isSelected={
 									webcamSelected ||
-									(selectedCameraLayoutId === resolvedCameraState.activeLayoutId &&
-										resolvedCameraState.mode === "default")
+									(selectedCameraLayoutId === resolvedWebcamModel.activeLayoutId &&
+										resolvedWebcamModel.mode === "default")
 								}
-								mirror={resolvedCameraState.mirror}
 								onPositionChange={(position) => onWebcamPositionChange?.(position)}
 								onSizeChange={(size) => onWebcamSizeChange?.(size)}
 								onClick={() => onSelectWebcam?.()}

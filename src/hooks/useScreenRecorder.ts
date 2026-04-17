@@ -19,6 +19,11 @@ import type {
 	SelectedArea,
 } from "@/lib/recording/session";
 import { INITIAL_RECORDING_SESSION_STATE, recordingSessionReducer } from "@/lib/recording/session";
+import {
+	buildWebcamConstraintCandidates,
+	getWebcamRecorderBitrate,
+	resolveWebcamCaptureProfile,
+} from "@/lib/recording/webcamCapture";
 
 const DEFAULT_WIDTH = 1920;
 const DEFAULT_HEIGHT = 1080;
@@ -280,56 +285,22 @@ export function useScreenRecorder(
 
 	const getWebcamConstraintCandidates = useCallback(
 		(deviceId?: string): MediaTrackConstraints[] => {
-			const deviceConstraint = deviceId ? { deviceId: { exact: deviceId } } : {};
-			const unconstrainedDevice = deviceId ? { deviceId: { ideal: deviceId } } : {};
+			const strictDeviceConstraint = deviceId ? { deviceId: { exact: deviceId } } : {};
+			const preferredDeviceConstraint = deviceId ? { deviceId: { ideal: deviceId } } : {};
 
 			return [
-				{
-					...deviceConstraint,
-					width: { ideal: 1920 },
-					height: { ideal: 1080 },
-					frameRate: { ideal: 30, max: 30 },
-				},
-				{
-					...deviceConstraint,
-					width: { ideal: 1280 },
-					height: { ideal: 720 },
-					frameRate: { ideal: 30, max: 30 },
-				},
-				{
-					...unconstrainedDevice,
-					width: { ideal: 1280 },
-					height: { ideal: 720 },
-					frameRate: { ideal: 30, max: 30 },
-				},
-				{
-					...unconstrainedDevice,
-					frameRate: { ideal: 30, max: 30 },
-				},
-				{
-					...unconstrainedDevice,
-				},
+				...buildWebcamConstraintCandidates(
+					resolvedRecordingProfile.frameRate,
+					strictDeviceConstraint,
+				),
+				...buildWebcamConstraintCandidates(
+					resolvedRecordingProfile.frameRate,
+					preferredDeviceConstraint,
+				),
 			];
 		},
-		[],
+		[resolvedRecordingProfile.frameRate],
 	);
-
-	const getWebcamRecorderBitrate = useCallback((camStream: MediaStream) => {
-		const settings = camStream.getVideoTracks()[0]?.getSettings();
-		const width = settings?.width ?? 1280;
-		const height = settings?.height ?? 720;
-		const pixels = width * height;
-
-		if (pixels >= 1920 * 1080) {
-			return 7_000_000;
-		}
-
-		if (pixels >= 1280 * 720) {
-			return 5_000_000;
-		}
-
-		return 3_500_000;
-	}, []);
 
 	const handleUnexpectedWebcamEnd = useCallback(() => {
 		if (!cameraSession.enabled || webcamStopInFlight.current) {
@@ -346,13 +317,21 @@ export function useScreenRecorder(
 		if (webcamRecorder.current?.state === "recording") {
 			void (async () => {
 				await stopWebcamRecordingRef.current();
-				setCameraSession((prev) => ({ ...prev, enabled: false }));
+				setCameraSession((prev) => ({
+					...prev,
+					enabled: false,
+					resolvedCaptureProfile: undefined,
+				}));
 			})();
 			return;
 		}
 
 		releaseWebcamStream();
-		setCameraSession((prev) => ({ ...prev, enabled: false }));
+		setCameraSession((prev) => ({
+			...prev,
+			enabled: false,
+			resolvedCaptureProfile: undefined,
+		}));
 	}, [cameraSession.enabled, releaseWebcamStream]);
 
 	const attachWebcamTrackLifecycle = useCallback(
@@ -435,6 +414,7 @@ export function useScreenRecorder(
 			setCameraSession((prev) => ({
 				...prev,
 				enabled,
+				resolvedCaptureProfile: enabled ? prev.resolvedCaptureProfile : undefined,
 			}));
 
 			if (!enabled) {
@@ -451,6 +431,7 @@ export function useScreenRecorder(
 				...prev,
 				deviceId,
 				enabled: Boolean(deviceId),
+				resolvedCaptureProfile: deviceId ? prev.resolvedCaptureProfile : undefined,
 			}));
 
 			if (webcamRecorder.current?.state !== "recording") {
@@ -497,6 +478,9 @@ export function useScreenRecorder(
 			webcamStream.current = null;
 		}
 
+		setCameraSession((prev) =>
+			prev.resolvedCaptureProfile ? { ...prev, resolvedCaptureProfile: undefined } : prev,
+		);
 		setCameraPreviewStream(null);
 	}, []);
 	const ensureWebcamStream = useCallback(async () => {
@@ -510,12 +494,21 @@ export function useScreenRecorder(
 		webcamStream.current = camStream;
 		attachWebcamTrackLifecycle(camStream);
 		setCameraPreviewStream(cameraSession.previewVisible ? camStream : null);
+		const resolvedCaptureProfile = resolveWebcamCaptureProfile(
+			camStream.getVideoTracks()[0]?.getSettings(),
+		);
 
 		if (resolvedDeviceId && resolvedDeviceId !== cameraSession.deviceId) {
 			setCameraSession((prev) => ({
 				...prev,
 				deviceId: resolvedDeviceId,
 				enabled: true,
+				resolvedCaptureProfile,
+			}));
+		} else {
+			setCameraSession((prev) => ({
+				...prev,
+				resolvedCaptureProfile,
 			}));
 		}
 
@@ -536,10 +529,11 @@ export function useScreenRecorder(
 			const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
 				? "video/webm;codecs=vp9"
 				: "video/webm";
+			const trackSettings = camStream.getVideoTracks()[0]?.getSettings();
 
 			const recorder = new MediaRecorder(camStream, {
 				mimeType,
-				videoBitsPerSecond: getWebcamRecorderBitrate(camStream),
+				videoBitsPerSecond: getWebcamRecorderBitrate(trackSettings),
 			});
 			webcamRecorder.current = recorder;
 			recorder.ondataavailable = (event) => {
@@ -549,11 +543,15 @@ export function useScreenRecorder(
 		} catch (error) {
 			console.warn("Failed to start webcam recording:", error);
 			await window.electronAPI.clearCurrentWebcamPath();
-			setCameraSession((prev) => ({ ...prev, enabled: false }));
+			setCameraSession((prev) => ({
+				...prev,
+				enabled: false,
+				resolvedCaptureProfile: undefined,
+			}));
 			setCameraPreviewStream(null);
 			toast.error("Unable to access the selected camera. Recording will continue without webcam.");
 		}
-	}, [ensureWebcamStream, getWebcamRecorderBitrate]);
+	}, [ensureWebcamStream]);
 
 	const stopWebcamRecording = useCallback(async () => {
 		webcamStopInFlight.current = true;
@@ -752,7 +750,11 @@ export function useScreenRecorder(
 				}
 
 				console.warn("Failed to prepare camera preview:", error);
-				setCameraSession((prev) => ({ ...prev, enabled: false }));
+				setCameraSession((prev) => ({
+					...prev,
+					enabled: false,
+					resolvedCaptureProfile: undefined,
+				}));
 				setCameraPreviewStream(null);
 			});
 
@@ -773,7 +775,12 @@ export function useScreenRecorder(
 
 				if (devices.length === 0) {
 					releaseWebcamStream();
-					setCameraSession((prev) => ({ ...prev, enabled: false, deviceId: undefined }));
+					setCameraSession((prev) => ({
+						...prev,
+						enabled: false,
+						deviceId: undefined,
+						resolvedCaptureProfile: undefined,
+					}));
 					return;
 				}
 
@@ -794,6 +801,7 @@ export function useScreenRecorder(
 					...prev,
 					deviceId: fallbackDeviceId,
 					enabled: Boolean(fallbackDeviceId),
+					resolvedCaptureProfile: undefined,
 				}));
 			})();
 		};

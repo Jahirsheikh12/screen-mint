@@ -484,11 +484,19 @@ export interface CameraLayoutRegion {
 	regionOverride?: Partial<WebcamRegion>;
 }
 
+export interface WebcamCaptureProfile {
+	width: number;
+	height: number;
+	frameRate: number;
+	aspectRatio: number;
+}
+
 export interface CameraSessionState {
 	enabled: boolean;
 	deviceId?: string;
 	previewVisible: boolean;
 	previewMirrored: boolean;
+	resolvedCaptureProfile?: WebcamCaptureProfile;
 }
 
 export const DEFAULT_CAMERA_LAYOUT_MODE: CameraLayoutMode = "default";
