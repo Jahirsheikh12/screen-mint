@@ -61,10 +61,18 @@ type HudToolbarProps = {
 		deviceId?: string;
 		previewVisible: boolean;
 		previewMirrored: boolean;
+		previewSize: "small" | "medium" | "large";
+		previewCorner: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+		previewShape: "rounded-rect" | "circle";
 	};
 	setCameraDeviceId: (deviceId?: string) => void;
 	setCameraPreviewVisible: (visible: boolean) => void;
 	setCameraPreviewMirrored: (mirrored: boolean) => void;
+	setCameraPreviewSize: (size: "small" | "medium" | "large") => void;
+	setCameraPreviewCorner: (
+		corner: "top-left" | "top-right" | "bottom-left" | "bottom-right",
+	) => void;
+	setCameraPreviewShape: (shape: "rounded-rect" | "circle") => void;
 	cameraDevices: CameraDeviceOption[];
 	showMicControls: boolean;
 	micDevices: Array<{ deviceId: string; label: string }>;
@@ -121,6 +129,9 @@ export function HudToolbar({
 	setCameraDeviceId,
 	setCameraPreviewVisible,
 	setCameraPreviewMirrored,
+	setCameraPreviewSize,
+	setCameraPreviewCorner,
+	setCameraPreviewShape,
 	cameraDevices,
 	showMicControls,
 	micDevices,
@@ -441,6 +452,64 @@ export function HudToolbar({
 						>
 							{t("recording.mirrorCameraPreview")}
 						</DropdownMenuCheckboxItem>
+						<DropdownMenuSeparator className="bg-white/[0.08]" />
+						<DropdownMenuLabel className="text-[11px] font-medium text-white/45">
+							Preview size
+						</DropdownMenuLabel>
+						<DropdownMenuRadioGroup
+							value={cameraSession.previewSize}
+							onValueChange={(value) => setCameraPreviewSize(value as "small" | "medium" | "large")}
+						>
+							<DropdownMenuRadioItem value="small" className="text-xs">
+								Small
+							</DropdownMenuRadioItem>
+							<DropdownMenuRadioItem value="medium" className="text-xs">
+								Medium
+							</DropdownMenuRadioItem>
+							<DropdownMenuRadioItem value="large" className="text-xs">
+								Large
+							</DropdownMenuRadioItem>
+						</DropdownMenuRadioGroup>
+						<DropdownMenuSeparator className="bg-white/[0.08]" />
+						<DropdownMenuLabel className="text-[11px] font-medium text-white/45">
+							Preview corner
+						</DropdownMenuLabel>
+						<DropdownMenuRadioGroup
+							value={cameraSession.previewCorner}
+							onValueChange={(value) =>
+								setCameraPreviewCorner(
+									value as "top-left" | "top-right" | "bottom-left" | "bottom-right",
+								)
+							}
+						>
+							<DropdownMenuRadioItem value="top-left" className="text-xs">
+								Top left
+							</DropdownMenuRadioItem>
+							<DropdownMenuRadioItem value="top-right" className="text-xs">
+								Top right
+							</DropdownMenuRadioItem>
+							<DropdownMenuRadioItem value="bottom-left" className="text-xs">
+								Bottom left
+							</DropdownMenuRadioItem>
+							<DropdownMenuRadioItem value="bottom-right" className="text-xs">
+								Bottom right
+							</DropdownMenuRadioItem>
+						</DropdownMenuRadioGroup>
+						<DropdownMenuSeparator className="bg-white/[0.08]" />
+						<DropdownMenuLabel className="text-[11px] font-medium text-white/45">
+							Preview shape
+						</DropdownMenuLabel>
+						<DropdownMenuRadioGroup
+							value={cameraSession.previewShape}
+							onValueChange={(value) => setCameraPreviewShape(value as "rounded-rect" | "circle")}
+						>
+							<DropdownMenuRadioItem value="rounded-rect" className="text-xs">
+								Rounded rectangle
+							</DropdownMenuRadioItem>
+							<DropdownMenuRadioItem value="circle" className="text-xs">
+								Circle
+							</DropdownMenuRadioItem>
+						</DropdownMenuRadioGroup>
 					</DropdownMenuContent>
 				</DropdownMenu>
 

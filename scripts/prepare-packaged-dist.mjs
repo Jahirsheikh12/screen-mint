@@ -6,6 +6,8 @@ import path from "node:path";
 const projectRoot = process.cwd();
 const distDir = path.join(projectRoot, "dist");
 const duplicateWallpaperDir = path.join(distDir, "wallpapers");
+const duplicateMediapipeDir = path.join(distDir, "mediapipe");
+const duplicateModelsDir = path.join(distDir, "models");
 
 async function getDirectorySizeBytes(dirPath) {
 	const entries = await readdir(dirPath, { withFileTypes: true }).catch(() => []);
@@ -40,10 +42,12 @@ function formatBytes(bytes) {
 
 async function main() {
 	await rm(duplicateWallpaperDir, { recursive: true, force: true });
+	await rm(duplicateMediapipeDir, { recursive: true, force: true });
+	await rm(duplicateModelsDir, { recursive: true, force: true });
 
 	const distSizeBytes = await getDirectorySizeBytes(distDir);
 	console.log(
-		`[prepare-packaged-dist] Removed duplicate renderer wallpapers from dist. Final dist size: ${formatBytes(
+		`[prepare-packaged-dist] Removed duplicate packaged assets from dist (wallpapers, mediapipe, models). Final dist size: ${formatBytes(
 			distSizeBytes,
 		)}`,
 	);

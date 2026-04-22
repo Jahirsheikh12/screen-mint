@@ -441,6 +441,79 @@ export interface WebcamRegion {
 	borderColor: string;
 }
 
+export type WebcamBackgroundMode = "none" | "blur" | "solid" | "image";
+export type WebcamShadowStyle = "soft" | "lifted" | "spotlight" | "none";
+export type WebcamMotionPreset = "focused" | "smooth" | "instant";
+export type WebcamStylePresetId =
+	| "classic-circle"
+	| "presenter-soft"
+	| "floating-card"
+	| "spotlight"
+	| "fullscreen-commentary"
+	| "custom";
+export type WebcamEffectFallbackState =
+	| "none"
+	| "segmentation-unavailable"
+	| "reduced-segmentation-rate"
+	| "reduced-background-sampling"
+	| "replacement-disabled"
+	| "raw-webcam-only";
+export type WebcamRenderQualityTier =
+	| "full-preview"
+	| "reduced-cadence"
+	| "reduced-preview-resolution"
+	| "simplified-preview-effects"
+	| "raw-webcam-only";
+export type WebcamDegradationStep = WebcamRenderQualityTier | "export-reference";
+export type WebcamSegmentationProviderStatus = "not-required" | "ready" | "unavailable";
+export type WebcamPreviewMode = "exact" | "performance" | "power-saving";
+export type CameraPreviewSize = "small" | "medium" | "large";
+export type CameraPreviewCorner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
+export type CameraPreviewShape = "rounded-rect" | "circle";
+
+export interface WebcamEffects {
+	presetId: WebcamStylePresetId;
+	backgroundMode: WebcamBackgroundMode;
+	backgroundBlurStrength: number;
+	backgroundColor: string;
+	backgroundImagePath?: string;
+	edgeFeather: number;
+	portraitScale: number;
+	portraitOffset: { x: number; y: number };
+	shadowStyle: WebcamShadowStyle;
+	shadowStrength: number;
+	shadowColor: string;
+	exposure: number;
+	contrast: number;
+	saturation: number;
+	warmth: number;
+	noiseReduction: number;
+	faceAwareFraming: boolean;
+	subtleAvoidance: boolean;
+}
+
+export interface WebcamHealthMetrics {
+	targetFps: number;
+	observedFps: number;
+	segmentationFps: number;
+	droppedFrameRatio: number;
+	effectFallbackState: WebcamEffectFallbackState;
+	previewMode?: WebcamPreviewMode;
+	configuredBackgroundMode?: WebcamBackgroundMode;
+	appliedBackgroundMode?: WebcamBackgroundMode;
+	degradationStep?: WebcamDegradationStep;
+	previewQualityTier?: WebcamRenderQualityTier;
+	segmentationWorkingWidth?: number;
+	segmentationWorkingHeight?: number;
+	segmentationProviderStatus?: WebcamSegmentationProviderStatus;
+	renderResolutionScale?: number;
+	driftMs?: number;
+	renderLatencyMs?: number;
+	frameQueueDepth?: number;
+	segmentCompatibilityWarnings?: string[];
+	fallbackReason?: string;
+}
+
 export const DEFAULT_WEBCAM_REGION: WebcamRegion = {
 	position: { x: 78, y: 78 },
 	size: { width: 18, height: 18 },
@@ -453,25 +526,139 @@ export const DEFAULT_WEBCAM_REGION: WebcamRegion = {
 	borderColor: "#ffffff",
 };
 
-export function getRecommendedWebcamRegion(aspectRatio?: string): WebcamRegion {
-	const normalized = aspectRatio?.trim().toLowerCase();
-	let size = DEFAULT_WEBCAM_REGION.size.width;
+export const DEFAULT_WEBCAM_EFFECTS: WebcamEffects = {
+	presetId: "classic-circle",
+	backgroundMode: "none",
+	backgroundBlurStrength: 14,
+	backgroundColor: "#111827",
+	backgroundImagePath: undefined,
+	edgeFeather: 10,
+	portraitScale: 1,
+	portraitOffset: { x: 0, y: 0 },
+	shadowStyle: "soft",
+	shadowStrength: 0.5,
+	shadowColor: "#000000",
+	exposure: 0,
+	contrast: 1,
+	saturation: 1,
+	warmth: 0,
+	noiseReduction: 0,
+	faceAwareFraming: false,
+	subtleAvoidance: true,
+};
 
-	if (normalized && normalized.includes(":")) {
-		const [rawWidth, rawHeight] = normalized.split(":");
-		const width = Number.parseFloat(rawWidth);
-		const height = Number.parseFloat(rawHeight);
-		if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
-			const ratio = width / height;
-			size = ratio <= 1.05 ? 22 : 18;
-		}
+export const DEFAULT_WEBCAM_HEALTH_METRICS: WebcamHealthMetrics = {
+	targetFps: 0,
+	observedFps: 0,
+	segmentationFps: 0,
+	droppedFrameRatio: 0,
+	effectFallbackState: "none",
+};
+export const DEFAULT_WEBCAM_PREVIEW_MODE: WebcamPreviewMode = "exact";
+
+export interface RecommendedWebcamDefaults {
+	region: WebcamRegion;
+	effects: WebcamEffects;
+	cameraSizeDuringZoom: number;
+	showWebcam: boolean;
+	mirrorWebcam: boolean;
+	previewSize: CameraPreviewSize;
+	previewCorner: CameraPreviewCorner;
+	previewShape: CameraPreviewShape;
+}
+
+function resolveAspectRatioValue(aspectRatio?: string): number | null {
+	const normalized = aspectRatio?.trim().toLowerCase();
+	if (!normalized || !normalized.includes(":")) {
+		return null;
+	}
+
+	const [rawWidth, rawHeight] = normalized.split(":");
+	const width = Number.parseFloat(rawWidth);
+	const height = Number.parseFloat(rawHeight);
+	if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+		return null;
+	}
+
+	return width / height;
+}
+
+function isCompactAspectRatio(aspectRatio?: string) {
+	const ratio = resolveAspectRatioValue(aspectRatio);
+	return ratio !== null && ratio <= 1.05;
+}
+
+export function getRecommendedWebcamDefaults(aspectRatio?: string): RecommendedWebcamDefaults {
+	const useCompactDefaults = isCompactAspectRatio(aspectRatio);
+
+	if (useCompactDefaults) {
+		return {
+			region: {
+				...DEFAULT_WEBCAM_REGION,
+				position: { ...DEFAULT_WEBCAM_REGION.position },
+				size: { width: 22, height: 22 },
+				anchor: "top-right",
+				shape: "rectangle",
+				borderWidth: 0,
+				borderRadius: 24,
+			},
+			effects: {
+				...DEFAULT_WEBCAM_EFFECTS,
+				portraitOffset: { ...DEFAULT_WEBCAM_EFFECTS.portraitOffset },
+				presetId: "presenter-soft",
+				backgroundMode: "blur",
+				backgroundBlurStrength: 18,
+				portraitScale: 1.06,
+				edgeFeather: 14,
+				shadowStyle: "lifted",
+				shadowStrength: 0.75,
+			},
+			cameraSizeDuringZoom: 0.62,
+			showWebcam: true,
+			mirrorWebcam: false,
+			previewSize: DEFAULT_CAMERA_PREVIEW_SIZE,
+			previewCorner: DEFAULT_CAMERA_PREVIEW_CORNER,
+			previewShape: "rounded-rect",
+		};
 	}
 
 	return {
-		...DEFAULT_WEBCAM_REGION,
-		position: { ...DEFAULT_WEBCAM_REGION.position },
-		size: { width: size, height: size },
+		region: {
+			...DEFAULT_WEBCAM_REGION,
+			position: { ...DEFAULT_WEBCAM_REGION.position },
+			size: { width: 18, height: 18 },
+			anchor: "top-right",
+			shape: "rectangle",
+			borderWidth: 1,
+			borderRadius: 20,
+			borderColor: "#e2e8f0",
+		},
+		effects: {
+			...DEFAULT_WEBCAM_EFFECTS,
+			portraitOffset: { ...DEFAULT_WEBCAM_EFFECTS.portraitOffset },
+			presetId: "floating-card",
+			backgroundMode: "solid",
+			backgroundColor: "#0f172a",
+			portraitScale: 1.08,
+			edgeFeather: 16,
+			shadowStyle: "lifted",
+			shadowStrength: 0.85,
+		},
+		cameraSizeDuringZoom: 0.68,
+		showWebcam: true,
+		mirrorWebcam: false,
+		previewSize: DEFAULT_CAMERA_PREVIEW_SIZE,
+		previewCorner: DEFAULT_CAMERA_PREVIEW_CORNER,
+		previewShape: "rounded-rect",
 	};
+}
+
+export function getRecommendedWebcamRegion(aspectRatio?: string): WebcamRegion {
+	return getRecommendedWebcamDefaults(aspectRatio).region;
+}
+
+export function getRecommendedWebcamEffects(aspectRatio?: string): WebcamEffects {
+	return getRecommendedWebcamDefaults(aspectRatio).effects;
 }
 
 export type CameraLayoutMode = "default" | "fullscreen" | "hidden";
@@ -482,6 +669,9 @@ export interface CameraLayoutRegion {
 	endMs: number;
 	mode: CameraLayoutMode;
 	regionOverride?: Partial<WebcamRegion>;
+	transitionInMs?: number;
+	transitionOutMs?: number;
+	motionPreset?: WebcamMotionPreset;
 }
 
 export interface WebcamCaptureProfile {
@@ -491,17 +681,37 @@ export interface WebcamCaptureProfile {
 	aspectRatio: number;
 }
 
+export const WEBCAM_RENDER_PIPELINE_VERSION = 2;
+
+export interface WebcamSessionMetadata {
+	sessionCaptureProfile?: WebcamCaptureProfile | null;
+	captureProfile?: WebcamCaptureProfile | null;
+	segmentOffsetsMs?: number[];
+	segmentProfiles?: Array<WebcamCaptureProfile | null>;
+	segmentCompatibilityMode?: "copy" | "normalized";
+	renderPipelineVersion: number;
+}
+
 export interface CameraSessionState {
 	enabled: boolean;
 	deviceId?: string;
 	previewVisible: boolean;
 	previewMirrored: boolean;
+	previewSize: CameraPreviewSize;
+	previewCorner: CameraPreviewCorner;
+	previewShape: CameraPreviewShape;
 	resolvedCaptureProfile?: WebcamCaptureProfile;
 }
 
 export const DEFAULT_CAMERA_LAYOUT_MODE: CameraLayoutMode = "default";
 export const DEFAULT_CAMERA_SIZE_DURING_ZOOM = 0.72;
 export const CAMERA_ZOOM_SCALE_DISABLED = 1;
+export const DEFAULT_CAMERA_LAYOUT_TRANSITION_IN_MS = 260;
+export const DEFAULT_CAMERA_LAYOUT_TRANSITION_OUT_MS = 220;
+export const DEFAULT_CAMERA_LAYOUT_MOTION_PRESET: WebcamMotionPreset = "focused";
+export const DEFAULT_CAMERA_PREVIEW_SIZE: CameraPreviewSize = "medium";
+export const DEFAULT_CAMERA_PREVIEW_CORNER: CameraPreviewCorner = "top-right";
+export const DEFAULT_CAMERA_PREVIEW_SHAPE: CameraPreviewShape = "rounded-rect";
 
 export interface CropRegion {
 	x: number;

@@ -27,7 +27,7 @@ import {
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import { AnnotationOverlay } from "./AnnotationOverlay";
 import { CaptionOverlay } from "./CaptionOverlay";
-import { type PixelRect, resolveWebcamRenderModel } from "./cameraLayouts";
+import { createWebcamZoomMotionState, type PixelRect } from "./cameraLayouts";
 import { applyOpacityToHex, buildFrameShadowFilter, hasVisibleFrameShadow } from "./frameEffects";
 import { KeyboardShortcutOverlay } from "./KeyboardShortcutOverlay";
 import {
@@ -66,12 +66,17 @@ import {
 	DEFAULT_KEYBOARD_SHORTCUT_SCALE,
 	DEFAULT_KEYBOARD_SHORTCUT_THEME,
 	DEFAULT_SMOOTH_CURSOR_MOVEMENT,
+	DEFAULT_WEBCAM_EFFECTS,
+	DEFAULT_WEBCAM_REGION,
 	type KeyboardShortcutCallout,
 	type KeyboardShortcutPosition,
 	type KeyboardShortcutTheme,
 	type PreviewQuality,
 	type SpeedRegion,
 	type TrimRegion,
+	type WebcamEffects,
+	type WebcamHealthMetrics,
+	type WebcamPreviewMode,
 	type ZoomDepth,
 	type ZoomFocus,
 	type ZoomRegion,
@@ -125,6 +130,7 @@ import {
 	projectFrameRect,
 } from "./videoPlayback/zoomTransform";
 import { WebcamOverlay } from "./WebcamOverlay";
+import { evaluateWebcamFrame } from "./webcamFrameEvaluation";
 
 interface VideoPlaybackProps {
 	videoPath: string;
@@ -197,10 +203,13 @@ interface VideoPlaybackProps {
 	cameraSpring?: import("./types").CameraSpringSettings;
 	webcamPath?: string | null;
 	webcamRegion?: import("./types").WebcamRegion;
+	webcamEffects?: WebcamEffects;
+	webcamPreviewMode?: WebcamPreviewMode;
 	showWebcam?: boolean;
 	mirrorWebcam?: boolean;
 	cameraSizeDuringZoom?: number;
 	cameraLayouts?: CameraLayoutRegion[];
+	onWebcamHealthMetricsChange?: (metrics: WebcamHealthMetrics | null) => void;
 	onWebcamPositionChange?: (position: { x: number; y: number }) => void;
 	onWebcamSizeChange?: (size: { width: number; height: number }) => void;
 	webcamSelected?: boolean;
@@ -319,10 +328,13 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			cameraSpring = DEFAULT_CAMERA_SPRING,
 			webcamPath,
 			webcamRegion,
+			webcamEffects = DEFAULT_WEBCAM_EFFECTS,
+			webcamPreviewMode = "exact",
 			showWebcam = true,
 			mirrorWebcam = false,
 			cameraSizeDuringZoom = 1,
 			cameraLayouts = [],
+			onWebcamHealthMetricsChange,
 			onWebcamPositionChange,
 			onWebcamSizeChange,
 			webcamSelected = false,
@@ -361,6 +373,8 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const zoomRegionsRef = useRef<ZoomRegion[]>([]);
 		const selectedZoomIdRef = useRef<string | null>(null);
 		const animationStateRef = useRef(createPlaybackCameraState());
+		const webcamMotionStateRef = useRef(createWebcamZoomMotionState(DEFAULT_WEBCAM_REGION));
+		const webcamLayoutMotionStateRef = useRef(createWebcamZoomMotionState(DEFAULT_WEBCAM_REGION));
 		const blurFilterRef = useRef<BlurFilter | null>(null);
 		const motionBlurFilterRef = useRef<MotionBlurFilter | null>(null);
 		const isDraggingFocusRef = useRef(false);
@@ -441,47 +455,116 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		useEffect(() => {
 			desiredPreviewQualityRef.current = previewQuality;
 		}, [previewQuality]);
-		const webcamStageRect = previewGeometry?.stageRect ?? {
-			x: 0,
-			y: 0,
-			width: stageSizeRef.current.width || 800,
-			height: stageSizeRef.current.height || 600,
-		};
-		const webcamCompositionRect = previewGeometry?.frameRect ?? webcamStageRect;
-		const webcamContentRect = previewGeometry?.maskRect ?? webcamCompositionRect;
-		const resolvedWebcamModel = useMemo(() => {
+		const webcamStageX = previewGeometry?.stageRect?.x ?? 0;
+		const webcamStageY = previewGeometry?.stageRect?.y ?? 0;
+		const webcamStageWidth =
+			previewGeometry?.stageRect?.width ?? (stageSizeRef.current.width || 800);
+		const webcamStageHeight =
+			previewGeometry?.stageRect?.height ?? (stageSizeRef.current.height || 600);
+		const webcamStageRect = useMemo<PixelRect>(() => {
+			return {
+				x: webcamStageX,
+				y: webcamStageY,
+				width: webcamStageWidth,
+				height: webcamStageHeight,
+			};
+		}, [webcamStageHeight, webcamStageWidth, webcamStageX, webcamStageY]);
+		const webcamCompositionX = previewGeometry?.frameRect?.x ?? webcamStageX;
+		const webcamCompositionY = previewGeometry?.frameRect?.y ?? webcamStageY;
+		const webcamCompositionWidth = previewGeometry?.frameRect?.width ?? webcamStageWidth;
+		const webcamCompositionHeight = previewGeometry?.frameRect?.height ?? webcamStageHeight;
+		const webcamCompositionRect = useMemo<PixelRect>(
+			() => ({
+				x: webcamCompositionX,
+				y: webcamCompositionY,
+				width: webcamCompositionWidth,
+				height: webcamCompositionHeight,
+			}),
+			[webcamCompositionHeight, webcamCompositionWidth, webcamCompositionX, webcamCompositionY],
+		);
+		const webcamContentX = previewGeometry?.maskRect?.x ?? webcamCompositionX;
+		const webcamContentY = previewGeometry?.maskRect?.y ?? webcamCompositionY;
+		const webcamContentWidth = previewGeometry?.maskRect?.width ?? webcamCompositionWidth;
+		const webcamContentHeight = previewGeometry?.maskRect?.height ?? webcamCompositionHeight;
+		const webcamContentRect = useMemo<PixelRect>(
+			() => ({
+				x: webcamContentX,
+				y: webcamContentY,
+				width: webcamContentWidth,
+				height: webcamContentHeight,
+			}),
+			[webcamContentHeight, webcamContentWidth, webcamContentX, webcamContentY],
+		);
+		const resolvedWebcamEvaluation = useMemo(() => {
 			if (!webcamRegion) {
 				return null;
 			}
 
-			return resolveWebcamRenderModel({
-				timeMs: Math.round(currentTime * 1000),
+			return evaluateWebcamFrame({
+				state: {
+					baseMotionState: webcamMotionStateRef.current,
+					layoutMotionState: webcamLayoutMotionStateRef.current,
+				},
+				playbackTimeMs: Math.round(currentTime * 1000),
 				webcamRegion,
 				showWebcam,
 				mirrorWebcam,
 				cameraLayouts,
 				zoomRegions,
+				cursorTelemetry,
 				connectZooms,
 				cameraSizeDuringZoom,
-				containerWidth: webcamStageRect.width,
-				containerHeight: webcamStageRect.height,
+				enableCursorAvoidance: webcamEffects.subtleAvoidance,
 				compositionRect: webcamCompositionRect,
 				contentRect: webcamContentRect,
+				containerWidth: webcamStageRect.width,
+				containerHeight: webcamStageRect.height,
+				effects: webcamEffects,
+				renderMode: "preview",
+				previewMode: webcamPreviewMode,
+				sourceKey: webcamPath ?? "webcam-preview",
+				shouldSmooth:
+					isPlaying &&
+					!(activePreviewHoldSrc !== null || isPreviewQualitySwitching || isPreviewRecoveryActive),
 			});
 		}, [
+			activePreviewHoldSrc,
 			cameraLayouts,
 			cameraSizeDuringZoom,
 			connectZooms,
+			cursorTelemetry,
 			currentTime,
+			isPlaying,
+			isPreviewQualitySwitching,
+			isPreviewRecoveryActive,
 			mirrorWebcam,
 			showWebcam,
+			webcamEffects,
+			webcamPreviewMode,
 			webcamCompositionRect,
 			webcamContentRect,
-			webcamStageRect.height,
-			webcamStageRect.width,
+			webcamStageRect,
+			webcamPath,
 			webcamRegion,
 			zoomRegions,
 		]);
+		const resolvedWebcamSpec = resolvedWebcamEvaluation?.renderSpec ?? null;
+		const resolvedWebcamModel = resolvedWebcamSpec?.renderModel ?? null;
+
+		useEffect(() => {
+			if (!webcamRegion) {
+				webcamMotionStateRef.current = createWebcamZoomMotionState(DEFAULT_WEBCAM_REGION);
+				webcamLayoutMotionStateRef.current = createWebcamZoomMotionState(DEFAULT_WEBCAM_REGION);
+				return;
+			}
+
+			if (!resolvedWebcamEvaluation) {
+				return;
+			}
+
+			webcamMotionStateRef.current = resolvedWebcamEvaluation.baseMotionState;
+			webcamLayoutMotionStateRef.current = resolvedWebcamEvaluation.layoutMotionState;
+		}, [resolvedWebcamEvaluation, webcamRegion]);
 
 		const clampFocusToStage = useCallback((focus: ZoomFocus, depth: ZoomDepth) => {
 			return clampFocusToStageUtil(focus, depth, stageSizeRef.current);
@@ -2300,15 +2383,18 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 								/>
 							));
 						})()}
-						{webcamPath && resolvedWebcamModel && resolvedWebcamModel.mode !== "hidden" && (
+						{webcamPath && resolvedWebcamModel && resolvedWebcamModel.opacity > 0 && (
 							<WebcamOverlay
 								webcamPath={webcamPath}
 								renderModel={resolvedWebcamModel}
 								compositionRect={webcamCompositionRect}
+								webcamEffects={webcamEffects}
+								webcamPreviewMode={webcamPreviewMode}
 								currentTime={currentTime}
 								isPlaying={isPlaying}
 								isHeld={isPreviewWebcamHeld}
 								playbackRate={videoRef.current?.playbackRate ?? 1}
+								onHealthMetricsChange={onWebcamHealthMetricsChange}
 								isSelected={
 									webcamSelected ||
 									(selectedCameraLayoutId === resolvedWebcamModel.activeLayoutId &&

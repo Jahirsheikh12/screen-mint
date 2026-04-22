@@ -54,6 +54,9 @@ import {
 	DEFAULT_AUDIO_REGION_VOLUME,
 	DEFAULT_BLUR_DATA,
 	DEFAULT_CAMERA_LAYOUT_MODE,
+	DEFAULT_CAMERA_LAYOUT_MOTION_PRESET,
+	DEFAULT_CAMERA_LAYOUT_TRANSITION_IN_MS,
+	DEFAULT_CAMERA_LAYOUT_TRANSITION_OUT_MS,
 	DEFAULT_CAMERA_SIZE_DURING_ZOOM,
 	DEFAULT_CAMERA_SPRING,
 	DEFAULT_CAPTION_GENERATION_OPTIONS,
@@ -85,6 +88,8 @@ import {
 	DEFAULT_KEYBOARD_SHORTCUT_THEME,
 	DEFAULT_PLAYBACK_SPEED,
 	DEFAULT_SHOW_KEYBOARD_SHORTCUTS,
+	DEFAULT_WEBCAM_EFFECTS,
+	DEFAULT_WEBCAM_PREVIEW_MODE,
 	DEFAULT_WEBCAM_REGION,
 	DEFAULT_ZOOM_DEPTH,
 	DEFAULT_ZOOM_MODE,
@@ -95,11 +100,17 @@ import {
 	type KeyboardShortcutTheme,
 	type SpeedRegion,
 	type TrimRegion,
+	WEBCAM_RENDER_PIPELINE_VERSION,
+	type WebcamEffects,
+	type WebcamMotionPreset,
+	type WebcamPreviewMode,
 	type WebcamRegion,
+	type WebcamSessionMetadata,
 	type ZoomMode,
 	type ZoomRegion,
 } from "./types";
 import { normalizeCursorSpring, resolveCursorV2Fields } from "./videoPlayback/cursorV2";
+import { normalizeWebcamEffects } from "./webcamEffects";
 import { normalizeWebcamRegion } from "./webcamRegionUtils";
 
 function normalizeCameraSpring(
@@ -117,7 +128,7 @@ function normalizeCameraSpring(
 	};
 }
 
-export const PROJECT_VERSION = 9;
+export const PROJECT_VERSION = 10;
 export const DEFAULT_VIDEO_PREVIEW_PADDING = 40;
 
 export interface ProjectEditorState {
@@ -179,6 +190,8 @@ export interface ProjectEditorState {
 	aspectRatio: AspectRatio;
 	webcamPath?: string;
 	webcamRegion: import("./types").WebcamRegion;
+	webcamEffects: WebcamEffects;
+	webcamPreviewMode: WebcamPreviewMode;
 	showWebcam: boolean;
 	mirrorWebcam: boolean;
 	cameraSizeDuringZoom: number;
@@ -196,6 +209,7 @@ export interface EditorProjectData {
 	version: number;
 	videoPath: string;
 	editor: ProjectEditorState;
+	webcamSessionMetadata?: WebcamSessionMetadata;
 }
 
 function normalizePartialWebcamRegion(candidate: unknown): Partial<WebcamRegion> | undefined {
@@ -287,6 +301,117 @@ function normalizePartialWebcamRegion(candidate: unknown): Partial<WebcamRegion>
 	return Object.keys(normalized).length > 0 ? normalized : undefined;
 }
 
+function normalizePartialWebcamEffects(candidate: unknown): Partial<WebcamEffects> | undefined {
+	if (!candidate || typeof candidate !== "object") {
+		return undefined;
+	}
+
+	const partial = candidate as Partial<WebcamEffects>;
+	const normalized: Partial<WebcamEffects> = {};
+
+	if (
+		partial.presetId === "classic-circle" ||
+		partial.presetId === "presenter-soft" ||
+		partial.presetId === "floating-card" ||
+		partial.presetId === "spotlight" ||
+		partial.presetId === "fullscreen-commentary" ||
+		partial.presetId === "custom"
+	) {
+		normalized.presetId = partial.presetId;
+	}
+
+	if (
+		partial.backgroundMode === "none" ||
+		partial.backgroundMode === "blur" ||
+		partial.backgroundMode === "solid" ||
+		partial.backgroundMode === "image"
+	) {
+		normalized.backgroundMode = partial.backgroundMode;
+	}
+
+	if (isFiniteNumber(partial.backgroundBlurStrength)) {
+		normalized.backgroundBlurStrength = clamp(partial.backgroundBlurStrength, 0, 32);
+	}
+
+	if (typeof partial.backgroundColor === "string" && partial.backgroundColor.trim().length > 0) {
+		normalized.backgroundColor = partial.backgroundColor;
+	}
+
+	if (
+		typeof partial.backgroundImagePath === "string" &&
+		partial.backgroundImagePath.trim().length > 0
+	) {
+		normalized.backgroundImagePath = partial.backgroundImagePath;
+	}
+
+	if (isFiniteNumber(partial.edgeFeather)) {
+		normalized.edgeFeather = clamp(partial.edgeFeather, 0, 32);
+	}
+
+	if (isFiniteNumber(partial.portraitScale)) {
+		normalized.portraitScale = clamp(partial.portraitScale, 0.85, 1.35);
+	}
+
+	if (partial.portraitOffset && typeof partial.portraitOffset === "object") {
+		const offset = partial.portraitOffset as Partial<WebcamEffects["portraitOffset"]>;
+		normalized.portraitOffset = {
+			x: isFiniteNumber(offset.x)
+				? clamp(offset.x, -0.3, 0.3)
+				: DEFAULT_WEBCAM_EFFECTS.portraitOffset.x,
+			y: isFiniteNumber(offset.y)
+				? clamp(offset.y, -0.3, 0.3)
+				: DEFAULT_WEBCAM_EFFECTS.portraitOffset.y,
+		};
+	}
+
+	if (
+		partial.shadowStyle === "none" ||
+		partial.shadowStyle === "soft" ||
+		partial.shadowStyle === "lifted" ||
+		partial.shadowStyle === "spotlight"
+	) {
+		normalized.shadowStyle = partial.shadowStyle;
+	}
+
+	if (isFiniteNumber(partial.shadowStrength)) {
+		normalized.shadowStrength = clamp(partial.shadowStrength, 0, 1.5);
+	}
+
+	if (typeof partial.shadowColor === "string" && partial.shadowColor.trim().length > 0) {
+		normalized.shadowColor = partial.shadowColor;
+	}
+
+	if (isFiniteNumber(partial.exposure)) {
+		normalized.exposure = clamp(partial.exposure, -0.6, 0.6);
+	}
+
+	if (isFiniteNumber(partial.contrast)) {
+		normalized.contrast = clamp(partial.contrast, 0.7, 1.6);
+	}
+
+	if (isFiniteNumber(partial.saturation)) {
+		normalized.saturation = clamp(partial.saturation, 0.2, 1.8);
+	}
+
+	if (isFiniteNumber(partial.warmth)) {
+		normalized.warmth = clamp(partial.warmth, -1, 1);
+	}
+
+	if (isFiniteNumber(partial.noiseReduction)) {
+		normalized.noiseReduction = clamp(partial.noiseReduction, 0, 1);
+	}
+
+	if (typeof partial.faceAwareFraming === "boolean") {
+		normalized.faceAwareFraming = partial.faceAwareFraming;
+	}
+
+	if (typeof partial.subtleAvoidance === "boolean") {
+		normalized.subtleAvoidance = partial.subtleAvoidance;
+	}
+
+	return Object.keys(normalized).length > 0 ? normalized : undefined;
+}
+
 function isFiniteNumber(value: unknown): value is number {
 	return typeof value === "number" && Number.isFinite(value);
 }
@@ -317,6 +442,12 @@ function normalizeCameraLayouts(candidate: unknown): CameraLayoutRegion[] {
 				layout.mode === "fullscreen" || layout.mode === "hidden" || layout.mode === "default"
 					? layout.mode
 					: DEFAULT_CAMERA_LAYOUT_MODE;
+			const motionPreset: WebcamMotionPreset =
+				layout.motionPreset === "focused" ||
+				layout.motionPreset === "smooth" ||
+				layout.motionPreset === "instant"
+					? layout.motionPreset
+					: DEFAULT_CAMERA_LAYOUT_MOTION_PRESET;
 
 			return {
 				id:
@@ -326,6 +457,13 @@ function normalizeCameraLayouts(candidate: unknown): CameraLayoutRegion[] {
 				startMs,
 				endMs,
 				mode,
+				transitionInMs: isFiniteNumber(layout.transitionInMs)
+					? clamp(layout.transitionInMs, 0, 3_000)
+					: DEFAULT_CAMERA_LAYOUT_TRANSITION_IN_MS,
+				transitionOutMs: isFiniteNumber(layout.transitionOutMs)
+					? clamp(layout.transitionOutMs, 0, 3_000)
+					: DEFAULT_CAMERA_LAYOUT_TRANSITION_OUT_MS,
+				motionPreset,
 				regionOverride: normalizePartialWebcamRegion(layout.regionOverride),
 			};
 		});
@@ -412,6 +550,61 @@ export function validateProjectData(candidate: unknown): candidate is EditorProj
 	if (typeof project.videoPath !== "string" || !project.videoPath) return false;
 	if (!project.editor || typeof project.editor !== "object") return false;
 	return true;
+}
+
+function normalizeWebcamCaptureProfile(candidate: unknown) {
+	if (!candidate || typeof candidate !== "object") {
+		return undefined;
+	}
+
+	const profile = candidate as Partial<import("./types").WebcamCaptureProfile>;
+	if (
+		!isFiniteNumber(profile.width) ||
+		!isFiniteNumber(profile.height) ||
+		!isFiniteNumber(profile.frameRate) ||
+		!isFiniteNumber(profile.aspectRatio)
+	) {
+		return undefined;
+	}
+
+	return {
+		width: Math.max(1, Math.round(profile.width)),
+		height: Math.max(1, Math.round(profile.height)),
+		frameRate: clamp(Math.round(profile.frameRate), 1, 120),
+		aspectRatio: clamp(profile.aspectRatio, 0.1, 10),
+	};
+}
+
+export function normalizeWebcamSessionMetadata(
+	candidate: unknown,
+): WebcamSessionMetadata | undefined {
+	if (!candidate || typeof candidate !== "object") {
+		return undefined;
+	}
+
+	const metadata = candidate as Partial<WebcamSessionMetadata>;
+	const segmentOffsetsMs = Array.isArray(metadata.segmentOffsetsMs)
+		? metadata.segmentOffsetsMs
+				.filter((value): value is number => isFiniteNumber(value))
+				.map((value) => Math.max(0, Math.round(value)))
+		: undefined;
+
+	return {
+		sessionCaptureProfile:
+			normalizeWebcamCaptureProfile(metadata.sessionCaptureProfile) ??
+			normalizeWebcamCaptureProfile(metadata.captureProfile) ??
+			null,
+		captureProfile: normalizeWebcamCaptureProfile(metadata.captureProfile) ?? null,
+		segmentOffsetsMs,
+		segmentProfiles: Array.isArray(metadata.segmentProfiles)
+			? metadata.segmentProfiles.map((profile) => normalizeWebcamCaptureProfile(profile) ?? null)
+			: undefined,
+		segmentCompatibilityMode:
+			metadata.segmentCompatibilityMode === "normalized" ? "normalized" : "copy",
+		renderPipelineVersion: isFiniteNumber(metadata.renderPipelineVersion)
+			? Math.max(1, Math.round(metadata.renderPipelineVersion))
+			: WEBCAM_RENDER_PIPELINE_VERSION,
+	};
 }
 
 function normalizeCaptionRegions(candidate: unknown): CaptionRegion[] {
@@ -1099,6 +1292,9 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		? editor.cropRegion.height
 		: DEFAULT_CROP_REGION.height;
 	const normalizedWebcamOverride = normalizePartialWebcamRegion(editor.webcamRegion);
+	const normalizedWebcamEffects = normalizePartialWebcamEffects(
+		(editor as Partial<ProjectEditorState>).webcamEffects,
+	);
 	const legacyCaptionRegions = normalizeCaptionRegions(
 		(editor as Partial<ProjectEditorState> & { captionRegions?: CaptionRegion[] }).captionRegions,
 	);
@@ -1324,6 +1520,20 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 				...normalizedWebcamOverride?.size,
 			},
 		}),
+		webcamEffects: normalizeWebcamEffects({
+			...DEFAULT_WEBCAM_EFFECTS,
+			...normalizedWebcamEffects,
+			portraitOffset: {
+				...DEFAULT_WEBCAM_EFFECTS.portraitOffset,
+				...normalizedWebcamEffects?.portraitOffset,
+			},
+		}),
+		webcamPreviewMode:
+			editor.webcamPreviewMode === "performance" ||
+			editor.webcamPreviewMode === "power-saving" ||
+			editor.webcamPreviewMode === "exact"
+				? editor.webcamPreviewMode
+				: DEFAULT_WEBCAM_PREVIEW_MODE,
 		showWebcam: typeof editor.showWebcam === "boolean" ? editor.showWebcam : true,
 		mirrorWebcam: typeof editor.mirrorWebcam === "boolean" ? editor.mirrorWebcam : false,
 		cameraSizeDuringZoom: isFiniteNumber(editor.cameraSizeDuringZoom)
@@ -1344,10 +1554,12 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 export function createProjectData(
 	videoPath: string,
 	editor: ProjectEditorState,
+	webcamSessionMetadata?: WebcamSessionMetadata,
 ): EditorProjectData {
 	return {
 		version: PROJECT_VERSION,
 		videoPath,
 		editor,
+		webcamSessionMetadata,
 	};
 }

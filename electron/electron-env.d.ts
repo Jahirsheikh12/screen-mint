@@ -3,6 +3,7 @@ import type {
 	CaptionGenerationProgress,
 	CaptionModelStatus,
 	CaptionTrack,
+	WebcamSessionMetadata,
 } from "../src/components/video-editor/types";
 import type { PostRecordingContext } from "../src/lib/recording/postRecording";
 import type {
@@ -106,17 +107,28 @@ declare global {
 				webcamSegments?: Array<{ path: string; durationMs: number }>;
 				microphoneSegments?: Array<{ path: string; durationMs: number }>;
 				selectedArea?: SelectedArea | null;
-			}) => Promise<{ success: boolean; path?: string; message?: string; error?: string }>;
+				webcamSessionMetadata?: WebcamSessionMetadata | null;
+			}) => Promise<{
+				success: boolean;
+				path?: string;
+				webcamPath?: string | null;
+				webcamSessionMetadata?: WebcamSessionMetadata | null;
+				microphonePath?: string | null;
+				message?: string;
+				error?: string;
+			}>;
 			triggerFinalizeRecordingSession: (payload: {
 				videoSegments: Array<{ path: string; durationMs: number }>;
 				webcamSegments?: Array<{ path: string; durationMs: number }>;
 				microphoneSegments?: Array<{ path: string; durationMs: number }>;
 				selectedArea?: SelectedArea | null;
+				webcamSessionMetadata?: WebcamSessionMetadata | null;
 			}) => Promise<{ success: boolean }>;
 			awaitRecordingFinalized: () => Promise<{
 				success: boolean;
 				path?: string;
 				webcamPath?: string | null;
+				webcamSessionMetadata?: WebcamSessionMetadata | null;
 				microphonePath?: string | null;
 				message?: string;
 				error?: string;
@@ -209,6 +221,7 @@ declare global {
 			) => Promise<{ success: boolean; path?: string; message?: string; error?: string }>;
 			openVideoFilePicker: () => Promise<{ success: boolean; path?: string; canceled?: boolean }>;
 			openAudioFilePicker: () => Promise<{ success: boolean; path?: string; canceled?: boolean }>;
+			openImageFilePicker: () => Promise<{ success: boolean; path?: string; canceled?: boolean }>;
 			setCurrentVideoPath: (path: string) => Promise<{ success: boolean }>;
 			getCurrentVideoPath: () => Promise<{ success: boolean; path?: string }>;
 			clearCurrentVideoPath: () => Promise<{ success: boolean }>;
@@ -436,6 +449,11 @@ declare global {
 		sourceType?: "screen" | "window";
 		appName?: string;
 		windowTitle?: string;
+		width?: number;
+		height?: number;
+		scaleFactor?: number;
+		isPrimary?: boolean;
+		isInternal?: boolean;
 	}
 
 	type SelectedCaptureSource = Pick<ProcessedDesktopSource, "id" | "name" | "display_id"> &

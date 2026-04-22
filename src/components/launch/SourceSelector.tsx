@@ -5,22 +5,6 @@ import { useScopedT } from "../../contexts/I18nContext";
 import { useCaptureSourceAccess } from "../../hooks/useCaptureSourceAccess";
 import styles from "./SourceSelector.module.css";
 
-type ProcessedDesktopSource = {
-	id: string;
-	name: string;
-	thumbnail: string | null;
-	display_id: string;
-	appIcon: string | null;
-	sourceType?: "screen" | "window";
-	appName?: string;
-	windowTitle?: string;
-	width?: number;
-	height?: number;
-	scaleFactor?: number;
-	isPrimary?: boolean;
-	isInternal?: boolean;
-};
-
 type DesktopSource = {
 	id: string;
 	name: string;

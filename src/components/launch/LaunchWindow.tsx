@@ -1,6 +1,7 @@
 import { ChevronDown } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { BsRecordCircle } from "react-icons/bs";
+import { resolveHudWebcamPreviewLayout } from "@/components/video-editor/webcamRenderPlan";
 import { useScopedT } from "@/contexts/I18nContext";
 import type { AfterRecordingAction, HudMode } from "@/hooks/useHudState";
 import { useHudState } from "@/hooks/useHudState";
@@ -216,6 +217,7 @@ export function LaunchWindow() {
 		hud.recordingBusy ||
 		!hud.hasSelectedSource ||
 		(hud.mode === "area" && !hud.hasSelectedArea);
+	const hudWebcamPreviewLayout = resolveHudWebcamPreviewLayout(hud.cameraSession);
 
 	useLayoutEffect(() => {
 		const compactHud = compactHudRef.current;
@@ -404,7 +406,8 @@ export function LaunchWindow() {
 
 			<div
 				ref={compactHudRef}
-				className="fixed bottom-0 left-1/2 z-20 flex w-fit -translate-x-1/2 flex-col items-center gap-3 pt-14 pb-3 pointer-events-none"
+				className="fixed bottom-0 left-1/2 z-20 flex w-fit -translate-x-1/2 flex-col gap-3 pt-14 pb-3 pointer-events-none"
+				style={{ alignItems: hudWebcamPreviewLayout.selfAlign }}
 			>
 				{/* Camera preview — floating above toolbar */}
 				{hud.cameraSession.enabled &&
@@ -413,6 +416,8 @@ export function LaunchWindow() {
 						<div
 							className={`${styles.electronNoDrag} pointer-events-auto`}
 							style={{
+								order: hudWebcamPreviewLayout.order,
+								alignSelf: hudWebcamPreviewLayout.selfAlign,
 								borderRadius: 16,
 								border: "1px solid rgba(255,255,255,0.1)",
 								background: "#161618",
@@ -420,7 +425,14 @@ export function LaunchWindow() {
 								boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
 							}}
 						>
-							<div className="relative h-[84px] w-[140px] overflow-hidden rounded-[12px] bg-black">
+							<div
+								className="relative overflow-hidden bg-black"
+								style={{
+									width: hudWebcamPreviewLayout.width,
+									height: hudWebcamPreviewLayout.height,
+									borderRadius: hudWebcamPreviewLayout.borderRadius,
+								}}
+							>
 								<video
 									ref={cameraPreviewRef}
 									autoPlay
@@ -472,6 +484,9 @@ export function LaunchWindow() {
 							setCameraDeviceId={hud.setCameraDeviceId}
 							setCameraPreviewVisible={hud.setCameraPreviewVisible}
 							setCameraPreviewMirrored={hud.setCameraPreviewMirrored}
+							setCameraPreviewSize={hud.setCameraPreviewSize}
+							setCameraPreviewCorner={hud.setCameraPreviewCorner}
+							setCameraPreviewShape={hud.setCameraPreviewShape}
 							cameraDevices={hud.cameraDevices}
 							showMicControls={hud.showMicControls}
 							micDevices={hud.micDevices}

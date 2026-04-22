@@ -144,6 +144,7 @@
 		"remove": "移除摄像头",
 		"mirrorCamera": "镜像摄像头",
 		"cameraDuringZoom": "缩放期间摄像头大小",
+		"cameraDuringZoomHint": "当画面缩放启动时，摄像头会平滑缩小；缩放结束后，它会同样平滑地恢复。",
 		"sameSize": "保持不变",
 		"size": "大小",
 		"shape": "形状",

@@ -18,6 +18,11 @@ import {
 	shell,
 	systemPreferences,
 } from "electron";
+import {
+	WEBCAM_RENDER_PIPELINE_VERSION,
+	type WebcamCaptureProfile,
+	type WebcamSessionMetadata,
+} from "../../src/components/video-editor/types";
 import type {
 	CaptureDiagnostics,
 	CapturePermissionState,
@@ -125,6 +130,7 @@ type FinalizeResult = {
 	success: boolean;
 	path?: string;
 	webcamPath?: string | null;
+	webcamSessionMetadata?: WebcamSessionMetadata | null;
 	microphonePath?: string | null;
 	message?: string;
 	error?: string;
@@ -175,6 +181,25 @@ type SystemCursorAsset = {
 type RecordingSegmentPayload = {
 	path: string;
 	durationMs: number;
+};
+
+type ProbedVideoSegmentProfile = {
+	path: string;
+	codec: string | null;
+	pixelFormat: string | null;
+	width: number | null;
+	height: number | null;
+	frameRate: number | null;
+	captureProfile: WebcamCaptureProfile | null;
+};
+
+type WebcamConcatTargetProfile = {
+	codec: "vp8" | "vp9";
+	pixelFormat: "yuv420p";
+	width: number;
+	height: number;
+	frameRate: number;
+	captureProfile: WebcamCaptureProfile;
 };
 
 type CursorVisualType =
@@ -1768,6 +1793,264 @@ async function concatenateMediaSegments(
 	}
 }
 
+function parseFfmpegRate(value: string | undefined): number | null {
+	if (!value) {
+		return null;
+	}
+
+	const trimmed = value.trim();
+	if (!trimmed) {
+		return null;
+	}
+
+	if (trimmed.includes("/")) {
+		const [numeratorText, denominatorText] = trimmed.split("/", 2);
+		const numerator = Number.parseFloat(numeratorText ?? "");
+		const denominator = Number.parseFloat(denominatorText ?? "");
+		if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator === 0) {
+			return null;
+		}
+		return numerator / denominator;
+	}
+
+	const numeric = Number.parseFloat(trimmed);
+	return Number.isFinite(numeric) ? numeric : null;
+}
+
+function normalizeWebcamCaptureProfile(
+	profile: WebcamCaptureProfile | null | undefined,
+): WebcamCaptureProfile | null {
+	if (
+		!profile ||
+		!Number.isFinite(profile.width) ||
+		!Number.isFinite(profile.height) ||
+		!Number.isFinite(profile.frameRate) ||
+		profile.width <= 0 ||
+		profile.height <= 0 ||
+		profile.frameRate <= 0
+	) {
+		return null;
+	}
+
+	return {
+		width: Math.round(profile.width),
+		height: Math.round(profile.height),
+		frameRate: Math.round(profile.frameRate),
+		aspectRatio: profile.width / profile.height,
+	};
+}
+
+async function probeVideoSegmentProfile(segmentPath: string): Promise<ProbedVideoSegmentProfile> {
+	const ffmpegPath = getFfmpegBinaryPath();
+	let probeOutput = "";
+
+	try {
+		await execFileAsync(ffmpegPath, ["-hide_banner", "-i", segmentPath], {
+			timeout: 30000,
+			maxBuffer: 10 * 1024 * 1024,
+		});
+	} catch (error) {
+		const ffmpegError = error as {
+			stderr?: string | Buffer;
+			stdout?: string | Buffer;
+			message?: string;
+		};
+		probeOutput = [
+			ffmpegError.stderr?.toString(),
+			ffmpegError.stdout?.toString(),
+			ffmpegError.message,
+		]
+			.filter((value): value is string => Boolean(value))
+			.join("\n");
+	}
+
+	const videoLine =
+		probeOutput
+			.split(/\r?\n/)
+			.find((line) => /Stream #.*Video:/.test(line) && !/attached pic/i.test(line)) ?? "";
+	const codec = videoLine.match(/Video:\s*([^,\s]+)/)?.[1] ?? null;
+	const pixelFormat = videoLine.match(/Video:\s*[^,]+,\s*([^,\s]+)/)?.[1] ?? null;
+	const dimensions = videoLine.match(/(\d{2,5})x(\d{2,5})/);
+	const width = dimensions ? Number.parseInt(dimensions[1] ?? "", 10) : null;
+	const height = dimensions ? Number.parseInt(dimensions[2] ?? "", 10) : null;
+	const frameRate =
+		parseFfmpegRate(videoLine.match(/,\s*([\d.]+(?:\/\d+)?)\s*fps/)?.[1]) ??
+		parseFfmpegRate(videoLine.match(/,\s*([\d.]+(?:\/\d+)?)\s*tbr/)?.[1]);
+	const captureProfile =
+		width && height && frameRate
+			? normalizeWebcamCaptureProfile({
+					width,
+					height,
+					frameRate,
+					aspectRatio: width / height,
+				})
+			: null;
+
+	return {
+		path: segmentPath,
+		codec,
+		pixelFormat,
+		width,
+		height,
+		frameRate,
+		captureProfile,
+	};
+}
+
+function resolveWebcamConcatTargetProfile(params: {
+	preferredProfile?: WebcamCaptureProfile | null;
+	probes: ProbedVideoSegmentProfile[];
+}): WebcamConcatTargetProfile | null {
+	const preferredProfile = normalizeWebcamCaptureProfile(params.preferredProfile);
+	const baselineProbe = params.probes.find((probe) => probe.captureProfile);
+	const captureProfile = preferredProfile ?? baselineProbe?.captureProfile ?? null;
+	if (!captureProfile) {
+		return null;
+	}
+
+	const baselineCodec = baselineProbe?.codec?.toLowerCase();
+	return {
+		codec: baselineCodec === "vp8" ? "vp8" : "vp9",
+		pixelFormat: "yuv420p",
+		width: captureProfile.width,
+		height: captureProfile.height,
+		frameRate: captureProfile.frameRate,
+		captureProfile,
+	};
+}
+
+function isWebcamSegmentCompatibleForConcat(
+	probe: ProbedVideoSegmentProfile,
+	targetProfile: WebcamConcatTargetProfile,
+): boolean {
+	return (
+		probe.codec?.toLowerCase() === targetProfile.codec &&
+		(probe.pixelFormat?.toLowerCase() ?? null) === targetProfile.pixelFormat &&
+		probe.width === targetProfile.width &&
+		probe.height === targetProfile.height &&
+		probe.frameRate != null &&
+		Math.abs(probe.frameRate - targetProfile.frameRate) <= 0.5
+	);
+}
+
+async function normalizeWebcamSegmentForConcat(params: {
+	segmentPath: string;
+	index: number;
+	targetProfile: WebcamConcatTargetProfile;
+}): Promise<string> {
+	const ffmpegPath = getFfmpegBinaryPath();
+	const normalizedPath = path.join(
+		os.tmpdir(),
+		`screenmint-webcam-normalized-${Date.now()}-${params.index}.webm`,
+	);
+	const encoderArgs =
+		params.targetProfile.codec === "vp8"
+			? ["-c:v", "libvpx", "-b:v", "4M", "-deadline", "realtime", "-cpu-used", "4"]
+			: [
+					"-c:v",
+					"libvpx-vp9",
+					"-b:v",
+					"0",
+					"-crf",
+					"32",
+					"-deadline",
+					"realtime",
+					"-cpu-used",
+					"4",
+					"-row-mt",
+					"1",
+				];
+	const videoFilter = [
+		`scale=${params.targetProfile.width}:${params.targetProfile.height}:flags=lanczos`,
+		`fps=${params.targetProfile.frameRate}`,
+	].join(",");
+
+	await execFileAsync(
+		ffmpegPath,
+		[
+			"-y",
+			"-i",
+			params.segmentPath,
+			"-an",
+			"-vf",
+			videoFilter,
+			...encoderArgs,
+			"-pix_fmt",
+			params.targetProfile.pixelFormat,
+			normalizedPath,
+		],
+		{ timeout: 120000, maxBuffer: 10 * 1024 * 1024 },
+	);
+
+	return normalizedPath;
+}
+
+async function persistMediaSegment(segmentPath: string, outputPath: string) {
+	if (normalizePath(segmentPath) === normalizePath(outputPath)) {
+		return segmentPath;
+	}
+
+	await fs.copyFile(segmentPath, outputPath);
+	return outputPath;
+}
+
+async function prepareCompatibleWebcamSegments(params: {
+	segmentPaths: string[];
+	preferredProfile?: WebcamCaptureProfile | null;
+}) {
+	if (params.segmentPaths.length === 0) {
+		return {
+			segmentPaths: [] as string[],
+			segmentProfiles: [] as Array<WebcamCaptureProfile | null>,
+			sessionCaptureProfile: null as WebcamCaptureProfile | null,
+			compatibilityMode: "copy" as const,
+			tempPaths: [] as string[],
+		};
+	}
+
+	const probes = await Promise.all(
+		params.segmentPaths.map((segmentPath) => probeVideoSegmentProfile(segmentPath)),
+	);
+	const targetProfile = resolveWebcamConcatTargetProfile({
+		preferredProfile: params.preferredProfile,
+		probes,
+	});
+	if (!targetProfile) {
+		return {
+			segmentPaths: params.segmentPaths,
+			segmentProfiles: probes.map((probe) => probe.captureProfile),
+			sessionCaptureProfile: normalizeWebcamCaptureProfile(params.preferredProfile),
+			compatibilityMode: "copy" as const,
+			tempPaths: [] as string[],
+		};
+	}
+
+	const tempPaths: string[] = [];
+	const segmentPaths = await Promise.all(
+		probes.map(async (probe, index) => {
+			if (isWebcamSegmentCompatibleForConcat(probe, targetProfile)) {
+				return probe.path;
+			}
+
+			const normalizedPath = await normalizeWebcamSegmentForConcat({
+				segmentPath: probe.path,
+				index,
+				targetProfile,
+			});
+			tempPaths.push(normalizedPath);
+			return normalizedPath;
+		}),
+	);
+
+	return {
+		segmentPaths,
+		segmentProfiles: probes.map((probe) => probe.captureProfile),
+		sessionCaptureProfile: targetProfile.captureProfile,
+		compatibilityMode: tempPaths.length > 0 ? ("normalized" as const) : ("copy" as const),
+		tempPaths,
+	};
+}
+
 async function cropVideoToArea(videoPath: string, area: SelectedArea, outputPath: string) {
 	const ffmpegPath = getFfmpegBinaryPath();
 	const { x, y, width, height } = area.normalizedBounds;
@@ -1813,6 +2096,7 @@ async function finalizeRecordingSession(payload: {
 	webcamSegments?: RecordingSegmentPayload[];
 	microphoneSegments?: RecordingSegmentPayload[];
 	selectedArea?: SelectedArea | null;
+	webcamSessionMetadata?: WebcamSessionMetadata | null;
 }) {
 	const recordingsDir = await getRecordingsDir();
 	const normalizedVideoSegments = payload.videoSegments.filter(
@@ -1833,10 +2117,25 @@ async function finalizeRecordingSession(payload: {
 		payload.webcamSegments
 			?.filter((segment) => typeof segment.path === "string" && segment.path.trim().length > 0)
 			.map((segment) => segment.path) ?? [];
+	const preparedWebcamSegments = await prepareCompatibleWebcamSegments({
+		segmentPaths: webcamSegmentPaths,
+		preferredProfile:
+			payload.webcamSessionMetadata?.sessionCaptureProfile ??
+			payload.webcamSessionMetadata?.captureProfile ??
+			postRecordingContext?.webcamSessionMetadata?.sessionCaptureProfile ??
+			postRecordingContext?.webcamSessionMetadata?.captureProfile ??
+			null,
+	});
+	const shouldPersistNormalizedSingleWebcamSegment =
+		preparedWebcamSegments.segmentPaths.length === 1 &&
+		preparedWebcamSegments.tempPaths.includes(preparedWebcamSegments.segmentPaths[0] ?? "");
 	const webcamOutputPath =
-		webcamSegmentPaths.length === 1
-			? webcamSegmentPaths[0]
-			: path.join(recordingsDir, `webcam-${Date.now()}-merged.webm`);
+		preparedWebcamSegments.segmentPaths.length === 1 && !shouldPersistNormalizedSingleWebcamSegment
+			? preparedWebcamSegments.segmentPaths[0]
+			: path.join(
+					recordingsDir,
+					`webcam-${Date.now()}-${shouldPersistNormalizedSingleWebcamSegment ? "normalized" : "merged"}.webm`,
+				);
 
 	const microphoneSegmentPaths =
 		payload.microphoneSegments
@@ -1848,8 +2147,13 @@ async function finalizeRecordingSession(payload: {
 	const [mergedVideoPath, finalWebcamPath, finalMicrophonePath, mergedCursorSamples] =
 		await Promise.all([
 			concatenateMediaSegments(videoSegmentPaths, finalVideoPathBase, ["-c", "copy"]),
-			webcamSegmentPaths.length > 0
-				? concatenateMediaSegments(webcamSegmentPaths, webcamOutputPath, ["-c", "copy"])
+			preparedWebcamSegments.segmentPaths.length > 0
+				? shouldPersistNormalizedSingleWebcamSegment
+					? persistMediaSegment(preparedWebcamSegments.segmentPaths[0], webcamOutputPath)
+					: concatenateMediaSegments(preparedWebcamSegments.segmentPaths, webcamOutputPath, [
+							"-c",
+							"copy",
+						])
 				: Promise.resolve<string | null>(null),
 			microphoneSegmentPaths.length > 0
 				? concatenateMediaSegments(microphoneSegmentPaths, microphoneOutputPath, ["-c:a", "aac"])
@@ -1894,14 +2198,51 @@ async function finalizeRecordingSession(payload: {
 	const filesToDiscard = [
 		...videoSegmentPaths.filter((segmentPath) => segmentPath !== finalVideoPath),
 		...webcamSegmentPaths.filter((segmentPath) => segmentPath !== currentWebcamPath),
+		...preparedWebcamSegments.tempPaths.filter((segmentPath) => segmentPath !== currentWebcamPath),
 		...microphoneSegmentPaths.filter((segmentPath) => segmentPath !== currentMicrophoneAudioPath),
 	];
 	await discardRecordingArtifacts(filesToDiscard);
 
 	const stored = await finalizeStoredVideo(finalVideoPath);
+	const webcamSessionMetadata: WebcamSessionMetadata | null =
+		finalWebcamPath != null
+			? {
+					sessionCaptureProfile:
+						preparedWebcamSegments.sessionCaptureProfile ??
+						payload.webcamSessionMetadata?.sessionCaptureProfile ??
+						payload.webcamSessionMetadata?.captureProfile ??
+						postRecordingContext?.webcamSessionMetadata?.sessionCaptureProfile ??
+						postRecordingContext?.webcamSessionMetadata?.captureProfile ??
+						null,
+					captureProfile:
+						preparedWebcamSegments.sessionCaptureProfile ??
+						payload.webcamSessionMetadata?.captureProfile ??
+						postRecordingContext?.webcamSessionMetadata?.captureProfile ??
+						null,
+					segmentOffsetsMs: payload.webcamSegments
+						?.filter(
+							(segment) => typeof segment.path === "string" && segment.path.trim().length > 0,
+						)
+						.reduce<number[]>((offsets, _segment, index, segments) => {
+							const previousOffset =
+								index === 0
+									? 0
+									: offsets[index - 1] + Math.max(0, segments[index - 1]?.durationMs ?? 0);
+							offsets.push(previousOffset);
+							return offsets;
+						}, []) ?? [0],
+					segmentProfiles: preparedWebcamSegments.segmentProfiles,
+					segmentCompatibilityMode: preparedWebcamSegments.compatibilityMode,
+					renderPipelineVersion:
+						payload.webcamSessionMetadata?.renderPipelineVersion ??
+						postRecordingContext?.webcamSessionMetadata?.renderPipelineVersion ??
+						WEBCAM_RENDER_PIPELINE_VERSION,
+				}
+			: null;
 	return {
 		...stored,
 		webcamPath: currentWebcamPath,
+		webcamSessionMetadata,
 		microphonePath: currentMicrophoneAudioPath,
 	};
 }
@@ -3992,6 +4333,7 @@ export function registerIpcHandlers(
 				webcamSegments?: RecordingSegmentPayload[];
 				microphoneSegments?: RecordingSegmentPayload[];
 				selectedArea?: SelectedArea | null;
+				webcamSessionMetadata?: WebcamSessionMetadata | null;
 			},
 		) => {
 			try {
@@ -4016,6 +4358,7 @@ export function registerIpcHandlers(
 				webcamSegments?: RecordingSegmentPayload[];
 				microphoneSegments?: RecordingSegmentPayload[];
 				selectedArea?: SelectedArea | null;
+				webcamSessionMetadata?: WebcamSessionMetadata | null;
 			},
 		) => {
 			lastFinalizationResult = null;
@@ -4026,6 +4369,7 @@ export function registerIpcHandlers(
 						success: true,
 						path: result.path,
 						webcamPath: result.webcamPath ?? null,
+						webcamSessionMetadata: result.webcamSessionMetadata ?? null,
 						microphonePath: result.microphonePath ?? null,
 						message: result.message,
 					};
@@ -4034,6 +4378,8 @@ export function registerIpcHandlers(
 							...postRecordingContext,
 							recordingPath: result.path ?? postRecordingContext.recordingPath ?? null,
 							webcamPath: result.webcamPath ?? postRecordingContext.webcamPath ?? null,
+							webcamSessionMetadata:
+								result.webcamSessionMetadata ?? postRecordingContext.webcamSessionMetadata ?? null,
 						};
 					}
 					lastFinalizationResult = finalized;
@@ -4605,6 +4951,38 @@ export function registerIpcHandlers(
 			return {
 				success: false,
 				message: "Failed to open audio file picker",
+				error: String(error),
+			};
+		}
+	});
+
+	ipcMain.handle("open-image-file-picker", async () => {
+		try {
+			const result = await dialog.showOpenDialog({
+				title: "Select Image File",
+				filters: [
+					{
+						name: "Image Files",
+						extensions: ["png", "jpg", "jpeg", "webp", "gif", "avif", "bmp"],
+					},
+					{ name: "All Files", extensions: ["*"] },
+				],
+				properties: ["openFile"],
+			});
+
+			if (result.canceled || result.filePaths.length === 0) {
+				return { success: false, canceled: true };
+			}
+
+			return {
+				success: true,
+				path: result.filePaths[0],
+			};
+		} catch (error) {
+			console.error("Failed to open image file picker:", error);
+			return {
+				success: false,
+				message: "Failed to open image file picker",
 				error: String(error),
 			};
 		}

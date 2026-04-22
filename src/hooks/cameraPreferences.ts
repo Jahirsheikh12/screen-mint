@@ -1,4 +1,9 @@
-import type { CameraSessionState } from "@/components/video-editor/types";
+import {
+	type CameraSessionState,
+	DEFAULT_CAMERA_PREVIEW_CORNER,
+	DEFAULT_CAMERA_PREVIEW_SHAPE,
+	DEFAULT_CAMERA_PREVIEW_SIZE,
+} from "@/components/video-editor/types";
 
 export interface CameraPreferences extends CameraSessionState {}
 
@@ -9,6 +14,9 @@ export const DEFAULT_CAMERA_PREFERENCES: CameraPreferences = {
 	deviceId: undefined,
 	previewVisible: true,
 	previewMirrored: true,
+	previewSize: DEFAULT_CAMERA_PREVIEW_SIZE,
+	previewCorner: DEFAULT_CAMERA_PREVIEW_CORNER,
+	previewShape: DEFAULT_CAMERA_PREVIEW_SHAPE,
 };
 
 export function normalizeCameraPreferences(candidate: unknown): CameraPreferences {
@@ -30,6 +38,21 @@ export function normalizeCameraPreferences(candidate: unknown): CameraPreference
 			typeof raw.previewMirrored === "boolean"
 				? raw.previewMirrored
 				: DEFAULT_CAMERA_PREFERENCES.previewMirrored,
+		previewSize:
+			raw.previewSize === "small" || raw.previewSize === "large" || raw.previewSize === "medium"
+				? raw.previewSize
+				: DEFAULT_CAMERA_PREFERENCES.previewSize,
+		previewCorner:
+			raw.previewCorner === "top-left" ||
+			raw.previewCorner === "top-right" ||
+			raw.previewCorner === "bottom-left" ||
+			raw.previewCorner === "bottom-right"
+				? raw.previewCorner
+				: DEFAULT_CAMERA_PREFERENCES.previewCorner,
+		previewShape:
+			raw.previewShape === "circle" || raw.previewShape === "rounded-rect"
+				? raw.previewShape
+				: DEFAULT_CAMERA_PREFERENCES.previewShape,
 	};
 }
 

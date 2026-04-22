@@ -92,6 +92,7 @@ import {
 	deriveNextId,
 	fromFileUrl,
 	normalizeProjectEditor,
+	normalizeWebcamSessionMetadata,
 	toFileUrl,
 	validateProjectData,
 } from "./projectPersistence";
@@ -126,24 +127,29 @@ import {
 	DEFAULT_AUDIO_FADE_OUT_MS,
 	DEFAULT_AUDIO_REGION_VOLUME,
 	DEFAULT_BLUR_DATA,
-	DEFAULT_CAMERA_SIZE_DURING_ZOOM,
 	DEFAULT_CAMERA_SPRING,
 	DEFAULT_CAPTION_GENERATION_OPTIONS,
 	DEFAULT_CAPTION_SETTINGS,
 	DEFAULT_CURSOR_FOLLOW_TRACKING,
 	DEFAULT_FIGURE_DATA,
 	DEFAULT_PLAYBACK_SPEED,
+	DEFAULT_WEBCAM_HEALTH_METRICS,
+	DEFAULT_WEBCAM_PREVIEW_MODE,
 	DEFAULT_ZOOM_DEPTH,
 	DEFAULT_ZOOM_MODE,
 	type FigureData,
-	getRecommendedWebcamRegion,
+	getRecommendedWebcamDefaults,
 	type KeyboardPlatform,
 	type KeyboardTelemetrySample,
 	type PlaybackSpeed,
 	type PreviewQuality,
 	type SpeedRegion,
 	type TrimRegion,
+	type WebcamEffects,
+	type WebcamHealthMetrics,
+	type WebcamPreviewMode,
 	type WebcamRegion,
+	type WebcamSessionMetadata,
 	type ZoomDepth,
 	type ZoomFocus,
 	type ZoomMode,
@@ -162,6 +168,7 @@ import {
 import { composeCropRegions, deriveLegacyCaptureCorrectionCrop } from "./videoPlayback/layoutUtils";
 import { resolveZoomRegionFocus } from "./videoPlayback/smartZoomController";
 import { findDominantRegion } from "./videoPlayback/zoomRegionUtils";
+import { applyWebcamStylePreset, normalizeWebcamEffects } from "./webcamEffects";
 import { normalizeWebcamRegion } from "./webcamRegionUtils";
 
 const LOOP_CURSOR_END_WINDOW_MS = 670;
@@ -175,6 +182,8 @@ type EditorHistorySnapshot = {
 	audioRegions: AudioRegion[];
 	cameraLayouts: CameraLayoutRegion[];
 	webcamRegion: WebcamRegion;
+	webcamEffects: WebcamEffects;
+	webcamPreviewMode: WebcamPreviewMode;
 	showWebcam: boolean;
 	mirrorWebcam: boolean;
 	cameraSizeDuringZoom: number;
@@ -228,9 +237,18 @@ export default function VideoEditor() {
 	// Users can re-apply a preset to bring back their preferred settings.
 	const initialEditorPreferences = useMemo(() => {
 		const stored = editorPreferencesService.load();
+		const recommendedWebcamDefaults = getRecommendedWebcamDefaults(
+			DEFAULT_EDITOR_PREFERENCES.aspectRatio,
+		);
 		return {
 			...DEFAULT_EDITOR_PREFERENCES,
+			webcamRegion: recommendedWebcamDefaults.region,
+			webcamEffects: recommendedWebcamDefaults.effects,
+			showWebcam: recommendedWebcamDefaults.showWebcam,
+			mirrorWebcam: recommendedWebcamDefaults.mirrorWebcam,
+			cameraSizeDuringZoom: recommendedWebcamDefaults.cameraSizeDuringZoom,
 			previewQuality: stored.previewQuality,
+			webcamPreviewMode: stored.webcamPreviewMode,
 			workspaceLayout: stored.workspaceLayout,
 			customAspectWidth: stored.customAspectWidth,
 			customAspectHeight: stored.customAspectHeight,
@@ -267,6 +285,9 @@ export default function VideoEditor() {
 	const [showCursor, setShowCursor] = useState(initialEditorPreferences.showCursor);
 	const [previewQuality, setPreviewQuality] = useState<PreviewQuality>(
 		initialEditorPreferences.previewQuality,
+	);
+	const [webcamPreviewMode, setWebcamPreviewMode] = useState<WebcamPreviewMode>(
+		initialEditorPreferences.webcamPreviewMode ?? DEFAULT_WEBCAM_PREVIEW_MODE,
 	);
 	const [loopCursor, setLoopCursor] = useState(initialEditorPreferences.loopCursor);
 	const [cursorSize, setCursorSize] = useState(initialEditorPreferences.cursorSize);
@@ -391,6 +412,14 @@ export default function VideoEditor() {
 	});
 	const [showWebcam, setShowWebcam] = useState(initialEditorPreferences.showWebcam);
 	const [mirrorWebcam, setMirrorWebcam] = useState(initialEditorPreferences.mirrorWebcam);
+	const [webcamEffects, setWebcamEffects] = useState<WebcamEffects>({
+		...initialEditorPreferences.webcamEffects,
+		portraitOffset: { ...initialEditorPreferences.webcamEffects.portraitOffset },
+	});
+	const [webcamHealthMetrics, setWebcamHealthMetrics] = useState<WebcamHealthMetrics | null>(null);
+	const [webcamSessionMetadata, setWebcamSessionMetadata] = useState<WebcamSessionMetadata | null>(
+		null,
+	);
 	const [cameraSizeDuringZoom, setCameraSizeDuringZoom] = useState(
 		initialEditorPreferences.cameraSizeDuringZoom,
 	);
@@ -508,12 +537,19 @@ export default function VideoEditor() {
 	}, [videoPath]);
 
 	const clearWebcamState = useCallback(() => {
+		const recommendedWebcamDefaults = getRecommendedWebcamDefaults(
+			initialEditorPreferences.aspectRatio,
+		);
 		setWebcamPath(null);
 		setMissingWebcamPath(null);
-		setWebcamRegion(getRecommendedWebcamRegion(initialEditorPreferences.aspectRatio));
-		setShowWebcam(true);
-		setMirrorWebcam(false);
-		setCameraSizeDuringZoom(DEFAULT_CAMERA_SIZE_DURING_ZOOM);
+		setWebcamSessionMetadata(null);
+		setWebcamRegion(recommendedWebcamDefaults.region);
+		setWebcamEffects(recommendedWebcamDefaults.effects);
+		setWebcamHealthMetrics(null);
+		setWebcamPreviewMode(DEFAULT_WEBCAM_PREVIEW_MODE);
+		setShowWebcam(recommendedWebcamDefaults.showWebcam);
+		setMirrorWebcam(recommendedWebcamDefaults.mirrorWebcam);
+		setCameraSizeDuringZoom(recommendedWebcamDefaults.cameraSizeDuringZoom);
 		setCameraLayouts([]);
 		setSelectedCameraLayoutId(null);
 		setWebcamSelected(false);
@@ -612,6 +648,8 @@ export default function VideoEditor() {
 				cropRegion,
 				aspectRatio,
 				webcamRegion,
+				webcamEffects,
+				webcamPreviewMode,
 				showWebcam,
 				mirrorWebcam,
 				cameraSizeDuringZoom,
@@ -671,6 +709,8 @@ export default function VideoEditor() {
 			cropRegion,
 			aspectRatio,
 			webcamRegion,
+			webcamEffects,
+			webcamPreviewMode,
 			showWebcam,
 			mirrorWebcam,
 			cameraSizeDuringZoom,
@@ -738,6 +778,12 @@ export default function VideoEditor() {
 			setShowWebcam(controls.showWebcam);
 			setMirrorWebcam(controls.mirrorWebcam);
 			setWebcamRegion({ ...controls.webcamRegion });
+			setWebcamEffects({
+				...controls.webcamEffects,
+				portraitOffset: { ...controls.webcamEffects.portraitOffset },
+			});
+			setWebcamHealthMetrics(null);
+			setWebcamPreviewMode(controls.webcamPreviewMode ?? DEFAULT_WEBCAM_PREVIEW_MODE);
 			setCameraSizeDuringZoom(controls.cameraSizeDuringZoom);
 			setCaptionSettings(controls.captionSettings);
 			setCaptionGenerationOptions(controls.captionGenerationOptions);
@@ -824,6 +870,8 @@ export default function VideoEditor() {
 			audioRegions: JSON.parse(JSON.stringify(snapshot.audioRegions)),
 			cameraLayouts: JSON.parse(JSON.stringify(snapshot.cameraLayouts)),
 			webcamRegion: JSON.parse(JSON.stringify(snapshot.webcamRegion)),
+			webcamEffects: JSON.parse(JSON.stringify(snapshot.webcamEffects)),
+			webcamPreviewMode: snapshot.webcamPreviewMode,
 			showWebcam: snapshot.showWebcam,
 			mirrorWebcam: snapshot.mirrorWebcam,
 			cameraSizeDuringZoom: snapshot.cameraSizeDuringZoom,
@@ -852,6 +900,8 @@ export default function VideoEditor() {
 			audioRegions,
 			cameraLayouts,
 			webcamRegion,
+			webcamEffects,
+			webcamPreviewMode,
 			showWebcam,
 			mirrorWebcam,
 			cameraSizeDuringZoom,
@@ -875,6 +925,8 @@ export default function VideoEditor() {
 		audioRegions,
 		cameraLayouts,
 		webcamRegion,
+		webcamEffects,
+		webcamPreviewMode,
 		showWebcam,
 		mirrorWebcam,
 		cameraSizeDuringZoom,
@@ -902,6 +954,8 @@ export default function VideoEditor() {
 			setAudioRegions(cloned.audioRegions);
 			setCameraLayouts(cloned.cameraLayouts);
 			setWebcamRegion(cloned.webcamRegion);
+			setWebcamEffects(cloned.webcamEffects);
+			setWebcamPreviewMode(cloned.webcamPreviewMode);
 			setShowWebcam(cloned.showWebcam);
 			setMirrorWebcam(cloned.mirrorWebcam);
 			setCameraSizeDuringZoom(cloned.cameraSizeDuringZoom);
@@ -983,6 +1037,8 @@ export default function VideoEditor() {
 			const project = candidate;
 			const sourcePath = fromFileUrl(project.videoPath);
 			const normalizedEditor = normalizeProjectEditor(project.editor);
+			const normalizedWebcamSessionMetadata =
+				normalizeWebcamSessionMetadata(project.webcamSessionMetadata) ?? null;
 
 			try {
 				videoPlaybackRef.current?.pause();
@@ -998,6 +1054,7 @@ export default function VideoEditor() {
 			setVideoPath(toFileUrl(sourcePath));
 			dispatchSession({ type: "set-current-project-path", path: path ?? null });
 			applyEditorControls(normalizedEditor, { includeTimeline: true });
+			setWebcamSessionMetadata(normalizedWebcamSessionMetadata);
 			setWebcamPath(normalizedEditor.webcamPath ?? null);
 			await syncWebcamAvailability(normalizedEditor.webcamPath ?? null, { quiet: false });
 
@@ -1049,6 +1106,7 @@ export default function VideoEditor() {
 				snapshot: editorPersistenceService.buildProjectArtifacts({
 					sourcePath,
 					editor: normalizedEditor,
+					webcamSessionMetadata: normalizedWebcamSessionMetadata ?? undefined,
 				}).projectSnapshot,
 			});
 			return true;
@@ -1122,6 +1180,8 @@ export default function VideoEditor() {
 				aspectRatio,
 				webcamPath: webcamPath ?? undefined,
 				webcamRegion,
+				webcamEffects,
+				webcamPreviewMode,
 				showWebcam,
 				mirrorWebcam,
 				cameraSizeDuringZoom,
@@ -1133,6 +1193,7 @@ export default function VideoEditor() {
 				videoExportSettings,
 				gifExportSettings,
 			},
+			webcamSessionMetadata: webcamSessionMetadata ?? undefined,
 		}).projectSnapshot;
 	}, [
 		videoPath,
@@ -1195,6 +1256,7 @@ export default function VideoEditor() {
 		aspectRatio,
 		webcamPath,
 		webcamRegion,
+		webcamEffects,
 		showWebcam,
 		mirrorWebcam,
 		cameraSizeDuringZoom,
@@ -1205,6 +1267,8 @@ export default function VideoEditor() {
 		exportFormat,
 		videoExportSettings,
 		gifExportSettings,
+		webcamSessionMetadata,
+		webcamPreviewMode,
 	]);
 
 	useEffect(() => {
@@ -1274,6 +1338,9 @@ export default function VideoEditor() {
 							const sourcePath = fromFileUrl(finalized.path);
 							setVideoSourcePath(sourcePath);
 							setVideoPath(toFileUrl(sourcePath));
+							setWebcamSessionMetadata(
+								normalizeWebcamSessionMetadata(finalized.webcamSessionMetadata) ?? null,
+							);
 							dispatchSession({ type: "set-current-project-path", path: null });
 							dispatchSession({ type: "set-last-saved-snapshot", snapshot: null });
 							// Reset every editor control (and timeline data) to defaults so
@@ -1297,6 +1364,7 @@ export default function VideoEditor() {
 							const sourcePath = fromFileUrl(result.path);
 							setVideoSourcePath(sourcePath);
 							setVideoPath(toFileUrl(sourcePath));
+							setWebcamSessionMetadata(null);
 							dispatchSession({ type: "set-current-project-path", path: null });
 							dispatchSession({ type: "set-last-saved-snapshot", snapshot: null });
 							applyEditorControls(normalizeProjectEditor({}), { includeTimeline: true });
@@ -1319,6 +1387,10 @@ export default function VideoEditor() {
 
 				const postRecordingResult = await window.electronAPI.getPostRecordingContext();
 				if (postRecordingResult.success) {
+					setWebcamSessionMetadata(
+						normalizeWebcamSessionMetadata(postRecordingResult.context?.webcamSessionMetadata) ??
+							null,
+					);
 					dispatchSession({
 						type: "set-post-recording-context",
 						context: postRecordingResult.context ?? null,
@@ -1381,10 +1453,11 @@ export default function VideoEditor() {
 	useEffect(() => {
 		editorPreferencesService.scheduleSave({
 			previewQuality,
+			webcamPreviewMode,
 			workspaceLayout,
 			presets: customPresets,
 		});
-	}, [previewQuality, workspaceLayout, customPresets]);
+	}, [previewQuality, webcamPreviewMode, workspaceLayout, customPresets]);
 
 	useEffect(() => {
 		return () => {
@@ -1466,6 +1539,8 @@ export default function VideoEditor() {
 					aspectRatio,
 					webcamPath: webcamPath ?? undefined,
 					webcamRegion,
+					webcamEffects,
+					webcamPreviewMode,
 					showWebcam,
 					mirrorWebcam,
 					cameraSizeDuringZoom,
@@ -1477,6 +1552,7 @@ export default function VideoEditor() {
 					videoExportSettings,
 					gifExportSettings,
 				},
+				webcamSessionMetadata: webcamSessionMetadata ?? undefined,
 			});
 			const result = await window.electronAPI.saveProjectFile(
 				projectArtifacts.projectData,
@@ -1565,6 +1641,8 @@ export default function VideoEditor() {
 			aspectRatio,
 			webcamPath,
 			webcamRegion,
+			webcamEffects,
+			webcamPreviewMode,
 			showWebcam,
 			mirrorWebcam,
 			cameraSizeDuringZoom,
@@ -1576,6 +1654,7 @@ export default function VideoEditor() {
 			videoExportSettings,
 			gifExportSettings,
 			deviceMockup,
+			webcamSessionMetadata,
 		],
 	);
 
@@ -2799,11 +2878,42 @@ export default function VideoEditor() {
 		[updateSelectedCameraLayoutRegionOverride],
 	);
 
+	const handleWebcamEffectsChange = useCallback((updates: Partial<WebcamEffects>) => {
+		setWebcamEffects((prev) =>
+			normalizeWebcamEffects({
+				...prev,
+				...updates,
+				presetId: updates.presetId ?? "custom",
+				portraitOffset: updates.portraitOffset
+					? { ...prev.portraitOffset, ...updates.portraitOffset }
+					: prev.portraitOffset,
+			}),
+		);
+	}, []);
+
+	const handleApplyWebcamPreset = useCallback(
+		(presetId: WebcamEffects["presetId"]) => {
+			setWebcamRegion((prevRegion) => {
+				const applied = applyWebcamStylePreset({
+					presetId,
+					baseRegion: prevRegion,
+					baseEffects: webcamEffects,
+				});
+				setWebcamEffects(applied.effects);
+				return normalizeWebcamRegion(applied.region);
+			});
+		},
+		[webcamEffects],
+	);
+
 	const handleResetRecommendedWebcam = useCallback(() => {
-		setWebcamRegion(getRecommendedWebcamRegion(aspectRatio));
-		setShowWebcam(true);
-		setMirrorWebcam(false);
-		setCameraSizeDuringZoom(DEFAULT_CAMERA_SIZE_DURING_ZOOM);
+		const recommendedWebcamDefaults = getRecommendedWebcamDefaults(aspectRatio);
+		setWebcamRegion(recommendedWebcamDefaults.region);
+		setWebcamEffects(recommendedWebcamDefaults.effects);
+		setWebcamHealthMetrics(DEFAULT_WEBCAM_HEALTH_METRICS);
+		setShowWebcam(recommendedWebcamDefaults.showWebcam);
+		setMirrorWebcam(recommendedWebcamDefaults.mirrorWebcam);
+		setCameraSizeDuringZoom(recommendedWebcamDefaults.cameraSizeDuringZoom);
 	}, [aspectRatio]);
 
 	const handleResetSelectedCameraLayout = useCallback(() => {
@@ -3755,6 +3865,7 @@ export default function VideoEditor() {
 						previewHeight,
 						webcamPath: resolvedWebcamPath,
 						webcamRegion,
+						webcamEffects,
 						showWebcam,
 						mirrorWebcam,
 						cameraSizeDuringZoom,
@@ -3910,6 +4021,7 @@ export default function VideoEditor() {
 						previewHeight,
 						webcamPath: resolvedWebcamPath,
 						webcamRegion,
+						webcamEffects,
 						showWebcam,
 						mirrorWebcam,
 						cameraSizeDuringZoom,
@@ -4079,6 +4191,7 @@ export default function VideoEditor() {
 			showExportSuccessToast,
 			resolvedWebcamPath,
 			webcamRegion,
+			webcamEffects,
 			showWebcam,
 			mirrorWebcam,
 			cameraSizeDuringZoom,
@@ -4753,10 +4866,13 @@ export default function VideoEditor() {
 											cameraSpring={cameraSpring}
 											webcamPath={resolvedWebcamPath}
 											webcamRegion={webcamRegion}
+											webcamEffects={webcamEffects}
+											webcamPreviewMode={webcamPreviewMode}
 											showWebcam={showWebcam}
 											mirrorWebcam={mirrorWebcam}
 											cameraSizeDuringZoom={cameraSizeDuringZoom}
 											cameraLayouts={cameraLayouts}
+											onWebcamHealthMetricsChange={setWebcamHealthMetrics}
 											onWebcamPositionChange={handleWebcamPositionChange}
 											onWebcamSizeChange={handleWebcamSizeChange}
 											webcamSelected={webcamSelected}
@@ -4901,7 +5017,13 @@ export default function VideoEditor() {
 									cameraSizeDuringZoom={cameraSizeDuringZoom}
 									onShowWebcamChange={setShowWebcam}
 									webcamRegion={webcamRegion}
+									webcamEffects={webcamEffects}
+									webcamPreviewMode={webcamPreviewMode}
+									webcamHealthMetrics={webcamHealthMetrics}
+									onWebcamPreviewModeChange={setWebcamPreviewMode}
 									onWebcamRegionChange={handleWebcamRegionChange}
+									onWebcamEffectsChange={handleWebcamEffectsChange}
+									onApplyWebcamPreset={handleApplyWebcamPreset}
 									onResetRecommendedWebcam={handleResetRecommendedWebcam}
 									onResetSelectedCameraLayout={handleResetSelectedCameraLayout}
 									onRelinkMissingWebcam={() => void handleRelinkMissingWebcam()}

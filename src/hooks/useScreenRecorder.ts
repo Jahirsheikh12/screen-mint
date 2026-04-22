@@ -1,7 +1,10 @@
 import { fixWebmDuration } from "@fix-webm-duration/fix";
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { CameraSessionState } from "@/components/video-editor/types";
+import {
+	type CameraSessionState,
+	WEBCAM_RENDER_PIPELINE_VERSION,
+} from "@/components/video-editor/types";
 import { loadCameraPreferences, saveCameraPreferences } from "@/hooks/cameraPreferences";
 import { playAppAudioCue, preloadAppAudioCues } from "@/lib/appAudio";
 import { resolveCaptureSourceAccessState } from "@/lib/recording/capturePermissionState";
@@ -23,6 +26,7 @@ import {
 	buildWebcamConstraintCandidates,
 	getWebcamRecorderBitrate,
 	resolveWebcamCaptureProfile,
+	selectSupportedWebcamRecorderMimeType,
 } from "@/lib/recording/webcamCapture";
 
 const DEFAULT_WIDTH = 1920;
@@ -75,6 +79,9 @@ type UseScreenRecorderReturn = {
 	setCameraDeviceId: (deviceId?: string) => void;
 	setCameraPreviewVisible: (visible: boolean) => void;
 	setCameraPreviewMirrored: (mirrored: boolean) => void;
+	setCameraPreviewSize: (size: CameraSessionState["previewSize"]) => void;
+	setCameraPreviewCorner: (corner: CameraSessionState["previewCorner"]) => void;
+	setCameraPreviewShape: (shape: CameraSessionState["previewShape"]) => void;
 	cameraPreviewStream: MediaStream | null;
 	recordingBusy: boolean;
 	sessionState: RecordingSessionState;
@@ -450,6 +457,21 @@ export function useScreenRecorder(
 		setCameraSession((prev) => ({ ...prev, previewMirrored: mirrored }));
 	}, []);
 
+	const setCameraPreviewSize = useCallback((previewSize: CameraSessionState["previewSize"]) => {
+		setCameraSession((prev) => ({ ...prev, previewSize }));
+	}, []);
+
+	const setCameraPreviewCorner = useCallback(
+		(previewCorner: CameraSessionState["previewCorner"]) => {
+			setCameraSession((prev) => ({ ...prev, previewCorner }));
+		},
+		[],
+	);
+
+	const setCameraPreviewShape = useCallback((previewShape: CameraSessionState["previewShape"]) => {
+		setCameraSession((prev) => ({ ...prev, previewShape }));
+	}, []);
+
 	const cleanupCapturedMedia = useCallback(() => {
 		if (stream.current) {
 			stream.current.getTracks().forEach((track) => track.stop());
@@ -526,9 +548,10 @@ export function useScreenRecorder(
 			const camStream = await ensureWebcamStream();
 			webcamChunks.current = [];
 
-			const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
-				? "video/webm;codecs=vp9"
-				: "video/webm";
+			const mimeType = selectSupportedWebcamRecorderMimeType(
+				(type) => MediaRecorder.isTypeSupported(type),
+				resolvedRecordingProfile.preferHardwareEncoding,
+			);
 			const trackSettings = camStream.getVideoTracks()[0]?.getSettings();
 
 			const recorder = new MediaRecorder(camStream, {
@@ -551,7 +574,7 @@ export function useScreenRecorder(
 			setCameraPreviewStream(null);
 			toast.error("Unable to access the selected camera. Recording will continue without webcam.");
 		}
-	}, [ensureWebcamStream]);
+	}, [ensureWebcamStream, resolvedRecordingProfile.preferHardwareEncoding]);
 
 	const stopWebcamRecording = useCallback(async () => {
 		webcamStopInFlight.current = true;
@@ -1371,6 +1394,16 @@ export function useScreenRecorder(
 				const selectedArea =
 					sessionRef.current.captureMode === "area" ? sessionRef.current.selectedArea : null;
 				const webcamSegment = await stopWebcamRecordingRef.current();
+				const webcamSessionMetadata: PostRecordingContext["webcamSessionMetadata"] =
+					cameraSession.enabled && webcamSegment
+						? {
+								sessionCaptureProfile: cameraSession.resolvedCaptureProfile ?? null,
+								captureProfile: cameraSession.resolvedCaptureProfile ?? null,
+								segmentProfiles: [cameraSession.resolvedCaptureProfile ?? null],
+								segmentCompatibilityMode: "copy" as const,
+								renderPipelineVersion: WEBCAM_RENDER_PIPELINE_VERSION,
+							}
+						: null;
 
 				// Retake path: keep the old behavior (fully synchronous finalize) because we
 				// immediately start a new recording and don't open the editor.
@@ -1380,6 +1413,7 @@ export function useScreenRecorder(
 						webcamSegments: webcamSegment ? [webcamSegment] : [],
 						microphoneSegments: microphoneSegmentsRef.current,
 						selectedArea,
+						webcamSessionMetadata,
 					});
 					if (!finalized.success || !finalized.path) {
 						throw new Error(finalized.error ?? finalized.message ?? "Failed to finalize session");
@@ -1392,6 +1426,7 @@ export function useScreenRecorder(
 						autoCreateZooms: Boolean(recordingSettings?.autoCreateZooms),
 						recordingPath: finalized.path,
 						webcamPath: webcamSegment?.path ?? null,
+						webcamSessionMetadata: finalized.webcamSessionMetadata ?? webcamSessionMetadata ?? null,
 						projectPath: null,
 					} satisfies PostRecordingContext);
 					pendingActionRef.current = null;
@@ -1409,6 +1444,7 @@ export function useScreenRecorder(
 					webcamSegments: webcamSegment ? [webcamSegment] : [],
 					microphoneSegments: microphoneSegmentsRef.current,
 					selectedArea,
+					webcamSessionMetadata,
 				});
 
 				resetSegmentBuffers();
@@ -1421,6 +1457,7 @@ export function useScreenRecorder(
 					autoCreateZooms: Boolean(recordingSettings?.autoCreateZooms),
 					recordingPath: null,
 					webcamPath: webcamSegment?.path ?? null,
+					webcamSessionMetadata,
 					projectPath: null,
 				} satisfies PostRecordingContext);
 				pendingActionRef.current = null;
@@ -1437,6 +1474,8 @@ export function useScreenRecorder(
 			}
 		},
 		[
+			cameraSession.enabled,
+			cameraSession.resolvedCaptureProfile,
 			recordingSettings?.afterRecordingAction,
 			recordingSettings?.autoCreateZooms,
 			recordingSettings?.openQuickShare,
@@ -1664,6 +1703,9 @@ export function useScreenRecorder(
 		setCameraDeviceId,
 		setCameraPreviewVisible,
 		setCameraPreviewMirrored,
+		setCameraPreviewSize,
+		setCameraPreviewCorner,
+		setCameraPreviewShape,
 		cameraPreviewStream,
 		recordingBusy: starting || finalizingRecordingRef.current || browserSessionStopPending.current,
 		sessionState,

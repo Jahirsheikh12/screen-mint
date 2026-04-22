@@ -16,6 +16,7 @@ import type {
 	KeyboardShortcutTheme,
 	SpeedRegion,
 	TrimRegion,
+	WebcamEffects,
 	WebcamRegion,
 	ZoomRegion,
 } from "@/components/video-editor/types";
@@ -108,6 +109,7 @@ interface GifExporterConfig {
 	previewHeight?: number;
 	webcamPath?: string | null;
 	webcamRegion?: WebcamRegion;
+	webcamEffects?: WebcamEffects;
 	showWebcam?: boolean;
 	mirrorWebcam?: boolean;
 	cameraSizeDuringZoom?: number;
@@ -271,6 +273,7 @@ export class GifExporter {
 				cameraSpring: this.config.cameraSpring,
 				webcamPath: this.config.webcamPath,
 				webcamRegion: this.config.webcamRegion,
+				webcamEffects: this.config.webcamEffects,
 				showWebcam: this.config.showWebcam,
 				mirrorWebcam: this.config.mirrorWebcam,
 				cameraSizeDuringZoom: this.config.cameraSizeDuringZoom,

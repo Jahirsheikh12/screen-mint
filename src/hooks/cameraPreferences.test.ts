@@ -52,6 +52,9 @@ describe("cameraPreferences", () => {
 					deviceId: "camera-1",
 					previewVisible: false,
 					previewMirrored: false,
+					previewSize: "large",
+					previewCorner: "bottom-left",
+					previewShape: "circle",
 				}),
 			}),
 		);
@@ -61,6 +64,9 @@ describe("cameraPreferences", () => {
 			deviceId: "camera-1",
 			previewVisible: false,
 			previewMirrored: false,
+			previewSize: "large",
+			previewCorner: "bottom-left",
+			previewShape: "circle",
 		});
 	});
 
@@ -71,6 +77,7 @@ describe("cameraPreferences", () => {
 			enabled: true,
 			deviceId: "camera-2",
 			previewVisible: false,
+			previewSize: "small",
 		});
 
 		expect(loadCameraPreferences()).toEqual({
@@ -78,6 +85,9 @@ describe("cameraPreferences", () => {
 			deviceId: "camera-2",
 			previewVisible: false,
 			previewMirrored: true,
+			previewSize: "small",
+			previewCorner: "top-right",
+			previewShape: "rounded-rect",
 		});
 	});
 });

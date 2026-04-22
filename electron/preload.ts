@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
+import type { WebcamSessionMetadata } from "../src/components/video-editor/types";
 import type { SelectedArea } from "../src/lib/recording/session";
 import type { UpdaterState } from "../src/lib/updater/types";
 
@@ -94,6 +95,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		webcamSegments?: Array<{ path: string; durationMs: number }>;
 		microphoneSegments?: Array<{ path: string; durationMs: number }>;
 		selectedArea?: unknown;
+		webcamSessionMetadata?: WebcamSessionMetadata | null;
 	}) => {
 		return ipcRenderer.invoke("finalize-recording-session", payload);
 	},
@@ -102,6 +104,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		webcamSegments?: Array<{ path: string; durationMs: number }>;
 		microphoneSegments?: Array<{ path: string; durationMs: number }>;
 		selectedArea?: unknown;
+		webcamSessionMetadata?: WebcamSessionMetadata | null;
 	}) => {
 		return ipcRenderer.invoke("trigger-finalize-recording-session", payload);
 	},
@@ -210,6 +213,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	},
 	openAudioFilePicker: () => {
 		return ipcRenderer.invoke("open-audio-file-picker");
+	},
+	openImageFilePicker: () => {
+		return ipcRenderer.invoke("open-image-file-picker");
 	},
 	setCurrentVideoPath: (path: string) => {
 		return ipcRenderer.invoke("set-current-video-path", path);

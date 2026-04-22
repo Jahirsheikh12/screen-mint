@@ -1,7 +1,12 @@
 import type { ExportQuality, GifSizePreset } from "@/lib/exporter";
 import { mapLegacyExportQualityToVideoSettings, mapLegacyGifSizePreset } from "@/lib/exporter";
 import { normalizeProjectEditor, type ProjectEditorState } from "./projectPersistence";
-import { DEFAULT_PREVIEW_QUALITY, type PreviewQuality } from "./types";
+import {
+	DEFAULT_PREVIEW_QUALITY,
+	DEFAULT_WEBCAM_PREVIEW_MODE,
+	type PreviewQuality,
+	type WebcamPreviewMode,
+} from "./types";
 
 type PersistedEditorControls = Pick<
 	ProjectEditorState,
@@ -56,6 +61,8 @@ type PersistedEditorControls = Pick<
 	| "cropRegion"
 	| "aspectRatio"
 	| "webcamRegion"
+	| "webcamEffects"
+	| "webcamPreviewMode"
 	| "showWebcam"
 	| "mirrorWebcam"
 	| "cameraSizeDuringZoom"
@@ -148,6 +155,8 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	cropRegion: DEFAULT_EDITOR_CONTROLS.cropRegion,
 	aspectRatio: DEFAULT_EDITOR_CONTROLS.aspectRatio,
 	webcamRegion: DEFAULT_EDITOR_CONTROLS.webcamRegion,
+	webcamEffects: DEFAULT_EDITOR_CONTROLS.webcamEffects,
+	webcamPreviewMode: DEFAULT_EDITOR_CONTROLS.webcamPreviewMode,
 	showWebcam: DEFAULT_EDITOR_CONTROLS.showWebcam,
 	mirrorWebcam: DEFAULT_EDITOR_CONTROLS.mirrorWebcam,
 	cameraSizeDuringZoom: DEFAULT_EDITOR_CONTROLS.cameraSizeDuringZoom,
@@ -234,6 +243,15 @@ function normalizePreviewQuality(value: unknown, fallback: PreviewQuality): Prev
 	return value === "low" || value === "medium" || value === "high" ? value : fallback;
 }
 
+function normalizeWebcamPreviewMode(
+	value: unknown,
+	fallback: WebcamPreviewMode,
+): WebcamPreviewMode {
+	return value === "performance" || value === "power-saving" || value === "exact"
+		? value
+		: fallback;
+}
+
 function normalizeEditorControls(
 	raw: Partial<EditorPreferences>,
 	fallback: EditorPreferences,
@@ -302,6 +320,8 @@ function normalizeEditorControls(
 		cropRegion: normalizeCropRegion(raw.cropRegion, fallback.cropRegion),
 		aspectRatio: candidateAspectRatio,
 		webcamRegion: raw.webcamRegion ?? fallback.webcamRegion,
+		webcamEffects: raw.webcamEffects ?? fallback.webcamEffects,
+		webcamPreviewMode: raw.webcamPreviewMode ?? fallback.webcamPreviewMode,
 		showWebcam: raw.showWebcam ?? fallback.showWebcam,
 		mirrorWebcam: raw.mirrorWebcam ?? fallback.mirrorWebcam,
 		cameraSizeDuringZoom: raw.cameraSizeDuringZoom ?? fallback.cameraSizeDuringZoom,
@@ -380,6 +400,11 @@ function normalizeEditorControls(
 		cropRegion: normalized.cropRegion,
 		aspectRatio: normalized.aspectRatio,
 		webcamRegion: normalized.webcamRegion,
+		webcamEffects: normalized.webcamEffects,
+		webcamPreviewMode: normalizeWebcamPreviewMode(
+			normalized.webcamPreviewMode,
+			fallback.webcamPreviewMode ?? DEFAULT_WEBCAM_PREVIEW_MODE,
+		),
 		showWebcam: normalized.showWebcam,
 		mirrorWebcam: normalized.mirrorWebcam,
 		cameraSizeDuringZoom: normalized.cameraSizeDuringZoom,

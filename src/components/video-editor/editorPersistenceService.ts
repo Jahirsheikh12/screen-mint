@@ -3,10 +3,12 @@ import {
 	normalizeProjectEditor,
 	type ProjectEditorState,
 } from "./projectPersistence";
+import type { WebcamSessionMetadata } from "./types";
 
 export interface BuildProjectArtifactsInput {
 	sourcePath: string;
 	editor: Partial<ProjectEditorState>;
+	webcamSessionMetadata?: WebcamSessionMetadata;
 }
 
 export interface ProjectArtifacts {
@@ -34,8 +36,12 @@ function buildFileNameBase(sourcePath: string): string {
 }
 
 export const editorPersistenceService: EditorPersistenceService = {
-	buildProjectArtifacts({ sourcePath, editor }) {
-		const projectData = createProjectData(sourcePath, normalizeProjectEditor(editor));
+	buildProjectArtifacts({ sourcePath, editor, webcamSessionMetadata }) {
+		const projectData = createProjectData(
+			sourcePath,
+			normalizeProjectEditor(editor),
+			webcamSessionMetadata,
+		);
 		return {
 			projectData,
 			projectSnapshot: JSON.stringify(projectData),

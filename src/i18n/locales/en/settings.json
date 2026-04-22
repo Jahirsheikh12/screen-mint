@@ -144,6 +144,7 @@
 		"remove": "Remove webcam",
 		"mirrorCamera": "Mirror camera",
 		"cameraDuringZoom": "Camera during zoom",
+		"cameraDuringZoomHint": "When screen zoom activates, the webcam smoothly shrinks; when zoom ends, it smoothly restores.",
 		"sameSize": "Same size",
 		"size": "Size",
 		"shape": "Shape",

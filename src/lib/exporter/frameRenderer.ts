@@ -1,6 +1,9 @@
 import { Application, BlurFilter, Container, Graphics, Sprite, Texture } from "pixi.js";
 import { MotionBlurFilter } from "pixi-filters/motion-blur";
-import { resolveWebcamRenderModel } from "@/components/video-editor/cameraLayouts";
+import {
+	createWebcamZoomMotionState,
+	type WebcamZoomMotionState,
+} from "@/components/video-editor/cameraLayouts";
 import {
 	applyOpacityToHex,
 	buildFrameShadowFilter,
@@ -24,10 +27,15 @@ import type {
 	KeyboardShortcutPosition,
 	KeyboardShortcutTheme,
 	SpeedRegion,
+	WebcamEffects,
 	WebcamRegion,
 	ZoomRegion,
 } from "@/components/video-editor/types";
-import { DEFAULT_CURSOR_SPRING } from "@/components/video-editor/types";
+import {
+	DEFAULT_CURSOR_SPRING,
+	DEFAULT_WEBCAM_EFFECTS,
+	DEFAULT_WEBCAM_REGION,
+} from "@/components/video-editor/types";
 import {
 	createPlaybackCameraState,
 	evaluatePlaybackCameraFrame,
@@ -54,6 +62,17 @@ import {
 	type MotionBlurState,
 	projectFrameRect,
 } from "@/components/video-editor/videoPlayback/zoomTransform";
+import {
+	createWebcamCompositionScratch,
+	drawResolvedWebcamComposition,
+} from "@/components/video-editor/webcamEffects";
+import { evaluateWebcamFrame } from "@/components/video-editor/webcamFrameEvaluation";
+import { resolveWebcamRenderSpec } from "@/components/video-editor/webcamRenderSpec";
+import {
+	createWebcamSegmentationProvider,
+	type WebcamSegmentationFrame,
+	type WebcamSegmentationProvider,
+} from "@/components/video-editor/webcamSegmentation";
 import { getAssetPath, getRenderableAssetUrl } from "@/lib/assetPath";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import { renderAnnotations, renderCaptions } from "./annotationRenderer";
@@ -122,6 +141,7 @@ interface FrameRenderConfig {
 	cameraSpring?: import("@/components/video-editor/types").CameraSpringSettings;
 	webcamPath?: string | null;
 	webcamRegion?: WebcamRegion;
+	webcamEffects?: WebcamEffects;
 	showWebcam?: boolean;
 	mirrorWebcam?: boolean;
 	cameraSizeDuringZoom?: number;
@@ -162,18 +182,26 @@ export class FrameRenderer {
 	private compositeCtx: CanvasRenderingContext2D | null = null;
 	private config: FrameRenderConfig;
 	private animationState: PlaybackCameraState;
+	private webcamMotionState: WebcamZoomMotionState;
+	private webcamLayoutMotionState: WebcamZoomMotionState;
 	private motionBlurState: MotionBlurState;
 	private layoutCache: FrameLayoutCache | null = null;
 	private currentVideoTime = 0;
 	private lastMotionVector = { x: 0, y: 0 };
 	private cursorOverlay: PixiCursorOverlay | null = null;
 	private webcamFrameProvider: StreamingVideoFrameProvider | null = null;
+	private webcamSegmentationProvider: WebcamSegmentationProvider | null = null;
 	private webcamSourceSize: { width: number; height: number } | null = null;
+	private webcamSegmentationCache = new Map<number, WebcamSegmentationFrame | null>();
 	private cursorSimulationPath: CursorSimulationPath | null = null;
+	private webcamImageCache = new Map<string, Promise<HTMLImageElement | null>>();
+	private webcamCompositionScratch = createWebcamCompositionScratch();
 
 	constructor(config: FrameRenderConfig) {
 		this.config = config;
 		this.animationState = createPlaybackCameraState();
+		this.webcamMotionState = createWebcamZoomMotionState(DEFAULT_WEBCAM_REGION);
+		this.webcamLayoutMotionState = createWebcamZoomMotionState(DEFAULT_WEBCAM_REGION);
 		this.motionBlurState = createMotionBlurState();
 	}
 
@@ -509,7 +537,7 @@ export class FrameRenderer {
 		return getRenderableAssetUrl(wallpaperAsset);
 	}
 
-	private drawWebcamFrame(
+	drawWebcamFrame(
 		ctx: CanvasRenderingContext2D,
 		frame: CanvasImageSource,
 		sourceCrop: { x: number; y: number; width: number; height: number } | null,
@@ -551,6 +579,69 @@ export class FrameRenderer {
 		ctx.scale(-1, 1);
 		drawFrame();
 		ctx.restore();
+	}
+
+	private async loadWebcamBackgroundImage(imagePath: string): Promise<HTMLImageElement | null> {
+		const cached = this.webcamImageCache.get(imagePath);
+		if (cached) {
+			return cached;
+		}
+
+		const pending = (async () => {
+			try {
+				const img = new Image();
+				const src = imagePath.startsWith("file://") ? imagePath : `file://${encodeURI(imagePath)}`;
+				await new Promise<void>((resolve, reject) => {
+					img.onload = () => resolve();
+					img.onerror = () => reject(new Error(`Failed to load ${src}`));
+					img.src = src;
+				});
+				return img;
+			} catch (error) {
+				console.warn("[FrameRenderer] Failed to load webcam background image:", error);
+				return null;
+			}
+		})();
+
+		this.webcamImageCache.set(imagePath, pending);
+		return pending;
+	}
+
+	private async ensureWebcamSegmentationProvider() {
+		if (this.webcamSegmentationProvider) {
+			return this.webcamSegmentationProvider;
+		}
+
+		this.webcamSegmentationProvider = await createWebcamSegmentationProvider();
+		return this.webcamSegmentationProvider;
+	}
+
+	private getWebcamSegmentationCacheBucket(timeMs: number) {
+		return Math.round(timeMs / (1000 / 15));
+	}
+
+	private async getCachedWebcamSegmentationFrame(
+		webcamFrame: VideoFrame,
+		timeMs: number,
+	): Promise<WebcamSegmentationFrame | null> {
+		const bucket = this.getWebcamSegmentationCacheBucket(timeMs);
+		if (this.webcamSegmentationCache.has(bucket)) {
+			return this.webcamSegmentationCache.get(bucket) ?? null;
+		}
+
+		const segmentationProvider = await this.ensureWebcamSegmentationProvider();
+		if (!segmentationProvider) {
+			this.webcamSegmentationCache.set(bucket, null);
+			return null;
+		}
+
+		const segmentationFrame = await segmentationProvider.segment(webcamFrame, timeMs, {
+			mode: "export",
+			workingMaxEdge: 512,
+			refinementMode: "sync",
+		});
+		this.webcamSegmentationCache.set(bucket, segmentationFrame ?? null);
+		return segmentationFrame ?? null;
 	}
 
 	async renderFrame(videoFrame: VideoFrame, timestamp: number): Promise<void> {
@@ -710,41 +801,88 @@ export class FrameRenderer {
 			const webcamFrame = await this.webcamFrameProvider.getFrameAt(timeMs);
 			if (webcamFrame) {
 				try {
-					const webcamModel = resolveWebcamRenderModel({
-						timeMs,
+					const webcamCompositionRect = {
+						x: 0,
+						y: 0,
+						width: this.config.width,
+						height: this.config.height,
+					};
+					const webcamContentRect = this.layoutCache?.maskRect ?? webcamCompositionRect;
+					const webcamEvaluation = evaluateWebcamFrame({
+						state: {
+							baseMotionState: this.webcamMotionState,
+							layoutMotionState: this.webcamLayoutMotionState,
+						},
+						playbackTimeMs: timeMs,
 						webcamRegion: this.config.webcamRegion,
 						showWebcam: this.config.showWebcam ?? true,
 						mirrorWebcam: this.config.mirrorWebcam,
 						cameraLayouts: this.config.cameraLayouts,
 						zoomRegions: this.config.zoomRegions,
+						cursorTelemetry: this.config.cursorTelemetry,
 						connectZooms: this.config.connectZooms,
 						cameraSizeDuringZoom: this.config.cameraSizeDuringZoom,
+						enableCursorAvoidance: this.config.webcamEffects?.subtleAvoidance,
+						compositionRect: webcamCompositionRect,
+						contentRect: webcamContentRect,
 						containerWidth: this.config.width,
 						containerHeight: this.config.height,
 						sourceSize: this.webcamSourceSize,
-						compositionRect: {
-							x: 0,
-							y: 0,
-							width: this.config.width,
-							height: this.config.height,
-						},
-						contentRect: this.layoutCache?.maskRect ?? {
-							x: 0,
-							y: 0,
-							width: this.config.width,
-							height: this.config.height,
-						},
+						effects: this.config.webcamEffects,
+						renderMode: "export",
+						sourceKey: this.config.webcamPath ?? "webcam-export",
+						shouldSmooth: true,
 					});
+					this.webcamMotionState = webcamEvaluation.baseMotionState;
+					this.webcamLayoutMotionState = webcamEvaluation.layoutMotionState;
+					const webcamModel = webcamEvaluation.renderSpec.renderModel;
 
-					if (webcamModel.mode !== "hidden" && webcamModel.opacity > 0) {
-						const { displayRect } = webcamModel;
+					if (webcamModel.opacity > 0) {
+						const requestedWebcamEffects = this.config.webcamEffects ?? DEFAULT_WEBCAM_EFFECTS;
+						let segmentationFrame = null;
+						let fallbackState =
+							"none" as import("@/components/video-editor/types").WebcamEffectFallbackState;
+						const exportReferenceSpec = webcamEvaluation.renderSpec;
+						if (exportReferenceSpec.segmentationRequired) {
+							try {
+								segmentationFrame = await this.getCachedWebcamSegmentationFrame(
+									webcamFrame,
+									timeMs,
+								);
+								if (!segmentationFrame?.mask) {
+									fallbackState = "segmentation-unavailable";
+								}
+							} catch (error) {
+								console.warn("[FrameRenderer] Webcam segmentation failed:", error);
+								this.webcamSegmentationProvider?.close();
+								this.webcamSegmentationProvider = null;
+								this.webcamSegmentationCache.clear();
+								fallbackState = "segmentation-unavailable";
+							}
+						}
+
+						const renderSpec = resolveWebcamRenderSpec({
+							timeMs,
+							webcamRegion: this.config.webcamRegion,
+							showWebcam: this.config.showWebcam ?? true,
+							resolvedRenderModel: webcamModel,
+							containerWidth: this.config.width,
+							containerHeight: this.config.height,
+							sourceSize: this.webcamSourceSize,
+							effects: requestedWebcamEffects,
+							renderMode: "export",
+							forcedFallbackState: fallbackState,
+							segmentationFrame,
+						});
+						const { displayRect } = renderSpec.renderModel;
+						const effectModel = renderSpec.compositionModel;
 						compositeCtx.save();
-						compositeCtx.globalAlpha = webcamModel.opacity;
+						compositeCtx.globalAlpha = renderSpec.renderModel.opacity;
 
-						if (webcamModel.mode !== "fullscreen" && webcamModel.shadowOpacity > 0) {
+						if (renderSpec.renderModel.mode !== "fullscreen" && webcamModel.shadowOpacity > 0) {
 							compositeCtx.save();
 							compositeCtx.beginPath();
-							if (webcamModel.clipShape === "circle") {
+							if (renderSpec.renderModel.clipShape === "circle") {
 								compositeCtx.ellipse(
 									displayRect.x + displayRect.width / 2,
 									displayRect.y + displayRect.height / 2,
@@ -760,20 +898,22 @@ export class FrameRenderer {
 									displayRect.y,
 									displayRect.width,
 									displayRect.height,
-									webcamModel.borderRadiusPx,
+									renderSpec.renderModel.borderRadiusPx,
 								);
 							}
-							compositeCtx.fillStyle = `rgba(0, 0, 0, ${webcamModel.shadowOpacity})`;
-							compositeCtx.shadowColor = `rgba(0, 0, 0, ${webcamModel.shadowOpacity})`;
-							compositeCtx.shadowBlur = webcamModel.shadowBlurPx;
+							compositeCtx.fillStyle = effectModel.shadowColor;
+							compositeCtx.shadowColor = effectModel.shadowColor;
+							compositeCtx.shadowBlur = effectModel.shadowBlurPx;
 							compositeCtx.shadowOffsetX = 0;
-							compositeCtx.shadowOffsetY = webcamModel.shadowOffsetYPx;
+							compositeCtx.shadowOffsetY = effectModel.shadowOffsetYPx;
+							compositeCtx.globalAlpha = effectModel.shadowOpacity;
 							compositeCtx.fill();
 							compositeCtx.restore();
+							compositeCtx.globalAlpha = renderSpec.renderModel.opacity;
 						}
 
 						compositeCtx.beginPath();
-						if (webcamModel.clipShape === "circle") {
+						if (renderSpec.renderModel.clipShape === "circle") {
 							compositeCtx.ellipse(
 								displayRect.x + displayRect.width / 2,
 								displayRect.y + displayRect.height / 2,
@@ -789,24 +929,26 @@ export class FrameRenderer {
 								displayRect.y,
 								displayRect.width,
 								displayRect.height,
-								webcamModel.borderRadiusPx,
+								renderSpec.renderModel.borderRadiusPx,
 							);
 						}
 						compositeCtx.clip();
-						this.drawWebcamFrame(
-							compositeCtx,
-							webcamFrame,
-							webcamModel.sourceCrop,
-							displayRect.x,
-							displayRect.y,
-							displayRect.width,
-							displayRect.height,
-							webcamModel.mirror,
-						);
+						const backgroundImage =
+							effectModel.backgroundMode === "image" && effectModel.backgroundImagePath
+								? await this.loadWebcamBackgroundImage(effectModel.backgroundImagePath)
+								: null;
+						drawResolvedWebcamComposition({
+							ctx: compositeCtx,
+							source: webcamFrame,
+							model: effectModel,
+							mirror: renderSpec.renderModel.mirror,
+							backgroundImage,
+							scratch: this.webcamCompositionScratch,
+						});
 
-						if (webcamModel.borderWidthPx > 0) {
-							compositeCtx.strokeStyle = webcamModel.region.borderColor;
-							compositeCtx.lineWidth = webcamModel.borderWidthPx;
+						if (renderSpec.renderModel.borderWidthPx > 0) {
+							compositeCtx.strokeStyle = renderSpec.renderModel.region.borderColor;
+							compositeCtx.lineWidth = renderSpec.renderModel.borderWidthPx;
 							compositeCtx.stroke();
 						}
 
@@ -1048,6 +1190,11 @@ export class FrameRenderer {
 			this.webcamFrameProvider.destroy();
 			this.webcamFrameProvider = null;
 		}
+		if (this.webcamSegmentationProvider) {
+			this.webcamSegmentationProvider.close();
+			this.webcamSegmentationProvider = null;
+		}
+		this.webcamSegmentationCache.clear();
 		this.webcamSourceSize = null;
 		this.shadowCanvas = null;
 		this.shadowCtx = null;

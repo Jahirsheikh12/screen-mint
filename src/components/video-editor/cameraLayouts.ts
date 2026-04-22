@@ -1,7 +1,15 @@
-import type { CameraLayoutMode, CameraLayoutRegion, WebcamRegion, ZoomRegion } from "./types";
-import { CAMERA_ZOOM_SCALE_DISABLED, ZOOM_DEPTH_SCALES } from "./types";
+import type {
+	CameraLayoutMode,
+	CameraLayoutRegion,
+	CursorTelemetryPoint,
+	WebcamMotionPreset,
+	WebcamRegion,
+	ZoomRegion,
+} from "./types";
+import { CAMERA_ZOOM_SCALE_DISABLED } from "./types";
 import { easeOutScreenStudio } from "./videoPlayback/mathUtils";
 import { findDominantRegion } from "./videoPlayback/zoomRegionUtils";
+import { smoothZoomValue } from "./videoPlayback/zoomTransform";
 import { getWebcamPixelRect, normalizeWebcamRegion } from "./webcamRegionUtils";
 
 export interface PixelRect {
@@ -16,13 +24,42 @@ interface WebcamSourceSize {
 	height: number;
 }
 
+const WEBCAM_MOTION_FIXED_STEP_MS = 1000 / 120;
+const WEBCAM_MOTION_MAX_SUBSTEPS = 12;
+const WEBCAM_MOTION_MAX_FRAME_DELTA_MS = 250;
+const WEBCAM_RESTORE_SETTLE_PROGRESS_EPSILON = 0.015;
+const WEBCAM_RESTORE_SETTLE_SCALE_EPSILON = 0.008;
+const WEBCAM_RESTORE_SETTLE_RECT_EPSILON_PX = 9;
+const WEBCAM_POST_ZOOM_RESTORE_WINDOW_MS = 220;
+
 export interface ResolvedCameraLayoutState {
 	mode: CameraLayoutMode;
 	region: WebcamRegion;
+	baseRegion: WebcamRegion;
 	mirror: boolean;
 	scale: number;
 	isZoomScaled: boolean;
 	activeLayoutId: string | null;
+	layoutProgress: number;
+	motionPreset: WebcamMotionPreset;
+}
+
+export interface ResolvedWebcamZoomMotion {
+	region: WebcamRegion;
+	scale: number;
+	isZoomScaled: boolean;
+	smoothedZoomProgress: number;
+	targetZoomProgress: number;
+	smoothedWebcamScale: number;
+}
+
+export interface WebcamZoomMotionState {
+	homeRegion: WebcamRegion;
+	activeRegion: WebcamRegion;
+	scale: number;
+	progress: number;
+	lastPlaybackTimeMs: number | null;
+	motionKey: string | null;
 }
 
 export interface ResolvedWebcamRenderModel extends ResolvedCameraLayoutState {
@@ -37,6 +74,13 @@ export interface ResolvedWebcamRenderModel extends ResolvedCameraLayoutState {
 	opacity: number;
 }
 
+export function resolveWebcamSourceCrop(
+	sourceSize: WebcamSourceSize | null | undefined,
+	displayRect: PixelRect,
+): PixelRect | null {
+	return getCoverCropRect(sourceSize, displayRect);
+}
+
 function clamp(value: number, min: number, max: number) {
 	return Math.min(max, Math.max(min, value));
 }
@@ -46,11 +90,90 @@ function clampPercent(value: number) {
 }
 
 function cloneWebcamRegion(region: WebcamRegion): WebcamRegion {
-	return normalizeWebcamRegion({
+	const clonedRegion = {
+		...region,
+		position: { ...region.position },
+		size: { ...region.size },
+	};
+
+	if (clonedRegion.anchor === "free") {
+		return clonedRegion;
+	}
+
+	return normalizeWebcamRegion(clonedRegion);
+}
+
+function normalizeWebcamRegionInRect(
+	region: WebcamRegion,
+	compositionRect: PixelRect,
+): WebcamRegion {
+	const normalizedRegion = normalizeWebcamRegion({
 		...region,
 		position: { ...region.position },
 		size: { ...region.size },
 	});
+
+	if (
+		normalizedRegion.anchor !== "free" ||
+		(normalizedRegion.shape !== "circle" && normalizedRegion.shape !== "square")
+	) {
+		return normalizedRegion;
+	}
+
+	const safeCompositionWidth = Math.max(1, compositionRect.width);
+	const safeCompositionHeight = Math.max(1, compositionRect.height);
+	const sidePx =
+		(normalizedRegion.size.width / 100) *
+		Math.max(1, Math.min(safeCompositionWidth, safeCompositionHeight));
+	const maxXPercent = (Math.max(0, safeCompositionWidth - sidePx) / safeCompositionWidth) * 100;
+	const maxYPercent = (Math.max(0, safeCompositionHeight - sidePx) / safeCompositionHeight) * 100;
+	const rawX = Number.isFinite(region.position.x) ? region.position.x : normalizedRegion.position.x;
+	const rawY = Number.isFinite(region.position.y) ? region.position.y : normalizedRegion.position.y;
+
+	return {
+		...normalizedRegion,
+		position: {
+			x: clamp(rawX, 0, maxXPercent),
+			y: clamp(rawY, 0, maxYPercent),
+		},
+	};
+}
+
+function clampWebcamMotionDeltaMs(deltaMs: number) {
+	if (!Number.isFinite(deltaMs) || deltaMs <= 0) {
+		return 0;
+	}
+
+	return Math.min(WEBCAM_MOTION_MAX_FRAME_DELTA_MS, deltaMs);
+}
+
+function getWebcamMotionSubstepDeltaMs(deltaMs: number) {
+	if (deltaMs <= 0) {
+		return [];
+	}
+
+	const stepCount = Math.max(
+		1,
+		Math.min(WEBCAM_MOTION_MAX_SUBSTEPS, Math.ceil(deltaMs / WEBCAM_MOTION_FIXED_STEP_MS)),
+	);
+	const stepDeltaMs = deltaMs / stepCount;
+	return Array.from({ length: stepCount }, () => stepDeltaMs);
+}
+
+function getWebcamRegionSignature(region: WebcamRegion) {
+	return [
+		region.anchor,
+		region.shape,
+		region.position.x.toFixed(3),
+		region.position.y.toFixed(3),
+		region.size.width.toFixed(3),
+		region.size.height.toFixed(3),
+		region.borderRadius.toFixed(3),
+		region.borderWidth.toFixed(3),
+		region.borderColor,
+		region.opacity.toFixed(4),
+		region.marginPct.toFixed(3),
+	].join(":");
 }
 
 function rectCenter(rect: PixelRect) {
@@ -67,6 +190,85 @@ function offsetRect(rect: PixelRect, offsetX: number, offsetY: number): PixelRec
 		width: rect.width,
 		height: rect.height,
 	};
+}
+
+function rectWidthToPercent(
+	shape: WebcamRegion["shape"],
+	widthPx: number,
+	compositionRect: PixelRect,
+) {
+	if (shape === "circle" || shape === "square") {
+		return (widthPx / Math.max(1, Math.min(compositionRect.width, compositionRect.height))) * 100;
+	}
+
+	return (widthPx / Math.max(1, compositionRect.width)) * 100;
+}
+
+function rectHeightToPercent(
+	shape: WebcamRegion["shape"],
+	heightPx: number,
+	compositionRect: PixelRect,
+) {
+	if (shape === "circle" || shape === "square") {
+		return (heightPx / Math.max(1, Math.min(compositionRect.width, compositionRect.height))) * 100;
+	}
+
+	return (heightPx / Math.max(1, compositionRect.height)) * 100;
+}
+
+function createFreeRegionFromPixelRect(
+	region: WebcamRegion,
+	rect: PixelRect,
+	compositionRect: PixelRect,
+): WebcamRegion {
+	const localRect = {
+		x: rect.x - compositionRect.x,
+		y: rect.y - compositionRect.y,
+		width: rect.width,
+		height: rect.height,
+	};
+	const size =
+		region.shape === "circle" || region.shape === "square"
+			? {
+					width: rectWidthToPercent(region.shape, localRect.width, compositionRect),
+					height: rectWidthToPercent(region.shape, localRect.width, compositionRect),
+				}
+			: {
+					width: rectWidthToPercent(region.shape, localRect.width, compositionRect),
+					height: rectHeightToPercent(region.shape, localRect.height, compositionRect),
+				};
+
+	return normalizeWebcamRegionInRect(
+		{
+			...region,
+			anchor: "free",
+			position: {
+				x: (localRect.x / Math.max(1, compositionRect.width)) * 100,
+				y: (localRect.y / Math.max(1, compositionRect.height)) * 100,
+			},
+			size,
+		},
+		compositionRect,
+	);
+}
+
+function getRectEdges(rect: PixelRect) {
+	return {
+		left: rect.x,
+		right: rect.x + rect.width,
+		top: rect.y,
+		bottom: rect.y + rect.height,
+	};
+}
+
+function hasEquivalentWebcamStyling(left: WebcamRegion, right: WebcamRegion, epsilon = 0.01) {
+	return (
+		left.shape === right.shape &&
+		Math.abs(left.borderRadius - right.borderRadius) <= epsilon &&
+		Math.abs(left.borderWidth - right.borderWidth) <= epsilon &&
+		left.borderColor === right.borderColor &&
+		Math.abs(left.opacity - right.opacity) <= 0.001
+	);
 }
 
 function getRectBounds(rect: PixelRect) {
@@ -119,6 +321,34 @@ function getWebcamPixelRectInRect(region: WebcamRegion, compositionRect: PixelRe
 	return offsetRect(localRect, compositionRect.x, compositionRect.y);
 }
 
+function areEquivalentRects(left: PixelRect, right: PixelRect, epsilon = 0.5) {
+	return (
+		Math.abs(left.x - right.x) <= epsilon &&
+		Math.abs(left.y - right.y) <= epsilon &&
+		Math.abs(left.width - right.width) <= epsilon &&
+		Math.abs(left.height - right.height) <= epsilon
+	);
+}
+
+function areEquivalentWebcamRegions(
+	left: WebcamRegion,
+	right: WebcamRegion,
+	compositionRect: PixelRect,
+	epsilon = 0.5,
+) {
+	const leftRect = getWebcamPixelRectInRect(left, compositionRect);
+	const rightRect = getWebcamPixelRectInRect(right, compositionRect);
+
+	return (
+		areEquivalentRects(leftRect, rightRect, epsilon) &&
+		left.shape === right.shape &&
+		Math.abs(left.borderRadius - right.borderRadius) <= 0.01 &&
+		Math.abs(left.borderWidth - right.borderWidth) <= 0.01 &&
+		left.borderColor === right.borderColor &&
+		Math.abs(left.opacity - right.opacity) <= 0.001
+	);
+}
+
 function createFreePositionRegion(
 	region: WebcamRegion,
 	xPx: number,
@@ -126,14 +356,34 @@ function createFreePositionRegion(
 	containerWidth: number,
 	containerHeight: number,
 ): WebcamRegion {
-	return normalizeWebcamRegion({
-		...region,
-		anchor: "free",
-		position: {
-			x: (xPx / containerWidth) * 100,
-			y: (yPx / containerHeight) * 100,
+	return normalizeWebcamRegionInRect(
+		{
+			...region,
+			anchor: "free",
+			position: {
+				x: (xPx / containerWidth) * 100,
+				y: (yPx / containerHeight) * 100,
+			},
 		},
-	});
+		{ x: 0, y: 0, width: containerWidth, height: containerHeight },
+	);
+}
+
+function convertRegionToFreePosition(
+	region: WebcamRegion,
+	compositionRect: PixelRect,
+): WebcamRegion {
+	const localRect = getWebcamPixelRect(region, compositionRect.width, compositionRect.height);
+	return createFreePositionRegion(
+		{
+			...region,
+			anchor: "free",
+		},
+		localRect.x,
+		localRect.y,
+		compositionRect.width,
+		compositionRect.height,
+	);
 }
 
 function createAnchoredRegion(region: WebcamRegion, anchor: WebcamRegion["anchor"]): WebcamRegion {
@@ -193,15 +443,16 @@ export function scaleWebcamRegion(region: WebcamRegion, scale: number): WebcamRe
 
 	const scaledWidth = clampPercent(region.size.width * scale);
 	const scaledHeight = clampPercent(region.size.height * scale);
-	const deltaX = (region.size.width - scaledWidth) / 2;
-	const deltaY = (region.size.height - scaledHeight) / 2;
 
 	return normalizeWebcamRegion({
 		...region,
-		position: {
-			x: clampPercent(region.position.x + deltaX),
-			y: clampPercent(region.position.y + deltaY),
-		},
+		position:
+			region.anchor === "free"
+				? {
+						x: clampPercent(region.position.x),
+						y: clampPercent(region.position.y),
+					}
+				: region.position,
 		size: {
 			width: scaledWidth,
 			height: scaledHeight,
@@ -307,26 +558,60 @@ function getCoverCropRect(
 	};
 }
 
-function getZoomAttentionRect(
-	region: ZoomRegion,
-	scale: number,
+function findCursorSampleAtTime(
+	cursorTelemetry: CursorTelemetryPoint[] | undefined,
+	timeMs: number,
+): CursorTelemetryPoint | null {
+	if (!cursorTelemetry?.length) {
+		return null;
+	}
+
+	let best: CursorTelemetryPoint | null = null;
+	for (const sample of cursorTelemetry) {
+		if (sample.timeMs > timeMs) {
+			break;
+		}
+		best = sample;
+	}
+
+	if (!best) {
+		best = cursorTelemetry[0] ?? null;
+	}
+
+	return best && Math.abs(best.timeMs - timeMs) <= 600 ? best : null;
+}
+
+function getCursorAttentionRect(
+	cursorTelemetry: CursorTelemetryPoint[] | undefined,
+	timeMs: number,
 	contentRect: PixelRect,
 	compositionRect: PixelRect,
-): PixelRect {
-	const visibleWidth = contentRect.width / Math.max(1, scale);
-	const visibleHeight = contentRect.height / Math.max(1, scale);
-	const centerX = contentRect.x + region.focus.cx * contentRect.width;
-	const centerY = contentRect.y + region.focus.cy * contentRect.height;
-	const padding = Math.min(contentRect.width, contentRect.height) * 0.08;
+): PixelRect | null {
+	const sample = findCursorSampleAtTime(cursorTelemetry, timeMs);
+	if (!sample) {
+		return null;
+	}
+
+	const baseSize = Math.min(contentRect.width, contentRect.height);
+	const intensity =
+		sample.cursorType === "text" ||
+		sample.interactionType === "click" ||
+		sample.interactionType === "mousedown"
+			? 0.2
+			: 0.14;
+	const width = Math.max(48, contentRect.width * intensity);
+	const height = Math.max(42, contentRect.height * (intensity * 0.85));
+	const centerX = contentRect.x + sample.cx * contentRect.width;
+	const centerY = contentRect.y + sample.cy * contentRect.height;
 
 	return inflateRectWithinBounds(
 		{
-			x: centerX - visibleWidth / 2,
-			y: centerY - visibleHeight / 2,
-			width: visibleWidth,
-			height: visibleHeight,
+			x: centerX - width / 2,
+			y: centerY - height / 2,
+			width,
+			height,
 		},
-		padding,
+		baseSize * 0.04,
 		compositionRect,
 	);
 }
@@ -384,20 +669,43 @@ function resolveZoomSafeRegion(params: {
 	attentionRect: PixelRect;
 	compositionRect: PixelRect;
 	preferredScale: number;
+	allowFullSizeFallback?: boolean;
 }): { region: WebcamRegion; scale: number } {
-	const { baseRegion, attentionRect, compositionRect, preferredScale } = params;
+	const {
+		baseRegion,
+		attentionRect,
+		compositionRect,
+		preferredScale,
+		allowFullSizeFallback = true,
+	} = params;
 	const baseRect = getWebcamPixelRectInRect(baseRegion, compositionRect);
 	const baseCenter = rectCenter(baseRect);
 	const containerDiagonal = Math.hypot(compositionRect.width, compositionRect.height) || 1;
 	const baseSafeArea = rectIntersectionArea(baseRect, attentionRect);
 	const desiredShrinkScale = clamp(preferredScale, 0.4, CAMERA_ZOOM_SCALE_DISABLED);
+	const scaleCandidateSource = allowFullSizeFallback
+		? [desiredShrinkScale, 0.9, 0.82, 0.72, 0.6, CAMERA_ZOOM_SCALE_DISABLED]
+		: [desiredShrinkScale, 0.9, 0.82, 0.72, 0.6];
 	const scaleCandidates = Array.from(
 		new Set(
-			[CAMERA_ZOOM_SCALE_DISABLED, desiredShrinkScale, 0.9, 0.82, 0.72, 0.6]
+			scaleCandidateSource
 				.filter((value) => value > 0 && value <= CAMERA_ZOOM_SCALE_DISABLED)
+				.filter(
+					(value) =>
+						value <= desiredShrinkScale + 0.0001 ||
+						(allowFullSizeFallback && value >= CAMERA_ZOOM_SCALE_DISABLED - 0.0001),
+				)
 				.map((value) => Math.round(value * 1000) / 1000),
 		),
-	).sort((left, right) => right - left);
+	).sort((left, right) => {
+		const leftIsFullSize = left >= CAMERA_ZOOM_SCALE_DISABLED - 0.0001;
+		const rightIsFullSize = right >= CAMERA_ZOOM_SCALE_DISABLED - 0.0001;
+		if (leftIsFullSize !== rightIsFullSize) {
+			return leftIsFullSize ? 1 : -1;
+		}
+
+		return right - left;
+	});
 
 	let bestChoice: { region: WebcamRegion; scale: number; score: number } | null = null;
 
@@ -444,45 +752,80 @@ function resolveZoomSafeRegion(params: {
 function resolveDefaultModeRegion(params: {
 	baseRegion: WebcamRegion;
 	zoomRegions: ZoomRegion[];
+	cursorTelemetry?: CursorTelemetryPoint[];
 	timeMs: number;
 	connectZooms: boolean;
 	cameraSizeDuringZoom: number;
+	enableCursorAvoidance?: boolean;
 	compositionRect: PixelRect;
 	contentRect: PixelRect;
 }) {
 	const {
 		baseRegion,
 		zoomRegions,
+		cursorTelemetry,
 		timeMs,
 		connectZooms,
 		cameraSizeDuringZoom,
+		enableCursorAvoidance = false,
 		compositionRect,
 		contentRect,
 	} = params;
 	const dominantRegion = findDominantRegion(zoomRegions, timeMs, { connectZooms });
 
 	if (!dominantRegion.region || dominantRegion.strength <= 0) {
+		if (enableCursorAvoidance) {
+			const cursorAttentionRect = getCursorAttentionRect(
+				cursorTelemetry,
+				timeMs,
+				contentRect,
+				compositionRect,
+			);
+			if (cursorAttentionRect) {
+				const subtleCursorSafeRegion = resolveZoomSafeRegion({
+					baseRegion,
+					attentionRect: cursorAttentionRect,
+					compositionRect,
+					preferredScale: Math.max(cameraSizeDuringZoom, 0.88),
+					allowFullSizeFallback: true,
+				});
+				return {
+					region: lerpWebcamRegion(
+						baseRegion,
+						subtleCursorSafeRegion.region,
+						easeOutScreenStudio(0.68),
+					),
+					scale: lerp(CAMERA_ZOOM_SCALE_DISABLED, subtleCursorSafeRegion.scale, 0.45),
+					isZoomScaled: subtleCursorSafeRegion.scale < CAMERA_ZOOM_SCALE_DISABLED,
+					targetZoomProgress: 0,
+				};
+			}
+		}
+
 		return {
 			region: cloneWebcamRegion(baseRegion),
 			scale: CAMERA_ZOOM_SCALE_DISABLED,
 			isZoomScaled: false,
+			targetZoomProgress: 0,
 		};
 	}
 
-	const zoomScale = dominantRegion.blendedScale ?? ZOOM_DEPTH_SCALES[dominantRegion.region.depth];
-	const attentionRect = getZoomAttentionRect(
-		dominantRegion.region,
-		zoomScale,
-		contentRect,
-		compositionRect,
-	);
-	const zoomSafeRegion = resolveZoomSafeRegion({
-		baseRegion,
-		attentionRect,
-		compositionRect,
-		preferredScale: cameraSizeDuringZoom,
-	});
-	const transitionProgress = clamp(dominantRegion.strength, 0, 1);
+	const zoomSafeRegion = {
+		region: scaleWebcamRegion(baseRegion, cameraSizeDuringZoom),
+		scale: clamp(cameraSizeDuringZoom, 0.4, CAMERA_ZOOM_SCALE_DISABLED),
+	};
+	const isPostZoomRestore = dominantRegion.region != null && timeMs > dominantRegion.region.endMs;
+	const transitionProgress = isPostZoomRestore
+		? clamp(1 - (timeMs - dominantRegion.region.endMs) / WEBCAM_POST_ZOOM_RESTORE_WINDOW_MS, 0, 1)
+		: clamp(dominantRegion.strength, 0, 1);
+	if (transitionProgress <= WEBCAM_RESTORE_SETTLE_PROGRESS_EPSILON) {
+		return {
+			region: cloneWebcamRegion(baseRegion),
+			scale: CAMERA_ZOOM_SCALE_DISABLED,
+			isZoomScaled: false,
+			targetZoomProgress: 0,
+		};
+	}
 	const interpolatedRegion = lerpWebcamRegion(
 		baseRegion,
 		zoomSafeRegion.region,
@@ -493,6 +836,397 @@ function resolveDefaultModeRegion(params: {
 		region: interpolatedRegion,
 		scale: lerp(CAMERA_ZOOM_SCALE_DISABLED, zoomSafeRegion.scale, transitionProgress),
 		isZoomScaled: zoomSafeRegion.scale < CAMERA_ZOOM_SCALE_DISABLED,
+		targetZoomProgress: transitionProgress,
+	};
+}
+
+function resolveWebcamMotionKey(params: {
+	baseRegion: WebcamRegion;
+	compositionRect: PixelRect;
+	contentRect: PixelRect;
+	cameraSizeDuringZoom: number;
+	enableCursorAvoidance: boolean;
+	connectZooms: boolean;
+}) {
+	const {
+		baseRegion,
+		compositionRect,
+		contentRect,
+		cameraSizeDuringZoom,
+		enableCursorAvoidance,
+		connectZooms,
+	} = params;
+
+	return [
+		getWebcamRegionSignature(baseRegion),
+		compositionRect.x.toFixed(3),
+		compositionRect.y.toFixed(3),
+		compositionRect.width.toFixed(3),
+		compositionRect.height.toFixed(3),
+		contentRect.x.toFixed(3),
+		contentRect.y.toFixed(3),
+		contentRect.width.toFixed(3),
+		contentRect.height.toFixed(3),
+		cameraSizeDuringZoom.toFixed(4),
+		enableCursorAvoidance ? "avoid" : "steady",
+		connectZooms ? "connected" : "split",
+	].join(":");
+}
+
+function smoothWebcamRegion(
+	currentRegion: WebcamRegion,
+	targetRegion: WebcamRegion,
+	compositionRect: PixelRect,
+	deltaSeconds: number,
+) {
+	if (areEquivalentWebcamRegions(currentRegion, targetRegion, compositionRect)) {
+		return cloneWebcamRegion(targetRegion);
+	}
+
+	if (targetRegion.anchor !== "free") {
+		const currentRect = getWebcamPixelRectInRect(currentRegion, compositionRect);
+		const targetRect = getWebcamPixelRectInRect(targetRegion, compositionRect);
+		const currentEdges = getRectEdges(currentRect);
+		const targetEdges = getRectEdges(targetRect);
+		const nextWidth = smoothZoomValue(currentRect.width, targetRect.width, deltaSeconds);
+		const nextHeight = smoothZoomValue(currentRect.height, targetRect.height, deltaSeconds);
+		const nextLeft = smoothZoomValue(currentEdges.left, targetEdges.left, deltaSeconds);
+		const nextRight = smoothZoomValue(currentEdges.right, targetEdges.right, deltaSeconds);
+		const nextTop = smoothZoomValue(currentEdges.top, targetEdges.top, deltaSeconds);
+		const nextBottom = smoothZoomValue(currentEdges.bottom, targetEdges.bottom, deltaSeconds);
+		const nextRect = (() => {
+			switch (targetRegion.anchor) {
+				case "top-left":
+					return {
+						x: nextLeft,
+						y: nextTop,
+						width: nextWidth,
+						height: nextHeight,
+					};
+				case "top-right":
+					return {
+						x: nextRight - nextWidth,
+						y: nextTop,
+						width: nextWidth,
+						height: nextHeight,
+					};
+				case "bottom-left":
+					return {
+						x: nextLeft,
+						y: nextBottom - nextHeight,
+						width: nextWidth,
+						height: nextHeight,
+					};
+				case "bottom-right":
+					return {
+						x: nextRight - nextWidth,
+						y: nextBottom - nextHeight,
+						width: nextWidth,
+						height: nextHeight,
+					};
+				default:
+					return currentRect;
+			}
+		})();
+
+		if (currentRegion.anchor === targetRegion.anchor) {
+			const nextRegion = normalizeWebcamRegion({
+				...targetRegion,
+				size:
+					targetRegion.shape === "circle" || targetRegion.shape === "square"
+						? {
+								width: rectWidthToPercent(targetRegion.shape, nextRect.width, compositionRect),
+								height: rectWidthToPercent(targetRegion.shape, nextRect.width, compositionRect),
+							}
+						: {
+								width: rectWidthToPercent(targetRegion.shape, nextRect.width, compositionRect),
+								height: rectHeightToPercent(targetRegion.shape, nextRect.height, compositionRect),
+							},
+				borderRadius: smoothZoomValue(
+					currentRegion.borderRadius,
+					targetRegion.borderRadius,
+					deltaSeconds,
+				),
+				borderWidth: smoothZoomValue(
+					currentRegion.borderWidth,
+					targetRegion.borderWidth,
+					deltaSeconds,
+				),
+				opacity: smoothZoomValue(currentRegion.opacity, targetRegion.opacity, deltaSeconds),
+			});
+
+			return areEquivalentRects(nextRect, targetRect, 0.75) &&
+				hasEquivalentWebcamStyling(nextRegion, targetRegion)
+				? cloneWebcamRegion(targetRegion)
+				: nextRegion;
+		}
+
+		const nextRegion = createFreeRegionFromPixelRect(
+			{
+				...targetRegion,
+				borderRadius: smoothZoomValue(
+					currentRegion.borderRadius,
+					targetRegion.borderRadius,
+					deltaSeconds,
+				),
+				borderWidth: smoothZoomValue(
+					currentRegion.borderWidth,
+					targetRegion.borderWidth,
+					deltaSeconds,
+				),
+				opacity: smoothZoomValue(currentRegion.opacity, targetRegion.opacity, deltaSeconds),
+			},
+			nextRect,
+			compositionRect,
+		);
+
+		return areEquivalentRects(nextRect, targetRect, 0.75) &&
+			hasEquivalentWebcamStyling(nextRegion, targetRegion)
+			? cloneWebcamRegion(targetRegion)
+			: nextRegion;
+	}
+
+	const currentFreeRegion = convertRegionToFreePosition(currentRegion, compositionRect);
+	const targetFreeRegion = convertRegionToFreePosition(targetRegion, compositionRect);
+	const nextFreeRegion = normalizeWebcamRegion({
+		...targetFreeRegion,
+		anchor: "free",
+		position: {
+			x: smoothZoomValue(currentFreeRegion.position.x, targetFreeRegion.position.x, deltaSeconds),
+			y: smoothZoomValue(currentFreeRegion.position.y, targetFreeRegion.position.y, deltaSeconds),
+		},
+		size: {
+			width: smoothZoomValue(
+				currentFreeRegion.size.width,
+				targetFreeRegion.size.width,
+				deltaSeconds,
+			),
+			height: smoothZoomValue(
+				currentFreeRegion.size.height,
+				targetFreeRegion.size.height,
+				deltaSeconds,
+			),
+		},
+		borderRadius: smoothZoomValue(
+			currentFreeRegion.borderRadius,
+			targetFreeRegion.borderRadius,
+			deltaSeconds,
+		),
+		borderWidth: smoothZoomValue(
+			currentFreeRegion.borderWidth,
+			targetFreeRegion.borderWidth,
+			deltaSeconds,
+		),
+		opacity: smoothZoomValue(currentFreeRegion.opacity, targetFreeRegion.opacity, deltaSeconds),
+	});
+
+	return areEquivalentWebcamRegions(nextFreeRegion, targetRegion, compositionRect, 2)
+		? cloneWebcamRegion(targetRegion)
+		: nextFreeRegion;
+}
+
+function shouldSnapToRestoredHomeRegion(params: {
+	targetZoomProgress: number;
+	currentScale: number;
+	currentRegion: WebcamRegion;
+	homeRegion: WebcamRegion;
+	compositionRect: PixelRect;
+}) {
+	const { targetZoomProgress, currentScale, currentRegion, homeRegion, compositionRect } = params;
+
+	return (
+		targetZoomProgress <= WEBCAM_RESTORE_SETTLE_PROGRESS_EPSILON &&
+		Math.abs(currentScale - CAMERA_ZOOM_SCALE_DISABLED) <= WEBCAM_RESTORE_SETTLE_SCALE_EPSILON &&
+		areEquivalentWebcamRegions(
+			currentRegion,
+			homeRegion,
+			compositionRect,
+			WEBCAM_RESTORE_SETTLE_RECT_EPSILON_PX,
+		)
+	);
+}
+
+function shouldSnapImmediatelyToResolvedHomeRegion(params: {
+	targetZoomProgress: number;
+	targetRegion: WebcamRegion;
+	homeRegion: WebcamRegion;
+	compositionRect: PixelRect;
+}) {
+	const { targetZoomProgress, targetRegion, homeRegion, compositionRect } = params;
+
+	return (
+		targetZoomProgress <= WEBCAM_RESTORE_SETTLE_PROGRESS_EPSILON &&
+		areEquivalentWebcamRegions(targetRegion, homeRegion, compositionRect, 0.75)
+	);
+}
+
+export function createWebcamZoomMotionState(initialRegion: WebcamRegion): WebcamZoomMotionState {
+	return {
+		homeRegion: cloneWebcamRegion(initialRegion),
+		activeRegion: cloneWebcamRegion(initialRegion),
+		scale: CAMERA_ZOOM_SCALE_DISABLED,
+		progress: 0,
+		lastPlaybackTimeMs: null,
+		motionKey: null,
+	};
+}
+
+export function evaluateWebcamZoomMotionFrame(params: {
+	state: WebcamZoomMotionState;
+	playbackTimeMs: number;
+	baseRegion: WebcamRegion;
+	zoomRegions: ZoomRegion[];
+	cursorTelemetry?: CursorTelemetryPoint[];
+	connectZooms?: boolean;
+	cameraSizeDuringZoom?: number;
+	enableCursorAvoidance?: boolean;
+	compositionRect: PixelRect;
+	contentRect: PixelRect;
+	shouldSmooth: boolean;
+}) {
+	const {
+		state,
+		playbackTimeMs,
+		baseRegion,
+		zoomRegions,
+		cursorTelemetry = [],
+		connectZooms = true,
+		cameraSizeDuringZoom = CAMERA_ZOOM_SCALE_DISABLED,
+		enableCursorAvoidance = false,
+		compositionRect,
+		contentRect,
+		shouldSmooth,
+	} = params;
+	const targetState = resolveDefaultModeRegion({
+		baseRegion,
+		zoomRegions,
+		cursorTelemetry,
+		timeMs: playbackTimeMs,
+		connectZooms,
+		cameraSizeDuringZoom,
+		enableCursorAvoidance,
+		compositionRect,
+		contentRect,
+	});
+	const motionKey = resolveWebcamMotionKey({
+		baseRegion,
+		compositionRect,
+		contentRect,
+		cameraSizeDuringZoom,
+		enableCursorAvoidance,
+		connectZooms,
+	});
+	const hasMatchingContext = state.motionKey === motionKey;
+	const playbackDeltaMs =
+		state.lastPlaybackTimeMs == null ? 0 : Math.max(0, playbackTimeMs - state.lastPlaybackTimeMs);
+	const frameDeltaMs = clampWebcamMotionDeltaMs(playbackDeltaMs);
+	const shouldSnap =
+		!shouldSmooth ||
+		!hasMatchingContext ||
+		state.lastPlaybackTimeMs == null ||
+		playbackTimeMs < state.lastPlaybackTimeMs;
+	const nextHomeRegion = cloneWebcamRegion(baseRegion);
+	let nextRegion = cloneWebcamRegion(targetState.region);
+	let nextScale = targetState.scale;
+	let nextProgress = targetState.targetZoomProgress;
+
+	if (shouldSnap) {
+		nextRegion = cloneWebcamRegion(targetState.region);
+		nextScale = targetState.scale;
+		nextProgress = targetState.targetZoomProgress;
+	} else if (frameDeltaMs <= 0) {
+		const shouldSnapHomeImmediately = shouldSnapImmediatelyToResolvedHomeRegion({
+			targetZoomProgress: targetState.targetZoomProgress,
+			targetRegion: targetState.region,
+			homeRegion: nextHomeRegion,
+			compositionRect,
+		});
+		nextRegion = shouldSnapHomeImmediately
+			? cloneWebcamRegion(nextHomeRegion)
+			: cloneWebcamRegion(state.activeRegion);
+		nextScale = shouldSnapHomeImmediately ? CAMERA_ZOOM_SCALE_DISABLED : state.scale;
+		nextProgress = shouldSnapHomeImmediately ? 0 : state.progress;
+	} else {
+		const substeps = getWebcamMotionSubstepDeltaMs(frameDeltaMs);
+		let steppedRegion = cloneWebcamRegion(state.activeRegion);
+		let steppedScale = state.scale;
+		let steppedProgress = state.progress;
+		let elapsedMs = 0;
+		let finalTargetState = targetState;
+
+		for (const stepDeltaMs of substeps) {
+			elapsedMs += stepDeltaMs;
+			const stepProgress = frameDeltaMs > 0 ? elapsedMs / frameDeltaMs : 1;
+			const stepPlaybackTimeMs =
+				state.lastPlaybackTimeMs == null
+					? playbackTimeMs
+					: state.lastPlaybackTimeMs + playbackDeltaMs * stepProgress;
+			finalTargetState = resolveDefaultModeRegion({
+				baseRegion,
+				zoomRegions,
+				cursorTelemetry,
+				timeMs: stepPlaybackTimeMs,
+				connectZooms,
+				cameraSizeDuringZoom,
+				enableCursorAvoidance,
+				compositionRect,
+				contentRect,
+			});
+			const stepDeltaSeconds = stepDeltaMs / 1000;
+			steppedRegion = smoothWebcamRegion(
+				steppedRegion,
+				finalTargetState.region,
+				compositionRect,
+				stepDeltaSeconds,
+			);
+			steppedScale = smoothZoomValue(steppedScale, finalTargetState.scale, stepDeltaSeconds);
+			steppedProgress = smoothZoomValue(
+				steppedProgress,
+				finalTargetState.targetZoomProgress,
+				stepDeltaSeconds,
+			);
+
+			if (
+				shouldSnapToRestoredHomeRegion({
+					targetZoomProgress: finalTargetState.targetZoomProgress,
+					currentScale: steppedScale,
+					currentRegion: steppedRegion,
+					homeRegion: nextHomeRegion,
+					compositionRect,
+				})
+			) {
+				steppedRegion = cloneWebcamRegion(nextHomeRegion);
+				steppedScale = CAMERA_ZOOM_SCALE_DISABLED;
+				steppedProgress = 0;
+			}
+		}
+
+		nextRegion = steppedRegion;
+		nextScale = steppedScale;
+		nextProgress = steppedProgress;
+	}
+	const nextState: WebcamZoomMotionState = {
+		homeRegion: nextHomeRegion,
+		activeRegion: nextRegion,
+		scale: nextScale,
+		progress: nextProgress,
+		lastPlaybackTimeMs: playbackTimeMs,
+		motionKey,
+	};
+
+	return {
+		state: nextState,
+		motion: {
+			region: cloneWebcamRegion(nextRegion),
+			scale: nextScale,
+			isZoomScaled:
+				nextScale < CAMERA_ZOOM_SCALE_DISABLED - 0.001 ||
+				targetState.isZoomScaled ||
+				nextProgress > 0.001,
+			smoothedZoomProgress: nextProgress,
+			targetZoomProgress: targetState.targetZoomProgress,
+			smoothedWebcamScale: nextScale,
+		} satisfies ResolvedWebcamZoomMotion,
 	};
 }
 
@@ -503,12 +1237,16 @@ export function resolveCameraLayoutState(params: {
 	mirrorWebcam?: boolean;
 	cameraLayouts?: CameraLayoutRegion[];
 	zoomRegions?: ZoomRegion[];
+	cursorTelemetry?: CursorTelemetryPoint[];
 	connectZooms?: boolean;
 	cameraSizeDuringZoom?: number;
+	enableCursorAvoidance?: boolean;
 	containerWidth?: number;
 	containerHeight?: number;
 	compositionRect?: PixelRect;
 	contentRect?: PixelRect;
+	resolvedDefaultMotion?: ResolvedWebcamZoomMotion | null;
+	resolvedTargetDefaultMotion?: ResolvedWebcamZoomMotion | null;
 }): ResolvedCameraLayoutState {
 	const {
 		timeMs,
@@ -517,12 +1255,16 @@ export function resolveCameraLayoutState(params: {
 		mirrorWebcam = false,
 		cameraLayouts = [],
 		zoomRegions = [],
+		cursorTelemetry = [],
 		connectZooms = true,
 		cameraSizeDuringZoom = CAMERA_ZOOM_SCALE_DISABLED,
+		enableCursorAvoidance = false,
 		containerWidth = 1920,
 		containerHeight = 1080,
 		compositionRect: compositionRectInput,
 		contentRect: contentRectInput,
+		resolvedDefaultMotion = null,
+		resolvedTargetDefaultMotion = null,
 	} = params;
 	const compositionRect = compositionRectInput ?? {
 		x: 0,
@@ -532,33 +1274,70 @@ export function resolveCameraLayoutState(params: {
 	};
 	const contentRect = contentRectInput ?? compositionRect;
 
-	const activeLayout = getActiveCameraLayout(cameraLayouts, timeMs);
-	const mode = activeLayout?.mode ?? (showWebcam ? "default" : "hidden");
-	const mergedRegion = mergeWebcamRegion(webcamRegion, activeLayout?.regionOverride);
-	const defaultModeRegion =
+	const activeLayout = showWebcam ? getActiveCameraLayout(cameraLayouts, timeMs) : null;
+	const baseDefaultState =
+		resolvedDefaultMotion ??
+		resolveDefaultModeRegion({
+			baseRegion: webcamRegion,
+			zoomRegions,
+			cursorTelemetry,
+			timeMs,
+			connectZooms,
+			cameraSizeDuringZoom,
+			enableCursorAvoidance,
+			compositionRect,
+			contentRect,
+		});
+	const layoutTargetRegion = activeLayout
+		? mergeWebcamRegion(webcamRegion, activeLayout.regionOverride)
+		: webcamRegion;
+	const targetDefaultState =
+		resolvedTargetDefaultMotion ??
+		resolveDefaultModeRegion({
+			baseRegion: layoutTargetRegion,
+			zoomRegions,
+			cursorTelemetry,
+			timeMs,
+			connectZooms,
+			cameraSizeDuringZoom,
+			enableCursorAvoidance,
+			compositionRect,
+			contentRect,
+		});
+	const activeProgress = activeLayout
+		? Math.min(
+				activeLayout.transitionInMs && activeLayout.transitionInMs > 0
+					? clamp((timeMs - activeLayout.startMs) / activeLayout.transitionInMs, 0, 1)
+					: 1,
+				activeLayout.transitionOutMs && activeLayout.transitionOutMs > 0
+					? clamp((activeLayout.endMs - timeMs) / activeLayout.transitionOutMs, 0, 1)
+					: 1,
+			)
+		: 0;
+	const motionProgress =
+		activeLayout?.motionPreset === "instant"
+			? activeProgress > 0
+				? 1
+				: 0
+			: activeLayout?.motionPreset === "smooth"
+				? easeOutScreenStudio(activeProgress * activeProgress)
+				: easeOutScreenStudio(activeProgress);
+	const mode = showWebcam ? (activeLayout?.mode ?? "default") : "hidden";
+	const resolvedRegion =
 		mode === "default"
-			? resolveDefaultModeRegion({
-					baseRegion: mergedRegion,
-					zoomRegions,
-					timeMs,
-					connectZooms,
-					cameraSizeDuringZoom,
-					compositionRect,
-					contentRect,
-				})
-			: {
-					region: cloneWebcamRegion(mergedRegion),
-					scale: CAMERA_ZOOM_SCALE_DISABLED,
-					isZoomScaled: false,
-				};
+			? lerpWebcamRegion(baseDefaultState.region, targetDefaultState.region, motionProgress)
+			: cloneWebcamRegion(baseDefaultState.region);
 
 	return {
 		mode,
-		region: defaultModeRegion.region,
+		region: resolvedRegion,
+		baseRegion: cloneWebcamRegion(baseDefaultState.region),
 		mirror: mirrorWebcam,
-		scale: defaultModeRegion.scale,
-		isZoomScaled: defaultModeRegion.isZoomScaled,
+		scale: lerp(baseDefaultState.scale, targetDefaultState.scale, motionProgress),
+		isZoomScaled: targetDefaultState.isZoomScaled || baseDefaultState.isZoomScaled,
 		activeLayoutId: activeLayout?.id ?? null,
+		layoutProgress: activeLayout ? motionProgress : 0,
+		motionPreset: activeLayout?.motionPreset ?? "focused",
 	};
 }
 
@@ -569,13 +1348,17 @@ export function resolveWebcamRenderModel(params: {
 	mirrorWebcam?: boolean;
 	cameraLayouts?: CameraLayoutRegion[];
 	zoomRegions?: ZoomRegion[];
+	cursorTelemetry?: CursorTelemetryPoint[];
 	connectZooms?: boolean;
 	cameraSizeDuringZoom?: number;
+	enableCursorAvoidance?: boolean;
 	containerWidth: number;
 	containerHeight: number;
 	sourceSize?: WebcamSourceSize | null;
 	compositionRect?: PixelRect;
 	contentRect?: PixelRect;
+	resolvedDefaultMotion?: ResolvedWebcamZoomMotion | null;
+	resolvedTargetDefaultMotion?: ResolvedWebcamZoomMotion | null;
 }): ResolvedWebcamRenderModel {
 	const {
 		containerWidth,
@@ -599,25 +1382,56 @@ export function resolveWebcamRenderModel(params: {
 		compositionRect,
 		contentRect,
 	});
+	const baseDisplayRect = getWebcamPixelRectInRect(cameraState.baseRegion, compositionRect);
 
 	if (cameraState.mode === "fullscreen") {
-		const displayRect = compositionRect;
+		const progress = clamp(cameraState.layoutProgress, 0, 1);
+		const displayRect = {
+			x: lerp(baseDisplayRect.x, compositionRect.x, progress),
+			y: lerp(baseDisplayRect.y, compositionRect.y, progress),
+			width: lerp(baseDisplayRect.width, compositionRect.width, progress),
+			height: lerp(baseDisplayRect.height, compositionRect.height, progress),
+		};
 
 		return {
 			...cameraState,
 			displayRect,
 			sourceCrop: getCoverCropRect(sourceSize, displayRect),
 			clipShape: "round-rect",
-			borderRadiusPx: 0,
-			borderWidthPx: 0,
-			shadowBlurPx: 0,
-			shadowOffsetYPx: 0,
-			shadowOpacity: 0,
+			borderRadiusPx: lerp(cameraState.baseRegion.borderRadius, 0, progress),
+			borderWidthPx: lerp(cameraState.baseRegion.borderWidth, 0, progress),
+			shadowBlurPx: lerp(16, 0, progress),
+			shadowOffsetYPx: lerp(6, 0, progress),
+			shadowOpacity: lerp(0.34, 0, progress),
 			opacity: 1,
 		};
 	}
 
-	const displayRect = getWebcamPixelRectInRect(cameraState.region, compositionRect);
+	const displayRect =
+		cameraState.mode === "hidden"
+			? {
+					x: lerp(
+						baseDisplayRect.x,
+						baseDisplayRect.x + baseDisplayRect.width * 0.04,
+						cameraState.layoutProgress,
+					),
+					y: lerp(
+						baseDisplayRect.y,
+						baseDisplayRect.y + baseDisplayRect.height * 0.04,
+						cameraState.layoutProgress,
+					),
+					width: lerp(
+						baseDisplayRect.width,
+						baseDisplayRect.width * 0.92,
+						cameraState.layoutProgress,
+					),
+					height: lerp(
+						baseDisplayRect.height,
+						baseDisplayRect.height * 0.92,
+						cameraState.layoutProgress,
+					),
+				}
+			: getWebcamPixelRectInRect(cameraState.region, compositionRect);
 	const minDimension = Math.min(displayRect.width, displayRect.height);
 	const shadowScale = Math.max(0.65, Math.min(1.6, minDimension / 180));
 

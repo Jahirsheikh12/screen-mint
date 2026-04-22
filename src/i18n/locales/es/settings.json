@@ -144,6 +144,7 @@
 		"remove": "Eliminar webcam",
 		"mirrorCamera": "Reflejar cámara",
 		"cameraDuringZoom": "Cámara durante el zoom",
+		"cameraDuringZoomHint": "Cuando se activa el zoom de pantalla, la cámara se reduce suavemente; cuando el zoom termina, recupera su tamaño con la misma suavidad.",
 		"sameSize": "Mismo tamaño",
 		"size": "Tamaño",
 		"shape": "Forma",

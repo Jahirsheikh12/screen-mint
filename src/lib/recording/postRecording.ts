@@ -1,3 +1,5 @@
+import type { WebcamSessionMetadata } from "@/components/video-editor/types";
+
 export type AfterRecordingAction =
 	| "create-project"
 	| "export-clipboard"
@@ -10,5 +12,6 @@ export interface PostRecordingContext {
 	autoCreateZooms: boolean;
 	recordingPath?: string | null;
 	webcamPath?: string | null;
+	webcamSessionMetadata?: WebcamSessionMetadata | null;
 	projectPath?: string | null;
 }
