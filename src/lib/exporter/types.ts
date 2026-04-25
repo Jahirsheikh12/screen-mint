@@ -70,7 +70,7 @@ export type ExportDestination = "file" | "clipboard" | "link";
 export type VideoExportMode = "preset" | "custom";
 export type VideoExportPreset = "fast-share" | "balanced" | "quality" | "master";
 export type VideoResolutionMode = "720p" | "1080p" | "1440p" | "2160p" | "source";
-export type VideoExportFrameRateMode = "auto" | "24" | "30" | "48" | "60" | "source";
+export type VideoExportFrameRateMode = "30" | "60";
 export type VideoBitrateMode = "auto" | "high" | "very-high" | "archive" | "custom" | "bpp";
 
 export interface VideoExportSettings {
@@ -161,11 +161,11 @@ export const VIDEO_EXPORT_PRESETS: Record<
 	},
 	quality: {
 		label: "Quality",
-		description: "Higher detail output while staying within broadly supported limits",
+		description: "1440p at 60 FPS for crisp social sharing",
 	},
 	master: {
 		label: "Master",
-		description: "Preserve as much of the source detail and frame rate as possible",
+		description: "4K at 60 FPS with the highest preset bitrate",
 	},
 };
 
@@ -184,12 +184,8 @@ export const VIDEO_FRAME_RATE_MODE_OPTIONS: {
 	value: VideoExportFrameRateMode;
 	label: string;
 }[] = [
-	{ value: "auto", label: "Auto" },
-	{ value: "24", label: "24 FPS" },
 	{ value: "30", label: "30 FPS" },
-	{ value: "48", label: "48 FPS" },
 	{ value: "60", label: "60 FPS" },
-	{ value: "source", label: "Source" },
 ];
 
 export const VIDEO_BITRATE_MODE_OPTIONS: {

@@ -5,11 +5,13 @@ import type {
 	GifExportConfig,
 	GifFrameRate,
 	GifSizePreset,
+	VideoExportFrameRateMode,
 	VideoExportSettings,
 } from "@/lib/exporter";
 import {
 	getDefaultGifExportSettings,
 	getDefaultVideoExportSettings,
+	getVideoExportSettingsForPreset,
 	mapLegacyExportQualityToVideoSettings,
 	mapLegacyGifSizePreset,
 } from "@/lib/exporter";
@@ -418,6 +420,32 @@ function isFiniteNumber(value: unknown): value is number {
 
 function clamp(value: number, min: number, max: number) {
 	return clampNumber(value, min, max);
+}
+
+function normalizeVideoFrameRateMode(value: unknown, fallback: VideoExportFrameRateMode) {
+	if (
+		value === "30" ||
+		value === 24 ||
+		value === 25 ||
+		value === 30 ||
+		value === "24" ||
+		value === "25"
+	) {
+		return "30";
+	}
+	if (
+		value === "60" ||
+		value === 48 ||
+		value === 50 ||
+		value === 60 ||
+		value === "48" ||
+		value === "50" ||
+		value === "auto" ||
+		value === "source"
+	) {
+		return "60";
+	}
+	return fallback;
 }
 
 function isFileUrl(value: string): boolean {
@@ -936,19 +964,22 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		exportEditor.exportQuality,
 	);
 	const legacyGifExportPreset = mapLegacyGifSizePreset(exportEditor.gifSizePreset);
+	const normalizedVideoMode =
+		exportEditor.videoExportSettings?.mode === "custom" ||
+		exportEditor.videoExportSettings?.mode === "preset"
+			? exportEditor.videoExportSettings.mode
+			: "preset";
+	const normalizedVideoPreset =
+		exportEditor.videoExportSettings?.preset === "fast-share" ||
+		exportEditor.videoExportSettings?.preset === "balanced" ||
+		exportEditor.videoExportSettings?.preset === "quality" ||
+		exportEditor.videoExportSettings?.preset === "master"
+			? exportEditor.videoExportSettings.preset
+			: legacyVideoExportSettings.preset;
+	const presetVideoExportSettings = getVideoExportSettingsForPreset(normalizedVideoPreset);
 	const normalizedVideoExportSettings: VideoExportSettings = {
-		mode:
-			exportEditor.videoExportSettings?.mode === "custom" ||
-			exportEditor.videoExportSettings?.mode === "preset"
-				? exportEditor.videoExportSettings.mode
-				: "preset",
-		preset:
-			exportEditor.videoExportSettings?.preset === "fast-share" ||
-			exportEditor.videoExportSettings?.preset === "balanced" ||
-			exportEditor.videoExportSettings?.preset === "quality" ||
-			exportEditor.videoExportSettings?.preset === "master"
-				? exportEditor.videoExportSettings.preset
-				: legacyVideoExportSettings.preset,
+		mode: normalizedVideoMode,
+		preset: normalizedVideoPreset,
 		resolutionMode:
 			exportEditor.videoExportSettings?.resolutionMode === "720p" ||
 			exportEditor.videoExportSettings?.resolutionMode === "1080p" ||
@@ -956,22 +987,19 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 			exportEditor.videoExportSettings?.resolutionMode === "2160p" ||
 			exportEditor.videoExportSettings?.resolutionMode === "source"
 				? exportEditor.videoExportSettings.resolutionMode
-				: legacyVideoExportSettings.resolutionMode,
-		frameRateMode:
-			exportEditor.videoExportSettings?.frameRateMode === "auto" ||
-			exportEditor.videoExportSettings?.frameRateMode === "24" ||
-			exportEditor.videoExportSettings?.frameRateMode === "30" ||
-			exportEditor.videoExportSettings?.frameRateMode === "48" ||
-			exportEditor.videoExportSettings?.frameRateMode === "60" ||
-			exportEditor.videoExportSettings?.frameRateMode === "source"
-				? exportEditor.videoExportSettings.frameRateMode
-				: legacyVideoExportSettings.frameRateMode,
+				: presetVideoExportSettings.resolutionMode,
+		frameRateMode: normalizeVideoFrameRateMode(
+			(exportEditor.videoExportSettings as Partial<{ frameRateMode: unknown }> | undefined)
+				?.frameRateMode,
+			presetVideoExportSettings.frameRateMode,
+		),
 		bitrateMode:
 			exportEditor.videoExportSettings?.bitrateMode === "auto" ||
 			exportEditor.videoExportSettings?.bitrateMode === "high" ||
 			exportEditor.videoExportSettings?.bitrateMode === "very-high" ||
 			exportEditor.videoExportSettings?.bitrateMode === "archive" ||
-			exportEditor.videoExportSettings?.bitrateMode === "custom"
+			exportEditor.videoExportSettings?.bitrateMode === "custom" ||
+			exportEditor.videoExportSettings?.bitrateMode === "bpp"
 				? exportEditor.videoExportSettings.bitrateMode
 				: legacyVideoExportSettings.bitrateMode,
 		customBitrateMbps:
@@ -979,10 +1007,19 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 			Number.isFinite(exportEditor.videoExportSettings.customBitrateMbps)
 				? clamp(exportEditor.videoExportSettings.customBitrateMbps, 4, 80)
 				: legacyVideoExportSettings.customBitrateMbps,
+		bitsPerPixel:
+			typeof exportEditor.videoExportSettings?.bitsPerPixel === "number" &&
+			Number.isFinite(exportEditor.videoExportSettings.bitsPerPixel)
+				? clamp(exportEditor.videoExportSettings.bitsPerPixel, 0.02, 0.5)
+				: legacyVideoExportSettings.bitsPerPixel,
+		forceFFmpegDecoder:
+			typeof exportEditor.videoExportSettings?.forceFFmpegDecoder === "boolean"
+				? exportEditor.videoExportSettings.forceFFmpegDecoder
+				: legacyVideoExportSettings.forceFFmpegDecoder,
 		optimizeForWeb:
 			typeof exportEditor.videoExportSettings?.optimizeForWeb === "boolean"
 				? exportEditor.videoExportSettings.optimizeForWeb
-				: defaultVideoExportSettings.optimizeForWeb,
+				: (legacyVideoExportSettings.optimizeForWeb ?? defaultVideoExportSettings.optimizeForWeb),
 	};
 	const normalizedGifExportSettings: GifExportConfig = {
 		mode:

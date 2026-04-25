@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import type { ExportDetails, ExportProgress } from "@/lib/exporter";
 import { cn } from "@/lib/utils";
 import { useScopedT } from "../../contexts/I18nContext";
+import type { ExportStatus } from "./editorSession";
 import { getExportDialogPhaseState } from "./exportUtils";
 
 interface ExportDialogProps {
@@ -12,6 +13,7 @@ interface ExportDialogProps {
 	onClose: () => void;
 	progress: ExportProgress | null;
 	isExporting: boolean;
+	exportStatus: ExportStatus;
 	error: string | null;
 	onCancel?: () => void;
 	onRetrySave?: () => void;
@@ -26,6 +28,7 @@ export function ExportDialog({
 	onClose,
 	progress,
 	isExporting,
+	exportStatus,
 	error,
 	onCancel,
 	onRetrySave,
@@ -35,7 +38,6 @@ export function ExportDialog({
 	exportedFilePath,
 }: ExportDialogProps) {
 	const t = useScopedT("dialogs");
-	const [showSuccess, setShowSuccess] = useState(false);
 	const [isVisible, setIsVisible] = useState(false);
 	const [isClosing, setIsClosing] = useState(false);
 	const prevIsOpenRef = useRef(isOpen);
@@ -57,39 +59,27 @@ export function ExportDialog({
 		prevIsOpenRef.current = isOpen;
 	}, [isOpen]);
 
-	// Reset showSuccess when a new export starts or dialog reopens
-	useEffect(() => {
-		if (isExporting) {
-			setShowSuccess(false);
-		}
-	}, [isExporting]);
-
-	// Reset showSuccess when dialog opens fresh
-	useEffect(() => {
-		if (isOpen && !isExporting && !progress) {
-			setShowSuccess(false);
-		}
-	}, [isOpen, isExporting, progress]);
-
-	useEffect(() => {
-		if (!isExporting && progress && progress.percentage >= 100 && !error) {
-			setShowSuccess(true);
-		}
-	}, [isExporting, progress, error]);
-
-	// Auto-close after successful export with a file saved
-	useEffect(() => {
-		if (showSuccess && exportedFilePath && !isExporting) {
-			const timer = setTimeout(() => {
-				onClose();
-			}, 2500);
-			return () => clearTimeout(timer);
-		}
-	}, [showSuccess, exportedFilePath, isExporting, onClose]);
-
 	if (!isOpen && !isVisible) return null;
 
 	const formatLabel = exportFormat === "gif" ? "GIF" : "Video";
+	const activeProgress: ExportProgress = progress ?? {
+		currentFrame: 0,
+		totalFrames: 1,
+		percentage: 0,
+		estimatedTimeRemaining: 0,
+		etaSeconds: 0,
+		phase: "preparing",
+	};
+	const showSuccess = exportStatus === "saved";
+	const showSaving = exportStatus === "awaiting-save-path" || exportStatus === "saving";
+	const showError = Boolean(error) && !showSuccess;
+	const showProgress = exportStatus === "exporting" && !showSuccess && !showError;
+	const showIdle = !showSuccess && !showSaving && !showError && !showProgress;
+	const canDismiss =
+		exportStatus === "idle" ||
+		exportStatus === "saved" ||
+		exportStatus === "canceled" ||
+		exportStatus === "failed";
 
 	const { isGifCompiling, isVideoFinalizing } = getExportDialogPhaseState({
 		isExporting,
@@ -182,7 +172,7 @@ export function ExportDialog({
 						? "opacity-0 duration-250 ease-in"
 						: "opacity-100 duration-300 ease-out animate-in fade-in",
 				)}
-				onClick={isExporting ? undefined : onClose}
+				onClick={canDismiss ? onClose : undefined}
 			/>
 
 			{/* Dialog */}
@@ -196,14 +186,17 @@ export function ExportDialog({
 					)}
 				>
 					{/* Top accent line - animated during export */}
-					{isExporting && !showSuccess ? (
+					{(showProgress || showSaving) && !showSuccess ? (
 						<div className="h-[2px] bg-white/[0.04] overflow-hidden">
 							<div
 								className="h-full bg-gradient-to-r from-transparent via-[#F59E0B] to-transparent transition-all duration-500 ease-out"
 								style={{
-									width: displayPercentage !== null ? `${displayPercentage}%` : "100%",
+									width:
+										showSaving || displayPercentage === null ? "100%" : `${displayPercentage}%`,
 									animation:
-										displayPercentage === null ? "shimmer 2s ease-in-out infinite" : undefined,
+										showSaving || displayPercentage === null
+											? "shimmer 2s ease-in-out infinite"
+											: undefined,
 								}}
 							/>
 						</div>
@@ -325,7 +318,7 @@ export function ExportDialog({
 						)}
 
 						{/* Error state */}
-						{error && !showSuccess && (
+						{showError && (
 							<div className="animate-in fade-in slide-in-from-bottom-2 duration-200">
 								<div className="flex items-center justify-between mb-5">
 									<div className="flex items-center gap-3">
@@ -337,7 +330,7 @@ export function ExportDialog({
 											<p className="text-[11px] text-slate-500 mt-0.5">{getStatusMessage()}</p>
 										</div>
 									</div>
-									{!isExporting && (
+									{canDismiss && (
 										<button
 											type="button"
 											onClick={onClose}
@@ -352,7 +345,7 @@ export function ExportDialog({
 									<p className="text-sm text-red-300 leading-relaxed">{error}</p>
 								</div>
 
-								{!isExporting && canRetrySave && onRetrySave && (
+								{canRetrySave && onRetrySave && (
 									<Button
 										onClick={onRetrySave}
 										className="w-full h-11 rounded-xl bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-white font-semibold text-sm shadow-lg shadow-[#F59E0B]/20 hover:shadow-[#F59E0B]/30 hover:scale-[1.01] active:scale-[0.98] transition-all duration-200"
@@ -363,8 +356,33 @@ export function ExportDialog({
 							</div>
 						)}
 
+						{showSaving && (
+							<div className="animate-in fade-in duration-200">
+								<div className="flex items-center gap-3">
+									<div className="w-10 h-10 rounded-xl bg-[#F59E0B]/10 border border-[#F59E0B]/20 flex items-center justify-center">
+										<Download className="w-5 h-5 text-[#F59E0B]" />
+									</div>
+									<div>
+										<h3 className="text-[15px] font-semibold text-white tracking-tight">
+											{exportStatus === "awaiting-save-path"
+												? "Choose Save Location"
+												: "Saving Export"}
+										</h3>
+										<p className="text-[11px] text-slate-500 mt-0.5">
+											{exportStatus === "awaiting-save-path"
+												? "Waiting for the native save dialog."
+												: `Writing your ${formatLabel.toLowerCase()} to disk.`}
+										</p>
+									</div>
+								</div>
+								<div className="mt-6 h-2.5 bg-white/[0.04] rounded-full overflow-hidden border border-white/[0.06]">
+									<div className="h-full w-full rounded-full bg-gradient-to-r from-transparent via-[#F59E0B] to-transparent shadow-[0_0_12px_rgba(245,158,11,0.4)] animate-[shimmer_1.6s_ease-in-out_infinite]" />
+								</div>
+							</div>
+						)}
+
 						{/* Exporting state */}
-						{isExporting && progress && !showSuccess && !error && (
+						{showProgress && (
 							<div className="animate-in fade-in duration-200">
 								{/* Header */}
 								<div className="flex items-center justify-between mb-6">
@@ -405,7 +423,7 @@ export function ExportDialog({
 														</span>
 													)
 												) : (
-													`${progress.percentage.toFixed(0)}%`
+													`${activeProgress.percentage.toFixed(0)}%`
 												)}
 											</span>
 										</div>
@@ -437,7 +455,7 @@ export function ExportDialog({
 												<div
 													className="h-full bg-gradient-to-r from-[#F59E0B] to-[#d97706] shadow-[0_0_12px_rgba(245,158,11,0.4)] transition-all duration-500 ease-out rounded-full"
 													style={{
-														width: `${Math.min(progress.percentage, 100)}%`,
+														width: `${Math.min(activeProgress.percentage, 100)}%`,
 													}}
 												/>
 											)}
@@ -457,9 +475,9 @@ export function ExportDialog({
 												{t("export.frames")}
 											</div>
 											<div className="text-slate-200 font-semibold text-sm font-mono tabular-nums">
-												{progress.currentFrame}
+												{activeProgress.currentFrame}
 												<span className="text-slate-500"> / </span>
-												{progress.totalFrames}
+												{activeProgress.totalFrames}
 											</div>
 										</div>
 										<div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
@@ -476,7 +494,7 @@ export function ExportDialog({
 									<div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3 text-[11px] text-slate-300 min-h-[52px]">
 										<div className="flex items-center justify-between">
 											<span className="capitalize">
-												{progress.phase ? progress.phase : "rendering"}
+												{activeProgress.phase ? activeProgress.phase : "rendering"}
 											</span>
 											<span className="font-mono tabular-nums min-w-[5ch] text-right">
 												{displayPercentage !== null ? `${displayPercentage}%` : "—"}
@@ -491,7 +509,7 @@ export function ExportDialog({
 									</div>
 
 									{/* Cancel button */}
-									{onCancel && (
+									{onCancel && exportStatus === "exporting" && (
 										<Button
 											onClick={onCancel}
 											variant="destructive"
@@ -504,12 +522,30 @@ export function ExportDialog({
 							</div>
 						)}
 
-						{/* Idle success message (after export completes) */}
-						{showSuccess && (
-							<div className="text-center pt-2 animate-in fade-in zoom-in-95 duration-200">
-								<p className="text-sm text-slate-300 font-medium">
-									{t("export.savedSuccess", undefined, { format: formatLabel })}
-								</p>
+						{showIdle && (
+							<div className="animate-in fade-in duration-200">
+								<div className="flex items-center justify-between">
+									<div className="flex items-center gap-3">
+										<div className="w-10 h-10 rounded-xl bg-[#F59E0B]/10 border border-[#F59E0B]/20 flex items-center justify-center">
+											<Download className="w-5 h-5 text-[#F59E0B]" />
+										</div>
+										<div>
+											<h3 className="text-[15px] font-semibold text-white tracking-tight">
+												Ready to Export
+											</h3>
+											<p className="text-[11px] text-slate-500 mt-0.5">
+												Preparing the export workflow.
+											</p>
+										</div>
+									</div>
+									<button
+										type="button"
+										onClick={onClose}
+										className="rounded-xl p-2 text-white/40 hover:text-white hover:bg-white/[0.06] transition-all duration-200 active:scale-95"
+									>
+										<X className="w-4 h-4" />
+									</button>
+								</div>
 							</div>
 						)}
 					</div>

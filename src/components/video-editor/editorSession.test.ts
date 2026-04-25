@@ -31,4 +31,34 @@ describe("editorSessionReducer", () => {
 		expect(state.exportError).toBeNull();
 		expect(state.hasPendingExportSave).toBe(false);
 	});
+
+	it("tracks explicit export save states", () => {
+		let state = createInitialEditorSessionState();
+
+		state = editorSessionReducer(state, { type: "set-export-status", status: "exporting" });
+		expect(state.exportStatus).toBe("exporting");
+
+		state = editorSessionReducer(state, {
+			type: "set-export-status",
+			status: "awaiting-save-path",
+		});
+		expect(state.exportStatus).toBe("awaiting-save-path");
+
+		state = editorSessionReducer(state, { type: "set-export-status", status: "saving" });
+		expect(state.exportStatus).toBe("saving");
+
+		state = editorSessionReducer(state, { type: "set-export-status", status: "saved" });
+		expect(state.exportStatus).toBe("saved");
+	});
+
+	it("resets export feedback back to idle", () => {
+		let state = createInitialEditorSessionState();
+		state = editorSessionReducer(state, { type: "set-export-status", status: "failed" });
+		state = editorSessionReducer(state, { type: "set-pending-export-save", value: true });
+
+		state = editorSessionReducer(state, { type: "reset-export-feedback" });
+
+		expect(state.exportStatus).toBe("idle");
+		expect(state.hasPendingExportSave).toBe(false);
+	});
 });

@@ -201,7 +201,7 @@ type EditorHistorySnapshot = {
 
 type PendingExportSave = {
 	fileName: string;
-	arrayBuffer: ArrayBuffer;
+	blob: Blob;
 };
 
 function LanguageSwitcher() {
@@ -478,6 +478,7 @@ export default function VideoEditor() {
 	const isExporting = sessionState.isExporting;
 	const exportProgress = sessionState.exportProgress;
 	const exportError = sessionState.exportError;
+	const exportStatus = sessionState.exportStatus;
 	const showExportDialog = sessionState.modals.exportDialogOpen;
 	const showExportSettings = sessionState.modals.exportSettingsOpen;
 	const exportDetails = sessionState.exportDetails;
@@ -1190,6 +1191,7 @@ export default function VideoEditor() {
 				captionSettings,
 				captionGenerationOptions,
 				exportFormat,
+				exportDestination,
 				videoExportSettings,
 				gifExportSettings,
 			},
@@ -1265,6 +1267,7 @@ export default function VideoEditor() {
 		captionSettings,
 		captionGenerationOptions,
 		exportFormat,
+		exportDestination,
 		videoExportSettings,
 		gifExportSettings,
 		webcamSessionMetadata,
@@ -1549,6 +1552,7 @@ export default function VideoEditor() {
 					captionSettings,
 					captionGenerationOptions,
 					exportFormat,
+					exportDestination,
 					videoExportSettings,
 					gifExportSettings,
 				},
@@ -1651,6 +1655,7 @@ export default function VideoEditor() {
 			captionSettings,
 			captionGenerationOptions,
 			exportFormat,
+			exportDestination,
 			videoExportSettings,
 			gifExportSettings,
 			deviceMockup,
@@ -3713,6 +3718,7 @@ export default function VideoEditor() {
 			}
 
 			dispatchSession({ type: "set-exporting", value: true });
+			dispatchSession({ type: "set-export-status", status: "exporting" });
 			dispatchSession({ type: "set-export-progress", progress: null });
 			dispatchSession({ type: "set-export-error", error: null });
 			dispatchSession({ type: "set-exported-file-path", path: undefined });
@@ -3728,6 +3734,123 @@ export default function VideoEditor() {
 			const progressThrottler = createExportProgressThrottler((progress) => {
 				dispatchSession({ type: "set-export-progress", progress });
 			});
+
+			const setPendingSave = (blob: Blob, fileName: string) => {
+				pendingExportSaveRef.current = { blob, fileName };
+				dispatchSession({ type: "set-pending-export-save", value: true });
+			};
+
+			const saveExportedBlob = async ({
+				blob,
+				fileName,
+				formatName,
+			}: {
+				blob: Blob;
+				fileName: string;
+				formatName: "GIF" | "video";
+			}): Promise<boolean> => {
+				if (saveMode === "clipboard") {
+					dispatchSession({ type: "set-export-status", status: "saving" });
+					const arrayBuffer = await blob.arrayBuffer();
+					const copyResult = await window.electronAPI.copyExportedToClipboard(
+						arrayBuffer,
+						fileName,
+					);
+					if (copyResult.success) {
+						toast.success(`${formatName === "GIF" ? "GIF" : "Video"} copied to clipboard.`);
+						dispatchSession({
+							type: "set-exported-file-path",
+							path: copyResult.path ?? "",
+						});
+						dispatchSession({ type: "set-export-status", status: "saved" });
+						return false;
+					}
+
+					dispatchSession({
+						type: "set-export-error",
+						error: copyResult.error || `Failed to copy ${formatName.toLowerCase()} to clipboard`,
+					});
+					dispatchSession({ type: "set-export-status", status: "failed" });
+					toast.error(
+						copyResult.error || `Failed to copy ${formatName.toLowerCase()} to clipboard`,
+					);
+					return true;
+				}
+
+				if (saveMode === "recordings") {
+					dispatchSession({ type: "set-export-status", status: "saving" });
+					const arrayBuffer = await blob.arrayBuffer();
+					const saveResult = await window.electronAPI.saveExportedVideoToRecordings(
+						arrayBuffer,
+						fileName,
+					);
+
+					if (saveResult.success && saveResult.path) {
+						showExportSuccessToast(saveResult.path);
+						dispatchSession({
+							type: "set-exported-file-path",
+							path: saveResult.path,
+						});
+						dispatchSession({ type: "set-export-status", status: "saved" });
+						await options.onSaved?.(saveResult.path);
+						return false;
+					}
+
+					const errorMessage = saveResult.message || `Failed to save ${formatName}`;
+					setPendingSave(blob, fileName);
+					dispatchSession({ type: "set-export-error", error: errorMessage });
+					dispatchSession({ type: "set-export-status", status: "failed" });
+					toast.error(errorMessage);
+					return true;
+				}
+
+				dispatchSession({ type: "set-export-status", status: "awaiting-save-path" });
+				const savePathResult = await window.electronAPI.showExportSaveDialog(fileName);
+				if ("canceled" in savePathResult && savePathResult.canceled) {
+					setPendingSave(blob, fileName);
+					dispatchSession({
+						type: "set-export-error",
+						error: "Save dialog canceled. Click Save Again to save without re-rendering.",
+					});
+					dispatchSession({ type: "set-export-status", status: "canceled" });
+					toast.info("Save canceled. You can save again without re-exporting.");
+					return true;
+				}
+
+				if (!savePathResult.success || !savePathResult.path) {
+					const errorMessage = savePathResult.message || "Failed to open save dialog";
+					setPendingSave(blob, fileName);
+					dispatchSession({ type: "set-export-error", error: errorMessage });
+					dispatchSession({ type: "set-export-status", status: "failed" });
+					toast.error(errorMessage);
+					return true;
+				}
+
+				dispatchSession({ type: "set-export-status", status: "saving" });
+				const arrayBuffer = await blob.arrayBuffer();
+				const writeResult = await window.electronAPI.writeExportedVideoToPath(
+					arrayBuffer,
+					savePathResult.path,
+				);
+
+				if (writeResult.success && writeResult.path) {
+					showExportSuccessToast(writeResult.path);
+					dispatchSession({
+						type: "set-exported-file-path",
+						path: writeResult.path,
+					});
+					dispatchSession({ type: "set-export-status", status: "saved" });
+					await options.onSaved?.(writeResult.path);
+					return false;
+				}
+
+				const errorMessage = writeResult.message || `Failed to save ${formatName}`;
+				setPendingSave(blob, fileName);
+				dispatchSession({ type: "set-export-error", error: errorMessage });
+				dispatchSession({ type: "set-export-status", status: "failed" });
+				toast.error(errorMessage);
+				return true;
+			};
 
 			const restorePreviewAfterExport = async (forceReload = false) => {
 				const playback = videoPlaybackRef.current;
@@ -3884,63 +4007,19 @@ export default function VideoEditor() {
 							type: "set-export-details",
 							details: mergeGifExportDetails(gifPlan, result.details, result.blob.size),
 						});
-						const arrayBuffer = await result.blob.arrayBuffer();
 						const timestamp = Date.now();
 						const fileName = `export-${timestamp}.gif`;
-
-						if (saveMode === "clipboard") {
-							const copyResult = await window.electronAPI.copyExportedToClipboard(
-								arrayBuffer,
-								fileName,
-							);
-							if (copyResult.success) {
-								toast.success("GIF copied to clipboard.");
-								dispatchSession({
-									type: "set-exported-file-path",
-									path: copyResult.path ?? "",
-								});
-							} else {
-								dispatchSession({
-									type: "set-export-error",
-									error: copyResult.error || "Failed to copy to clipboard",
-								});
-								toast.error(copyResult.error || "Failed to copy GIF to clipboard");
-							}
-						} else {
-							const saveResult =
-								saveMode === "recordings"
-									? await window.electronAPI.saveExportedVideoToRecordings(arrayBuffer, fileName)
-									: await window.electronAPI.saveExportedVideo(arrayBuffer, fileName);
-
-							if ("canceled" in saveResult && saveResult.canceled) {
-								pendingExportSaveRef.current = { arrayBuffer, fileName };
-								dispatchSession({ type: "set-pending-export-save", value: true });
-								dispatchSession({
-									type: "set-export-error",
-									error: "Save dialog canceled. Click Save Again to save without re-rendering.",
-								});
-								toast.info("Save canceled. You can save again without re-exporting.");
-								keepExportDialogOpen = true;
-							} else if (saveResult.success && saveResult.path) {
-								showExportSuccessToast(saveResult.path);
-								dispatchSession({
-									type: "set-exported-file-path",
-									path: saveResult.path,
-								});
-								await options.onSaved?.(saveResult.path);
-							} else {
-								dispatchSession({
-									type: "set-export-error",
-									error: saveResult.message || "Failed to save GIF",
-								});
-								toast.error(saveResult.message || "Failed to save GIF");
-							}
-						}
+						keepExportDialogOpen = await saveExportedBlob({
+							blob: result.blob,
+							fileName,
+							formatName: "GIF",
+						});
 					} else {
 						dispatchSession({
 							type: "set-export-error",
 							error: result.error || "GIF export failed",
 						});
+						dispatchSession({ type: "set-export-status", status: "failed" });
 						toast.error(result.error || "GIF export failed");
 					}
 				} else {
@@ -4041,63 +4120,19 @@ export default function VideoEditor() {
 							type: "set-export-details",
 							details: mergeVideoExportDetails(videoPlan, result.details, result.blob.size),
 						});
-						const arrayBuffer = await result.blob.arrayBuffer();
 						const timestamp = Date.now();
 						const fileName = `export-${timestamp}.mp4`;
-
-						if (saveMode === "clipboard") {
-							const copyResult = await window.electronAPI.copyExportedToClipboard(
-								arrayBuffer,
-								fileName,
-							);
-							if (copyResult.success) {
-								toast.success("Video copied to clipboard.");
-								dispatchSession({
-									type: "set-exported-file-path",
-									path: copyResult.path ?? "",
-								});
-							} else {
-								dispatchSession({
-									type: "set-export-error",
-									error: copyResult.error || "Failed to copy to clipboard",
-								});
-								toast.error(copyResult.error || "Failed to copy video to clipboard");
-							}
-						} else {
-							const saveResult =
-								saveMode === "recordings"
-									? await window.electronAPI.saveExportedVideoToRecordings(arrayBuffer, fileName)
-									: await window.electronAPI.saveExportedVideo(arrayBuffer, fileName);
-
-							if ("canceled" in saveResult && saveResult.canceled) {
-								pendingExportSaveRef.current = { arrayBuffer, fileName };
-								dispatchSession({ type: "set-pending-export-save", value: true });
-								dispatchSession({
-									type: "set-export-error",
-									error: "Save dialog canceled. Click Save Again to save without re-rendering.",
-								});
-								toast.info("Save canceled. You can save again without re-exporting.");
-								keepExportDialogOpen = true;
-							} else if (saveResult.success && saveResult.path) {
-								showExportSuccessToast(saveResult.path);
-								dispatchSession({
-									type: "set-exported-file-path",
-									path: saveResult.path,
-								});
-								await options.onSaved?.(saveResult.path);
-							} else {
-								dispatchSession({
-									type: "set-export-error",
-									error: saveResult.message || "Failed to save video",
-								});
-								toast.error(saveResult.message || "Failed to save video");
-							}
-						}
+						keepExportDialogOpen = await saveExportedBlob({
+							blob: result.blob,
+							fileName,
+							formatName: "video",
+						});
 					} else {
 						dispatchSession({
 							type: "set-export-error",
 							error: result.error || "Export failed",
 						});
+						dispatchSession({ type: "set-export-status", status: "failed" });
 						toast.error(result.error || "Export failed");
 					}
 				}
@@ -4107,6 +4142,7 @@ export default function VideoEditor() {
 				console.error("Export error:", error);
 				const errorMessage = error instanceof Error ? error.message : "Unknown error";
 				dispatchSession({ type: "set-export-error", error: errorMessage });
+				dispatchSession({ type: "set-export-status", status: "failed" });
 				toast.error(`Export failed: ${errorMessage}`);
 			} finally {
 				progressThrottler.flush();
@@ -4212,6 +4248,7 @@ export default function VideoEditor() {
 
 			if (hasPendingExportSave) {
 				dispatchSession({ type: "set-export-dialog-open", value: true });
+				dispatchSession({ type: "set-export-status", status: "canceled" });
 				dispatchSession({
 					type: "set-export-error",
 					error: "Save dialog canceled. Click Save Again to save without re-rendering.",
@@ -4225,6 +4262,7 @@ export default function VideoEditor() {
 			}
 
 			dispatchSession({ type: "set-export-dialog-open", value: true });
+			dispatchSession({ type: "set-export-status", status: "exporting" });
 			dispatchSession({ type: "set-export-error", error: null });
 
 			if (destination === "clipboard") {
@@ -4244,6 +4282,7 @@ export default function VideoEditor() {
 
 		dispatchSession({ type: "set-quick-share-open", value: false });
 		dispatchSession({ type: "set-export-dialog-open", value: true });
+		dispatchSession({ type: "set-export-status", status: "exporting" });
 		dispatchSession({ type: "set-export-error", error: null });
 		await handleExport(settings, {
 			saveMode: "recordings",
@@ -4459,6 +4498,7 @@ export default function VideoEditor() {
 			toast.info("Export canceled");
 			dispatchSession({ type: "set-export-dialog-open", value: false });
 			dispatchSession({ type: "set-exporting", value: false });
+			dispatchSession({ type: "set-export-status", status: "idle" });
 			dispatchSession({ type: "set-export-progress", progress: null });
 			dispatchSession({ type: "set-export-error", error: null });
 			dispatchSession({ type: "set-exported-file-path", path: undefined });
@@ -4469,6 +4509,7 @@ export default function VideoEditor() {
 		dispatchSession({ type: "set-export-dialog-open", value: false });
 		dispatchSession({ type: "set-exported-file-path", path: undefined });
 		dispatchSession({ type: "set-export-error", error: null });
+		dispatchSession({ type: "set-export-status", status: "idle" });
 	}, []);
 
 	const handleRetrySaveExport = useCallback(async () => {
@@ -4477,32 +4518,57 @@ export default function VideoEditor() {
 			return;
 		}
 
-		const saveResult = await window.electronAPI.saveExportedVideo(
-			pendingSave.arrayBuffer,
-			pendingSave.fileName,
-		);
+		dispatchSession({ type: "set-export-error", error: null });
+		dispatchSession({ type: "set-export-status", status: "awaiting-save-path" });
+		try {
+			const savePathResult = await window.electronAPI.showExportSaveDialog(pendingSave.fileName);
 
-		if ("canceled" in saveResult && saveResult.canceled) {
-			dispatchSession({
-				type: "set-export-error",
-				error: "Save dialog canceled. Click Save Again to save without re-rendering.",
-			});
-			toast.info("Save canceled. You can try again.");
-			return;
+			if ("canceled" in savePathResult && savePathResult.canceled) {
+				dispatchSession({
+					type: "set-export-error",
+					error: "Save dialog canceled. Click Save Again to save without re-rendering.",
+				});
+				dispatchSession({ type: "set-export-status", status: "canceled" });
+				toast.info("Save canceled. You can try again.");
+				return;
+			}
+
+			if (!savePathResult.success || !savePathResult.path) {
+				const errorMessage = savePathResult.message || "Failed to open save dialog";
+				dispatchSession({ type: "set-export-error", error: errorMessage });
+				dispatchSession({ type: "set-export-status", status: "failed" });
+				toast.error(errorMessage);
+				return;
+			}
+
+			dispatchSession({ type: "set-export-status", status: "saving" });
+			const arrayBuffer = await pendingSave.blob.arrayBuffer();
+			const writeResult = await window.electronAPI.writeExportedVideoToPath(
+				arrayBuffer,
+				savePathResult.path,
+			);
+
+			if (writeResult.success && writeResult.path) {
+				pendingExportSaveRef.current = null;
+				dispatchSession({ type: "set-pending-export-save", value: false });
+				dispatchSession({ type: "set-export-error", error: null });
+				dispatchSession({ type: "set-exported-file-path", path: writeResult.path });
+				dispatchSession({ type: "set-export-status", status: "saved" });
+				dispatchSession({ type: "set-export-dialog-open", value: false });
+				showExportSuccessToast(writeResult.path);
+				return;
+			}
+
+			const errorMessage = writeResult.message || "Failed to save video";
+			dispatchSession({ type: "set-export-error", error: errorMessage });
+			dispatchSession({ type: "set-export-status", status: "failed" });
+			toast.error(errorMessage);
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			dispatchSession({ type: "set-export-error", error: errorMessage });
+			dispatchSession({ type: "set-export-status", status: "failed" });
+			toast.error(errorMessage);
 		}
-
-		if (saveResult.success && saveResult.path) {
-			pendingExportSaveRef.current = null;
-			dispatchSession({ type: "set-pending-export-save", value: false });
-			dispatchSession({ type: "set-export-error", error: null });
-			dispatchSession({ type: "set-exported-file-path", path: saveResult.path });
-			showExportSuccessToast(saveResult.path);
-			return;
-		}
-
-		const errorMessage = saveResult.message || "Failed to save video";
-		dispatchSession({ type: "set-export-error", error: errorMessage });
-		toast.error(errorMessage);
 	}, [showExportSuccessToast]);
 
 	const openRecordingsFolder = useCallback(async () => {
@@ -5203,6 +5269,7 @@ export default function VideoEditor() {
 						onClose={handleExportDialogClose}
 						progress={exportProgress}
 						isExporting={isExporting}
+						exportStatus={exportStatus}
 						error={exportError}
 						onCancel={handleCancelExport}
 						onRetrySave={handleRetrySaveExport}

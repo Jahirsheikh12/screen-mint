@@ -7,9 +7,15 @@ import {
 } from "@/lib/exporter";
 import {
 	buildSourceVideoMetadata,
+	GIF_EXPORT_QUALITY_OPTIONS,
 	getExportDialogPhaseState,
+	getSelectedGifQuality,
+	getSelectedVideoQuality,
 	mergeGifExportDetails,
 	mergeVideoExportDetails,
+	selectGifQualitySettings,
+	selectVideoQualitySettings,
+	VIDEO_EXPORT_QUALITY_OPTIONS,
 } from "./exportUtils";
 
 describe("exportUtils", () => {
@@ -142,5 +148,52 @@ describe("exportUtils", () => {
 			isGifCompiling: true,
 			isVideoFinalizing: false,
 		});
+	});
+
+	it("resets video preset controls when selecting a quality pill", () => {
+		const customSettings = {
+			...getDefaultVideoExportSettings(),
+			mode: "custom" as const,
+			resolutionMode: "2160p" as const,
+			frameRateMode: "60" as const,
+			bitrateMode: "bpp" as const,
+			bitsPerPixel: 0.45,
+			forceFFmpegDecoder: true,
+		};
+
+		expect(getSelectedVideoQuality(customSettings)).toBeNull();
+
+		const selected = selectVideoQualitySettings(customSettings, "web");
+		expect(selected).toMatchObject({
+			mode: "preset",
+			preset: "balanced",
+			resolutionMode: "1080p",
+			frameRateMode: "30",
+			bitrateMode: "auto",
+			forceFFmpegDecoder: true,
+		});
+		expect(getSelectedVideoQuality(selected)).toBe("web");
+	});
+
+	it("keeps GIF quality pills unique and hides unsupported duplicate maximum", () => {
+		expect(GIF_EXPORT_QUALITY_OPTIONS).toEqual(["potato", "web", "social"]);
+		expect(VIDEO_EXPORT_QUALITY_OPTIONS).toEqual(["potato", "web", "social", "maximum"]);
+
+		const customSettings = {
+			...getDefaultGifExportSettings(),
+			mode: "custom" as const,
+			resolutionMode: "1080p" as const,
+			frameRate: 30 as const,
+		};
+		expect(getSelectedGifQuality(customSettings)).toBeNull();
+
+		const selected = selectGifQualitySettings("social");
+		expect(selected).toMatchObject({
+			mode: "preset",
+			preset: "quality",
+			resolutionMode: "1080p",
+			frameRate: 20,
+		});
+		expect(getSelectedGifQuality(selected)).toBe("social");
 	});
 });

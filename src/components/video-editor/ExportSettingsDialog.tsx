@@ -1,4 +1,15 @@
-import { Clipboard, FileText, Film, Link, Monitor } from "lucide-react";
+import {
+	AlertTriangle,
+	Check,
+	Clipboard,
+	FileText,
+	Film,
+	Link,
+	Monitor,
+	Settings2,
+	SlidersHorizontal,
+	Zap,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { Switch } from "@/components/ui/switch";
@@ -9,20 +20,32 @@ import type {
 	GifDitherMode,
 	GifExportConfig,
 	GifMotionSensitivity,
-	GifQualityLabel,
 	ResolvedGifExportPlan,
 	ResolvedVideoExportPlan,
+	VideoBitrateMode,
 	VideoExportSettings,
-	VideoQualityLabel,
 } from "@/lib/exporter";
 import {
-	GIF_QUALITY_TO_PRESET,
+	GIF_COLOR_COUNT_OPTIONS,
+	GIF_DITHER_MODE_OPTIONS,
+	GIF_FRAME_RATES,
+	GIF_MOTION_SENSITIVITY_OPTIONS,
+	GIF_RESOLUTION_MODE_OPTIONS,
 	getGifExportSettingsForPreset,
 	getVideoExportSettingsForPreset,
-	VIDEO_PRESET_TO_QUALITY,
-	VIDEO_QUALITY_TO_PRESET,
+	VIDEO_BITRATE_MODE_OPTIONS,
+	VIDEO_FRAME_RATE_MODE_OPTIONS,
+	VIDEO_RESOLUTION_MODE_OPTIONS,
 } from "@/lib/exporter";
 import { cn } from "@/lib/utils";
+import {
+	GIF_EXPORT_QUALITY_OPTIONS,
+	getSelectedGifQuality,
+	getSelectedVideoQuality,
+	selectGifQualitySettings,
+	selectVideoQualitySettings,
+	VIDEO_EXPORT_QUALITY_OPTIONS,
+} from "./exportUtils";
 
 interface ExportSettingsDialogProps {
 	isOpen: boolean;
@@ -40,83 +63,197 @@ interface ExportSettingsDialogProps {
 	onExport: (destination: ExportDestination) => void;
 }
 
-// --- Sub-components ---
+const QUALITY_LABELS = {
+	potato: {
+		label: "Draft",
+		description: "Smallest file",
+	},
+	web: {
+		label: "Web",
+		description: "Balanced",
+	},
+	social: {
+		label: "Social",
+		description: "Crisp share",
+	},
+	maximum: {
+		label: "Maximum",
+		description: "Source detail",
+	},
+} as const;
 
-function SectionLabel({ icon, children }: { icon: ReactNode; children: string }) {
+const VIDEO_BITRATE_OPTIONS: Array<{
+	value: VideoBitrateMode;
+	label: string;
+	description: string;
+}> = [
+	...VIDEO_BITRATE_MODE_OPTIONS,
+	{
+		value: "bpp",
+		label: "BPP",
+		description: "Scale bitrate from resolution and frame rate",
+	},
+];
+
+function formatEstimatedSize(bytes: number): string {
+	if (bytes >= 1_000_000) {
+		return `${(bytes / 1_000_000).toFixed(1)} MB`;
+	}
+	return `${Math.max(1, Math.round(bytes / 1_000))} KB`;
+}
+
+function formatBitrate(bitsPerSecond: number): string {
+	return `${(bitsPerSecond / 1_000_000).toFixed(1)} Mbps`;
+}
+
+function clampBpp(value: number): number {
+	return Math.min(0.5, Math.max(0.02, value));
+}
+
+function SectionHeader({
+	icon,
+	title,
+	description,
+}: {
+	icon: ReactNode;
+	title: string;
+	description?: string;
+}) {
 	return (
-		<div className="mb-3 flex items-center gap-2 text-[13px] font-medium tracking-wide text-white/70">
-			<span className="text-white/40">{icon}</span>
-			{children}
+		<div className="mb-3 flex items-start justify-between gap-4">
+			<div className="flex items-center gap-2.5">
+				<span className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04] text-white/55">
+					{icon}
+				</span>
+				<div>
+					<h3 className="text-[13px] font-semibold text-white">{title}</h3>
+					{description ? (
+						<p className="mt-0.5 text-[11px] leading-4 text-white/38">{description}</p>
+					) : null}
+				</div>
+			</div>
 		</div>
 	);
 }
 
-function DestinationCard({
-	icon,
-	label,
-	selected,
-	disabled = false,
-	badge,
-	onClick,
-}: {
-	icon: ReactNode;
-	label: string;
-	selected: boolean;
-	disabled?: boolean;
-	badge?: string;
-	onClick: () => void;
-}) {
-	return (
-		<button
-			type="button"
-			onClick={onClick}
-			disabled={disabled}
-			className={cn(
-				"group relative flex flex-1 flex-col items-center gap-2 rounded-[14px] border py-4 transition-all duration-200",
-				selected
-					? "border-white/20 bg-white/[0.07] text-white"
-					: "border-white/[0.06] text-white/40 hover:border-white/[0.12] hover:text-white/60",
-				disabled && "pointer-events-none opacity-30",
-			)}
-		>
-			<span className={cn("transition-colors", selected ? "text-white" : "text-white/30")}>
-				{icon}
-			</span>
-			<span className="text-[11px] font-medium">{label}</span>
-			{badge && (
-				<span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-full bg-white/[0.06] px-2 py-0.5 text-[8px] text-white/30">
-					{badge}
-				</span>
-			)}
-		</button>
-	);
-}
-
-function Pill({
+function ChoiceButton({
 	children,
 	selected,
+	disabled = false,
+	description,
+	selectionLabel,
+	optionGroup,
 	className,
 	onClick,
 }: {
 	children: ReactNode;
 	selected: boolean;
+	disabled?: boolean;
+	description?: string;
+	selectionLabel?: string;
+	optionGroup?: string;
 	className?: string;
 	onClick: () => void;
 }) {
 	return (
 		<button
 			type="button"
+			aria-pressed={selected}
+			data-selection-label={selectionLabel}
+			data-selected={selected ? "true" : "false"}
+			data-option-group={optionGroup}
+			disabled={disabled}
 			onClick={onClick}
 			className={cn(
-				"flex-1 rounded-[10px] border py-2.5 text-center text-[13px] font-semibold transition-all duration-150",
+				"relative min-h-[42px] rounded-lg border px-3 py-2 text-left transition-all duration-150",
+				"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F59E0B]/45",
 				selected
-					? "border-white/15 bg-white/[0.08] text-white"
-					: "border-transparent text-white/35 hover:text-white/55",
+					? "border-[#F59E0B]/55 bg-[#F59E0B]/12 text-white shadow-[0_0_0_1px_rgba(245,158,11,0.12)]"
+					: "border-white/[0.07] bg-white/[0.025] text-white/56 hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white/82",
+				disabled &&
+					"cursor-not-allowed opacity-35 hover:border-white/[0.07] hover:bg-white/[0.025]",
 				className,
 			)}
 		>
-			{children}
+			<span className="flex items-center justify-between gap-2 text-[12px] font-semibold">
+				{children}
+				{selected ? <Check className="h-3.5 w-3.5 text-[#F59E0B]" /> : null}
+			</span>
+			{description ? (
+				<span className="mt-1 block text-[10px] text-white/34">{description}</span>
+			) : null}
 		</button>
+	);
+}
+
+function DestinationButton({
+	icon,
+	label,
+	description,
+	selected,
+	disabled,
+	badge,
+	onClick,
+}: {
+	icon: ReactNode;
+	label: string;
+	description: string;
+	selected: boolean;
+	disabled?: boolean;
+	badge?: string;
+	onClick: () => void;
+}) {
+	return (
+		<ChoiceButton
+			selected={selected}
+			disabled={disabled}
+			description={description}
+			selectionLabel={label}
+			onClick={onClick}
+			className="min-h-[78px]"
+		>
+			<span className="flex items-center gap-2">
+				<span className={selected ? "text-[#F59E0B]" : "text-white/42"}>{icon}</span>
+				<span>{label}</span>
+				{badge ? (
+					<span className="rounded-full border border-white/[0.08] px-1.5 py-0.5 text-[9px] font-medium text-white/35">
+						{badge}
+					</span>
+				) : null}
+			</span>
+		</ChoiceButton>
+	);
+}
+
+function SegmentedGrid<T extends string | number>({
+	options,
+	value,
+	columns,
+	group,
+	onChange,
+}: {
+	options: Array<{ value: T; label: string; description?: string }>;
+	value: T;
+	columns: string;
+	group?: string;
+	onChange: (value: T) => void;
+}) {
+	return (
+		<div className={cn("grid gap-1.5", columns)}>
+			{options.map((option) => (
+				<ChoiceButton
+					key={String(option.value)}
+					selected={value === option.value}
+					description={option.description}
+					selectionLabel={option.label}
+					optionGroup={group}
+					onClick={() => onChange(option.value)}
+					className="min-h-[40px] px-2.5 text-center"
+				>
+					<span className="w-full text-center">{option.label}</span>
+				</ChoiceButton>
+			))}
+		</div>
 	);
 }
 
@@ -127,68 +264,52 @@ function ToggleRow({
 	onChange,
 }: {
 	label: string;
-	description?: string;
+	description: string;
 	checked: boolean;
 	onChange: (checked: boolean) => void;
 }) {
 	return (
-		<div className="flex items-center justify-between py-1">
+		<div className="flex items-center justify-between gap-4 rounded-lg border border-white/[0.07] bg-white/[0.025] px-3 py-2.5">
 			<div>
-				<div className="text-[12px] font-medium text-white/70">{label}</div>
-				{description && <div className="mt-0.5 text-[10px] text-white/30">{description}</div>}
+				<div className="text-[12px] font-semibold text-white/78">{label}</div>
+				<div className="mt-0.5 text-[10px] leading-4 text-white/34">{description}</div>
 			</div>
 			<Switch
 				checked={checked}
 				onCheckedChange={onChange}
-				className="scale-[0.8] data-[state=checked]:bg-[#F59E0B]"
+				className="shrink-0 data-[state=checked]:bg-[#F59E0B]"
 			/>
 		</div>
 	);
 }
 
-function SegmentedRow<T extends string | number>({
-	label,
-	options,
-	value,
-	onChange,
-}: {
-	label: string;
-	options: Array<{ value: T; label: string }>;
-	value: T;
-	onChange: (val: T) => void;
-}) {
+function SummaryStat({ label, value }: { label: string; value: string }) {
 	return (
-		<div>
-			<div className="mb-2 text-[11px] font-medium text-white/40">{label}</div>
-			<div className="flex gap-1 rounded-[10px] bg-white/[0.03] p-1">
-				{options.map((opt) => (
-					<button
-						type="button"
-						key={String(opt.value)}
-						onClick={() => onChange(opt.value)}
-						className={cn(
-							"flex-1 rounded-lg py-1.5 text-[11px] font-semibold transition-all duration-150",
-							value === opt.value
-								? "bg-white/10 text-white shadow-sm"
-								: "text-white/30 hover:text-white/50",
-						)}
-					>
-						{opt.label}
-					</button>
-				))}
+		<div className="min-w-0">
+			<div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/26">
+				{label}
 			</div>
+			<div className="mt-1 truncate text-[12px] font-semibold text-white/82">{value}</div>
 		</div>
 	);
 }
 
-function formatEstimatedSize(bytes: number): string {
-	if (bytes >= 1_000_000) {
-		return `~${(bytes / 1_000_000).toFixed(1)} MB`;
+function Warnings({ warnings }: { warnings: string[] }) {
+	if (warnings.length === 0) {
+		return null;
 	}
-	return `~${Math.round(bytes / 1_000)} KB`;
-}
 
-// --- Main Component ---
+	return (
+		<div className="mt-3 space-y-1.5 rounded-lg border border-amber-400/16 bg-amber-400/[0.06] p-3">
+			{warnings.map((warning) => (
+				<div key={warning} className="flex gap-2 text-[11px] leading-4 text-amber-100/80">
+					<AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-300/80" />
+					<span>{warning}</span>
+				</div>
+			))}
+		</div>
+	);
+}
 
 export function ExportSettingsDialog({
 	isOpen,
@@ -227,513 +348,554 @@ export function ExportSettingsDialog({
 	}, [isOpen]);
 
 	useEffect(() => {
-		if (exportFormat === "mp4") {
-			setAdvancedOpen(videoExportSettings.mode === "custom");
-		} else {
-			setAdvancedOpen(gifExportSettings.mode === "custom");
-		}
-	}, [exportFormat, videoExportSettings.mode, gifExportSettings.mode]);
+		setAdvancedOpen(
+			exportFormat === "gif"
+				? gifExportSettings.mode === "custom"
+				: videoExportSettings.mode === "custom",
+		);
+	}, [exportFormat, gifExportSettings.mode, videoExportSettings.mode]);
 
 	if (!isOpen && !isVisible) return null;
 
 	const isGif = exportFormat === "gif";
+	const currentVideoQuality = getSelectedVideoQuality(videoExportSettings);
+	const currentGifQuality = getSelectedGifQuality(gifExportSettings);
+	const activePlan = isGif ? resolvedGifPlan : resolvedVideoPlan;
+	const activeWarnings = activePlan.warnings;
+	const bppValue = clampBpp(videoExportSettings.bitsPerPixel ?? 0.3);
+	const bppPercent = ((bppValue - 0.02) / (0.5 - 0.02)) * 100;
+	const exportLabel =
+		exportDestination === "clipboard"
+			? "Copy Export"
+			: exportDestination === "link"
+				? "Create Link"
+				: `Export ${isGif ? "GIF" : "MP4"}`;
 
-	// Quality mapping
-	const currentVideoQuality: VideoQualityLabel =
-		VIDEO_PRESET_TO_QUALITY[videoExportSettings.preset] ?? "web";
-
-	const currentGifQuality: GifQualityLabel =
-		gifExportSettings.preset === "small-share"
-			? "potato"
-			: gifExportSettings.preset === "balanced"
-				? "web"
-				: "maximum";
-
-	const handleVideoQualityChange = (quality: VideoQualityLabel) => {
-		const preset = VIDEO_QUALITY_TO_PRESET[quality];
-		const presetSettings = getVideoExportSettingsForPreset(preset);
+	const setCustomVideoSettings = (patch: Partial<VideoExportSettings>) => {
 		onVideoExportSettingsChange({
-			...presetSettings,
-			forceFFmpegDecoder: videoExportSettings.forceFFmpegDecoder,
+			...videoExportSettings,
+			mode: "custom",
+			...patch,
 		});
 	};
 
-	const handleGifQualityChange = (quality: GifQualityLabel) => {
-		const preset = GIF_QUALITY_TO_PRESET[quality];
-		onGifExportSettingsChange(getGifExportSettingsForPreset(preset));
+	const setCustomGifSettings = (patch: Partial<GifExportConfig>) => {
+		onGifExportSettingsChange({
+			...gifExportSettings,
+			mode: "custom",
+			...patch,
+		});
 	};
 
 	const handleAdvancedToggle = (checked: boolean) => {
 		setAdvancedOpen(checked);
 		if (isGif) {
-			if (checked) {
-				onGifExportSettingsChange({ ...gifExportSettings, mode: "custom" });
-			} else {
-				onGifExportSettingsChange(getGifExportSettingsForPreset(gifExportSettings.preset));
-			}
-		} else if (checked) {
+			onGifExportSettingsChange(
+				checked
+					? { ...gifExportSettings, mode: "custom" }
+					: getGifExportSettingsForPreset(gifExportSettings.preset),
+			);
+			return;
+		}
+
+		if (checked) {
 			onVideoExportSettingsChange({
 				...videoExportSettings,
 				mode: "custom",
-				bitrateMode: "bpp",
+				bitrateMode:
+					videoExportSettings.bitrateMode === "custom" || videoExportSettings.bitrateMode === "bpp"
+						? videoExportSettings.bitrateMode
+						: "bpp",
 				bitsPerPixel: videoExportSettings.bitsPerPixel ?? 0.3,
 			});
-		} else {
-			const presetSettings = getVideoExportSettingsForPreset(videoExportSettings.preset);
-			onVideoExportSettingsChange({
-				...presetSettings,
-				forceFFmpegDecoder: videoExportSettings.forceFFmpegDecoder,
-			});
+			return;
 		}
+
+		onVideoExportSettingsChange({
+			...getVideoExportSettingsForPreset(videoExportSettings.preset),
+			forceFFmpegDecoder: videoExportSettings.forceFFmpegDecoder,
+		});
 	};
 
-	const handleVideoResolutionChange = (resolutionMode: VideoExportSettings["resolutionMode"]) => {
-		onVideoExportSettingsChange({ ...videoExportSettings, mode: "custom", resolutionMode });
+	const handleExportClick = () => {
+		if (exportDestination === "link") {
+			return;
+		}
+		onExport(exportDestination);
+		onClose();
 	};
-
-	const handleVideoFrameRateChange = (frameRateMode: VideoExportSettings["frameRateMode"]) => {
-		onVideoExportSettingsChange({ ...videoExportSettings, mode: "custom", frameRateMode });
-	};
-
-	const handleGifResolutionChange = (resolutionMode: GifExportConfig["resolutionMode"]) => {
-		onGifExportSettingsChange({ ...gifExportSettings, mode: "custom", resolutionMode });
-	};
-
-	const handleGifFrameRateChange = (frameRate: GifExportConfig["frameRate"]) => {
-		onGifExportSettingsChange({ ...gifExportSettings, mode: "custom", frameRate });
-	};
-
-	const exportLabel =
-		exportDestination === "clipboard"
-			? "Copy to Clipboard"
-			: exportDestination === "link"
-				? "Get Shareable Link"
-				: "Export to File";
-
-	const exportIcon =
-		exportDestination === "clipboard" ? (
-			<Clipboard className="h-[18px] w-[18px]" />
-		) : (
-			<FileText className="h-[18px] w-[18px]" />
-		);
-
-	const bppValue = videoExportSettings.bitsPerPixel ?? 0.3;
-	const bppPercent = ((bppValue - 0.02) / (0.5 - 0.02)) * 100;
 
 	return (
 		<>
-			{/* Backdrop */}
 			<div
 				className={cn(
-					"fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm transition-all",
-					isClosing
-						? "opacity-0 duration-200 ease-in"
-						: "opacity-100 duration-300 ease-out animate-in fade-in",
+					"fixed inset-0 z-[9999] bg-black/72 backdrop-blur-md transition-all",
+					isClosing ? "opacity-0 duration-200 ease-in" : "opacity-100 duration-300 ease-out",
 				)}
 				onClick={onClose}
 			/>
 
-			{/* Dialog */}
-			<div className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none">
+			<div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 pointer-events-none">
 				<div
 					className={cn(
-						"pointer-events-auto w-[90vw] max-w-[480px] rounded-2xl border border-white/[0.06] bg-[#0c0c0e] shadow-2xl shadow-black/80 overflow-hidden transition-all",
+						"pointer-events-auto flex max-h-[90vh] w-[min(960px,94vw)] flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-[#090b0d] shadow-2xl shadow-black/70 transition-all",
 						isClosing
 							? "opacity-0 scale-95 translate-y-2 duration-200 ease-in"
 							: "opacity-100 scale-100 translate-y-0 duration-300 ease-out animate-in fade-in zoom-in-95 slide-in-from-bottom-3",
 					)}
 				>
-					<div className="max-h-[88vh] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-						<div className="px-6 pt-7 pb-6">
-							{/* ── Destination ── */}
-							<SectionLabel
-								icon={
-									<svg
-										viewBox="0 0 16 16"
-										fill="none"
-										className="h-4 w-4"
-										stroke="currentColor"
-										strokeWidth="1.5"
-										strokeLinecap="round"
-										strokeLinejoin="round"
-									>
-										<path d="M8 2v8M4.5 6.5 8 3l3.5 3.5M3 11h10M3 13.5h10" />
-									</svg>
-								}
-							>
-								Destination
-							</SectionLabel>
-							<div className="flex gap-2.5">
-								<DestinationCard
-									icon={<FileText className="h-5 w-5" strokeWidth={1.5} />}
-									label="File"
-									selected={exportDestination === "file"}
-									onClick={() => onExportDestinationChange("file")}
-								/>
-								<DestinationCard
-									icon={<Clipboard className="h-5 w-5" strokeWidth={1.5} />}
-									label="Clipboard"
-									selected={exportDestination === "clipboard"}
-									onClick={() => onExportDestinationChange("clipboard")}
-								/>
-								<DestinationCard
-									icon={<Link className="h-5 w-5" strokeWidth={1.5} />}
-									label="Shareable Link"
-									selected={exportDestination === "link"}
-									disabled
-									badge="Coming soon"
-									onClick={() => {
-										// No-op: shareable link not yet implemented
-									}}
-								/>
-							</div>
-
-							{/* ── Format ── */}
-							<div className="mt-7">
-								<SectionLabel icon={<Film className="h-4 w-4" strokeWidth={1.5} />}>
-									Format
-								</SectionLabel>
-								<div className="flex gap-1.5 rounded-xl bg-white/[0.03] p-1">
-									<Pill
-										selected={exportFormat === "mp4"}
-										onClick={() => onExportFormatChange("mp4")}
-										className="flex-[1.6]"
-									>
-										MP4
-									</Pill>
-									<Pill
-										selected={exportFormat === "gif"}
-										onClick={() => onExportFormatChange("gif")}
-									>
-										GIF
-									</Pill>
-								</div>
-							</div>
-
-							{/* ── Resolution ── */}
-							<div className="mt-7">
-								<SectionLabel icon={<Monitor className="h-4 w-4" strokeWidth={1.5} />}>
-									Resolution
-								</SectionLabel>
-								<div className="flex gap-1.5">
-									{isGif ? (
-										<>
-											{(["480p", "720p", "1080p"] as const).map((r) => (
-												<Pill
-													key={r}
-													selected={gifExportSettings.resolutionMode === r}
-													onClick={() => handleGifResolutionChange(r)}
-												>
-													{r}
-												</Pill>
-											))}
-										</>
-									) : (
-										<>
-											<Pill
-												selected={videoExportSettings.resolutionMode === "720p"}
-												onClick={() => handleVideoResolutionChange("720p")}
-											>
-												720p
-											</Pill>
-											<Pill
-												selected={videoExportSettings.resolutionMode === "1080p"}
-												onClick={() => handleVideoResolutionChange("1080p")}
-											>
-												1080p
-											</Pill>
-											<Pill
-												selected={videoExportSettings.resolutionMode === "2160p"}
-												onClick={() => handleVideoResolutionChange("2160p")}
-											>
-												4K
-											</Pill>
-										</>
-									)}
-								</div>
-							</div>
-
-							{/* ── Frame Rate ── */}
-							<div className="mt-7">
-								<SectionLabel
-									icon={
-										<svg
-											viewBox="0 0 16 16"
-											fill="none"
-											className="h-4 w-4"
-											stroke="currentColor"
-											strokeWidth="1.5"
-											strokeLinecap="round"
-											strokeLinejoin="round"
-										>
-											<circle cx="8" cy="8" r="6.5" />
-											<path d="M8 4.5V8l2.5 1.5" />
-										</svg>
-									}
-								>
-									Frame Rate
-								</SectionLabel>
-								<div className="flex gap-1.5">
-									{isGif ? (
-										<>
-											{([10, 15, 30] as const).map((fps) => (
-												<Pill
-													key={fps}
-													selected={gifExportSettings.frameRate === fps}
-													onClick={() => handleGifFrameRateChange(fps)}
-												>
-													{fps}
-												</Pill>
-											))}
-										</>
-									) : (
-										<>
-											{(
-												[
-													["24", "24"],
-													["30", "30"],
-													["60", "60"],
-												] as const
-											).map(([mode, display]) => (
-												<Pill
-													key={mode}
-													selected={videoExportSettings.frameRateMode === mode}
-													onClick={() =>
-														handleVideoFrameRateChange(mode as VideoExportSettings["frameRateMode"])
-													}
-												>
-													{display}
-												</Pill>
-											))}
-										</>
-									)}
-								</div>
-							</div>
-
-							{/* ── Quality ── */}
-							<div className="mt-7">
-								<SectionLabel
-									icon={
-										<svg
-											viewBox="0 0 16 16"
-											fill="none"
-											className="h-4 w-4"
-											stroke="currentColor"
-											strokeWidth="1.5"
-											strokeLinecap="round"
-											strokeLinejoin="round"
-										>
-											<path d="M8 1.5l1.8 3.7 4 .6-2.9 2.8.7 4L8 10.8 4.4 12.6l.7-4-2.9-2.8 4-.6L8 1.5z" />
-										</svg>
-									}
-								>
-									Quality
-								</SectionLabel>
-								<div className="flex gap-1.5">
-									{(["potato", "web", "social", "maximum"] as const).map((q) => (
-										<Pill
-											key={q}
-											selected={isGif ? currentGifQuality === q : currentVideoQuality === q}
-											onClick={() =>
-												isGif ? handleGifQualityChange(q) : handleVideoQualityChange(q)
-											}
-										>
-											{q.charAt(0).toUpperCase() + q.slice(1)}
-										</Pill>
-									))}
-								</div>
-								<div className="mt-2 flex justify-between text-[10px] text-white/20">
-									<span>Smaller file</span>
-									<span>Larger file</span>
-								</div>
-							</div>
-
-							{/* ── Divider ── */}
-							<div className="my-6 h-px bg-white/[0.06]" />
-
-							{/* ── Advanced ── */}
-							<div className="flex items-center justify-between">
-								<div className="flex items-center gap-2">
-									<Switch
-										checked={advancedOpen}
-										onCheckedChange={handleAdvancedToggle}
-										className="scale-[0.85] data-[state=checked]:bg-[#F59E0B]"
-									/>
-									<span className="text-[13px] font-medium text-white/70">Advanced</span>
-								</div>
-							</div>
-
-							{advancedOpen && (
-								<div className="mt-5 space-y-5 animate-in fade-in slide-in-from-top-1 duration-200">
-									{isGif ? (
-										<>
-											<ToggleRow
-												label="Loop"
-												description="Loop the GIF forever"
-												checked={gifExportSettings.loop}
-												onChange={(checked) =>
-													onGifExportSettingsChange({ ...gifExportSettings, loop: checked })
-												}
-											/>
-											<ToggleRow
-												label="Dedupe similar frames"
-												description="Merge near-identical frames to reduce size"
-												checked={gifExportSettings.dedupeFrames}
-												onChange={(checked) =>
-													onGifExportSettingsChange({
-														...gifExportSettings,
-														dedupeFrames: checked,
-													})
-												}
-											/>
-											<SegmentedRow
-												label="Color Count"
-												value={gifExportSettings.colorCount}
-												onChange={(colorCount: GifColorCount) =>
-													onGifExportSettingsChange({ ...gifExportSettings, colorCount })
-												}
-												options={[
-													{ value: 64 as GifColorCount, label: "64" },
-													{ value: 128 as GifColorCount, label: "128" },
-													{ value: 256 as GifColorCount, label: "256" },
-												]}
-											/>
-											<SegmentedRow
-												label="Dithering"
-												value={gifExportSettings.ditherMode}
-												onChange={(ditherMode: GifDitherMode) =>
-													onGifExportSettingsChange({ ...gifExportSettings, ditherMode })
-												}
-												options={[
-													{ value: "off" as GifDitherMode, label: "Off" },
-													{ value: "bayer" as GifDitherMode, label: "Bayer" },
-													{ value: "floyd-steinberg" as GifDitherMode, label: "F-S" },
-												]}
-											/>
-											<SegmentedRow
-												label="Motion Sensitivity"
-												value={gifExportSettings.motionSensitivity}
-												onChange={(motionSensitivity: GifMotionSensitivity) =>
-													onGifExportSettingsChange({
-														...gifExportSettings,
-														motionSensitivity,
-													})
-												}
-												options={[
-													{ value: "low" as GifMotionSensitivity, label: "Low" },
-													{ value: "balanced" as GifMotionSensitivity, label: "Balanced" },
-													{ value: "high" as GifMotionSensitivity, label: "High" },
-												]}
-											/>
-										</>
-									) : (
-										<>
-											{/* Bits per pixel */}
-											<div>
-												<div className="mb-3 flex items-center justify-between">
-													<span className="text-[12px] font-medium text-white/50">
-														Bits per pixel
-													</span>
-													<span className="text-[13px] font-semibold tabular-nums text-white/80">
-														{bppValue.toFixed(2)}
-													</span>
-												</div>
-												<div className="relative h-1.5 rounded-full bg-white/[0.06]">
-													<div
-														className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#F59E0B]/60 to-[#F59E0B]"
-														style={{ width: `${bppPercent}%` }}
-													/>
-													<input
-														type="range"
-														min={0.02}
-														max={0.5}
-														step={0.01}
-														value={bppValue}
-														onChange={(e) =>
-															onVideoExportSettingsChange({
-																...videoExportSettings,
-																mode: "custom",
-																bitrateMode: "bpp",
-																bitsPerPixel: Number.parseFloat(e.target.value),
-															})
-														}
-														className="absolute inset-0 w-full appearance-none bg-transparent cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#F59E0B] [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(245,158,11,0.5)] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#0c0c0e] [&::-webkit-slider-thumb]:transition-shadow [&::-webkit-slider-thumb]:hover:shadow-[0_0_14px_rgba(245,158,11,0.7)]"
-													/>
-												</div>
-												<div className="mt-2 flex justify-between text-[10px] text-white/20">
-													<span>0.02 (tiny)</span>
-													<span>0.50 (huge)</span>
-												</div>
-											</div>
-
-											{/* Force FFmpeg decoder */}
-											<div className="flex items-start gap-3 pt-1">
-												<Switch
-													checked={videoExportSettings.forceFFmpegDecoder ?? false}
-													onCheckedChange={(checked) =>
-														onVideoExportSettingsChange({
-															...videoExportSettings,
-															forceFFmpegDecoder: checked,
-														})
-													}
-													className="mt-0.5 scale-[0.8] data-[state=checked]:bg-[#F59E0B]"
-												/>
-												<div>
-													<div className="text-[12px] font-medium text-white/70">
-														Force FFmpeg decoder
-													</div>
-													<div className="mt-0.5 text-[10px] text-white/30">
-														Skip hardware decoder (auto-fallback enabled)
-													</div>
-												</div>
-											</div>
-										</>
-									)}
-								</div>
-							)}
-						</div>
-
-						{/* ── Resolved Summary ── */}
-						<div className="px-6 pb-3">
-							<p className="text-center text-[12px] text-white/30 tracking-wide">
-								{exportFormat === "gif"
-									? `${resolvedGifPlan.width}×${resolvedGifPlan.height} · ${resolvedGifPlan.frameRate} fps · ${formatEstimatedSize(resolvedGifPlan.estimatedSizeBytes)}`
-									: `${resolvedVideoPlan.width}×${resolvedVideoPlan.height} · ${resolvedVideoPlan.frameRate} fps · ${(resolvedVideoPlan.bitrate / 1_000_000).toFixed(1)} Mbps`}
+					<div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-4">
+						<div>
+							<h2 className="text-[17px] font-semibold tracking-tight text-white">
+								Export settings
+							</h2>
+							<p className="mt-0.5 text-[12px] text-white/38">
+								Choose the format, destination, and output quality before rendering.
 							</p>
 						</div>
-
-						{/* ── Footer ── */}
-						<div className="px-6 pb-7">
-							{/* Export button */}
-							<button
-								type="button"
-								disabled={exportDestination === "link"}
-								onClick={() => {
-									onExport(exportDestination);
-									onClose();
-								}}
-								className={cn(
-									"flex h-[52px] w-full items-center justify-center gap-2.5 rounded-2xl text-[14px] font-semibold transition-all duration-200",
-									"bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-white",
-									"shadow-[0_4px_24px_rgba(245,158,11,0.25)]",
-									"hover:shadow-[0_4px_32px_rgba(245,158,11,0.35)] hover:brightness-110",
-									"active:scale-[0.98] active:brightness-95",
-									"disabled:opacity-40 disabled:pointer-events-none",
-								)}
-							>
-								{exportIcon}
-								{exportLabel}
-							</button>
-
-							{/* Back to Editor */}
-							<button
-								type="button"
-								onClick={onClose}
-								className="mt-4 w-full text-center text-[13px] font-medium text-white/35 hover:text-white/60 transition-colors duration-200"
-							>
-								Back to Editor
-							</button>
+						<div className="rounded-lg border border-[#F59E0B]/20 bg-[#F59E0B]/10 px-3 py-1.5 text-[11px] font-semibold text-[#FBBF24]">
+							{isGif ? "GIF" : "MP4"} ready
 						</div>
+					</div>
+
+					<div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[1fr_300px]">
+						<div className="overflow-y-auto px-5 py-5 [scrollbar-width:thin]">
+							<div className="space-y-6">
+								<section>
+									<SectionHeader
+										icon={<Film className="h-4 w-4" />}
+										title="Format"
+										description="MP4 is best for sharing and editing. GIF is best for short loops."
+									/>
+									<div className="grid grid-cols-2 gap-2">
+										<ChoiceButton
+											selected={exportFormat === "mp4"}
+											description="Audio, timeline edits, high quality"
+											selectionLabel="MP4 video"
+											onClick={() => onExportFormatChange("mp4")}
+										>
+											MP4 video
+										</ChoiceButton>
+										<ChoiceButton
+											selected={exportFormat === "gif"}
+											description="Silent animated image"
+											selectionLabel="GIF animation"
+											onClick={() => onExportFormatChange("gif")}
+										>
+											GIF animation
+										</ChoiceButton>
+									</div>
+								</section>
+
+								<section>
+									<SectionHeader
+										icon={<FileText className="h-4 w-4" />}
+										title="Destination"
+										description="Save a file or copy the rendered export as a temporary file."
+									/>
+									<div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+										<DestinationButton
+											icon={<FileText className="h-4 w-4" />}
+											label="File"
+											description="Choose a folder"
+											selected={exportDestination === "file"}
+											onClick={() => onExportDestinationChange("file")}
+										/>
+										<DestinationButton
+											icon={<Clipboard className="h-4 w-4" />}
+											label="Clipboard"
+											description="Copy file reference"
+											selected={exportDestination === "clipboard"}
+											onClick={() => onExportDestinationChange("clipboard")}
+										/>
+										<DestinationButton
+											icon={<Link className="h-4 w-4" />}
+											label="Link"
+											description="Cloud share"
+											selected={exportDestination === "link"}
+											disabled
+											badge="Soon"
+											onClick={() => undefined}
+										/>
+									</div>
+								</section>
+
+								<section>
+									<SectionHeader
+										icon={<Zap className="h-4 w-4" />}
+										title="Quality profile"
+										description="Profiles set sensible defaults. Any manual output change becomes Custom."
+									/>
+									<div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+										{isGif
+											? GIF_EXPORT_QUALITY_OPTIONS.map((quality) => (
+													<ChoiceButton
+														key={quality}
+														selected={currentGifQuality === quality}
+														description={QUALITY_LABELS[quality].description}
+														selectionLabel={QUALITY_LABELS[quality].label}
+														onClick={() =>
+															onGifExportSettingsChange(selectGifQualitySettings(quality))
+														}
+													>
+														{QUALITY_LABELS[quality].label}
+													</ChoiceButton>
+												))
+											: VIDEO_EXPORT_QUALITY_OPTIONS.map((quality) => (
+													<ChoiceButton
+														key={quality}
+														selected={currentVideoQuality === quality}
+														description={QUALITY_LABELS[quality].description}
+														selectionLabel={QUALITY_LABELS[quality].label}
+														onClick={() =>
+															onVideoExportSettingsChange(
+																selectVideoQualitySettings(videoExportSettings, quality),
+															)
+														}
+													>
+														{QUALITY_LABELS[quality].label}
+													</ChoiceButton>
+												))}
+									</div>
+									{(isGif ? currentGifQuality === null : currentVideoQuality === null) ? (
+										<div className="mt-2 rounded-lg border border-[#F59E0B]/18 bg-[#F59E0B]/8 px-3 py-2 text-[11px] text-[#FCD34D]/88">
+											Custom profile is active because one or more output controls were changed.
+										</div>
+									) : null}
+								</section>
+
+								<section>
+									<SectionHeader
+										icon={<Monitor className="h-4 w-4" />}
+										title="Output"
+										description="Resolution and frame rate are applied to the final rendered canvas."
+									/>
+									<div className="space-y-4">
+										<div>
+											<div className="mb-2 text-[11px] font-semibold text-white/45">Resolution</div>
+											<SegmentedGrid
+												value={
+													isGif
+														? gifExportSettings.resolutionMode
+														: videoExportSettings.resolutionMode
+												}
+												options={
+													isGif ? GIF_RESOLUTION_MODE_OPTIONS : VIDEO_RESOLUTION_MODE_OPTIONS
+												}
+												columns={isGif ? "grid-cols-4" : "grid-cols-5"}
+												group={isGif ? "gif-resolution" : "video-resolution"}
+												onChange={(resolutionMode) => {
+													if (isGif) {
+														setCustomGifSettings({
+															resolutionMode: resolutionMode as GifExportConfig["resolutionMode"],
+														});
+													} else {
+														setCustomVideoSettings({
+															resolutionMode:
+																resolutionMode as VideoExportSettings["resolutionMode"],
+														});
+													}
+												}}
+											/>
+										</div>
+
+										<div>
+											<div className="mb-2 text-[11px] font-semibold text-white/45">Frame rate</div>
+											<SegmentedGrid
+												value={
+													isGif ? gifExportSettings.frameRate : videoExportSettings.frameRateMode
+												}
+												options={
+													isGif
+														? GIF_FRAME_RATES.map((option) => ({
+																value: option.value,
+																label: `${option.value}`,
+															}))
+														: VIDEO_FRAME_RATE_MODE_OPTIONS.map((option) => ({
+																value: option.value,
+																label: option.value,
+															}))
+												}
+												columns={isGif ? "grid-cols-7" : "grid-cols-2"}
+												group={isGif ? "gif-frame-rate" : "video-frame-rate"}
+												onChange={(frameRate) => {
+													if (isGif) {
+														setCustomGifSettings({
+															frameRate: frameRate as GifExportConfig["frameRate"],
+														});
+													} else {
+														setCustomVideoSettings({
+															frameRateMode: frameRate as VideoExportSettings["frameRateMode"],
+														});
+													}
+												}}
+											/>
+										</div>
+									</div>
+								</section>
+
+								<section>
+									<div className="flex items-center justify-between rounded-lg border border-white/[0.07] bg-white/[0.025] px-3 py-3">
+										<div className="flex items-center gap-2.5">
+											<SlidersHorizontal className="h-4 w-4 text-white/45" />
+											<div>
+												<div className="text-[13px] font-semibold text-white/82">
+													Advanced controls
+												</div>
+												<div className="mt-0.5 text-[11px] text-white/34">
+													{isGif
+														? "Looping, dedupe, colors, dithering, and motion sensitivity."
+														: "Bitrate, web optimization, and decoder fallback controls."}
+												</div>
+											</div>
+										</div>
+										<Switch
+											checked={advancedOpen}
+											onCheckedChange={handleAdvancedToggle}
+											className="data-[state=checked]:bg-[#F59E0B]"
+										/>
+									</div>
+
+									{advancedOpen ? (
+										<div className="mt-3 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+											{isGif ? (
+												<>
+													<div className="grid gap-2 sm:grid-cols-2">
+														<ToggleRow
+															label="Loop forever"
+															description="Repeat the GIF automatically."
+															checked={gifExportSettings.loop}
+															onChange={(loop) => setCustomGifSettings({ loop })}
+														/>
+														<ToggleRow
+															label="Dedupe frames"
+															description="Remove near-identical frames to reduce size."
+															checked={gifExportSettings.dedupeFrames}
+															onChange={(dedupeFrames) => setCustomGifSettings({ dedupeFrames })}
+														/>
+													</div>
+													<SegmentedGrid
+														value={gifExportSettings.colorCount}
+														options={GIF_COLOR_COUNT_OPTIONS}
+														columns="grid-cols-3"
+														onChange={(colorCount) =>
+															setCustomGifSettings({ colorCount: colorCount as GifColorCount })
+														}
+													/>
+													<SegmentedGrid
+														value={gifExportSettings.ditherMode}
+														options={GIF_DITHER_MODE_OPTIONS}
+														columns="grid-cols-3"
+														onChange={(ditherMode) =>
+															setCustomGifSettings({ ditherMode: ditherMode as GifDitherMode })
+														}
+													/>
+													<SegmentedGrid
+														value={gifExportSettings.motionSensitivity}
+														options={GIF_MOTION_SENSITIVITY_OPTIONS}
+														columns="grid-cols-3"
+														onChange={(motionSensitivity) =>
+															setCustomGifSettings({
+																motionSensitivity: motionSensitivity as GifMotionSensitivity,
+															})
+														}
+													/>
+												</>
+											) : (
+												<>
+													<SegmentedGrid
+														value={videoExportSettings.bitrateMode}
+														options={VIDEO_BITRATE_OPTIONS.map((option) => ({
+															value: option.value,
+															label: option.label,
+														}))}
+														columns="grid-cols-3 sm:grid-cols-6"
+														onChange={(bitrateMode) =>
+															setCustomVideoSettings({
+																bitrateMode: bitrateMode as VideoBitrateMode,
+																bitsPerPixel:
+																	bitrateMode === "bpp"
+																		? (videoExportSettings.bitsPerPixel ?? 0.3)
+																		: videoExportSettings.bitsPerPixel,
+															})
+														}
+													/>
+
+													{videoExportSettings.bitrateMode === "bpp" ? (
+														<div className="rounded-lg border border-white/[0.07] bg-white/[0.025] px-3 py-3">
+															<div className="mb-3 flex items-center justify-between">
+																<span className="text-[12px] font-semibold text-white/72">
+																	Bits per pixel
+																</span>
+																<span className="font-mono text-[12px] font-semibold tabular-nums text-white/82">
+																	{bppValue.toFixed(2)}
+																</span>
+															</div>
+															<div className="relative h-1.5 rounded-full bg-white/[0.07]">
+																<div
+																	className="absolute inset-y-0 left-0 rounded-full bg-[#F59E0B]"
+																	style={{ width: `${bppPercent}%` }}
+																/>
+																<input
+																	type="range"
+																	min={0.02}
+																	max={0.5}
+																	step={0.01}
+																	value={bppValue}
+																	onChange={(event) =>
+																		setCustomVideoSettings({
+																			bitrateMode: "bpp",
+																			bitsPerPixel: Number.parseFloat(event.target.value),
+																		})
+																	}
+																	className="absolute inset-0 w-full cursor-pointer appearance-none bg-transparent [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#090b0d] [&::-webkit-slider-thumb]:bg-[#F59E0B]"
+																/>
+															</div>
+															<div className="mt-2 flex justify-between text-[10px] text-white/30">
+																<span>Smaller</span>
+																<span>Sharper</span>
+															</div>
+														</div>
+													) : null}
+
+													{videoExportSettings.bitrateMode === "custom" ? (
+														<label className="block rounded-lg border border-white/[0.07] bg-white/[0.025] px-3 py-3">
+															<span className="text-[12px] font-semibold text-white/72">
+																Custom bitrate
+															</span>
+															<div className="mt-2 flex items-center gap-2">
+																<input
+																	type="number"
+																	min={4}
+																	max={80}
+																	step={1}
+																	value={videoExportSettings.customBitrateMbps ?? 16}
+																	onChange={(event) =>
+																		setCustomVideoSettings({
+																			bitrateMode: "custom",
+																			customBitrateMbps: Number.parseFloat(event.target.value),
+																		})
+																	}
+																	className="h-9 w-24 rounded-md border border-white/[0.1] bg-black/30 px-2 text-[13px] text-white outline-none focus:border-[#F59E0B]/60"
+																/>
+																<span className="text-[11px] text-white/38">Mbps</span>
+															</div>
+														</label>
+													) : null}
+
+													<div className="grid gap-2 sm:grid-cols-2">
+														<ToggleRow
+															label="Optimize for web"
+															description="Prefer broadly compatible H.264 profiles."
+															checked={videoExportSettings.optimizeForWeb}
+															onChange={(optimizeForWeb) =>
+																setCustomVideoSettings({ optimizeForWeb })
+															}
+														/>
+														<ToggleRow
+															label="Force FFmpeg decoder"
+															description="Use the software decoder when hardware decode misbehaves."
+															checked={videoExportSettings.forceFFmpegDecoder ?? false}
+															onChange={(forceFFmpegDecoder) =>
+																setCustomVideoSettings({ forceFFmpegDecoder })
+															}
+														/>
+													</div>
+												</>
+											)}
+										</div>
+									) : null}
+								</section>
+							</div>
+						</div>
+
+						<aside className="border-t border-white/[0.07] bg-white/[0.025] p-5 lg:border-l lg:border-t-0">
+							<div className="sticky top-0">
+								<SectionHeader
+									icon={<Settings2 className="h-4 w-4" />}
+									title="Resolved export"
+									description="These are the exact output settings that will be sent to the renderer."
+								/>
+								<div className="grid grid-cols-2 gap-3 rounded-lg border border-white/[0.08] bg-black/20 p-3">
+									<SummaryStat label="Canvas" value={`${activePlan.width}x${activePlan.height}`} />
+									<SummaryStat label="FPS" value={`${activePlan.frameRate}`} />
+									{isGif ? (
+										<>
+											<SummaryStat
+												label="Estimate"
+												value={formatEstimatedSize(resolvedGifPlan.estimatedSizeBytes)}
+											/>
+											<SummaryStat label="Colors" value={`${resolvedGifPlan.colorCount}`} />
+										</>
+									) : (
+										<>
+											<SummaryStat
+												label="Bitrate"
+												value={formatBitrate(resolvedVideoPlan.bitrate)}
+											/>
+											<SummaryStat label="Codec" value={resolvedVideoPlan.codecLabel} />
+										</>
+									)}
+								</div>
+
+								<Warnings warnings={activeWarnings} />
+
+								<div className="mt-5 space-y-2 rounded-lg border border-white/[0.08] bg-black/20 p-3 text-[11px] leading-4 text-white/42">
+									<div className="flex justify-between gap-4">
+										<span>Profile</span>
+										<span className="text-right text-white/72">
+											{isGif
+												? ((currentGifQuality && QUALITY_LABELS[currentGifQuality].label) ??
+													"Custom")
+												: ((currentVideoQuality && QUALITY_LABELS[currentVideoQuality].label) ??
+													"Custom")}
+										</span>
+									</div>
+									<div className="flex justify-between gap-4">
+										<span>Destination</span>
+										<span className="text-right text-white/72">
+											{exportDestination === "clipboard"
+												? "Clipboard"
+												: exportDestination === "link"
+													? "Link"
+													: "File"}
+										</span>
+									</div>
+									<div className="flex justify-between gap-4">
+										<span>Mode</span>
+										<span className="text-right text-white/72">
+											{isGif ? resolvedGifPlan.mode : resolvedVideoPlan.mode}
+										</span>
+									</div>
+								</div>
+							</div>
+						</aside>
+					</div>
+
+					<div className="flex flex-col gap-3 border-t border-white/[0.07] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+						<button
+							type="button"
+							onClick={onClose}
+							className="h-10 rounded-lg px-4 text-[13px] font-semibold text-white/46 transition-colors hover:bg-white/[0.05] hover:text-white/72"
+						>
+							Back to editor
+						</button>
+						<button
+							type="button"
+							disabled={exportDestination === "link"}
+							onClick={handleExportClick}
+							className={cn(
+								"flex h-11 min-w-[180px] items-center justify-center gap-2 rounded-lg bg-[#F59E0B] px-5 text-[13px] font-bold text-black shadow-[0_8px_28px_rgba(245,158,11,0.22)] transition-all",
+								"hover:bg-[#FBBF24] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-35",
+							)}
+						>
+							{exportDestination === "clipboard" ? (
+								<Clipboard className="h-4 w-4" />
+							) : (
+								<FileText className="h-4 w-4" />
+							)}
+							{exportLabel}
+						</button>
 					</div>
 				</div>
 			</div>

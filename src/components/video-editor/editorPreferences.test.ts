@@ -397,7 +397,8 @@ describe("editorPreferences", () => {
 			exportFormat: "gif",
 			videoExportSettings: {
 				preset: "master",
-				frameRateMode: "source",
+				resolutionMode: "2160p",
+				frameRateMode: "60",
 				optimizeForWeb: false,
 			},
 			gifExportSettings: {
@@ -483,8 +484,8 @@ describe("editorPreferences", () => {
 			videoExportSettings: {
 				mode: "preset",
 				preset: "master",
-				resolutionMode: "source",
-				frameRateMode: "source",
+				resolutionMode: "2160p",
+				frameRateMode: "60",
 				bitrateMode: "archive",
 				optimizeForWeb: false,
 			},
@@ -506,8 +507,10 @@ describe("editorPreferences", () => {
 					preset: "quality",
 					resolutionMode: "2160p",
 					frameRateMode: "48",
-					bitrateMode: "custom",
+					bitrateMode: "bpp",
 					customBitrateMbps: 200,
+					bitsPerPixel: 0.9,
+					forceFFmpegDecoder: true,
 					optimizeForWeb: true,
 				},
 				gifExportSettings: {
@@ -528,9 +531,11 @@ describe("editorPreferences", () => {
 			videoExportSettings: {
 				mode: "custom",
 				resolutionMode: "2160p",
-				frameRateMode: "48",
-				bitrateMode: "custom",
+				frameRateMode: "60",
+				bitrateMode: "bpp",
 				customBitrateMbps: 80,
+				bitsPerPixel: 0.5,
+				forceFFmpegDecoder: true,
 			},
 			gifExportSettings: {
 				mode: "custom",

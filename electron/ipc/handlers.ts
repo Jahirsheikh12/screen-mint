@@ -15,6 +15,7 @@ import {
 	desktopCapturer,
 	dialog,
 	ipcMain,
+	type SaveDialogOptions,
 	shell,
 	systemPreferences,
 } from "electron";
@@ -4957,20 +4958,71 @@ export function registerIpcHandlers(
 		}
 	});
 
+	const getExportSaveDialogOptions = (fileName: string): SaveDialogOptions => {
+		const isGif = fileName.toLowerCase().endsWith(".gif");
+		const filters = isGif
+			? [{ name: "GIF Image", extensions: ["gif"] }]
+			: [{ name: "MP4 Video", extensions: ["mp4"] }];
+
+		return {
+			title: isGif ? "Save Exported GIF" : "Save Exported Video",
+			defaultPath: path.join(app.getPath("downloads"), fileName),
+			filters,
+			properties: ["createDirectory", "showOverwriteConfirmation"],
+		};
+	};
+
+	ipcMain.handle("show-export-save-dialog", async (_, fileName: string) => {
+		try {
+			const result = await dialog.showSaveDialog(getExportSaveDialogOptions(fileName));
+
+			if (result.canceled || !result.filePath) {
+				return {
+					success: false,
+					canceled: true,
+					message: "Export canceled",
+				};
+			}
+
+			return {
+				success: true,
+				path: result.filePath,
+			};
+		} catch (error) {
+			console.error("Failed to show export save dialog:", error);
+			return {
+				success: false,
+				message: "Failed to open save dialog",
+				error: String(error),
+			};
+		}
+	});
+
+	ipcMain.handle(
+		"write-exported-video-to-path",
+		async (_, videoData: ArrayBuffer, filePath: string) => {
+			try {
+				await fs.writeFile(filePath, Buffer.from(videoData));
+
+				return {
+					success: true,
+					path: filePath,
+					message: "Video exported successfully",
+				};
+			} catch (error) {
+				console.error("Failed to write exported video:", error);
+				return {
+					success: false,
+					message: "Failed to save exported video",
+					error: String(error),
+				};
+			}
+		},
+	);
+
 	ipcMain.handle("save-exported-video", async (_, videoData: ArrayBuffer, fileName: string) => {
 		try {
-			// Determine file type from extension
-			const isGif = fileName.toLowerCase().endsWith(".gif");
-			const filters = isGif
-				? [{ name: "GIF Image", extensions: ["gif"] }]
-				: [{ name: "MP4 Video", extensions: ["mp4"] }];
-
-			const result = await dialog.showSaveDialog({
-				title: isGif ? "Save Exported GIF" : "Save Exported Video",
-				defaultPath: path.join(app.getPath("downloads"), fileName),
-				filters,
-				properties: ["createDirectory", "showOverwriteConfirmation"],
-			});
+			const result = await dialog.showSaveDialog(getExportSaveDialogOptions(fileName));
 
 			if (result.canceled || !result.filePath) {
 				return {

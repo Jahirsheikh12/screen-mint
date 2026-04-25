@@ -15,7 +15,7 @@ import type {
 	VideoResolutionMode,
 } from "./types";
 
-const SUPPORTED_VIDEO_FRAME_RATES = [24, 25, 30, 48, 50, 60] as const;
+const SUPPORTED_VIDEO_FRAME_RATES = [30, 60] as const;
 const HIGH_QUALITY_CODEC_CANDIDATES = [
 	"avc1.640033",
 	"avc1.4d4033",
@@ -40,10 +40,18 @@ const GIF_RESOLUTION_HEIGHTS: Record<Exclude<GifResolutionMode, "source">, numbe
 	"720p": 720,
 	"1080p": 1080,
 };
-const VIDEO_RESOLUTION_FALLBACK_ORDER: VideoResolutionMode[] = ["2160p", "1440p", "1080p", "720p"];
-const FPS_FALLBACK_ORDER: ReadonlyArray<(typeof SUPPORTED_VIDEO_FRAME_RATES)[number]> = [
-	60, 50, 48, 30, 25, 24,
-] as const;
+const PRESET_BITRATE_FLOORS: Record<VideoExportPreset, number> = {
+	"fast-share": 8_000_000,
+	balanced: 12_000_000,
+	quality: 60_000_000,
+	master: 120_000_000,
+};
+const PRESET_BITS_PER_PIXEL: Record<VideoExportPreset, number> = {
+	"fast-share": 0.22,
+	balanced: 0.2,
+	quality: 0.24,
+	master: 0.24,
+};
 
 export interface SourceVideoMetadata {
 	width: number;
@@ -115,7 +123,7 @@ export function getVideoExportSettingsForPreset(preset: VideoExportPreset): Vide
 				mode: "preset",
 				preset,
 				resolutionMode: "1440p",
-				frameRateMode: "auto",
+				frameRateMode: "60",
 				bitrateMode: "very-high",
 				optimizeForWeb: true,
 			};
@@ -123,8 +131,8 @@ export function getVideoExportSettingsForPreset(preset: VideoExportPreset): Vide
 			return {
 				mode: "preset",
 				preset,
-				resolutionMode: "source",
-				frameRateMode: "source",
+				resolutionMode: "2160p",
+				frameRateMode: "60",
 				bitrateMode: "archive",
 				optimizeForWeb: false,
 			};
@@ -134,7 +142,7 @@ export function getVideoExportSettingsForPreset(preset: VideoExportPreset): Vide
 				mode: "preset",
 				preset: "balanced",
 				resolutionMode: "1080p",
-				frameRateMode: "auto",
+				frameRateMode: "30",
 				bitrateMode: "auto",
 				optimizeForWeb: true,
 			};
@@ -240,7 +248,7 @@ function makeEven(value: number): number {
 }
 
 function clampBitrate(value: number): number {
-	return Math.round(Math.min(80_000_000, Math.max(4_000_000, value)));
+	return Math.round(Math.min(220_000_000, Math.max(4_000_000, value)));
 }
 
 function resolveDimensions(
@@ -254,7 +262,7 @@ function resolveDimensions(
 		Number.isFinite(aspectRatioValue) && aspectRatioValue > 0
 			? aspectRatioValue
 			: sourceAspectRatio;
-	const baseHeight = preserveSourceHeight ? source.height : Math.min(source.height, maxHeight);
+	const baseHeight = preserveSourceHeight ? source.height : maxHeight;
 	const height = makeEven(baseHeight);
 	const width = makeEven(height * outputAspectRatio);
 	return { width, height };
@@ -290,17 +298,12 @@ function estimateVideoBitrate(
 	frameRate: number,
 	preset: VideoExportPreset,
 ): number {
-	const megapixels = (width * height) / 1_000_000;
-	const motionFactor = frameRate / 30;
-	const presetMultiplier =
-		preset === "fast-share"
-			? 2_200_000
-			: preset === "balanced"
-				? 3_400_000
-				: preset === "quality"
-					? 4_500_000
-					: 5_800_000;
-	return Math.round(Math.max(6_000_000, megapixels * motionFactor * presetMultiplier));
+	return Math.round(
+		Math.max(
+			PRESET_BITRATE_FLOORS[preset],
+			width * height * frameRate * PRESET_BITS_PER_PIXEL[preset],
+		),
+	);
 }
 
 function getBitrateMultiplier(mode: VideoBitrateMode): number {
@@ -343,23 +346,15 @@ function resolveVideoBitrateMode(settings: VideoExportSettings): VideoBitrateMod
 }
 
 function resolveFrameRateFromMode(
-	source: SourceVideoMetadata,
 	frameRateMode: VideoExportFrameRateMode,
 ): (typeof SUPPORTED_VIDEO_FRAME_RATES)[number] {
 	switch (frameRateMode) {
-		case "24":
-			return 24;
 		case "30":
 			return 30;
-		case "48":
-			return 48;
 		case "60":
 			return 60;
-		case "source":
-			return roundToSupportedFrameRate(source.frameRate || 60);
-		case "auto":
 		default:
-			return roundToSupportedFrameRate(source.frameRate || 60);
+			return roundToSupportedFrameRate(Number(frameRateMode));
 	}
 }
 
@@ -380,20 +375,6 @@ export function getCodecLabel(codec: string): string {
 		default:
 			return "H.264 Baseline";
 	}
-}
-
-function getLowerFrameRates(
-	frameRate: (typeof SUPPORTED_VIDEO_FRAME_RATES)[number],
-): (typeof SUPPORTED_VIDEO_FRAME_RATES)[number][] {
-	return FPS_FALLBACK_ORDER.filter((candidate) => candidate < frameRate);
-}
-
-function getLowerResolutionModes(resolutionMode: VideoResolutionMode): VideoResolutionMode[] {
-	const startIndex = VIDEO_RESOLUTION_FALLBACK_ORDER.indexOf(resolutionMode);
-	if (startIndex === -1) {
-		return ["1440p", "1080p", "720p"];
-	}
-	return VIDEO_RESOLUTION_FALLBACK_ORDER.slice(startIndex + 1);
 }
 
 function estimateGifSizeBytes(
@@ -423,20 +404,8 @@ export function resolveVideoExportPlan(
 	const frameRateMode = resolveVideoFrameRateMode(settings);
 	const bitrateMode = resolveVideoBitrateMode(settings);
 
-	let { width, height } = resolveVideoDimensions(source, aspectRatioValue, resolutionMode);
-	let frameRate = resolveFrameRateFromMode(source, frameRateMode);
-	const autoFrameRate = roundToSupportedFrameRate(source.frameRate || 60);
-	if (
-		(frameRateMode === "auto" || frameRateMode === "source") &&
-		autoFrameRate !== (source.frameRate || 60)
-	) {
-		fallbackSteps.push(`Rounded frame rate to ${autoFrameRate} FPS for encoder support.`);
-	}
-
-	if (settings.mode === "preset" && settings.preset === "fast-share" && frameRate > 30) {
-		frameRate = 30;
-		fallbackSteps.push("Fast Share capped output to 30 FPS for faster exports.");
-	}
+	const { width, height } = resolveVideoDimensions(source, aspectRatioValue, resolutionMode);
+	const frameRate = resolveFrameRateFromMode(frameRateMode);
 
 	if (height >= 2160) {
 		warnings.push("4K exports may be slower on some systems.");
@@ -457,7 +426,6 @@ export function resolveVideoExportPlan(
 		candidateWidth: number,
 		candidateHeight: number,
 		candidateFrameRate: (typeof SUPPORTED_VIDEO_FRAME_RATES)[number],
-		candidateSteps: string[],
 	) => {
 		const candidateBitrate =
 			bitrateMode === "bpp" && typeof settings.bitsPerPixel === "number"
@@ -488,33 +456,12 @@ export function resolveVideoExportPlan(
 				frameRate: candidateFrameRate,
 				bitrate: candidateBitrate,
 				codecCandidates,
-				fallbackSteps: candidateSteps,
+				fallbackSteps: [],
 			});
 		}
 	};
 
-	pushCandidate(width, height, frameRate, []);
-	for (const fallbackFrameRate of getLowerFrameRates(frameRate)) {
-		pushCandidate(width, height, fallbackFrameRate, [
-			`Lowered frame rate to ${fallbackFrameRate} FPS for compatibility.`,
-		]);
-	}
-	for (const fallbackResolutionMode of getLowerResolutionModes(resolutionMode)) {
-		const fallbackDimensions = resolveVideoDimensions(
-			source,
-			aspectRatioValue,
-			fallbackResolutionMode,
-		);
-		pushCandidate(fallbackDimensions.width, fallbackDimensions.height, frameRate, [
-			`Lowered output resolution to ${fallbackResolutionMode.toUpperCase()} for compatibility.`,
-		]);
-		for (const fallbackFrameRate of getLowerFrameRates(frameRate)) {
-			pushCandidate(fallbackDimensions.width, fallbackDimensions.height, fallbackFrameRate, [
-				`Lowered output resolution to ${fallbackResolutionMode.toUpperCase()} for compatibility.`,
-				`Lowered frame rate to ${fallbackFrameRate} FPS for compatibility.`,
-			]);
-		}
-	}
+	pushCandidate(width, height, frameRate);
 
 	if (settings.mode === "custom" && settings.optimizeForWeb) {
 		warnings.push(

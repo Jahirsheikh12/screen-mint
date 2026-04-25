@@ -29,26 +29,59 @@ describe("export planner", () => {
 		expect(mapLegacyExportQualityToVideoSettings("source")).toMatchObject({
 			mode: "preset",
 			preset: "master",
-			resolutionMode: "source",
-			frameRateMode: "source",
+			resolutionMode: "2160p",
+			frameRateMode: "60",
 			bitrateMode: "archive",
 			optimizeForWeb: false,
 		});
 	});
 
-	it("builds preset video plans with resolved dimensions and fps", () => {
-		const plan = resolveVideoExportPlan(source, getDefaultVideoExportSettings(), 16 / 9);
+	it("builds exact MP4 preset dimensions and fps", () => {
+		const cases = [
+			{ preset: "fast-share" as const, width: 1280, height: 720, frameRate: 30 },
+			{ preset: "balanced" as const, width: 1920, height: 1080, frameRate: 30 },
+			{ preset: "quality" as const, width: 2560, height: 1440, frameRate: 60 },
+			{ preset: "master" as const, width: 3840, height: 2160, frameRate: 60 },
+		];
 
-		expect(plan.mode).toBe("preset");
-		expect(plan.resolutionMode).toBe("1080p");
-		expect(plan.width).toBe(1920);
-		expect(plan.height).toBe(1080);
-		expect(plan.frameRate).toBe(60);
-		expect(plan.encoderCandidates[0]).toMatchObject({
+		for (const expected of cases) {
+			const plan = resolveVideoExportPlan(
+				source,
+				getVideoExportSettingsForPreset(expected.preset),
+				16 / 9,
+			);
+
+			expect(plan).toMatchObject({
+				mode: "preset",
+				width: expected.width,
+				height: expected.height,
+				frameRate: expected.frameRate,
+			});
+			expect(plan.encoderCandidates).toHaveLength(1);
+			expect(plan.encoderCandidates[0]).toMatchObject({
+				width: expected.width,
+				height: expected.height,
+				frameRate: expected.frameRate,
+			});
+		}
+	});
+
+	it("upscales lower-resolution sources to exact preset targets", () => {
+		const lowResolutionSource = {
 			width: 1920,
 			height: 1080,
-			frameRate: 60,
-		});
+			frameRate: 30,
+			durationMs: 8_000,
+		};
+		const plan = resolveVideoExportPlan(
+			lowResolutionSource,
+			getVideoExportSettingsForPreset("master"),
+			16 / 9,
+		);
+
+		expect(plan.width).toBe(3840);
+		expect(plan.height).toBe(2160);
+		expect(plan.frameRate).toBe(60);
 	});
 
 	it("builds custom video plans with explicit resolution, fps, and bitrate", () => {
@@ -58,7 +91,7 @@ describe("export planner", () => {
 				...getDefaultVideoExportSettings(),
 				mode: "custom",
 				resolutionMode: "2160p",
-				frameRateMode: "48",
+				frameRateMode: "60",
 				bitrateMode: "custom",
 				customBitrateMbps: 32,
 			},
@@ -67,29 +100,23 @@ describe("export planner", () => {
 
 		expect(plan.width).toBe(3840);
 		expect(plan.height).toBe(2160);
-		expect(plan.frameRate).toBe(48);
+		expect(plan.frameRate).toBe(60);
 		expect(plan.bitrate).toBe(32_000_000);
-		expect(plan.encoderCandidates.some((candidate) => candidate.frameRate === 30)).toBe(true);
-		expect(plan.encoderCandidates.some((candidate) => candidate.height === 1440)).toBe(true);
+		expect(plan.encoderCandidates).toHaveLength(1);
 	});
 
-	it("preserves source-driven frame rates across common input FPS values", () => {
-		for (const frameRate of [24, 25, 30, 50, 60]) {
-			const plan = resolveVideoExportPlan(
-				{
-					...source,
-					frameRate,
-				},
-				{
-					...getDefaultVideoExportSettings(),
-					mode: "custom",
-					frameRateMode: "source",
-				},
-				16 / 9,
-			);
+	it("does not add silent resolution or fps downgrade candidates for presets", () => {
+		const plan = resolveVideoExportPlan(source, getVideoExportSettingsForPreset("master"), 16 / 9);
 
-			expect(plan.frameRate).toBe(frameRate);
-		}
+		expect(plan.encoderCandidates).toEqual([
+			expect.objectContaining({
+				width: 3840,
+				height: 2160,
+				frameRate: 60,
+				fallbackSteps: [],
+			}),
+		]);
+		expect(plan.fallbackApplied).toBe(false);
 	});
 
 	it("uses the higher-quality codec ladder for custom exports when web optimization is off", () => {
@@ -128,7 +155,7 @@ describe("export planner", () => {
 			source,
 			{
 				...getVideoExportSettingsForPreset("balanced"),
-				frameRateMode: "24",
+				frameRateMode: "60",
 				bitrateMode: "custom",
 				customBitrateMbps: 48,
 			},
@@ -136,8 +163,8 @@ describe("export planner", () => {
 		);
 
 		expect(plan.mode).toBe("preset");
-		expect(plan.frameRateMode).toBe("auto");
-		expect(plan.frameRate).toBe(60);
+		expect(plan.frameRateMode).toBe("30");
+		expect(plan.frameRate).toBe(30);
 		expect(plan.bitrateMode).toBe("auto");
 	});
 

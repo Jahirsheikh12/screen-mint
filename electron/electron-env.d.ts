@@ -236,7 +236,24 @@ declare global {
 			saveExportedVideo: (
 				videoData: ArrayBuffer,
 				fileName: string,
-			) => Promise<{ success: boolean; path?: string; message?: string; canceled?: boolean }>;
+			) => Promise<{
+				success: boolean;
+				path?: string;
+				message?: string;
+				error?: string;
+				canceled?: boolean;
+			}>;
+			showExportSaveDialog: (fileName: string) => Promise<{
+				success: boolean;
+				path?: string;
+				message?: string;
+				error?: string;
+				canceled?: boolean;
+			}>;
+			writeExportedVideoToPath: (
+				videoData: ArrayBuffer,
+				filePath: string,
+			) => Promise<{ success: boolean; path?: string; message?: string; error?: string }>;
 			saveExportedVideoToRecordings: (
 				videoData: ArrayBuffer,
 				fileName: string,

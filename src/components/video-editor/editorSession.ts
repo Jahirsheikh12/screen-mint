@@ -1,6 +1,15 @@
 import type { ExportDetails, ExportProgress } from "@/lib/exporter";
 import type { PostRecordingContext } from "@/lib/recording/postRecording";
 
+export type ExportStatus =
+	| "idle"
+	| "exporting"
+	| "awaiting-save-path"
+	| "saving"
+	| "saved"
+	| "canceled"
+	| "failed";
+
 export interface PresetDialogState {
 	isOpen: boolean;
 	name: string;
@@ -27,6 +36,7 @@ export interface EditorSessionState {
 	currentProjectPath: string | null;
 	lastSavedSnapshot: string | null;
 	isExporting: boolean;
+	exportStatus: ExportStatus;
 	exportProgress: ExportProgress | null;
 	exportError: string | null;
 	exportDetails: ExportDetails | null;
@@ -41,6 +51,7 @@ export type EditorSessionAction =
 	| { type: "set-current-project-path"; path: string | null }
 	| { type: "set-last-saved-snapshot"; snapshot: string | null }
 	| { type: "set-exporting"; value: boolean }
+	| { type: "set-export-status"; status: ExportStatus }
 	| { type: "set-export-progress"; progress: ExportProgress | null }
 	| { type: "set-export-error"; error: string | null }
 	| { type: "set-export-details"; details: ExportDetails | null }
@@ -63,6 +74,7 @@ export function createInitialEditorSessionState(): EditorSessionState {
 		currentProjectPath: null,
 		lastSavedSnapshot: null,
 		isExporting: false,
+		exportStatus: "idle",
 		exportProgress: null,
 		exportError: null,
 		exportDetails: null,
@@ -102,6 +114,11 @@ export function editorSessionReducer(
 			return {
 				...state,
 				isExporting: action.value,
+			};
+		case "set-export-status":
+			return {
+				...state,
+				exportStatus: action.status,
 			};
 		case "set-export-progress":
 			return {
@@ -219,6 +236,7 @@ export function editorSessionReducer(
 				exportDetails: null,
 				exportedFilePath: undefined,
 				hasPendingExportSave: false,
+				exportStatus: "idle",
 			};
 	}
 }

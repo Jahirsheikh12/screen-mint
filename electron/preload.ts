@@ -225,6 +225,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	saveExportedVideo: (videoData: ArrayBuffer, fileName: string) => {
 		return ipcRenderer.invoke("save-exported-video", videoData, fileName);
 	},
+	showExportSaveDialog: (fileName: string) => {
+		return ipcRenderer.invoke("show-export-save-dialog", fileName);
+	},
+	writeExportedVideoToPath: (videoData: ArrayBuffer, filePath: string) => {
+		return ipcRenderer.invoke("write-exported-video-to-path", videoData, filePath);
+	},
 	saveExportedVideoToRecordings: (videoData: ArrayBuffer, fileName: string) => {
 		return ipcRenderer.invoke("save-exported-video-to-recordings", videoData, fileName);
 	},
