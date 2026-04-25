@@ -75,8 +75,16 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	stopNativeScreenRecording: () => {
 		return ipcRenderer.invoke("stop-native-screen-recording");
 	},
-	startFfmpegRecording: (source: SelectedCaptureSource) => {
-		return ipcRenderer.invoke("start-ffmpeg-recording", source);
+	startFfmpegRecording: (
+		source: SelectedCaptureSource,
+		options?: {
+			recordingFps?: number;
+			recordingWidth?: number;
+			recordingHeight?: number;
+			videoBitsPerSecond?: number;
+		},
+	) => {
+		return ipcRenderer.invoke("start-ffmpeg-recording", source, options);
 	},
 	stopFfmpegRecording: () => {
 		return ipcRenderer.invoke("stop-ffmpeg-recording");
@@ -86,6 +94,18 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	},
 	storeRecordedVideoSegment: (videoData: ArrayBuffer, fileName: string) => {
 		return ipcRenderer.invoke("store-recorded-video", videoData, fileName, false);
+	},
+	startMediaRecorderChunkSession: (fileName: string) => {
+		return ipcRenderer.invoke("start-media-recorder-chunk-session", fileName);
+	},
+	appendMediaRecorderChunk: (sessionId: string, chunkData: ArrayBuffer) => {
+		return ipcRenderer.invoke("append-media-recorder-chunk", sessionId, chunkData);
+	},
+	finishMediaRecorderChunkSession: (sessionId: string) => {
+		return ipcRenderer.invoke("finish-media-recorder-chunk-session", sessionId);
+	},
+	discardMediaRecorderChunkSession: (sessionId: string) => {
+		return ipcRenderer.invoke("discard-media-recorder-chunk-session", sessionId);
 	},
 	getRecordedVideoPath: () => {
 		return ipcRenderer.invoke("get-recorded-video-path");

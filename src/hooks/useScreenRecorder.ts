@@ -1,4 +1,3 @@
-import { fixWebmDuration } from "@fix-webm-duration/fix";
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -94,6 +93,8 @@ type ScreenRecorderOptions = Partial<RecordingRuntimeSettings> & {
 	highlightArea?: boolean;
 };
 
+type MutableRecorderRef<T> = { current: T };
+
 export function useScreenRecorder(
 	recordingSettings?: ScreenRecorderOptions,
 ): UseScreenRecorderReturn {
@@ -116,10 +117,16 @@ export function useScreenRecorder(
 	const screenStream = useRef<MediaStream | null>(null);
 	const microphoneStream = useRef<MediaStream | null>(null);
 	const mixingContext = useRef<AudioContext | null>(null);
-	const chunks = useRef<Blob[]>([]);
 	const webcamStream = useRef<MediaStream | null>(null);
 	const webcamRecorder = useRef<MediaRecorder | null>(null);
-	const webcamChunks = useRef<Blob[]>([]);
+	const screenChunkSessionId = useRef<string | null>(null);
+	const screenChunkWriteChain = useRef<Promise<void>>(Promise.resolve());
+	const screenChunkWriteError = useRef<unknown>(null);
+	const screenChunkCount = useRef(0);
+	const webcamChunkSessionId = useRef<string | null>(null);
+	const webcamChunkWriteChain = useRef<Promise<void>>(Promise.resolve());
+	const webcamChunkWriteError = useRef<unknown>(null);
+	const webcamChunkCount = useRef(0);
 	const startTime = useRef<number>(0);
 	const nativeScreenRecording = useRef(false);
 	const wgcRecording = useRef(false);
@@ -505,6 +512,120 @@ export function useScreenRecorder(
 		);
 		setCameraPreviewStream(null);
 	}, []);
+
+	const resetChunkWriter = useCallback(
+		(
+			sessionIdRef: MutableRecorderRef<string | null>,
+			writeChainRef: MutableRecorderRef<Promise<void>>,
+			writeErrorRef: MutableRecorderRef<unknown>,
+			chunkCountRef: MutableRecorderRef<number>,
+		) => {
+			sessionIdRef.current = null;
+			writeChainRef.current = Promise.resolve();
+			writeErrorRef.current = null;
+			chunkCountRef.current = 0;
+		},
+		[],
+	);
+
+	const startChunkWriter = useCallback(
+		async (
+			fileName: string,
+			sessionIdRef: MutableRecorderRef<string | null>,
+			writeChainRef: MutableRecorderRef<Promise<void>>,
+			writeErrorRef: MutableRecorderRef<unknown>,
+			chunkCountRef: MutableRecorderRef<number>,
+		) => {
+			resetChunkWriter(sessionIdRef, writeChainRef, writeErrorRef, chunkCountRef);
+			const result = await window.electronAPI.startMediaRecorderChunkSession(fileName);
+			if (!result.success || !result.id) {
+				throw new Error(result.error ?? "Failed to start recorder chunk writer");
+			}
+			sessionIdRef.current = result.id;
+		},
+		[resetChunkWriter],
+	);
+
+	const queueChunkWrite = useCallback(
+		(
+			data: Blob,
+			sessionIdRef: MutableRecorderRef<string | null>,
+			writeChainRef: MutableRecorderRef<Promise<void>>,
+			writeErrorRef: MutableRecorderRef<unknown>,
+			chunkCountRef: MutableRecorderRef<number>,
+		) => {
+			const sessionId = sessionIdRef.current;
+			if (!sessionId || data.size === 0) {
+				return;
+			}
+
+			chunkCountRef.current += 1;
+			writeChainRef.current = writeChainRef.current
+				.then(async () => {
+					const arrayBuffer = await data.arrayBuffer();
+					const result = await window.electronAPI.appendMediaRecorderChunk(sessionId, arrayBuffer);
+					if (!result.success) {
+						throw new Error(result.error ?? "Failed to append recorder chunk");
+					}
+				})
+				.catch((error) => {
+					writeErrorRef.current = error;
+					console.error("Failed to write recorder chunk:", error);
+				});
+		},
+		[],
+	);
+
+	const finishChunkWriter = useCallback(
+		async (
+			sessionIdRef: MutableRecorderRef<string | null>,
+			writeChainRef: MutableRecorderRef<Promise<void>>,
+			writeErrorRef: MutableRecorderRef<unknown>,
+			chunkCountRef: MutableRecorderRef<number>,
+		) => {
+			const sessionId = sessionIdRef.current;
+			if (!sessionId) {
+				return null;
+			}
+
+			await writeChainRef.current;
+			if (writeErrorRef.current) {
+				await window.electronAPI.discardMediaRecorderChunkSession(sessionId);
+				resetChunkWriter(sessionIdRef, writeChainRef, writeErrorRef, chunkCountRef);
+				throw writeErrorRef.current;
+			}
+
+			if (chunkCountRef.current === 0) {
+				await window.electronAPI.discardMediaRecorderChunkSession(sessionId);
+				resetChunkWriter(sessionIdRef, writeChainRef, writeErrorRef, chunkCountRef);
+				return null;
+			}
+
+			const result = await window.electronAPI.finishMediaRecorderChunkSession(sessionId);
+			resetChunkWriter(sessionIdRef, writeChainRef, writeErrorRef, chunkCountRef);
+			if (!result.success || !result.path) {
+				throw new Error(result.error ?? "Failed to finish recorder chunk writer");
+			}
+			return result.path;
+		},
+		[resetChunkWriter],
+	);
+
+	const discardChunkWriter = useCallback(
+		async (
+			sessionIdRef: MutableRecorderRef<string | null>,
+			writeChainRef: MutableRecorderRef<Promise<void>>,
+			writeErrorRef: MutableRecorderRef<unknown>,
+			chunkCountRef: MutableRecorderRef<number>,
+		) => {
+			const sessionId = sessionIdRef.current;
+			if (sessionId) {
+				await window.electronAPI.discardMediaRecorderChunkSession(sessionId);
+			}
+			resetChunkWriter(sessionIdRef, writeChainRef, writeErrorRef, chunkCountRef);
+		},
+		[resetChunkWriter],
+	);
 	const ensureWebcamStream = useCallback(async () => {
 		if (webcamStream.current) {
 			return webcamStream.current;
@@ -546,7 +667,13 @@ export function useScreenRecorder(
 		try {
 			hasShownCameraDisconnectToast.current = false;
 			const camStream = await ensureWebcamStream();
-			webcamChunks.current = [];
+			await startChunkWriter(
+				`${WEBCAM_FILE_PREFIX}${Date.now()}${VIDEO_FILE_EXTENSION}`,
+				webcamChunkSessionId,
+				webcamChunkWriteChain,
+				webcamChunkWriteError,
+				webcamChunkCount,
+			);
 
 			const mimeType = selectSupportedWebcamRecorderMimeType(
 				(type) => MediaRecorder.isTypeSupported(type),
@@ -560,11 +687,25 @@ export function useScreenRecorder(
 			});
 			webcamRecorder.current = recorder;
 			recorder.ondataavailable = (event) => {
-				if (event.data && event.data.size > 0) webcamChunks.current.push(event.data);
+				if (event.data && event.data.size > 0) {
+					queueChunkWrite(
+						event.data,
+						webcamChunkSessionId,
+						webcamChunkWriteChain,
+						webcamChunkWriteError,
+						webcamChunkCount,
+					);
+				}
 			};
 			recorder.start(RECORDER_TIMESLICE_MS);
 		} catch (error) {
 			console.warn("Failed to start webcam recording:", error);
+			await discardChunkWriter(
+				webcamChunkSessionId,
+				webcamChunkWriteChain,
+				webcamChunkWriteError,
+				webcamChunkCount,
+			);
 			await window.electronAPI.clearCurrentWebcamPath();
 			setCameraSession((prev) => ({
 				...prev,
@@ -574,16 +715,21 @@ export function useScreenRecorder(
 			setCameraPreviewStream(null);
 			toast.error("Unable to access the selected camera. Recording will continue without webcam.");
 		}
-	}, [ensureWebcamStream, resolvedRecordingProfile.preferHardwareEncoding]);
+	}, [
+		discardChunkWriter,
+		ensureWebcamStream,
+		queueChunkWrite,
+		resolvedRecordingProfile.preferHardwareEncoding,
+		startChunkWriter,
+	]);
 
 	const stopWebcamRecording = useCallback(async () => {
 		webcamStopInFlight.current = true;
 		try {
 			const recorder = webcamRecorder.current;
-			const mimeType = recorder?.mimeType ?? "video/webm";
 
 			// Wait for MediaRecorder to fully stop and fire final dataavailable
-			if (recorder?.state === "recording") {
+			if (recorder?.state === "recording" || recorder?.state === "paused") {
 				await new Promise<void>((resolve) => {
 					recorder.onstop = () => resolve();
 					recorder.stop();
@@ -592,7 +738,14 @@ export function useScreenRecorder(
 
 			releaseWebcamStream();
 
-			if (webcamChunks.current.length === 0) {
+			const webcamPath = await finishChunkWriter(
+				webcamChunkSessionId,
+				webcamChunkWriteChain,
+				webcamChunkWriteError,
+				webcamChunkCount,
+			);
+
+			if (!webcamPath) {
 				webcamRecorder.current = null;
 				await window.electronAPI.clearCurrentWebcamPath();
 				return null;
@@ -601,29 +754,22 @@ export function useScreenRecorder(
 			const duration =
 				recordingSegmentsRef.current.reduce((total, segment) => total + segment.durationMs, 0) ||
 				Math.max(0, Date.now() - startTime.current);
-			const buggyBlob = new Blob(webcamChunks.current, { type: mimeType });
-			webcamChunks.current = [];
-
-			const webcamBlob = await fixWebmDuration(buggyBlob, duration);
-			const arrayBuffer = await webcamBlob.arrayBuffer();
-			const webcamFileName = `${WEBCAM_FILE_PREFIX}${Date.now()}${VIDEO_FILE_EXTENSION}`;
-			const result = await window.electronAPI.storeRecordedVideoSegment(
-				arrayBuffer,
-				webcamFileName,
-			);
-			if (result.success && result.path) {
-				return { path: result.path, durationMs: duration };
-			}
-			return null;
+			return { path: webcamPath, durationMs: duration };
 		} catch (error) {
 			console.error("Error saving webcam recording:", error);
+			await discardChunkWriter(
+				webcamChunkSessionId,
+				webcamChunkWriteChain,
+				webcamChunkWriteError,
+				webcamChunkCount,
+			);
 			await window.electronAPI.clearCurrentWebcamPath();
 			return null;
 		} finally {
 			webcamRecorder.current = null;
 			webcamStopInFlight.current = false;
 		}
-	}, [releaseWebcamStream]);
+	}, [discardChunkWriter, finishChunkWriter, releaseWebcamStream]);
 
 	stopWebcamRecordingRef.current = stopWebcamRecording;
 
@@ -1255,7 +1401,13 @@ export function useScreenRecorder(
 				)} Mbps`,
 			);
 
-			chunks.current = [];
+			await startChunkWriter(
+				`${RECORDING_FILE_PREFIX}${Date.now()}${VIDEO_FILE_EXTENSION}`,
+				screenChunkSessionId,
+				screenChunkWriteChain,
+				screenChunkWriteError,
+				screenChunkCount,
+			);
 			const hasAudio = stream.current.getAudioTracks().length > 0;
 			const recorder = new MediaRecorder(stream.current, {
 				mimeType,
@@ -1267,36 +1419,35 @@ export function useScreenRecorder(
 
 			mediaRecorder.current = recorder;
 			recorder.ondataavailable = (event) => {
-				if (event.data && event.data.size > 0) chunks.current.push(event.data);
+				if (event.data && event.data.size > 0) {
+					queueChunkWrite(
+						event.data,
+						screenChunkSessionId,
+						screenChunkWriteChain,
+						screenChunkWriteError,
+						screenChunkCount,
+					);
+				}
 			};
 			recorder.onstop = async () => {
 				cleanupCapturedMedia();
 				const pendingAction = pendingActionRef.current;
 				browserSessionStopPending.current = false;
-				if (chunks.current.length === 0) return;
 
 				const duration = Math.max(0, Date.now() - currentSegmentStartedAtRef.current);
-				const recordedChunks = chunks.current;
-				const buggyBlob = new Blob(recordedChunks, { type: mimeType });
-				chunks.current = [];
-				const timestamp = Date.now();
-				const videoFileName = `${RECORDING_FILE_PREFIX}${timestamp}${VIDEO_FILE_EXTENSION}`;
 
 				try {
-					const videoBlob = await fixWebmDuration(buggyBlob, duration);
-					const arrayBuffer = await videoBlob.arrayBuffer();
-					const videoResult = await window.electronAPI.storeRecordedVideoSegment(
-						arrayBuffer,
-						videoFileName,
+					const videoPath = await finishChunkWriter(
+						screenChunkSessionId,
+						screenChunkWriteChain,
+						screenChunkWriteError,
+						screenChunkCount,
 					);
-					if (!videoResult.success) {
-						console.error("Failed to store video:", videoResult.message);
+					if (!videoPath) {
 						return;
 					}
 
-					if (videoResult.path) {
-						recordSegment(videoResult.path, duration);
-					}
+					recordSegment(videoPath, duration);
 
 					if (pendingAction === "delete" || pendingAction === "retake") {
 						const webcamSegment = await stopWebcamRecordingRef.current();
@@ -1322,6 +1473,12 @@ export function useScreenRecorder(
 					await finalizeSessionRef.current("stop");
 				} catch (error) {
 					console.error("Error saving recording:", error);
+					await discardChunkWriter(
+						screenChunkSessionId,
+						screenChunkWriteChain,
+						screenChunkWriteError,
+						screenChunkCount,
+					);
 				}
 			};
 			recorder.onerror = () => {
@@ -1357,17 +1514,26 @@ export function useScreenRecorder(
 			);
 			dispatchSession({ type: "reset" });
 			cleanupCapturedMedia();
+			await discardChunkWriter(
+				screenChunkSessionId,
+				screenChunkWriteChain,
+				screenChunkWriteError,
+				screenChunkCount,
+			);
 		} finally {
 			startInFlight.current = false;
 			setStarting(false);
 		}
 	}, [
 		cleanupCapturedMedia,
+		discardChunkWriter,
+		finishChunkWriter,
 		getCaptureMode,
 		getSelectedArea,
 		microphoneDeviceId,
 		microphoneEnabled,
 		preparePermissions,
+		queueChunkWrite,
 		recordSegment,
 		recordingSettings?.highlightArea,
 		resolvedRecordingProfile.frameRate,
@@ -1378,6 +1544,7 @@ export function useScreenRecorder(
 		resolveSourceCaptureBounds,
 		resetSegmentBuffers,
 		selectMimeType,
+		startChunkWriter,
 		startWebcamRecording,
 		systemAudioEnabled,
 		webcamEnabled,

@@ -86,6 +86,12 @@ declare global {
 			}>;
 			startFfmpegRecording: (
 				source: SelectedCaptureSource,
+				options?: {
+					recordingFps?: number;
+					recordingWidth?: number;
+					recordingHeight?: number;
+					videoBitsPerSecond?: number;
+				},
 			) => Promise<{ success: boolean; path?: string; message?: string; error?: string }>;
 			stopFfmpegRecording: () => Promise<{
 				success: boolean;
@@ -101,6 +107,22 @@ declare global {
 				videoData: ArrayBuffer,
 				fileName: string,
 			) => Promise<{ success: boolean; path?: string; message?: string }>;
+			startMediaRecorderChunkSession: (
+				fileName: string,
+			) => Promise<{ success: boolean; id?: string; path?: string; error?: string }>;
+			appendMediaRecorderChunk: (
+				sessionId: string,
+				chunkData: ArrayBuffer,
+			) => Promise<{ success: boolean; error?: string }>;
+			finishMediaRecorderChunkSession: (sessionId: string) => Promise<{
+				success: boolean;
+				path?: string;
+				bytesWritten?: number;
+				error?: string;
+			}>;
+			discardMediaRecorderChunkSession: (
+				sessionId: string,
+			) => Promise<{ success: boolean; error?: string }>;
 			getRecordedVideoPath: () => Promise<{ success: boolean; path?: string; message?: string }>;
 			finalizeRecordingSession: (payload: {
 				videoSegments: Array<{ path: string; durationMs: number }>;

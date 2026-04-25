@@ -8,22 +8,22 @@ export interface WebcamConstraintProfile {
 
 const DEFAULT_FALLBACK_FRAME_RATE = 30;
 const MIN_HIGH_FPS_WEBCAM_FRAME_RATE = 50;
-const MIN_WEBCAM_BITRATE = 4_000_000;
-const MAX_WEBCAM_BITRATE = 20_000_000;
-const WEBCAM_BITS_PER_PIXEL = 0.09;
+const MIN_WEBCAM_BITRATE = 2_500_000;
+const MAX_WEBCAM_BITRATE = 12_000_000;
+const WEBCAM_BITS_PER_PIXEL = 0.07;
 
 const HIGH_FPS_PROFILES: WebcamConstraintProfile[] = [
 	{ width: 1280, height: 720, frameRate: 60 },
-	{ width: 1920, height: 1080, frameRate: 60 },
 	{ width: 1280, height: 720, frameRate: 30 },
+	{ width: 1920, height: 1080, frameRate: 60 },
 	{ width: 1920, height: 1080, frameRate: 30 },
 ];
 
 const STANDARD_FPS_PROFILES: WebcamConstraintProfile[] = [
-	{ width: 1920, height: 1080, frameRate: 30 },
 	{ width: 1280, height: 720, frameRate: 30 },
-	{ width: 1920, height: 1080, frameRate: 60 },
+	{ width: 1920, height: 1080, frameRate: 30 },
 	{ width: 1280, height: 720, frameRate: 60 },
+	{ width: 1920, height: 1080, frameRate: 60 },
 ];
 
 function clamp(value: number, min: number, max: number) {

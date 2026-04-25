@@ -29,6 +29,7 @@ struct CaptureConfig {
     int fps = 60;
     int width = 0;
     int height = 0;
+    int bitrate = 20000000;
     bool captureSystemAudio = false;
     bool captureMic = false;
 };
@@ -106,6 +107,9 @@ static bool parseSimpleJson(const std::string& json, CaptureConfig& config) {
 
     int height = findInt("height");
     if (height > 0) config.height = height;
+
+    int bitrate = findInt("bitrate");
+    if (bitrate > 0) config.bitrate = bitrate;
 
     config.audioOutputPath = findString("audioOutputPath");
     config.micOutputPath = findString("micOutputPath");
@@ -232,7 +236,7 @@ int main(int argc, char* argv[]) {
     // Initialize encoder
     MFEncoder encoder;
     std::wstring outputPathW = utf8ToWide(config.outputPath);
-    if (!encoder.initialize(outputPathW, captureWidth, captureHeight, config.fps,
+    if (!encoder.initialize(outputPathW, captureWidth, captureHeight, config.fps, config.bitrate,
                            session.device(), session.context())) {
         std::cerr << "ERROR: Failed to initialize Media Foundation encoder" << std::endl;
         return 1;
@@ -240,11 +244,21 @@ int main(int argc, char* argv[]) {
 
     // Set up frame callback
     std::atomic<int64_t> frameCount{0};
+    std::atomic<int64_t> firstFrameTimeHns{-1};
+    std::atomic<bool> encoderBusy{false};
     session.setFrameCallback([&](ID3D11Texture2D* texture, int64_t timestampHns) {
         if (g_stopRequested) return;
-        if (encoder.writeFrame(texture, timestampHns)) {
+        if (encoderBusy.exchange(true)) return;
+
+        int64_t expectedFirstFrameTime = -1;
+        firstFrameTimeHns.compare_exchange_strong(expectedFirstFrameTime, timestampHns);
+        int64_t normalizedTimestampHns = timestampHns - firstFrameTimeHns.load();
+        if (normalizedTimestampHns < 0) normalizedTimestampHns = 0;
+
+        if (encoder.writeFrame(texture, normalizedTimestampHns)) {
             frameCount++;
         }
+        encoderBusy = false;
     });
 
     // Start stdin listener

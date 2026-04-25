@@ -18,7 +18,9 @@ struct CaptureConfig: Codable {
 	let microphoneOutputPath: String?
 }
 
-let targetCaptureFPS = 60
+let defaultCaptureFPS = 30
+let minimumCaptureFPS = 15
+let maximumCaptureFPS = 60
 
 final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 	private let queue = DispatchQueue(label: "screenmint.screencapturekit.video")
@@ -75,7 +77,10 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 		}
 		writesMicrophoneToSeparateTrack = capturesSystemAudio && capturesMicrophone
 		primaryAudioSource = capturesSystemAudio ? .system : (capturesMicrophone ? .microphone : nil)
-		let requestedFPS = max(targetCaptureFPS, config.fps ?? targetCaptureFPS)
+		let requestedFPS = min(
+			maximumCaptureFPS,
+			max(minimumCaptureFPS, config.fps ?? defaultCaptureFPS)
+		)
 		streamConfig.minimumFrameInterval = CMTime(value: 1, timescale: CMTimeScale(requestedFPS))
 		streamConfig.queueDepth = 6
 		streamConfig.pixelFormat = kCVPixelFormatType_32BGRA

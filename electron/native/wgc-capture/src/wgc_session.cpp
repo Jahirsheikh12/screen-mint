@@ -36,17 +36,34 @@ bool WgcSession::createD3DDevice() {
         D3D_FEATURE_LEVEL_11_0,
     };
 
+    UINT deviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT | D3D11_CREATE_DEVICE_VIDEO_SUPPORT;
+
     HRESULT hr = D3D11CreateDevice(
         nullptr,
         D3D_DRIVER_TYPE_HARDWARE,
         nullptr,
-        D3D11_CREATE_DEVICE_BGRA_SUPPORT,
+        deviceFlags,
         featureLevels,
         ARRAYSIZE(featureLevels),
         D3D11_SDK_VERSION,
         &d3dDevice_,
         nullptr,
         &d3dContext_);
+
+    if (FAILED(hr)) {
+        deviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
+        hr = D3D11CreateDevice(
+            nullptr,
+            D3D_DRIVER_TYPE_HARDWARE,
+            nullptr,
+            deviceFlags,
+            featureLevels,
+            ARRAYSIZE(featureLevels),
+            D3D11_SDK_VERSION,
+            &d3dDevice_,
+            nullptr,
+            &d3dContext_);
+    }
 
     if (FAILED(hr)) {
         std::cerr << "ERROR: D3D11CreateDevice failed: 0x" << std::hex << hr << std::endl;

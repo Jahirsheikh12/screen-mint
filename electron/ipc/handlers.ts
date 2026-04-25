@@ -59,6 +59,7 @@ import {
 	type CursorMoveSampleCandidate,
 	shouldRecordCursorMoveSample,
 } from "./cursorTelemetryUtils";
+import { MediaRecorderChunkStore } from "./mediaRecorderChunkStore";
 
 const execFileAsync = promisify(execFile);
 const nodeRequire = createRequire(import.meta.url);
@@ -363,6 +364,8 @@ async function getRecordingsDir() {
 	await fs.mkdir(targetDir, { recursive: true });
 	return targetDir;
 }
+
+const mediaRecorderChunkStore = new MediaRecorderChunkStore(getRecordingsDir);
 
 async function persistRecordingsDirectorySetting(nextDir: string) {
 	customRecordingsDir = path.resolve(nextDir);
@@ -1087,19 +1090,43 @@ async function resolveLinuxWindowBounds(source: SelectedSource): Promise<WindowB
 	}
 }
 
-async function buildFfmpegCaptureArgs(source: SelectedSource, outputPath: string) {
-	const commonOutputArgs = [
+function clampCaptureFps(value: number | undefined) {
+	if (!Number.isFinite(value)) {
+		return 30;
+	}
+	return Math.min(60, Math.max(15, Math.round(value ?? 30)));
+}
+
+function buildFfmpegOutputArgs(outputPath: string, options?: NativeMacRecordingOptions) {
+	const outputArgs = [
 		"-an",
 		"-c:v",
 		"libx264",
 		"-preset",
 		"veryfast",
+		...(options?.videoBitsPerSecond ? ["-b:v", String(options.videoBitsPerSecond)] : []),
+		...(options?.recordingWidth && options?.recordingHeight
+			? [
+					"-vf",
+					`scale='min(${options.recordingWidth},iw)':'min(${options.recordingHeight},ih)':force_original_aspect_ratio=decrease:force_divisible_by=2`,
+				]
+			: []),
 		"-pix_fmt",
 		"yuv420p",
 		"-movflags",
 		"+faststart",
 		outputPath,
 	];
+	return outputArgs;
+}
+
+async function buildFfmpegCaptureArgs(
+	source: SelectedSource,
+	outputPath: string,
+	options?: NativeMacRecordingOptions,
+) {
+	const fps = String(clampCaptureFps(options?.recordingFps));
+	const commonOutputArgs = buildFfmpegOutputArgs(outputPath, options);
 
 	if (process.platform === "win32") {
 		if (source?.id?.startsWith("window:")) {
@@ -1114,7 +1141,7 @@ async function buildFfmpegCaptureArgs(source: SelectedSource, outputPath: string
 				"-f",
 				"gdigrab",
 				"-framerate",
-				"60",
+				fps,
 				"-draw_mouse",
 				"0",
 				"-i",
@@ -1128,7 +1155,7 @@ async function buildFfmpegCaptureArgs(source: SelectedSource, outputPath: string
 			"-f",
 			"gdigrab",
 			"-framerate",
-			"60",
+			fps,
 			"-draw_mouse",
 			"0",
 			"-i",
@@ -1150,7 +1177,7 @@ async function buildFfmpegCaptureArgs(source: SelectedSource, outputPath: string
 				"-f",
 				"x11grab",
 				"-framerate",
-				"60",
+				fps,
 				"-draw_mouse",
 				"0",
 				"-video_size",
@@ -1167,7 +1194,7 @@ async function buildFfmpegCaptureArgs(source: SelectedSource, outputPath: string
 			"-f",
 			"x11grab",
 			"-framerate",
-			"60",
+			fps,
 			"-draw_mouse",
 			"0",
 			"-video_size",
@@ -1186,7 +1213,7 @@ async function buildFfmpegCaptureArgs(source: SelectedSource, outputPath: string
 			"-capture_cursor",
 			"0",
 			"-framerate",
-			"60",
+			fps,
 			"-i",
 			"1:none",
 			...commonOutputArgs,
@@ -1994,6 +2021,57 @@ async function persistMediaSegment(segmentPath: string, outputPath: string) {
 	return outputPath;
 }
 
+function getMediaRecorderRemuxTargetPath(segmentPath: string, codec: string | null) {
+	const extension = path.extname(segmentPath).toLowerCase();
+	if (extension !== ".webm") {
+		return null;
+	}
+
+	const normalizedCodec = codec?.toLowerCase() ?? null;
+	if (!normalizedCodec) {
+		return null;
+	}
+
+	if (["vp8", "vp9", "av1"].includes(normalizedCodec)) {
+		return segmentPath;
+	}
+
+	if (["h264", "hevc", "mpeg4"].includes(normalizedCodec)) {
+		return `${segmentPath.slice(0, -extension.length)}.mp4`;
+	}
+
+	return null;
+}
+
+async function remuxMediaRecorderSegment(segmentPath: string) {
+	const probe = await probeVideoSegmentProfile(segmentPath);
+	const targetPath = getMediaRecorderRemuxTargetPath(segmentPath, probe.codec);
+	if (!targetPath) {
+		return segmentPath;
+	}
+
+	const ffmpegPath = getFfmpegBinaryPath();
+	const remuxedPath =
+		normalizePath(targetPath) === normalizePath(segmentPath)
+			? `${segmentPath}.remuxed${path.extname(segmentPath)}`
+			: `${targetPath}.remuxed${path.extname(targetPath)}`;
+
+	try {
+		await execFileAsync(ffmpegPath, ["-y", "-i", segmentPath, "-c", "copy", remuxedPath], {
+			timeout: 120000,
+			maxBuffer: 10 * 1024 * 1024,
+		});
+		await moveFileWithOverwrite(remuxedPath, targetPath);
+		if (normalizePath(targetPath) !== normalizePath(segmentPath)) {
+			await fs.rm(segmentPath, { force: true }).catch(() => undefined);
+		}
+		return targetPath;
+	} catch {
+		await fs.rm(remuxedPath, { force: true }).catch(() => undefined);
+		return segmentPath;
+	}
+}
+
 async function prepareCompatibleWebcamSegments(params: {
 	segmentPaths: string[];
 	preferredProfile?: WebcamCaptureProfile | null;
@@ -2249,13 +2327,13 @@ async function finalizeRecordingSession(payload: {
 
 const CURSOR_TELEMETRY_VERSION = 4;
 const KEYBOARD_TELEMETRY_VERSION = 1;
-const CURSOR_SAMPLE_INTERVAL_MS = 1000 / 60;
+const CURSOR_SAMPLE_INTERVAL_MS = 1000 / 30;
 const CURSOR_DRAG_SAMPLE_INTERVAL_MS = 16;
-const CURSOR_MOVE_SAMPLE_INTERVAL_MS = 8;
+const CURSOR_MOVE_SAMPLE_INTERVAL_MS = 16;
 const CURSOR_MOVE_MIN_DISTANCE = 0.0015;
 const CURSOR_POLL_HEARTBEAT_INTERVAL_MS = 120;
 const CURSOR_POLL_STALE_AFTER_MS = 40;
-const WINDOW_BOUNDS_CAPTURE_INTERVAL_MS = 1000 / 30;
+const WINDOW_BOUNDS_CAPTURE_INTERVAL_MS = 1000 / 10;
 const WINDOW_BOUNDS_FALLBACK_CAPTURE_INTERVAL_MS = 1000;
 const MAX_CURSOR_SAMPLES = 60 * 60 * 120; // 1 hour @ 120Hz worth of mixed cursor events
 const MAX_KEYBOARD_SAMPLES = 60 * 60 * 20; // 1 hour @ ~20 keyboard events/sec average
@@ -3818,7 +3896,7 @@ export function registerIpcHandlers(
 
 					const config: Record<string, unknown> = {
 						outputPath,
-						fps: Math.max(30, options?.recordingFps ?? 60),
+						fps: Math.max(30, options?.recordingFps ?? 30),
 					};
 					if (options?.recordingWidth) {
 						config.width = options.recordingWidth;
@@ -3948,7 +4026,7 @@ export function registerIpcHandlers(
 						? path.join(recordingsDir, `recording-${Date.now()}.mic.m4a`)
 						: null;
 				const config: Record<string, unknown> = {
-					fps: Math.max(30, options?.recordingFps ?? 60),
+					fps: Math.max(30, options?.recordingFps ?? 30),
 					outputPath,
 					capturesSystemAudio,
 					capturesMicrophone,
@@ -4206,46 +4284,49 @@ export function registerIpcHandlers(
 		}
 	});
 
-	ipcMain.handle("start-ffmpeg-recording", async (_, source: SelectedSource) => {
-		if (ffmpegCaptureProcess) {
-			return { success: false, message: "An FFmpeg recording is already active." };
-		}
+	ipcMain.handle(
+		"start-ffmpeg-recording",
+		async (_, source: SelectedSource, options?: NativeMacRecordingOptions) => {
+			if (ffmpegCaptureProcess) {
+				return { success: false, message: "An FFmpeg recording is already active." };
+			}
 
-		try {
-			const recordingsDir = await getRecordingsDir();
-			const ffmpegPath = getFfmpegBinaryPath();
-			const outputPath = path.join(recordingsDir, `recording-${Date.now()}.mp4`);
-			const args = await buildFfmpegCaptureArgs(source, outputPath);
+			try {
+				const recordingsDir = await getRecordingsDir();
+				const ffmpegPath = getFfmpegBinaryPath();
+				const outputPath = path.join(recordingsDir, `recording-${Date.now()}.mp4`);
+				const args = await buildFfmpegCaptureArgs(source, outputPath, options);
 
-			ffmpegCaptureOutputBuffer = "";
-			ffmpegCaptureTargetPath = outputPath;
-			ffmpegCaptureProcess = spawn(ffmpegPath, args, {
-				cwd: recordingsDir,
-				stdio: ["pipe", "pipe", "pipe"],
-			});
+				ffmpegCaptureOutputBuffer = "";
+				ffmpegCaptureTargetPath = outputPath;
+				ffmpegCaptureProcess = spawn(ffmpegPath, args, {
+					cwd: recordingsDir,
+					stdio: ["pipe", "pipe", "pipe"],
+				});
 
-			ffmpegCaptureProcess.stdout.on("data", (chunk: Buffer) => {
-				ffmpegCaptureOutputBuffer += chunk.toString();
-			});
-			ffmpegCaptureProcess.stderr.on("data", (chunk: Buffer) => {
-				ffmpegCaptureOutputBuffer += chunk.toString();
-			});
+				ffmpegCaptureProcess.stdout.on("data", (chunk: Buffer) => {
+					ffmpegCaptureOutputBuffer += chunk.toString();
+				});
+				ffmpegCaptureProcess.stderr.on("data", (chunk: Buffer) => {
+					ffmpegCaptureOutputBuffer += chunk.toString();
+				});
 
-			await waitForFfmpegCaptureStart(ffmpegCaptureProcess);
-			ffmpegScreenRecordingActive = true;
-			return { success: true };
-		} catch (error) {
-			console.error("Failed to start FFmpeg recording:", error);
-			ffmpegScreenRecordingActive = false;
-			ffmpegCaptureProcess = null;
-			ffmpegCaptureTargetPath = null;
-			return {
-				success: false,
-				message: "Failed to start FFmpeg recording",
-				error: String(error),
-			};
-		}
-	});
+				await waitForFfmpegCaptureStart(ffmpegCaptureProcess);
+				ffmpegScreenRecordingActive = true;
+				return { success: true };
+			} catch (error) {
+				console.error("Failed to start FFmpeg recording:", error);
+				ffmpegScreenRecordingActive = false;
+				ffmpegCaptureProcess = null;
+				ffmpegCaptureTargetPath = null;
+				return {
+					success: false,
+					message: "Failed to start FFmpeg recording",
+					error: String(error),
+				};
+			}
+		},
+	);
 
 	ipcMain.handle("stop-ffmpeg-recording", async () => {
 		if (!ffmpegScreenRecordingActive) {
@@ -4303,6 +4384,51 @@ export function registerIpcHandlers(
 			}
 		},
 	);
+
+	ipcMain.handle("start-media-recorder-chunk-session", async (_, fileName: string) => {
+		try {
+			const session = await mediaRecorderChunkStore.start(fileName);
+			return { success: true, ...session };
+		} catch (error) {
+			console.error("Failed to start MediaRecorder chunk session:", error);
+			return { success: false, error: String(error) };
+		}
+	});
+
+	ipcMain.handle(
+		"append-media-recorder-chunk",
+		async (_, sessionId: string, chunkData: ArrayBuffer) => {
+			try {
+				await mediaRecorderChunkStore.append(sessionId, chunkData);
+				return { success: true };
+			} catch (error) {
+				console.error("Failed to append MediaRecorder chunk:", error);
+				return { success: false, error: String(error) };
+			}
+		},
+	);
+
+	ipcMain.handle("finish-media-recorder-chunk-session", async (_, sessionId: string) => {
+		try {
+			const result = await mediaRecorderChunkStore.finish(sessionId);
+			const segmentPath = await remuxMediaRecorderSegment(result.path);
+			await persistCapturedTelemetryForVideo(segmentPath);
+			return { success: true, path: segmentPath, bytesWritten: result.bytesWritten };
+		} catch (error) {
+			console.error("Failed to finish MediaRecorder chunk session:", error);
+			return { success: false, error: String(error) };
+		}
+	});
+
+	ipcMain.handle("discard-media-recorder-chunk-session", async (_, sessionId: string) => {
+		try {
+			await mediaRecorderChunkStore.discard(sessionId);
+			return { success: true };
+		} catch (error) {
+			console.error("Failed to discard MediaRecorder chunk session:", error);
+			return { success: false, error: String(error) };
+		}
+	});
 
 	ipcMain.handle("get-recorded-video-path", async () => {
 		try {

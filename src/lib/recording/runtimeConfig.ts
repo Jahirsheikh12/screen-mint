@@ -23,7 +23,7 @@ const HIGH_FRAME_RATE_BOOST = 1.7;
 
 export const DEFAULT_RECORDING_RUNTIME_SETTINGS: RecordingRuntimeSettings = {
 	recordingQuality: "auto",
-	recordingFps: 60,
+	recordingFps: 30,
 	hardwareAcceleration: true,
 };
 
@@ -59,7 +59,7 @@ export function resolveRecordingTargetProfile(
 			? { width: 1280, height: 720 }
 			: merged.recordingQuality === "high"
 				? { width: 2560, height: 1440 }
-				: { width: 3840, height: 2160 };
+				: { width: 2560, height: 1440 };
 
 	return {
 		...dimensions,

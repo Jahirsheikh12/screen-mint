@@ -12,18 +12,18 @@ describe("webcamCapture", () => {
 	it("prefers 60fps webcam profiles for 60fps recordings", () => {
 		expect(getPreferredWebcamProfiles(60)).toEqual([
 			{ width: 1280, height: 720, frameRate: 60 },
-			{ width: 1920, height: 1080, frameRate: 60 },
 			{ width: 1280, height: 720, frameRate: 30 },
+			{ width: 1920, height: 1080, frameRate: 60 },
 			{ width: 1920, height: 1080, frameRate: 30 },
 		]);
 	});
 
-	it("falls back to 30fps-first webcam profiles for 30fps recordings", () => {
+	it("uses 720p30-first webcam profiles for balanced 30fps recordings", () => {
 		expect(getPreferredWebcamProfiles(30)).toEqual([
-			{ width: 1920, height: 1080, frameRate: 30 },
 			{ width: 1280, height: 720, frameRate: 30 },
-			{ width: 1920, height: 1080, frameRate: 60 },
+			{ width: 1920, height: 1080, frameRate: 30 },
 			{ width: 1280, height: 720, frameRate: 60 },
+			{ width: 1920, height: 1080, frameRate: 60 },
 		]);
 	});
 
@@ -98,6 +98,6 @@ describe("webcamCapture", () => {
 		});
 
 		expect(bitrate60).toBeGreaterThan(bitrate30);
-		expect(bitrate60).toBeGreaterThanOrEqual(11_000_000);
+		expect(bitrate60).toBeLessThanOrEqual(12_000_000);
 	});
 });
