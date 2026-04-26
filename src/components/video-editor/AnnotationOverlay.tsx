@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { Rnd } from "react-rnd";
 import { cn } from "@/lib/utils";
-import { getArrowComponent } from "./ArrowSvgs";
+import { getArrowComponent } from "./arrowComponent";
 import type { AnnotationRegion } from "./types";
 
 interface AnnotationOverlayProps {

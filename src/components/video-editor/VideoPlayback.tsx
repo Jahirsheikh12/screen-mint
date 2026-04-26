@@ -449,7 +449,11 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const previewQualitySwitchTokenRef = useRef(0);
 		const desiredPreviewQualityRef = useRef(previewQuality);
 		const previewResolution = useMemo(
-			() => getEffectivePreviewResolution(window.devicePixelRatio || 1, rendererPreviewQuality),
+			() =>
+				getEffectivePreviewResolution(window.devicePixelRatio || 1, rendererPreviewQuality, {
+					width: window.innerWidth,
+					height: window.innerHeight,
+				}),
 			[rendererPreviewQuality],
 		);
 		useEffect(() => {

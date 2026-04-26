@@ -86,7 +86,7 @@ export function ShortcutsConfigDialog() {
 
 		window.addEventListener("keydown", handleCapture, { capture: true });
 		return () => window.removeEventListener("keydown", handleCapture, { capture: true });
-	}, [captureFor, t]);
+	}, [captureFor, draft, t]);
 
 	const handleSwap = useCallback(() => {
 		if (!conflict || conflict.conflictWith.type !== "configurable") return;

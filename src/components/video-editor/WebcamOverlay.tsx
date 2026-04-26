@@ -49,6 +49,26 @@ interface WorkerRefinementResponse {
 	};
 }
 
+const MAX_SEGMENTATION_CACHE_ENTRIES = 18;
+
+function rememberSegmentationFrame(
+	cache: Map<string, WebcamSegmentationFrame | null>,
+	key: string,
+	frame: WebcamSegmentationFrame | null,
+) {
+	if (cache.has(key)) {
+		cache.delete(key);
+	}
+	cache.set(key, frame);
+	while (cache.size > MAX_SEGMENTATION_CACHE_ENTRIES) {
+		const oldestKey = cache.keys().next().value;
+		if (typeof oldestKey !== "string") {
+			break;
+		}
+		cache.delete(oldestKey);
+	}
+}
+
 function clamp(value: number, min: number, max: number) {
 	return Math.min(max, Math.max(min, value));
 }
@@ -489,7 +509,11 @@ export function WebcamOverlay({
 				previewBudget.segmentationMaxEdge,
 				Math.round(pendingFrame.timestampMs / (1000 / 15)),
 			].join(":");
-			segmentationCacheRef.current.set(cacheKey, segmentationFrameRef.current);
+			rememberSegmentationFrame(
+				segmentationCacheRef.current,
+				cacheKey,
+				segmentationFrameRef.current,
+			);
 			delete (worker as Worker & { __pendingFrame?: WebcamSegmentationFrame }).__pendingFrame;
 			segmentationPendingRef.current = false;
 			setWorkerLatencyMs(performance.now() - pendingWorkerStartedAtRef.current);

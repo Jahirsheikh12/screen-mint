@@ -165,4 +165,46 @@ describe("VideoExporter cursor config", () => {
 		expect(result.success).toBe(false);
 		expect(isConfigSupported).toHaveBeenCalledTimes(2);
 	});
+
+	it("records when export falls back to software encoding", async () => {
+		const isConfigSupported = vi.fn().mockImplementation((config: VideoEncoderConfig) =>
+			Promise.resolve({
+				supported: config.hardwareAcceleration === "prefer-software",
+			}),
+		);
+		vi.stubGlobal("VideoEncoder", {
+			isConfigSupported,
+		});
+
+		const exporter = new VideoExporter({
+			videoUrl: "file:///tmp/demo.mp4",
+			width: 1280,
+			height: 720,
+			frameRate: 30,
+			bitrate: 8_000_000,
+			codecCandidates: ["avc1.4d401f"],
+			wallpaper: "#000000",
+			zoomRegions: [],
+			showShadow: false,
+			shadowIntensity: 0,
+			backgroundBlur: 0,
+			cropRegion: { x: 0, y: 0, width: 1, height: 1 },
+		});
+		const resolveEncoderCandidate = (
+			exporter as unknown as {
+				resolveEncoderCandidate: () => Promise<{
+					hardwareAcceleration: VideoEncoderConfig["hardwareAcceleration"];
+					fallbackSteps: string[];
+				}>;
+			}
+		).resolveEncoderCandidate.bind(exporter);
+
+		const activeConfig = await resolveEncoderCandidate();
+
+		expect(activeConfig.hardwareAcceleration).toBe("prefer-software");
+		expect(activeConfig.fallbackSteps).toContain(
+			"Used software encoding because hardware encoding was unavailable for the selected export settings.",
+		);
+		expect(isConfigSupported).toHaveBeenCalledTimes(2);
+	});
 });

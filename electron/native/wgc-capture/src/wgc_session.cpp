@@ -225,8 +225,8 @@ void WgcSession::onFrameArrived(
     auto timestamp = frame.SystemRelativeTime();
     int64_t frameTimeHns = std::chrono::duration_cast<std::chrono::duration<int64_t, std::ratio<1, 10000000>>>(timestamp).count();
 
-    // Frame rate limiting: skip frames that arrive too soon
-    if (lastFrameTimeHns_ > 0 && (frameTimeHns - lastFrameTimeHns_) < (frameIntervalHns_ * 7 / 10)) {
+    // Frame rate limiting: skip frames that arrive too soon.
+    if (lastFrameTimeHns_ > 0 && (frameTimeHns - lastFrameTimeHns_) < (frameIntervalHns_ * 95 / 100)) {
         frame.Close();
         return;
     }

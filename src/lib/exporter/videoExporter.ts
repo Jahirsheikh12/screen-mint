@@ -23,6 +23,11 @@ import type {
 } from "@/components/video-editor/types";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import { AudioProcessor } from "./audioEncoder";
+import {
+	resolveVideoExportEncodeQueueLimit,
+	shouldYieldExportFrame,
+	yieldToExportScheduler,
+} from "./exportScheduler";
 import { FrameRenderer } from "./frameRenderer";
 import { VideoMuxer } from "./muxer";
 import type { ResolvedVideoEncoderCandidate } from "./planner";
@@ -128,8 +133,8 @@ export class VideoExporter {
 	private encodeQueue = 0;
 	private readonly maxEncodeQueue =
 		typeof navigator !== "undefined"
-			? Math.max(60, Math.min(180, (navigator.hardwareConcurrency || 4) * 24))
-			: 120;
+			? resolveVideoExportEncodeQueueLimit(navigator.hardwareConcurrency)
+			: resolveVideoExportEncodeQueueLimit();
 	private videoDescription: Uint8Array | undefined;
 	private videoColorSpace: VideoColorSpaceInit | undefined;
 	private pendingMuxing: Promise<void> = Promise.resolve();
@@ -289,6 +294,7 @@ export class VideoExporter {
 					this.reportPhase("encoding", frameIndex, totalFrames);
 					await this.encodeRenderedFrame(timestamp, frameDuration, frameIndex);
 					frameIndex++;
+					await this.yieldAfterFrame(frameIndex);
 					this.reportProgress(frameIndex, totalFrames);
 				},
 				this.config.forceFFmpegDecoder,
@@ -420,6 +426,12 @@ export class VideoExporter {
 		exportFrame.close();
 	}
 
+	private async yieldAfterFrame(frameIndex: number) {
+		if (shouldYieldExportFrame(frameIndex)) {
+			await yieldToExportScheduler();
+		}
+	}
+
 	private reportProgress(currentFrame: number, totalFrames: number) {
 		if (this.config.onProgress) {
 			const elapsedMs = Math.max(performance.now() - this.exportStartedAtMs, 1);
@@ -530,6 +542,11 @@ export class VideoExporter {
 						if (codec !== candidate.codecCandidates[0]) {
 							this.resolvedFallbackSteps.push(
 								`Used ${getCodecLabel(codec)} profile for compatibility.`,
+							);
+						}
+						if (hardwareAcceleration === "prefer-software") {
+							this.resolvedFallbackSteps.push(
+								"Used software encoding because hardware encoding was unavailable for the selected export settings.",
 							);
 						}
 						return {

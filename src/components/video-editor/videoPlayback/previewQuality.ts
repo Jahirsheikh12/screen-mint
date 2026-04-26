@@ -5,6 +5,12 @@ export const PREVIEW_QUALITY_RESOLUTION_MULTIPLIERS: Record<PreviewQuality, numb
 	medium: 0.75,
 	high: 1,
 };
+export const PREVIEW_QUALITY_MAX_RESOLUTION: Record<PreviewQuality, number> = {
+	low: 1,
+	medium: 1.5,
+	high: 2,
+};
+export const LARGE_PREVIEW_PIXEL_AREA = 1920 * 1080;
 
 export interface PreviewQualitySwitchState {
 	activeQuality: PreviewQuality;
@@ -36,6 +42,7 @@ export function getPreviewQualityMultiplier(quality: PreviewQuality): number {
 export function getEffectivePreviewResolution(
 	devicePixelRatio: number,
 	quality: PreviewQuality,
+	viewport?: { width: number; height: number } | null,
 ): number {
 	const safeDevicePixelRatio =
 		typeof devicePixelRatio === "number" &&
@@ -44,7 +51,23 @@ export function getEffectivePreviewResolution(
 			? devicePixelRatio
 			: 1;
 	const rawResolution = safeDevicePixelRatio * getPreviewQualityMultiplier(quality);
-	return Math.max(0.5, Math.round(rawResolution * 100) / 100);
+	const viewportArea =
+		viewport &&
+		Number.isFinite(viewport.width) &&
+		Number.isFinite(viewport.height) &&
+		viewport.width > 0 &&
+		viewport.height > 0
+			? viewport.width * viewport.height
+			: 0;
+	const areaScale =
+		viewportArea > LARGE_PREVIEW_PIXEL_AREA
+			? Math.sqrt(LARGE_PREVIEW_PIXEL_AREA / viewportArea)
+			: 1;
+	const cappedResolution = Math.min(
+		rawResolution,
+		PREVIEW_QUALITY_MAX_RESOLUTION[quality] * areaScale,
+	);
+	return Math.max(0.5, Math.round(cappedResolution * 100) / 100);
 }
 
 export function createPreviewQualitySwitchState(

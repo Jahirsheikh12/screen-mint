@@ -30,7 +30,7 @@ import { type CustomFont, getCustomFonts } from "@/lib/customFonts";
 import { cn } from "@/lib/utils";
 import { useScopedT } from "../../contexts/I18nContext";
 import { AddCustomFontDialog } from "./AddCustomFontDialog";
-import { getArrowComponent } from "./ArrowSvgs";
+import { getArrowComponent } from "./arrowComponent";
 import { ColorPicker } from "./ColorPicker";
 import type {
 	AnnotationRegion,

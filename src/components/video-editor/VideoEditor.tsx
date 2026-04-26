@@ -4879,7 +4879,7 @@ export default function VideoEditor() {
 											frameShadowSize={frameShadowSize}
 											frameShadowOpacity={frameShadowOpacity}
 											frameShadowBlur={frameShadowBlur}
-											previewQuality={previewQuality}
+											previewQuality={isExporting ? "low" : previewQuality}
 											onPreviewQualitySwitchFailed={handlePreviewQualitySwitchFailed}
 											backgroundBlur={backgroundBlur}
 											zoomMotionBlur={zoomMotionBlur}
@@ -4933,7 +4933,7 @@ export default function VideoEditor() {
 											webcamPath={resolvedWebcamPath}
 											webcamRegion={webcamRegion}
 											webcamEffects={webcamEffects}
-											webcamPreviewMode={webcamPreviewMode}
+											webcamPreviewMode={isExporting ? "power-saving" : webcamPreviewMode}
 											showWebcam={showWebcam}
 											mirrorWebcam={mirrorWebcam}
 											cameraSizeDuringZoom={cameraSizeDuringZoom}

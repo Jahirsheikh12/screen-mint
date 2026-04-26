@@ -21,6 +21,7 @@ import type {
 	ZoomRegion,
 } from "@/components/video-editor/types";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
+import { shouldYieldExportFrame, yieldToExportScheduler } from "./exportScheduler";
 import { FrameRenderer } from "./frameRenderer";
 import { StreamingVideoDecoder } from "./streamingDecoder";
 import type {
@@ -340,6 +341,9 @@ export class GifExporter {
 						[imageData.data.buffer],
 					);
 					frameIndex++;
+					if (shouldYieldExportFrame(frameIndex)) {
+						await yieldToExportScheduler();
+					}
 					this.reportProgress(frameIndex, totalFrames, "encoding", undefined, warnings);
 				},
 			);

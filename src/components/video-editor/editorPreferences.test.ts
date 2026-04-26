@@ -415,7 +415,7 @@ describe("editorPreferences", () => {
 		});
 	});
 
-	it("falls back invalid stored preview quality values to high", () => {
+	it("falls back invalid stored preview quality values to the cooler default", () => {
 		vi.stubGlobal(
 			"localStorage",
 			createStorageMock({
@@ -425,7 +425,7 @@ describe("editorPreferences", () => {
 			}),
 		);
 
-		expect(loadEditorPreferences().previewQuality).toBe("high");
+		expect(loadEditorPreferences().previewQuality).toBe("medium");
 	});
 
 	it("normalizes workspace layouts and custom presets", () => {

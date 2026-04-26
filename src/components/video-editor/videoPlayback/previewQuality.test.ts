@@ -16,15 +16,24 @@ describe("previewQuality", () => {
 		{ devicePixelRatio: 2, quality: "low" as PreviewQuality, resolution: 1 },
 		{ devicePixelRatio: 2, quality: "medium" as PreviewQuality, resolution: 1.5 },
 		{ devicePixelRatio: 2, quality: "high" as PreviewQuality, resolution: 2 },
-		{ devicePixelRatio: 3, quality: "low" as PreviewQuality, resolution: 1.5 },
-		{ devicePixelRatio: 3, quality: "medium" as PreviewQuality, resolution: 2.25 },
-		{ devicePixelRatio: 3, quality: "high" as PreviewQuality, resolution: 3 },
+		{ devicePixelRatio: 3, quality: "low" as PreviewQuality, resolution: 1 },
+		{ devicePixelRatio: 3, quality: "medium" as PreviewQuality, resolution: 1.5 },
+		{ devicePixelRatio: 3, quality: "high" as PreviewQuality, resolution: 2 },
 	])("computes effective resolution for DPR $devicePixelRatio at $quality quality", ({
 		devicePixelRatio,
 		quality,
 		resolution,
 	}) => {
 		expect(getEffectivePreviewResolution(devicePixelRatio, quality)).toBe(resolution);
+	});
+
+	it("reduces preview resolution for very large viewports", () => {
+		expect(
+			getEffectivePreviewResolution(2, "high", {
+				width: 3840,
+				height: 2160,
+			}),
+		).toBe(1);
 	});
 
 	it("queues the last requested switch while another quality change is in flight", () => {

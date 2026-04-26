@@ -286,7 +286,7 @@ export const DEVICE_MOCKUP_OPTIONS: { value: DeviceMockup; label: string }[] = [
 ];
 
 export const DEFAULT_ZOOM_MOTION_BLUR = 0.35;
-export const DEFAULT_PREVIEW_QUALITY: PreviewQuality = "high";
+export const DEFAULT_PREVIEW_QUALITY: PreviewQuality = "medium";
 export const PREVIEW_QUALITY_OPTIONS: Array<{ value: PreviewQuality; label: string }> = [
 	{ value: "low", label: "Low" },
 	{ value: "medium", label: "Medium" },
@@ -554,7 +554,7 @@ export const DEFAULT_WEBCAM_HEALTH_METRICS: WebcamHealthMetrics = {
 	droppedFrameRatio: 0,
 	effectFallbackState: "none",
 };
-export const DEFAULT_WEBCAM_PREVIEW_MODE: WebcamPreviewMode = "exact";
+export const DEFAULT_WEBCAM_PREVIEW_MODE: WebcamPreviewMode = "performance";
 
 export interface RecommendedWebcamDefaults {
 	region: WebcamRegion;

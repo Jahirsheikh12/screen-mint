@@ -82,7 +82,7 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 			max(minimumCaptureFPS, config.fps ?? defaultCaptureFPS)
 		)
 		streamConfig.minimumFrameInterval = CMTime(value: 1, timescale: CMTimeScale(requestedFPS))
-		streamConfig.queueDepth = 6
+			streamConfig.queueDepth = 3
 		streamConfig.pixelFormat = kCVPixelFormatType_32BGRA
 		streamConfig.showsCursor = false
 		streamConfig.capturesAudio = capturesSystemAudio

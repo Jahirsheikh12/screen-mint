@@ -12,6 +12,40 @@ export interface DecodedVideoInfo {
 	audioCodec?: string;
 }
 
+export const STREAMING_DECODE_MIN_QUEUE = 4;
+export const STREAMING_DECODE_MAX_QUEUE = 12;
+export const STREAMING_DECODE_QUEUE_PER_CORE = 1;
+export const STREAMING_DECODE_MIN_BACKLOG = 6;
+export const STREAMING_DECODE_MAX_BACKLOG = 16;
+export const STREAMING_DECODE_BACKLOG_PER_CORE = 2;
+
+function normalizeHardwareConcurrency(hardwareConcurrency?: number): number {
+	return typeof hardwareConcurrency === "number" &&
+		Number.isFinite(hardwareConcurrency) &&
+		hardwareConcurrency > 0
+		? hardwareConcurrency
+		: 4;
+}
+
+export function resolveStreamingDecodeQueueLimit(hardwareConcurrency?: number): number {
+	const concurrency = normalizeHardwareConcurrency(hardwareConcurrency);
+	return Math.max(
+		STREAMING_DECODE_MIN_QUEUE,
+		Math.min(STREAMING_DECODE_MAX_QUEUE, Math.round(concurrency * STREAMING_DECODE_QUEUE_PER_CORE)),
+	);
+}
+
+export function resolveStreamingDecodeBacklogLimit(hardwareConcurrency?: number): number {
+	const concurrency = normalizeHardwareConcurrency(hardwareConcurrency);
+	return Math.max(
+		STREAMING_DECODE_MIN_BACKLOG,
+		Math.min(
+			STREAMING_DECODE_MAX_BACKLOG,
+			Math.round(concurrency * STREAMING_DECODE_BACKLOG_PER_CORE),
+		),
+	);
+}
+
 /** Caller must close the VideoFrame after use. */
 type OnFrameCallback = (
 	frame: VideoFrame,
@@ -33,12 +67,12 @@ export class StreamingVideoDecoder {
 	private metadata: DecodedVideoInfo | null = null;
 	private readonly decodeQueueLimit =
 		typeof navigator !== "undefined"
-			? Math.max(8, Math.min(24, (navigator.hardwareConcurrency || 4) * 2))
-			: 10;
+			? resolveStreamingDecodeQueueLimit(navigator.hardwareConcurrency)
+			: resolveStreamingDecodeQueueLimit();
 	private readonly decodedFrameBacklogLimit =
 		typeof navigator !== "undefined"
-			? Math.max(16, Math.min(48, (navigator.hardwareConcurrency || 4) * 4))
-			: 24;
+			? resolveStreamingDecodeBacklogLimit(navigator.hardwareConcurrency)
+			: resolveStreamingDecodeBacklogLimit();
 
 	private toLocalFilePath(resourceUrl: string): string | null {
 		if (!resourceUrl.startsWith("file:")) {
@@ -540,12 +574,12 @@ export class StreamingVideoFrameProvider {
 	private metadata: DecodedVideoInfo | null = null;
 	private readonly decodeQueueLimit =
 		typeof navigator !== "undefined"
-			? Math.max(8, Math.min(24, (navigator.hardwareConcurrency || 4) * 2))
-			: 10;
+			? resolveStreamingDecodeQueueLimit(navigator.hardwareConcurrency)
+			: resolveStreamingDecodeQueueLimit();
 	private readonly decodedFrameBacklogLimit =
 		typeof navigator !== "undefined"
-			? Math.max(16, Math.min(48, (navigator.hardwareConcurrency || 4) * 4))
-			: 24;
+			? resolveStreamingDecodeBacklogLimit(navigator.hardwareConcurrency)
+			: resolveStreamingDecodeBacklogLimit();
 	private pendingFrames: VideoFrame[] = [];
 	private frameResolve: ((frame: VideoFrame | null) => void) | null = null;
 	private decodeError: Error | null = null;

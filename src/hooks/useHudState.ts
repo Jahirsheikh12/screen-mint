@@ -46,16 +46,72 @@ export const DEFAULT_HUD_SETTINGS: HudSettings = {
 	hardwareAcceleration: DEFAULT_RECORDING_RUNTIME_SETTINGS.hardwareAcceleration,
 };
 
+const VALID_AFTER_RECORDING_ACTIONS: AfterRecordingAction[] = [
+	"create-project",
+	"export-clipboard",
+	"export-share-link",
+	"export-save-file",
+];
+const VALID_COUNTDOWN_DELAYS = new Set([0, 3, 5, 10]);
+
+function pickBoolean(value: unknown, fallback: boolean): boolean {
+	return typeof value === "boolean" ? value : fallback;
+}
+
+function pickString(value: unknown, fallback: string): string {
+	return typeof value === "string" ? value : fallback;
+}
+
+function pickAfterRecordingAction(value: unknown): AfterRecordingAction {
+	return typeof value === "string" &&
+		VALID_AFTER_RECORDING_ACTIONS.includes(value as AfterRecordingAction)
+		? (value as AfterRecordingAction)
+		: DEFAULT_HUD_SETTINGS.afterRecordingAction;
+}
+
+function pickRecordingQuality(value: unknown): RecordingQuality {
+	return value === "auto" || value === "high" || value === "medium"
+		? value
+		: DEFAULT_HUD_SETTINGS.recordingQuality;
+}
+
+function pickRecordingFrameRate(value: unknown): RecordingFrameRate {
+	return value === 60 || value === "60" ? 60 : DEFAULT_HUD_SETTINGS.recordingFps;
+}
+
+function pickCountdownDelay(value: unknown): number {
+	const numeric = typeof value === "string" ? Number(value) : value;
+	return typeof numeric === "number" &&
+		Number.isFinite(numeric) &&
+		VALID_COUNTDOWN_DELAYS.has(numeric)
+		? numeric
+		: DEFAULT_HUD_SETTINGS.countdownDelay;
+}
+
 export function resolveHudSettings(
 	settings: Record<string, unknown> | null | undefined,
 ): HudSettings {
+	const raw = settings ?? {};
 	return {
-		...DEFAULT_HUD_SETTINGS,
-		...settings,
-		autoCreateZooms:
-			typeof settings?.autoCreateZooms === "boolean"
-				? settings.autoCreateZooms
-				: DEFAULT_HUD_SETTINGS.autoCreateZooms,
+		hiddenFromCapture: pickBoolean(raw.hiddenFromCapture, DEFAULT_HUD_SETTINGS.hiddenFromCapture),
+		hideDesktopIcons: pickBoolean(raw.hideDesktopIcons, DEFAULT_HUD_SETTINGS.hideDesktopIcons),
+		hideDockIcon: pickBoolean(raw.hideDockIcon, DEFAULT_HUD_SETTINGS.hideDockIcon),
+		highlightArea: pickBoolean(raw.highlightArea, DEFAULT_HUD_SETTINGS.highlightArea),
+		openQuickShare: pickBoolean(raw.openQuickShare, DEFAULT_HUD_SETTINGS.openQuickShare),
+		speakerNotesEnabled: pickBoolean(
+			raw.speakerNotesEnabled,
+			DEFAULT_HUD_SETTINGS.speakerNotesEnabled,
+		),
+		speakerNotesText: pickString(raw.speakerNotesText, DEFAULT_HUD_SETTINGS.speakerNotesText),
+		afterRecordingAction: pickAfterRecordingAction(raw.afterRecordingAction),
+		countdownDelay: pickCountdownDelay(raw.countdownDelay),
+		autoCreateZooms: pickBoolean(raw.autoCreateZooms, DEFAULT_HUD_SETTINGS.autoCreateZooms),
+		recordingQuality: pickRecordingQuality(raw.recordingQuality),
+		recordingFps: pickRecordingFrameRate(raw.recordingFps),
+		hardwareAcceleration: pickBoolean(
+			raw.hardwareAcceleration,
+			DEFAULT_HUD_SETTINGS.hardwareAcceleration,
+		),
 	};
 }
 
