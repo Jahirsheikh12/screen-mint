@@ -1,0 +1,110 @@
+{
+	"name": "fixed-webcam-preview-export-regression",
+	"sourceSize": {
+		"width": 320,
+		"height": 240
+	},
+	"previewStageRect": {
+		"x": 0,
+		"y": 0,
+		"width": 960,
+		"height": 540
+	},
+	"previewCompositionRect": {
+		"x": 72,
+		"y": 36,
+		"width": 816,
+		"height": 459
+	},
+	"previewContentRect": {
+		"x": 96,
+		"y": 54,
+		"width": 768,
+		"height": 432
+	},
+	"exportRect": {
+		"x": 0,
+		"y": 0,
+		"width": 1280,
+		"height": 720
+	},
+	"webcamRegion": {
+		"position": {
+			"x": 70,
+			"y": 8
+		},
+		"size": {
+			"width": 18,
+			"height": 18
+		},
+		"anchor": "top-right",
+		"marginPct": 4,
+		"shape": "rectangle",
+		"borderRadius": 18,
+		"opacity": 1,
+		"borderWidth": 1,
+		"borderColor": "#e2e8f0"
+	},
+	"effects": {
+		"presetId": "regression-fixed",
+		"backgroundMode": "solid",
+		"backgroundBlurStrength": 14,
+		"backgroundColor": "#0f172a",
+		"edgeFeather": 12,
+		"portraitScale": 1,
+		"portraitOffset": {
+			"x": 0,
+			"y": 0
+		},
+		"shadowStyle": "lifted",
+		"shadowStrength": 0.75,
+		"shadowColor": "#000000",
+		"exposure": 0,
+		"contrast": 1,
+		"saturation": 1,
+		"warmth": 0,
+		"noiseReduction": 0,
+		"faceAwareFraming": false,
+		"subtleAvoidance": false
+	},
+	"showWebcam": true,
+	"mirrorWebcam": true,
+	"connectZooms": true,
+	"cameraSizeDuringZoom": 0.64,
+	"cameraLayouts": [
+		{
+			"id": "fixture-webcam-layout-transition",
+			"startMs": 620,
+			"endMs": 1550,
+			"mode": "default",
+			"transitionInMs": 200,
+			"transitionOutMs": 240,
+			"motionPreset": "focused",
+			"regionOverride": {
+				"anchor": "bottom-left",
+				"position": {
+					"x": 4,
+					"y": 70
+				},
+				"size": {
+					"width": 16,
+					"height": 16
+				},
+				"borderRadius": 16
+			}
+		}
+	],
+	"zoomRegions": [
+		{
+			"id": "fixture-webcam-zoom-transition",
+			"startMs": 1000,
+			"endMs": 1450,
+			"depth": 5,
+			"focus": {
+				"cx": 0.82,
+				"cy": 0.22
+			}
+		}
+	],
+	"samplesMs": [0, 620, 720, 996, 1016, 1160, 1450, 1580, 1760, 2200]
+}
