@@ -1,16 +1,19 @@
 import type { Span } from "dnd-timeline";
 import {
+	Check,
 	ChevronDown,
 	Download,
 	FolderOpen,
 	Keyboard,
 	Languages,
+	Pencil,
 	Redo2,
 	Save,
 	Sparkles,
 	SplitSquareHorizontal,
 	Trash2,
 	Undo2,
+	X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
@@ -52,6 +55,11 @@ import {
 	VideoExporter,
 	type VideoExportSettings,
 } from "@/lib/exporter";
+import {
+	deriveVideoNameFromPath,
+	ensureFileExtension,
+	normalizeVideoDisplayName,
+} from "@/lib/fileNames";
 import { matchesShortcut } from "@/lib/shortcuts";
 import { type AspectRatio, getAspectRatioValue } from "@/utils/aspectRatioUtils";
 import {
@@ -268,6 +276,9 @@ export default function VideoEditor() {
 	);
 	const [videoPath, setVideoPath] = useState<string | null>(null);
 	const [videoSourcePath, setVideoSourcePath] = useState<string | null>(null);
+	const [videoName, setVideoName] = useState("Untitled");
+	const [draftVideoName, setDraftVideoName] = useState("Untitled");
+	const [isEditingVideoName, setIsEditingVideoName] = useState(false);
 	const [videoHasAudio, setVideoHasAudio] = useState(false);
 	const [clipVolume, setClipVolume] = useState(1);
 	const [loading, setLoading] = useState(true);
@@ -475,6 +486,8 @@ export default function VideoEditor() {
 	const historyCurrentRef = useRef<EditorHistorySnapshot | null>(null);
 	const applyingHistoryRef = useRef(false);
 	const pendingExportSaveRef = useRef<PendingExportSave | null>(null);
+	const videoNameInputRef = useRef<HTMLInputElement | null>(null);
+	const videoNameEditCanceledRef = useRef(false);
 	const webcamAvailabilityRequestRef = useRef(0);
 	const notifiedMissingWebcamPathRef = useRef<string | null>(null);
 	const audioAvailabilityRequestRef = useRef(0);
@@ -542,6 +555,60 @@ export default function VideoEditor() {
 			decoder?.destroy();
 		};
 	}, [videoPath]);
+
+	useEffect(() => {
+		if (!isEditingVideoName) {
+			return;
+		}
+
+		requestAnimationFrame(() => {
+			videoNameInputRef.current?.focus();
+			videoNameInputRef.current?.select();
+		});
+	}, [isEditingVideoName]);
+
+	const startVideoNameEdit = useCallback(() => {
+		setDraftVideoName(videoName);
+		setIsEditingVideoName(true);
+	}, [videoName]);
+
+	const commitVideoNameEdit = useCallback(() => {
+		const nextVideoName = normalizeVideoDisplayName(draftVideoName);
+		setVideoName(nextVideoName);
+		setDraftVideoName(nextVideoName);
+		setIsEditingVideoName(false);
+	}, [draftVideoName]);
+
+	const cancelVideoNameEdit = useCallback(() => {
+		videoNameEditCanceledRef.current = true;
+		setDraftVideoName(videoName);
+		setIsEditingVideoName(false);
+	}, [videoName]);
+
+	const handleVideoNameInputBlur = useCallback(() => {
+		if (videoNameEditCanceledRef.current) {
+			videoNameEditCanceledRef.current = false;
+			return;
+		}
+
+		commitVideoNameEdit();
+	}, [commitVideoNameEdit]);
+
+	const handleVideoNameInputKeyDown = useCallback(
+		(event: React.KeyboardEvent<HTMLInputElement>) => {
+			if (event.key === "Enter") {
+				event.preventDefault();
+				commitVideoNameEdit();
+				return;
+			}
+
+			if (event.key === "Escape") {
+				event.preventDefault();
+				cancelVideoNameEdit();
+			}
+		},
+		[cancelVideoNameEdit, commitVideoNameEdit],
+	);
 
 	const clearWebcamState = useCallback(() => {
 		const recommendedWebcamDefaults = getRecommendedWebcamDefaults(
@@ -1043,6 +1110,9 @@ export default function VideoEditor() {
 
 			const project = candidate;
 			const sourcePath = fromFileUrl(project.videoPath);
+			const loadedVideoName = normalizeVideoDisplayName(
+				project.videoName ?? deriveVideoNameFromPath(path ?? sourcePath),
+			);
 			const normalizedEditor = normalizeProjectEditor(project.editor);
 			const normalizedWebcamSessionMetadata =
 				normalizeWebcamSessionMetadata(project.webcamSessionMetadata) ?? null;
@@ -1059,6 +1129,9 @@ export default function VideoEditor() {
 			setError(null);
 			setVideoSourcePath(sourcePath);
 			setVideoPath(toFileUrl(sourcePath));
+			setVideoName(loadedVideoName);
+			setDraftVideoName(loadedVideoName);
+			setIsEditingVideoName(false);
 			dispatchSession({ type: "set-current-project-path", path: path ?? null });
 			applyEditorControls(normalizedEditor, { includeTimeline: true });
 			setWebcamSessionMetadata(normalizedWebcamSessionMetadata);
@@ -1113,6 +1186,7 @@ export default function VideoEditor() {
 				snapshot: editorPersistenceService.buildProjectArtifacts({
 					sourcePath,
 					editor: normalizedEditor,
+					videoName: loadedVideoName,
 					webcamSessionMetadata: normalizedWebcamSessionMetadata ?? undefined,
 				}).projectSnapshot,
 			});
@@ -1128,6 +1202,7 @@ export default function VideoEditor() {
 		}
 		return editorPersistenceService.buildProjectArtifacts({
 			sourcePath,
+			videoName,
 			editor: {
 				wallpaper,
 				hideBackground,
@@ -1206,6 +1281,7 @@ export default function VideoEditor() {
 	}, [
 		videoPath,
 		videoSourcePath,
+		videoName,
 		wallpaper,
 		hideBackground,
 		shadowIntensity,
@@ -1345,8 +1421,12 @@ export default function VideoEditor() {
 							);
 						} else {
 							const sourcePath = fromFileUrl(finalized.path);
+							const nextVideoName = deriveVideoNameFromPath(sourcePath);
 							setVideoSourcePath(sourcePath);
 							setVideoPath(toFileUrl(sourcePath));
+							setVideoName(nextVideoName);
+							setDraftVideoName(nextVideoName);
+							setIsEditingVideoName(false);
 							setWebcamSessionMetadata(
 								normalizeWebcamSessionMetadata(finalized.webcamSessionMetadata) ?? null,
 							);
@@ -1371,8 +1451,12 @@ export default function VideoEditor() {
 						const result = await window.electronAPI.getCurrentVideoPath();
 						if (result.success && result.path) {
 							const sourcePath = fromFileUrl(result.path);
+							const nextVideoName = deriveVideoNameFromPath(sourcePath);
 							setVideoSourcePath(sourcePath);
 							setVideoPath(toFileUrl(sourcePath));
+							setVideoName(nextVideoName);
+							setDraftVideoName(nextVideoName);
+							setIsEditingVideoName(false);
 							setWebcamSessionMetadata(null);
 							dispatchSession({ type: "set-current-project-path", path: null });
 							dispatchSession({ type: "set-last-saved-snapshot", snapshot: null });
@@ -1489,6 +1573,7 @@ export default function VideoEditor() {
 
 			const projectArtifacts = editorPersistenceService.buildProjectArtifacts({
 				sourcePath,
+				videoName,
 				editor: {
 					wallpaper,
 					hideBackground,
@@ -1593,6 +1678,7 @@ export default function VideoEditor() {
 		[
 			videoPath,
 			videoSourcePath,
+			videoName,
 			currentProjectPath,
 			wallpaper,
 			hideBackground,
@@ -4122,8 +4208,7 @@ export default function VideoEditor() {
 						aspectRatioValue,
 						Math.round(duration * 1000),
 					);
-					const timestamp = Date.now();
-					const fileName = `export-${timestamp}.gif`;
+					const fileName = ensureFileExtension(videoName, "gif");
 					const exportV2Result = await tryExportV2({
 						request: {
 							sourcePath: videoPath,
@@ -4278,8 +4363,7 @@ export default function VideoEditor() {
 						settings.video,
 						aspectRatioValue,
 					);
-					const timestamp = Date.now();
-					const fileName = `export-${timestamp}.mp4`;
+					const fileName = ensureFileExtension(videoName, "mp4");
 					const exportV2Result = await tryExportV2({
 						request: {
 							sourcePath: videoPath,
@@ -4456,6 +4540,7 @@ export default function VideoEditor() {
 		},
 		[
 			videoPath,
+			videoName,
 			wallpaper,
 			trimRegions,
 			speedRegions,
@@ -4981,21 +5066,70 @@ export default function VideoEditor() {
 							</Tooltip>
 						</div>
 
-						{/* Center: Project filename */}
-						<div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
-							<span className="text-[13px] font-medium text-white/60 truncate max-w-[400px]">
-								{currentProjectPath
-									? currentProjectPath
-											.split(/[\\/]/)
-											.pop()
-											?.replace(/\.[^.]+$/, "") || "Untitled"
-									: videoSourcePath
-										? videoSourcePath
-												.split(/[\\/]/)
-												.pop()
-												?.replace(/\.[^.]+$/, "") || "Untitled"
-										: "ScreenMint"}
-							</span>
+						{/* Center: editable video name */}
+						<div
+							className="absolute left-1/2 -translate-x-1/2 flex h-8 max-w-[460px] items-center gap-1"
+							style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
+						>
+							{isEditingVideoName ? (
+								<>
+									<input
+										ref={videoNameInputRef}
+										type="text"
+										value={draftVideoName}
+										onChange={(event) => setDraftVideoName(event.target.value)}
+										onBlur={handleVideoNameInputBlur}
+										onKeyDown={handleVideoNameInputKeyDown}
+										aria-label="Video name"
+										className="h-7 w-[320px] rounded-md border border-white/10 bg-white/[0.07] px-2.5 text-center text-[13px] font-medium text-white/85 outline-none transition placeholder:text-white/25 focus:border-amber-300/45 focus:bg-white/[0.09] focus:ring-2 focus:ring-amber-300/15"
+									/>
+									<Tooltip content="Save Name" side="bottom">
+										<button
+											type="button"
+											onMouseDown={(event) => event.preventDefault()}
+											onClick={commitVideoNameEdit}
+											className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
+											aria-label="Save video name"
+										>
+											<Check className="h-3.5 w-3.5" />
+										</button>
+									</Tooltip>
+									<Tooltip content="Cancel" side="bottom">
+										<button
+											type="button"
+											onMouseDown={(event) => event.preventDefault()}
+											onClick={cancelVideoNameEdit}
+											className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/8 hover:text-white cursor-pointer"
+											aria-label="Cancel video name edit"
+										>
+											<X className="h-3.5 w-3.5" />
+										</button>
+									</Tooltip>
+								</>
+							) : (
+								<>
+									<button
+										type="button"
+										onClick={startVideoNameEdit}
+										onDoubleClick={startVideoNameEdit}
+										className="min-w-0 max-w-[400px] truncate rounded-md px-2 py-1 text-[13px] font-medium text-white/60 transition hover:bg-white/[0.06] hover:text-white/85 cursor-text"
+										title={videoName}
+										aria-label="Edit video name"
+									>
+										{videoName}
+									</button>
+									<Tooltip content="Edit Name" side="bottom">
+										<button
+											type="button"
+											onClick={startVideoNameEdit}
+											className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-500 opacity-70 transition hover:bg-white/8 hover:text-white hover:opacity-100 cursor-pointer"
+											aria-label="Edit video name"
+										>
+											<Pencil className="h-3.5 w-3.5" />
+										</button>
+									</Tooltip>
+								</>
+							)}
 						</div>
 
 						{/* Right: Undo/Redo, Presets, Layout, Settings, Export */}

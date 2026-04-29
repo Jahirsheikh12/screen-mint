@@ -32,6 +32,11 @@ import type {
 	ExportV2StartResult,
 	ExportV2TrimRegion,
 } from "../../src/lib/exporter/exportV2";
+import {
+	buildCollisionFileName,
+	ensureFileExtension,
+	sanitizeFileNameBase,
+} from "../../src/lib/fileNames";
 import type {
 	CaptureDiagnostics,
 	CapturePermissionState,
@@ -1091,16 +1096,66 @@ function getCachedExportV2Capabilities() {
 
 function getExportSaveDialogOptions(fileName: string): SaveDialogOptions {
 	const isGif = fileName.toLowerCase().endsWith(".gif");
+	const safeFileName = ensureFileExtension(fileName, isGif ? "gif" : "mp4");
 	const filters = isGif
 		? [{ name: "GIF Image", extensions: ["gif"] }]
 		: [{ name: "MP4 Video", extensions: ["mp4"] }];
 
 	return {
 		title: isGif ? "Save Exported GIF" : "Save Exported Video",
-		defaultPath: path.join(app.getPath("downloads"), fileName),
+		defaultPath: path.join(app.getPath("downloads"), safeFileName),
 		filters,
 		properties: ["createDirectory", "showOverwriteConfirmation"],
 	};
+}
+
+async function findAvailableFilePath(directoryPath: string, fileName: string) {
+	for (let collisionIndex = 0; collisionIndex < 1000; collisionIndex += 1) {
+		const candidatePath = path.join(
+			directoryPath,
+			buildCollisionFileName(fileName, collisionIndex),
+		);
+
+		try {
+			await fs.access(candidatePath);
+		} catch (error) {
+			const code =
+				error && typeof error === "object" && "code" in error
+					? String((error as { code?: unknown }).code)
+					: "";
+			if (code === "ENOENT") {
+				return candidatePath;
+			}
+			throw error;
+		}
+	}
+
+	throw new Error(`Unable to find an available filename for ${fileName}`);
+}
+
+async function writeBufferToUniqueFile(directoryPath: string, fileName: string, data: Buffer) {
+	for (let collisionIndex = 0; collisionIndex < 1000; collisionIndex += 1) {
+		const candidatePath = path.join(
+			directoryPath,
+			buildCollisionFileName(fileName, collisionIndex),
+		);
+
+		try {
+			await fs.writeFile(candidatePath, data, { flag: "wx" });
+			return candidatePath;
+		} catch (error) {
+			const code =
+				error && typeof error === "object" && "code" in error
+					? String((error as { code?: unknown }).code)
+					: "";
+			if (code === "EEXIST") {
+				continue;
+			}
+			throw error;
+		}
+	}
+
+	throw new Error(`Unable to save ${fileName}; too many files with similar names exist.`);
 }
 
 function normalizeExportV2SourcePath(sourcePath: string) {
@@ -1130,10 +1185,7 @@ function buildTrimSelectExpression(trimRegions: ExportV2TrimRegion[] = []) {
 
 async function resolveExportV2OutputPath(request: ExportV2StartRequest) {
 	const extension = request.format === "gif" ? "gif" : "mp4";
-	const safeName = request.fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
-	const fileName = safeName.toLowerCase().endsWith(`.${extension}`)
-		? safeName
-		: `${safeName}.${extension}`;
+	const fileName = ensureFileExtension(request.fileName, extension);
 
 	if (request.outputPath) {
 		return { path: request.outputPath, canceled: false };
@@ -1153,7 +1205,7 @@ async function resolveExportV2OutputPath(request: ExportV2StartRequest) {
 
 	const recordingsDir = await getRecordingsDir();
 	return {
-		path: path.join(recordingsDir, `${Date.now()}-${fileName}`),
+		path: await findAvailableFilePath(recordingsDir, fileName),
 		canceled: false,
 	};
 }
@@ -5991,9 +6043,13 @@ export function registerIpcHandlers(
 		async (_, videoData: ArrayBuffer, fileName: string) => {
 			try {
 				const recordingsDir = await getRecordingsDir();
-				const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
-				const targetPath = path.join(recordingsDir, `${Date.now()}-${safeName}`);
-				await fs.writeFile(targetPath, Buffer.from(videoData));
+				const extension = fileName.toLowerCase().endsWith(".gif") ? "gif" : "mp4";
+				const safeName = ensureFileExtension(fileName, extension);
+				const targetPath = await writeBufferToUniqueFile(
+					recordingsDir,
+					safeName,
+					Buffer.from(videoData),
+				);
 				return {
 					success: true,
 					path: targetPath,
@@ -6327,10 +6383,8 @@ export function registerIpcHandlers(
 					};
 				}
 
-				const safeName = (suggestedName || `project-${Date.now()}`).replace(/[^a-zA-Z0-9-_]/g, "_");
-				const defaultName = safeName.endsWith(`.${PROJECT_FILE_EXTENSION}`)
-					? safeName
-					: `${safeName}.${PROJECT_FILE_EXTENSION}`;
+				const safeName = sanitizeFileNameBase(suggestedName, `project-${Date.now()}`);
+				const defaultName = ensureFileExtension(safeName, PROJECT_FILE_EXTENSION);
 
 				const result = await dialog.showSaveDialog({
 					title: `Save ${BRAND_NAME} Project`,
