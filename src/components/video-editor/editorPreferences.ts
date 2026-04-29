@@ -168,7 +168,7 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	customAspectWidth: "16",
 	customAspectHeight: "9",
 	customWallpapers: [],
-	workspaceLayout: "default",
+	workspaceLayout: "preview-focus",
 	presets: [],
 };
 
@@ -439,6 +439,22 @@ export function normalizeEditorPreferences(
 	};
 }
 
+function migrateEditorPreferences(candidate: unknown): unknown {
+	if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+		return candidate;
+	}
+
+	const raw = candidate as Partial<EditorPreferences>;
+	if (raw.workspaceLayout !== "default") {
+		return candidate;
+	}
+
+	return {
+		...raw,
+		workspaceLayout: DEFAULT_EDITOR_PREFERENCES.workspaceLayout,
+	};
+}
+
 function normalizePresets(value: unknown, fallback: EditorPreferences): EditorPreset[] {
 	if (!Array.isArray(value)) {
 		return fallback.presets;
@@ -478,7 +494,7 @@ export function loadEditorPreferences(): EditorPreferences {
 			return DEFAULT_EDITOR_PREFERENCES;
 		}
 
-		const prefs = normalizeEditorPreferences(JSON.parse(stored));
+		const prefs = normalizeEditorPreferences(migrateEditorPreferences(JSON.parse(stored)));
 		globalThis.localStorage.setItem(EDITOR_PREFERENCES_STORAGE_KEY, JSON.stringify(prefs));
 		return prefs;
 	} catch {

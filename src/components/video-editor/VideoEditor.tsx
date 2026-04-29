@@ -15,7 +15,15 @@ import {
 	Undo2,
 	X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import {
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useReducer,
+	useRef,
+	useState,
+} from "react";
 import {
 	type ImperativePanelGroupHandle,
 	Panel,
@@ -217,6 +225,18 @@ type PendingExportSave = {
 	blob: Blob;
 };
 
+function getWorkspaceLayoutSizes(layout: EditorWorkspaceLayout): [number, number] {
+	if (layout === "preview-focus") {
+		return [80, 20];
+	}
+
+	if (layout === "timeline-focus") {
+		return [42, 58];
+	}
+
+	return [65, 35];
+}
+
 function LanguageSwitcher() {
 	const { locale, setLocale, t } = useI18n();
 	const idx = SUPPORTED_LOCALES.indexOf(locale as (typeof SUPPORTED_LOCALES)[number]);
@@ -245,8 +265,8 @@ export default function VideoEditor() {
 	const tSettings = useScopedT("settings");
 	// Editor control values (wallpaper, cursor, frame, export, etc.) always start
 	// from defaults for every new session. The only settings we restore from
-	// localStorage are genuine app-level prefs (preview quality, workspace layout,
-	// custom aspect inputs, custom wallpaper library) and the user's saved presets.
+	// localStorage are genuine app-level prefs (preview quality, custom aspect inputs,
+	// custom wallpaper library) and the user's saved presets.
 	// Users can re-apply a preset to bring back their preferred settings.
 	const initialEditorPreferences = useMemo(() => {
 		const stored = editorPreferencesService.load();
@@ -262,7 +282,7 @@ export default function VideoEditor() {
 			cameraSizeDuringZoom: recommendedWebcamDefaults.cameraSizeDuringZoom,
 			previewQuality: stored.previewQuality,
 			webcamPreviewMode: stored.webcamPreviewMode,
-			workspaceLayout: stored.workspaceLayout,
+			workspaceLayout: DEFAULT_EDITOR_PREFERENCES.workspaceLayout,
 			customAspectWidth: stored.customAspectWidth,
 			customAspectHeight: stored.customAspectHeight,
 			customWallpapers: stored.customWallpapers,
@@ -466,6 +486,10 @@ export default function VideoEditor() {
 	const [postRecordingAutoZoomBootstrap, setPostRecordingAutoZoomBootstrap] =
 		useState<PostRecordingAutoZoomBootstrapState | null>(null);
 	const captionRegions = captionTrack?.segments ?? [];
+	const workspaceLayoutSizes = useMemo(
+		() => getWorkspaceLayoutSizes(workspaceLayout),
+		[workspaceLayout],
+	);
 
 	const videoPlaybackRef = useRef<VideoPlaybackRef>(null);
 	const panelGroupRef = useRef<ImperativePanelGroupHandle | null>(null);
@@ -1547,10 +1571,9 @@ export default function VideoEditor() {
 		editorPreferencesService.scheduleSave({
 			previewQuality,
 			webcamPreviewMode,
-			workspaceLayout,
 			presets: customPresets,
 		});
-	}, [previewQuality, webcamPreviewMode, workspaceLayout, customPresets]);
+	}, [previewQuality, webcamPreviewMode, customPresets]);
 
 	useEffect(() => {
 		return () => {
@@ -2102,16 +2125,9 @@ export default function VideoEditor() {
 		zoomRegions.length,
 	]);
 
-	useEffect(() => {
-		const layout =
-			workspaceLayout === "preview-focus"
-				? [78, 22]
-				: workspaceLayout === "timeline-focus"
-					? [42, 58]
-					: [65, 35];
-
-		panelGroupRef.current?.setLayout(layout);
-	}, [workspaceLayout]);
+	useLayoutEffect(() => {
+		panelGroupRef.current?.setLayout(workspaceLayoutSizes);
+	}, [workspaceLayoutSizes]);
 
 	function togglePlayPause() {
 		const playback = videoPlaybackRef.current;
@@ -5260,7 +5276,7 @@ export default function VideoEditor() {
 
 					<PanelGroup ref={panelGroupRef} direction="vertical" className="flex-1 min-h-0">
 						{/* Top section: Video preview + Settings sidebar */}
-						<Panel defaultSize={65} minSize={35}>
+						<Panel defaultSize={workspaceLayoutSizes[0]} minSize={35}>
 							<div className="flex h-full pb-0 gap-3 pr-3 pl-3 pt-3">
 								{/* Video preview area */}
 								<div className="flex-1 min-w-0 flex flex-col overflow-hidden rounded-xl">
@@ -5586,8 +5602,8 @@ export default function VideoEditor() {
 						</PanelResizeHandle>
 
 						{/* Full-width Timeline section */}
-						<Panel defaultSize={35} minSize={15}>
-							<div className="h-full min-h-0 mx-4 mb-4 bg-[#0c0c0f] rounded-2xl border border-white/5 shadow-lg overflow-hidden flex flex-col">
+						<Panel defaultSize={workspaceLayoutSizes[1]} minSize={12}>
+							<div className="h-[calc(100%-0.5rem)] min-h-0 mx-4 mb-2 bg-[#0c0c0f] rounded-2xl border border-white/5 shadow-lg overflow-hidden flex flex-col">
 								<TimelineEditor
 									videoDuration={duration}
 									currentTime={currentTime}

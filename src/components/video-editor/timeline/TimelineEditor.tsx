@@ -2494,49 +2494,6 @@ export default function TimelineEditor({
 					/>
 				</TimelineWrapper>
 			</div>
-
-			{/* Add Layer Button */}
-			<div className="flex items-center px-3 py-1 border-t border-white/5 bg-[#111114]">
-				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Button
-							variant="ghost"
-							size="sm"
-							className="h-7 px-2.5 text-[11px] text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-all gap-1"
-						>
-							<Plus className="w-3 h-3" />
-							Add Layer
-						</Button>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent align="start" className="bg-[#1a1a1a] border-white/10 min-w-[160px]">
-						{ADDITIONAL_LAYER_OPTIONS.map((opt) => (
-							<DropdownMenuItem
-								key={opt.type}
-								onClick={() => {
-									toggleLayer(opt.type);
-									// Auto-add an item when showing the layer
-									if (!visibleLayers.has(opt.type)) {
-										if (opt.type === "annotation") handleAddAnnotation();
-										else if (opt.type === "camera") handleAddCameraLayout();
-										else if (opt.type === "speed") handleAddSpeed();
-										else if (opt.type === "audio") handleAddAudio();
-										else if (opt.type === "caption") handleAddCaption();
-									}
-								}}
-								className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer flex items-center gap-2"
-							>
-								<opt.icon className="w-3.5 h-3.5" />
-								{opt.label}
-								{visibleLayers.has(opt.type) && (
-									<Check className="w-3 h-3 text-[#F59E0B] ml-auto" />
-								)}
-							</DropdownMenuItem>
-						))}
-					</DropdownMenuContent>
-				</DropdownMenu>
-				<div className="flex-1" />
-				<span className="text-[10px] text-slate-600 font-medium">Scroll to pan</span>
-			</div>
 		</div>
 	);
 }

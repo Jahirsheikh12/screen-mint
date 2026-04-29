@@ -428,6 +428,19 @@ describe("editorPreferences", () => {
 		expect(loadEditorPreferences().previewQuality).toBe("medium");
 	});
 
+	it("migrates the previous default workspace layout to preview focus", () => {
+		vi.stubGlobal(
+			"localStorage",
+			createStorageMock({
+				[EDITOR_PREFERENCES_STORAGE_KEY]: JSON.stringify({
+					workspaceLayout: "default",
+				}),
+			}),
+		);
+
+		expect(loadEditorPreferences().workspaceLayout).toBe("preview-focus");
+	});
+
 	it("normalizes workspace layouts and custom presets", () => {
 		const preferences = normalizeEditorPreferences({
 			workspaceLayout: "timeline-focus",
