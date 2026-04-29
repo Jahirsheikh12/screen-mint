@@ -5,11 +5,8 @@ const workerScope = self as typeof self & {
 	onmessage: ((event: MessageEvent) => void) | null;
 };
 
-interface StoredFrame {
-	rgba: Uint8Array;
-	delay: number;
-	diffScore: number;
-}
+const MAX_PALETTE_SAMPLE_BYTES = 512 * 1024;
+const MAX_FRAME_SAMPLE_PIXELS = 4096;
 
 let width = 0;
 let height = 0;
@@ -18,8 +15,15 @@ let dedupeFrames = true;
 let colorCount = 128;
 let ditherMode: "off" | "bayer" | "floyd-steinberg" = "bayer";
 let dedupeThreshold = 8;
-let frames: StoredFrame[] = [];
-let cancelled = false;
+let paletteSamples: number[] = [];
+let samplePreviousFrame: Uint8Array | null = null;
+let sampleDedupedFrames = 0;
+let globalPalette: number[][] | null = null;
+let gif: ReturnType<typeof GIFEncoder> | null = null;
+let pendingFrame: Uint8Array | null = null;
+let pendingDelay = 0;
+let encodedFrames = 0;
+let acceptedEncodeFrames = 0;
 
 function sampleDifference(previous: Uint8Array, next: Uint8Array): number {
 	const samplePixels = 2048;
@@ -39,42 +43,33 @@ function sampleDifference(previous: Uint8Array, next: Uint8Array): number {
 	return compared > 0 ? total / compared : 0;
 }
 
-function buildGlobalPaletteSample(): Uint8Array {
-	if (frames.length === 0) {
-		return new Uint8Array();
-	}
-
-	const samples: number[] = [];
-	for (const frame of frames) {
-		const stride = Math.max(Math.floor(frame.rgba.length / (4 * 4096)), 1);
-		for (let index = 0; index < frame.rgba.length; index += stride * 4) {
-			samples.push(
-				frame.rgba[index],
-				frame.rgba[index + 1],
-				frame.rgba[index + 2],
-				frame.rgba[index + 3],
-			);
-		}
-	}
-
-	return Uint8Array.from(samples);
-}
-
-function appendFrame(rgbaBuffer: ArrayBuffer, delay: number) {
-	const rgba = new Uint8Array(rgbaBuffer);
-	if (dedupeFrames && frames.length > 0) {
-		const previous = frames[frames.length - 1];
-		const diffScore = sampleDifference(previous.rgba, rgba);
-		if (diffScore < dedupeThreshold) {
-			previous.delay += delay;
-			return;
-		}
-		frames.push({ rgba, delay, diffScore });
+function appendPaletteSample(rgba: Uint8Array) {
+	if (paletteSamples.length >= MAX_PALETTE_SAMPLE_BYTES) {
 		return;
 	}
 
-	const diffScore = frames.length > 0 ? sampleDifference(frames[frames.length - 1].rgba, rgba) : 0;
-	frames.push({ rgba, delay, diffScore });
+	const stride = Math.max(Math.floor(rgba.length / (4 * MAX_FRAME_SAMPLE_PIXELS)), 1);
+	for (
+		let index = 0;
+		index < rgba.length && paletteSamples.length < MAX_PALETTE_SAMPLE_BYTES;
+		index += stride * 4
+	) {
+		paletteSamples.push(rgba[index], rgba[index + 1], rgba[index + 2], rgba[index + 3]);
+	}
+}
+
+function sampleFrame(rgbaBuffer: ArrayBuffer) {
+	const rgba = new Uint8Array(rgbaBuffer);
+	if (dedupeFrames && samplePreviousFrame) {
+		const diffScore = sampleDifference(samplePreviousFrame, rgba);
+		if (diffScore < dedupeThreshold) {
+			return;
+		}
+	}
+
+	appendPaletteSample(rgba);
+	samplePreviousFrame = rgba;
+	sampleDedupedFrames++;
 }
 
 function nearestPaletteIndex(palette: number[][], r: number, g: number, b: number): number {
@@ -181,43 +176,68 @@ function palettizeFrame(rgba: Uint8Array, palette: number[][]): Uint8Array {
 	return applyBayerDither(rgba, palette);
 }
 
-function encodeGif() {
-	const gif = GIFEncoder();
-	const globalSample = buildGlobalPaletteSample();
-	const globalPalette = quantize(
-		globalSample.length > 0 ? globalSample : frames[0].rgba,
-		colorCount,
-		{
-			format: "rgb565",
-		},
-	);
+function prepareEncode() {
+	const globalSample =
+		paletteSamples.length > 0
+			? Uint8Array.from(paletteSamples)
+			: samplePreviousFrame || new Uint8Array([0, 0, 0, 255]);
+	globalPalette = quantize(globalSample, colorCount, {
+		format: "rgb565",
+	});
+	gif = GIFEncoder();
+	pendingFrame = null;
+	pendingDelay = 0;
+	encodedFrames = 0;
+	acceptedEncodeFrames = 0;
+}
 
-	frames.forEach((frame, index) => {
-		if (cancelled) {
+function flushPendingFrame() {
+	if (!gif || !globalPalette || !pendingFrame) {
+		return;
+	}
+
+	const indexedFrame = palettizeFrame(pendingFrame, globalPalette);
+	gif.writeFrame(indexedFrame, width, height, {
+		palette: globalPalette,
+		delay: pendingDelay,
+		repeat: encodedFrames === 0 ? (loop ? 0 : -1) : undefined,
+	});
+	encodedFrames++;
+	pendingFrame = null;
+	pendingDelay = 0;
+
+	workerScope.postMessage({
+		type: "progress",
+		progress: sampleDedupedFrames > 0 ? encodedFrames / sampleDedupedFrames : 1,
+		dedupedFrames: acceptedEncodeFrames,
+	});
+}
+
+function appendFrame(rgbaBuffer: ArrayBuffer, delay: number) {
+	const rgba = new Uint8Array(rgbaBuffer);
+	if (!gif || !globalPalette) {
+		throw new Error("GIF encoder was not prepared");
+	}
+
+	if (dedupeFrames && pendingFrame) {
+		const diffScore = sampleDifference(pendingFrame, rgba);
+		if (diffScore < dedupeThreshold) {
+			pendingDelay += delay;
 			return;
 		}
+	}
 
-		const useLocalPalette = index > 0 && frame.diffScore > 42;
-		const palette = useLocalPalette
-			? quantize(frame.rgba, colorCount, { format: "rgb565" })
-			: globalPalette;
-		const indexedFrame = palettizeFrame(frame.rgba, palette);
+	flushPendingFrame();
+	pendingFrame = rgba;
+	pendingDelay = delay;
+	acceptedEncodeFrames++;
+}
 
-		gif.writeFrame(indexedFrame, width, height, {
-			palette,
-			delay: frame.delay,
-			repeat: index === 0 ? (loop ? 0 : -1) : undefined,
-		});
-
-		if (index % 5 === 0 || index === frames.length - 1) {
-			workerScope.postMessage({
-				type: "progress",
-				progress: (index + 1) / frames.length,
-				dedupedFrames: frames.length,
-			});
-		}
-	});
-
+function encodeGif() {
+	if (!gif) {
+		throw new Error("GIF encoder was not prepared");
+	}
+	flushPendingFrame();
 	gif.finish();
 	return gif.bytes();
 }
@@ -232,19 +252,58 @@ workerScope.onmessage = (event: MessageEvent) => {
 		colorCount = message.colorCount ?? 128;
 		ditherMode = message.ditherMode ?? "bayer";
 		dedupeThreshold = message.dedupeThreshold ?? 8;
-		frames = [];
-		cancelled = false;
+		paletteSamples = [];
+		samplePreviousFrame = null;
+		sampleDedupedFrames = 0;
+		globalPalette = null;
+		gif = null;
+		pendingFrame = null;
+		pendingDelay = 0;
+		encodedFrames = 0;
+		acceptedEncodeFrames = 0;
+		return;
+	}
+
+	if (message.type === "sample-frame") {
+		sampleFrame(message.rgba);
+		workerScope.postMessage({
+			type: "frame-accepted",
+			dedupedFrames: sampleDedupedFrames,
+		});
+		return;
+	}
+
+	if (message.type === "prepare-encode") {
+		try {
+			prepareEncode();
+			workerScope.postMessage({
+				type: "encode-ready",
+				dedupedFrames: sampleDedupedFrames,
+			});
+		} catch (error) {
+			workerScope.postMessage({
+				type: "error",
+				error: error instanceof Error ? error.message : String(error),
+			});
+		}
 		return;
 	}
 
 	if (message.type === "frame") {
 		appendFrame(message.rgba, message.delay);
+		workerScope.postMessage({
+			type: "frame-accepted",
+			dedupedFrames: acceptedEncodeFrames,
+		});
 		return;
 	}
 
 	if (message.type === "cancel") {
-		cancelled = true;
-		frames = [];
+		paletteSamples = [];
+		samplePreviousFrame = null;
+		globalPalette = null;
+		gif = null;
+		pendingFrame = null;
 		return;
 	}
 
@@ -255,11 +314,15 @@ workerScope.onmessage = (event: MessageEvent) => {
 				{
 					type: "done",
 					buffer: bytes.buffer,
-					dedupedFrames: frames.length,
+					dedupedFrames: encodedFrames,
 				},
 				[bytes.buffer],
 			);
-			frames = [];
+			paletteSamples = [];
+			samplePreviousFrame = null;
+			globalPalette = null;
+			gif = null;
+			pendingFrame = null;
 		} catch (error) {
 			workerScope.postMessage({
 				type: "error",

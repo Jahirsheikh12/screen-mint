@@ -7,6 +7,12 @@ import type {
 } from "../src/components/video-editor/types";
 import type { PostRecordingContext } from "../src/lib/recording/postRecording";
 import type {
+	ExportV2Capabilities,
+	ExportV2Progress,
+	ExportV2StartRequest,
+	ExportV2StartResult,
+} from "../src/lib/exporter/exportV2";
+import type {
 	CaptureDiagnostics,
 	CapturePermissionState,
 	CaptureSourceProbeResult,
@@ -258,6 +264,30 @@ declare global {
 				videoData: ArrayBuffer,
 				fileName: string,
 			) => Promise<{ success: boolean; path?: string; message?: string; error?: string }>;
+			exportV2Probe: () => Promise<ExportV2Capabilities>;
+			exportV2Start: (request: ExportV2StartRequest) => Promise<ExportV2StartResult>;
+			exportV2CreateWorker: () => Promise<{ success: boolean; error?: string }>;
+			exportV2Cancel: (jobId: string) => Promise<{ success: boolean; error?: string }>;
+			exportV2StreamStart: (
+				filePath: string,
+			) => Promise<{ success: boolean; id?: string; path?: string; error?: string }>;
+			exportV2StreamAppend: (
+				sessionId: string,
+				chunk: ArrayBuffer,
+				position: number,
+			) => Promise<{ success: boolean; bytesWritten?: number; error?: string }>;
+			exportV2StreamFinish: (
+				sessionId: string,
+			) => Promise<{ success: boolean; path?: string; bytesWritten?: number; error?: string }>;
+			exportV2StreamDiscard: (sessionId: string) => Promise<{ success: boolean; error?: string }>;
+			onExportV2Progress: (callback: (progress: ExportV2Progress) => void) => () => void;
+			onExportV2WorkerStart: (callback: (request: ExportV2StartRequest) => void) => () => void;
+			exportV2WorkerProgress: (
+				progress: ExportV2Progress,
+			) => Promise<{ success: boolean; error?: string }>;
+			exportV2WorkerComplete: (
+				result: ExportV2StartResult,
+			) => Promise<{ success: boolean; error?: string }>;
 			openVideoFilePicker: () => Promise<{ success: boolean; path?: string; canceled?: boolean }>;
 			openAudioFilePicker: () => Promise<{ success: boolean; path?: string; canceled?: boolean }>;
 			openImageFilePicker: () => Promise<{ success: boolean; path?: string; canceled?: boolean }>;

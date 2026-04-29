@@ -2,7 +2,7 @@ import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { execFile, spawn, spawnSync } from "node:child_process";
 import { constants as fsConstants } from "node:fs";
 
-import fs from "node:fs/promises";
+import fs, { type FileHandle } from "node:fs/promises";
 import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
@@ -24,6 +24,14 @@ import {
 	type WebcamCaptureProfile,
 	type WebcamSessionMetadata,
 } from "../../src/components/video-editor/types";
+import type {
+	ExportV2Capabilities,
+	ExportV2EncoderCandidate,
+	ExportV2Progress,
+	ExportV2StartRequest,
+	ExportV2StartResult,
+	ExportV2TrimRegion,
+} from "../../src/lib/exporter/exportV2";
 import type {
 	CaptureDiagnostics,
 	CapturePermissionState,
@@ -50,6 +58,7 @@ import {
 	closeSpeakerNotesWindow,
 	createAreaOverlayWindow,
 	createCountdownWindow,
+	createExportWorkerWindow,
 	createSpeakerNotesWindow,
 	getCountdownWindow,
 	lockAreaOverlayWindow,
@@ -164,6 +173,31 @@ let ffmpegScreenRecordingActive = false;
 let ffmpegCaptureProcess: ChildProcessWithoutNullStreams | null = null;
 let ffmpegCaptureOutputBuffer = "";
 let ffmpegCaptureTargetPath: string | null = null;
+const exportV2Jobs = new Map<
+	string,
+	{
+		process: ChildProcessWithoutNullStreams;
+		outputPath: string;
+		startedAtMs: number;
+		engine: "direct-native";
+	}
+>();
+const exportV2CanceledJobs = new Set<string>();
+const exportV2WorkerResolvers = new Map<
+	string,
+	(result: ExportV2StartResult) => void
+>();
+const exportV2WorkerOwners = new Map<string, Electron.WebContents>();
+const exportV2WorkerWindows = new Map<string, BrowserWindow>();
+type ExportV2StreamSession = {
+	id: string;
+	path: string;
+	handle: FileHandle;
+	pending: Promise<void>;
+	bytesWritten: number;
+	closed: boolean;
+};
+const exportV2StreamSessions = new Map<string, ExportV2StreamSession>();
 let customRecordingsDir: string | null = null;
 let recordingsDirLoaded = false;
 let cachedSystemCursorAssets: Record<string, SystemCursorAsset> | null = null;
@@ -937,6 +971,533 @@ function getFfmpegBinaryPath() {
 	}
 
 	return ffmpegStatic;
+}
+
+function isExportV2Enabled() {
+	return (
+		process.env["SCREENMINT_EXPORT_V2"] === "1" || process.env["SCREENMINT_EXPORT_V2"] === "true"
+	);
+}
+
+function getExportV2EncoderPriority(platform: NodeJS.Platform): ExportV2EncoderCandidate[] {
+	const software: ExportV2EncoderCandidate = {
+		name: "libx264",
+		label: "x264 H.264",
+		hardwareAcceleration: "software",
+		available: false,
+	};
+
+	switch (platform) {
+		case "darwin":
+			return [
+				{
+					name: "h264_videotoolbox",
+					label: "VideoToolbox H.264",
+					hardwareAcceleration: "hardware",
+					available: false,
+				},
+				software,
+			];
+		case "win32":
+			return [
+				{
+					name: "h264_nvenc",
+					label: "NVIDIA NVENC H.264",
+					hardwareAcceleration: "hardware",
+					available: false,
+				},
+				{
+					name: "h264_qsv",
+					label: "Intel Quick Sync H.264",
+					hardwareAcceleration: "hardware",
+					available: false,
+				},
+				{
+					name: "h264_amf",
+					label: "AMD AMF H.264",
+					hardwareAcceleration: "hardware",
+					available: false,
+				},
+				software,
+			];
+		case "linux":
+			return [
+				{
+					name: "h264_vaapi",
+					label: "VAAPI H.264",
+					hardwareAcceleration: "hardware",
+					available: false,
+				},
+				software,
+			];
+		default:
+			return [software];
+	}
+}
+
+let cachedExportV2Capabilities: ExportV2Capabilities | null = null;
+
+function probeExportV2Capabilities(): ExportV2Capabilities {
+	const warnings: string[] = [];
+	let ffmpegPath: string | undefined;
+	let encoderOutput = "";
+	let filterOutput = "";
+
+	try {
+		ffmpegPath = getFfmpegBinaryPath();
+		const encoderProbe = spawnSync(ffmpegPath, ["-hide_banner", "-encoders"], {
+			encoding: "utf8",
+			maxBuffer: 10 * 1024 * 1024,
+		});
+		encoderOutput = `${encoderProbe.stdout ?? ""}\n${encoderProbe.stderr ?? ""}`;
+		const filterProbe = spawnSync(ffmpegPath, ["-hide_banner", "-filters"], {
+			encoding: "utf8",
+			maxBuffer: 10 * 1024 * 1024,
+		});
+		filterOutput = `${filterProbe.stdout ?? ""}\n${filterProbe.stderr ?? ""}`;
+	} catch (error) {
+		warnings.push(`FFmpeg probe failed: ${String(error)}`);
+	}
+
+	const videoEncoders = getExportV2EncoderPriority(process.platform).map((candidate) => ({
+		...candidate,
+		available: new RegExp(`\\b${candidate.name}\\b`).test(encoderOutput),
+	}));
+	const gifPalettePipeline =
+		/\bpalettegen\b/.test(filterOutput) && /\bpaletteuse\b/.test(filterOutput);
+	if (!videoEncoders.some((encoder) => encoder.available)) {
+		warnings.push("No H.264 encoder was detected for export v2.");
+	}
+	if (!gifPalettePipeline) {
+		warnings.push("FFmpeg GIF palette filters are unavailable.");
+	}
+
+	return {
+		enabled: isExportV2Enabled(),
+		platform: process.platform,
+		ffmpegPath,
+		videoEncoders,
+		gif: {
+			ffmpegPalettePipeline: gifPalettePipeline,
+		},
+		warnings,
+	};
+}
+
+function getCachedExportV2Capabilities() {
+	cachedExportV2Capabilities ??= probeExportV2Capabilities();
+	return cachedExportV2Capabilities;
+}
+
+function getExportSaveDialogOptions(fileName: string): SaveDialogOptions {
+	const isGif = fileName.toLowerCase().endsWith(".gif");
+	const filters = isGif
+		? [{ name: "GIF Image", extensions: ["gif"] }]
+		: [{ name: "MP4 Video", extensions: ["mp4"] }];
+
+	return {
+		title: isGif ? "Save Exported GIF" : "Save Exported Video",
+		defaultPath: path.join(app.getPath("downloads"), fileName),
+		filters,
+		properties: ["createDirectory", "showOverwriteConfirmation"],
+	};
+}
+
+function normalizeExportV2SourcePath(sourcePath: string) {
+	if (sourcePath.startsWith("file://")) {
+		return fileURLToPath(sourcePath);
+	}
+	return sourcePath;
+}
+
+function buildTrimSelectExpression(trimRegions: ExportV2TrimRegion[] = []) {
+	const validTrims = trimRegions
+		.filter((region) => region.endMs > region.startMs)
+		.map((region) => ({
+			startSec: Math.max(0, region.startMs / 1000),
+			endSec: Math.max(0, region.endMs / 1000),
+		}));
+
+	if (validTrims.length === 0) {
+		return null;
+	}
+
+	const removedRanges = validTrims
+		.map((region) => `between(t\\,${region.startSec.toFixed(3)}\\,${region.endSec.toFixed(3)})`)
+		.join("+");
+	return `not(${removedRanges})`;
+}
+
+async function resolveExportV2OutputPath(request: ExportV2StartRequest) {
+	const extension = request.format === "gif" ? "gif" : "mp4";
+	const safeName = request.fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+	const fileName = safeName.toLowerCase().endsWith(`.${extension}`)
+		? safeName
+		: `${safeName}.${extension}`;
+
+	if (request.outputPath) {
+		return { path: request.outputPath, canceled: false };
+	}
+
+	if (request.destination === "clipboard") {
+		return {
+			path: path.join(app.getPath("temp"), `screenmint-export-v2-${Date.now()}.${extension}`),
+			canceled: false,
+		};
+	}
+
+	if (request.destination === "file") {
+		const result = await dialog.showSaveDialog(getExportSaveDialogOptions(fileName));
+		return { path: result.filePath, canceled: result.canceled || !result.filePath };
+	}
+
+	const recordingsDir = await getRecordingsDir();
+	return {
+		path: path.join(recordingsDir, `${Date.now()}-${fileName}`),
+		canceled: false,
+	};
+}
+
+async function startExportV2StreamSession(filePath: string) {
+	await fs.mkdir(path.dirname(filePath), { recursive: true });
+	const id = `export-stream-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+	const handle = await fs.open(filePath, "w");
+	const session: ExportV2StreamSession = {
+		id,
+		path: filePath,
+		handle,
+		pending: Promise.resolve(),
+		bytesWritten: 0,
+		closed: false,
+	};
+	exportV2StreamSessions.set(id, session);
+	return { id, path: filePath };
+}
+
+function getExportV2StreamSession(id: string) {
+	const session = exportV2StreamSessions.get(id);
+	if (!session || session.closed) {
+		throw new Error("Export stream session is not available.");
+	}
+	return session;
+}
+
+async function appendExportV2StreamSession(
+	id: string,
+	chunk: ArrayBuffer | Uint8Array,
+	position: number,
+) {
+	const session = getExportV2StreamSession(id);
+	const buffer = Buffer.from(chunk instanceof Uint8Array ? chunk : new Uint8Array(chunk));
+	if (buffer.byteLength === 0) {
+		return { success: true, bytesWritten: session.bytesWritten };
+	}
+
+	session.pending = session.pending.then(async () => {
+		await session.handle.write(buffer, 0, buffer.byteLength, position);
+		session.bytesWritten = Math.max(session.bytesWritten, position + buffer.byteLength);
+	});
+	await session.pending;
+	return { success: true, bytesWritten: session.bytesWritten };
+}
+
+async function finishExportV2StreamSession(id: string) {
+	const session = getExportV2StreamSession(id);
+	session.closed = true;
+	await session.pending;
+	await session.handle.close();
+	exportV2StreamSessions.delete(id);
+	return { path: session.path, bytesWritten: session.bytesWritten };
+}
+
+async function discardExportV2StreamSession(id: string) {
+	const session = exportV2StreamSessions.get(id);
+	if (!session) {
+		return;
+	}
+
+	session.closed = true;
+	exportV2StreamSessions.delete(id);
+	await session.pending.catch(() => undefined);
+	await session.handle.close().catch(() => undefined);
+	await fs.rm(session.path, { force: true }).catch(() => undefined);
+}
+
+function getAvailableExportV2VideoEncoders(capabilities: ExportV2Capabilities) {
+	return capabilities.videoEncoders.filter((encoder) => encoder.available);
+}
+
+function buildExportV2VideoArgs(
+	request: ExportV2StartRequest,
+	outputPath: string,
+	encoder: ExportV2EncoderCandidate,
+) {
+	const filters: string[] = [];
+	const trimExpression = buildTrimSelectExpression(request.trimRegions);
+	if (trimExpression) {
+		filters.push(`select='${trimExpression}',setpts=N/FRAME_RATE/TB`);
+	}
+	filters.push(`fps=${request.frameRate}`);
+	filters.push(`scale=${request.width}:${request.height}:flags=lanczos`);
+	filters.push("format=yuv420p");
+
+	const audioFilters: string[] = [];
+	if (trimExpression) {
+		audioFilters.push(`aselect='${trimExpression}',asetpts=N/SR/TB`);
+	}
+
+	const args = [
+		"-y",
+		"-hide_banner",
+		"-nostats",
+		"-progress",
+		"pipe:2",
+		"-i",
+		normalizeExportV2SourcePath(request.sourcePath),
+	];
+	if (filters.length > 0) {
+		args.push("-vf", filters.join(","));
+	}
+	if (audioFilters.length > 0) {
+		args.push("-af", audioFilters.join(","));
+	}
+
+	args.push("-c:v", encoder.name);
+	if (encoder.name === "libx264") {
+		args.push("-preset", "veryfast", "-profile:v", "high", "-crf", resolveExportV2Crf(request));
+	} else if (encoder.name === "h264_videotoolbox") {
+		args.push("-allow_sw", "1");
+		if (request.bitrate) {
+			args.push("-b:v", String(request.bitrate));
+		}
+	} else if (request.bitrate) {
+		args.push("-b:v", String(request.bitrate));
+	}
+
+	args.push(
+		"-g",
+		String(Math.max(1, Math.round(request.frameRate * 2))),
+		"-pix_fmt",
+		"yuv420p",
+		"-colorspace",
+		"bt709",
+		"-color_primaries",
+		"bt709",
+		"-color_trc",
+		"bt709",
+		"-c:a",
+		"aac",
+		"-b:a",
+		"192k",
+		"-movflags",
+		"+faststart",
+		outputPath,
+	);
+
+	return { args, encoder };
+}
+
+function resolveExportV2Crf(request: ExportV2StartRequest) {
+	switch (request.bitrateMode) {
+		case "archive":
+			return "14";
+		case "very-high":
+			return "16";
+		case "high":
+			return "18";
+		default:
+			return "20";
+	}
+}
+
+function buildExportV2GifArgs(request: ExportV2StartRequest, outputPath: string) {
+	const fps = request.frameRate;
+	const trimExpression = buildTrimSelectExpression(request.trimRegions);
+	const baseFilters: string[] = [];
+	if (trimExpression) {
+		baseFilters.push(`select='${trimExpression}',setpts=N/FRAME_RATE/TB`);
+	}
+	baseFilters.push(`fps=${fps}`);
+	baseFilters.push(`scale=${request.width}:${request.height}:flags=lanczos`);
+	const statsMode = request.gif?.motionSensitivity === "high" ? "full" : "diff";
+	const dither =
+		request.gif?.ditherMode === "floyd-steinberg"
+			? "floyd_steinberg"
+			: request.gif?.ditherMode === "off"
+				? "none"
+				: "bayer";
+	const colorCount = request.gif?.colorCount ?? 128;
+	const filter = `${baseFilters.join(",")},split[s0][s1];[s0]palettegen=max_colors=${colorCount}:stats_mode=${statsMode}[p];[s1][p]paletteuse=dither=${dither}`;
+	const args = [
+		"-y",
+		"-hide_banner",
+		"-nostats",
+		"-progress",
+		"pipe:2",
+		"-i",
+		normalizeExportV2SourcePath(request.sourcePath),
+		"-filter_complex",
+		filter,
+		"-loop",
+		request.gif?.loop === false ? "-1" : "0",
+		outputPath,
+	];
+
+	return {
+		args,
+		encoder: {
+			name: "ffmpeg-palette",
+			label: "FFmpeg palette GIF",
+			hardwareAcceleration: "software" as const,
+			available: true,
+		},
+	};
+}
+
+function getExportV2AttemptPath(outputPath: string, attemptIndex: number) {
+	const extension = path.extname(outputPath);
+	const base = extension ? outputPath.slice(0, -extension.length) : outputPath;
+	return `${base}.attempt-${attemptIndex + 1}${extension || ".tmp"}`;
+}
+
+function parseFfmpegProgressSeconds(output: string) {
+	const outTimeMsMatches = [...output.matchAll(/out_time_ms=(\d+)/g)];
+	const latestOutTimeMs = outTimeMsMatches[outTimeMsMatches.length - 1];
+	if (latestOutTimeMs) {
+		return Number(latestOutTimeMs[1]) / 1_000_000;
+	}
+
+	const outTimeMatches = [...output.matchAll(/out_time=(\d+):(\d+):(\d+(?:\.\d+)?)/g)];
+	const latestOutTime = outTimeMatches[outTimeMatches.length - 1];
+	if (latestOutTime) {
+		return (
+			Number(latestOutTime[1]) * 3600 + Number(latestOutTime[2]) * 60 + Number(latestOutTime[3])
+		);
+	}
+
+	const timeMatches = [...output.matchAll(/time=(\d+):(\d+):(\d+(?:\.\d+)?)/g)];
+	const latest = timeMatches[timeMatches.length - 1];
+	if (!latest) {
+		return 0;
+	}
+
+	return Number(latest[1]) * 3600 + Number(latest[2]) * 60 + Number(latest[3]);
+}
+
+function writeExportV2ClipboardPath(filePath: string) {
+	if (process.platform === "darwin") {
+		const escapedPath = filePath.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+		const plistContent = `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><array><string>${escapedPath}</string></array></plist>`;
+		clipboard.writeBuffer("NSFilenamesPboardType", Buffer.from(plistContent, "utf8"));
+		return;
+	}
+
+	clipboard.writeText(filePath);
+}
+
+function emitExportV2Progress(window: Electron.WebContents, progress: ExportV2Progress) {
+	window.send("exportV2:progress", progress);
+}
+
+async function validateExportV2Output({
+	ffmpegPath,
+	filePath,
+	format,
+	expectAudio,
+	policy,
+}: {
+	ffmpegPath: string;
+	filePath: string;
+	format: "mp4" | "gif";
+	expectAudio: boolean;
+	policy: "strict" | "warn";
+}) {
+	const warnings: string[] = [];
+	const stat = await fs.stat(filePath);
+	if (stat.size <= 0) {
+		throw new Error("Export validation failed: output file is empty.");
+	}
+
+	let probeOutput = "";
+	try {
+		await execFileAsync(ffmpegPath, ["-hide_banner", "-i", filePath], {
+			timeout: 15000,
+			maxBuffer: 8 * 1024 * 1024,
+		});
+	} catch (error) {
+		const probeError = error as { stderr?: Buffer | string; stdout?: Buffer | string };
+		probeOutput = `${probeError.stdout ?? ""}\n${probeError.stderr ?? ""}`;
+	}
+
+	const hasVideo = /Video:/i.test(probeOutput);
+	const hasAudio = /Audio:/i.test(probeOutput);
+	const formatMatches =
+		format === "gif"
+			? /gif/i.test(probeOutput)
+			: /(mov,mp4|mp4|isom|avc1|h264)/i.test(probeOutput);
+
+	if (!hasVideo) {
+		warnings.push("No video stream was detected in the exported file.");
+	}
+	if (!formatMatches) {
+		warnings.push(`The exported file did not probe as an expected ${format.toUpperCase()} container.`);
+	}
+	if (expectAudio && format === "mp4" && !hasAudio) {
+		warnings.push("The source was expected to contain audio, but no exported audio stream was detected.");
+	}
+	if (policy === "strict" && warnings.length > 0) {
+		throw new Error(`Export validation failed: ${warnings.join(" ")}`);
+	}
+
+	return {
+		video: hasVideo,
+		audio: hasAudio,
+		warnings,
+	};
+}
+
+async function runExportV2WorkerJob(
+	request: ExportV2StartRequest,
+	owner: Electron.WebContents,
+): Promise<ExportV2StartResult> {
+	const jobId =
+		request.jobId ?? `export-v2-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+	const worker = createExportWorkerWindow();
+	const workerReady =
+		worker.webContents.isLoading()
+			? new Promise<void>((resolve) => {
+					worker.webContents.once("did-finish-load", () => resolve());
+				})
+			: Promise.resolve();
+
+	await workerReady;
+
+	return await new Promise<ExportV2StartResult>((resolve) => {
+		const timeout = setTimeout(() => {
+			exportV2WorkerResolvers.delete(jobId);
+			resolve({
+				success: false,
+				fallbackToLegacy: true,
+				jobId,
+				error: "Export worker timed out.",
+			});
+		}, 30 * 60 * 1000);
+
+		exportV2WorkerResolvers.set(jobId, (result) => {
+			clearTimeout(timeout);
+			exportV2WorkerResolvers.delete(jobId);
+			exportV2WorkerOwners.delete(jobId);
+			exportV2WorkerWindows.delete(jobId);
+			resolve(result);
+		});
+		exportV2WorkerOwners.set(jobId, owner);
+		exportV2WorkerWindows.set(jobId, worker);
+
+		worker.webContents.send("exportV2:worker-start", {
+			...request,
+			jobId,
+		});
+	});
 }
 
 function waitForFfmpegCaptureStart(process: ChildProcessWithoutNullStreams) {
@@ -4958,19 +5519,395 @@ export function registerIpcHandlers(
 		}
 	});
 
-	const getExportSaveDialogOptions = (fileName: string): SaveDialogOptions => {
-		const isGif = fileName.toLowerCase().endsWith(".gif");
-		const filters = isGif
-			? [{ name: "GIF Image", extensions: ["gif"] }]
-			: [{ name: "MP4 Video", extensions: ["mp4"] }];
+	ipcMain.handle("exportV2:probe", async () => getCachedExportV2Capabilities());
 
-		return {
-			title: isGif ? "Save Exported GIF" : "Save Exported Video",
-			defaultPath: path.join(app.getPath("downloads"), fileName),
-			filters,
-			properties: ["createDirectory", "showOverwriteConfirmation"],
-		};
-	};
+	ipcMain.handle("exportV2:createWorker", async () => {
+		try {
+			createExportWorkerWindow();
+			return { success: true };
+		} catch (error) {
+			return { success: false, error: String(error) };
+		}
+	});
+
+	ipcMain.handle("exportV2:worker-progress", async (_, progress: ExportV2Progress) => {
+		const owner = exportV2WorkerOwners.get(progress.jobId);
+		if (owner && !owner.isDestroyed()) {
+			emitExportV2Progress(owner, progress);
+		}
+		return { success: true };
+	});
+
+	ipcMain.handle("exportV2:worker-complete", async (_, result: ExportV2StartResult) => {
+		if (!result.jobId) {
+			return { success: false, error: "Worker result is missing a job id." };
+		}
+		const resolver = exportV2WorkerResolvers.get(result.jobId);
+		if (!resolver) {
+			return { success: false, error: "Export worker job is no longer active." };
+		}
+		resolver(result);
+		return { success: true };
+	});
+
+	ipcMain.handle("exportV2:streamStart", async (_, filePath: string) => {
+		try {
+			const session = await startExportV2StreamSession(filePath);
+			return { success: true, ...session };
+		} catch (error) {
+			return { success: false, error: String(error) };
+		}
+	});
+
+	ipcMain.handle(
+		"exportV2:streamAppend",
+		async (_, sessionId: string, chunk: ArrayBuffer, position: number) => {
+			try {
+				return await appendExportV2StreamSession(sessionId, chunk, position);
+			} catch (error) {
+				return { success: false, error: String(error) };
+			}
+		},
+	);
+
+	ipcMain.handle("exportV2:streamFinish", async (_, sessionId: string) => {
+		try {
+			const result = await finishExportV2StreamSession(sessionId);
+			return { success: true, ...result };
+		} catch (error) {
+			return { success: false, error: String(error) };
+		}
+	});
+
+	ipcMain.handle("exportV2:streamDiscard", async (_, sessionId: string) => {
+		try {
+			await discardExportV2StreamSession(sessionId);
+			return { success: true };
+		} catch (error) {
+			return { success: false, error: String(error) };
+		}
+	});
+
+	ipcMain.handle("exportV2:cancel", async (_, jobId: string) => {
+		const job = exportV2Jobs.get(jobId);
+		if (!job) {
+			const resolver = exportV2WorkerResolvers.get(jobId);
+			const worker = exportV2WorkerWindows.get(jobId);
+			if (resolver) {
+				exportV2WorkerResolvers.delete(jobId);
+				exportV2WorkerOwners.delete(jobId);
+				exportV2WorkerWindows.delete(jobId);
+				resolver({ success: false, canceled: true, jobId });
+			}
+			if (worker && !worker.isDestroyed()) {
+				worker.close();
+			}
+			exportV2CanceledJobs.add(jobId);
+			return { success: true };
+		}
+
+		exportV2CanceledJobs.add(jobId);
+		job.process.kill("SIGTERM");
+		await fs.rm(job.outputPath, { force: true }).catch(() => undefined);
+		return { success: true };
+	});
+
+	ipcMain.handle(
+		"exportV2:start",
+		async (event, request: ExportV2StartRequest): Promise<ExportV2StartResult> => {
+			const capabilities = getCachedExportV2Capabilities();
+			if (!capabilities.enabled) {
+				return {
+					success: false,
+					fallbackToLegacy: true,
+					error: "Export v2 is disabled. Set SCREENMINT_EXPORT_V2=1 to enable it.",
+				};
+			}
+
+			if (request.selection.engine === "composited-hardware") {
+				const output = await resolveExportV2OutputPath(request);
+				if (output.canceled || !output.path) {
+					return { success: false, canceled: true };
+				}
+				const workerResult = await runExportV2WorkerJob(
+					{
+						...request,
+						outputPath: output.path,
+					},
+					event.sender,
+				);
+				if (!workerResult.success || !workerResult.path) {
+					return workerResult;
+				}
+				let validation: { video: boolean; audio: boolean; warnings: string[] };
+				try {
+					validation = await validateExportV2Output({
+						ffmpegPath: capabilities.ffmpegPath ?? getFfmpegBinaryPath(),
+						filePath: workerResult.path,
+						format: request.format,
+						expectAudio: request.audioPlan?.expectAudio === true,
+						policy: request.validationPolicy ?? "warn",
+					});
+				} catch (error) {
+					return {
+						success: false,
+						fallbackToLegacy: true,
+						jobId: workerResult.jobId,
+						error: error instanceof Error ? error.message : String(error),
+					};
+				}
+				return {
+					...workerResult,
+					details: workerResult.details
+						? {
+								...workerResult.details,
+								validation,
+								warnings: [
+									...(workerResult.details.warnings ?? []),
+									...validation.warnings,
+								],
+							}
+						: workerResult.details,
+				};
+			}
+
+			if (request.selection.engine !== "direct-native") {
+				return {
+					success: false,
+					fallbackToLegacy: true,
+					error: request.selection.reason,
+				};
+			}
+
+			if (request.speedRegions?.length) {
+				return {
+					success: false,
+					fallbackToLegacy: true,
+					error: "Direct native export does not yet handle speed-edited timelines.",
+				};
+			}
+
+			const availableVideoEncoders = getAvailableExportV2VideoEncoders(capabilities);
+			if (request.format === "mp4" && availableVideoEncoders.length === 0) {
+				return {
+					success: false,
+					fallbackToLegacy: true,
+					error: "Export v2 could not find an available H.264 encoder.",
+				};
+			}
+			if (request.format === "gif" && !capabilities.gif.ffmpegPalettePipeline) {
+				return {
+					success: false,
+					fallbackToLegacy: true,
+					error: "Export v2 could not find FFmpeg GIF palette filters.",
+				};
+			}
+
+			const output = await resolveExportV2OutputPath(request);
+			if (output.canceled || !output.path) {
+				return { success: false, canceled: true };
+			}
+
+			const jobId =
+				request.jobId ?? `export-v2-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+			const startedAtMs = Date.now();
+			const totalFrames = Math.max(
+				1,
+				Math.ceil(((request.durationMs ?? 0) / 1000) * request.frameRate),
+			);
+			const ffmpegPath = capabilities.ffmpegPath ?? getFfmpegBinaryPath();
+			const attempts =
+				request.format === "gif"
+					? [buildExportV2GifArgs(request, getExportV2AttemptPath(output.path, 0))]
+					: availableVideoEncoders.map((encoder) =>
+							buildExportV2VideoArgs(
+								request,
+								getExportV2AttemptPath(output.path!, availableVideoEncoders.indexOf(encoder)),
+								encoder,
+							),
+						);
+
+			emitExportV2Progress(event.sender, {
+				jobId,
+				engine: "direct-native",
+				currentFrame: 0,
+				totalFrames,
+				percentage: 0,
+				estimatedTimeRemaining: 0,
+				etaSeconds: 0,
+				throughputFps: 0,
+				phase: "probing",
+			});
+
+			const failedAttempts: string[] = [];
+			for (const [attemptIndex, attempt] of attempts.entries()) {
+				const attemptPath = getExportV2AttemptPath(output.path, attemptIndex);
+				const attemptStartedAtMs = Date.now();
+				const attemptResult = await new Promise<{
+					success: boolean;
+					canceled?: boolean;
+					error?: string;
+				}>((resolve) => {
+					let settled = false;
+					let stderr = "";
+					const child = spawn(ffmpegPath, attempt.args, {
+						windowsHide: true,
+					});
+					exportV2Jobs.set(jobId, {
+						process: child,
+						outputPath: attemptPath,
+						startedAtMs,
+						engine: "direct-native",
+					});
+
+					child.stderr.on("data", (chunk: Buffer) => {
+						stderr += chunk.toString();
+						const elapsedSec = parseFfmpegProgressSeconds(stderr);
+						const currentFrame = Math.min(totalFrames, Math.round(elapsedSec * request.frameRate));
+						const elapsedMs = Math.max(Date.now() - attemptStartedAtMs, 1);
+						const throughputFps = currentFrame > 0 ? (currentFrame / elapsedMs) * 1000 : 0;
+						const remainingFrames = Math.max(totalFrames - currentFrame, 0);
+						const etaSeconds = throughputFps > 0 ? remainingFrames / throughputFps : 0;
+						emitExportV2Progress(event.sender, {
+							jobId,
+							engine: "direct-native",
+							currentFrame,
+							totalFrames,
+							percentage: totalFrames > 0 ? (currentFrame / totalFrames) * 100 : 0,
+							estimatedTimeRemaining: etaSeconds,
+							etaSeconds,
+							throughputFps,
+							phase: "encoding",
+						});
+					});
+
+					child.on("error", (error) => {
+						if (settled) {
+							return;
+						}
+						settled = true;
+						exportV2Jobs.delete(jobId);
+						resolve({ success: false, error: error.message });
+					});
+
+					child.on("close", (code) => {
+						if (settled) {
+							return;
+						}
+						settled = true;
+						exportV2Jobs.delete(jobId);
+						if (exportV2CanceledJobs.has(jobId)) {
+							resolve({ success: false, canceled: true });
+							return;
+						}
+
+						if (code !== 0) {
+							resolve({
+								success: false,
+								error:
+									stderr.split("\n").slice(-8).join("\n").trim() ||
+									`FFmpeg export failed with code ${code ?? "unknown"}`,
+							});
+							return;
+						}
+
+						resolve({ success: true });
+					});
+				});
+
+				if (exportV2CanceledJobs.delete(jobId) || attemptResult.canceled) {
+					exportV2Jobs.delete(jobId);
+					await fs.rm(attemptPath, { force: true }).catch(() => undefined);
+					return { success: false, canceled: true, jobId };
+				}
+
+				if (!attemptResult.success) {
+					failedAttempts.push(`${attempt.encoder.name}: ${attemptResult.error ?? "unknown error"}`);
+					await fs.rm(attemptPath, { force: true }).catch(() => undefined);
+					continue;
+				}
+
+				await fs.rm(output.path, { force: true }).catch(() => undefined);
+				await fs.rename(attemptPath, output.path);
+				let validation: { video: boolean; audio: boolean; warnings: string[] };
+				try {
+					validation = await validateExportV2Output({
+						ffmpegPath,
+						filePath: output.path,
+						format: request.format,
+						expectAudio: request.audioPlan?.expectAudio === true,
+						policy: request.validationPolicy ?? "warn",
+					});
+				} catch (error) {
+					failedAttempts.push(
+						`${attempt.encoder.name}: ${error instanceof Error ? error.message : String(error)}`,
+					);
+					await fs.rm(output.path, { force: true }).catch(() => undefined);
+					continue;
+				}
+
+				emitExportV2Progress(event.sender, {
+					jobId,
+					engine: "direct-native",
+					currentFrame: totalFrames,
+					totalFrames,
+					percentage: 100,
+					estimatedTimeRemaining: 0,
+					etaSeconds: 0,
+					throughputFps:
+						totalFrames > 0 ? (totalFrames / Math.max(Date.now() - startedAtMs, 1)) * 1000 : 0,
+					phase: request.destination === "clipboard" ? "writing" : "finalizing",
+				});
+
+				if (request.destination === "clipboard") {
+					writeExportV2ClipboardPath(output.path);
+				}
+
+				const stat = await fs.stat(output.path);
+				const elapsedMs = Date.now() - startedAtMs;
+				const throughputFps =
+					totalFrames > 0 ? (totalFrames / Math.max(elapsedMs, 1)) * 1000 : undefined;
+				return {
+					success: true,
+					jobId,
+					path: output.path,
+					copiedToClipboard: request.destination === "clipboard",
+					details: {
+						format: request.format,
+						width: request.width,
+						height: request.height,
+						frameRate: request.frameRate,
+						bitrate: request.bitrate,
+						codec: request.format === "mp4" ? "avc1" : undefined,
+						codecLabel: request.format === "mp4" ? "H.264" : undefined,
+						elapsedMs,
+						fileSizeBytes: stat.size,
+						fallbackApplied: failedAttempts.length > 0,
+						fallbackReason: failedAttempts[0],
+						fallbackSteps: failedAttempts.map((failure) => `Retried after ${failure}`),
+						engine: "direct-native",
+						encoder: attempt.encoder.name,
+						hardwareAcceleration: attempt.encoder.hardwareAcceleration,
+						audioCodec: request.format === "mp4" ? "aac" : "none",
+						validation,
+						throughputFps,
+						warnings: [...capabilities.warnings, ...validation.warnings],
+					},
+				};
+			}
+
+			await fs.rm(output.path, { force: true }).catch(() => undefined);
+			return {
+				success: false,
+				fallbackToLegacy: true,
+				jobId,
+				error:
+					failedAttempts.length > 0
+						? failedAttempts.join("\n")
+						: "Export v2 failed before FFmpeg produced output.",
+			};
+		},
+	);
 
 	ipcMain.handle("show-export-save-dialog", async (_, fileName: string) => {
 		try {

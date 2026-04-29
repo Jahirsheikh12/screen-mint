@@ -1,3 +1,20 @@
+export type {
+	ExportCompositionPayload,
+	ExportV2AudioPlan,
+	ExportV2Capabilities,
+	ExportV2Destination,
+	ExportV2EncoderCandidate,
+	ExportV2Engine,
+	ExportV2EngineSelection,
+	ExportV2EngineSignals,
+	ExportV2HardwareAcceleration,
+	ExportV2Progress,
+	ExportV2SpeedRegion,
+	ExportV2StartRequest,
+	ExportV2StartResult,
+	ExportV2TrimRegion,
+} from "./exportV2";
+export { selectExportV2Engine, shouldUseDirectNativeExport } from "./exportV2";
 export { FrameRenderer } from "./frameRenderer";
 export { calculateOutputDimensions, GifExporter } from "./gifExporter";
 export { VideoMuxer } from "./muxer";
@@ -22,7 +39,9 @@ export type {
 	ExportConfig,
 	ExportDestination,
 	ExportDetails,
+	ExportEngine,
 	ExportFormat,
+	ExportHardwareAcceleration,
 	ExportPhase,
 	ExportProgress,
 	ExportQuality,

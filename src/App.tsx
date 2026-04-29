@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { UpdaterDialogs } from "@/components/updater/UpdaterDialogs";
 import { CountdownOverlay } from "./components/countdown/CountdownOverlay";
+import { ExportWorker } from "./components/export-worker/ExportWorker";
 import { AreaSelectionOverlay } from "./components/launch/AreaSelectionOverlay";
 import { LaunchWindow } from "./components/launch/LaunchWindow";
 import { SourceSelector } from "./components/launch/SourceSelector";
@@ -101,6 +102,9 @@ export default function App() {
 			break;
 		case "speaker-notes":
 			content = <SpeakerNotesWindow />;
+			break;
+		case "export-worker":
+			content = <ExportWorker />;
 			break;
 		case "editor":
 			content = (

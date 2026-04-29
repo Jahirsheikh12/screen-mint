@@ -7,7 +7,7 @@ import {
 import type { AudioRegion, SpeedRegion, TrimRegion } from "@/components/video-editor/types";
 import type { VideoMuxer } from "./muxer";
 
-const AUDIO_BITRATE = 128_000;
+const AUDIO_BITRATE = 192_000;
 const DECODE_BACKPRESSURE_LIMIT = 20;
 const MIN_SPEED_REGION_DELTA_MS = 0.0001;
 
@@ -124,7 +124,7 @@ export class AudioProcessor {
 		const sampleRate = audioConfig.sampleRate || 48_000;
 		const channels = audioConfig.numberOfChannels || 2;
 		const encodeConfig: AudioEncoderConfig = {
-			codec: "opus",
+			codec: "mp4a.40.2",
 			sampleRate,
 			numberOfChannels: channels,
 			bitrate: AUDIO_BITRATE,
@@ -132,7 +132,7 @@ export class AudioProcessor {
 
 		const encodeSupport = await AudioEncoder.isConfigSupported(encodeConfig);
 		if (!encodeSupport.supported) {
-			console.warn("[AudioProcessor] Opus encoding not supported, skipping audio");
+			console.warn("[AudioProcessor] AAC encoding not supported, skipping audio");
 			for (const frame of decodedFrames) frame.close();
 			return;
 		}
@@ -376,28 +376,7 @@ export class AudioProcessor {
 
 		try {
 			await demuxer.load(file);
-			const audioConfig = (await demuxer.getDecoderConfig("audio")) as AudioDecoderConfig;
-			const reader = (demuxer.read("audio") as ReadableStream<EncodedAudioChunk>).getReader();
-			let isFirstChunk = true;
-
-			try {
-				while (!this.cancelled) {
-					const { done, value: chunk } = await reader.read();
-					if (done || !chunk) break;
-					if (isFirstChunk) {
-						await muxer.addAudioChunk(chunk, { decoderConfig: audioConfig });
-						isFirstChunk = false;
-					} else {
-						await muxer.addAudioChunk(chunk);
-					}
-				}
-			} finally {
-				try {
-					await reader.cancel();
-				} catch {
-					// reader already closed
-				}
-			}
+			await this.processTrimOnlyAudio(demuxer, muxer, [], undefined);
 		} finally {
 			try {
 				demuxer.destroy();

@@ -109,6 +109,7 @@ interface VideoExporterConfig extends ExportConfig {
 	encoderCandidates?: readonly ResolvedVideoEncoderCandidate[];
 	fallbackSteps?: string[];
 	forceFFmpegDecoder?: boolean;
+	outputPath?: string;
 	onProgress?: (progress: ExportProgress) => void;
 }
 
@@ -147,6 +148,8 @@ export class VideoExporter {
 	private activeConfig: ActiveVideoExportConfig | null = null;
 	private resolvedFallbackSteps: string[] = [];
 	private readonly encoderSupportCache = new Map<string, boolean>();
+	private exportStreamSessionId: string | null = null;
+	private exportStreamFinished = false;
 
 	constructor(config: VideoExporterConfig) {
 		this.config = config;
@@ -158,6 +161,8 @@ export class VideoExporter {
 			this.cancelled = false;
 			this.exportStartedAtMs = performance.now();
 			this.warnings = [];
+			this.exportStreamSessionId = null;
+			this.exportStreamFinished = false;
 			this.reportPhase("preparing");
 
 			// Initialize streaming decoder and load video metadata
@@ -255,6 +260,34 @@ export class VideoExporter {
 					codec: this.resolvedCodec ?? this.activeConfig.codecCandidates[0],
 				},
 				hasAudio,
+				this.config.outputPath
+					? {
+							write: async (chunk) => {
+								if (!this.exportStreamSessionId) {
+									const startResult = await window.electronAPI.exportV2StreamStart(
+										this.config.outputPath!,
+									);
+									if (!startResult.success || !startResult.id) {
+										throw new Error(startResult.error || "Failed to start export stream");
+									}
+									this.exportStreamSessionId = startResult.id;
+								}
+								const bytes = chunk.data;
+								const arrayBuffer = bytes.buffer.slice(
+									bytes.byteOffset,
+									bytes.byteOffset + bytes.byteLength,
+								) as ArrayBuffer;
+								const appendResult = await window.electronAPI.exportV2StreamAppend(
+									this.exportStreamSessionId,
+									arrayBuffer,
+									chunk.position,
+								);
+								if (!appendResult.success) {
+									throw new Error(appendResult.error || "Failed to write export stream");
+								}
+							},
+						}
+					: undefined,
 			);
 			await this.muxer.initialize();
 
@@ -336,10 +369,24 @@ export class VideoExporter {
 			// Finalize muxer and get output blob
 			this.reportPhase("finalizing", totalFrames, totalFrames);
 			const blob = await this.awaitWithWindowsTimeout(this.muxer!.finalize(), "muxer finalization");
+			let outputPath = this.config.outputPath;
+			let fileSizeBytes = blob?.size ?? 0;
+			if (this.exportStreamSessionId) {
+				const finishResult = await window.electronAPI.exportV2StreamFinish(
+					this.exportStreamSessionId,
+				);
+				if (!finishResult.success || !finishResult.path) {
+					throw new Error(finishResult.error || "Failed to finish export stream");
+				}
+				this.exportStreamFinished = true;
+				outputPath = finishResult.path;
+				fileSizeBytes = finishResult.bytesWritten ?? fileSizeBytes;
+			}
 
 			return {
 				success: true,
-				blob,
+				blob: blob ?? undefined,
+				path: outputPath,
 				details: {
 					format: "mp4",
 					width: this.activeConfig.width,
@@ -349,14 +396,21 @@ export class VideoExporter {
 					codec: this.resolvedCodec ?? this.config.codec,
 					codecLabel: getCodecLabel(this.resolvedCodec ?? this.config.codec ?? "avc1.4d401f"),
 					elapsedMs: Math.round(performance.now() - this.exportStartedAtMs),
-					fileSizeBytes: blob.size,
+					fileSizeBytes,
 					fallbackSteps: this.resolvedFallbackSteps,
 					fallbackApplied: this.resolvedFallbackSteps.length > 0,
 					fallbackReason: this.resolvedFallbackSteps[0],
+					engine: this.config.outputPath ? "composited-hardware" : undefined,
+					audioCodec: hasAudio ? "aac" : "none",
 					warnings: this.warnings,
 				},
 			};
 		} catch (error) {
+			if (this.exportStreamSessionId && !this.exportStreamFinished) {
+				await window.electronAPI
+					.exportV2StreamDiscard(this.exportStreamSessionId)
+					.catch(() => undefined);
+			}
 			console.error("Export error:", error);
 			return {
 				success: false,
@@ -418,7 +472,11 @@ export class VideoExporter {
 
 		if (this.encoder && this.encoder.state === "configured") {
 			this.encodeQueue++;
-			this.encoder.encode(exportFrame, { keyFrame: frameIndex % 150 === 0 });
+			const keyFrameInterval = Math.max(
+				1,
+				Math.round((this.activeConfig?.frameRate ?? this.config.frameRate) * 2),
+			);
+			this.encoder.encode(exportFrame, { keyFrame: frameIndex % keyFrameInterval === 0 });
 		} else {
 			console.warn(`[Frame ${frameIndex}] Encoder not ready! State: ${this.encoder?.state}`);
 		}

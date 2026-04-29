@@ -27,6 +27,7 @@ let hudOverlayCaptureProtectionLoaded = false;
 let countdownWindow: BrowserWindow | null = null;
 let areaOverlayWindow: BrowserWindow | null = null;
 let speakerNotesWindow: BrowserWindow | null = null;
+let exportWorkerWindow: BrowserWindow | null = null;
 let hudCompactLayout: HudCompactLayout = DEFAULT_HUD_COMPACT_LAYOUT;
 let hudContentVisible = false;
 let hudDropdownExpanded = false;
@@ -376,6 +377,54 @@ export function createEditorWindow(): BrowserWindow {
 	}
 
 	return win;
+}
+
+export function createExportWorkerWindow(): BrowserWindow {
+	if (exportWorkerWindow && !exportWorkerWindow.isDestroyed()) {
+		return exportWorkerWindow;
+	}
+
+	const win = new BrowserWindow({
+		width: 640,
+		height: 360,
+		show: false,
+		frame: false,
+		transparent: false,
+		resizable: false,
+		skipTaskbar: true,
+		backgroundColor: "#000000",
+		webPreferences: {
+			preload: path.join(__dirname, "preload.mjs"),
+			nodeIntegration: false,
+			contextIsolation: true,
+			webSecurity: false,
+			backgroundThrottling: false,
+		},
+	});
+
+	exportWorkerWindow = win;
+	win.on("closed", () => {
+		if (exportWorkerWindow === win) {
+			exportWorkerWindow = null;
+		}
+	});
+
+	if (VITE_DEV_SERVER_URL) {
+		win.loadURL(VITE_DEV_SERVER_URL + "?windowType=export-worker");
+	} else {
+		win.loadFile(path.join(RENDERER_DIST, "index.html"), {
+			query: { windowType: "export-worker" },
+		});
+	}
+
+	return win;
+}
+
+export function closeExportWorkerWindow(): void {
+	if (exportWorkerWindow && !exportWorkerWindow.isDestroyed()) {
+		exportWorkerWindow.close();
+	}
+	exportWorkerWindow = null;
 }
 
 export function createSourceSelectorWindow(): BrowserWindow {

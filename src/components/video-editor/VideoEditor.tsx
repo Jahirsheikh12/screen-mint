@@ -38,13 +38,17 @@ import { type AppLocale, SUPPORTED_LOCALES } from "@/i18n/config";
 import { getBackgroundMusicAssetById } from "@/lib/backgroundMusic";
 import {
 	type ExportDestination,
+	type ExportDetails,
 	type ExportFormat,
 	type ExportSettings,
+	type ExportV2Destination,
+	type ExportV2StartRequest,
 	type GifExportConfig,
 	GifExporter,
 	resolveGifExportPlan,
 	resolveVideoExportPlan,
 	StreamingVideoDecoder,
+	selectExportV2Engine,
 	VideoExporter,
 	type VideoExportSettings,
 } from "@/lib/exporter";
@@ -130,6 +134,7 @@ import {
 	DEFAULT_CAMERA_SPRING,
 	DEFAULT_CAPTION_GENERATION_OPTIONS,
 	DEFAULT_CAPTION_SETTINGS,
+	DEFAULT_CROP_REGION,
 	DEFAULT_CURSOR_FOLLOW_TRACKING,
 	DEFAULT_FIGURE_DATA,
 	DEFAULT_PLAYBACK_SPEED,
@@ -464,6 +469,7 @@ export default function VideoEditor() {
 	const nextAnnotationZIndexRef = useRef(1); // Track z-index for stacking order
 	const nextCaptionIdRef = useRef(1);
 	const exporterRef = useRef<VideoExporter | null>(null);
+	const exportV2JobIdRef = useRef<string | null>(null);
 	const historyPastRef = useRef<EditorHistorySnapshot[]>([]);
 	const historyFutureRef = useRef<EditorHistorySnapshot[]>([]);
 	const historyCurrentRef = useRef<EditorHistorySnapshot | null>(null);
@@ -3909,6 +3915,205 @@ export default function VideoEditor() {
 				const previewWidth = containerElement?.clientWidth || 1920;
 				const previewHeight = containerElement?.clientHeight || 1080;
 
+				const isDefaultCropRegion =
+					Math.abs(effectiveCropRegion.x - DEFAULT_CROP_REGION.x) < 0.0001 &&
+					Math.abs(effectiveCropRegion.y - DEFAULT_CROP_REGION.y) < 0.0001 &&
+					Math.abs(effectiveCropRegion.width - DEFAULT_CROP_REGION.width) < 0.0001 &&
+					Math.abs(effectiveCropRegion.height - DEFAULT_CROP_REGION.height) < 0.0001;
+				const hasFrameShadow =
+					frameShadowOpacity > 0 && (frameShadowSize > 0 || frameShadowBlur > 0);
+				const hasCaptionExport =
+					Boolean(captionSettings?.enabled) && (captionRegions?.length ?? 0) > 0;
+				const hasKeyboardShortcutExport =
+					Boolean(showKeyboardShortcuts) && keyboardShortcutCallouts.length > 0;
+				const hasCursorExport = Boolean(showCursor) && effectiveCursorTelemetry.length > 0;
+				const hasWebcamExport = Boolean(showWebcam) && Boolean(resolvedWebcamPath);
+				const hasVisualComposition =
+					effectiveZoomRegions.length > 0 ||
+					!isDefaultCropRegion ||
+					aspectRatio !== "native" ||
+					padding !== 0 ||
+					borderRadius !== 0 ||
+					frameBorderEnabled ||
+					hasFrameShadow ||
+					backgroundBlur > 0 ||
+					hideBackground;
+				const exportV2Selection = selectExportV2Engine({
+					format: settings.format,
+					hasVisualComposition,
+					hasExternalAudio: audioRegions.length > 0,
+					hasWebcam: hasWebcamExport,
+					hasCaptions: hasCaptionExport,
+					hasAnnotations: annotationRegions.length > 0,
+					hasCursorOverlay: hasCursorExport,
+					hasKeyboardCallouts: hasKeyboardShortcutExport,
+					hasSpeedRegions: speedRegions.length > 0,
+					hasTrimRegions: trimRegions.length > 0,
+				});
+				const exportV2Destination: ExportV2Destination =
+					saveMode === "recordings"
+						? "recordings"
+						: saveMode === "clipboard"
+							? "clipboard"
+							: "file";
+				const compositionPayload = {
+					videoUrl: videoPath,
+					wallpaper,
+					trimRegions,
+					speedRegions,
+					showShadow: hasFrameShadow,
+					shadowIntensity,
+					frameShadowSize,
+					frameShadowOpacity,
+					frameShadowBlur,
+					backgroundBlur,
+					hideBackground,
+					zoomMotionBlur,
+					connectZooms,
+					deviceMockup: "none" as const,
+					frameBorderEnabled,
+					frameBorderWidth,
+					frameBorderColor,
+					frameBorderOpacity,
+					borderRadius,
+					padding,
+					videoPadding: padding,
+					cropRegion: effectiveCropRegion,
+					aspectRatio,
+					annotationRegions,
+					zoomRegions: effectiveZoomRegions,
+					cursorTelemetry: effectiveCursorTelemetry,
+					keyboardShortcutCallouts,
+					showCursor,
+					showKeyboardShortcuts,
+					cursorSize,
+					cursorSmoothing,
+					cursorMotionBlur,
+					cursorClickBounce,
+					cursorSway,
+					cursorStyle,
+					cursorPack,
+					cursorColor,
+					cursorOpacity,
+					clickHighlightColor,
+					clickHighlightSize,
+					clickHighlightOpacity,
+					cursorTrailLength,
+					cursorTrailOpacity,
+					cursorTypeMode,
+					cursorTilt,
+					hideWhenIdle,
+					idleHideDelayMs,
+					smoothMovementEnabled,
+					cursorMovementStyle,
+					cursorSpring,
+					highQualitySvgCursors,
+					cameraSpring,
+					keyboardShortcutPosition,
+					keyboardShortcutTheme,
+					keyboardShortcutScale,
+					keyboardShortcutOpacity,
+					keyboardShortcutMaxVisible,
+					audioRegions,
+					previewWidth,
+					previewHeight,
+					webcamPath: resolvedWebcamPath,
+					webcamRegion,
+					webcamEffects,
+					showWebcam,
+					mirrorWebcam,
+					cameraSizeDuringZoom,
+					cameraLayouts,
+					captionRegions,
+					captionSettings,
+				};
+
+				const tryExportV2 = async ({
+					request,
+					onDetails,
+					formatName,
+				}: {
+					request: ExportV2StartRequest;
+					onDetails: (details: ExportDetails) => void;
+					formatName: "GIF" | "video";
+				}): Promise<{ handled: boolean; keepDialogOpen: boolean }> => {
+					const capabilities = await window.electronAPI.exportV2Probe();
+					if (!capabilities.enabled) {
+						return { handled: false, keepDialogOpen: true };
+					}
+
+					if (
+						exportV2Selection.engine === "direct-native" &&
+						request.format === "mp4" &&
+						!capabilities.videoEncoders.some((encoder) => encoder.available)
+					) {
+						return { handled: false, keepDialogOpen: true };
+					}
+					if (
+						exportV2Selection.engine === "direct-native" &&
+						request.format === "gif" &&
+						!capabilities.gif.ffmpegPalettePipeline
+					) {
+						return { handled: false, keepDialogOpen: true };
+					}
+
+					const jobId = `export-v2-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+					exportV2JobIdRef.current = jobId;
+					const unsubscribe = window.electronAPI.onExportV2Progress((progress) => {
+						if (progress.jobId === jobId) {
+							progressThrottler.push(progress);
+						}
+					});
+
+					try {
+						const result = await window.electronAPI.exportV2Start({
+							...request,
+							jobId,
+						});
+						progressThrottler.flush();
+
+						if (result.fallbackToLegacy) {
+							return { handled: false, keepDialogOpen: true };
+						}
+
+						if (result.canceled) {
+							dispatchSession({
+								type: "set-export-error",
+								error: "Save dialog canceled. Reopen export to choose another location.",
+							});
+							dispatchSession({ type: "set-export-status", status: "canceled" });
+							return { handled: true, keepDialogOpen: true };
+						}
+
+						if (!result.success || !result.path || !result.details) {
+							const errorMessage = result.error || `${formatName} export failed`;
+							dispatchSession({ type: "set-export-error", error: errorMessage });
+							dispatchSession({ type: "set-export-status", status: "failed" });
+							toast.error(errorMessage);
+							return { handled: true, keepDialogOpen: true };
+						}
+
+						onDetails(result.details);
+						dispatchSession({
+							type: "set-exported-file-path",
+							path: result.path,
+						});
+						dispatchSession({ type: "set-export-status", status: "saved" });
+						if (result.copiedToClipboard) {
+							toast.success(`${formatName === "GIF" ? "GIF" : "Video"} copied to clipboard.`);
+						} else {
+							showExportSuccessToast(result.path);
+						}
+						await options.onSaved?.(result.path);
+						return { handled: true, keepDialogOpen: false };
+					} finally {
+						unsubscribe();
+						if (exportV2JobIdRef.current === jobId) {
+							exportV2JobIdRef.current = null;
+						}
+					}
+				};
+
 				if (settings.format === "gif") {
 					// GIF Export
 					const gifPlan = resolveGifExportPlan(
@@ -3917,110 +4122,154 @@ export default function VideoEditor() {
 						aspectRatioValue,
 						Math.round(duration * 1000),
 					);
-					const gifExporter = new GifExporter({
-						videoUrl: videoPath,
-						width: gifPlan.width,
-						height: gifPlan.height,
-						frameRate: gifPlan.frameRate,
-						loop: gifPlan.loop,
-						preset: gifPlan.preset,
-						dedupeFrames: gifPlan.dedupeFrames,
-						colorCount: gifPlan.colorCount,
-						ditherMode: gifPlan.ditherMode,
-						motionSensitivity: gifPlan.motionSensitivity,
-						wallpaper,
-						trimRegions,
-						speedRegions,
-						showShadow: frameShadowOpacity > 0 && (frameShadowSize > 0 || frameShadowBlur > 0),
-						shadowIntensity,
-						frameShadowSize,
-						frameShadowOpacity,
-						frameShadowBlur,
-						backgroundBlur,
-						hideBackground,
-						zoomMotionBlur,
-						connectZooms,
-						deviceMockup: "none",
-						frameBorderEnabled,
-						frameBorderWidth,
-						frameBorderColor,
-						frameBorderOpacity,
-						borderRadius,
-						padding,
-						videoPadding: padding,
-						cropRegion: effectiveCropRegion,
-						aspectRatio,
-						annotationRegions,
-						zoomRegions: effectiveZoomRegions,
-						cursorTelemetry: effectiveCursorTelemetry,
-						keyboardShortcutCallouts,
-						showCursor,
-						showKeyboardShortcuts,
-						cursorSize,
-						cursorSmoothing,
-						cursorMotionBlur,
-						cursorClickBounce,
-						cursorSway,
-						cursorStyle,
-						cursorPack,
-						cursorColor,
-						cursorOpacity,
-						clickHighlightColor,
-						clickHighlightSize,
-						clickHighlightOpacity,
-						cursorTrailLength,
-						cursorTrailOpacity,
-						cursorTypeMode,
-						cursorTilt,
-						hideWhenIdle,
-						idleHideDelayMs,
-						smoothMovementEnabled,
-						cursorMovementStyle,
-						cursorSpring,
-						highQualitySvgCursors,
-						cameraSpring,
-						keyboardShortcutPosition,
-						keyboardShortcutTheme,
-						keyboardShortcutScale,
-						keyboardShortcutOpacity,
-						keyboardShortcutMaxVisible,
-						previewWidth,
-						previewHeight,
-						webcamPath: resolvedWebcamPath,
-						webcamRegion,
-						webcamEffects,
-						showWebcam,
-						mirrorWebcam,
-						cameraSizeDuringZoom,
-						cameraLayouts,
-						captionRegions,
-						captionSettings,
-						onProgress: progressThrottler.push,
+					const timestamp = Date.now();
+					const fileName = `export-${timestamp}.gif`;
+					const exportV2Result = await tryExportV2({
+						request: {
+							sourcePath: videoPath,
+							fileName,
+							destination: exportV2Destination,
+							format: "gif",
+							width: gifPlan.width,
+							height: gifPlan.height,
+							frameRate: gifPlan.frameRate,
+							durationMs: Math.round(duration * 1000),
+							trimRegions,
+							speedRegions,
+							compositionPayload,
+							audioPlan: {
+								mode:
+									audioRegions.length > 0 || speedRegions.length > 0 ? "timeline-mix" : "source",
+								expectAudio: true,
+								sourcePath: videoPath,
+								audioRegionCount: audioRegions.length,
+								hasSpeedRegions: speedRegions.length > 0,
+							},
+							validationPolicy: "warn",
+							gif: {
+								colorCount: gifPlan.colorCount,
+								ditherMode: gifPlan.ditherMode,
+								motionSensitivity: gifPlan.motionSensitivity,
+								loop: gifPlan.loop,
+								dedupeFrames: gifPlan.dedupeFrames,
+							},
+							selection: exportV2Selection,
+						},
+						onDetails: (details) => {
+							dispatchSession({
+								type: "set-export-details",
+								details: mergeGifExportDetails(gifPlan, details, details.fileSizeBytes),
+							});
+						},
+						formatName: "GIF",
 					});
 
-					exporterRef.current = gifExporter as unknown as VideoExporter;
-					const result = await gifExporter.export();
-
-					if (result.success && result.blob) {
-						progressThrottler.flush();
-						dispatchSession({
-							type: "set-export-details",
-							details: mergeGifExportDetails(gifPlan, result.details, result.blob.size),
-						});
-						const timestamp = Date.now();
-						const fileName = `export-${timestamp}.gif`;
-						keepExportDialogOpen = await saveExportedBlob({
-							blob: result.blob,
-							fileName,
-							formatName: "GIF",
-						});
+					if (exportV2Result.handled) {
+						keepExportDialogOpen = exportV2Result.keepDialogOpen;
 					} else {
-						dispatchSession({
-							type: "set-export-error",
-							error: result.error || "GIF export failed",
+						const gifExporter = new GifExporter({
+							videoUrl: videoPath,
+							width: gifPlan.width,
+							height: gifPlan.height,
+							frameRate: gifPlan.frameRate,
+							loop: gifPlan.loop,
+							preset: gifPlan.preset,
+							dedupeFrames: gifPlan.dedupeFrames,
+							colorCount: gifPlan.colorCount,
+							ditherMode: gifPlan.ditherMode,
+							motionSensitivity: gifPlan.motionSensitivity,
+							wallpaper,
+							trimRegions,
+							speedRegions,
+							showShadow: frameShadowOpacity > 0 && (frameShadowSize > 0 || frameShadowBlur > 0),
+							shadowIntensity,
+							frameShadowSize,
+							frameShadowOpacity,
+							frameShadowBlur,
+							backgroundBlur,
+							hideBackground,
+							zoomMotionBlur,
+							connectZooms,
+							deviceMockup: "none",
+							frameBorderEnabled,
+							frameBorderWidth,
+							frameBorderColor,
+							frameBorderOpacity,
+							borderRadius,
+							padding,
+							videoPadding: padding,
+							cropRegion: effectiveCropRegion,
+							aspectRatio,
+							annotationRegions,
+							zoomRegions: effectiveZoomRegions,
+							cursorTelemetry: effectiveCursorTelemetry,
+							keyboardShortcutCallouts,
+							showCursor,
+							showKeyboardShortcuts,
+							cursorSize,
+							cursorSmoothing,
+							cursorMotionBlur,
+							cursorClickBounce,
+							cursorSway,
+							cursorStyle,
+							cursorPack,
+							cursorColor,
+							cursorOpacity,
+							clickHighlightColor,
+							clickHighlightSize,
+							clickHighlightOpacity,
+							cursorTrailLength,
+							cursorTrailOpacity,
+							cursorTypeMode,
+							cursorTilt,
+							hideWhenIdle,
+							idleHideDelayMs,
+							smoothMovementEnabled,
+							cursorMovementStyle,
+							cursorSpring,
+							highQualitySvgCursors,
+							cameraSpring,
+							keyboardShortcutPosition,
+							keyboardShortcutTheme,
+							keyboardShortcutScale,
+							keyboardShortcutOpacity,
+							keyboardShortcutMaxVisible,
+							previewWidth,
+							previewHeight,
+							webcamPath: resolvedWebcamPath,
+							webcamRegion,
+							webcamEffects,
+							showWebcam,
+							mirrorWebcam,
+							cameraSizeDuringZoom,
+							cameraLayouts,
+							captionRegions,
+							captionSettings,
+							onProgress: progressThrottler.push,
 						});
-						dispatchSession({ type: "set-export-status", status: "failed" });
-						toast.error(result.error || "GIF export failed");
+
+						exporterRef.current = gifExporter as unknown as VideoExporter;
+						const result = await gifExporter.export();
+
+						if (result.success && result.blob) {
+							progressThrottler.flush();
+							dispatchSession({
+								type: "set-export-details",
+								details: mergeGifExportDetails(gifPlan, result.details, result.blob.size),
+							});
+							keepExportDialogOpen = await saveExportedBlob({
+								blob: result.blob,
+								fileName,
+								formatName: "GIF",
+							});
+						} else {
+							dispatchSession({
+								type: "set-export-error",
+								error: result.error || "GIF export failed",
+							});
+							dispatchSession({ type: "set-export-status", status: "failed" });
+							toast.error(result.error || "GIF export failed");
+						}
 					}
 				} else {
 					// MP4 Export
@@ -4029,111 +4278,149 @@ export default function VideoEditor() {
 						settings.video,
 						aspectRatioValue,
 					);
-
-					const exporter = new VideoExporter({
-						videoUrl: videoPath,
-						width: videoPlan.width,
-						height: videoPlan.height,
-						frameRate: videoPlan.frameRate,
-						bitrate: videoPlan.bitrate,
-						codec: videoPlan.codec,
-						codecCandidates: videoPlan.codecCandidates,
-						encoderCandidates: videoPlan.encoderCandidates,
-						fallbackSteps: videoPlan.fallbackSteps,
-						wallpaper,
-						trimRegions,
-						speedRegions,
-						showShadow: frameShadowOpacity > 0 && (frameShadowSize > 0 || frameShadowBlur > 0),
-						shadowIntensity,
-						frameShadowSize,
-						frameShadowOpacity,
-						frameShadowBlur,
-						backgroundBlur,
-						hideBackground,
-						zoomMotionBlur,
-						connectZooms,
-						deviceMockup: "none",
-						frameBorderEnabled,
-						frameBorderWidth,
-						frameBorderColor,
-						frameBorderOpacity,
-						borderRadius,
-						padding,
-						cropRegion: effectiveCropRegion,
-						aspectRatio,
-						annotationRegions,
-						zoomRegions: effectiveZoomRegions,
-						cursorTelemetry: effectiveCursorTelemetry,
-						keyboardShortcutCallouts,
-						showCursor,
-						showKeyboardShortcuts,
-						cursorSize,
-						cursorSmoothing,
-						cursorMotionBlur,
-						cursorClickBounce,
-						cursorSway,
-						cursorStyle,
-						cursorPack,
-						cursorColor,
-						cursorOpacity,
-						clickHighlightColor,
-						clickHighlightSize,
-						clickHighlightOpacity,
-						cursorTrailLength,
-						cursorTrailOpacity,
-						cursorTypeMode,
-						cursorTilt,
-						hideWhenIdle,
-						idleHideDelayMs,
-						smoothMovementEnabled,
-						cursorMovementStyle,
-						cursorSpring,
-						highQualitySvgCursors,
-						cameraSpring,
-						keyboardShortcutPosition,
-						keyboardShortcutTheme,
-						keyboardShortcutScale,
-						keyboardShortcutOpacity,
-						keyboardShortcutMaxVisible,
-						audioRegions,
-						previewWidth,
-						previewHeight,
-						webcamPath: resolvedWebcamPath,
-						webcamRegion,
-						webcamEffects,
-						showWebcam,
-						mirrorWebcam,
-						cameraSizeDuringZoom,
-						cameraLayouts,
-						captionRegions,
-						captionSettings,
-						forceFFmpegDecoder: videoPlan.forceFFmpegDecoder,
-						onProgress: progressThrottler.push,
+					const timestamp = Date.now();
+					const fileName = `export-${timestamp}.mp4`;
+					const exportV2Result = await tryExportV2({
+						request: {
+							sourcePath: videoPath,
+							fileName,
+							destination: exportV2Destination,
+							format: "mp4",
+							width: videoPlan.width,
+							height: videoPlan.height,
+							frameRate: videoPlan.frameRate,
+							bitrate: videoPlan.bitrate,
+							bitrateMode: videoPlan.bitrateMode,
+							durationMs: Math.round(duration * 1000),
+							trimRegions,
+							speedRegions,
+							compositionPayload,
+							audioPlan: {
+								mode:
+									audioRegions.length > 0 || speedRegions.length > 0 ? "timeline-mix" : "source",
+								expectAudio: true,
+								sourcePath: videoPath,
+								audioRegionCount: audioRegions.length,
+								hasSpeedRegions: speedRegions.length > 0,
+							},
+							validationPolicy: "warn",
+							selection: exportV2Selection,
+						},
+						onDetails: (details) => {
+							dispatchSession({
+								type: "set-export-details",
+								details: mergeVideoExportDetails(videoPlan, details, details.fileSizeBytes),
+							});
+						},
+						formatName: "video",
 					});
 
-					exporterRef.current = exporter;
-					const result = await exporter.export();
-
-					if (result.success && result.blob) {
-						progressThrottler.flush();
-						dispatchSession({
-							type: "set-export-details",
-							details: mergeVideoExportDetails(videoPlan, result.details, result.blob.size),
-						});
-						const timestamp = Date.now();
-						const fileName = `export-${timestamp}.mp4`;
-						keepExportDialogOpen = await saveExportedBlob({
-							blob: result.blob,
-							fileName,
-							formatName: "video",
-						});
+					if (exportV2Result.handled) {
+						keepExportDialogOpen = exportV2Result.keepDialogOpen;
 					} else {
-						dispatchSession({
-							type: "set-export-error",
-							error: result.error || "Export failed",
+						const exporter = new VideoExporter({
+							videoUrl: videoPath,
+							width: videoPlan.width,
+							height: videoPlan.height,
+							frameRate: videoPlan.frameRate,
+							bitrate: videoPlan.bitrate,
+							codec: videoPlan.codec,
+							codecCandidates: videoPlan.codecCandidates,
+							encoderCandidates: videoPlan.encoderCandidates,
+							fallbackSteps: videoPlan.fallbackSteps,
+							wallpaper,
+							trimRegions,
+							speedRegions,
+							showShadow: frameShadowOpacity > 0 && (frameShadowSize > 0 || frameShadowBlur > 0),
+							shadowIntensity,
+							frameShadowSize,
+							frameShadowOpacity,
+							frameShadowBlur,
+							backgroundBlur,
+							hideBackground,
+							zoomMotionBlur,
+							connectZooms,
+							deviceMockup: "none",
+							frameBorderEnabled,
+							frameBorderWidth,
+							frameBorderColor,
+							frameBorderOpacity,
+							borderRadius,
+							padding,
+							cropRegion: effectiveCropRegion,
+							aspectRatio,
+							annotationRegions,
+							zoomRegions: effectiveZoomRegions,
+							cursorTelemetry: effectiveCursorTelemetry,
+							keyboardShortcutCallouts,
+							showCursor,
+							showKeyboardShortcuts,
+							cursorSize,
+							cursorSmoothing,
+							cursorMotionBlur,
+							cursorClickBounce,
+							cursorSway,
+							cursorStyle,
+							cursorPack,
+							cursorColor,
+							cursorOpacity,
+							clickHighlightColor,
+							clickHighlightSize,
+							clickHighlightOpacity,
+							cursorTrailLength,
+							cursorTrailOpacity,
+							cursorTypeMode,
+							cursorTilt,
+							hideWhenIdle,
+							idleHideDelayMs,
+							smoothMovementEnabled,
+							cursorMovementStyle,
+							cursorSpring,
+							highQualitySvgCursors,
+							cameraSpring,
+							keyboardShortcutPosition,
+							keyboardShortcutTheme,
+							keyboardShortcutScale,
+							keyboardShortcutOpacity,
+							keyboardShortcutMaxVisible,
+							audioRegions,
+							previewWidth,
+							previewHeight,
+							webcamPath: resolvedWebcamPath,
+							webcamRegion,
+							webcamEffects,
+							showWebcam,
+							mirrorWebcam,
+							cameraSizeDuringZoom,
+							cameraLayouts,
+							captionRegions,
+							captionSettings,
+							forceFFmpegDecoder: videoPlan.forceFFmpegDecoder,
+							onProgress: progressThrottler.push,
 						});
-						dispatchSession({ type: "set-export-status", status: "failed" });
-						toast.error(result.error || "Export failed");
+
+						exporterRef.current = exporter;
+						const result = await exporter.export();
+
+						if (result.success && result.blob) {
+							progressThrottler.flush();
+							dispatchSession({
+								type: "set-export-details",
+								details: mergeVideoExportDetails(videoPlan, result.details, result.blob.size),
+							});
+							keepExportDialogOpen = await saveExportedBlob({
+								blob: result.blob,
+								fileName,
+								formatName: "video",
+							});
+						} else {
+							dispatchSession({
+								type: "set-export-error",
+								error: result.error || "Export failed",
+							});
+							dispatchSession({ type: "set-export-status", status: "failed" });
+							toast.error(result.error || "Export failed");
+						}
 					}
 				}
 
@@ -4493,6 +4780,19 @@ export default function VideoEditor() {
 	]);
 
 	const handleCancelExport = useCallback(() => {
+		if (exportV2JobIdRef.current) {
+			void window.electronAPI.exportV2Cancel(exportV2JobIdRef.current);
+			exportV2JobIdRef.current = null;
+			toast.info("Export canceled");
+			dispatchSession({ type: "set-export-dialog-open", value: false });
+			dispatchSession({ type: "set-exporting", value: false });
+			dispatchSession({ type: "set-export-status", status: "idle" });
+			dispatchSession({ type: "set-export-progress", progress: null });
+			dispatchSession({ type: "set-export-error", error: null });
+			dispatchSession({ type: "set-exported-file-path", path: undefined });
+			return;
+		}
+
 		if (exporterRef.current) {
 			exporterRef.current.cancel();
 			toast.info("Export canceled");

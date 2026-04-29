@@ -7,11 +7,14 @@ export interface ExportConfig {
 }
 
 export type ExportPhase =
+	| "probing"
 	| "preparing"
 	| "decoding"
 	| "rendering"
+	| "audio"
 	| "encoding"
 	| "muxing"
+	| "writing"
 	| "finalizing";
 
 export interface ExportProgress {
@@ -46,11 +49,20 @@ export interface ExportDetails {
 	fallbackApplied?: boolean;
 	fallbackReason?: string;
 	warnings?: string[];
+	engine?: ExportEngine;
+	encoder?: string;
+	hardwareAcceleration?: ExportHardwareAcceleration;
+	throughputFps?: number;
+	audioCodec?: "aac" | "none" | "fallback";
+	validation?: { video: boolean; audio: boolean; warnings: string[] };
+	dedupedFrames?: number;
+	paletteMode?: "ffmpeg" | "worker-two-pass";
 }
 
 export interface ExportResult {
 	success: boolean;
 	blob?: Blob;
+	path?: string;
 	error?: string;
 	details?: ExportDetails;
 }
@@ -66,6 +78,8 @@ export type ExportQuality = "medium" | "good" | "high" | "source";
 // GIF Export Types
 export type ExportFormat = "mp4" | "gif";
 export type ExportDestination = "file" | "clipboard" | "link";
+export type ExportEngine = "direct-native" | "composited-hardware" | "legacy-renderer";
+export type ExportHardwareAcceleration = "hardware" | "software" | "unknown";
 
 export type VideoExportMode = "preset" | "custom";
 export type VideoExportPreset = "fast-share" | "balanced" | "quality" | "master";

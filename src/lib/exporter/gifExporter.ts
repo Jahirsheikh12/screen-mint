@@ -117,6 +117,7 @@ interface GifExporterConfig {
 	cameraLayouts?: CameraLayoutRegion[];
 	captionRegions?: CaptionRegion[];
 	captionSettings?: CaptionSettings;
+	outputPath?: string;
 	onProgress?: (progress: ExportProgress) => void;
 }
 
@@ -175,7 +176,22 @@ interface GifWorkerErrorMessage {
 	error: string;
 }
 
-type GifWorkerMessage = GifWorkerProgressMessage | GifWorkerDoneMessage | GifWorkerErrorMessage;
+interface GifWorkerFrameAcceptedMessage {
+	type: "frame-accepted";
+	dedupedFrames: number;
+}
+
+interface GifWorkerEncodeReadyMessage {
+	type: "encode-ready";
+	dedupedFrames: number;
+}
+
+type GifWorkerMessage =
+	| GifWorkerProgressMessage
+	| GifWorkerDoneMessage
+	| GifWorkerErrorMessage
+	| GifWorkerFrameAcceptedMessage
+	| GifWorkerEncodeReadyMessage;
 
 function getMotionDedupeThreshold(motionSensitivity: GifMotionSensitivity): number {
 	switch (motionSensitivity) {
@@ -332,14 +348,41 @@ export class GifExporter {
 					videoFrame.close();
 
 					const imageData = canvasCtx.getImageData(0, 0, this.config.width, this.config.height);
-					this.worker?.postMessage(
-						{
-							type: "frame",
-							rgba: imageData.data.buffer,
-							delay: frameDelay,
-						},
-						[imageData.data.buffer],
-					);
+					await this.postFrameToWorker(imageData.data.buffer, frameDelay, "sample-frame");
+					frameIndex++;
+					if (shouldYieldExportFrame(frameIndex)) {
+						await yieldToExportScheduler();
+					}
+					this.reportProgress(frameIndex, totalFrames, "rendering", undefined, warnings);
+				},
+			);
+
+			if (this.cancelled) {
+				return { success: false, error: "Export cancelled" };
+			}
+
+			const sampledFrames = await this.prepareWorkerEncoding();
+			if (sampledFrames === 0) {
+				throw new Error("No frames were available for GIF export");
+			}
+
+			frameIndex = 0;
+			await this.streamingDecoder.decodeAll(
+				this.config.frameRate,
+				this.config.trimRegions,
+				this.config.speedRegions,
+				async (videoFrame, _exportTimestampUs, sourceTimestampMs) => {
+					if (this.cancelled) {
+						videoFrame.close();
+						return;
+					}
+
+					const sourceTimestampUs = sourceTimestampMs * 1000;
+					await this.renderer!.renderFrame(videoFrame, sourceTimestampUs);
+					videoFrame.close();
+
+					const imageData = canvasCtx.getImageData(0, 0, this.config.width, this.config.height);
+					await this.postFrameToWorker(imageData.data.buffer, frameDelay, "frame");
 					frameIndex++;
 					if (shouldYieldExportFrame(frameIndex)) {
 						await yieldToExportScheduler();
@@ -353,7 +396,35 @@ export class GifExporter {
 			}
 
 			this.reportProgress(totalFrames, totalFrames, "finalizing", 0, warnings);
-			const blob = await this.finalizeWorker(totalFrames, warnings);
+			const { blob, dedupedFrames } = await this.finalizeWorker(totalFrames, warnings);
+			let outputPath = this.config.outputPath;
+			let fileSizeBytes = blob.size;
+			if (outputPath) {
+				const streamResult = await window.electronAPI.exportV2StreamStart(outputPath);
+				if (!streamResult.success || !streamResult.id) {
+					throw new Error(streamResult.error || "Failed to start GIF export stream");
+				}
+				try {
+					const arrayBuffer = await blob.arrayBuffer();
+					const appendResult = await window.electronAPI.exportV2StreamAppend(
+						streamResult.id,
+						arrayBuffer,
+						0,
+					);
+					if (!appendResult.success) {
+						throw new Error(appendResult.error || "Failed to write GIF export stream");
+					}
+					const finishResult = await window.electronAPI.exportV2StreamFinish(streamResult.id);
+					if (!finishResult.success || !finishResult.path) {
+						throw new Error(finishResult.error || "Failed to finish GIF export stream");
+					}
+					outputPath = finishResult.path;
+					fileSizeBytes = finishResult.bytesWritten ?? fileSizeBytes;
+				} catch (error) {
+					await window.electronAPI.exportV2StreamDiscard(streamResult.id).catch(() => undefined);
+					throw error;
+				}
+			}
 
 			const details: ExportDetails = {
 				format: "gif",
@@ -366,13 +437,17 @@ export class GifExporter {
 				loop: this.config.loop,
 				dedupeFrames: this.config.dedupeFrames,
 				elapsedMs: Math.round(performance.now() - this.exportStartedAtMs),
-				fileSizeBytes: blob.size,
+				fileSizeBytes,
+				engine: outputPath ? "composited-hardware" : undefined,
+				dedupedFrames,
+				paletteMode: "worker-two-pass",
 				warnings,
 			};
 
 			return {
 				success: true,
-				blob,
+				blob: outputPath ? undefined : blob,
+				path: outputPath,
 				details,
 			};
 		} catch (error) {
@@ -387,7 +462,7 @@ export class GifExporter {
 	}
 
 	private finalizeWorker(totalFrames: number, warnings: string[]) {
-		return new Promise<Blob>((resolve, reject) => {
+		return new Promise<{ blob: Blob; dedupedFrames: number }>((resolve, reject) => {
 			if (!this.worker) {
 				reject(new Error("GIF worker not initialized"));
 				return;
@@ -406,6 +481,12 @@ export class GifExporter {
 					);
 					return;
 				}
+				if (message.type === "frame-accepted") {
+					return;
+				}
+				if (message.type === "encode-ready") {
+					return;
+				}
 
 				worker.removeEventListener("message", handleMessage);
 				worker.removeEventListener("error", handleError);
@@ -415,7 +496,15 @@ export class GifExporter {
 					return;
 				}
 
-				resolve(new Blob([message.buffer], { type: "image/gif" }));
+				if (message.type !== "done") {
+					reject(new Error("Unexpected GIF worker response"));
+					return;
+				}
+
+				resolve({
+					blob: new Blob([message.buffer], { type: "image/gif" }),
+					dedupedFrames: message.dedupedFrames,
+				});
 			};
 
 			const handleError = (event: ErrorEvent) => {
@@ -427,6 +516,87 @@ export class GifExporter {
 			worker.addEventListener("message", handleMessage);
 			worker.addEventListener("error", handleError);
 			worker.postMessage({ type: "finalize" });
+		});
+	}
+
+	private prepareWorkerEncoding() {
+		return new Promise<number>((resolve, reject) => {
+			if (!this.worker) {
+				reject(new Error("GIF worker not initialized"));
+				return;
+			}
+
+			const worker = this.worker;
+			const handleMessage = (event: MessageEvent<GifWorkerMessage>) => {
+				const message = event.data;
+				if (message.type !== "encode-ready" && message.type !== "error") {
+					return;
+				}
+				cleanup();
+				if (message.type === "error") {
+					reject(new Error(message.error));
+					return;
+				}
+				resolve(message.dedupedFrames);
+			};
+			const handleError = (event: ErrorEvent) => {
+				cleanup();
+				reject(new Error(event.message || "Failed to prepare GIF encoder"));
+			};
+			const cleanup = () => {
+				worker.removeEventListener("message", handleMessage);
+				worker.removeEventListener("error", handleError);
+			};
+
+			worker.addEventListener("message", handleMessage);
+			worker.addEventListener("error", handleError);
+			worker.postMessage({ type: "prepare-encode" });
+		});
+	}
+
+	private postFrameToWorker(
+		rgba: ArrayBuffer,
+		delay: number,
+		messageType: "sample-frame" | "frame",
+	) {
+		return new Promise<void>((resolve, reject) => {
+			if (!this.worker) {
+				reject(new Error("GIF worker not initialized"));
+				return;
+			}
+
+			const worker = this.worker;
+			const handleMessage = (event: MessageEvent<GifWorkerMessage>) => {
+				const message = event.data;
+				if (message.type !== "frame-accepted" && message.type !== "error") {
+					return;
+				}
+				cleanup();
+				if (message.type === "error") {
+					reject(new Error(message.error));
+					return;
+				}
+				resolve();
+			};
+			const handleError = (event: ErrorEvent) => {
+				cleanup();
+				reject(new Error(event.message || "Failed to encode GIF frame"));
+			};
+			const cleanup = () => {
+				worker.removeEventListener("message", handleMessage);
+				worker.removeEventListener("error", handleError);
+			};
+
+			worker.addEventListener("message", handleMessage);
+			worker.addEventListener("error", handleError);
+			worker.postMessage(
+				{
+					type: messageType,
+					rgba,
+					delay,
+				},
+				[rgba],
+			);
 		});
 	}
 

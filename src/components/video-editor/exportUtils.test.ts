@@ -105,11 +105,17 @@ describe("exportUtils", () => {
 				codec: plan.codec,
 				codecLabel: "H.264 Main",
 				fileSizeBytes: 4_000_000,
+				engine: "direct-native",
+				encoder: "h264_videotoolbox",
+				hardwareAcceleration: "hardware",
 			},
 			4_000_000,
 		);
 
 		expect(details.codecLabel).toBe("H.264 Main");
+		expect(details.engine).toBe("direct-native");
+		expect(details.encoder).toBe("h264_videotoolbox");
+		expect(details.hardwareAcceleration).toBe("hardware");
 		expect(details.fallbackSteps).toEqual(plan.fallbackSteps);
 		expect(details.warnings).toEqual(plan.warnings);
 	});

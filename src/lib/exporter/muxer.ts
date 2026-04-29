@@ -5,8 +5,15 @@ import {
 	EncodedVideoPacketSource,
 	Mp4OutputFormat,
 	Output,
+	StreamTarget,
+	type StreamTargetChunk,
 } from "mediabunny";
 import type { ExportConfig } from "./types";
+
+export interface VideoMuxerStreamTarget {
+	write: (chunk: StreamTargetChunk) => Promise<void>;
+	close?: () => Promise<void>;
+}
 
 export class VideoMuxer {
 	private output: Output | null = null;
@@ -14,22 +21,35 @@ export class VideoMuxer {
 	private audioSource: EncodedAudioPacketSource | null = null;
 	private hasAudio: boolean;
 	private target: BufferTarget | null = null;
+	private streamTarget: StreamTarget | null = null;
 	private config: ExportConfig;
+	private readonly stream?: VideoMuxerStreamTarget;
 
-	constructor(config: ExportConfig, hasAudio = false) {
+	constructor(config: ExportConfig, hasAudio = false, stream?: VideoMuxerStreamTarget) {
 		this.config = config;
 		this.hasAudio = hasAudio;
+		this.stream = stream;
 	}
 
 	async initialize(): Promise<void> {
-		// Create the buffer target
-		this.target = new BufferTarget();
+		if (this.stream) {
+			const writable = new WritableStream<StreamTargetChunk>({
+				write: (chunk) => this.stream!.write(chunk),
+				close: () => this.stream?.close?.(),
+			});
+			this.streamTarget = new StreamTarget(writable, {
+				chunked: true,
+				chunkSize: 4 * 1024 * 1024,
+			});
+		} else {
+			this.target = new BufferTarget();
+		}
 
 		this.output = new Output({
 			format: new Mp4OutputFormat({
-				fastStart: "in-memory",
+				fastStart: this.stream ? false : "in-memory",
 			}),
-			target: this.target,
+			target: this.streamTarget ?? this.target!,
 		});
 
 		// Create video source - codec will be deduced from metadata
@@ -40,7 +60,7 @@ export class VideoMuxer {
 
 		// Create audio source if needed
 		if (this.hasAudio) {
-			this.audioSource = new EncodedAudioPacketSource("opus");
+			this.audioSource = new EncodedAudioPacketSource("aac");
 			this.output.addAudioTrack(this.audioSource);
 		}
 
@@ -72,12 +92,20 @@ export class VideoMuxer {
 		await this.audioSource.add(packet, meta);
 	}
 
-	async finalize(): Promise<Blob> {
-		if (!this.output || !this.target) {
+	async finalize(): Promise<Blob | null> {
+		if (!this.output) {
 			throw new Error("Muxer not initialized");
 		}
 
 		await this.output.finalize();
+		if (this.stream) {
+			return null;
+		}
+
+		if (!this.target) {
+			throw new Error("Muxer target not initialized");
+		}
+
 		const buffer = this.target.buffer;
 
 		if (!buffer) {

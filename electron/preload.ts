@@ -234,6 +234,46 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	saveExportedVideoToRecordings: (videoData: ArrayBuffer, fileName: string) => {
 		return ipcRenderer.invoke("save-exported-video-to-recordings", videoData, fileName);
 	},
+	exportV2Probe: () => {
+		return ipcRenderer.invoke("exportV2:probe");
+	},
+	exportV2Start: (request: unknown) => {
+		return ipcRenderer.invoke("exportV2:start", request);
+	},
+	exportV2CreateWorker: () => {
+		return ipcRenderer.invoke("exportV2:createWorker");
+	},
+	exportV2Cancel: (jobId: string) => {
+		return ipcRenderer.invoke("exportV2:cancel", jobId);
+	},
+	exportV2StreamStart: (filePath: string) => {
+		return ipcRenderer.invoke("exportV2:streamStart", filePath);
+	},
+	exportV2StreamAppend: (sessionId: string, chunk: ArrayBuffer, position: number) => {
+		return ipcRenderer.invoke("exportV2:streamAppend", sessionId, chunk, position);
+	},
+	exportV2StreamFinish: (sessionId: string) => {
+		return ipcRenderer.invoke("exportV2:streamFinish", sessionId);
+	},
+	exportV2StreamDiscard: (sessionId: string) => {
+		return ipcRenderer.invoke("exportV2:streamDiscard", sessionId);
+	},
+	onExportV2Progress: (callback: (progress: unknown) => void) => {
+		const listener = (_event: Electron.IpcRendererEvent, progress: unknown) => callback(progress);
+		ipcRenderer.on("exportV2:progress", listener);
+		return () => ipcRenderer.removeListener("exportV2:progress", listener);
+	},
+	onExportV2WorkerStart: (callback: (request: unknown) => void) => {
+		const listener = (_event: Electron.IpcRendererEvent, request: unknown) => callback(request);
+		ipcRenderer.on("exportV2:worker-start", listener);
+		return () => ipcRenderer.removeListener("exportV2:worker-start", listener);
+	},
+	exportV2WorkerProgress: (progress: unknown) => {
+		return ipcRenderer.invoke("exportV2:worker-progress", progress);
+	},
+	exportV2WorkerComplete: (result: unknown) => {
+		return ipcRenderer.invoke("exportV2:worker-complete", result);
+	},
 	openVideoFilePicker: () => {
 		return ipcRenderer.invoke("open-video-file-picker");
 	},

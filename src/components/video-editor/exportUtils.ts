@@ -116,6 +116,10 @@ export function mergeGifExportDetails(
 		dedupeFrames: runtimeDetails?.dedupeFrames ?? plan.dedupeFrames,
 		elapsedMs: runtimeDetails?.elapsedMs,
 		fileSizeBytes: runtimeDetails?.fileSizeBytes ?? fallbackFileSizeBytes,
+		engine: runtimeDetails?.engine,
+		encoder: runtimeDetails?.encoder,
+		hardwareAcceleration: runtimeDetails?.hardwareAcceleration,
+		throughputFps: runtimeDetails?.throughputFps,
 		warnings: uniqueStrings([...(plan.warnings ?? []), ...(runtimeDetails?.warnings ?? [])]),
 	};
 }
@@ -141,6 +145,10 @@ export function mergeVideoExportDetails(
 		]),
 		elapsedMs: runtimeDetails?.elapsedMs,
 		fileSizeBytes: runtimeDetails?.fileSizeBytes ?? fallbackFileSizeBytes,
+		engine: runtimeDetails?.engine,
+		encoder: runtimeDetails?.encoder,
+		hardwareAcceleration: runtimeDetails?.hardwareAcceleration,
+		throughputFps: runtimeDetails?.throughputFps,
 		warnings: uniqueStrings([...(plan.warnings ?? []), ...(runtimeDetails?.warnings ?? [])]),
 	};
 }
