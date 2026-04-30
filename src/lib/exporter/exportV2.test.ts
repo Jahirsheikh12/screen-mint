@@ -30,11 +30,22 @@ describe("export v2 engine selection", () => {
 		expect(selection.reason).toContain("palette");
 	});
 
-	it("keeps composed timelines on the composited hardware path", () => {
+	it("uses native composed export for common MP4 compositions", () => {
+		const selection = selectExportV2Engine({
+			...baseSignals,
+			hasVisualComposition: true,
+		});
+
+		expect(selection.engine).toBe("native-composed");
+		expect(shouldUseDirectNativeExport(selection)).toBe(false);
+	});
+
+	it("keeps complex composed timelines on the composited hardware path", () => {
 		const selection = selectExportV2Engine({
 			...baseSignals,
 			hasVisualComposition: true,
 			hasCursorOverlay: true,
+			hasWebcam: true,
 		});
 
 		expect(selection.engine).toBe("composited-hardware");

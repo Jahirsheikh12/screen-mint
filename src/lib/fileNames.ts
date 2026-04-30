@@ -1,4 +1,4 @@
-const INVALID_FILE_NAME_CHARS = /[<>:"/\\|?*\x00-\x1f]/g;
+const INVALID_FILE_NAME_CHARS = new RegExp('[<>:"/\\\\|?*\\x00-\\x1f]', "g");
 const RESERVED_WINDOWS_NAMES = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
 const DEFAULT_FILE_NAME_BASE = "Untitled";
 const MAX_FILE_NAME_BASE_LENGTH = 180;

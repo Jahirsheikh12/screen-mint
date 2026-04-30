@@ -32,7 +32,11 @@ import type {
 	VideoBitrateMode,
 } from "./types";
 
-export type ExportV2Engine = "direct-native" | "composited-hardware" | "legacy-renderer";
+export type ExportV2Engine =
+	| "direct-native"
+	| "native-composed"
+	| "composited-hardware"
+	| "legacy-renderer";
 export type ExportV2HardwareAcceleration = "hardware" | "software" | "unknown";
 export type ExportV2Destination = "file" | "clipboard" | "recordings";
 
@@ -189,6 +193,8 @@ export interface ExportCompositionPayload {
 	cameraLayouts?: CameraLayoutRegion[];
 	captionRegions?: CaptionRegion[];
 	captionSettings?: CaptionSettings;
+	sourceWidth?: number;
+	sourceHeight?: number;
 	forceFFmpegDecoder?: boolean;
 }
 
@@ -220,6 +226,21 @@ export function selectExportV2Engine(signals: ExportV2EngineSignals): ExportV2En
 		signals.hasSpeedRegions;
 
 	if (requiresComposition) {
+		const mayUseNativeComposition =
+			signals.format === "mp4" &&
+			!signals.hasExternalAudio &&
+			!signals.hasWebcam &&
+			!signals.hasKeyboardCallouts &&
+			!signals.hasSpeedRegions;
+
+		if (mayUseNativeComposition) {
+			return {
+				engine: "native-composed",
+				reason:
+					"Timeline uses common ScreenMint composition effects that can be attempted with native FFmpeg filters.",
+			};
+		}
+
 		return {
 			engine: "composited-hardware",
 			reason: "Timeline uses ScreenMint visual composition, so v2 keeps the PIXI renderer path.",

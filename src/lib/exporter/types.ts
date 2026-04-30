@@ -25,6 +25,7 @@ export interface ExportProgress {
 	phase?: ExportPhase;
 	etaSeconds?: number;
 	throughputFps?: number;
+	engine?: ExportEngine;
 	warnings?: string[];
 	renderProgress?: number; // 0-100, progress of GIF rendering phase
 }
@@ -53,6 +54,10 @@ export interface ExportDetails {
 	encoder?: string;
 	hardwareAcceleration?: ExportHardwareAcceleration;
 	throughputFps?: number;
+	stageTimingsMs?: Record<string, number>;
+	nativeComposedFallbackReason?: string;
+	nativeComposedFeatures?: string[];
+	benchmarkThroughputFps?: number;
 	audioCodec?: "aac" | "none" | "fallback";
 	validation?: { video: boolean; audio: boolean; warnings: string[] };
 	dedupedFrames?: number;
@@ -78,7 +83,11 @@ export type ExportQuality = "medium" | "good" | "high" | "source";
 // GIF Export Types
 export type ExportFormat = "mp4" | "gif";
 export type ExportDestination = "file" | "clipboard" | "link";
-export type ExportEngine = "direct-native" | "composited-hardware" | "legacy-renderer";
+export type ExportEngine =
+	| "direct-native"
+	| "native-composed"
+	| "composited-hardware"
+	| "legacy-renderer";
 export type ExportHardwareAcceleration = "hardware" | "software" | "unknown";
 
 export type VideoExportMode = "preset" | "custom";

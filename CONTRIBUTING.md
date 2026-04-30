@@ -23,6 +23,10 @@ Recommended checks:
 - `npm run build`
 - `npm run i18n:check` when editing locale files
 
+For larger changes, read [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) first and keep refactors
+scoped to one domain at a time. Public beta release validation lives in
+[docs/BETA_RELEASE_CHECKLIST.md](./docs/BETA_RELEASE_CHECKLIST.md).
+
 ## Pull Requests
 
 - Explain the user-facing problem and the fix.
@@ -34,6 +38,8 @@ Recommended checks:
 Report bugs and feature requests here:
 
 - https://github.com/Jahirsheikh12/screen-mint/issues
+
+For security issues, do not open a public issue. Follow [SECURITY.md](./SECURITY.md).
 
 ## Sponsorship
 

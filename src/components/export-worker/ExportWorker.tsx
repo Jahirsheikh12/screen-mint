@@ -60,6 +60,7 @@ async function runWorkerExport(request: ExportV2StartRequest) {
 						bitrate: request.bitrate ?? 12_000_000,
 						codec: "avc1.640033",
 						outputPath: request.outputPath,
+						schedulerMode: "worker",
 						onProgress,
 					}).export();
 

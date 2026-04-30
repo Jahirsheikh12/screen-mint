@@ -29,7 +29,7 @@
 		"version:set": "node scripts/bump-version.mjs",
 		"lint": "npm run lint:app",
 		"lint:app": "biome check src/components/video-editor src/lib/exporter src/lib/updater src/hooks electron/updater.ts",
-		"lint:repo": "biome check .",
+		"lint:repo": "biome check src electron scripts website *.ts *.json *.json5 *.cjs *.md",
 		"lint:fix": "biome check --write .",
 		"format": "biome format --write .",
 		"preview": "vite preview",
@@ -45,7 +45,8 @@
 		"release:validate-assets": "node scripts/validate-release-assets.mjs",
 		"i18n:check": "node scripts/i18n-check.mjs",
 		"test": "vitest --run",
-		"test:watch": "vitest"
+		"test:watch": "vitest",
+		"benchmark:export:native-composed": "node scripts/benchmark-native-composed-export.mjs"
 	},
 	"dependencies": {
 		"@fix-webm-duration/fix": "^1.0.1",

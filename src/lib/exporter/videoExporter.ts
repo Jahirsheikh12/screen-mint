@@ -22,14 +22,17 @@ import type {
 	ZoomRegion,
 } from "@/components/video-editor/types";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
-import { AudioProcessor } from "./audioEncoder";
+import { AudioProcessor, type PreparedAudioTrack } from "./audioEncoder";
 import {
+	ExportQueueDrainNotifier,
+	type ExportSchedulerMode,
+	resolveVideoExportEncodeQueueCeiling,
 	resolveVideoExportEncodeQueueLimit,
 	shouldYieldExportFrame,
 	yieldToExportScheduler,
 } from "./exportScheduler";
 import { FrameRenderer } from "./frameRenderer";
-import { VideoMuxer } from "./muxer";
+import { VideoMuxer, type VideoMuxerStreamTarget } from "./muxer";
 import type { ResolvedVideoEncoderCandidate } from "./planner";
 import { getCodecLabel } from "./planner";
 import { StreamingVideoDecoder } from "./streamingDecoder";
@@ -110,6 +113,7 @@ interface VideoExporterConfig extends ExportConfig {
 	fallbackSteps?: string[];
 	forceFFmpegDecoder?: boolean;
 	outputPath?: string;
+	schedulerMode?: ExportSchedulerMode;
 	onProgress?: (progress: ExportProgress) => void;
 }
 
@@ -123,6 +127,20 @@ interface ActiveVideoExportConfig {
 	fallbackSteps: string[];
 }
 
+interface ExportStreamBuffer {
+	position: number;
+	byteLength: number;
+	chunks: Uint8Array[];
+}
+
+interface AudioPreparationResult {
+	audioTrack: PreparedAudioTrack | null;
+	error?: Error;
+}
+
+const EXPORT_STREAM_FLUSH_BYTES = 8 * 1024 * 1024;
+const ADAPTIVE_QUEUE_STEP = 4;
+
 export class VideoExporter {
 	private config: VideoExporterConfig;
 	private streamingDecoder: StreamingVideoDecoder | null = null;
@@ -132,10 +150,10 @@ export class VideoExporter {
 	private audioProcessor: AudioProcessor | null = null;
 	private cancelled = false;
 	private encodeQueue = 0;
-	private readonly maxEncodeQueue =
-		typeof navigator !== "undefined"
-			? resolveVideoExportEncodeQueueLimit(navigator.hardwareConcurrency)
-			: resolveVideoExportEncodeQueueLimit();
+	private readonly schedulerMode: ExportSchedulerMode;
+	private maxEncodeQueue: number;
+	private readonly maxEncodeQueueCeiling: number;
+	private readonly encoderQueueDrain = new ExportQueueDrainNotifier();
 	private videoDescription: Uint8Array | undefined;
 	private videoColorSpace: VideoColorSpaceInit | undefined;
 	private pendingMuxing: Promise<void> = Promise.resolve();
@@ -150,9 +168,17 @@ export class VideoExporter {
 	private readonly encoderSupportCache = new Map<string, boolean>();
 	private exportStreamSessionId: string | null = null;
 	private exportStreamFinished = false;
+	private exportStreamBuffer: ExportStreamBuffer | null = null;
+	private stageTimingsMs: Record<string, number> = {};
 
 	constructor(config: VideoExporterConfig) {
 		this.config = config;
+		this.schedulerMode = config.schedulerMode ?? "interactive";
+		this.maxEncodeQueue =
+			typeof navigator !== "undefined"
+				? resolveVideoExportEncodeQueueLimit(navigator.hardwareConcurrency, this.schedulerMode)
+				: resolveVideoExportEncodeQueueLimit(undefined, this.schedulerMode);
+		this.maxEncodeQueueCeiling = resolveVideoExportEncodeQueueCeiling(this.schedulerMode);
 	}
 
 	async export(): Promise<ExportResult> {
@@ -163,12 +189,18 @@ export class VideoExporter {
 			this.warnings = [];
 			this.exportStreamSessionId = null;
 			this.exportStreamFinished = false;
+			this.exportStreamBuffer = null;
+			this.stageTimingsMs = {};
 			this.reportPhase("preparing");
 
 			// Initialize streaming decoder and load video metadata
 			this.streamingDecoder = new StreamingVideoDecoder();
-			const videoInfo = await this.streamingDecoder.loadMetadata(this.config.videoUrl);
-			this.activeConfig = await this.resolveEncoderCandidate();
+			const videoInfo = await this.profileStage("metadata", () =>
+				this.streamingDecoder!.loadMetadata(this.config.videoUrl),
+			);
+			this.activeConfig = await this.profileStage("encoderProbe", () =>
+				this.resolveEncoderCandidate(),
+			);
 
 			// Initialize frame renderer
 			this.renderer = new FrameRenderer({
@@ -242,10 +274,10 @@ export class VideoExporter {
 				captionRegions: this.config.captionRegions,
 				captionSettings: this.config.captionSettings,
 			});
-			await this.renderer.initialize();
+			await this.profileStage("rendererInit", () => this.renderer!.initialize());
 
 			// Initialize video encoder
-			await this.initializeEncoder(this.activeConfig);
+			await this.profileStage("encoderInit", () => this.initializeEncoder(this.activeConfig!));
 
 			const hasAudioRegions = (this.config.audioRegions ?? []).length > 0;
 			const hasAudio = videoInfo.hasAudio || hasAudioRegions;
@@ -260,36 +292,11 @@ export class VideoExporter {
 					codec: this.resolvedCodec ?? this.activeConfig.codecCandidates[0],
 				},
 				hasAudio,
-				this.config.outputPath
-					? {
-							write: async (chunk) => {
-								if (!this.exportStreamSessionId) {
-									const startResult = await window.electronAPI.exportV2StreamStart(
-										this.config.outputPath!,
-									);
-									if (!startResult.success || !startResult.id) {
-										throw new Error(startResult.error || "Failed to start export stream");
-									}
-									this.exportStreamSessionId = startResult.id;
-								}
-								const bytes = chunk.data;
-								const arrayBuffer = bytes.buffer.slice(
-									bytes.byteOffset,
-									bytes.byteOffset + bytes.byteLength,
-								) as ArrayBuffer;
-								const appendResult = await window.electronAPI.exportV2StreamAppend(
-									this.exportStreamSessionId,
-									arrayBuffer,
-									chunk.position,
-								);
-								if (!appendResult.success) {
-									throw new Error(appendResult.error || "Failed to write export stream");
-								}
-							},
-						}
-					: undefined,
+				this.createExportStreamTarget(),
 			);
-			await this.muxer.initialize();
+			await this.profileStage("muxerInit", () => this.muxer!.initialize());
+			const audioPreparation =
+				hasAudio && !this.cancelled ? this.startAudioPreparation(hasAudioRegions) : null;
 
 			// Calculate effective duration and frame count (excluding trim regions)
 			const effectiveDuration = this.streamingDecoder.getEffectiveDuration(
@@ -305,6 +312,7 @@ export class VideoExporter {
 
 			const frameDuration = 1_000_000 / this.activeConfig.frameRate; // in microseconds
 			let frameIndex = 0;
+			let lastFrameCompletedAt = performance.now();
 			this.reportPhase("decoding", 0, totalFrames);
 
 			// Stream decode and process frames — no seeking!
@@ -313,6 +321,7 @@ export class VideoExporter {
 				this.config.trimRegions,
 				this.config.speedRegions,
 				async (videoFrame, _exportTimestampUs, sourceTimestampMs) => {
+					this.addStageTiming("decodeWait", performance.now() - lastFrameCompletedAt);
 					if (this.cancelled) {
 						videoFrame.close();
 						return;
@@ -321,14 +330,19 @@ export class VideoExporter {
 					const timestamp = frameIndex * frameDuration;
 					const sourceTimestampUs = sourceTimestampMs * 1000;
 					this.reportPhase("rendering", frameIndex, totalFrames);
+					const renderStartedAt = performance.now();
 					await this.renderer!.renderFrame(videoFrame, sourceTimestampUs);
+					this.addStageTiming("render", performance.now() - renderStartedAt);
 					videoFrame.close();
 
 					this.reportPhase("encoding", frameIndex, totalFrames);
+					const encodeStartedAt = performance.now();
 					await this.encodeRenderedFrame(timestamp, frameDuration, frameIndex);
+					this.addStageTiming("encodeSubmit", performance.now() - encodeStartedAt);
 					frameIndex++;
 					await this.yieldAfterFrame(frameIndex);
 					this.reportProgress(frameIndex, totalFrames);
+					lastFrameCompletedAt = performance.now();
 				},
 				this.config.forceFFmpegDecoder,
 			);
@@ -340,40 +354,42 @@ export class VideoExporter {
 			// Finalize encoding
 			if (this.encoder && this.encoder.state === "configured") {
 				this.reportPhase("encoding", totalFrames, totalFrames);
-				await this.awaitWithWindowsTimeout(this.encoder.flush(), "encoder flush");
+				await this.profileStage("encoderFlush", () =>
+					this.awaitWithWindowsTimeout(this.encoder!.flush(), "encoder flush"),
+				);
 			}
 
 			// Wait for queued muxing operations to complete
 			this.reportPhase("muxing", totalFrames, totalFrames);
-			await this.awaitWithWindowsTimeout(this.pendingMuxing, "muxing queued video chunks");
+			await this.profileStage("muxDrain", () =>
+				this.awaitWithWindowsTimeout(this.pendingMuxing, "muxing queued video chunks"),
+			);
 
-			if (hasAudio && !this.cancelled) {
-				const demuxer = this.streamingDecoder.getDemuxer();
-				if (demuxer || hasAudioRegions) {
-					this.audioProcessor = new AudioProcessor();
-					await this.awaitWithWindowsTimeout(
-						this.audioProcessor.process(
-							demuxer!,
-							this.muxer!,
-							this.config.videoUrl,
-							this.config.trimRegions,
-							this.config.speedRegions,
-							undefined,
-							this.config.audioRegions,
-						),
-						"audio processing",
+			if (audioPreparation && !this.cancelled) {
+				const audioResult = await this.profileStage("audioWait", () =>
+					this.awaitWithWindowsTimeout(audioPreparation, "audio preparation"),
+				);
+				if (audioResult.error) {
+					throw audioResult.error;
+				}
+				if (audioResult.audioTrack) {
+					await this.profileStage("audioMux", () =>
+						this.awaitWithWindowsTimeout(audioResult.audioTrack!.mux(this.muxer!), "audio muxing"),
 					);
 				}
 			}
 
 			// Finalize muxer and get output blob
 			this.reportPhase("finalizing", totalFrames, totalFrames);
-			const blob = await this.awaitWithWindowsTimeout(this.muxer!.finalize(), "muxer finalization");
+			const blob = await this.profileStage("finalize", () =>
+				this.awaitWithWindowsTimeout(this.muxer!.finalize(), "muxer finalization"),
+			);
+			await this.flushExportStreamBuffer();
 			let outputPath = this.config.outputPath;
 			let fileSizeBytes = blob?.size ?? 0;
 			if (this.exportStreamSessionId) {
-				const finishResult = await window.electronAPI.exportV2StreamFinish(
-					this.exportStreamSessionId,
+				const finishResult = await this.profileStage("streamFinish", () =>
+					window.electronAPI.exportV2StreamFinish(this.exportStreamSessionId!),
 				);
 				if (!finishResult.success || !finishResult.path) {
 					throw new Error(finishResult.error || "Failed to finish export stream");
@@ -382,6 +398,18 @@ export class VideoExporter {
 				outputPath = finishResult.path;
 				fileSizeBytes = finishResult.bytesWritten ?? fileSizeBytes;
 			}
+			const elapsedMs = Math.round(performance.now() - this.exportStartedAtMs);
+			const throughputFps =
+				totalFrames > 0 ? (totalFrames / Math.max(elapsedMs, 1)) * 1000 : undefined;
+			const stageTimingsMs = this.getRoundedStageTimings();
+			console.log("[VideoExporter] Export performance", {
+				elapsedMs,
+				throughputFps,
+				stageTimingsMs,
+				maxEncodeQueue: this.maxEncodeQueue,
+				maxEncodeQueueCeiling: this.maxEncodeQueueCeiling,
+				schedulerMode: this.schedulerMode,
+			});
 
 			return {
 				success: true,
@@ -395,13 +423,17 @@ export class VideoExporter {
 					bitrate: this.activeConfig.bitrate,
 					codec: this.resolvedCodec ?? this.config.codec,
 					codecLabel: getCodecLabel(this.resolvedCodec ?? this.config.codec ?? "avc1.4d401f"),
-					elapsedMs: Math.round(performance.now() - this.exportStartedAtMs),
+					elapsedMs,
 					fileSizeBytes,
 					fallbackSteps: this.resolvedFallbackSteps,
 					fallbackApplied: this.resolvedFallbackSteps.length > 0,
 					fallbackReason: this.resolvedFallbackSteps[0],
 					engine: this.config.outputPath ? "composited-hardware" : undefined,
+					hardwareAcceleration:
+						this.activeConfig.hardwareAcceleration === "prefer-hardware" ? "hardware" : "software",
 					audioCodec: hasAudio ? "aac" : "none",
+					throughputFps,
+					stageTimingsMs,
 					warnings: this.warnings,
 				},
 			};
@@ -451,6 +483,153 @@ export class VideoExporter {
 		}
 	}
 
+	private addStageTiming(stage: string, durationMs: number): void {
+		if (!Number.isFinite(durationMs) || durationMs <= 0) {
+			return;
+		}
+		this.stageTimingsMs[stage] = (this.stageTimingsMs[stage] ?? 0) + durationMs;
+	}
+
+	private async profileStage<T>(stage: string, task: () => Promise<T>): Promise<T> {
+		const startedAt = performance.now();
+		try {
+			return await task();
+		} finally {
+			this.addStageTiming(stage, performance.now() - startedAt);
+		}
+	}
+
+	private getRoundedStageTimings(): Record<string, number> {
+		return Object.fromEntries(
+			Object.entries(this.stageTimingsMs).map(([stage, durationMs]) => [
+				stage,
+				Math.round(durationMs),
+			]),
+		);
+	}
+
+	private createExportStreamTarget(): VideoMuxerStreamTarget | undefined {
+		if (!this.config.outputPath) {
+			return undefined;
+		}
+
+		return {
+			write: async (chunk) => {
+				await this.writeExportStreamChunk(chunk.data, chunk.position);
+			},
+			close: async () => {
+				await this.flushExportStreamBuffer();
+			},
+		};
+	}
+
+	private async ensureExportStreamSession(): Promise<string> {
+		if (this.exportStreamSessionId) {
+			return this.exportStreamSessionId;
+		}
+
+		const startResult = await this.profileStage("streamStart", () =>
+			window.electronAPI.exportV2StreamStart(this.config.outputPath!),
+		);
+		if (!startResult.success || !startResult.id) {
+			throw new Error(startResult.error || "Failed to start export stream");
+		}
+		this.exportStreamSessionId = startResult.id;
+		return startResult.id;
+	}
+
+	private async writeExportStreamChunk(bytes: Uint8Array, position: number): Promise<void> {
+		if (bytes.byteLength === 0) {
+			return;
+		}
+
+		const bufferEnd = this.exportStreamBuffer
+			? this.exportStreamBuffer.position + this.exportStreamBuffer.byteLength
+			: position;
+		const canCoalesce =
+			this.exportStreamBuffer &&
+			bufferEnd === position &&
+			this.exportStreamBuffer.byteLength + bytes.byteLength <= EXPORT_STREAM_FLUSH_BYTES;
+
+		if (this.exportStreamBuffer && !canCoalesce) {
+			await this.flushExportStreamBuffer();
+		}
+
+		if (!this.exportStreamBuffer) {
+			this.exportStreamBuffer = {
+				position,
+				byteLength: 0,
+				chunks: [],
+			};
+		}
+
+		this.exportStreamBuffer.chunks.push(bytes);
+		this.exportStreamBuffer.byteLength += bytes.byteLength;
+
+		if (this.exportStreamBuffer.byteLength >= EXPORT_STREAM_FLUSH_BYTES) {
+			await this.flushExportStreamBuffer();
+		}
+	}
+
+	private async flushExportStreamBuffer(): Promise<void> {
+		const buffer = this.exportStreamBuffer;
+		if (!buffer || buffer.byteLength === 0) {
+			this.exportStreamBuffer = null;
+			return;
+		}
+
+		this.exportStreamBuffer = null;
+		let arrayBuffer: ArrayBuffer;
+		if (buffer.chunks.length === 1) {
+			const bytes = buffer.chunks[0];
+			arrayBuffer = bytes.buffer.slice(
+				bytes.byteOffset,
+				bytes.byteOffset + bytes.byteLength,
+			) as ArrayBuffer;
+		} else {
+			const merged = new Uint8Array(buffer.byteLength);
+			let offset = 0;
+			for (const chunk of buffer.chunks) {
+				merged.set(chunk, offset);
+				offset += chunk.byteLength;
+			}
+			arrayBuffer = merged.buffer;
+		}
+
+		const sessionId = await this.ensureExportStreamSession();
+		const appendResult = await this.profileStage("fileWrite", () =>
+			window.electronAPI.exportV2StreamAppend(sessionId, arrayBuffer, buffer.position),
+		);
+		if (!appendResult.success) {
+			throw new Error(appendResult.error || "Failed to write export stream");
+		}
+	}
+
+	private startAudioPreparation(hasAudioRegions: boolean): Promise<AudioPreparationResult> {
+		const demuxer = this.streamingDecoder?.getDemuxer() ?? null;
+		if (!demuxer && !hasAudioRegions) {
+			return Promise.resolve({ audioTrack: null });
+		}
+
+		this.audioProcessor = new AudioProcessor();
+		return this.profileStage("audioPrepare", () =>
+			this.audioProcessor!.prepare(
+				this.config.videoUrl,
+				demuxer,
+				this.config.trimRegions,
+				this.config.speedRegions,
+				undefined,
+				this.config.audioRegions,
+				{ independentDemuxer: true },
+			),
+		)
+			.then((audioTrack) => ({ audioTrack }))
+			.catch((error) => ({
+				audioTrack: null,
+				error: error instanceof Error ? error : new Error(String(error)),
+			}));
+	}
+
 	private async encodeRenderedFrame(timestamp: number, frameDuration: number, frameIndex: number) {
 		const canvas = this.renderer!.getCanvas();
 
@@ -466,9 +645,7 @@ export class VideoExporter {
 			},
 		});
 
-		while (this.encoder && this.encoder.encodeQueueSize >= this.maxEncodeQueue && !this.cancelled) {
-			await new Promise((resolve) => setTimeout(resolve, 5));
-		}
+		await this.waitForEncoderCapacity();
 
 		if (this.encoder && this.encoder.state === "configured") {
 			this.encodeQueue++;
@@ -484,8 +661,37 @@ export class VideoExporter {
 		exportFrame.close();
 	}
 
+	private async waitForEncoderCapacity(): Promise<void> {
+		while (this.encoder && this.encoder.encodeQueueSize >= this.maxEncodeQueue && !this.cancelled) {
+			if (this.tryRaiseEncodeQueueLimit()) {
+				continue;
+			}
+			const waitStartedAt = performance.now();
+			await this.encoderQueueDrain.wait();
+			this.addStageTiming("encodeBackpressure", performance.now() - waitStartedAt);
+		}
+	}
+
+	private tryRaiseEncodeQueueLimit(): boolean {
+		if (this.schedulerMode !== "worker" || this.maxEncodeQueue >= this.maxEncodeQueueCeiling) {
+			return false;
+		}
+
+		const nextLimit = Math.min(
+			this.maxEncodeQueueCeiling,
+			this.maxEncodeQueue + ADAPTIVE_QUEUE_STEP,
+		);
+		if (nextLimit <= this.maxEncodeQueue) {
+			return false;
+		}
+
+		this.maxEncodeQueue = nextLimit;
+		this.addStageTiming("adaptiveQueueRaises", 1);
+		return true;
+	}
+
 	private async yieldAfterFrame(frameIndex: number) {
-		if (shouldYieldExportFrame(frameIndex)) {
+		if (shouldYieldExportFrame(frameIndex, this.schedulerMode)) {
 			await yieldToExportScheduler();
 		}
 	}
@@ -658,6 +864,7 @@ export class VideoExporter {
 
 				this.pendingMuxing = this.pendingMuxing.then(async () => {
 					try {
+						const muxStartedAt = performance.now();
 						if (isFirstChunk && this.videoDescription) {
 							// Add decoder config for the first chunk
 							const colorSpace = this.videoColorSpace || {
@@ -681,11 +888,13 @@ export class VideoExporter {
 						} else {
 							await this.muxer!.addVideoChunk(chunk, meta);
 						}
+						this.addStageTiming("muxWrite", performance.now() - muxStartedAt);
 					} catch (error) {
 						console.error("Muxing error:", error);
 					}
 				});
 				this.encodeQueue--;
+				this.encoderQueueDrain.notify();
 			},
 			error: (error) => {
 				console.error(
@@ -694,7 +903,11 @@ export class VideoExporter {
 				);
 				// Stop export — encoding failed
 				this.cancelled = true;
+				this.encoderQueueDrain.notify();
 			},
+		});
+		this.encoder.addEventListener("dequeue", () => {
+			this.encoderQueueDrain.notify();
 		});
 
 		const baseConfig: VideoEncoderConfig = {
@@ -713,6 +926,7 @@ export class VideoExporter {
 
 	cancel(): void {
 		this.cancelled = true;
+		this.encoderQueueDrain.notify();
 		if (this.streamingDecoder) {
 			this.streamingDecoder.cancel();
 		}
@@ -755,6 +969,7 @@ export class VideoExporter {
 		this.muxer = null;
 		this.audioProcessor = null;
 		this.encodeQueue = 0;
+		this.encoderQueueDrain.clear();
 		this.pendingMuxing = Promise.resolve();
 		this.chunkCount = 0;
 		this.videoDescription = undefined;
@@ -762,6 +977,7 @@ export class VideoExporter {
 		this.activeConfig = null;
 		this.resolvedFallbackSteps = [];
 		this.resolvedCodec = undefined;
+		this.exportStreamBuffer = null;
 		this.encoderSupportCache.clear();
 	}
 }

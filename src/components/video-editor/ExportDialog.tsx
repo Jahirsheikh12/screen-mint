@@ -106,7 +106,10 @@ export function ExportDialog({
 			})}${throughputFps ? ` • ${throughputFps.toFixed(1)} fps` : ""}`;
 		}
 		if (progress?.phase && progress.phase !== "finalizing") {
-			const phaseLabel = progress.phase.charAt(0).toUpperCase() + progress.phase.slice(1);
+			const phaseLabel =
+				progress.engine === "native-composed" && progress.phase === "encoding"
+					? "Native composing"
+					: progress.phase.charAt(0).toUpperCase() + progress.phase.slice(1);
 			return `${phaseLabel}${throughputFps ? ` • ${throughputFps.toFixed(1)} fps` : ""}${etaSeconds > 0 ? ` • ETA ${Math.ceil(etaSeconds)}s` : ""}`;
 		}
 		return t("export.takeMoment");

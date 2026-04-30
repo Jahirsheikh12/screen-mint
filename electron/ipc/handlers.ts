@@ -32,6 +32,7 @@ import type {
 	ExportV2StartResult,
 	ExportV2TrimRegion,
 } from "../../src/lib/exporter/exportV2";
+import { compileNativeComposedExport } from "../../src/lib/exporter/nativeComposed";
 import {
 	buildCollisionFileName,
 	ensureFileExtension,
@@ -184,14 +185,11 @@ const exportV2Jobs = new Map<
 		process: ChildProcessWithoutNullStreams;
 		outputPath: string;
 		startedAtMs: number;
-		engine: "direct-native";
+		engine: ExportV2FfmpegEngine;
 	}
 >();
 const exportV2CanceledJobs = new Set<string>();
-const exportV2WorkerResolvers = new Map<
-	string,
-	(result: ExportV2StartResult) => void
->();
+const exportV2WorkerResolvers = new Map<string, (result: ExportV2StartResult) => void>();
 const exportV2WorkerOwners = new Map<string, Electron.WebContents>();
 const exportV2WorkerWindows = new Map<string, BrowserWindow>();
 type ExportV2StreamSession = {
@@ -210,6 +208,15 @@ let cachedSystemCursorAssetsSourceMtimeMs: number | null = null;
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
 let countdownCancelled = false;
 let countdownInProgress = false;
+
+type ExportV2FfmpegEngine = "direct-native" | "native-composed";
+
+type ExportV2FfmpegAttempt = {
+	args: string[];
+	encoder: ExportV2EncoderCandidate;
+	nativeComposedFallbackReason?: string;
+	nativeComposedFeatures?: string[];
+};
 
 type SystemCursorAsset = {
 	dataUrl: string;
@@ -1283,7 +1290,7 @@ function buildExportV2VideoArgs(
 	request: ExportV2StartRequest,
 	outputPath: string,
 	encoder: ExportV2EncoderCandidate,
-) {
+): ExportV2FfmpegAttempt {
 	const filters: string[] = [];
 	const trimExpression = buildTrimSelectExpression(request.trimRegions);
 	if (trimExpression) {
@@ -1362,7 +1369,10 @@ function resolveExportV2Crf(request: ExportV2StartRequest) {
 	}
 }
 
-function buildExportV2GifArgs(request: ExportV2StartRequest, outputPath: string) {
+function buildExportV2GifArgs(
+	request: ExportV2StartRequest,
+	outputPath: string,
+): ExportV2FfmpegAttempt {
 	const fps = request.frameRate;
 	const trimExpression = buildTrimSelectExpression(request.trimRegions);
 	const baseFilters: string[] = [];
@@ -1484,18 +1494,20 @@ async function validateExportV2Output({
 	const hasVideo = /Video:/i.test(probeOutput);
 	const hasAudio = /Audio:/i.test(probeOutput);
 	const formatMatches =
-		format === "gif"
-			? /gif/i.test(probeOutput)
-			: /(mov,mp4|mp4|isom|avc1|h264)/i.test(probeOutput);
+		format === "gif" ? /gif/i.test(probeOutput) : /(mov,mp4|mp4|isom|avc1|h264)/i.test(probeOutput);
 
 	if (!hasVideo) {
 		warnings.push("No video stream was detected in the exported file.");
 	}
 	if (!formatMatches) {
-		warnings.push(`The exported file did not probe as an expected ${format.toUpperCase()} container.`);
+		warnings.push(
+			`The exported file did not probe as an expected ${format.toUpperCase()} container.`,
+		);
 	}
 	if (expectAudio && format === "mp4" && !hasAudio) {
-		warnings.push("The source was expected to contain audio, but no exported audio stream was detected.");
+		warnings.push(
+			"The source was expected to contain audio, but no exported audio stream was detected.",
+		);
 	}
 	if (policy === "strict" && warnings.length > 0) {
 		throw new Error(`Export validation failed: ${warnings.join(" ")}`);
@@ -1512,28 +1524,29 @@ async function runExportV2WorkerJob(
 	request: ExportV2StartRequest,
 	owner: Electron.WebContents,
 ): Promise<ExportV2StartResult> {
-	const jobId =
-		request.jobId ?? `export-v2-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+	const jobId = request.jobId ?? `export-v2-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 	const worker = createExportWorkerWindow();
-	const workerReady =
-		worker.webContents.isLoading()
-			? new Promise<void>((resolve) => {
-					worker.webContents.once("did-finish-load", () => resolve());
-				})
-			: Promise.resolve();
+	const workerReady = worker.webContents.isLoading()
+		? new Promise<void>((resolve) => {
+				worker.webContents.once("did-finish-load", () => resolve());
+			})
+		: Promise.resolve();
 
 	await workerReady;
 
 	return await new Promise<ExportV2StartResult>((resolve) => {
-		const timeout = setTimeout(() => {
-			exportV2WorkerResolvers.delete(jobId);
-			resolve({
-				success: false,
-				fallbackToLegacy: true,
-				jobId,
-				error: "Export worker timed out.",
-			});
-		}, 30 * 60 * 1000);
+		const timeout = setTimeout(
+			() => {
+				exportV2WorkerResolvers.delete(jobId);
+				resolve({
+					success: false,
+					fallbackToLegacy: true,
+					jobId,
+					error: "Export worker timed out.",
+				});
+			},
+			30 * 60 * 1000,
+		);
 
 		exportV2WorkerResolvers.set(jobId, (result) => {
 			clearTimeout(timeout);
@@ -5714,16 +5727,16 @@ export function registerIpcHandlers(
 						? {
 								...workerResult.details,
 								validation,
-								warnings: [
-									...(workerResult.details.warnings ?? []),
-									...validation.warnings,
-								],
+								warnings: [...(workerResult.details.warnings ?? []), ...validation.warnings],
 							}
 						: workerResult.details,
 				};
 			}
 
-			if (request.selection.engine !== "direct-native") {
+			if (
+				request.selection.engine !== "direct-native" &&
+				request.selection.engine !== "native-composed"
+			) {
 				return {
 					success: false,
 					fallbackToLegacy: true,
@@ -5731,7 +5744,7 @@ export function registerIpcHandlers(
 				};
 			}
 
-			if (request.speedRegions?.length) {
+			if (request.selection.engine === "direct-native" && request.speedRegions?.length) {
 				return {
 					success: false,
 					fallbackToLegacy: true,
@@ -5760,28 +5773,109 @@ export function registerIpcHandlers(
 				return { success: false, canceled: true };
 			}
 
+			if (request.selection.engine === "native-composed") {
+				const firstEncoder = availableVideoEncoders[0];
+				const compiled = compileNativeComposedExport(request, output.path, firstEncoder);
+				if (!compiled.supported) {
+					const fallbackResult = await runExportV2WorkerJob(
+						{
+							...request,
+							outputPath: output.path,
+							selection: {
+								engine: "composited-hardware",
+								reason: compiled.fallbackReason ?? "Native composition was not supported.",
+							},
+						},
+						event.sender,
+					);
+					if (!fallbackResult.success || !fallbackResult.path) {
+						return fallbackResult;
+					}
+					let validation: { video: boolean; audio: boolean; warnings: string[] };
+					try {
+						validation = await validateExportV2Output({
+							ffmpegPath: capabilities.ffmpegPath ?? getFfmpegBinaryPath(),
+							filePath: fallbackResult.path,
+							format: request.format,
+							expectAudio: request.audioPlan?.expectAudio === true,
+							policy: request.validationPolicy ?? "warn",
+						});
+					} catch (error) {
+						return {
+							success: false,
+							fallbackToLegacy: true,
+							jobId: fallbackResult.jobId,
+							error: error instanceof Error ? error.message : String(error),
+						};
+					}
+					return {
+						...fallbackResult,
+						details: fallbackResult.details
+							? {
+									...fallbackResult.details,
+									nativeComposedFallbackReason: compiled.fallbackReason,
+									nativeComposedFeatures: compiled.featureReport,
+									fallbackApplied: true,
+									fallbackReason: fallbackResult.details.fallbackReason ?? compiled.fallbackReason,
+									validation,
+									warnings: [...(fallbackResult.details.warnings ?? []), ...validation.warnings],
+								}
+							: fallbackResult.details,
+					};
+				}
+			}
+
 			const jobId =
 				request.jobId ?? `export-v2-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+			const ffmpegEngine: ExportV2FfmpegEngine =
+				request.selection.engine === "native-composed" ? "native-composed" : "direct-native";
 			const startedAtMs = Date.now();
 			const totalFrames = Math.max(
 				1,
 				Math.ceil(((request.durationMs ?? 0) / 1000) * request.frameRate),
 			);
 			const ffmpegPath = capabilities.ffmpegPath ?? getFfmpegBinaryPath();
-			const attempts =
+			const attempts: ExportV2FfmpegAttempt[] =
 				request.format === "gif"
 					? [buildExportV2GifArgs(request, getExportV2AttemptPath(output.path, 0))]
-					: availableVideoEncoders.map((encoder) =>
-							buildExportV2VideoArgs(
-								request,
-								getExportV2AttemptPath(output.path!, availableVideoEncoders.indexOf(encoder)),
-								encoder,
-							),
-						);
+					: availableVideoEncoders.map((encoder) => {
+							const attemptPath = getExportV2AttemptPath(
+								output.path!,
+								availableVideoEncoders.indexOf(encoder),
+							);
+							if (ffmpegEngine === "native-composed") {
+								const compiled = compileNativeComposedExport(request, attemptPath, encoder);
+								if (!compiled.supported || !compiled.ffmpegArgs) {
+									return {
+										args: [],
+										encoder,
+										nativeComposedFallbackReason: compiled.fallbackReason,
+										nativeComposedFeatures: compiled.featureReport,
+									};
+								}
+								return {
+									args: compiled.ffmpegArgs,
+									encoder,
+									nativeComposedFeatures: compiled.featureReport,
+								};
+							}
+							return buildExportV2VideoArgs(request, attemptPath, encoder);
+						});
+			const runnableAttempts = attempts.filter((attempt) => attempt.args.length > 0);
+			if (runnableAttempts.length === 0) {
+				return {
+					success: false,
+					fallbackToLegacy: true,
+					jobId,
+					error:
+						attempts[0]?.nativeComposedFallbackReason ??
+						"Native composition could not produce FFmpeg arguments.",
+				};
+			}
 
 			emitExportV2Progress(event.sender, {
 				jobId,
-				engine: "direct-native",
+				engine: ffmpegEngine,
 				currentFrame: 0,
 				totalFrames,
 				percentage: 0,
@@ -5792,7 +5886,7 @@ export function registerIpcHandlers(
 			});
 
 			const failedAttempts: string[] = [];
-			for (const [attemptIndex, attempt] of attempts.entries()) {
+			for (const [attemptIndex, attempt] of runnableAttempts.entries()) {
 				const attemptPath = getExportV2AttemptPath(output.path, attemptIndex);
 				const attemptStartedAtMs = Date.now();
 				const attemptResult = await new Promise<{
@@ -5809,7 +5903,7 @@ export function registerIpcHandlers(
 						process: child,
 						outputPath: attemptPath,
 						startedAtMs,
-						engine: "direct-native",
+						engine: ffmpegEngine,
 					});
 
 					child.stderr.on("data", (chunk: Buffer) => {
@@ -5822,7 +5916,7 @@ export function registerIpcHandlers(
 						const etaSeconds = throughputFps > 0 ? remainingFrames / throughputFps : 0;
 						emitExportV2Progress(event.sender, {
 							jobId,
-							engine: "direct-native",
+							engine: ffmpegEngine,
 							currentFrame,
 							totalFrames,
 							percentage: totalFrames > 0 ? (currentFrame / totalFrames) * 100 : 0,
@@ -5900,7 +5994,7 @@ export function registerIpcHandlers(
 
 				emitExportV2Progress(event.sender, {
 					jobId,
-					engine: "direct-native",
+					engine: ffmpegEngine,
 					currentFrame: totalFrames,
 					totalFrames,
 					percentage: 100,
@@ -5937,12 +6031,14 @@ export function registerIpcHandlers(
 						fallbackApplied: failedAttempts.length > 0,
 						fallbackReason: failedAttempts[0],
 						fallbackSteps: failedAttempts.map((failure) => `Retried after ${failure}`),
-						engine: "direct-native",
+						engine: ffmpegEngine,
 						encoder: attempt.encoder.name,
 						hardwareAcceleration: attempt.encoder.hardwareAcceleration,
 						audioCodec: request.format === "mp4" ? "aac" : "none",
 						validation,
 						throughputFps,
+						nativeComposedFeatures: attempt.nativeComposedFeatures,
+						benchmarkThroughputFps: ffmpegEngine === "native-composed" ? throughputFps : undefined,
 						warnings: [...capabilities.warnings, ...validation.warnings],
 					},
 				};

@@ -11,6 +11,11 @@ const AUDIO_BITRATE = 192_000;
 const DECODE_BACKPRESSURE_LIMIT = 20;
 const MIN_SPEED_REGION_DELTA_MS = 0.0001;
 
+export interface PreparedAudioTrack {
+	chunkCount: number;
+	mux: (muxer: VideoMuxer) => Promise<void>;
+}
+
 export class AudioProcessor {
 	private cancelled = false;
 
@@ -28,6 +33,28 @@ export class AudioProcessor {
 		readEndSec?: number,
 		audioRegions?: AudioRegion[],
 	): Promise<void> {
+		const preparedAudio = await this.prepare(
+			videoUrl,
+			demuxer,
+			trimRegions,
+			speedRegions,
+			readEndSec,
+			audioRegions,
+		);
+		if (!this.cancelled && preparedAudio) {
+			await preparedAudio.mux(muxer);
+		}
+	}
+
+	async prepare(
+		videoUrl: string,
+		demuxer: WebDemuxer | null,
+		trimRegions?: TrimRegion[],
+		speedRegions?: SpeedRegion[],
+		readEndSec?: number,
+		audioRegions?: AudioRegion[],
+		options?: { independentDemuxer?: boolean },
+	): Promise<PreparedAudioTrack | null> {
 		const sortedTrims = trimRegions ? [...trimRegions].sort((a, b) => a.startMs - b.startMs) : [];
 		const sortedSpeedRegions = speedRegions
 			? [...speedRegions]
@@ -47,34 +74,49 @@ export class AudioProcessor {
 				sortedAudioRegions,
 			);
 			if (!this.cancelled) {
-				await this.muxRenderedAudioBlob(renderedAudioBlob, muxer);
-				return;
+				return await this.prepareRenderedAudioBlob(renderedAudioBlob);
 			}
+			return null;
 		}
 
 		// No speed edits or audio regions: keep the original demux/decode/encode path with trim timestamp remap.
-		await this.processTrimOnlyAudio(demuxer, muxer, sortedTrims, readEndSec);
+		if (!options?.independentDemuxer) {
+			if (!demuxer) {
+				return null;
+			}
+			return await this.prepareTrimOnlyAudio(demuxer, sortedTrims, readEndSec);
+		}
+
+		const audioDemuxer = await this.createIndependentDemuxer(videoUrl);
+		try {
+			return await this.prepareTrimOnlyAudio(audioDemuxer, sortedTrims, readEndSec);
+		} finally {
+			try {
+				audioDemuxer.destroy();
+			} catch {
+				// ignore
+			}
+		}
 	}
 
 	// Legacy trim-only path used when no speed regions are configured.
-	private async processTrimOnlyAudio(
+	private async prepareTrimOnlyAudio(
 		demuxer: WebDemuxer,
-		muxer: VideoMuxer,
 		sortedTrims: TrimRegion[],
 		readEndSec?: number,
-	): Promise<void> {
+	): Promise<PreparedAudioTrack | null> {
 		let audioConfig: AudioDecoderConfig;
 		try {
 			audioConfig = (await demuxer.getDecoderConfig("audio")) as AudioDecoderConfig;
 		} catch {
 			console.warn("[AudioProcessor] No audio track found, skipping");
-			return;
+			return null;
 		}
 
 		const codecCheck = await AudioDecoder.isConfigSupported(audioConfig);
 		if (!codecCheck.supported) {
 			console.warn("[AudioProcessor] Audio codec not supported:", audioConfig.codec);
-			return;
+			return null;
 		}
 
 		const decodedFrames: AudioData[] = [];
@@ -110,7 +152,7 @@ export class AudioProcessor {
 
 		if (this.cancelled || decodedFrames.length === 0) {
 			for (const frame of decodedFrames) frame.close();
-			return;
+			return null;
 		}
 
 		const encodedChunks: { chunk: EncodedAudioChunk; meta?: EncodedAudioChunkMetadata }[] = [];
@@ -134,7 +176,7 @@ export class AudioProcessor {
 		if (!encodeSupport.supported) {
 			console.warn("[AudioProcessor] AAC encoding not supported, skipping audio");
 			for (const frame of decodedFrames) frame.close();
-			return;
+			return null;
 		}
 
 		encoder.configure(encodeConfig);
@@ -161,10 +203,15 @@ export class AudioProcessor {
 			encoder.close();
 		}
 
-		for (const { chunk, meta } of encodedChunks) {
-			if (this.cancelled) break;
-			await muxer.addAudioChunk(chunk, meta);
-		}
+		return {
+			chunkCount: encodedChunks.length,
+			mux: async (muxer) => {
+				for (const { chunk, meta } of encodedChunks) {
+					if (this.cancelled) break;
+					await muxer.addAudioChunk(chunk, meta);
+				}
+			},
+		};
 	}
 
 	// Renders mixed audio: original video audio (with speed/trim) + external audio regions.
@@ -366,9 +413,9 @@ export class AudioProcessor {
 		return recordedBlob;
 	}
 
-	// Demuxes the rendered speed-adjusted blob and feeds encoded chunks into the MP4 muxer.
-	private async muxRenderedAudioBlob(blob: Blob, muxer: VideoMuxer): Promise<void> {
-		if (this.cancelled) return;
+	// Demuxes the rendered speed-adjusted blob and prepares encoded AAC chunks for the MP4 muxer.
+	private async prepareRenderedAudioBlob(blob: Blob): Promise<PreparedAudioTrack | null> {
+		if (this.cancelled) return null;
 
 		const file = new File([blob], "speed-audio.webm", { type: blob.type || "audio/webm" });
 		const wasmUrl = new URL("./wasm/web-demuxer.wasm", window.location.href).href;
@@ -376,7 +423,7 @@ export class AudioProcessor {
 
 		try {
 			await demuxer.load(file);
-			await this.processTrimOnlyAudio(demuxer, muxer, [], undefined);
+			return await this.prepareTrimOnlyAudio(demuxer, [], undefined);
 		} finally {
 			try {
 				demuxer.destroy();
@@ -384,6 +431,97 @@ export class AudioProcessor {
 				// ignore
 			}
 		}
+	}
+
+	private async createIndependentDemuxer(videoUrl: string): Promise<WebDemuxer> {
+		const wasmUrl = new URL("./wasm/web-demuxer.wasm", window.location.href).href;
+		const demuxer = new WebDemuxer({ wasmFilePath: wasmUrl });
+		try {
+			await demuxer.load(await this.loadVideoFile(this.resolveVideoResourceUrl(videoUrl)));
+			return demuxer;
+		} catch (error) {
+			try {
+				demuxer.destroy();
+			} catch {
+				// ignore
+			}
+			throw error;
+		}
+	}
+
+	private resolveVideoResourceUrl(videoUrl: string): string {
+		if (/^(blob:|data:|https?:|file:)/i.test(videoUrl)) {
+			return videoUrl;
+		}
+
+		if (videoUrl.startsWith("/")) {
+			return `file://${encodeURI(videoUrl)}`;
+		}
+
+		return videoUrl;
+	}
+
+	private toLocalFilePath(resourceUrl: string): string | null {
+		if (!resourceUrl.startsWith("file:")) {
+			return null;
+		}
+
+		try {
+			const url = new URL(resourceUrl);
+			let filePath = decodeURIComponent(url.pathname);
+			if (/^\/[A-Za-z]:/.test(filePath)) {
+				filePath = filePath.slice(1);
+			}
+			return filePath;
+		} catch {
+			return resourceUrl.replace(/^file:\/\//, "");
+		}
+	}
+
+	private inferMimeType(fileName: string): string {
+		const extension = fileName.split(".").pop()?.toLowerCase();
+		switch (extension) {
+			case "mov":
+				return "video/quicktime";
+			case "webm":
+				return "video/webm";
+			case "mkv":
+				return "video/x-matroska";
+			case "avi":
+				return "video/x-msvideo";
+			case "mp4":
+			default:
+				return "video/mp4";
+		}
+	}
+
+	private async loadVideoFile(resourceUrl: string): Promise<File> {
+		const filename = resourceUrl.split("/").pop() || "video";
+		const localFilePath = this.toLocalFilePath(resourceUrl);
+
+		if (localFilePath) {
+			const result = await window.electronAPI.readLocalFile(localFilePath);
+			if (!result.success || !result.data) {
+				throw new Error(result.error || "Failed to read local video file for audio export");
+			}
+
+			const bytes = result.data instanceof Uint8Array ? result.data : new Uint8Array(result.data);
+			const arrayBuffer = bytes.buffer.slice(
+				bytes.byteOffset,
+				bytes.byteOffset + bytes.byteLength,
+			) as ArrayBuffer;
+			return new File([arrayBuffer], filename, { type: this.inferMimeType(filename) });
+		}
+
+		const response = await fetch(resourceUrl);
+		if (!response.ok) {
+			throw new Error(
+				`Failed to load audio export resource: ${response.status} ${response.statusText}`,
+			);
+		}
+
+		const blob = await response.blob();
+		return new File([blob], filename, { type: blob.type || this.inferMimeType(filename) });
 	}
 
 	private startAudioRecording(stream: MediaStream): {

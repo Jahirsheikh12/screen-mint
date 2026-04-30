@@ -120,6 +120,10 @@ export function mergeGifExportDetails(
 		encoder: runtimeDetails?.encoder,
 		hardwareAcceleration: runtimeDetails?.hardwareAcceleration,
 		throughputFps: runtimeDetails?.throughputFps,
+		stageTimingsMs: runtimeDetails?.stageTimingsMs,
+		nativeComposedFallbackReason: runtimeDetails?.nativeComposedFallbackReason,
+		nativeComposedFeatures: runtimeDetails?.nativeComposedFeatures,
+		benchmarkThroughputFps: runtimeDetails?.benchmarkThroughputFps,
 		warnings: uniqueStrings([...(plan.warnings ?? []), ...(runtimeDetails?.warnings ?? [])]),
 	};
 }
@@ -149,6 +153,10 @@ export function mergeVideoExportDetails(
 		encoder: runtimeDetails?.encoder,
 		hardwareAcceleration: runtimeDetails?.hardwareAcceleration,
 		throughputFps: runtimeDetails?.throughputFps,
+		stageTimingsMs: runtimeDetails?.stageTimingsMs,
+		nativeComposedFallbackReason: runtimeDetails?.nativeComposedFallbackReason,
+		nativeComposedFeatures: runtimeDetails?.nativeComposedFeatures,
+		benchmarkThroughputFps: runtimeDetails?.benchmarkThroughputFps,
 		warnings: uniqueStrings([...(plan.warnings ?? []), ...(runtimeDetails?.warnings ?? [])]),
 	};
 }

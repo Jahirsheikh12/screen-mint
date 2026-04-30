@@ -309,30 +309,25 @@ async function main() {
 	await mkdir(wallpaperOutputDir, { recursive: true });
 	await mkdir(backgroundMusicOutputDir, { recursive: true });
 
-	const [
-		wallpaperStats,
-		backgroundMusicStats,
-		wallpaperThumbStats,
-		mediapipeBytes,
-		modelsBytes,
-	] = await Promise.all([
-		optimizeDirectory(
-			wallpaperSourceDir,
-			wallpaperOutputDir,
-			wallpaperExtensions,
-			optimizeWallpaper,
-		),
-		optimizeDirectory(
-			backgroundMusicSourceDir,
-			backgroundMusicOutputDir,
-			audioExtensions,
-			optimizeBackgroundMusic,
-			(fileName) => packagedBackgroundMusicFiles.has(fileName),
-		),
-		copyWallpaperThumbs(),
-		copyDirectory(mediapipeSourceDir, mediapipeOutputDir),
-		copyDirectory(modelsSourceDir, modelsOutputDir),
-	]);
+	const [wallpaperStats, backgroundMusicStats, wallpaperThumbStats, mediapipeBytes, modelsBytes] =
+		await Promise.all([
+			optimizeDirectory(
+				wallpaperSourceDir,
+				wallpaperOutputDir,
+				wallpaperExtensions,
+				optimizeWallpaper,
+			),
+			optimizeDirectory(
+				backgroundMusicSourceDir,
+				backgroundMusicOutputDir,
+				audioExtensions,
+				optimizeBackgroundMusic,
+				(fileName) => packagedBackgroundMusicFiles.has(fileName),
+			),
+			copyWallpaperThumbs(),
+			copyDirectory(mediapipeSourceDir, mediapipeOutputDir),
+			copyDirectory(modelsSourceDir, modelsOutputDir),
+		]);
 
 	const manifest = {
 		generatedAt: new Date().toISOString(),

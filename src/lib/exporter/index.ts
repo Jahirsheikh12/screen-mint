@@ -18,6 +18,8 @@ export { selectExportV2Engine, shouldUseDirectNativeExport } from "./exportV2";
 export { FrameRenderer } from "./frameRenderer";
 export { calculateOutputDimensions, GifExporter } from "./gifExporter";
 export { VideoMuxer } from "./muxer";
+export type { NativeComposedCompileResult } from "./nativeComposed";
+export { compileNativeComposedExport } from "./nativeComposed";
 export type {
 	ResolvedGifExportPlan,
 	ResolvedVideoExportPlan,

@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-	DEFAULT_RECORDING_RUNTIME_SETTINGS,
-	resolveRecordingTargetProfile,
-} from "./runtimeConfig";
+import { DEFAULT_RECORDING_RUNTIME_SETTINGS, resolveRecordingTargetProfile } from "./runtimeConfig";
 
 describe("runtimeConfig", () => {
 	it("uses balanced sustained defaults for auto recordings", () => {

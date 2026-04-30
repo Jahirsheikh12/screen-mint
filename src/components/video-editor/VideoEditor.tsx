@@ -4128,6 +4128,8 @@ export default function VideoEditor() {
 					cameraLayouts,
 					captionRegions,
 					captionSettings,
+					sourceWidth,
+					sourceHeight,
 				};
 
 				const tryExportV2 = async ({

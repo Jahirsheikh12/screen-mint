@@ -39,7 +39,7 @@ export class VideoMuxer {
 			});
 			this.streamTarget = new StreamTarget(writable, {
 				chunked: true,
-				chunkSize: 4 * 1024 * 1024,
+				chunkSize: 8 * 1024 * 1024,
 			});
 		} else {
 			this.target = new BufferTarget();

@@ -161,6 +161,12 @@ interface FrameLayoutCache {
 	maskRect: { x: number; y: number; width: number; height: number };
 }
 
+interface FrameShadowSettings {
+	size: number;
+	opacity: number;
+	blur: number;
+}
+
 // Renders video frames with all effects (background, zoom, crop, blur, shadow) to an offscreen canvas for export.
 
 export class FrameRenderer {
@@ -196,6 +202,13 @@ export class FrameRenderer {
 	private cursorSimulationPath: CursorSimulationPath | null = null;
 	private webcamImageCache = new Map<string, Promise<HTMLImageElement | null>>();
 	private webcamCompositionScratch = createWebcamCompositionScratch();
+	private readonly canvasScaleFactor: number;
+	private readonly annotationScaleFactor: number;
+	private readonly shadowSettings: FrameShadowSettings;
+	private readonly borderRadiusPx: number;
+	private readonly borderWidthPx: number;
+	private readonly frameBorderColorWithOpacity: string;
+	private readonly webcamCompositionRect: { x: number; y: number; width: number; height: number };
 
 	constructor(config: FrameRenderConfig) {
 		this.config = config;
@@ -203,6 +216,31 @@ export class FrameRenderer {
 		this.webcamMotionState = createWebcamZoomMotionState(DEFAULT_WEBCAM_REGION);
 		this.webcamLayoutMotionState = createWebcamZoomMotionState(DEFAULT_WEBCAM_REGION);
 		this.motionBlurState = createMotionBlurState();
+		const previewWidth = this.config.previewWidth || 1920;
+		const previewHeight = this.config.previewHeight || 1080;
+		this.canvasScaleFactor = Math.min(
+			this.config.width / previewWidth,
+			this.config.height / previewHeight,
+		);
+		this.annotationScaleFactor =
+			(this.config.width / previewWidth + this.config.height / previewHeight) / 2;
+		this.shadowSettings = {
+			size: this.config.frameShadowSize ?? this.config.shadowIntensity * 12,
+			opacity: this.config.frameShadowOpacity ?? this.config.shadowIntensity * 0.7,
+			blur: this.config.frameShadowBlur ?? this.config.shadowIntensity * 48,
+		};
+		this.borderRadiusPx = (this.config.borderRadius || 0) * this.canvasScaleFactor;
+		this.borderWidthPx = (this.config.frameBorderWidth || 0) * this.canvasScaleFactor;
+		this.frameBorderColorWithOpacity = applyOpacityToHex(
+			this.config.frameBorderColor || "#000000",
+			this.config.frameBorderOpacity ?? 0,
+		);
+		this.webcamCompositionRect = {
+			x: 0,
+			y: 0,
+			width: this.config.width,
+			height: this.config.height,
+		};
 	}
 
 	async initialize(): Promise<void> {
@@ -743,19 +781,13 @@ export class FrameRenderer {
 			this.compositeCtx
 		) {
 			// Calculate scale factor based on export vs preview dimensions
-			const previewWidth = this.config.previewWidth || 1920;
-			const previewHeight = this.config.previewHeight || 1080;
-			const scaleX = this.config.width / previewWidth;
-			const scaleY = this.config.height / previewHeight;
-			const scaleFactor = (scaleX + scaleY) / 2;
-
 			await renderAnnotations(
 				this.compositeCtx,
 				this.config.annotationRegions,
 				this.config.width,
 				this.config.height,
 				timeMs,
-				scaleFactor,
+				this.annotationScaleFactor,
 			);
 		}
 
@@ -801,13 +833,7 @@ export class FrameRenderer {
 			const webcamFrame = await this.webcamFrameProvider.getFrameAt(timeMs);
 			if (webcamFrame) {
 				try {
-					const webcamCompositionRect = {
-						x: 0,
-						y: 0,
-						width: this.config.width,
-						height: this.config.height,
-					};
-					const webcamContentRect = this.layoutCache?.maskRect ?? webcamCompositionRect;
+					const webcamContentRect = this.layoutCache?.maskRect ?? this.webcamCompositionRect;
 					const webcamEvaluation = evaluateWebcamFrame({
 						state: {
 							baseMotionState: this.webcamMotionState,
@@ -823,7 +849,7 @@ export class FrameRenderer {
 						connectZooms: this.config.connectZooms,
 						cameraSizeDuringZoom: this.config.cameraSizeDuringZoom,
 						enableCursorAvoidance: this.config.webcamEffects?.subtleAvoidance,
-						compositionRect: webcamCompositionRect,
+						compositionRect: this.webcamCompositionRect,
 						contentRect: webcamContentRect,
 						containerWidth: this.config.width,
 						containerHeight: this.config.height,
@@ -963,6 +989,7 @@ export class FrameRenderer {
 
 	private updateLayout(): void {
 		if (!this.app || !this.videoSprite || !this.maskGraphics || !this.videoContainer) return;
+		if (this.layoutCache) return;
 
 		const { width, height } = this.config;
 		const { cropRegion, borderRadius = 0, padding = 0, aspectRatio = "native" } = this.config;
@@ -985,19 +1012,13 @@ export class FrameRenderer {
 
 		this.videoContainer.position.set(0, 0);
 
-		// scale border radius by export/preview canvas ratio
-		const previewWidth = this.config.previewWidth || 1920;
-		const previewHeight = this.config.previewHeight || 1080;
-		const canvasScaleFactor = Math.min(width / previewWidth, height / previewHeight);
-		const scaledBorderRadius = borderRadius * canvasScaleFactor;
-
 		this.maskGraphics.clear();
 		this.maskGraphics.roundRect(
 			layout.maskRect.x,
 			layout.maskRect.y,
 			layout.maskRect.width,
 			layout.maskRect.height,
-			scaledBorderRadius,
+			borderRadius * this.canvasScaleFactor,
 		);
 		this.maskGraphics.fill({ color: 0xffffff });
 
@@ -1013,15 +1034,24 @@ export class FrameRenderer {
 	}
 
 	private getCanvasScaleFactor(): number {
-		const previewWidth = this.config.previewWidth || 1920;
-		const previewHeight = this.config.previewHeight || 1080;
-		return Math.min(this.config.width / previewWidth, this.config.height / previewHeight);
+		return this.canvasScaleFactor;
 	}
 
-	private drawFrameBorder(ctx: CanvasRenderingContext2D, scaleFactor: number): void {
+	private drawFrameBorder(
+		ctx: CanvasRenderingContext2D,
+		scaleFactor = this.canvasScaleFactor,
+	): void {
 		if (!this.layoutCache || !this.config.frameBorderEnabled) {
 			return;
 		}
+		const borderRadius =
+			scaleFactor === this.canvasScaleFactor
+				? this.borderRadiusPx
+				: (this.config.borderRadius || 0) * scaleFactor;
+		const borderWidthPx =
+			scaleFactor === this.canvasScaleFactor
+				? this.borderWidthPx
+				: (this.config.frameBorderWidth || 0) * scaleFactor;
 
 		const projectedFrame = projectFrameRect({
 			rect: this.layoutCache.maskRect,
@@ -1030,8 +1060,8 @@ export class FrameRenderer {
 				x: this.animationState.x,
 				y: this.animationState.y,
 			},
-			borderRadius: (this.config.borderRadius || 0) * scaleFactor,
-			borderWidth: (this.config.frameBorderWidth || 0) * scaleFactor,
+			borderRadius,
+			borderWidth: borderWidthPx,
 		});
 		const borderWidth = projectedFrame.borderWidth;
 		const borderOpacity = this.config.frameBorderOpacity ?? 0;
@@ -1039,12 +1069,11 @@ export class FrameRenderer {
 			return;
 		}
 
-		const color = applyOpacityToHex(this.config.frameBorderColor || "#000000", borderOpacity);
 		const radius = projectedFrame.borderRadius;
 		const mask = projectedFrame.rect;
 
 		ctx.save();
-		ctx.fillStyle = color;
+		ctx.fillStyle = this.frameBorderColorWithOpacity;
 		ctx.beginPath();
 		ctx.roundRect(
 			mask.x - borderWidth,
@@ -1103,11 +1132,6 @@ export class FrameRenderer {
 		const ctx = this.compositeCtx;
 		const w = this.compositeCanvas.width;
 		const h = this.compositeCanvas.height;
-		const shadowSettings = {
-			size: this.config.frameShadowSize ?? this.config.shadowIntensity * 12,
-			opacity: this.config.frameShadowOpacity ?? this.config.shadowIntensity * 0.7,
-			blur: this.config.frameShadowBlur ?? this.config.shadowIntensity * 48,
-		};
 		const canvasScaleFactor = this.getCanvasScaleFactor();
 
 		// Clear composite canvas
@@ -1128,19 +1152,19 @@ export class FrameRenderer {
 		}
 
 		// Draw the outside border beneath the video/cursor layer so it never occludes the cursor.
-		this.drawFrameBorder(ctx, canvasScaleFactor);
+		this.drawFrameBorder(ctx);
 
 		// Draw video layer with shadows on top of background and border
 		if (
 			this.config.showShadow &&
-			hasVisibleFrameShadow(shadowSettings) &&
+			hasVisibleFrameShadow(this.shadowSettings) &&
 			this.shadowCanvas &&
 			this.shadowCtx
 		) {
 			const shadowCtx = this.shadowCtx;
 			shadowCtx.clearRect(0, 0, w, h);
 			shadowCtx.save();
-			shadowCtx.filter = buildFrameShadowFilter(shadowSettings, canvasScaleFactor);
+			shadowCtx.filter = buildFrameShadowFilter(this.shadowSettings, canvasScaleFactor);
 			shadowCtx.drawImage(videoCanvas, 0, 0, w, h);
 			shadowCtx.restore();
 			ctx.drawImage(this.shadowCanvas, 0, 0, w, h);

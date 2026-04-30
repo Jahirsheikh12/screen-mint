@@ -44,9 +44,21 @@ Useful commands:
 - `npm run test`
 - `npm run i18n:check`
 
+## Public Beta
+
+ScreenMint is preparing for a public beta. Before publishing a release, use the
+[beta release checklist](./docs/BETA_RELEASE_CHECKLIST.md) and review
+[asset provenance](./docs/ASSET_PROVENANCE.md) for bundled media, models, WASM, and native helper
+artifacts.
+
 ## Project Format
 
 ScreenMint saves editor projects as `.screenmint` files. Project serialization lives in `src/components/video-editor/projectPersistence.ts`.
+
+## Architecture
+
+See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for the process model, window types, recording
+pipeline, editing pipeline, export pipeline, and current refactor targets.
 
 ## macOS Note
 
@@ -92,6 +104,11 @@ releases, you can sponsor the project on GitHub Sponsors:
 
 If you prefer one-time website support, the support options on `screenmint.live` are designed as
 separate card-checkout support purchases and remain secondary to GitHub Sponsors.
+
+## Support And Security
+
+- For bugs and beta support, see [SUPPORT.md](./SUPPORT.md).
+- For private vulnerability reports, see [SECURITY.md](./SECURITY.md).
 
 ## License
 

@@ -36,7 +36,7 @@ export function ShortcutsProvider({ children }: { children: ReactNode }) {
 	useEffect(() => {
 		getIsMac()
 			.then(setIsMac)
-			.catch(() => {});
+			.catch(() => undefined);
 
 		window.electronAPI
 			.getShortcuts?.()
@@ -45,7 +45,7 @@ export function ShortcutsProvider({ children }: { children: ReactNode }) {
 					setShortcuts(mergeWithDefaults(saved as Partial<ShortcutsConfig>));
 				}
 			})
-			.catch(() => {});
+			.catch(() => undefined);
 	}, []);
 
 	const persistShortcuts = useCallback(

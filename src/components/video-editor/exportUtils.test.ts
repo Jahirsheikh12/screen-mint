@@ -108,6 +108,9 @@ describe("exportUtils", () => {
 				engine: "direct-native",
 				encoder: "h264_videotoolbox",
 				hardwareAcceleration: "hardware",
+				nativeComposedFallbackReason: "Cursor overlays require the renderer path.",
+				nativeComposedFeatures: ["crop", "native-filtergraph"],
+				benchmarkThroughputFps: 128,
 			},
 			4_000_000,
 		);
@@ -116,6 +119,9 @@ describe("exportUtils", () => {
 		expect(details.engine).toBe("direct-native");
 		expect(details.encoder).toBe("h264_videotoolbox");
 		expect(details.hardwareAcceleration).toBe("hardware");
+		expect(details.nativeComposedFallbackReason).toBe("Cursor overlays require the renderer path.");
+		expect(details.nativeComposedFeatures).toEqual(["crop", "native-filtergraph"]);
+		expect(details.benchmarkThroughputFps).toBe(128);
 		expect(details.fallbackSteps).toEqual(plan.fallbackSteps);
 		expect(details.warnings).toEqual(plan.warnings);
 	});
