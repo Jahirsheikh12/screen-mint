@@ -24,7 +24,7 @@ export function useGSAP(
 		return () => {
 			ctx.revert();
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// biome-ignore lint/correctness/useExhaustiveDependencies: GSAP callers own the effect dependency list.
 	}, deps);
 
 	return ctxRef;

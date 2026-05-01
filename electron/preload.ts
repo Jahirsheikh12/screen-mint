@@ -1,11 +1,12 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type { WebcamSessionMetadata } from "../src/components/video-editor/types";
+import { IPC_CHANNELS } from "../src/electron-ipc/contracts";
 import type { SelectedArea } from "../src/lib/recording/session";
 import type { UpdaterState } from "../src/lib/updater/types";
 
 const assetBasePathSync = (() => {
 	try {
-		return ipcRenderer.sendSync("get-asset-base-path-sync") as string | null;
+		return ipcRenderer.sendSync(IPC_CHANNELS.assets.getBasePathSync) as string | null;
 	} catch {
 		return null;
 	}
@@ -25,16 +26,16 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		return ipcRenderer.invoke("set-hud-overlay-capture-protection", enabled);
 	},
 	getAssetBasePath: async () => {
-		return assetBasePathSync ?? (await ipcRenderer.invoke("get-asset-base-path"));
+		return assetBasePathSync ?? (await ipcRenderer.invoke(IPC_CHANNELS.assets.getBasePath));
 	},
 	getAssetBasePathSync: () => {
 		return assetBasePathSync;
 	},
 	readLocalFile: (filePath: string) => {
-		return ipcRenderer.invoke("read-local-file", filePath);
+		return ipcRenderer.invoke(IPC_CHANNELS.assets.readLocalFile, filePath);
 	},
 	getSources: async (opts: Electron.SourcesOptions) => {
-		return await ipcRenderer.invoke("get-sources", opts);
+		return await ipcRenderer.invoke(IPC_CHANNELS.capture.getSources, opts);
 	},
 	switchToEditor: () => {
 		return ipcRenderer.invoke("switch-to-editor");
@@ -46,19 +47,19 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		return ipcRenderer.invoke("open-source-selector");
 	},
 	selectSource: (source: SelectedCaptureSource) => {
-		return ipcRenderer.invoke("select-source", source);
+		return ipcRenderer.invoke(IPC_CHANNELS.capture.selectSource, source);
 	},
 	getSelectedSource: () => {
-		return ipcRenderer.invoke("get-selected-source");
+		return ipcRenderer.invoke(IPC_CHANNELS.capture.getSelectedSource);
 	},
 	setSelectedArea: (area: SelectedArea | null) => {
-		return ipcRenderer.invoke("set-selected-area", area);
+		return ipcRenderer.invoke(IPC_CHANNELS.capture.setSelectedArea, area);
 	},
 	getSelectedArea: () => {
-		return ipcRenderer.invoke("get-selected-area");
+		return ipcRenderer.invoke(IPC_CHANNELS.capture.getSelectedArea);
 	},
 	clearSelectedArea: () => {
-		return ipcRenderer.invoke("clear-selected-area");
+		return ipcRenderer.invoke(IPC_CHANNELS.capture.clearSelectedArea);
 	},
 	startNativeScreenRecording: (
 		source: SelectedCaptureSource,

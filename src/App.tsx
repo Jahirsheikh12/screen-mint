@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { UpdaterDialogs } from "@/components/updater/UpdaterDialogs";
 import { CountdownOverlay } from "./components/countdown/CountdownOverlay";
@@ -7,11 +7,16 @@ import { AreaSelectionOverlay } from "./components/launch/AreaSelectionOverlay";
 import { LaunchWindow } from "./components/launch/LaunchWindow";
 import { SourceSelector } from "./components/launch/SourceSelector";
 import { SpeakerNotesWindow } from "./components/launch/SpeakerNotesWindow";
-import { ShortcutsConfigDialog } from "./components/video-editor/ShortcutsConfigDialog";
-import VideoEditor from "./components/video-editor/VideoEditor";
 import { useI18n } from "./contexts/I18nContext";
 import { ShortcutsProvider } from "./contexts/ShortcutsContext";
 import { loadAllCustomFonts } from "./lib/customFonts";
+
+const VideoEditor = lazy(() => import("./components/video-editor/VideoEditor"));
+const ShortcutsConfigDialog = lazy(() =>
+	import("./components/video-editor/ShortcutsConfigDialog").then((module) => ({
+		default: module.ShortcutsConfigDialog,
+	})),
+);
 
 function AppLoadingScreen({ label }: { label: string }) {
 	return (
@@ -109,8 +114,14 @@ export default function App() {
 		case "editor":
 			content = (
 				<ShortcutsProvider>
-					<VideoEditor />
-					<ShortcutsConfigDialog />
+					<Suspense
+						fallback={
+							<AppLoadingScreen label={t("app.subtitle", "Screen recording and editing")} />
+						}
+					>
+						<VideoEditor />
+						<ShortcutsConfigDialog />
+					</Suspense>
 				</ShortcutsProvider>
 			);
 			break;

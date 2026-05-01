@@ -26,12 +26,17 @@ Windows builds older than 19041 fall back to Electron capture and cannot hide th
 ```bash
 git clone https://github.com/Jahirsheikh12/screen-mint.git
 cd screen-mint
-npm install
+npm ci
 npm run dev
 ```
 
 Useful commands:
 
+- `npm run lint`
+- `npm run lint:repo`
+- `npm run test`
+- `npm run i18n:check`
+- `npm run build:renderer`
 - `npm run build`
 - `npm run build:mac`
 - `npm run build:win`
@@ -40,9 +45,6 @@ Useful commands:
 - `npm run version:minor`
 - `npm run version:major`
 - `npm run version:set -- 1.2.3`
-- `npm run lint`
-- `npm run test`
-- `npm run i18n:check`
 
 ## Public Beta
 
@@ -50,6 +52,8 @@ ScreenMint is preparing for a public beta. Before publishing a release, use the
 [beta release checklist](./docs/BETA_RELEASE_CHECKLIST.md) and review
 [asset provenance](./docs/ASSET_PROVENANCE.md) for bundled media, models, WASM, and native helper
 artifacts.
+Third-party runtime and asset notices are tracked in
+[THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
 
 ## Project Format
 
@@ -77,17 +81,6 @@ bash scripts/reset-macos-capture-state.sh
 ```
 
 This resets ScreenMint-only TCC entries for Screen Recording, Microphone, and Accessibility, and removes stale helper/cache state while preserving recordings and saved settings.
-
-## Architecture
-
-ScreenMint is an Electron + React + Vite desktop app with:
-
-- a floating recording HUD
-- a dedicated editor window
-- a source selector window
-- native capture helpers for macOS
-- native Windows capture support
-- a renderer-driven export pipeline built on PixiJS and Web APIs
 
 ## Project Links
 

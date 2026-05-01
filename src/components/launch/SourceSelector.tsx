@@ -287,6 +287,7 @@ export function SourceSelector() {
 	);
 
 	const visibleSources = activeTab === "screens" ? filteredScreens : filteredWindows;
+	const focusResetKey = `${activeTab}\u0000${search}`;
 	const otherTabHasMatches =
 		search.trim().length > 0 &&
 		(activeTab === "screens" ? filteredWindows.length > 0 : filteredScreens.length > 0);
@@ -301,8 +302,9 @@ export function SourceSelector() {
 	}, [loading, screenSources.length, windowSources.length]);
 
 	useEffect(() => {
+		void focusResetKey;
 		setFocusIndex(0);
-	}, [activeTab, search]);
+	}, [focusResetKey]);
 
 	useEffect(() => {
 		if (focusIndex >= visibleSources.length) {

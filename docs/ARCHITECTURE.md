@@ -67,7 +67,8 @@ Export code lives in `src/lib/exporter`.
 
 ## Public Beta Refactor Targets
 
-The largest maintenance risks are known and should be split gradually:
+The largest maintenance risks are known and should be split gradually. Preserve IPC channel names and
+the `.screenmint` project format during the first cleanup phase.
 
 - `electron/ipc/handlers.ts` into domain-specific IPC registration modules.
 - `src/components/video-editor/VideoEditor.tsx` into lifecycle/export/media/caption/history hooks.
@@ -76,3 +77,10 @@ The largest maintenance risks are known and should be split gradually:
   modules.
 
 Refactors should keep the current test suite green after every slice.
+
+## IPC Contracts
+
+Shared IPC channel names and early request/response contracts live in
+`src/electron-ipc/contracts.ts`. New IPC work should add channel names there first, then use the
+shared constants from preload and main-process handlers. This keeps the public bridge stable while
+the large handler file is split by domain.

@@ -1,7 +1,7 @@
 name: Feature Request
-description: Suggest an idea for this project
+description: Suggest an improvement for ScreenMint.
 title: "[Feature]: "
-labels: ["enhancement", "feature-request"]
+labels: ["enhancement", "feature-request", "beta-feedback"]
 body:
   - type: checkboxes
     attributes:
@@ -17,6 +17,24 @@ body:
       label: Is your feature request related to a problem?
       description: A clear and concise description of what the problem is.
       placeholder: e.g., I'm always frustrated when I have to...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: workflow-area
+    attributes:
+      label: Workflow area
+      description: Which part of ScreenMint would this improve?
+      options:
+        - Recording
+        - Editor
+        - Timeline
+        - Captions
+        - Export
+        - Project files
+        - Website/download
+        - Developer experience
+        - Other
     validations:
       required: true
 
@@ -46,4 +64,3 @@ body:
       placeholder: Links, mockups, or any additional information
     validations:
       required: false
-

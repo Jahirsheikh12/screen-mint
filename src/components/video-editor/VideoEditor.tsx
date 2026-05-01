@@ -60,9 +60,9 @@ import {
 	resolveVideoExportPlan,
 	StreamingVideoDecoder,
 	selectExportV2Engine,
-	VideoExporter,
 	type VideoExportSettings,
 } from "@/lib/exporter";
+import { VideoExporter } from "@/lib/exporter/videoExporter";
 import {
 	deriveVideoNameFromPath,
 	ensureFileExtension,

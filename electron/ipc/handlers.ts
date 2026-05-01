@@ -6,7 +6,7 @@ import fs, { type FileHandle } from "node:fs/promises";
 import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import {
 	app,
@@ -24,6 +24,7 @@ import {
 	type WebcamCaptureProfile,
 	type WebcamSessionMetadata,
 } from "../../src/components/video-editor/types";
+import { IPC_CHANNELS } from "../../src/electron-ipc/contracts";
 import type {
 	ExportV2Capabilities,
 	ExportV2EncoderCandidate,
@@ -71,6 +72,7 @@ import {
 	unlockAreaOverlayWindow,
 	updateSpeakerNotesWindow,
 } from "../windows";
+import { registerAssetIpcHandlers } from "./assetHandlers";
 import {
 	type CursorMoveSampleCandidate,
 	shouldRecordCursorMoveSample,
@@ -4219,7 +4221,9 @@ export function registerIpcHandlers(
 	getSourceSelectorWindow: () => BrowserWindow | null,
 	onRecordingStateChange?: (recording: boolean, sourceName: string) => void,
 ) {
-	ipcMain.handle("get-sources", async (_, opts) => {
+	registerAssetIpcHandlers();
+
+	ipcMain.handle(IPC_CHANNELS.capture.getSources, async (_, opts) => {
 		const includeScreens = Array.isArray(opts?.types) ? opts.types.includes("screen") : true;
 		const includeWindows = Array.isArray(opts?.types) ? opts.types.includes("window") : true;
 		const electronTypes = [
@@ -4409,7 +4413,7 @@ export function registerIpcHandlers(
 		}
 	});
 
-	ipcMain.handle("select-source", (_, source: SelectedSource) => {
+	ipcMain.handle(IPC_CHANNELS.capture.selectSource, (_, source: SelectedSource) => {
 		selectedSource = source;
 		userExplicitlySelectedSource = true;
 		if (!getSelectedAreaForSource(source)) {
@@ -4424,7 +4428,7 @@ export function registerIpcHandlers(
 		return selectedSource;
 	});
 
-	ipcMain.handle("auto-select-cursor-display", async () => {
+	ipcMain.handle(IPC_CHANNELS.capture.autoSelectCursorDisplay, async () => {
 		if (userExplicitlySelectedSource && selectedSource) {
 			return { success: true, source: selectedSource };
 		}
@@ -4453,21 +4457,21 @@ export function registerIpcHandlers(
 		}
 	});
 
-	ipcMain.handle("get-selected-source", () => {
+	ipcMain.handle(IPC_CHANNELS.capture.getSelectedSource, () => {
 		return selectedSource;
 	});
 
-	ipcMain.handle("set-selected-area", (_, area: SelectedArea | null) => {
+	ipcMain.handle(IPC_CHANNELS.capture.setSelectedArea, (_, area: SelectedArea | null) => {
 		selectedArea = area;
 		notifySelectedAreaChanged();
 		return { success: true, area: selectedArea };
 	});
 
-	ipcMain.handle("get-selected-area", () => {
+	ipcMain.handle(IPC_CHANNELS.capture.getSelectedArea, () => {
 		return { success: true, area: selectedArea };
 	});
 
-	ipcMain.handle("clear-selected-area", () => {
+	ipcMain.handle(IPC_CHANNELS.capture.clearSelectedArea, () => {
 		selectedArea = null;
 		notifySelectedAreaChanged();
 		return { success: true };
@@ -5551,42 +5555,9 @@ export function registerIpcHandlers(
 		}
 	});
 
-	const resolveAssetBasePath = () => {
-		try {
-			if (app.isPackaged) {
-				const assetPath = path.join(process.resourcesPath, "assets");
-				return pathToFileURL(`${assetPath}${path.sep}`).toString();
-			}
-			const assetPath = path.join(app.getAppPath(), "public");
-			return pathToFileURL(`${assetPath}${path.sep}`).toString();
-		} catch (err) {
-			console.error("Failed to resolve asset base path:", err);
-			return null;
-		}
-	};
+	ipcMain.handle(IPC_CHANNELS.exportV2.probe, async () => getCachedExportV2Capabilities());
 
-	// Return base path for assets so renderer can resolve file:// paths in production
-	ipcMain.handle("get-asset-base-path", () => {
-		return resolveAssetBasePath();
-	});
-
-	ipcMain.on("get-asset-base-path-sync", (event) => {
-		event.returnValue = resolveAssetBasePath();
-	});
-
-	ipcMain.handle("read-local-file", async (_, filePath: string) => {
-		try {
-			const data = await fs.readFile(filePath);
-			return { success: true, data };
-		} catch (error) {
-			console.error("Failed to read local file:", error);
-			return { success: false, error: String(error) };
-		}
-	});
-
-	ipcMain.handle("exportV2:probe", async () => getCachedExportV2Capabilities());
-
-	ipcMain.handle("exportV2:createWorker", async () => {
+	ipcMain.handle(IPC_CHANNELS.exportV2.createWorker, async () => {
 		try {
 			createExportWorkerWindow();
 			return { success: true };

@@ -34,11 +34,19 @@
 ## Testing Guide
 <!-- Describe how reviewers can test the changes. Include steps, commands, or environment setup. -->
 
+## Platform Testing
+<!-- Mark every platform you tested, or explain why it was not relevant. -->
+- [ ] macOS
+- [ ] Windows
+- [ ] Linux
+- [ ] Not platform-specific
+
 ## Checklist
 - [ ] I have performed a self-review of my code.
+- [ ] I have run the relevant checks (`npm run lint`, `npm run test`, `npm run i18n:check`, or platform-specific builds).
 - [ ] I have added any necessary screenshots or videos.
+- [ ] I have updated docs or translation files when needed.
 - [ ] I have linked related issue(s) and updated the changelog if applicable.
 
 ---
 *Thank you for contributing!*
-

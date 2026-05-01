@@ -7,6 +7,7 @@ Use this checklist before publishing a public beta release.
 - Confirm `README.md` accurately describes platform support, setup, and beta limitations.
 - Confirm `CONTRIBUTING.md`, `SECURITY.md`, `SUPPORT.md`, and `CHANGELOG.md` are current.
 - Confirm bundled assets have documented provenance in `docs/ASSET_PROVENANCE.md`.
+- Confirm third-party runtime and media notices are current in `THIRD_PARTY_NOTICES.md`.
 - Confirm no local editor, generated, or release artifacts are committed accidentally.
 - Confirm dependency licenses are compatible with the project license.
 
@@ -14,6 +15,7 @@ Use this checklist before publishing a public beta release.
 
 - Run `npm ci` on a clean checkout.
 - Run `npm run lint`.
+- Run `npm run lint:repo`.
 - Run `npm run test`.
 - Run `npm run i18n:check`.
 - Run `npm run build:asset-pack`.

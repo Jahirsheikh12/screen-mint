@@ -1,7 +1,7 @@
 name: Bug Report
-description: Create a report to help us improve. If you are not sure what you are experiencing is a bug, report it anyway. We would rather you submit an unprofessional bug report than not report it at all.
+description: Report a ScreenMint beta bug.
 title: "[Bug]: "
-labels: ["bug", "triage"]
+labels: ["bug", "triage", "beta-feedback"]
 body:
   - type: checkboxes
     attributes:
@@ -32,15 +32,60 @@ body:
   - type: textarea
     id: steps-to-reproduce
     attributes:
-      label: To Reproduce
+      label: Steps to reproduce
       description: Steps to reproduce the behavior.
       placeholder: |
-        1. Go to '...'
-        2. Click on '....'
-        3. Scroll down to '....'
-        4. See error
+        1. Open ScreenMint...
+        2. Select display/window/area...
+        3. Start recording...
+        4. See error...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: affected-area
+    attributes:
+      label: Affected area
+      description: Where did the problem happen?
+      options:
+        - Launch/HUD
+        - Source selection
+        - Recording
+        - Editor
+        - Timeline
+        - Captions
+        - Export
+        - Updater
+        - Website/download
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: capture-source
+    attributes:
+      label: Capture source type
+      description: If this is a recording issue, what were you recording?
+      options:
+        - Not recording related
+        - Full display
+        - Window
+        - Selected area
+        - Imported video
+        - Other
     validations:
       required: false
+
+  - type: checkboxes
+    id: audio-settings
+    attributes:
+      label: Audio settings
+      description: Select any audio sources that were enabled.
+      options:
+        - label: Microphone
+        - label: System audio
+        - label: No audio
+        - label: Not recording related
 
   - type: textarea
     id: screenshots
@@ -65,11 +110,20 @@ body:
       required: false
 
   - type: input
+    id: app-version
+    attributes:
+      label: ScreenMint version
+      description: Version shown in the app or release file name.
+      placeholder: e.g., 1.0.3-beta.1
+    validations:
+      required: false
+
+  - type: input
     id: os-version
     attributes:
       label: OS Version
       description: Please specify your OS version
-      placeholder: e.g., Windows 11, macOS Sonoma, Ubuntu 22.04
+      placeholder: e.g., Windows 11 23H2, macOS 15.4, Ubuntu 24.04
     validations:
       required: false
 
@@ -86,8 +140,7 @@ body:
     id: additional-context
     attributes:
       label: Additional context
-      description: Add any other context about the problem here.
-      placeholder: Links, references, or any additional information
+      description: Add logs, safe sample files, links, or anything else that helps.
+      placeholder: Please do not attach private recordings publicly.
     validations:
       required: false
-
