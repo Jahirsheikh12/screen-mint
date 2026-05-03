@@ -80,6 +80,9 @@ jobs:
             exit 1
           fi
 
+      - name: Validate asset provenance gate
+        run: npm run release:validate-provenance
+
   build-macos-x64:
     name: Build macOS x64
     needs: validate-release

@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { app, BrowserWindow, ipcMain } from "electron";
+import { IPC_CHANNELS } from "../src/electron-ipc/contracts";
 import {
 	computeHudCompactBounds,
 	DEFAULT_HUD_COMPACT_LAYOUT,
@@ -172,7 +173,7 @@ ipcMain.on("hud-overlay-hide", () => {
 	}, 16);
 });
 
-ipcMain.handle("get-hud-overlay-capture-protection", () => {
+ipcMain.handle(IPC_CHANNELS.hudOverlay.getCaptureProtection, () => {
 	const enabled = loadHudOverlayCaptureProtectionSetting();
 
 	return {
@@ -181,7 +182,7 @@ ipcMain.handle("get-hud-overlay-capture-protection", () => {
 	};
 });
 
-ipcMain.handle("set-hud-overlay-capture-protection", (_event, enabled: boolean) => {
+ipcMain.handle(IPC_CHANNELS.hudOverlay.setCaptureProtection, (_event, enabled: boolean) => {
 	loadHudOverlayCaptureProtectionSetting();
 	hudOverlayHiddenFromCapture = Boolean(enabled);
 	persistHudOverlayCaptureProtectionSetting(hudOverlayHiddenFromCapture);
@@ -201,7 +202,7 @@ ipcMain.handle("set-hud-overlay-capture-protection", (_event, enabled: boolean) 
 });
 
 ipcMain.handle(
-	"sync-hud-compact-layout",
+	IPC_CHANNELS.hudWindow.syncCompactLayout,
 	(_event, layout: { width: number; height: number } | null | undefined) => {
 		if (!layout) {
 			return;
@@ -821,11 +822,11 @@ function moveHudToCursorDisplay(): void {
 	}
 }
 
-ipcMain.handle("hud-recenter-on-cursor", () => {
+ipcMain.handle(IPC_CHANNELS.hudWindow.recenterOnCursor, () => {
 	moveHudToCursorDisplay();
 });
 
-ipcMain.handle("hud-set-dropdown-expanded", (_event, expanded: boolean) => {
+ipcMain.handle(IPC_CHANNELS.hudWindow.setDropdownExpanded, (_event, expanded: boolean) => {
 	if (!hudOverlayWindow || hudOverlayWindow.isDestroyed()) return;
 
 	const next = Boolean(expanded);
@@ -842,7 +843,7 @@ ipcMain.handle("hud-set-dropdown-expanded", (_event, expanded: boolean) => {
 	}
 });
 
-ipcMain.handle("resize-hud-window", (_event, contentVisible: boolean) => {
+ipcMain.handle(IPC_CHANNELS.hudWindow.resize, (_event, contentVisible: boolean) => {
 	if (!hudOverlayWindow || hudOverlayWindow.isDestroyed()) return;
 
 	// Skip if already in the desired state — prevents redundant setBounds flicker

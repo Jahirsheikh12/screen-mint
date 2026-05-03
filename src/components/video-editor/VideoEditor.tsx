@@ -68,19 +68,16 @@ import {
 	ensureFileExtension,
 	normalizeVideoDisplayName,
 } from "@/lib/fileNames";
-import { matchesShortcut } from "@/lib/shortcuts";
 import { type AspectRatio, getAspectRatioValue } from "@/utils/aspectRatioUtils";
-import {
-	getAudioPlaybackOffsetSeconds,
-	getAudioRegionFadeMultiplier,
-	isFileAudioSource,
-	loadAudioSelectionDurationMs,
-	resolveAudioSourceUrl,
-} from "./audioRegionUtils";
-import { applyPresetToSettings } from "./captionPresets";
+import { loadAudioSelectionDurationMs } from "./audioRegionUtils";
 import { ConfirmActionDialog, PresetNameDialog } from "./EditorDialogs";
 import { ExportDialog } from "./ExportDialog";
 import { ExportSettingsDialog } from "./ExportSettingsDialog";
+import {
+	cloneEditorHistorySnapshot,
+	type EditorHistorySnapshot,
+	useEditorHistory,
+} from "./editorHistory";
 import { editorPersistenceService } from "./editorPersistenceService";
 import {
 	DEFAULT_EDITOR_PREFERENCES,
@@ -88,11 +85,7 @@ import {
 	type EditorWorkspaceLayout,
 } from "./editorPreferences";
 import { editorPreferencesService } from "./editorPreferencesService";
-import {
-	type ConfirmDialogState,
-	createInitialEditorSessionState,
-	editorSessionReducer,
-} from "./editorSession";
+import { createInitialEditorSessionState, editorSessionReducer } from "./editorSession";
 import { createExportProgressThrottler } from "./exportProgressThrottler";
 import {
 	buildSourceVideoMetadata,
@@ -103,7 +96,6 @@ import {
 import { getLegacyShadowIntensityFromFrameShadow } from "./frameEffects";
 import { deriveKeyboardShortcutCallouts } from "./keyboardShortcuts";
 import {
-	isPostRecordingAutoZoomPending,
 	type PostRecordingAutoZoomBootstrapState,
 	resolvePostRecordingAutoZoomDecision,
 } from "./postRecordingAutoZoomUtils";
@@ -125,18 +117,12 @@ import {
 	type AudioRegion,
 	type AudioTrackSelection,
 	type BlurData,
-	CAPTION_STYLE_PRESETS,
 	type CameraLayoutRegion,
 	type CaptionGenerationOptions,
 	type CaptionGenerationProgress,
 	type CaptionModelStatus,
-	type CaptionPositionOverride,
-	type CaptionRegion,
-	type CaptionSegment,
 	type CaptionSettings,
-	type CaptionStylePreset,
 	type CaptionTrack,
-	type CaptionUserPreset,
 	type CropRegion,
 	type CursorTelemetryPoint,
 	clampFocusToDepth,
@@ -176,8 +162,20 @@ import {
 	type ZoomMode,
 	type ZoomRegion,
 } from "./types";
+import { useDefaultExportSettings } from "./useDefaultExportSettings";
+import { usePostRecordingActions } from "./usePostRecordingActions";
+import { useSourceVideoMetadata } from "./useSourceVideoMetadata";
+import { useTimelineSelectionPruning } from "./useTimelineSelectionPruning";
+import { useVideoEditorAudioPreview } from "./useVideoEditorAudioPreview";
+import { useVideoEditorCaptions } from "./useVideoEditorCaptions";
+import { type PendingExportSave, useVideoEditorExportActions } from "./useVideoEditorExportActions";
+import { useVideoEditorKeyboardShortcuts } from "./useVideoEditorKeyboardShortcuts";
+import { useVideoEditorMediaAvailability } from "./useVideoEditorMediaAvailability";
+import { useVideoEditorProjectActions } from "./useVideoEditorProjectActions";
+import { useVideoEditorProjectFileActions } from "./useVideoEditorProjectFileActions";
+import { useVideoNameEditing } from "./useVideoNameEditing";
 import { VideoEditorSkeleton } from "./VideoEditorSkeleton";
-import VideoPlayback, { VideoPlaybackRef } from "./VideoPlayback";
+import VideoPlayback from "./VideoPlayback";
 import {
 	buildLoopedCursorTelemetry,
 	getDisplayedTimelineWindowMs,
@@ -187,43 +185,13 @@ import {
 	evaluateCursorMotionSnapshot,
 } from "./videoPlayback/cursorSimulation";
 import { composeCropRegions, deriveLegacyCaptureCorrectionCrop } from "./videoPlayback/layoutUtils";
+import type { VideoPlaybackRef } from "./videoPlayback/playbackTypes";
 import { resolveZoomRegionFocus } from "./videoPlayback/smartZoomController";
 import { findDominantRegion } from "./videoPlayback/zoomRegionUtils";
 import { applyWebcamStylePreset, normalizeWebcamEffects } from "./webcamEffects";
 import { normalizeWebcamRegion } from "./webcamRegionUtils";
 
 const LOOP_CURSOR_END_WINDOW_MS = 670;
-
-type EditorHistorySnapshot = {
-	zoomRegions: ZoomRegion[];
-	trimRegions: TrimRegion[];
-	cutPoints: number[];
-	speedRegions: SpeedRegion[];
-	annotationRegions: AnnotationRegion[];
-	audioRegions: AudioRegion[];
-	cameraLayouts: CameraLayoutRegion[];
-	webcamRegion: WebcamRegion;
-	webcamEffects: WebcamEffects;
-	webcamPreviewMode: WebcamPreviewMode;
-	showWebcam: boolean;
-	mirrorWebcam: boolean;
-	cameraSizeDuringZoom: number;
-	selectedCameraLayoutId: string | null;
-	webcamSelected: boolean;
-	selectedZoomId: string | null;
-	selectedTrimId: string | null;
-	selectedSpeedId: string | null;
-	selectedAnnotationId: string | null;
-	selectedAudioId: string | null;
-	captionTrack: CaptionTrack | null;
-	captionSettings: CaptionSettings;
-	selectedCaptionId: string | null;
-};
-
-type PendingExportSave = {
-	fileName: string;
-	blob: Blob;
-};
 
 function getWorkspaceLayoutSizes(layout: EditorWorkspaceLayout): [number, number] {
 	if (layout === "preview-focus") {
@@ -296,9 +264,20 @@ export default function VideoEditor() {
 	);
 	const [videoPath, setVideoPath] = useState<string | null>(null);
 	const [videoSourcePath, setVideoSourcePath] = useState<string | null>(null);
-	const [videoName, setVideoName] = useState("Untitled");
-	const [draftVideoName, setDraftVideoName] = useState("Untitled");
-	const [isEditingVideoName, setIsEditingVideoName] = useState(false);
+	const {
+		videoName,
+		setVideoName,
+		draftVideoName,
+		setDraftVideoName,
+		isEditingVideoName,
+		setIsEditingVideoName,
+		videoNameInputRef,
+		startVideoNameEdit,
+		commitVideoNameEdit,
+		cancelVideoNameEdit,
+		handleVideoNameInputBlur,
+		handleVideoNameInputKeyDown,
+	} = useVideoNameEditing("Untitled");
 	const [videoHasAudio, setVideoHasAudio] = useState(false);
 	const [clipVolume, setClipVolume] = useState(1);
 	const [loading, setLoading] = useState(true);
@@ -505,17 +484,7 @@ export default function VideoEditor() {
 	const nextCaptionIdRef = useRef(1);
 	const exporterRef = useRef<VideoExporter | null>(null);
 	const exportV2JobIdRef = useRef<string | null>(null);
-	const historyPastRef = useRef<EditorHistorySnapshot[]>([]);
-	const historyFutureRef = useRef<EditorHistorySnapshot[]>([]);
-	const historyCurrentRef = useRef<EditorHistorySnapshot | null>(null);
-	const applyingHistoryRef = useRef(false);
 	const pendingExportSaveRef = useRef<PendingExportSave | null>(null);
-	const videoNameInputRef = useRef<HTMLInputElement | null>(null);
-	const videoNameEditCanceledRef = useRef(false);
-	const webcamAvailabilityRequestRef = useRef(0);
-	const notifiedMissingWebcamPathRef = useRef<string | null>(null);
-	const audioAvailabilityRequestRef = useRef(0);
-	const handledPostRecordingContextRef = useRef<string | null>(null);
 	const resolvedWebcamPath = missingWebcamPath ? null : webcamPath;
 	const currentProjectPath = sessionState.currentProjectPath;
 	const isExporting = sessionState.isExporting;
@@ -545,113 +514,30 @@ export default function VideoEditor() {
 		[frameShadowBlur, frameShadowOpacity, frameShadowSize],
 	);
 
-	useEffect(() => {
-		let cancelled = false;
-		const decoder = videoPath ? new StreamingVideoDecoder() : null;
+	useSourceVideoMetadata({
+		videoPath,
+		setSourceFrameRate,
+		setVideoHasAudio,
+	});
 
-		if (!videoPath) {
-			setSourceFrameRate(60);
-			return;
-		}
-
-		void decoder
-			?.loadMetadata(videoPath)
-			.then((metadata) => {
-				if (cancelled) {
-					return;
-				}
-				setSourceFrameRate(resolveSourceFrameRate(metadata.frameRate));
-				setVideoHasAudio(metadata.hasAudio);
-			})
-			.catch((error) => {
-				if (cancelled) {
-					return;
-				}
-				console.warn("[VideoEditor] Failed to load source FPS for export planning:", error);
-				setSourceFrameRate(60);
-			})
-			.finally(() => {
-				decoder?.destroy();
-			});
-
-		return () => {
-			cancelled = true;
-			decoder?.destroy();
-		};
-	}, [videoPath]);
-
-	useEffect(() => {
-		if (!isEditingVideoName) {
-			return;
-		}
-
-		requestAnimationFrame(() => {
-			videoNameInputRef.current?.focus();
-			videoNameInputRef.current?.select();
+	const { clearWebcamState, syncWebcamAvailability, syncAudioAvailability } =
+		useVideoEditorMediaAvailability({
+			aspectRatio: initialEditorPreferences.aspectRatio,
+			setWebcamPath,
+			setMissingWebcamPath,
+			setWebcamSessionMetadata,
+			setWebcamRegion,
+			setWebcamEffects,
+			setWebcamHealthMetrics,
+			setWebcamPreviewMode,
+			setShowWebcam,
+			setMirrorWebcam,
+			setCameraSizeDuringZoom,
+			setCameraLayouts,
+			setSelectedCameraLayoutId,
+			setWebcamSelected,
+			setMissingAudioPathsById,
 		});
-	}, [isEditingVideoName]);
-
-	const startVideoNameEdit = useCallback(() => {
-		setDraftVideoName(videoName);
-		setIsEditingVideoName(true);
-	}, [videoName]);
-
-	const commitVideoNameEdit = useCallback(() => {
-		const nextVideoName = normalizeVideoDisplayName(draftVideoName);
-		setVideoName(nextVideoName);
-		setDraftVideoName(nextVideoName);
-		setIsEditingVideoName(false);
-	}, [draftVideoName]);
-
-	const cancelVideoNameEdit = useCallback(() => {
-		videoNameEditCanceledRef.current = true;
-		setDraftVideoName(videoName);
-		setIsEditingVideoName(false);
-	}, [videoName]);
-
-	const handleVideoNameInputBlur = useCallback(() => {
-		if (videoNameEditCanceledRef.current) {
-			videoNameEditCanceledRef.current = false;
-			return;
-		}
-
-		commitVideoNameEdit();
-	}, [commitVideoNameEdit]);
-
-	const handleVideoNameInputKeyDown = useCallback(
-		(event: React.KeyboardEvent<HTMLInputElement>) => {
-			if (event.key === "Enter") {
-				event.preventDefault();
-				commitVideoNameEdit();
-				return;
-			}
-
-			if (event.key === "Escape") {
-				event.preventDefault();
-				cancelVideoNameEdit();
-			}
-		},
-		[cancelVideoNameEdit, commitVideoNameEdit],
-	);
-
-	const clearWebcamState = useCallback(() => {
-		const recommendedWebcamDefaults = getRecommendedWebcamDefaults(
-			initialEditorPreferences.aspectRatio,
-		);
-		setWebcamPath(null);
-		setMissingWebcamPath(null);
-		setWebcamSessionMetadata(null);
-		setWebcamRegion(recommendedWebcamDefaults.region);
-		setWebcamEffects(recommendedWebcamDefaults.effects);
-		setWebcamHealthMetrics(null);
-		setWebcamPreviewMode(DEFAULT_WEBCAM_PREVIEW_MODE);
-		setShowWebcam(recommendedWebcamDefaults.showWebcam);
-		setMirrorWebcam(recommendedWebcamDefaults.mirrorWebcam);
-		setCameraSizeDuringZoom(recommendedWebcamDefaults.cameraSizeDuringZoom);
-		setCameraLayouts([]);
-		setSelectedCameraLayoutId(null);
-		setWebcamSelected(false);
-	}, [initialEditorPreferences.aspectRatio]);
 
 	const builtInPresets = useMemo<EditorPreset[]>(
 		() => [
@@ -904,90 +790,6 @@ export default function VideoEditor() {
 		[],
 	);
 
-	const syncWebcamAvailability = useCallback(
-		async (candidatePath: string | null, options: { quiet?: boolean } = {}) => {
-			const requestId = ++webcamAvailabilityRequestRef.current;
-
-			if (!candidatePath) {
-				setMissingWebcamPath(null);
-				notifiedMissingWebcamPathRef.current = null;
-				return true;
-			}
-
-			const result = await window.electronAPI.checkFileAvailable(candidatePath);
-			if (requestId !== webcamAvailabilityRequestRef.current) {
-				return false;
-			}
-
-			if (result.success && result.exists) {
-				setMissingWebcamPath(null);
-				notifiedMissingWebcamPathRef.current = null;
-				return true;
-			}
-
-			setMissingWebcamPath(candidatePath);
-			if (!options.quiet && notifiedMissingWebcamPathRef.current !== candidatePath) {
-				notifiedMissingWebcamPathRef.current = candidatePath;
-				toast.warning("Webcam source is missing. Relink it or remove it from the project.");
-			}
-
-			return false;
-		},
-		[],
-	);
-
-	const syncAudioAvailability = useCallback(async (regions: AudioRegion[]) => {
-		const requestId = ++audioAvailabilityRequestRef.current;
-		const nextMissingEntries = await Promise.all(
-			regions
-				.filter((region) => isFileAudioSource(region) && region.audioPath)
-				.map(async (region) => {
-					const result = await window.electronAPI.checkFileAvailable(region.audioPath ?? "");
-					return result.success && result.exists
-						? null
-						: ([region.id, region.audioPath ?? ""] as const);
-				}),
-		);
-
-		if (requestId !== audioAvailabilityRequestRef.current) {
-			return;
-		}
-
-		setMissingAudioPathsById(
-			Object.fromEntries(nextMissingEntries.filter(Boolean) as Array<[string, string]>),
-		);
-	}, []);
-
-	const cloneSnapshot = useCallback((snapshot: EditorHistorySnapshot): EditorHistorySnapshot => {
-		return {
-			zoomRegions: JSON.parse(JSON.stringify(snapshot.zoomRegions)),
-			trimRegions: JSON.parse(JSON.stringify(snapshot.trimRegions)),
-			cutPoints: [...snapshot.cutPoints],
-			speedRegions: JSON.parse(JSON.stringify(snapshot.speedRegions)),
-			annotationRegions: JSON.parse(JSON.stringify(snapshot.annotationRegions)),
-			audioRegions: JSON.parse(JSON.stringify(snapshot.audioRegions)),
-			cameraLayouts: JSON.parse(JSON.stringify(snapshot.cameraLayouts)),
-			webcamRegion: JSON.parse(JSON.stringify(snapshot.webcamRegion)),
-			webcamEffects: JSON.parse(JSON.stringify(snapshot.webcamEffects)),
-			webcamPreviewMode: snapshot.webcamPreviewMode,
-			showWebcam: snapshot.showWebcam,
-			mirrorWebcam: snapshot.mirrorWebcam,
-			cameraSizeDuringZoom: snapshot.cameraSizeDuringZoom,
-			selectedCameraLayoutId: snapshot.selectedCameraLayoutId,
-			webcamSelected: snapshot.webcamSelected,
-			selectedZoomId: snapshot.selectedZoomId,
-			selectedTrimId: snapshot.selectedTrimId,
-			selectedSpeedId: snapshot.selectedSpeedId,
-			selectedAnnotationId: snapshot.selectedAnnotationId,
-			selectedAudioId: snapshot.selectedAudioId,
-			captionTrack: snapshot.captionTrack
-				? JSON.parse(JSON.stringify(snapshot.captionTrack))
-				: null,
-			captionSettings: JSON.parse(JSON.stringify(snapshot.captionSettings)),
-			selectedCaptionId: snapshot.selectedCaptionId,
-		};
-	}, []);
-
 	const buildHistorySnapshot = useCallback((): EditorHistorySnapshot => {
 		return {
 			zoomRegions,
@@ -1040,91 +842,68 @@ export default function VideoEditor() {
 		selectedCaptionId,
 	]);
 
-	const applyHistorySnapshot = useCallback(
-		(snapshot: EditorHistorySnapshot) => {
-			applyingHistoryRef.current = true;
-			const cloned = cloneSnapshot(snapshot);
-			setZoomRegions(cloned.zoomRegions);
-			setTrimRegions(cloned.trimRegions);
-			setCutPoints(cloned.cutPoints);
-			setSpeedRegions(cloned.speedRegions);
-			setAnnotationRegions(cloned.annotationRegions);
-			setAudioRegions(cloned.audioRegions);
-			setCameraLayouts(cloned.cameraLayouts);
-			setWebcamRegion(cloned.webcamRegion);
-			setWebcamEffects(cloned.webcamEffects);
-			setWebcamPreviewMode(cloned.webcamPreviewMode);
-			setShowWebcam(cloned.showWebcam);
-			setMirrorWebcam(cloned.mirrorWebcam);
-			setCameraSizeDuringZoom(cloned.cameraSizeDuringZoom);
-			setSelectedCameraLayoutId(cloned.selectedCameraLayoutId);
-			setWebcamSelected(cloned.webcamSelected);
-			setSelectedZoomId(cloned.selectedZoomId);
-			setSelectedTrimId(cloned.selectedTrimId);
-			setSelectedSpeedId(cloned.selectedSpeedId);
-			setSelectedAnnotationId(cloned.selectedAnnotationId);
-			setSelectedAudioId(cloned.selectedAudioId);
-			setCaptionTrack(cloned.captionTrack);
-			setCaptionSettings(cloned.captionSettings);
-			setSelectedCaptionId(cloned.selectedCaptionId);
+	const applyHistorySnapshot = useCallback((snapshot: EditorHistorySnapshot) => {
+		const cloned = cloneEditorHistorySnapshot(snapshot);
+		setZoomRegions(cloned.zoomRegions);
+		setTrimRegions(cloned.trimRegions);
+		setCutPoints(cloned.cutPoints);
+		setSpeedRegions(cloned.speedRegions);
+		setAnnotationRegions(cloned.annotationRegions);
+		setAudioRegions(cloned.audioRegions);
+		setCameraLayouts(cloned.cameraLayouts);
+		setWebcamRegion(cloned.webcamRegion);
+		setWebcamEffects(cloned.webcamEffects);
+		setWebcamPreviewMode(cloned.webcamPreviewMode);
+		setShowWebcam(cloned.showWebcam);
+		setMirrorWebcam(cloned.mirrorWebcam);
+		setCameraSizeDuringZoom(cloned.cameraSizeDuringZoom);
+		setSelectedCameraLayoutId(cloned.selectedCameraLayoutId);
+		setWebcamSelected(cloned.webcamSelected);
+		setSelectedZoomId(cloned.selectedZoomId);
+		setSelectedTrimId(cloned.selectedTrimId);
+		setSelectedSpeedId(cloned.selectedSpeedId);
+		setSelectedAnnotationId(cloned.selectedAnnotationId);
+		setSelectedAudioId(cloned.selectedAudioId);
+		setCaptionTrack(cloned.captionTrack);
+		setCaptionSettings(cloned.captionSettings);
+		setSelectedCaptionId(cloned.selectedCaptionId);
 
-			nextZoomIdRef.current = deriveNextId(
-				"zoom",
-				cloned.zoomRegions.map((region) => region.id),
-			);
-			nextTrimIdRef.current = deriveNextId(
-				"trim",
-				cloned.trimRegions.map((region) => region.id),
-			);
-			nextSpeedIdRef.current = deriveNextId(
-				"speed",
-				cloned.speedRegions.map((region) => region.id),
-			);
-			nextAnnotationIdRef.current = deriveNextId(
-				"annotation",
-				cloned.annotationRegions.map((region) => region.id),
-			);
-			nextAudioIdRef.current = deriveNextId(
-				"audio",
-				cloned.audioRegions.map((region) => region.id),
-			);
-			nextCameraLayoutIdRef.current = deriveNextId(
-				"camera-layout",
-				cloned.cameraLayouts.map((layout) => layout.id),
-			);
-			nextCaptionIdRef.current = deriveNextId(
-				"caption",
-				(cloned.captionTrack?.segments ?? []).map((region) => region.id),
-			);
-			nextAnnotationZIndexRef.current =
-				cloned.annotationRegions.reduce((max, region) => Math.max(max, region.zIndex), 0) + 1;
-		},
-		[cloneSnapshot],
-	);
+		nextZoomIdRef.current = deriveNextId(
+			"zoom",
+			cloned.zoomRegions.map((region) => region.id),
+		);
+		nextTrimIdRef.current = deriveNextId(
+			"trim",
+			cloned.trimRegions.map((region) => region.id),
+		);
+		nextSpeedIdRef.current = deriveNextId(
+			"speed",
+			cloned.speedRegions.map((region) => region.id),
+		);
+		nextAnnotationIdRef.current = deriveNextId(
+			"annotation",
+			cloned.annotationRegions.map((region) => region.id),
+		);
+		nextAudioIdRef.current = deriveNextId(
+			"audio",
+			cloned.audioRegions.map((region) => region.id),
+		);
+		nextCameraLayoutIdRef.current = deriveNextId(
+			"camera-layout",
+			cloned.cameraLayouts.map((layout) => layout.id),
+		);
+		nextCaptionIdRef.current = deriveNextId(
+			"caption",
+			(cloned.captionTrack?.segments ?? []).map((region) => region.id),
+		);
+		nextAnnotationZIndexRef.current =
+			cloned.annotationRegions.reduce((max, region) => Math.max(max, region.zIndex), 0) + 1;
+	}, []);
 
-	const handleUndo = useCallback(() => {
-		if (historyPastRef.current.length === 0) return;
-
-		const current = historyCurrentRef.current ?? cloneSnapshot(buildHistorySnapshot());
-		const previous = historyPastRef.current.pop();
-		if (!previous) return;
-
-		historyFutureRef.current.push(cloneSnapshot(current));
-		historyCurrentRef.current = cloneSnapshot(previous);
-		applyHistorySnapshot(previous);
-	}, [applyHistorySnapshot, buildHistorySnapshot, cloneSnapshot]);
-
-	const handleRedo = useCallback(() => {
-		if (historyFutureRef.current.length === 0) return;
-
-		const current = historyCurrentRef.current ?? cloneSnapshot(buildHistorySnapshot());
-		const next = historyFutureRef.current.pop();
-		if (!next) return;
-
-		historyPastRef.current.push(cloneSnapshot(current));
-		historyCurrentRef.current = cloneSnapshot(next);
-		applyHistorySnapshot(next);
-	}, [applyHistorySnapshot, buildHistorySnapshot, cloneSnapshot]);
+	const { historyPastRef, historyFutureRef, handleUndo, handleRedo } = useEditorHistory({
+		buildSnapshot: buildHistorySnapshot,
+		applySnapshot: applyHistorySnapshot,
+	});
 
 	const applyLoadedProject = useCallback(
 		async (candidate: unknown, path?: string | null) => {
@@ -1216,7 +995,13 @@ export default function VideoEditor() {
 			});
 			return true;
 		},
-		[applyEditorControls, syncWebcamAvailability],
+		[
+			applyEditorControls,
+			syncWebcamAvailability,
+			setDraftVideoName,
+			setIsEditingVideoName,
+			setVideoName,
+		],
 	);
 
 	const currentProjectSnapshot = useMemo(() => {
@@ -1380,34 +1165,6 @@ export default function VideoEditor() {
 		webcamPreviewMode,
 	]);
 
-	useEffect(() => {
-		const snapshot = cloneSnapshot(buildHistorySnapshot());
-
-		if (!historyCurrentRef.current) {
-			historyCurrentRef.current = snapshot;
-			return;
-		}
-
-		if (applyingHistoryRef.current) {
-			historyCurrentRef.current = snapshot;
-			applyingHistoryRef.current = false;
-			return;
-		}
-
-		const currentSerialized = JSON.stringify(historyCurrentRef.current);
-		const nextSerialized = JSON.stringify(snapshot);
-		if (currentSerialized === nextSerialized) {
-			return;
-		}
-
-		historyPastRef.current.push(cloneSnapshot(historyCurrentRef.current));
-		if (historyPastRef.current.length > 100) {
-			historyPastRef.current.shift();
-		}
-		historyCurrentRef.current = snapshot;
-		historyFutureRef.current = [];
-	}, [buildHistorySnapshot, cloneSnapshot]);
-
 	const hasUnsavedChanges = editorPersistenceService.hasUnsavedChanges({
 		currentProjectPath,
 		currentProjectSnapshot,
@@ -1521,7 +1278,15 @@ export default function VideoEditor() {
 		}
 
 		loadInitialData();
-	}, [applyEditorControls, applyLoadedProject, clearWebcamState, syncWebcamAvailability]);
+	}, [
+		applyEditorControls,
+		applyLoadedProject,
+		clearWebcamState,
+		syncWebcamAvailability,
+		setDraftVideoName,
+		setIsEditingVideoName,
+		setVideoName,
+	]);
 
 	// Crossfade skeleton → editor when loading finishes
 	useEffect(() => {
@@ -1778,89 +1543,13 @@ export default function VideoEditor() {
 		],
 	);
 
-	useEffect(() => {
-		const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-			editorPreferencesService.flush();
-			if (!hasUnsavedChanges) {
-				return;
-			}
-
-			event.preventDefault();
-			event.returnValue = "";
-		};
-
-		window.addEventListener("beforeunload", handleBeforeUnload);
-		return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-	}, [hasUnsavedChanges]);
-
-	useEffect(() => {
-		window.electronAPI.setHasUnsavedChanges(hasUnsavedChanges);
-	}, [hasUnsavedChanges]);
-
-	useEffect(() => {
-		void window.electronAPI.setUpdaterBusyState({
-			exporting: isExporting,
-			transcribing: isTranscribing,
-		});
-	}, [isExporting, isTranscribing]);
-
-	useEffect(() => {
-		return () => {
-			void window.electronAPI.setUpdaterBusyState({
-				exporting: false,
-				transcribing: false,
-			});
-		};
-	}, []);
-
-	useEffect(() => {
-		const cleanup = window.electronAPI.onRequestSaveBeforeClose(async () => {
-			await saveProject(false);
-		});
-
-		return () => cleanup?.();
-	}, [saveProject]);
-
-	const handleSaveProject = useCallback(async () => {
-		await saveProject(false);
-	}, [saveProject]);
-
-	const handleSaveProjectAs = useCallback(async () => {
-		await saveProject(true);
-	}, [saveProject]);
-
-	const handleLoadProject = useCallback(async () => {
-		const result = await window.electronAPI.loadProjectFile();
-
-		if (result.canceled) {
-			return;
-		}
-
-		if (!result.success) {
-			toast.error(result.message || "Failed to load project");
-			return;
-		}
-
-		const restored = await applyLoadedProject(result.project, result.path ?? null);
-		if (!restored) {
-			toast.error("Invalid project file format");
-			return;
-		}
-
-		toast.success(`Project loaded from ${result.path}`);
-	}, [applyLoadedProject]);
-
-	useEffect(() => {
-		const removeLoadListener = window.electronAPI.onMenuLoadProject(handleLoadProject);
-		const removeSaveListener = window.electronAPI.onMenuSaveProject(handleSaveProject);
-		const removeSaveAsListener = window.electronAPI.onMenuSaveProjectAs(handleSaveProjectAs);
-
-		return () => {
-			removeLoadListener?.();
-			removeSaveListener?.();
-			removeSaveAsListener?.();
-		};
-	}, [handleLoadProject, handleSaveProject, handleSaveProjectAs]);
+	const { handleSaveProject, handleLoadProject } = useVideoEditorProjectFileActions({
+		hasUnsavedChanges,
+		isExporting,
+		isTranscribing,
+		saveProject,
+		applyLoadedProject,
+	});
 
 	useEffect(() => {
 		let mounted = true;
@@ -3069,451 +2758,41 @@ export default function VideoEditor() {
 		);
 	}, []);
 
-	// ── Caption handlers ──
-
-	const createManualCaptionSegment = useCallback(
-		(id: string, startMs: number, endMs: number, text: string) => {
-			const tokens = text
-				.split(/\s+/)
-				.map((token) => token.trim())
-				.filter(Boolean);
-			const duration = Math.max(1, endMs - startMs);
-			const step = Math.max(1, Math.round(duration / Math.max(1, tokens.length)));
-
-			return {
-				id,
-				startMs,
-				endMs,
-				text,
-				words: tokens.map((token, index) => {
-					const wordStartMs = startMs + index * step;
-					return {
-						id: `${id}-word-${index + 1}`,
-						text: token,
-						startMs: wordStartMs,
-						endMs: index === tokens.length - 1 ? endMs : Math.min(endMs, wordStartMs + step),
-					};
-				}),
-				source: "manual" as const,
-			};
-		},
-		[],
-	);
-
-	const updateCaptionSegments = useCallback(
-		(updater: (segments: CaptionRegion[]) => CaptionRegion[]) => {
-			setCaptionTrack((prev) => {
-				const baseTrack: CaptionTrack = prev ?? {
-					backend:
-						captionGenerationOptions.preferredBackend === "apple-speech"
-							? "apple-speech"
-							: "whisper.cpp",
-					model: captionGenerationOptions.model,
-					language: captionGenerationOptions.language,
-					prompt: captionGenerationOptions.prompt,
-					sourceAudio: captionGenerationOptions.preferredSourceAudio,
-					status: "ready",
-					segments: [],
-				};
-				return {
-					...baseTrack,
-					segments: updater(baseTrack.segments),
-					status: "ready",
-					error: undefined,
-				};
-			});
-		},
-		[captionGenerationOptions],
-	);
-
-	const handleCaptionAdded = useCallback(
-		(span: { start: number; end: number }) => {
-			const id = `caption-${nextCaptionIdRef.current++}`;
-			updateCaptionSegments((prev) => [
-				...prev,
-				createManualCaptionSegment(
-					id,
-					span.start,
-					span.end,
-					t("editor.captions.defaultText", "Caption text"),
-				),
-			]);
-			setSelectedCaptionId(id);
-		},
-		[createManualCaptionSegment, t, updateCaptionSegments],
-	);
-
-	const handleCaptionSpanChange = useCallback(
-		(id: string, span: { start: number; end: number }) => {
-			updateCaptionSegments((prev) =>
-				prev.map((segment) =>
-					segment.id === id
-						? createManualCaptionSegment(id, span.start, span.end, segment.text)
-						: segment,
-				),
-			);
-		},
-		[createManualCaptionSegment, updateCaptionSegments],
-	);
-
-	const handleCaptionTextChange = useCallback(
-		(id: string, text: string) => {
-			updateCaptionSegments((prev) =>
-				prev.map((segment) =>
-					segment.id === id
-						? createManualCaptionSegment(id, segment.startMs, segment.endMs, text)
-						: segment,
-				),
-			);
-		},
-		[createManualCaptionSegment, updateCaptionSegments],
-	);
-
-	const handleCaptionDelete = useCallback(
-		(id: string) => {
-			updateCaptionSegments((prev) => prev.filter((segment) => segment.id !== id));
-			setSelectedCaptionId((prev) => (prev === id ? null : prev));
-		},
-		[updateCaptionSegments],
-	);
-
-	const handleDeleteAllCaptions = useCallback(() => {
-		setCaptionTrack((prev) =>
-			prev ? { ...prev, segments: [], status: "idle", error: undefined } : null,
-		);
-		setSelectedCaptionId(null);
-	}, []);
-
-	const handleCaptionStylePresetChange = useCallback((preset: CaptionStylePreset) => {
-		setCaptionSettings((prev) => ({
-			...prev,
-			style: { ...CAPTION_STYLE_PRESETS[preset] },
-		}));
-	}, []);
-
-	const handleCaptionSettingsChange = useCallback((partial: Partial<CaptionSettings>) => {
-		setCaptionSettings((prev) => ({ ...prev, ...partial }));
-	}, []);
-
-	const handleCaptionStyleChange = useCallback((partial: Partial<CaptionSettings["style"]>) => {
-		setCaptionSettings((prev) => ({
-			...prev,
-			style: { ...prev.style, ...partial },
-		}));
-	}, []);
-
-	const handleApplyCaptionPreset = useCallback((preset: CaptionUserPreset) => {
-		setCaptionSettings((prev) => applyPresetToSettings(prev, preset));
-	}, []);
-
-	const handleToggleCaptionPositionEditing = useCallback((next: boolean) => {
-		setIsEditingCaptionPosition(next);
-	}, []);
-
-	const handleCaptionPositionOverrideChange = useCallback(
-		(override: CaptionPositionOverride | null) => {
-			setCaptionSettings((prev) => ({ ...prev, positionOverride: override }));
-		},
-		[],
-	);
-
-	const handleCaptionImport = useCallback(
-		(segments: CaptionSegment[], mode: "replace" | "append") => {
-			if (segments.length === 0) return;
-			setCaptionTrack((prev) => {
-				const existing = prev?.segments ?? [];
-				const nextSegments =
-					mode === "replace"
-						? segments
-						: [...existing, ...segments].sort((a, b) => a.startMs - b.startMs);
-				const base: CaptionTrack = prev ?? {
-					backend: "whisper.cpp",
-					model: captionGenerationOptions.model,
-					language: captionGenerationOptions.language ?? "auto",
-					prompt: captionGenerationOptions.prompt ?? "",
-					sourceAudio: captionGenerationOptions.preferredSourceAudio ?? "microphone",
-					status: "ready",
-					segments: [],
-				};
-				return {
-					...base,
-					status: "ready",
-					error: undefined,
-					generatedAt: new Date().toISOString(),
-					segments: nextSegments,
-				};
-			});
-		},
-		[captionGenerationOptions],
-	);
-
-	const getFriendlyCaptionErrorMessage = useCallback(
-		(error: unknown) => {
-			const rawMessage = error instanceof Error ? error.message : String(error ?? "");
-			const normalizedMessage = rawMessage.toLowerCase();
-
-			if (
-				normalizedMessage.includes("no usable audio track") ||
-				normalizedMessage.includes("does not contain any stream") ||
-				normalizedMessage.includes("no microphone or video audio")
-			) {
-				return t(
-					"editor.captions.transcribeNoAudio",
-					"This recording has no usable audio. Turn on microphone or system audio, then record again.",
-				);
-			}
-
-			if (
-				normalizedMessage.includes("failed to download whisper model") ||
-				normalizedMessage.includes("failed to download whisper vad model") ||
-				normalizedMessage.includes("download whisper")
-			) {
-				return t(
-					"editor.captions.transcribeModelDownloadFailed",
-					"ScreenMint couldn't download the local speech model. Check your internet connection and try again.",
-				);
-			}
-
-			if (normalizedMessage.includes("apple speech requires a specific language")) {
-				return t(
-					"editor.captions.transcribeAppleSpeechNeedsLanguage",
-					"Apple Speech needs a fixed language. Choose the spoken language, then try again.",
-				);
-			}
-
-			if (
-				normalizedMessage.includes("speech recognition permission") ||
-				normalizedMessage.includes("permission is denied")
-			) {
-				return t(
-					"editor.captions.transcribeSpeechPermissionNeeded",
-					"Allow speech recognition for ScreenMint in macOS settings, then try again.",
-				);
-			}
-
-			if (
-				normalizedMessage.includes("on-device apple speech is unavailable") ||
-				normalizedMessage.includes("apple speech is unavailable for the selected language")
-			) {
-				return t(
-					"editor.captions.transcribeAppleSpeechUnavailable",
-					"Apple Speech is unavailable for this language on this Mac. Switch to Whisper or choose another language.",
-				);
-			}
-
-			if (
-				normalizedMessage.includes("whisper cli build tools are unavailable") ||
-				normalizedMessage.includes("cmake") ||
-				normalizedMessage.includes("xcode command line tools") ||
-				normalizedMessage.includes("visual studio c++ build tools")
-			) {
-				return t(
-					"editor.captions.transcribeRuntimeSetupFailed",
-					"ScreenMint couldn't prepare the local caption engine on this device. Install the required build tools and try again.",
-				);
-			}
-
-			if (
-				normalizedMessage.includes("bad_alloc") ||
-				normalizedMessage.includes("bad allocation") ||
-				normalizedMessage.includes("out of memory") ||
-				normalizedMessage.includes("not enough memory")
-			) {
-				return t(
-					"editor.captions.transcribeLowMemory",
-					"Your device ran out of memory while transcribing. Try the Small model for this recording.",
-				);
-			}
-
-			return t("editor.captions.transcribeFailed", "Failed to transcribe audio locally.");
-		},
-		[t],
-	);
-
-	const handleAutoTranscribe = useCallback(async () => {
-		if (!videoPath || isTranscribing) return;
-		dispatchSession({ type: "set-transcribing", value: true });
-		setCaptionGenerationProgress({
-			stage: "bootstrap",
-			percentage: 0,
-			message: t("editor.captions.preparing", "Preparing local transcription..."),
-		});
-
-		try {
-			const result = await window.electronAPI.generateCaptions({
-				videoPath,
-				preferredBackend: captionGenerationOptions.preferredBackend,
-				model: captionGenerationOptions.model,
-				language: captionGenerationOptions.language,
-				prompt: captionGenerationOptions.prompt,
-				preferredSourceAudio: captionGenerationOptions.preferredSourceAudio,
-			});
-
-			if (!result.success && result.canceled) {
-				setCaptionGenerationProgress(null);
-				return;
-			}
-
-			if (!result.success || !result.track) {
-				throw new Error(result.error || result.message || "Failed to generate captions.");
-			}
-
-			setCaptionTrack(result.track);
-			setCaptionSettings((prev) => ({ ...prev, enabled: true }));
-			setCaptionGenerationOptions((prev) => ({
-				...prev,
-				preferredBackend: result.track?.backend ?? prev.preferredBackend,
-				model: result.track?.model ?? prev.model,
-				language: result.track?.language ?? prev.language,
-				prompt: result.track?.prompt ?? prev.prompt,
-				preferredSourceAudio: result.track?.sourceAudio ?? prev.preferredSourceAudio,
-			}));
-			setSelectedCaptionId(result.track.segments[0]?.id ?? null);
-			setCaptionGenerationProgress({
-				stage: "complete",
-				percentage: 100,
-				message: t("editor.captions.transcriptReady", "Transcript ready"),
-			});
-			const status = await window.electronAPI.getCaptionModelStatus(videoPath);
-			if (status.success && status.status) {
-				setCaptionModelStatus(status.status);
-			}
-			toast.success(
-				t("editor.captions.generatedSegments", "Generated {{count}} transcript segments", {
-					count: result.track.segments.length,
-				}),
-			);
-		} catch (error) {
-			console.error("Transcription error:", error);
-			setCaptionGenerationProgress(null);
-			toast.error(getFriendlyCaptionErrorMessage(error));
-		} finally {
-			dispatchSession({ type: "set-transcribing", value: false });
-		}
-	}, [captionGenerationOptions, getFriendlyCaptionErrorMessage, isTranscribing, t, videoPath]);
-
-	const handleCaptionGenerationOptionsChange = useCallback(
-		(partial: Partial<CaptionGenerationOptions>) => {
-			setCaptionGenerationOptions((prev) => ({ ...prev, ...partial }));
-		},
-		[],
-	);
-
-	const handleCaptionSplit = useCallback(
-		(id: string) => {
-			updateCaptionSegments((prev) => {
-				const segment = prev.find((entry) => entry.id === id);
-				if (!segment) {
-					return prev;
-				}
-
-				if (segment.words.length < 2) {
-					return prev;
-				}
-
-				const splitIndex = Math.floor(segment.words.length / 2);
-				const leftWords = segment.words.slice(0, splitIndex);
-				const rightWords = segment.words.slice(splitIndex);
-				if (leftWords.length === 0 || rightWords.length === 0) {
-					return prev;
-				}
-
-				const leftId = `caption-${nextCaptionIdRef.current++}`;
-				const rightId = `caption-${nextCaptionIdRef.current++}`;
-				const leftSegment: CaptionRegion = {
-					id: leftId,
-					startMs: segment.startMs,
-					endMs: leftWords[leftWords.length - 1]?.endMs ?? segment.startMs,
-					text: leftWords.map((word) => word.text).join(" "),
-					words: leftWords.map((word, index) => ({ ...word, id: `${leftId}-word-${index + 1}` })),
-					source: segment.source,
-				};
-				const rightSegment: CaptionRegion = {
-					id: rightId,
-					startMs: rightWords[0]?.startMs ?? segment.endMs,
-					endMs: segment.endMs,
-					text: rightWords.map((word) => word.text).join(" "),
-					words: rightWords.map((word, index) => ({ ...word, id: `${rightId}-word-${index + 1}` })),
-					source: segment.source,
-				};
-
-				return prev.flatMap((entry) => (entry.id === id ? [leftSegment, rightSegment] : [entry]));
-			});
-		},
-		[updateCaptionSegments],
-	);
-
-	const handleCaptionMergeNext = useCallback(
-		(id: string) => {
-			updateCaptionSegments((prev) => {
-				const index = prev.findIndex((entry) => entry.id === id);
-				if (index < 0 || index >= prev.length - 1) {
-					return prev;
-				}
-
-				const current = prev[index];
-				const next = prev[index + 1];
-				const mergedId = `caption-${nextCaptionIdRef.current++}`;
-				const mergedWords = [...current.words, ...next.words].map((word, wordIndex) => ({
-					...word,
-					id: `${mergedId}-word-${wordIndex + 1}`,
-				}));
-				const merged: CaptionRegion = {
-					id: mergedId,
-					startMs: current.startMs,
-					endMs: next.endMs,
-					text: `${current.text} ${next.text}`.trim(),
-					words: mergedWords,
-					source: current.source,
-				};
-
-				return [...prev.slice(0, index), merged, ...prev.slice(index + 2)];
-			});
-		},
-		[updateCaptionSegments],
-	);
-
-	const handleTranscriptExport = useCallback(
-		async (format: "srt" | "vtt" | "txt") => {
-			if (!captionTrack || captionTrack.segments.length === 0 || !videoPath) {
-				toast.info(
-					t("editor.captions.noTranscriptToExport", "No transcript is available to export."),
-				);
-				return;
-			}
-
-			const result = await window.electronAPI.exportCaptionsTranscript({
-				videoPath,
-				format,
-				track: captionTrack,
-			});
-
-			if (!result.success && result.canceled) {
-				return;
-			}
-
-			if (!result.success) {
-				toast.error(
-					result.message || t("editor.captions.exportFailed", "Failed to export transcript."),
-				);
-				return;
-			}
-
-			toast.success(
-				t("editor.captions.exported", "Transcript exported as {{format}}", {
-					format: format.toUpperCase(),
-				}),
-			);
-		},
-		[captionTrack, t, videoPath],
-	);
-
-	const handleCancelCaptionGeneration = useCallback(async () => {
-		await window.electronAPI.cancelCaptionGeneration();
-		dispatchSession({ type: "set-transcribing", value: false });
-		setCaptionGenerationProgress(null);
-		toast.info(t("editor.captions.cancelled", "Caption generation cancelled"));
-	}, [t]);
+	const {
+		handleCaptionAdded,
+		handleCaptionSpanChange,
+		handleCaptionTextChange,
+		handleCaptionDelete,
+		handleDeleteAllCaptions,
+		handleCaptionStylePresetChange,
+		handleCaptionSettingsChange,
+		handleCaptionStyleChange,
+		handleApplyCaptionPreset,
+		handleToggleCaptionPositionEditing,
+		handleCaptionPositionOverrideChange,
+		handleCaptionImport,
+		handleAutoTranscribe,
+		handleCaptionGenerationOptionsChange,
+		handleCaptionSplit,
+		handleCaptionMergeNext,
+		handleTranscriptExport,
+		handleCancelCaptionGeneration,
+	} = useVideoEditorCaptions({
+		t,
+		videoPath,
+		isTranscribing,
+		captionTrack,
+		captionGenerationOptions,
+		nextCaptionIdRef,
+		dispatchSession,
+		setCaptionTrack,
+		setCaptionSettings,
+		setCaptionGenerationOptions,
+		setCaptionGenerationProgress,
+		setCaptionModelStatus,
+		setSelectedCaptionId,
+		setIsEditingCaptionPosition,
+	});
 
 	const handleAnnotationPositionChange = useCallback(
 		(id: string, position: { x: number; y: number }) => {
@@ -3533,278 +2812,70 @@ export default function VideoEditor() {
 		[],
 	);
 
-	// Global Tab prevention
-	useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			const target = e.target as HTMLElement | null;
-			const isEditableTarget =
-				target instanceof HTMLInputElement ||
-				target instanceof HTMLTextAreaElement ||
-				target?.isContentEditable;
+	useVideoEditorKeyboardShortcuts({
+		shortcuts,
+		isMac,
+		handleUndo,
+		handleRedo,
+		videoPlaybackRef,
+	});
 
-			const usesPrimaryModifier = isMac ? e.metaKey : e.ctrlKey;
-			const key = e.key.toLowerCase();
-
-			if (usesPrimaryModifier && !e.altKey && key === "z") {
-				if (!isEditableTarget) {
-					e.preventDefault();
-					if (e.shiftKey) {
-						handleRedo();
-					} else {
-						handleUndo();
-					}
-				}
-				return;
-			}
-
-			if (!isMac && e.ctrlKey && !e.metaKey && !e.altKey && key === "y") {
-				if (!isEditableTarget) {
-					e.preventDefault();
-					handleRedo();
-				}
-				return;
-			}
-
-			if (e.key === "Tab") {
-				// Allow tab only in inputs/textareas
-				if (isEditableTarget) {
-					return;
-				}
-				e.preventDefault();
-			}
-
-			if (matchesShortcut(e, shortcuts.playPause, isMac)) {
-				// Allow space only in inputs/textareas
-				if (isEditableTarget) {
-					return;
-				}
-				e.preventDefault();
-
-				const playback = videoPlaybackRef.current;
-				if (playback?.video) {
-					if (playback.video.paused) {
-						playback.play().catch(console.error);
-					} else {
-						playback.pause();
-					}
-				}
-			}
-		};
-
-		window.addEventListener("keydown", handleKeyDown, { capture: true });
-		return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
-	}, [shortcuts, isMac, handleUndo, handleRedo]);
-
-	useEffect(() => {
-		if (selectedZoomId && !zoomRegions.some((region) => region.id === selectedZoomId)) {
-			setSelectedZoomId(null);
-		}
-	}, [selectedZoomId, zoomRegions]);
-
-	useEffect(() => {
-		if (selectedTrimId && !trimRegions.some((region) => region.id === selectedTrimId)) {
-			setSelectedTrimId(null);
-		}
-	}, [selectedTrimId, trimRegions]);
-
-	useEffect(() => {
-		if (
-			selectedAnnotationId &&
-			!annotationRegions.some((region) => region.id === selectedAnnotationId)
-		) {
-			setSelectedAnnotationId(null);
-		}
-	}, [selectedAnnotationId, annotationRegions]);
-
-	useEffect(() => {
-		if (selectedSpeedId && !speedRegions.some((region) => region.id === selectedSpeedId)) {
-			setSelectedSpeedId(null);
-		}
-	}, [selectedSpeedId, speedRegions]);
-
-	useEffect(() => {
-		if (selectedAudioId && !audioRegions.some((region) => region.id === selectedAudioId)) {
-			setSelectedAudioId(null);
-		}
-	}, [selectedAudioId, audioRegions]);
+	useTimelineSelectionPruning({
+		selectedZoomId,
+		setSelectedZoomId,
+		zoomRegions,
+		selectedTrimId,
+		setSelectedTrimId,
+		trimRegions,
+		selectedAnnotationId,
+		setSelectedAnnotationId,
+		annotationRegions,
+		selectedSpeedId,
+		setSelectedSpeedId,
+		speedRegions,
+		selectedAudioId,
+		setSelectedAudioId,
+		audioRegions,
+	});
 
 	useEffect(() => {
 		void syncAudioAvailability(audioRegions);
 	}, [audioRegions, syncAudioAvailability]);
 
-	useEffect(() => {
-		let cancelled = false;
+	useVideoEditorAudioPreview({
+		audioRegions,
+		currentTime,
+		isPlaying,
+		clipVolume,
+		missingAudioPathsById,
+		resolvedAudioSourceUrls,
+		setResolvedAudioSourceUrls,
+		videoPlaybackRef,
+	});
 
-		void (async () => {
-			const entries = await Promise.all(
-				audioRegions.map(
-					async (region) => [region.id, await resolveAudioSourceUrl(region)] as const,
-				),
-			);
-			if (cancelled) {
-				return;
-			}
+	const {
+		showExportSuccessToast,
+		handleCancelExport,
+		handleExportDialogClose,
+		handleRetrySaveExport,
+		openRecordingsFolder,
+	} = useVideoEditorExportActions({
+		exportV2JobIdRef,
+		exporterRef,
+		pendingExportSaveRef,
+		dispatchSession,
+	});
 
-			setResolvedAudioSourceUrls(
-				Object.fromEntries(
-					entries.filter(
-						(entry): entry is readonly [string, string] => typeof entry[1] === "string",
-					),
-				),
-			);
-		})();
-
-		return () => {
-			cancelled = true;
-		};
-	}, [audioRegions]);
-
-	// Audio playback sync: manage Audio elements that play in sync with video
-	const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
-
-	useEffect(() => {
-		const existing = audioElementsRef.current;
-		const currentIds = new Set(audioRegions.map((r) => r.id));
-
-		// Remove old audio elements
-		for (const [id, audio] of existing) {
-			if (!currentIds.has(id)) {
-				audio.pause();
-				audio.src = "";
-				existing.delete(id);
-			}
-		}
-
-		// Create/update audio elements
-		for (const region of audioRegions) {
-			let audio = existing.get(region.id);
-			if (!audio) {
-				audio = new Audio();
-				audio.preload = "auto";
-				existing.set(region.id, audio);
-			}
-
-			const expectedSrc = missingAudioPathsById[region.id]
-				? ""
-				: (resolvedAudioSourceUrls[region.id] ?? "");
-			if (audio.src !== expectedSrc) {
-				audio.pause();
-				audio.src = expectedSrc;
-			}
-			audio.volume = Math.max(0, Math.min(1, region.volume));
-		}
-
-		return () => {
-			for (const audio of existing.values()) {
-				audio.pause();
-				audio.src = "";
-			}
-			existing.clear();
-		};
-	}, [audioRegions, missingAudioPathsById, resolvedAudioSourceUrls]);
-
-	// Sync audio playback with video currentTime and isPlaying state
-	useEffect(() => {
-		for (const region of audioRegions) {
-			const audio = audioElementsRef.current.get(region.id);
-			if (!audio) continue;
-
-			const currentTimeMs = currentTime * 1000;
-			const isInRegion = currentTimeMs >= region.startMs && currentTimeMs < region.endMs;
-			audio.volume = Math.max(
-				0,
-				Math.min(1, region.volume * getAudioRegionFadeMultiplier(region, currentTimeMs)),
-			);
-
-			if (isPlaying && isInRegion && !missingAudioPathsById[region.id] && audio.src) {
-				const audioOffset = getAudioPlaybackOffsetSeconds(region, currentTimeMs, audio.duration);
-				// Only seek if significantly out of sync (> 200ms)
-				if (Math.abs(audio.currentTime - audioOffset) > 0.2) {
-					audio.currentTime = audioOffset;
-				}
-				const hasPlayableContent = region.loop || audioOffset < Math.max(0, audio.duration - 0.05);
-				if (audio.paused && hasPlayableContent) {
-					audio.play().catch(() => undefined);
-				}
-			} else {
-				if (!audio.paused) {
-					audio.pause();
-				}
-			}
-		}
-	}, [currentTime, audioRegions, isPlaying, missingAudioPathsById]);
-
-	// Sync clip volume to the video element
-	useEffect(() => {
-		const video = videoPlaybackRef.current?.video;
-		if (video) {
-			video.volume = Math.max(0, Math.min(1, clipVolume));
-		}
-	}, [clipVolume]);
-
-	const showExportSuccessToast = useCallback((filePath: string) => {
-		toast.success(`Exported successfully to ${filePath}`, {
-			action: {
-				label: "Show in Folder",
-				onClick: async () => {
-					try {
-						const result = await window.electronAPI.revealInFolder(filePath);
-						if (!result.success) {
-							const errorMessage =
-								result.error || result.message || "Failed to reveal item in folder.";
-							toast.error(errorMessage);
-						}
-					} catch (err) {
-						toast.error(`Error revealing in folder: ${String(err)}`);
-					}
-				},
-			},
-		});
-	}, []);
-
-	const buildDefaultExportSettings = useCallback((): ExportSettings | null => {
-		const video = videoPlaybackRef.current?.video;
-		if (!video) {
-			toast.error("Video not ready");
-			return null;
-		}
-
-		const sourceWidth = video.videoWidth || 1920;
-		const sourceHeight = video.videoHeight || 1080;
-		const sourceAspectRatio = sourceHeight > 0 ? sourceWidth / sourceHeight : 16 / 9;
-		const aspectRatioValue = getAspectRatioValue(aspectRatio, sourceAspectRatio);
-		const sourceMetadata = buildSourceVideoMetadata({
-			width: sourceWidth,
-			height: sourceHeight,
-			frameRate: sourceFrameRate,
-			durationMs: Math.round(duration * 1000),
-		});
-		const gifPlan = resolveGifExportPlan(
-			sourceMetadata,
-			gifExportSettings,
-			aspectRatioValue,
-			Math.round(duration * 1000),
-		);
-
-		return {
-			format: exportFormat,
-			destination: exportDestination,
-			video: videoExportSettings,
-			gif: {
-				...gifExportSettings,
-				width: gifPlan.width,
-				height: gifPlan.height,
-			},
-		};
-	}, [
+	const buildDefaultExportSettings = useDefaultExportSettings({
+		videoPlaybackRef,
 		aspectRatio,
 		duration,
-		exportDestination,
-		exportFormat,
-		gifExportSettings,
 		sourceFrameRate,
+		exportFormat,
+		exportDestination,
 		videoExportSettings,
-	]);
+		gifExportSettings,
+	});
 
 	const handleExport = useCallback(
 		async (
@@ -4687,303 +3758,41 @@ export default function VideoEditor() {
 		});
 	}, [buildDefaultExportSettings, handleExport]);
 
-	const handleQuickShareSave = useCallback(() => {
-		dispatchSession({ type: "set-quick-share-open", value: false });
-		handleOpenExportDialog();
-	}, [handleOpenExportDialog]);
-
-	const handleQuickShareEdit = useCallback(() => {
-		dispatchSession({ type: "set-quick-share-open", value: false });
-	}, []);
-
-	const cycleWorkspaceLayout = useCallback(() => {
-		setWorkspaceLayout((current) => {
-			if (current === "default") return "preview-focus";
-			if (current === "preview-focus") return "timeline-focus";
-			return "default";
-		});
-	}, []);
-
-	const applyPreset = useCallback(
-		(preset: EditorPreset) => {
-			applyEditorControls(normalizeProjectEditor(preset.controls));
-			toast.success(`Applied ${preset.name} preset.`);
-		},
-		[applyEditorControls],
-	);
-
-	const handleSavePreset = useCallback(() => {
-		dispatchSession({ type: "open-preset-dialog", name: "My preset" });
-	}, []);
-
-	const handleConfirmSavePreset = useCallback(() => {
-		const name = sessionState.modals.presetDialog.name.trim();
-		if (!name) {
-			return;
-		}
-
-		const preset: EditorPreset = {
-			id: `preset-${Date.now()}`,
-			name,
-			controls: buildCurrentPresetControls(),
-		};
-
-		setCustomPresets((prev) => [...prev, preset]);
-		dispatchSession({ type: "close-preset-dialog" });
-		toast.success(`Saved ${name} preset.`);
-	}, [buildCurrentPresetControls, sessionState.modals.presetDialog.name]);
-
-	const handleDeletePreset = useCallback(
-		(presetId: string) => {
-			const target = customPresets.find((preset) => preset.id === presetId);
-			if (!target) {
-				return;
-			}
-
-			dispatchSession({
-				type: "open-confirm-dialog",
-				dialog: {
-					kind: "delete-preset",
-					title: "Delete preset?",
-					description: `Delete the preset "${target.name}"?`,
-					confirmLabel: "Delete preset",
-					payload: presetId,
-					tone: "danger",
-				},
-			});
-		},
-		[customPresets],
-	);
-
-	const handleDeleteProject = useCallback(async () => {
-		const dialog: ConfirmDialogState = {
-			kind: "delete-project",
-			title: "Delete project?",
-			description: [
-				"Delete this ScreenMint project and any managed recording media?",
-				"",
-				"Imported files outside the ScreenMint recordings folder will be kept.",
-			].join("\n"),
-			confirmLabel: "Delete project",
-			tone: "danger",
-		};
-		dispatchSession({ type: "open-confirm-dialog", dialog });
-	}, []);
-
-	const confirmDeleteProject = useCallback(async () => {
-		dispatchSession({ type: "close-confirm-dialog" });
-
-		const result = await window.electronAPI.deleteProjectAndMedia({
-			projectPath: currentProjectPath,
-			videoPath: videoSourcePath,
-			webcamPath,
-		});
-
-		if (!result.success) {
-			toast.error(result.message || result.error || "Failed to delete the project.");
-			return;
-		}
-
-		const deletedCount = result.deletedPaths?.length ?? 0;
-		const skippedCount = result.skippedPaths?.length ?? 0;
-		toast.success(
-			deletedCount > 0
-				? `Deleted ${deletedCount} item${deletedCount === 1 ? "" : "s"}.${
-						skippedCount > 0
-							? ` Kept ${skippedCount} external file${skippedCount === 1 ? "" : "s"}.`
-							: ""
-					}`
-				: skippedCount > 0
-					? `Removed this recording from the editor. Kept ${skippedCount} external file${
-							skippedCount === 1 ? "" : "s"
-						}.`
-					: "Project removed.",
-		);
-
-		await window.electronAPI.switchToHud();
-	}, [currentProjectPath, videoSourcePath, webcamPath]);
-
-	const handleConfirmDialogAction = useCallback(async () => {
-		const dialog = sessionState.modals.confirmDialog;
-		if (!dialog) {
-			return;
-		}
-
-		if (dialog.kind === "delete-preset" && dialog.payload) {
-			const target = customPresets.find((preset) => preset.id === dialog.payload);
-			setCustomPresets((prev) => prev.filter((preset) => preset.id !== dialog.payload));
-			dispatchSession({ type: "close-confirm-dialog" });
-			if (target) {
-				toast.success(`Deleted ${target.name} preset.`);
-			}
-			return;
-		}
-
-		if (dialog.kind === "delete-project") {
-			await confirmDeleteProject();
-		}
-	}, [confirmDeleteProject, customPresets, sessionState.modals.confirmDialog]);
-
-	useEffect(() => {
-		if (loading || error || !videoPath || !postRecordingContext) {
-			return;
-		}
-
-		if (isPostRecordingAutoZoomPending(postRecordingAutoZoomBootstrap, videoPath)) {
-			return;
-		}
-
-		if (
-			(postRecordingContext.action === "export-save-file" ||
-				postRecordingContext.action === "export-clipboard") &&
-			duration <= 0
-		) {
-			return;
-		}
-
-		const contextKey = JSON.stringify(postRecordingContext);
-		if (handledPostRecordingContextRef.current === contextKey) {
-			return;
-		}
-
-		handledPostRecordingContextRef.current = contextKey;
-
-		void (async () => {
-			switch (postRecordingContext.action) {
-				case "export-save-file":
-					handleOpenExportDialog();
-					break;
-				case "export-clipboard":
-					await handleExportToClipboard();
-					break;
-				case "export-share-link":
-					dispatchSession({ type: "set-quick-share-open", value: true });
-					toast.info("Share links are not available yet. Opening Quick Share instead.");
-					break;
-				case "create-project":
-				default:
-					if (postRecordingContext.openQuickShare) {
-						dispatchSession({ type: "set-quick-share-open", value: true });
-					}
-					break;
-			}
-
-			await window.electronAPI.clearPostRecordingContext();
-			dispatchSession({ type: "set-post-recording-context", context: null });
-		})();
-	}, [
-		duration,
-		error,
-		handleExportToClipboard,
+	const {
+		handleQuickShareSave,
+		handleQuickShareEdit,
+		cycleWorkspaceLayout,
+		applyPreset,
+		handleSavePreset,
+		handleConfirmSavePreset,
+		handleDeletePreset,
+		handleDeleteProject,
+		handleConfirmDialogAction,
+	} = useVideoEditorProjectActions({
+		currentProjectPath,
+		videoSourcePath,
+		webcamPath,
+		customPresets,
+		setCustomPresets,
+		setWorkspaceLayout,
+		sessionState,
+		dispatchSession,
+		buildCurrentPresetControls,
+		applyEditorControls,
 		handleOpenExportDialog,
+	});
+
+	usePostRecordingActions({
 		loading,
-		postRecordingAutoZoomBootstrap,
-		postRecordingContext,
+		error,
 		videoPath,
-	]);
-
-	const handleCancelExport = useCallback(() => {
-		if (exportV2JobIdRef.current) {
-			void window.electronAPI.exportV2Cancel(exportV2JobIdRef.current);
-			exportV2JobIdRef.current = null;
-			toast.info("Export canceled");
-			dispatchSession({ type: "set-export-dialog-open", value: false });
-			dispatchSession({ type: "set-exporting", value: false });
-			dispatchSession({ type: "set-export-status", status: "idle" });
-			dispatchSession({ type: "set-export-progress", progress: null });
-			dispatchSession({ type: "set-export-error", error: null });
-			dispatchSession({ type: "set-exported-file-path", path: undefined });
-			return;
-		}
-
-		if (exporterRef.current) {
-			exporterRef.current.cancel();
-			toast.info("Export canceled");
-			dispatchSession({ type: "set-export-dialog-open", value: false });
-			dispatchSession({ type: "set-exporting", value: false });
-			dispatchSession({ type: "set-export-status", status: "idle" });
-			dispatchSession({ type: "set-export-progress", progress: null });
-			dispatchSession({ type: "set-export-error", error: null });
-			dispatchSession({ type: "set-exported-file-path", path: undefined });
-		}
-	}, []);
-
-	const handleExportDialogClose = useCallback(() => {
-		dispatchSession({ type: "set-export-dialog-open", value: false });
-		dispatchSession({ type: "set-exported-file-path", path: undefined });
-		dispatchSession({ type: "set-export-error", error: null });
-		dispatchSession({ type: "set-export-status", status: "idle" });
-	}, []);
-
-	const handleRetrySaveExport = useCallback(async () => {
-		const pendingSave = pendingExportSaveRef.current;
-		if (!pendingSave) {
-			return;
-		}
-
-		dispatchSession({ type: "set-export-error", error: null });
-		dispatchSession({ type: "set-export-status", status: "awaiting-save-path" });
-		try {
-			const savePathResult = await window.electronAPI.showExportSaveDialog(pendingSave.fileName);
-
-			if ("canceled" in savePathResult && savePathResult.canceled) {
-				dispatchSession({
-					type: "set-export-error",
-					error: "Save dialog canceled. Click Save Again to save without re-rendering.",
-				});
-				dispatchSession({ type: "set-export-status", status: "canceled" });
-				toast.info("Save canceled. You can try again.");
-				return;
-			}
-
-			if (!savePathResult.success || !savePathResult.path) {
-				const errorMessage = savePathResult.message || "Failed to open save dialog";
-				dispatchSession({ type: "set-export-error", error: errorMessage });
-				dispatchSession({ type: "set-export-status", status: "failed" });
-				toast.error(errorMessage);
-				return;
-			}
-
-			dispatchSession({ type: "set-export-status", status: "saving" });
-			const arrayBuffer = await pendingSave.blob.arrayBuffer();
-			const writeResult = await window.electronAPI.writeExportedVideoToPath(
-				arrayBuffer,
-				savePathResult.path,
-			);
-
-			if (writeResult.success && writeResult.path) {
-				pendingExportSaveRef.current = null;
-				dispatchSession({ type: "set-pending-export-save", value: false });
-				dispatchSession({ type: "set-export-error", error: null });
-				dispatchSession({ type: "set-exported-file-path", path: writeResult.path });
-				dispatchSession({ type: "set-export-status", status: "saved" });
-				dispatchSession({ type: "set-export-dialog-open", value: false });
-				showExportSuccessToast(writeResult.path);
-				return;
-			}
-
-			const errorMessage = writeResult.message || "Failed to save video";
-			dispatchSession({ type: "set-export-error", error: errorMessage });
-			dispatchSession({ type: "set-export-status", status: "failed" });
-			toast.error(errorMessage);
-		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
-			dispatchSession({ type: "set-export-error", error: errorMessage });
-			dispatchSession({ type: "set-export-status", status: "failed" });
-			toast.error(errorMessage);
-		}
-	}, [showExportSuccessToast]);
-
-	const openRecordingsFolder = useCallback(async () => {
-		try {
-			const result = await window.electronAPI.openRecordingsFolder();
-			if (!result.success) {
-				toast.error(result.message || result.error || "Failed to open recordings folder.");
-			}
-		} catch (error) {
-			toast.error(`Failed to open recordings folder: ${String(error)}`);
-		}
-	}, []);
+		duration,
+		postRecordingContext,
+		postRecordingAutoZoomBootstrap,
+		dispatchSession,
+		handleOpenExportDialog,
+		handleExportToClipboard,
+	});
 
 	if (error) {
 		return (

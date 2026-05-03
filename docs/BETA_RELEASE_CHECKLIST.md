@@ -16,10 +16,14 @@ Use this checklist before publishing a public beta release.
 - Run `npm ci` on a clean checkout.
 - Run `npm run lint`.
 - Run `npm run lint:repo`.
+- Run `npx tsc --noEmit`.
 - Run `npm run test`.
 - Run `npm run i18n:check`.
+- Run `npm run build:renderer`.
 - Run `npm run build:asset-pack`.
+- Run `npm run release:validate-provenance`.
 - Run platform builds on the target platforms before publishing installers.
+- Run `npm run release:validate-assets -- release` against the complete release directory.
 
 ## Recording Smoke Tests
 
@@ -53,8 +57,21 @@ Use this checklist before publishing a public beta release.
 
 - macOS: verify Screen Recording, Microphone, Accessibility, and Speech Recognition flows.
 - macOS: verify unsigned build instructions or signing/notarization status.
-- Windows: verify WGC capture and fallback behavior.
+- Windows: verify `npm run build:wgc-capture`, `npm run build:cursor-monitor`, WGC capture, and
+  fallback behavior on a Windows host.
 - Linux: verify display capture behavior and known cursor limitations.
+
+## Beta Blockers
+
+- Do not publish until every bundled wallpaper, music file, cursor asset, model, WASM runtime, and
+  website media file has source, license, and redistribution status recorded in
+  `docs/ASSET_PROVENANCE.md` and `THIRD_PARTY_NOTICES.md`.
+- Do not delete bundled assets during provenance cleanup unless the maintainer explicitly requests
+  removal.
+- Do not add generated native helper binaries unless the matching source and rebuild command are
+  committed and documented.
+- macOS beta builds may remain unsigned/ad-hoc only when release notes clearly explain the expected
+  Gatekeeper and permission behavior.
 
 ## Release Checks
 

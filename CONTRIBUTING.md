@@ -7,7 +7,8 @@ Thanks for helping improve ScreenMint.
 ```bash
 git clone https://github.com/Jahirsheikh12/screen-mint.git
 cd screen-mint
-npm install
+npm ci
+npm run dev
 ```
 
 ## Development Workflow
@@ -19,9 +20,18 @@ npm install
 Recommended checks:
 
 - `npm run lint`
+- `npm run lint:repo`
+- `npx tsc --noEmit`
 - `npm run test`
+- `npm run build:renderer`
 - `npm run build`
 - `npm run i18n:check` when editing locale files
+
+Native helper checks:
+
+- macOS helpers: `npm run build:native-helpers`
+- Windows WGC helper: `npm run build:wgc-capture` on Windows
+- Windows cursor helper: `npm run build:cursor-monitor` on Windows
 
 For larger changes, read [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) first and keep refactors
 scoped to one domain at a time. Public beta release validation lives in

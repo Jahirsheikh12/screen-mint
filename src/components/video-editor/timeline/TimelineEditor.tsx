@@ -55,476 +55,33 @@ import {
 } from "@/utils/aspectRatioUtils";
 import { getAudioRegionDisplayName, loadAudioSelectionDurationMs } from "../audioRegionUtils";
 import { loadEditorPreferences, saveEditorPreferences } from "../editorPreferences";
-import type {
-	AnnotationRegion,
-	AudioRegion,
-	AudioTrackSelection,
-	CameraLayoutRegion,
-	CaptionRegion,
-	CursorTelemetryPoint,
-	SpeedRegion,
-	TrimRegion,
-	ZoomFocus,
-	ZoomRegion,
-} from "../types";
+import type { AudioRegion, CameraLayoutRegion, SpeedRegion, ZoomRegion } from "../types";
 import Item from "./Item";
 import KeyframeMarkers from "./KeyframeMarkers";
 import Row from "./Row";
 import TimelineWrapper from "./TimelineWrapper";
+import { PlaybackCursor, TimelineAxis } from "./timelineOverlays";
+import {
+	calculateTimelineScale,
+	createInitialRange,
+	normalizeWheelDeltaToPixels,
+} from "./timelineScale";
+import {
+	ADDITIONAL_LAYER_OPTIONS,
+	AdditionalLayerType,
+	ANNOTATION_ROW_ID,
+	AUDIO_ROW_ID,
+	CAMERA_ROW_ID,
+	CAPTION_ROW_ID,
+	CLIP_ROW_ID,
+	ICON_SIDEBAR_WIDTH,
+	SPEED_ROW_ID,
+	type TimelineEditorProps,
+	type TimelineProps,
+	type TimelineRenderItem,
+	ZOOM_ROW_ID,
+} from "./timelineTypes";
 import { buildAutoZoomSuggestions, normalizeCursorTelemetry } from "./zoomSuggestionUtils";
-
-const CLIP_ROW_ID = "row-clip";
-const ZOOM_ROW_ID = "row-zoom";
-const ANNOTATION_ROW_ID = "row-annotation";
-const SPEED_ROW_ID = "row-speed";
-const AUDIO_ROW_ID = "row-audio";
-const CAMERA_ROW_ID = "row-camera";
-const CAPTION_ROW_ID = "row-caption";
-const FALLBACK_RANGE_MS = 1000;
-const ICON_SIDEBAR_WIDTH = 48;
-
-type AdditionalLayerType = "annotation" | "camera" | "speed" | "audio" | "caption";
-
-const ADDITIONAL_LAYER_OPTIONS: {
-	type: AdditionalLayerType;
-	label: string;
-	icon: typeof Camera;
-}[] = [
-	{ type: "annotation", label: "Annotation", icon: MessageSquare },
-	{ type: "camera", label: "Layouts", icon: Camera },
-	{ type: "speed", label: "Speed", icon: Gauge },
-	{ type: "audio", label: "Audio", icon: Music },
-	{ type: "caption", label: "Caption", icon: MessageSquare },
-];
-const TARGET_MARKER_COUNT = 12;
-interface TimelineEditorProps {
-	videoDuration: number;
-	currentTime: number;
-	onSeek?: (time: number) => void;
-	cursorTelemetry?: CursorTelemetryPoint[];
-	zoomRegions: ZoomRegion[];
-	onZoomAdded: (span: Span) => void;
-	onZoomSuggested?: (span: Span, focus: ZoomFocus) => void;
-	onZoomSpanChange: (id: string, span: Span) => void;
-	onZoomDelete: (id: string) => void;
-	selectedZoomId: string | null;
-	onSelectZoom: (id: string | null) => void;
-	trimRegions?: TrimRegion[];
-	cutPoints?: number[];
-	onSplitClip?: (timeMs: number) => void;
-	onDeleteSegment?: (startMs: number, endMs: number) => void;
-	onTrimAdded?: (span: Span) => void;
-	onTrimSpanChange?: (id: string, span: Span) => void;
-	onTrimDelete?: (id: string) => void;
-	selectedTrimId?: string | null;
-	onSelectTrim?: (id: string | null) => void;
-	annotationRegions?: AnnotationRegion[];
-	onAnnotationAdded?: (span: Span) => void;
-	onAnnotationSpanChange?: (id: string, span: Span) => void;
-	onAnnotationDelete?: (id: string) => void;
-	selectedAnnotationId?: string | null;
-	onSelectAnnotation?: (id: string | null) => void;
-	cameraLayouts?: CameraLayoutRegion[];
-	onCameraLayoutAdded?: (span: Span) => void;
-	onCameraLayoutSpanChange?: (id: string, span: Span) => void;
-	onCameraLayoutDelete?: (id: string) => void;
-	selectedCameraLayoutId?: string | null;
-	onSelectCameraLayout?: (id: string | null) => void;
-	captionRegions?: CaptionRegion[];
-	onCaptionAdded?: (span: Span) => void;
-	onCaptionSpanChange?: (id: string, span: Span) => void;
-	onCaptionDelete?: (id: string) => void;
-	selectedCaptionId?: string | null;
-	onSelectCaption?: (id: string | null) => void;
-	speedRegions?: SpeedRegion[];
-	onSpeedAdded?: (span: Span) => void;
-	onSpeedSpanChange?: (id: string, span: Span) => void;
-	onSpeedDelete?: (id: string) => void;
-	selectedSpeedId?: string | null;
-	onSelectSpeed?: (id: string | null) => void;
-	audioRegions?: AudioRegion[];
-	onAudioAdded?: (selection: AudioTrackSelection, clickTimeMs?: number) => void | Promise<void>;
-	onAudioSpanChange?: (id: string, span: Span) => void;
-	onAudioDelete?: (id: string) => void;
-	selectedAudioId?: string | null;
-	onSelectAudio?: (id: string | null) => void;
-	aspectRatio: AspectRatio;
-	onAspectRatioChange: (aspectRatio: AspectRatio) => void;
-	isPlaying?: boolean;
-	onTogglePlayPause?: () => void;
-	onSkipForward?: () => void;
-	onSkipBack?: () => void;
-	playbackSpeed?: number;
-	videoPath?: string | null;
-	hasAudio?: boolean;
-	clipVolume?: number;
-	onClipVolumeChange?: (volume: number) => void;
-}
-
-interface TimelineScaleConfig {
-	minItemDurationMs: number;
-	defaultItemDurationMs: number;
-	minVisibleRangeMs: number;
-}
-
-interface TimelineRenderItem {
-	id: string;
-	rowId: string;
-	span: Span;
-	label: string;
-	zoomDepth?: number;
-	speedValue?: number;
-	variant: "zoom" | "trim" | "annotation" | "speed" | "audio" | "camera" | "caption" | "clip";
-	clipDuration?: string;
-	clipSpeed?: string;
-	sourceStart?: number;
-	sourceEnd?: number;
-}
-
-const SCALE_CANDIDATES = [
-	{ intervalSeconds: 0.05, gridSeconds: 0.01 },
-	{ intervalSeconds: 0.1, gridSeconds: 0.02 },
-	{ intervalSeconds: 0.25, gridSeconds: 0.05 },
-	{ intervalSeconds: 0.5, gridSeconds: 0.1 },
-	{ intervalSeconds: 1, gridSeconds: 0.25 },
-	{ intervalSeconds: 2, gridSeconds: 0.5 },
-	{ intervalSeconds: 5, gridSeconds: 1 },
-	{ intervalSeconds: 10, gridSeconds: 2 },
-	{ intervalSeconds: 15, gridSeconds: 3 },
-	{ intervalSeconds: 30, gridSeconds: 5 },
-	{ intervalSeconds: 60, gridSeconds: 10 },
-	{ intervalSeconds: 120, gridSeconds: 20 },
-	{ intervalSeconds: 300, gridSeconds: 30 },
-	{ intervalSeconds: 600, gridSeconds: 60 },
-	{ intervalSeconds: 900, gridSeconds: 120 },
-	{ intervalSeconds: 1800, gridSeconds: 180 },
-	{ intervalSeconds: 3600, gridSeconds: 300 },
-];
-
-function calculateAxisScale(visibleRangeMs: number): { intervalMs: number; gridMs: number } {
-	const visibleSeconds = visibleRangeMs / 1000;
-	const candidate =
-		SCALE_CANDIDATES.find((scaleCandidate) => {
-			if (visibleSeconds <= 0) {
-				return true;
-			}
-			return visibleSeconds / scaleCandidate.intervalSeconds <= TARGET_MARKER_COUNT;
-		}) ?? SCALE_CANDIDATES[SCALE_CANDIDATES.length - 1];
-
-	return {
-		intervalMs: Math.round(candidate.intervalSeconds * 1000),
-		gridMs: Math.round(candidate.gridSeconds * 1000),
-	};
-}
-
-function calculateTimelineScale(durationSeconds: number): TimelineScaleConfig {
-	const totalMs = Math.max(0, Math.round(durationSeconds * 1000));
-
-	const minItemDurationMs = 100;
-
-	const defaultItemDurationMs =
-		totalMs > 0
-			? Math.max(minItemDurationMs, Math.min(Math.round(totalMs * 0.05), 30000))
-			: Math.max(minItemDurationMs, 1000);
-
-	const minVisibleRangeMs = 300;
-
-	return {
-		minItemDurationMs,
-		defaultItemDurationMs,
-		minVisibleRangeMs,
-	};
-}
-
-function createInitialRange(totalMs: number): Range {
-	if (totalMs > 0) {
-		return { start: 0, end: totalMs };
-	}
-
-	return { start: 0, end: FALLBACK_RANGE_MS };
-}
-
-function normalizeWheelDeltaToPixels(delta: number, deltaMode: number) {
-	if (deltaMode === 1) {
-		return delta * 16;
-	}
-
-	if (deltaMode === 2) {
-		return delta * 240;
-	}
-
-	return delta;
-}
-
-function formatTimeLabel(milliseconds: number, intervalMs: number) {
-	const totalSeconds = milliseconds / 1000;
-	const hours = Math.floor(totalSeconds / 3600);
-	const minutes = Math.floor((totalSeconds % 3600) / 60);
-	const seconds = totalSeconds % 60;
-
-	const fractionalDigits = intervalMs < 250 ? 2 : intervalMs < 1000 ? 1 : 0;
-
-	if (hours > 0) {
-		const minutesString = minutes.toString().padStart(2, "0");
-		const secondsString = Math.floor(seconds).toString().padStart(2, "0");
-		return `${hours}:${minutesString}:${secondsString}`;
-	}
-
-	if (fractionalDigits > 0) {
-		const secondsWithFraction = seconds.toFixed(fractionalDigits);
-		const [wholeSeconds, fraction] = secondsWithFraction.split(".");
-		return `${minutes}:${wholeSeconds.padStart(2, "0")}.${fraction}`;
-	}
-
-	return `${minutes}:${Math.floor(seconds).toString().padStart(2, "0")}`;
-}
-
-function formatPlayheadTime(ms: number): string {
-	const s = ms / 1000;
-	const min = Math.floor(s / 60);
-	const sec = s % 60;
-	if (min > 0) return `${min}:${sec.toFixed(1).padStart(4, "0")}`;
-	return `${sec.toFixed(1)}s`;
-}
-
-function PlaybackCursor({
-	currentTimeMs,
-	videoDurationMs,
-	onSeek,
-	timelineRef,
-	keyframes = [],
-}: {
-	currentTimeMs: number;
-	videoDurationMs: number;
-	onSeek?: (time: number) => void;
-	timelineRef: React.RefObject<HTMLDivElement>;
-	keyframes?: { id: string; time: number }[];
-}) {
-	const { sidebarWidth, direction, range, valueToPixels, pixelsToValue } = useTimelineContext();
-	const sideProperty = direction === "rtl" ? "right" : "left";
-	const [isDragging, setIsDragging] = useState(false);
-
-	useEffect(() => {
-		if (!isDragging) return;
-
-		const handleMouseMove = (e: MouseEvent) => {
-			if (!timelineRef.current || !onSeek) return;
-
-			const rect = timelineRef.current.getBoundingClientRect();
-			const clickX = e.clientX - rect.left - sidebarWidth;
-
-			// Allow dragging outside to 0 or max, but clamp the value
-			const relativeMs = pixelsToValue(clickX);
-			let absoluteMs = Math.max(0, Math.min(range.start + relativeMs, videoDurationMs));
-
-			// Snap to nearby keyframe if within threshold (150ms)
-			const snapThresholdMs = 150;
-			const nearbyKeyframe = keyframes.find(
-				(kf) =>
-					Math.abs(kf.time - absoluteMs) <= snapThresholdMs &&
-					kf.time >= range.start &&
-					kf.time <= range.end,
-			);
-
-			if (nearbyKeyframe) {
-				absoluteMs = nearbyKeyframe.time;
-			}
-
-			onSeek(absoluteMs / 1000);
-		};
-
-		const handleMouseUp = () => {
-			setIsDragging(false);
-			document.body.style.cursor = "";
-		};
-
-		window.addEventListener("mousemove", handleMouseMove);
-		window.addEventListener("mouseup", handleMouseUp);
-		document.body.style.cursor = "ew-resize";
-
-		return () => {
-			window.removeEventListener("mousemove", handleMouseMove);
-			window.removeEventListener("mouseup", handleMouseUp);
-			document.body.style.cursor = "";
-		};
-	}, [
-		isDragging,
-		onSeek,
-		timelineRef,
-		sidebarWidth,
-		range.start,
-		range.end,
-		videoDurationMs,
-		pixelsToValue,
-		keyframes,
-	]);
-
-	if (videoDurationMs <= 0 || currentTimeMs < 0) {
-		return null;
-	}
-
-	const clampedTime = Math.min(currentTimeMs, videoDurationMs);
-
-	if (clampedTime < range.start || clampedTime > range.end) {
-		return null;
-	}
-
-	const offset = valueToPixels(clampedTime - range.start);
-
-	return (
-		<div
-			className="absolute top-0 bottom-0 z-50 group/cursor"
-			style={{
-				[sideProperty === "right" ? "marginRight" : "marginLeft"]: `${sidebarWidth - 1}px`,
-				pointerEvents: "none",
-			}}
-		>
-			<div
-				className="absolute top-0 bottom-0 w-[1.5px] bg-[#f59e0b] shadow-[0_0_8px_rgba(245,158,11,0.4)] cursor-ew-resize pointer-events-auto hover:shadow-[0_0_12px_rgba(245,158,11,0.6)] transition-shadow"
-				style={{
-					[sideProperty]: `${offset}px`,
-				}}
-				onMouseDown={(e) => {
-					e.stopPropagation();
-					setIsDragging(true);
-				}}
-			>
-				{/* Blue circle head */}
-				<div
-					className="absolute -top-1.5 left-1/2 -translate-x-1/2 hover:scale-125 transition-transform"
-					style={{ width: "14px", height: "14px" }}
-				>
-					<div className="w-3 h-3 mx-auto mt-[1px] bg-[#f59e0b] rounded-full shadow-lg border-2 border-[#fbbf24]" />
-				</div>
-				{isDragging && (
-					<div className="absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded bg-black/80 text-[10px] text-white/90 font-medium tabular-nums whitespace-nowrap border border-white/10 shadow-lg pointer-events-none">
-						{formatPlayheadTime(clampedTime)}
-					</div>
-				)}
-			</div>
-		</div>
-	);
-}
-
-function TimelineAxis({
-	videoDurationMs,
-	currentTimeMs,
-}: {
-	videoDurationMs: number;
-	currentTimeMs: number;
-}) {
-	const { sidebarWidth, direction, range, valueToPixels } = useTimelineContext();
-	const sideProperty = direction === "rtl" ? "right" : "left";
-
-	const { intervalMs } = useMemo(
-		() => calculateAxisScale(range.end - range.start),
-		[range.end, range.start],
-	);
-
-	const markers = useMemo(() => {
-		if (intervalMs <= 0) {
-			return { markers: [], minorTicks: [] };
-		}
-
-		const maxTime = videoDurationMs > 0 ? videoDurationMs : range.end;
-		const visibleStart = Math.max(0, Math.min(range.start, maxTime));
-		const visibleEnd = Math.min(range.end, maxTime);
-		const markerTimes = new Set<number>();
-
-		const firstMarker = Math.ceil(visibleStart / intervalMs) * intervalMs;
-
-		for (let time = firstMarker; time <= maxTime; time += intervalMs) {
-			if (time >= visibleStart && time <= visibleEnd) {
-				markerTimes.add(Math.round(time));
-			}
-		}
-
-		if (visibleStart <= maxTime) {
-			markerTimes.add(Math.round(visibleStart));
-		}
-
-		if (videoDurationMs > 0) {
-			markerTimes.add(Math.round(videoDurationMs));
-		}
-
-		const sorted = Array.from(markerTimes)
-			.filter((time) => time <= maxTime)
-			.sort((a, b) => a - b);
-
-		// Generate minor ticks (4 ticks between major intervals)
-		const minorTicks = [];
-		const minorInterval = intervalMs / 5;
-
-		for (let time = firstMarker; time <= maxTime; time += minorInterval) {
-			if (time >= visibleStart && time <= visibleEnd) {
-				// Skip if it's close to a major marker
-				const isMajor = Math.abs(time % intervalMs) < 1;
-				if (!isMajor) {
-					minorTicks.push(time);
-				}
-			}
-		}
-
-		return {
-			markers: sorted.map((time) => ({
-				time,
-				label: formatTimeLabel(time, intervalMs),
-			})),
-			minorTicks,
-		};
-	}, [intervalMs, range.end, range.start, videoDurationMs]);
-
-	return (
-		<div
-			className="h-8 bg-[#0c0c0f] border-b border-white/5 relative overflow-hidden select-none"
-			style={{
-				[sideProperty === "right" ? "marginRight" : "marginLeft"]: `${sidebarWidth}px`,
-			}}
-		>
-			{/* Minor Ticks */}
-			{markers.minorTicks.map((time) => {
-				const offset = valueToPixels(time - range.start);
-				return (
-					<div
-						key={`minor-${time}`}
-						className="absolute bottom-0 h-1 w-[1px] bg-white/5"
-						style={{ [sideProperty]: `${offset}px` }}
-					/>
-				);
-			})}
-
-			{/* Major Markers */}
-			{markers.markers.map((marker) => {
-				const offset = valueToPixels(marker.time - range.start);
-				const markerStyle: React.CSSProperties = {
-					position: "absolute",
-					bottom: 0,
-					height: "100%",
-					display: "flex",
-					flexDirection: "row",
-					alignItems: "flex-end",
-					[sideProperty]: `${offset}px`,
-				};
-
-				return (
-					<div key={marker.time} style={markerStyle}>
-						<div className="flex flex-col items-center pb-1">
-							<div className="h-2 w-[1px] bg-white/20 mb-1" />
-							<span
-								className={cn(
-									"text-[10px] font-medium tabular-nums tracking-tight",
-									marker.time === currentTimeMs ? "text-[#fbbf24]" : "text-slate-500",
-								)}
-							>
-								{marker.label}
-							</span>
-						</div>
-					</div>
-				);
-			})}
-		</div>
-	);
-}
 
 function Timeline({
 	items,
@@ -565,46 +122,7 @@ function Timeline({
 	onDeleteSegment,
 	waveformData,
 	sourceDurationMs,
-}: {
-	items: TimelineRenderItem[];
-	videoDurationMs: number;
-	currentTimeMs: number;
-	onSeek?: (time: number) => void;
-	onSelectZoom?: (id: string | null) => void;
-	onSelectTrim?: (id: string | null) => void;
-	onSelectAnnotation?: (id: string | null) => void;
-	onSelectCameraLayout?: (id: string | null) => void;
-	onSelectSpeed?: (id: string | null) => void;
-	onSelectAudio?: (id: string | null) => void;
-	onSelectCaption?: (id: string | null) => void;
-	selectedZoomId: string | null;
-	selectedAnnotationId?: string | null;
-	selectedCameraLayoutId?: string | null;
-	selectedSpeedId?: string | null;
-	selectedAudioId?: string | null;
-	selectedCaptionId?: string | null;
-	keyframes?: { id: string; time: number }[];
-	onAddZoom?: (clickTimeMs?: number) => void;
-	onAddAnnotation?: (clickTimeMs?: number) => void;
-	onAddCameraLayout?: (clickTimeMs?: number) => void;
-	onAddSpeed?: (clickTimeMs?: number) => void;
-	onAddAudio?: (clickTimeMs?: number) => void;
-	onAddCaption?: (clickTimeMs?: number) => void;
-	onDeleteZoom?: (id: string) => void;
-	onDeleteAnnotation?: (id: string) => void;
-	onDeleteCameraLayout?: (id: string) => void;
-	onDeleteSpeed?: (id: string) => void;
-	onDeleteAudio?: (id: string) => void;
-	onDeleteCaption?: (id: string) => void;
-	visibleLayers: Set<AdditionalLayerType>;
-	selectedClip: boolean;
-	onSelectClip?: (selected: boolean) => void;
-	trimMode?: boolean;
-	onSplitClip?: (timeMs: number) => void;
-	onDeleteSegment?: (startMs: number, endMs: number) => void;
-	waveformData?: Float32Array | null;
-	sourceDurationMs?: number;
-}) {
+}: TimelineProps) {
 	const { setTimelineRef, setSidebarRef, style, sidebarWidth, direction, range, pixelsToValue } =
 		useTimelineContext();
 	const sideProperty = direction === "rtl" ? "right" : "left";
@@ -703,10 +221,6 @@ function Timeline({
 			onMouseMove={handleTimelineMouseMove}
 			onMouseLeave={handleTimelineMouseLeave}
 		>
-			{/* Hidden element whose width is measured by dnd-timeline as the sidebar width.
-			    Reserves ICON_SIDEBAR_WIDTH of horizontal space so items are positioned within
-			    (timelineWidth - ICON_SIDEBAR_WIDTH), leaving room for the absolute icon column
-			    on each row and preventing the right edge from being clipped. */}
 			<div
 				ref={setSidebarRef}
 				aria-hidden
@@ -728,7 +242,6 @@ function Timeline({
 				timelineRef={localTimelineRef}
 				keyframes={keyframes}
 			/>
-			{/* Ghost playhead - follows cursor */}
 			{ghostX !== null && (
 				<div
 					className="absolute top-0 bottom-0 z-40 pointer-events-none"
@@ -750,7 +263,6 @@ function Timeline({
 				</div>
 			)}
 
-			{/* Clip Layer - shows segments (splits visible as gaps) */}
 			<Row
 				id={CLIP_ROW_ID}
 				isEmpty={clipItems.length === 0}
@@ -784,7 +296,6 @@ function Timeline({
 				))}
 			</Row>
 
-			{/* Zoom Layer - always visible */}
 			<Row
 				id={ZOOM_ROW_ID}
 				isEmpty={zoomItems.length === 0}
@@ -811,7 +322,6 @@ function Timeline({
 				))}
 			</Row>
 
-			{/* Additional layers - only shown when added */}
 			{visibleLayers.has("annotation") && (
 				<Row
 					id={ANNOTATION_ROW_ID}
@@ -1011,7 +521,6 @@ export default function TimelineEditor({
 	const currentTimeMs = useMemo(() => Math.round(currentTime * 1000), [currentTime]);
 	const waveformData = useWaveformData(videoPath ?? null, hasAudio);
 
-	// Source-to-display time mapping for ripple-delete (timeline collapses trimmed gaps)
 	const sortedTrimRegions = useMemo(
 		() => [...trimRegions].sort((a, b) => a.startMs - b.startMs),
 		[trimRegions],
@@ -1080,7 +589,6 @@ export default function TimelineEditor({
 	const timelineContainerRef = useRef<HTMLDivElement>(null);
 	const { shortcuts: keyShortcuts, isMac } = useShortcuts();
 
-	// Auto-show layers when they have items
 	useEffect(() => {
 		setVisibleLayers((prev) => {
 			const next = new Set(prev);
@@ -1177,7 +685,6 @@ export default function TimelineEditor({
 		[applyCustomAspectRatio],
 	);
 
-	// Add keyframe at current playhead position
 	const addKeyframe = useCallback(() => {
 		if (totalMs === 0) return;
 		const time = Math.max(0, Math.min(currentTimeMs, totalMs));
@@ -1185,14 +692,12 @@ export default function TimelineEditor({
 		setKeyframes((prev) => [...prev, { id: uuidv4(), time }]);
 	}, [currentTimeMs, totalMs, keyframes]);
 
-	// Delete selected keyframe
 	const deleteSelectedKeyframe = useCallback(() => {
 		if (!selectedKeyframeId) return;
 		setKeyframes((prev) => prev.filter((kf) => kf.id !== selectedKeyframeId));
 		setSelectedKeyframeId(null);
 	}, [selectedKeyframeId]);
 
-	// Move keyframe to new time position
 	const handleKeyframeMove = useCallback(
 		(id: string, newTime: number) => {
 			setKeyframes((prev) =>
@@ -1204,14 +709,12 @@ export default function TimelineEditor({
 		[totalMs],
 	);
 
-	// Delete selected zoom item
 	const deleteSelectedZoom = useCallback(() => {
 		if (!selectedZoomId) return;
 		onZoomDelete(selectedZoomId);
 		onSelectZoom(null);
 	}, [selectedZoomId, onZoomDelete, onSelectZoom]);
 
-	// Delete selected trim item
 	const deleteSelectedAnnotation = useCallback(() => {
 		if (!selectedAnnotationId || !onAnnotationDelete || !onSelectAnnotation) return;
 		onAnnotationDelete(selectedAnnotationId);
@@ -1246,9 +749,6 @@ export default function TimelineEditor({
 		setRange(createInitialRange(displayTotalMs));
 	}, [displayTotalMs]);
 
-	// Normalize regions only when timeline bounds change (not on every region edit).
-	// Using refs to read current regions avoids a dependency-loop that re-fires
-	// this effect on every drag/resize and races with dnd-timeline's internal state.
 	const zoomRegionsRef = useRef(zoomRegions);
 	const trimRegionsRef = useRef(trimRegions);
 	const speedRegionsRef = useRef(speedRegions);
@@ -1328,7 +828,6 @@ export default function TimelineEditor({
 				onCaptionSpanChange?.(region.id, { start: normalizedStart, end: normalizedEnd });
 			}
 		});
-		// Only re-run when the timeline scale changes, not on every region edit
 	}, [
 		totalMs,
 		safeMinDurationMs,
@@ -1341,7 +840,6 @@ export default function TimelineEditor({
 
 	const hasOverlap = useCallback(
 		(newSpan: Span, excludeId?: string): boolean => {
-			// Determine which row the item belongs to
 			const isZoomItem = zoomRegions.some((r) => r.id === excludeId);
 			const isAnnotationItem = annotationRegions.some((r) => r.id === excludeId);
 			const isCameraItem = cameraLayouts.some((r) => r.id === excludeId);
@@ -1353,7 +851,6 @@ export default function TimelineEditor({
 				return false;
 			}
 
-			// Helper to check overlap against a specific set of regions
 			const checkOverlap = (
 				regions: (ZoomRegion | SpeedRegion | AudioRegion | CameraLayoutRegion)[],
 			) => {
@@ -1384,8 +881,6 @@ export default function TimelineEditor({
 		[zoomRegions, annotationRegions, cameraLayouts, speedRegions, audioRegions, captionRegions],
 	);
 
-	// Keep newly added timeline regions at the original short default instead of
-	// scaling them with the full recording length.
 	const defaultRegionDurationMs = useMemo(() => Math.min(1000, totalMs), [totalMs]);
 
 	const handleAddZoom = useCallback(
@@ -1399,17 +894,14 @@ export default function TimelineEditor({
 				return;
 			}
 
-			// Place zoom at click position if provided, otherwise at playhead
 			const startPos = Math.max(
 				0,
 				Math.min(clickTimeMs != null ? Math.round(clickTimeMs) : currentTimeMs, totalMs),
 			);
-			// Find the next zoom region after the position
 			const sorted = [...zoomRegions].sort((a, b) => a.startMs - b.startMs);
 			const nextRegion = sorted.find((region) => region.startMs > startPos);
 			const gapToNext = nextRegion ? nextRegion.startMs - startPos : totalMs - startPos;
 
-			// Check if position is inside any zoom region
 			const isOverlapping = sorted.some(
 				(region) => startPos >= region.startMs && startPos < region.endMs,
 			);
@@ -1764,11 +1256,9 @@ export default function TimelineEditor({
 		return `${min}m ${sec}s`;
 	}, [displayTotalMs]);
 
-	// Compute visible clip segments from cut points and trim regions
 	const clipSegments = useMemo(() => {
 		if (totalMs <= 0) return [];
 
-		// Collect all boundary points
 		const boundaries = new Set<number>([0, totalMs]);
 		for (const cp of cutPoints) {
 			if (cp > 0 && cp < totalMs) boundaries.add(cp);
@@ -1784,7 +1274,6 @@ export default function TimelineEditor({
 		for (let i = 0; i < sorted.length - 1; i++) {
 			const start = sorted[i];
 			const end = sorted[i + 1];
-			// Skip if this interval is fully inside a trim region
 			const isTrimmed = trimRegions.some((tr) => start >= tr.startMs && end <= tr.endMs);
 			if (!isTrimmed && end > start) {
 				segments.push({ id: `segment-${start}-${end}`, startMs: start, endMs: end });
@@ -1795,7 +1284,6 @@ export default function TimelineEditor({
 	}, [totalMs, cutPoints, trimRegions]);
 
 	const timelineItems = useMemo<TimelineRenderItem[]>(() => {
-		// Clip segments - each visible portion of the video (mapped to display time)
 		const hasSplits = clipSegments.length > 1 || trimRegions.length > 0;
 		const clip: TimelineRenderItem[] = clipSegments.map((seg, index) => ({
 			id: seg.id,
@@ -1809,7 +1297,6 @@ export default function TimelineEditor({
 			sourceEnd: seg.endMs,
 		}));
 
-		// All other regions are also mapped to display time so they align with clips
 		const zooms: TimelineRenderItem[] = zoomRegions
 			.map((region, index) => ({
 				id: region.id,
@@ -1928,7 +1415,6 @@ export default function TimelineEditor({
 		captionRegions,
 	]);
 
-	// Flat list of all non-annotation region spans in display time for neighbour-clamping
 	const allRegionSpans = useMemo(() => {
 		const zooms = zoomRegions.map((r) => ({
 			id: r.id,
@@ -1953,7 +1439,6 @@ export default function TimelineEditor({
 		return [...zooms, ...cameras, ...speeds, ...audios];
 	}, [zoomRegions, cameraLayouts, speedRegions, audioRegions, sourceToDisplay]);
 
-	// Convert display-time span back to source time before updating regions
 	const handleItemSpanChange = useCallback(
 		(id: string, displaySpan: Span) => {
 			const span = {
@@ -1991,7 +1476,6 @@ export default function TimelineEditor({
 		],
 	);
 
-	// Wrap hasOverlap to accept display-time spans (converts to source time internally)
 	const displayTimeHasOverlap = useCallback(
 		(displaySpan: Span, excludeId?: string): boolean => {
 			const sourceSpan = {
@@ -2003,7 +1487,6 @@ export default function TimelineEditor({
 		[hasOverlap, displayToSource],
 	);
 
-	// Wrap seek to convert display time → source time
 	const wrappedOnSeek = useCallback(
 		(timeInSeconds: number) => {
 			if (!onSeek) return;
@@ -2014,7 +1497,6 @@ export default function TimelineEditor({
 		[onSeek, displayToSource],
 	);
 
-	// Wrap split to convert display time → source time
 	const wrappedOnSplitClip = useCallback(
 		(displayTimeMs: number) => {
 			if (!onSplitClip) return;
@@ -2023,7 +1505,6 @@ export default function TimelineEditor({
 		[onSplitClip, displayToSource],
 	);
 
-	// Wrap add-region handlers to convert click time from display → source
 	const wrappedHandleAddZoom = useCallback(
 		(clickTimeMs?: number) => {
 			handleAddZoom(clickTimeMs != null ? displayToSource(Math.round(clickTimeMs)) : undefined);

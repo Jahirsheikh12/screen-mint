@@ -4,7 +4,8 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 const targetDir = path.resolve(process.argv[2] || "release-assets");
-const requiredMetadataFiles = ["latest.yml", "latest-linux.yml", "latest-mac.yml"];
+const requiredMetadataFiles = ["latest.yml", "latest-mac.yml"];
+const requiredMetadataAlternatives = [["latest-linux.yml", "latest-linux-arm64.yml"]];
 const optionalMetadataFiles = ["latest-mac-arm64.yml"];
 const requiredMetadataReferences = {
 	"latest-mac.yml": ["ScreenMint-x64", "ScreenMint-arm64"],
@@ -45,8 +46,18 @@ async function main() {
 		}
 	}
 
+	const selectedAlternativeMetadataFiles = [];
+	for (const alternatives of requiredMetadataAlternatives) {
+		const selected = alternatives.find((metadataFile) => entrySet.has(metadataFile));
+		if (!selected) {
+			throw new Error(`Missing updater metadata file: one of ${alternatives.join(", ")}`);
+		}
+		selectedAlternativeMetadataFiles.push(selected);
+	}
+
 	const metadataFilesToValidate = [
 		...requiredMetadataFiles,
+		...selectedAlternativeMetadataFiles,
 		...optionalMetadataFiles.filter((metadataFile) => entrySet.has(metadataFile)),
 	];
 

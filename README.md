@@ -34,9 +34,11 @@ Useful commands:
 
 - `npm run lint`
 - `npm run lint:repo`
+- `npx tsc --noEmit`
 - `npm run test`
 - `npm run i18n:check`
 - `npm run build:renderer`
+- `npm run build:asset-pack`
 - `npm run build`
 - `npm run build:mac`
 - `npm run build:win`
@@ -54,6 +56,11 @@ ScreenMint is preparing for a public beta. Before publishing a release, use the
 artifacts.
 Third-party runtime and asset notices are tracked in
 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
+
+Current beta blockers are asset provenance, Windows-helper validation on a real Windows host, and
+macOS signing/notarization credentials. Bundled assets are kept in the repository, but release
+publishing is blocked until `npm run release:validate-provenance` passes and any remaining platform
+limitations are clearly called out in release notes.
 
 ## Project Format
 

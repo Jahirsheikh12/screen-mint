@@ -18,27 +18,10 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { getAssetPath, getRenderableAssetUrl } from "@/lib/assetPath";
-import {
-	DEFAULT_WALLPAPER_PATH,
-	DEFAULT_WALLPAPER_RELATIVE_PATH,
-	normalizeWallpaperSelection,
-} from "@/lib/wallpapers";
-import type { AspectRatio } from "@/utils/aspectRatioUtils";
-import { AnnotationOverlay } from "./AnnotationOverlay";
-import { CaptionOverlay } from "./CaptionOverlay";
-import { createWebcamZoomMotionState, type PixelRect } from "./cameraLayouts";
+import { createWebcamZoomMotionState } from "./cameraLayouts";
 import { applyOpacityToHex, buildFrameShadowFilter, hasVisibleFrameShadow } from "./frameEffects";
-import { KeyboardShortcutOverlay } from "./KeyboardShortcutOverlay";
 import {
-	type AnnotationRegion,
-	type CameraLayoutRegion,
-	type CursorMovementStyle,
-	type CursorPack,
-	type CursorSpringSettings,
-	type CursorStyle,
 	type CursorTelemetryPoint,
-	type CursorTypeMode,
 	DEFAULT_CAMERA_SPRING,
 	DEFAULT_CLICK_HIGHLIGHT_COLOR,
 	DEFAULT_CLICK_HIGHLIGHT_OPACITY,
@@ -68,15 +51,9 @@ import {
 	DEFAULT_SMOOTH_CURSOR_MOVEMENT,
 	DEFAULT_WEBCAM_EFFECTS,
 	DEFAULT_WEBCAM_REGION,
-	type KeyboardShortcutCallout,
-	type KeyboardShortcutPosition,
-	type KeyboardShortcutTheme,
 	type PreviewQuality,
 	type SpeedRegion,
 	type TrimRegion,
-	type WebcamEffects,
-	type WebcamHealthMetrics,
-	type WebcamPreviewMode,
 	type ZoomDepth,
 	type ZoomFocus,
 	type ZoomRegion,
@@ -91,16 +68,16 @@ import {
 	PixiCursorOverlay,
 	preloadCursorAssets,
 } from "./videoPlayback/cursorRenderer";
-import {
-	buildCursorSimulationPath,
-	type CursorSimulationPath,
-} from "./videoPlayback/cursorSimulation";
+import type { CursorSimulationPath } from "./videoPlayback/cursorSimulation";
 import { resolveCursorV2Config } from "./videoPlayback/cursorV2";
 // import { computeMockupScreenRect, drawDeviceMockup } from "./videoPlayback/deviceMockups";
 import { clampFocusToStage as clampFocusToStageUtil } from "./videoPlayback/focusUtils";
+import { HiddenPreviewVideo } from "./videoPlayback/HiddenPreviewVideo";
 import { layoutVideoContent as layoutVideoContentUtil } from "./videoPlayback/layoutUtils";
-import { clamp01 } from "./videoPlayback/mathUtils";
 import { updateOverlayIndicator } from "./videoPlayback/overlayUtils";
+import { PlaybackOverlays } from "./videoPlayback/PlaybackOverlays";
+import type { VideoPlaybackProps, VideoPlaybackRef } from "./videoPlayback/playbackTypes";
+import { type PreviewGeometry, rectsEqual } from "./videoPlayback/previewGeometry";
 import {
 	addPreviewHold,
 	clearPreviewHolds,
@@ -122,6 +99,10 @@ import {
 	hasRenderablePreviewFrame,
 	restorePreviewFrame as restorePreviewVideoFrame,
 } from "./videoPlayback/previewRecovery";
+import { usePlaybackLatestRefs } from "./videoPlayback/usePlaybackLatestRefs";
+import { usePlaybackWebcamFrame } from "./videoPlayback/usePlaybackWebcamFrame";
+import { useResolvedWallpaper } from "./videoPlayback/useResolvedWallpaper";
+import { useZoomFocusDrag } from "./videoPlayback/useZoomFocusDrag";
 import { createVideoEventHandlers } from "./videoPlayback/videoEventHandlers";
 import {
 	applyZoomTransform,
@@ -129,131 +110,6 @@ import {
 	type MotionBlurState,
 	projectFrameRect,
 } from "./videoPlayback/zoomTransform";
-import { WebcamOverlay } from "./WebcamOverlay";
-import { evaluateWebcamFrame } from "./webcamFrameEvaluation";
-
-interface VideoPlaybackProps {
-	videoPath: string;
-	onDurationChange: (duration: number) => void;
-	onTimeUpdate: (time: number) => void;
-	currentTime: number;
-	onPlayStateChange: (playing: boolean) => void;
-	onError: (error: string) => void;
-	wallpaper?: string;
-	zoomRegions: ZoomRegion[];
-	selectedZoomId: string | null;
-	onSelectZoom: (id: string | null) => void;
-	onZoomFocusChange: (id: string, focus: ZoomFocus) => void;
-	isPlaying: boolean;
-	frameShadowSize?: number;
-	frameShadowOpacity?: number;
-	frameShadowBlur?: number;
-	previewQuality: PreviewQuality;
-	onPreviewQualitySwitchFailed?: (fallbackQuality: PreviewQuality) => void;
-	backgroundBlur?: number;
-	hideBackground?: boolean;
-	zoomMotionBlur?: number;
-	connectZooms?: boolean;
-	frameBorderEnabled?: boolean;
-	frameBorderWidth?: number;
-	frameBorderColor?: string;
-	frameBorderOpacity?: number;
-	borderRadius?: number;
-	padding?: number;
-	cropRegion?: import("./types").CropRegion;
-	trimRegions?: TrimRegion[];
-	speedRegions?: SpeedRegion[];
-	aspectRatio: AspectRatio;
-	annotationRegions?: AnnotationRegion[];
-	selectedAnnotationId?: string | null;
-	onSelectAnnotation?: (id: string | null) => void;
-	onAnnotationPositionChange?: (id: string, position: { x: number; y: number }) => void;
-	onAnnotationSizeChange?: (id: string, size: { width: number; height: number }) => void;
-	cursorTelemetry?: CursorTelemetryPoint[];
-	keyboardShortcutCallouts?: KeyboardShortcutCallout[];
-	showKeyboardShortcuts?: boolean;
-	keyboardShortcutPosition?: KeyboardShortcutPosition;
-	keyboardShortcutTheme?: KeyboardShortcutTheme;
-	keyboardShortcutScale?: number;
-	keyboardShortcutOpacity?: number;
-	keyboardShortcutMaxVisible?: number;
-	showCursor?: boolean;
-	cursorSize?: number;
-	cursorSmoothing?: number;
-	cursorMotionBlur?: number;
-	cursorClickBounce?: number;
-	cursorSway?: number;
-	cursorStyle?: CursorStyle;
-	cursorPack?: CursorPack;
-	cursorColor?: string;
-	cursorOpacity?: number;
-	clickHighlightColor?: string;
-	clickHighlightSize?: number;
-	clickHighlightOpacity?: number;
-	cursorTrailLength?: number;
-	cursorTrailOpacity?: number;
-	cursorTypeMode?: CursorTypeMode;
-	cursorTilt?: number;
-	hideWhenIdle?: boolean;
-	idleHideDelayMs?: number;
-	smoothMovementEnabled?: boolean;
-	cursorMovementStyle?: CursorMovementStyle;
-	cursorSpring?: CursorSpringSettings;
-	highQualitySvgCursors?: boolean;
-	cameraSpring?: import("./types").CameraSpringSettings;
-	webcamPath?: string | null;
-	webcamRegion?: import("./types").WebcamRegion;
-	webcamEffects?: WebcamEffects;
-	webcamPreviewMode?: WebcamPreviewMode;
-	showWebcam?: boolean;
-	mirrorWebcam?: boolean;
-	cameraSizeDuringZoom?: number;
-	cameraLayouts?: CameraLayoutRegion[];
-	onWebcamHealthMetricsChange?: (metrics: WebcamHealthMetrics | null) => void;
-	onWebcamPositionChange?: (position: { x: number; y: number }) => void;
-	onWebcamSizeChange?: (size: { width: number; height: number }) => void;
-	webcamSelected?: boolean;
-	selectedCameraLayoutId?: string | null;
-	onSelectWebcam?: () => void;
-	captionRegions?: import("./types").CaptionRegion[];
-	captionSettings?: import("./types").CaptionSettings;
-	isEditingCaptionPosition?: boolean;
-	onCaptionPositionOverrideChange?: (
-		override: import("./types").CaptionPositionOverride | null,
-	) => void;
-}
-
-export interface VideoPlaybackRef {
-	video: HTMLVideoElement | null;
-	app: Application | null;
-	videoSprite: Sprite | null;
-	videoContainer: Container | null;
-	containerRef: React.RefObject<HTMLDivElement>;
-	play: () => Promise<void>;
-	pause: () => void;
-	refreshFrame: () => Promise<void>;
-	restorePreviewFrame: (options?: {
-		forceReload?: boolean;
-		resumePlayback?: boolean;
-	}) => Promise<void>;
-	acquirePreviewHold: (reason: PreviewHoldReason) => Promise<string>;
-	releasePreviewHold: (token: string) => void;
-}
-
-interface PreviewGeometry {
-	stageRect: PixelRect;
-	frameRect: PixelRect;
-	maskRect: PixelRect;
-}
-
-function rectsEqual(left: PixelRect, right: PixelRect) {
-	return (
-		left.x === right.x &&
-		left.y === right.y &&
-		left.width === right.width &&
-		left.height === right.height
-	);
-}
 
 const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 	(
@@ -459,116 +315,28 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		useEffect(() => {
 			desiredPreviewQualityRef.current = previewQuality;
 		}, [previewQuality]);
-		const webcamStageX = previewGeometry?.stageRect?.x ?? 0;
-		const webcamStageY = previewGeometry?.stageRect?.y ?? 0;
-		const webcamStageWidth =
-			previewGeometry?.stageRect?.width ?? (stageSizeRef.current.width || 800);
-		const webcamStageHeight =
-			previewGeometry?.stageRect?.height ?? (stageSizeRef.current.height || 600);
-		const webcamStageRect = useMemo<PixelRect>(() => {
-			return {
-				x: webcamStageX,
-				y: webcamStageY,
-				width: webcamStageWidth,
-				height: webcamStageHeight,
-			};
-		}, [webcamStageHeight, webcamStageWidth, webcamStageX, webcamStageY]);
-		const webcamCompositionX = previewGeometry?.frameRect?.x ?? webcamStageX;
-		const webcamCompositionY = previewGeometry?.frameRect?.y ?? webcamStageY;
-		const webcamCompositionWidth = previewGeometry?.frameRect?.width ?? webcamStageWidth;
-		const webcamCompositionHeight = previewGeometry?.frameRect?.height ?? webcamStageHeight;
-		const webcamCompositionRect = useMemo<PixelRect>(
-			() => ({
-				x: webcamCompositionX,
-				y: webcamCompositionY,
-				width: webcamCompositionWidth,
-				height: webcamCompositionHeight,
-			}),
-			[webcamCompositionHeight, webcamCompositionWidth, webcamCompositionX, webcamCompositionY],
-		);
-		const webcamContentX = previewGeometry?.maskRect?.x ?? webcamCompositionX;
-		const webcamContentY = previewGeometry?.maskRect?.y ?? webcamCompositionY;
-		const webcamContentWidth = previewGeometry?.maskRect?.width ?? webcamCompositionWidth;
-		const webcamContentHeight = previewGeometry?.maskRect?.height ?? webcamCompositionHeight;
-		const webcamContentRect = useMemo<PixelRect>(
-			() => ({
-				x: webcamContentX,
-				y: webcamContentY,
-				width: webcamContentWidth,
-				height: webcamContentHeight,
-			}),
-			[webcamContentHeight, webcamContentWidth, webcamContentX, webcamContentY],
-		);
-		const resolvedWebcamEvaluation = useMemo(() => {
-			if (!webcamRegion) {
-				return null;
-			}
-
-			return evaluateWebcamFrame({
-				state: {
-					baseMotionState: webcamMotionStateRef.current,
-					layoutMotionState: webcamLayoutMotionStateRef.current,
-				},
-				playbackTimeMs: Math.round(currentTime * 1000),
-				webcamRegion,
-				showWebcam,
-				mirrorWebcam,
-				cameraLayouts,
-				zoomRegions,
-				cursorTelemetry,
-				connectZooms,
-				cameraSizeDuringZoom,
-				enableCursorAvoidance: webcamEffects.subtleAvoidance,
-				compositionRect: webcamCompositionRect,
-				contentRect: webcamContentRect,
-				containerWidth: webcamStageRect.width,
-				containerHeight: webcamStageRect.height,
-				effects: webcamEffects,
-				renderMode: "preview",
-				previewMode: webcamPreviewMode,
-				sourceKey: webcamPath ?? "webcam-preview",
-				shouldSmooth:
-					isPlaying &&
-					!(activePreviewHoldSrc !== null || isPreviewQualitySwitching || isPreviewRecoveryActive),
-			});
-		}, [
-			activePreviewHoldSrc,
-			cameraLayouts,
-			cameraSizeDuringZoom,
-			connectZooms,
-			cursorTelemetry,
-			currentTime,
-			isPlaying,
-			isPreviewQualitySwitching,
-			isPreviewRecoveryActive,
-			mirrorWebcam,
+		const { rects: webcamPreviewRects, model: resolvedWebcamModel } = usePlaybackWebcamFrame({
+			previewGeometry,
+			stageSizeRef,
+			webcamMotionStateRef,
+			webcamLayoutMotionStateRef,
+			webcamRegion,
 			showWebcam,
+			mirrorWebcam,
+			cameraLayouts,
+			zoomRegions,
+			cursorTelemetry,
+			connectZooms,
+			cameraSizeDuringZoom,
 			webcamEffects,
 			webcamPreviewMode,
-			webcamCompositionRect,
-			webcamContentRect,
-			webcamStageRect,
 			webcamPath,
-			webcamRegion,
-			zoomRegions,
-		]);
-		const resolvedWebcamSpec = resolvedWebcamEvaluation?.renderSpec ?? null;
-		const resolvedWebcamModel = resolvedWebcamSpec?.renderModel ?? null;
-
-		useEffect(() => {
-			if (!webcamRegion) {
-				webcamMotionStateRef.current = createWebcamZoomMotionState(DEFAULT_WEBCAM_REGION);
-				webcamLayoutMotionStateRef.current = createWebcamZoomMotionState(DEFAULT_WEBCAM_REGION);
-				return;
-			}
-
-			if (!resolvedWebcamEvaluation) {
-				return;
-			}
-
-			webcamMotionStateRef.current = resolvedWebcamEvaluation.baseMotionState;
-			webcamLayoutMotionStateRef.current = resolvedWebcamEvaluation.layoutMotionState;
-		}, [resolvedWebcamEvaluation, webcamRegion]);
+			currentTime,
+			isPlaying,
+			isHeld: activePreviewHoldSrc !== null,
+			isPreviewQualitySwitching,
+			isPreviewRecoveryActive,
+		});
 
 		const clampFocusToStage = useCallback((focus: ZoomFocus, depth: ZoomDepth) => {
 			return clampFocusToStageUtil(focus, depth, stageSizeRef.current);
@@ -1230,224 +998,105 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			videoReady,
 		]);
 
-		const updateFocusFromClientPoint = (clientX: number, clientY: number) => {
-			const overlayEl = overlayRef.current;
-			if (!overlayEl) return;
+		const {
+			handleOverlayPointerDown,
+			handleOverlayPointerMove,
+			handleOverlayPointerUp,
+			handleOverlayPointerLeave,
+		} = useZoomFocusDrag({
+			overlayRef,
+			isPlayingRef,
+			isDraggingFocusRef,
+			selectedZoomIdRef,
+			zoomRegionsRef,
+			stageSizeRef,
+			baseMaskRef,
+			clampFocusToStage,
+			onSelectZoom,
+			onZoomFocusChange,
+			updateOverlayForRegion,
+		});
 
-			const regionId = selectedZoomIdRef.current;
-			if (!regionId) return;
-
-			const region = zoomRegionsRef.current.find((r) => r.id === regionId);
-			if (!region) return;
-
-			const rect = overlayEl.getBoundingClientRect();
-			const stageWidth = rect.width;
-			const stageHeight = rect.height;
-
-			if (!stageWidth || !stageHeight) {
-				return;
-			}
-
-			stageSizeRef.current = { width: stageWidth, height: stageHeight };
-
-			const localX = clientX - rect.left;
-			const localY = clientY - rect.top;
-			const baseMask = baseMaskRef.current;
-
-			const unclampedFocus: ZoomFocus = {
-				cx: clamp01((localX - baseMask.x) / Math.max(1, baseMask.width)),
-				cy: clamp01((localY - baseMask.y) / Math.max(1, baseMask.height)),
-			};
-			const clampedFocus = clampFocusToStage(unclampedFocus, region.depth);
-
-			onZoomFocusChange(region.id, clampedFocus);
-			updateOverlayForRegion({ ...region, focus: clampedFocus }, clampedFocus);
-		};
-
-		const handleOverlayPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-			if (isPlayingRef.current) return;
-			const regionId = selectedZoomIdRef.current;
-			if (!regionId) return;
-			const region = zoomRegionsRef.current.find((r) => r.id === regionId);
-			if (!region) return;
-			onSelectZoom(region.id);
-			event.preventDefault();
-			isDraggingFocusRef.current = true;
-			event.currentTarget.setPointerCapture(event.pointerId);
-			updateFocusFromClientPoint(event.clientX, event.clientY);
-		};
-
-		const handleOverlayPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-			if (!isDraggingFocusRef.current) return;
-			event.preventDefault();
-			updateFocusFromClientPoint(event.clientX, event.clientY);
-		};
-
-		const endFocusDrag = (event: React.PointerEvent<HTMLDivElement>) => {
-			if (!isDraggingFocusRef.current) return;
-			isDraggingFocusRef.current = false;
-			try {
-				event.currentTarget.releasePointerCapture(event.pointerId);
-			} catch {
-				// Pointer capture may already be released if the interaction was interrupted.
-			}
-		};
-
-		const handleOverlayPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-			endFocusDrag(event);
-		};
-
-		const handleOverlayPointerLeave = (event: React.PointerEvent<HTMLDivElement>) => {
-			endFocusDrag(event);
-		};
-
-		useEffect(() => {
-			zoomRegionsRef.current = zoomRegions;
-		}, [zoomRegions]);
-
-		useEffect(() => {
-			selectedZoomIdRef.current = selectedZoomId;
-		}, [selectedZoomId]);
-
-		useEffect(() => {
-			isPlayingRef.current = isPlaying;
-			// Hide/show the zoom focus indicator when play state changes
+		const refreshOverlayForPlayingState = useCallback(() => {
 			if (pixiReady && videoReady) {
 				updateOverlayForRegion(selectedZoom);
 			}
-		}, [isPlaying, pixiReady, videoReady, selectedZoom, updateOverlayForRegion]);
+		}, [pixiReady, selectedZoom, updateOverlayForRegion, videoReady]);
 
-		useEffect(() => {
-			pixiReadyRef.current = pixiReady;
-		}, [pixiReady]);
-
-		useEffect(() => {
-			videoReadyRef.current = videoReady;
-		}, [videoReady]);
-
-		useEffect(() => {
-			cachedPreviewFrameRef.current = cachedPreviewFrameSrc;
-		}, [cachedPreviewFrameSrc]);
-
-		useEffect(() => {
-			trimRegionsRef.current = trimRegions;
-		}, [trimRegions]);
-
-		useEffect(() => {
-			speedRegionsRef.current = speedRegions;
-		}, [speedRegions]);
-
-		useEffect(() => {
-			zoomMotionBlurRef.current = zoomMotionBlur;
-		}, [zoomMotionBlur]);
-
-		useEffect(() => {
-			connectZoomsRef.current = connectZooms;
-		}, [connectZooms]);
-
-		useEffect(() => {
-			cursorTelemetryRef.current = cursorTelemetry;
-			cursorSimulationPathRef.current = buildCursorSimulationPath(
-				cursorTelemetry,
-				cursorTelemetry[cursorTelemetry.length - 1]?.timeMs ?? 0,
-			);
-		}, [cursorTelemetry]);
-
-		useEffect(() => {
-			showCursorRef.current = showCursor;
-		}, [showCursor]);
-
-		useEffect(() => {
-			cursorSizeRef.current = cursorSize;
-		}, [cursorSize]);
-
-		useEffect(() => {
-			cursorSmoothingRef.current = cursorSmoothing;
-		}, [cursorSmoothing]);
-
-		useEffect(() => {
-			cursorMotionBlurRef.current = cursorMotionBlur;
-		}, [cursorMotionBlur]);
-
-		useEffect(() => {
-			cursorClickBounceRef.current = cursorClickBounce;
-		}, [cursorClickBounce]);
-
-		useEffect(() => {
-			cursorSwayRef.current = cursorSway;
-		}, [cursorSway]);
-
-		useEffect(() => {
-			cursorStyleRef.current = cursorStyle;
-		}, [cursorStyle]);
-
-		useEffect(() => {
-			cursorPackRef.current = cursorPack;
-		}, [cursorPack]);
-
-		useEffect(() => {
-			cursorColorRef.current = cursorColor;
-		}, [cursorColor]);
-
-		useEffect(() => {
-			cursorOpacityRef.current = cursorOpacity;
-		}, [cursorOpacity]);
-
-		useEffect(() => {
-			clickHighlightColorRef.current = clickHighlightColor;
-		}, [clickHighlightColor]);
-
-		useEffect(() => {
-			clickHighlightSizeRef.current = clickHighlightSize;
-		}, [clickHighlightSize]);
-
-		useEffect(() => {
-			clickHighlightOpacityRef.current = clickHighlightOpacity;
-		}, [clickHighlightOpacity]);
-
-		useEffect(() => {
-			cursorTrailLengthRef.current = cursorTrailLength;
-		}, [cursorTrailLength]);
-
-		useEffect(() => {
-			cursorTrailOpacityRef.current = cursorTrailOpacity;
-		}, [cursorTrailOpacity]);
-
-		useEffect(() => {
-			cursorTypeModeRef.current = cursorTypeMode;
-		}, [cursorTypeMode]);
-
-		useEffect(() => {
-			cursorTiltRef.current = cursorTilt;
-		}, [cursorTilt]);
-
-		useEffect(() => {
-			hideWhenIdleRef.current = hideWhenIdle;
-		}, [hideWhenIdle]);
-
-		useEffect(() => {
-			idleHideDelayMsRef.current = idleHideDelayMs;
-		}, [idleHideDelayMs]);
-
-		useEffect(() => {
-			smoothMovementEnabledRef.current = smoothMovementEnabled;
-		}, [smoothMovementEnabled]);
-
-		useEffect(() => {
-			cursorMovementStyleRef.current = cursorMovementStyle;
-		}, [cursorMovementStyle]);
-
-		useEffect(() => {
-			cursorSpringRef.current = cursorSpring;
-		}, [cursorSpring]);
-
-		useEffect(() => {
-			highQualitySvgCursorsRef.current = highQualitySvgCursors;
-		}, [highQualitySvgCursors]);
-
-		useEffect(() => {
-			cameraSpringRef.current = cameraSpring;
-		}, [cameraSpring]);
+		usePlaybackLatestRefs({
+			zoomRegions,
+			zoomRegionsRef,
+			selectedZoomId,
+			selectedZoomIdRef,
+			isPlaying,
+			isPlayingRef,
+			pixiReady,
+			pixiReadyRef,
+			videoReady,
+			videoReadyRef,
+			cachedPreviewFrameSrc,
+			cachedPreviewFrameRef,
+			trimRegions,
+			trimRegionsRef,
+			speedRegions,
+			speedRegionsRef,
+			zoomMotionBlur,
+			zoomMotionBlurRef,
+			connectZooms,
+			connectZoomsRef,
+			cursorTelemetry,
+			cursorTelemetryRef,
+			cursorSimulationPathRef,
+			showCursor,
+			showCursorRef,
+			cursorSize,
+			cursorSizeRef,
+			cursorSmoothing,
+			cursorSmoothingRef,
+			cursorMotionBlur,
+			cursorMotionBlurRef,
+			cursorClickBounce,
+			cursorClickBounceRef,
+			cursorSway,
+			cursorSwayRef,
+			cursorStyle,
+			cursorStyleRef,
+			cursorPack,
+			cursorPackRef,
+			cursorColor,
+			cursorColorRef,
+			cursorOpacity,
+			cursorOpacityRef,
+			clickHighlightColor,
+			clickHighlightColorRef,
+			clickHighlightSize,
+			clickHighlightSizeRef,
+			clickHighlightOpacity,
+			clickHighlightOpacityRef,
+			cursorTrailLength,
+			cursorTrailLengthRef,
+			cursorTrailOpacity,
+			cursorTrailOpacityRef,
+			cursorTypeMode,
+			cursorTypeModeRef,
+			cursorTilt,
+			cursorTiltRef,
+			hideWhenIdle,
+			hideWhenIdleRef,
+			idleHideDelayMs,
+			idleHideDelayMsRef,
+			smoothMovementEnabled,
+			smoothMovementEnabledRef,
+			cursorMovementStyle,
+			cursorMovementStyleRef,
+			cursorSpring,
+			cursorSpringRef,
+			highQualitySvgCursors,
+			highQualitySvgCursorsRef,
+			cameraSpring,
+			cameraSpringRef,
+			onPlayingStateRefreshed: refreshOverlayForPlayingState,
+		});
 
 		useEffect(() => {
 			if (!pixiReady || !videoReady) return;
@@ -2189,61 +1838,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			videoReadyRafRef.current = requestAnimationFrame(waitForRenderableFrame);
 		};
 
-		const [resolvedWallpaper, setResolvedWallpaper] = useState<string | null>(null);
-
-		useEffect(() => {
-			let mounted = true;
-			(async () => {
-				const resolvedDefaultWallpaper = await getRenderableAssetUrl(
-					await getAssetPath(DEFAULT_WALLPAPER_RELATIVE_PATH),
-				);
-
-				try {
-					const selectedWallpaper = wallpaper
-						? normalizeWallpaperSelection(wallpaper)
-						: DEFAULT_WALLPAPER_PATH;
-
-					if (!selectedWallpaper) {
-						if (mounted) setResolvedWallpaper(resolvedDefaultWallpaper);
-						return;
-					}
-
-					if (
-						selectedWallpaper.startsWith("#") ||
-						selectedWallpaper.startsWith("linear-gradient") ||
-						selectedWallpaper.startsWith("radial-gradient")
-					) {
-						if (mounted) setResolvedWallpaper(selectedWallpaper);
-						return;
-					}
-
-					// If it's a data URL (custom uploaded image), use as-is
-					if (selectedWallpaper.startsWith("data:")) {
-						if (mounted) setResolvedWallpaper(selectedWallpaper);
-						return;
-					}
-
-					if (
-						selectedWallpaper.startsWith("http") ||
-						selectedWallpaper.startsWith("file://") ||
-						selectedWallpaper.startsWith("/")
-					) {
-						const renderable = await getRenderableAssetUrl(selectedWallpaper);
-						if (mounted) setResolvedWallpaper(renderable);
-						return;
-					}
-					const p = await getRenderableAssetUrl(
-						await getAssetPath(selectedWallpaper.replace(/^\//, "")),
-					);
-					if (mounted) setResolvedWallpaper(p);
-				} catch {
-					if (mounted) setResolvedWallpaper(resolvedDefaultWallpaper);
-				}
-			})();
-			return () => {
-				mounted = false;
-			};
-		}, [wallpaper]);
+		const resolvedWallpaper = useResolvedWallpaper(wallpaper);
 
 		useEffect(() => {
 			return () => {
@@ -2328,154 +1923,53 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				{/* Device mockup overlay is temporarily disabled in the video editor preview. */}
 				{/* Only render overlay after PIXI and video are fully initialized */}
 				{pixiReady && videoReady && (
-					<div
-						ref={overlayRef}
-						className="absolute inset-0 select-none"
-						style={{ pointerEvents: "none" }}
+					<PlaybackOverlays
+						overlayRef={overlayRef}
+						focusIndicatorRef={focusIndicatorRef}
+						annotationRegions={annotationRegions}
+						selectedAnnotationId={selectedAnnotationId}
+						onSelectAnnotation={onSelectAnnotation}
+						onAnnotationPositionChange={onAnnotationPositionChange}
+						onAnnotationSizeChange={onAnnotationSizeChange}
+						currentTime={currentTime}
+						webcamPath={webcamPath}
+						resolvedWebcamModel={resolvedWebcamModel}
+						webcamPreviewRects={webcamPreviewRects}
+						webcamEffects={webcamEffects}
+						webcamPreviewMode={webcamPreviewMode}
+						isPlaying={isPlaying}
+						isPreviewWebcamHeld={isPreviewWebcamHeld}
+						playbackRate={videoRef.current?.playbackRate ?? 1}
+						onWebcamHealthMetricsChange={onWebcamHealthMetricsChange}
+						webcamSelected={webcamSelected}
+						selectedCameraLayoutId={selectedCameraLayoutId}
+						onWebcamPositionChange={onWebcamPositionChange}
+						onWebcamSizeChange={onWebcamSizeChange}
+						onSelectWebcam={onSelectWebcam}
+						captionRegions={captionRegions}
+						captionSettings={captionSettings}
+						isEditingCaptionPosition={isEditingCaptionPosition}
+						onCaptionPositionOverrideChange={onCaptionPositionOverrideChange}
+						showKeyboardShortcuts={showKeyboardShortcuts}
+						keyboardShortcutCallouts={keyboardShortcutCallouts}
+						keyboardShortcutPosition={keyboardShortcutPosition}
+						keyboardShortcutTheme={keyboardShortcutTheme}
+						keyboardShortcutScale={keyboardShortcutScale}
+						keyboardShortcutOpacity={keyboardShortcutOpacity}
+						keyboardShortcutMaxVisible={keyboardShortcutMaxVisible}
 						onPointerDown={handleOverlayPointerDown}
 						onPointerMove={handleOverlayPointerMove}
 						onPointerUp={handleOverlayPointerUp}
 						onPointerLeave={handleOverlayPointerLeave}
-					>
-						<div
-							ref={focusIndicatorRef}
-							className="absolute rounded-md border border-[#F59E0B]/80 bg-[#F59E0B]/20 shadow-[0_0_0_1px_rgba(245,158,11,0.35)]"
-							style={{ display: "none", pointerEvents: "none" }}
-						/>
-						{(() => {
-							const filtered = (annotationRegions || []).filter((annotation) => {
-								if (typeof annotation.startMs !== "number" || typeof annotation.endMs !== "number")
-									return false;
-
-								if (annotation.id === selectedAnnotationId) return true;
-
-								const timeMs = Math.round(currentTime * 1000);
-								return timeMs >= annotation.startMs && timeMs <= annotation.endMs;
-							});
-
-							// Sort by z-index (lowest to highest) so higher z-index renders on top
-							const sorted = [...filtered].sort((a, b) => a.zIndex - b.zIndex);
-
-							// Handle click-through cycling: when clicking same annotation, cycle to next
-							const handleAnnotationClick = (clickedId: string) => {
-								if (!onSelectAnnotation) return;
-
-								// If clicking on already selected annotation and there are multiple overlapping
-								if (clickedId === selectedAnnotationId && sorted.length > 1) {
-									// Find current index and cycle to next
-									const currentIndex = sorted.findIndex((a) => a.id === clickedId);
-									const nextIndex = (currentIndex + 1) % sorted.length;
-									onSelectAnnotation(sorted[nextIndex].id);
-								} else {
-									// First click or clicking different annotation
-									onSelectAnnotation(clickedId);
-								}
-							};
-
-							return sorted.map((annotation) => (
-								<AnnotationOverlay
-									key={annotation.id}
-									annotation={annotation}
-									isSelected={annotation.id === selectedAnnotationId}
-									containerWidth={overlayRef.current?.clientWidth || 800}
-									containerHeight={overlayRef.current?.clientHeight || 600}
-									onPositionChange={(id, position) => onAnnotationPositionChange?.(id, position)}
-									onSizeChange={(id, size) => onAnnotationSizeChange?.(id, size)}
-									onClick={handleAnnotationClick}
-									zIndex={annotation.zIndex}
-									isSelectedBoost={annotation.id === selectedAnnotationId}
-								/>
-							));
-						})()}
-						{webcamPath && resolvedWebcamModel && resolvedWebcamModel.opacity > 0 && (
-							<WebcamOverlay
-								webcamPath={webcamPath}
-								renderModel={resolvedWebcamModel}
-								compositionRect={webcamCompositionRect}
-								webcamEffects={webcamEffects}
-								webcamPreviewMode={webcamPreviewMode}
-								currentTime={currentTime}
-								isPlaying={isPlaying}
-								isHeld={isPreviewWebcamHeld}
-								playbackRate={videoRef.current?.playbackRate ?? 1}
-								onHealthMetricsChange={onWebcamHealthMetricsChange}
-								isSelected={
-									webcamSelected ||
-									(selectedCameraLayoutId === resolvedWebcamModel.activeLayoutId &&
-										resolvedWebcamModel.mode === "default")
-								}
-								onPositionChange={(position) => onWebcamPositionChange?.(position)}
-								onSizeChange={(size) => onWebcamSizeChange?.(size)}
-								onClick={() => onSelectWebcam?.()}
-							/>
-						)}
-						{captionSettings && (
-							<CaptionOverlay
-								captionRegions={captionRegions}
-								captionSettings={captionSettings}
-								currentTimeMs={Math.round(currentTime * 1000)}
-								containerWidth={overlayRef.current?.clientWidth || 800}
-								containerHeight={overlayRef.current?.clientHeight || 600}
-								isEditing={isEditingCaptionPosition}
-								onPositionOverrideChange={onCaptionPositionOverrideChange}
-							/>
-						)}
-						{showKeyboardShortcuts && (
-							<KeyboardShortcutOverlay
-								callouts={keyboardShortcutCallouts}
-								position={keyboardShortcutPosition}
-								theme={keyboardShortcutTheme}
-								scale={keyboardShortcutScale}
-								opacity={keyboardShortcutOpacity}
-								maxVisible={keyboardShortcutMaxVisible}
-								currentTimeMs={Math.round(currentTime * 1000)}
-								containerWidth={overlayRef.current?.clientWidth || 800}
-							/>
-						)}
-					</div>
+					/>
 				)}
-				<video
-					ref={videoRef}
-					src={videoPath}
-					preload="metadata"
-					playsInline
-					style={{
-						position: "absolute",
-						width: 1,
-						height: 1,
-						opacity: 0,
-						pointerEvents: "none",
-						left: -10_000,
-						top: 0,
-					}}
+				<HiddenPreviewVideo
+					videoRef={videoRef}
+					videoPath={videoPath}
 					onLoadedMetadata={handleLoadedMetadata}
-					onDurationChange={(e) => {
-						onDurationChange(e.currentTarget.duration);
-					}}
-					onError={(e) => {
-						const videoEl = e.currentTarget;
-						const mediaError = videoEl.error;
-						const code = mediaError?.code ?? "unknown";
-						const msg = mediaError?.message ?? "";
-
-						if (isPreviewRecoveryInProgressRef.current) {
-							console.warn("Ignoring transient video error during preview recovery:", {
-								code,
-								message: msg,
-								src: videoEl.src,
-							});
-							return;
-						}
-
-						console.error("Video load error:", {
-							code,
-							message: msg,
-							src: videoEl.src,
-						});
-						onError(
-							`Failed to load video (error ${code}${msg ? `: ${msg}` : ""}). Source: ${videoEl.src}`,
-						);
-					}}
+					onDurationChange={onDurationChange}
+					onError={onError}
+					isPreviewRecoveryInProgressRef={isPreviewRecoveryInProgressRef}
 				/>
 			</div>
 		);

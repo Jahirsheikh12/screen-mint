@@ -1,0 +1,170 @@
+import fs from "node:fs/promises";
+import path from "node:path";
+import { app, BrowserWindow, dialog, ipcMain } from "electron";
+import type { CaptionTrack } from "../../src/components/video-editor/types";
+import { IPC_CHANNELS } from "../../src/electron-ipc/contracts";
+import {
+	cancelCaptionGeneration,
+	exportCaptionTranscript,
+	generateCaptions,
+	getCaptionModelStatus,
+	isCaptionGenerationCancelled,
+} from "../captions/transcriptionOrchestrator";
+
+interface CaptionIpcHandlersContext {
+	getCurrentVideoPath: () => string | null;
+	getCurrentMicrophoneAudioPath: () => string | null;
+	getFfmpegBinaryPath: () => string;
+	normalizeVideoSourcePath: (videoPath?: string | null) => string | null;
+}
+
+function emitCaptionGenerationProgress(progress: {
+	stage: string;
+	percentage: number;
+	message: string;
+}) {
+	BrowserWindow.getAllWindows().forEach((window) => {
+		if (!window.isDestroyed()) {
+			window.webContents.send("caption-generation-progress", progress);
+		}
+	});
+}
+
+export function registerCaptionIpcHandlers({
+	getCurrentVideoPath,
+	getCurrentMicrophoneAudioPath,
+	getFfmpegBinaryPath,
+	normalizeVideoSourcePath,
+}: CaptionIpcHandlersContext) {
+	ipcMain.handle(IPC_CHANNELS.captions.getModelStatus, async (_, videoPath?: string) => {
+		try {
+			const targetVideoPath = normalizeVideoSourcePath(videoPath ?? getCurrentVideoPath());
+			if (!targetVideoPath) {
+				return { success: false, message: "No video available for captions." };
+			}
+
+			const status = await getCaptionModelStatus(
+				targetVideoPath,
+				getCurrentMicrophoneAudioPath(),
+				getFfmpegBinaryPath(),
+			);
+			return { success: true, status };
+		} catch (error) {
+			console.error("Failed to get caption model status:", error);
+			return {
+				success: false,
+				message: "Failed to get caption model status",
+				error: String(error),
+			};
+		}
+	});
+
+	ipcMain.handle(
+		IPC_CHANNELS.captions.generate,
+		async (
+			_,
+			request: {
+				videoPath?: string;
+				preferredBackend: "auto" | "whisper.cpp" | "apple-speech";
+				model: "base" | "small" | "medium";
+				language: string;
+				prompt: string;
+				preferredSourceAudio: "microphone" | "mixed";
+			},
+		) => {
+			try {
+				const targetVideoPath = normalizeVideoSourcePath(
+					request.videoPath ?? getCurrentVideoPath(),
+				);
+				if (!targetVideoPath) {
+					return { success: false, message: "No video available for transcription." };
+				}
+
+				const track = await generateCaptions(
+					{
+						videoPath: targetVideoPath,
+						preferredBackend: request.preferredBackend,
+						model: request.model,
+						language: request.language,
+						prompt: request.prompt,
+						preferredSourceAudio: request.preferredSourceAudio,
+						microphoneAudioPath: getCurrentMicrophoneAudioPath(),
+						ffmpegPath: getFfmpegBinaryPath(),
+					},
+					(progress) => {
+						emitCaptionGenerationProgress(progress);
+					},
+				);
+
+				return { success: true, track };
+			} catch (error) {
+				if (isCaptionGenerationCancelled(error)) {
+					return {
+						success: false,
+						canceled: true,
+						message: "Caption generation cancelled",
+					};
+				}
+
+				console.error("Failed to generate captions:", error);
+				return {
+					success: false,
+					message: "Failed to generate captions",
+					error: String(error),
+				};
+			}
+		},
+	);
+
+	ipcMain.handle(IPC_CHANNELS.captions.cancelGeneration, async () => {
+		cancelCaptionGeneration();
+		return { success: true };
+	});
+
+	ipcMain.handle(
+		IPC_CHANNELS.captions.exportTranscript,
+		async (
+			_,
+			payload: {
+				videoPath?: string;
+				format: "srt" | "vtt" | "txt";
+				track: CaptionTrack;
+			},
+		) => {
+			try {
+				const targetVideoPath = normalizeVideoSourcePath(
+					payload.videoPath ?? getCurrentVideoPath(),
+				);
+				if (!targetVideoPath) {
+					return { success: false, message: "No video available for transcript export." };
+				}
+
+				const transcript = await exportCaptionTranscript(
+					targetVideoPath,
+					payload.track,
+					payload.format,
+				);
+				const result = await dialog.showSaveDialog({
+					title: "Export Transcript",
+					defaultPath: path.join(app.getPath("downloads"), transcript.defaultFileName),
+					filters: [{ name: "Transcript", extensions: [payload.format] }],
+					properties: ["createDirectory", "showOverwriteConfirmation"],
+				});
+
+				if (result.canceled || !result.filePath) {
+					return { success: false, canceled: true, message: "Transcript export canceled" };
+				}
+
+				await fs.writeFile(result.filePath, transcript.content, "utf-8");
+				return { success: true, path: result.filePath };
+			} catch (error) {
+				console.error("Failed to export transcript:", error);
+				return {
+					success: false,
+					message: "Failed to export transcript",
+					error: String(error),
+				};
+			}
+		},
+	);
+}

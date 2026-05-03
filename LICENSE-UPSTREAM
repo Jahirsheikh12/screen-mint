@@ -1,21 +1,36 @@
-MIT License
+# Upstream License Registry
 
-Copyright (c) 2025 Jahir Sheikh
+ScreenMint is MIT licensed. This file tracks upstream runtime and asset license
+obligations for public beta release artifacts.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+## Release Gate
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Run `npm run release:validate-provenance` before publishing. The command passes only when
+`docs/ASSET_PROVENANCE.md`, `THIRD_PARTY_NOTICES.md`, and this file contain concrete
+asset provenance/status language.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+## Verified Project-Owned Assets
+
+- ScreenMint brand source assets in `branding/source-assets/`.
+- Generated app and installer icons in `public/app-icons/` and `icons/icons/`.
+- Native helper source under `electron/native/`.
+
+## Maintainer-Attested Redistributable Assets
+
+The maintainer confirms that these bundled asset groups are copyright-free or otherwise
+approved for redistribution in the public beta and open-source repository:
+
+- MediaPipe Tasks Vision runtime files in `public/mediapipe/`.
+- Webcam segmentation model in `public/models/selfie_segmenter_landscape.tflite`.
+- `web-demuxer` runtime in `public/wasm/web-demuxer.wasm`.
+- Bundled editor wallpapers and generated thumbnails in `public/wallpapers/`.
+- App sounds and built-in editor music in `src/assets/audio/`, including Mixkit-named
+  files.
+- Cursor SVGs and cursor packs in `src/assets/cursors/`.
+- Website screenshots, GIFs, and preview images in `website/public/images/`.
+
+New bundled assets require a matching source/status/proof note in
+`docs/ASSET_PROVENANCE.md` and `THIRD_PARTY_NOTICES.md`.
+
+Do not delete bundled assets during provenance cleanup unless the maintainer explicitly
+asks for removal.

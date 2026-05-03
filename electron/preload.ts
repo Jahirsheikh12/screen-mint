@@ -20,10 +20,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		ipcRenderer.send("hud-overlay-close");
 	},
 	getHudOverlayCaptureProtection: () => {
-		return ipcRenderer.invoke("get-hud-overlay-capture-protection");
+		return ipcRenderer.invoke(IPC_CHANNELS.hudOverlay.getCaptureProtection);
 	},
 	setHudOverlayCaptureProtection: (enabled: boolean) => {
-		return ipcRenderer.invoke("set-hud-overlay-capture-protection", enabled);
+		return ipcRenderer.invoke(IPC_CHANNELS.hudOverlay.setCaptureProtection, enabled);
 	},
 	getAssetBasePath: async () => {
 		return assetBasePathSync ?? (await ipcRenderer.invoke(IPC_CHANNELS.assets.getBasePath));
@@ -38,13 +38,13 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		return await ipcRenderer.invoke(IPC_CHANNELS.capture.getSources, opts);
 	},
 	switchToEditor: () => {
-		return ipcRenderer.invoke("switch-to-editor");
+		return ipcRenderer.invoke(IPC_CHANNELS.windows.switchToEditor);
 	},
 	switchToHud: () => {
-		return ipcRenderer.invoke("switch-to-hud");
+		return ipcRenderer.invoke(IPC_CHANNELS.windows.switchToHud);
 	},
 	openSourceSelector: () => {
-		return ipcRenderer.invoke("open-source-selector");
+		return ipcRenderer.invoke(IPC_CHANNELS.windows.openSourceSelector);
 	},
 	selectSource: (source: SelectedCaptureSource) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.capture.selectSource, source);
@@ -71,10 +71,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
 			selectedArea?: unknown;
 		},
 	) => {
-		return ipcRenderer.invoke("start-native-screen-recording", source, options);
+		return ipcRenderer.invoke(IPC_CHANNELS.recording.startNative, source, options);
 	},
 	stopNativeScreenRecording: () => {
-		return ipcRenderer.invoke("stop-native-screen-recording");
+		return ipcRenderer.invoke(IPC_CHANNELS.recording.stopNative);
 	},
 	startFfmpegRecording: (
 		source: SelectedCaptureSource,
@@ -85,31 +85,31 @@ contextBridge.exposeInMainWorld("electronAPI", {
 			videoBitsPerSecond?: number;
 		},
 	) => {
-		return ipcRenderer.invoke("start-ffmpeg-recording", source, options);
+		return ipcRenderer.invoke(IPC_CHANNELS.recording.startFfmpeg, source, options);
 	},
 	stopFfmpegRecording: () => {
-		return ipcRenderer.invoke("stop-ffmpeg-recording");
+		return ipcRenderer.invoke(IPC_CHANNELS.recording.stopFfmpeg);
 	},
 	storeRecordedVideo: (videoData: ArrayBuffer, fileName: string) => {
-		return ipcRenderer.invoke("store-recorded-video", videoData, fileName);
+		return ipcRenderer.invoke(IPC_CHANNELS.recording.storeVideo, videoData, fileName);
 	},
 	storeRecordedVideoSegment: (videoData: ArrayBuffer, fileName: string) => {
-		return ipcRenderer.invoke("store-recorded-video", videoData, fileName, false);
+		return ipcRenderer.invoke(IPC_CHANNELS.recording.storeVideo, videoData, fileName, false);
 	},
 	startMediaRecorderChunkSession: (fileName: string) => {
-		return ipcRenderer.invoke("start-media-recorder-chunk-session", fileName);
+		return ipcRenderer.invoke(IPC_CHANNELS.recording.startChunkSession, fileName);
 	},
 	appendMediaRecorderChunk: (sessionId: string, chunkData: ArrayBuffer) => {
-		return ipcRenderer.invoke("append-media-recorder-chunk", sessionId, chunkData);
+		return ipcRenderer.invoke(IPC_CHANNELS.recording.appendChunk, sessionId, chunkData);
 	},
 	finishMediaRecorderChunkSession: (sessionId: string) => {
-		return ipcRenderer.invoke("finish-media-recorder-chunk-session", sessionId);
+		return ipcRenderer.invoke(IPC_CHANNELS.recording.finishChunkSession, sessionId);
 	},
 	discardMediaRecorderChunkSession: (sessionId: string) => {
-		return ipcRenderer.invoke("discard-media-recorder-chunk-session", sessionId);
+		return ipcRenderer.invoke(IPC_CHANNELS.recording.discardChunkSession, sessionId);
 	},
 	getRecordedVideoPath: () => {
-		return ipcRenderer.invoke("get-recorded-video-path");
+		return ipcRenderer.invoke(IPC_CHANNELS.recording.getRecordedVideoPath);
 	},
 	finalizeRecordingSession: (payload: {
 		videoSegments: Array<{ path: string; durationMs: number }>;
@@ -118,7 +118,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		selectedArea?: unknown;
 		webcamSessionMetadata?: WebcamSessionMetadata | null;
 	}) => {
-		return ipcRenderer.invoke("finalize-recording-session", payload);
+		return ipcRenderer.invoke(IPC_CHANNELS.recording.finalizeSession, payload);
 	},
 	triggerFinalizeRecordingSession: (payload: {
 		videoSegments: Array<{ path: string; durationMs: number }>;
@@ -127,32 +127,32 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		selectedArea?: unknown;
 		webcamSessionMetadata?: WebcamSessionMetadata | null;
 	}) => {
-		return ipcRenderer.invoke("trigger-finalize-recording-session", payload);
+		return ipcRenderer.invoke(IPC_CHANNELS.recording.triggerFinalizeSession, payload);
 	},
 	awaitRecordingFinalized: () => {
-		return ipcRenderer.invoke("await-recording-finalized");
+		return ipcRenderer.invoke(IPC_CHANNELS.recording.awaitFinalized);
 	},
 	discardRecordingArtifacts: (payload: {
 		paths: string[];
 		clearCurrentVideo?: boolean;
 		clearCurrentWebcam?: boolean;
 	}) => {
-		return ipcRenderer.invoke("discard-recording-artifacts", payload);
+		return ipcRenderer.invoke(IPC_CHANNELS.recording.discardArtifacts, payload);
 	},
 	setRecordingState: (recording: boolean) => {
-		return ipcRenderer.invoke("set-recording-state", recording);
+		return ipcRenderer.invoke(IPC_CHANNELS.recording.setState, recording);
 	},
 	setCursorScale: (scale: number) => {
-		return ipcRenderer.invoke("set-cursor-scale", scale);
+		return ipcRenderer.invoke(IPC_CHANNELS.telemetry.setCursorScale, scale);
 	},
 	getCursorTelemetry: (videoPath?: string) => {
-		return ipcRenderer.invoke("get-cursor-telemetry", videoPath);
+		return ipcRenderer.invoke(IPC_CHANNELS.telemetry.getCursor, videoPath);
 	},
 	getKeyboardTelemetry: (videoPath?: string) => {
-		return ipcRenderer.invoke("get-keyboard-telemetry", videoPath);
+		return ipcRenderer.invoke(IPC_CHANNELS.telemetry.getKeyboard, videoPath);
 	},
 	getSystemCursorAssets: () => {
-		return ipcRenderer.invoke("get-system-cursor-assets");
+		return ipcRenderer.invoke(IPC_CHANNELS.telemetry.getSystemCursorAssets);
 	},
 	onStopRecordingFromTray: (callback: () => void) => {
 		const listener = () => callback();
@@ -194,70 +194,70 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		return () => ipcRenderer.removeListener("selected-area-changed", listener);
 	},
 	openExternalUrl: (url: string) => {
-		return ipcRenderer.invoke("open-external-url", url);
+		return ipcRenderer.invoke(IPC_CHANNELS.files.openExternalUrl, url);
 	},
 	getAccessibilityPermissionStatus: () => {
-		return ipcRenderer.invoke("get-accessibility-permission-status");
+		return ipcRenderer.invoke(IPC_CHANNELS.permissions.getAccessibilityStatus);
 	},
 	requestAccessibilityPermission: () => {
-		return ipcRenderer.invoke("request-accessibility-permission");
+		return ipcRenderer.invoke(IPC_CHANNELS.permissions.requestAccessibility);
 	},
 	getCapturePermissionState: () => {
-		return ipcRenderer.invoke("get-capture-permission-state");
+		return ipcRenderer.invoke(IPC_CHANNELS.permissions.getCaptureState);
 	},
 	requestMicrophoneAccess: () => {
-		return ipcRenderer.invoke("request-microphone-access");
+		return ipcRenderer.invoke(IPC_CHANNELS.permissions.requestMicrophone);
 	},
 	getScreenRecordingPermissionStatus: () => {
-		return ipcRenderer.invoke("get-screen-recording-permission-status");
+		return ipcRenderer.invoke(IPC_CHANNELS.permissions.getScreenRecordingStatus);
 	},
 	openDisplayCapturePreferences: () => {
-		return ipcRenderer.invoke("open-screen-recording-preferences");
+		return ipcRenderer.invoke(IPC_CHANNELS.permissions.openScreenRecordingPreferences);
 	},
 	openAccessibilityPreferences: () => {
-		return ipcRenderer.invoke("open-accessibility-preferences");
+		return ipcRenderer.invoke(IPC_CHANNELS.permissions.openAccessibilityPreferences);
 	},
 	probeCaptureSources: () => {
-		return ipcRenderer.invoke("probe-capture-sources");
+		return ipcRenderer.invoke(IPC_CHANNELS.permissions.probeCaptureSources);
 	},
 	getCaptureDiagnostics: () => {
-		return ipcRenderer.invoke("get-capture-diagnostics");
+		return ipcRenderer.invoke(IPC_CHANNELS.permissions.getCaptureDiagnostics);
 	},
 	saveExportedVideo: (videoData: ArrayBuffer, fileName: string) => {
-		return ipcRenderer.invoke("save-exported-video", videoData, fileName);
+		return ipcRenderer.invoke(IPC_CHANNELS.exportFiles.saveVideo, videoData, fileName);
 	},
 	showExportSaveDialog: (fileName: string) => {
-		return ipcRenderer.invoke("show-export-save-dialog", fileName);
+		return ipcRenderer.invoke(IPC_CHANNELS.exportFiles.showSaveDialog, fileName);
 	},
 	writeExportedVideoToPath: (videoData: ArrayBuffer, filePath: string) => {
-		return ipcRenderer.invoke("write-exported-video-to-path", videoData, filePath);
+		return ipcRenderer.invoke(IPC_CHANNELS.exportFiles.writeVideoToPath, videoData, filePath);
 	},
 	saveExportedVideoToRecordings: (videoData: ArrayBuffer, fileName: string) => {
-		return ipcRenderer.invoke("save-exported-video-to-recordings", videoData, fileName);
+		return ipcRenderer.invoke(IPC_CHANNELS.exportFiles.saveVideoToRecordings, videoData, fileName);
 	},
 	exportV2Probe: () => {
-		return ipcRenderer.invoke("exportV2:probe");
+		return ipcRenderer.invoke(IPC_CHANNELS.exportV2.probe);
 	},
 	exportV2Start: (request: unknown) => {
-		return ipcRenderer.invoke("exportV2:start", request);
+		return ipcRenderer.invoke(IPC_CHANNELS.exportV2.start, request);
 	},
 	exportV2CreateWorker: () => {
-		return ipcRenderer.invoke("exportV2:createWorker");
+		return ipcRenderer.invoke(IPC_CHANNELS.exportV2.createWorker);
 	},
 	exportV2Cancel: (jobId: string) => {
-		return ipcRenderer.invoke("exportV2:cancel", jobId);
+		return ipcRenderer.invoke(IPC_CHANNELS.exportV2.cancel, jobId);
 	},
 	exportV2StreamStart: (filePath: string) => {
-		return ipcRenderer.invoke("exportV2:streamStart", filePath);
+		return ipcRenderer.invoke(IPC_CHANNELS.exportV2.streamStart, filePath);
 	},
 	exportV2StreamAppend: (sessionId: string, chunk: ArrayBuffer, position: number) => {
-		return ipcRenderer.invoke("exportV2:streamAppend", sessionId, chunk, position);
+		return ipcRenderer.invoke(IPC_CHANNELS.exportV2.streamAppend, sessionId, chunk, position);
 	},
 	exportV2StreamFinish: (sessionId: string) => {
-		return ipcRenderer.invoke("exportV2:streamFinish", sessionId);
+		return ipcRenderer.invoke(IPC_CHANNELS.exportV2.streamFinish, sessionId);
 	},
 	exportV2StreamDiscard: (sessionId: string) => {
-		return ipcRenderer.invoke("exportV2:streamDiscard", sessionId);
+		return ipcRenderer.invoke(IPC_CHANNELS.exportV2.streamDiscard, sessionId);
 	},
 	onExportV2Progress: (callback: (progress: unknown) => void) => {
 		const listener = (_event: Electron.IpcRendererEvent, progress: unknown) => callback(progress);
@@ -270,43 +270,43 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		return () => ipcRenderer.removeListener("exportV2:worker-start", listener);
 	},
 	exportV2WorkerProgress: (progress: unknown) => {
-		return ipcRenderer.invoke("exportV2:worker-progress", progress);
+		return ipcRenderer.invoke(IPC_CHANNELS.exportV2.workerProgress, progress);
 	},
 	exportV2WorkerComplete: (result: unknown) => {
-		return ipcRenderer.invoke("exportV2:worker-complete", result);
+		return ipcRenderer.invoke(IPC_CHANNELS.exportV2.workerComplete, result);
 	},
 	openVideoFilePicker: () => {
-		return ipcRenderer.invoke("open-video-file-picker");
+		return ipcRenderer.invoke(IPC_CHANNELS.files.openVideoPicker);
 	},
 	openAudioFilePicker: () => {
-		return ipcRenderer.invoke("open-audio-file-picker");
+		return ipcRenderer.invoke(IPC_CHANNELS.files.openAudioPicker);
 	},
 	openImageFilePicker: () => {
-		return ipcRenderer.invoke("open-image-file-picker");
+		return ipcRenderer.invoke(IPC_CHANNELS.files.openImagePicker);
 	},
 	setCurrentVideoPath: (path: string) => {
-		return ipcRenderer.invoke("set-current-video-path", path);
+		return ipcRenderer.invoke(IPC_CHANNELS.currentMedia.setVideoPath, path);
 	},
 	getCurrentVideoPath: () => {
-		return ipcRenderer.invoke("get-current-video-path");
+		return ipcRenderer.invoke(IPC_CHANNELS.currentMedia.getVideoPath);
 	},
 	clearCurrentVideoPath: () => {
-		return ipcRenderer.invoke("clear-current-video-path");
+		return ipcRenderer.invoke(IPC_CHANNELS.currentMedia.clearVideoPath);
 	},
 	setCurrentWebcamPath: (path: string) => {
-		return ipcRenderer.invoke("set-current-webcam-path", path);
+		return ipcRenderer.invoke(IPC_CHANNELS.currentMedia.setWebcamPath, path);
 	},
 	getCurrentWebcamPath: () => {
-		return ipcRenderer.invoke("get-current-webcam-path");
+		return ipcRenderer.invoke(IPC_CHANNELS.currentMedia.getWebcamPath);
 	},
 	clearCurrentWebcamPath: () => {
-		return ipcRenderer.invoke("clear-current-webcam-path");
+		return ipcRenderer.invoke(IPC_CHANNELS.currentMedia.clearWebcamPath);
 	},
 	checkFileAvailable: (filePath: string) => {
-		return ipcRenderer.invoke("check-file-available", filePath);
+		return ipcRenderer.invoke(IPC_CHANNELS.files.checkFileAvailable, filePath);
 	},
 	getCaptionModelStatus: (videoPath?: string) => {
-		return ipcRenderer.invoke("get-caption-model-status", videoPath);
+		return ipcRenderer.invoke(IPC_CHANNELS.captions.getModelStatus, videoPath);
 	},
 	generateCaptions: (request: {
 		videoPath?: string;
@@ -316,17 +316,17 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		prompt: string;
 		preferredSourceAudio: "microphone" | "mixed";
 	}) => {
-		return ipcRenderer.invoke("generate-captions", request);
+		return ipcRenderer.invoke(IPC_CHANNELS.captions.generate, request);
 	},
 	cancelCaptionGeneration: () => {
-		return ipcRenderer.invoke("cancel-caption-generation");
+		return ipcRenderer.invoke(IPC_CHANNELS.captions.cancelGeneration);
 	},
 	exportCaptionsTranscript: (payload: {
 		videoPath?: string;
 		format: "srt" | "vtt" | "txt";
 		track: unknown;
 	}) => {
-		return ipcRenderer.invoke("export-captions-transcript", payload);
+		return ipcRenderer.invoke(IPC_CHANNELS.captions.exportTranscript, payload);
 	},
 	onCaptionGenerationProgress: (
 		callback: (progress: { stage: string; percentage: number; message: string }) => void,
@@ -339,13 +339,18 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		return () => ipcRenderer.removeListener("caption-generation-progress", listener);
 	},
 	saveProjectFile: (projectData: unknown, suggestedName?: string, existingProjectPath?: string) => {
-		return ipcRenderer.invoke("save-project-file", projectData, suggestedName, existingProjectPath);
+		return ipcRenderer.invoke(
+			IPC_CHANNELS.projects.saveFile,
+			projectData,
+			suggestedName,
+			existingProjectPath,
+		);
 	},
 	loadProjectFile: () => {
-		return ipcRenderer.invoke("load-project-file");
+		return ipcRenderer.invoke(IPC_CHANNELS.projects.loadFile);
 	},
 	loadCurrentProjectFile: () => {
-		return ipcRenderer.invoke("load-current-project-file");
+		return ipcRenderer.invoke(IPC_CHANNELS.projects.loadCurrentFile);
 	},
 	onMenuLoadProject: (callback: () => void) => {
 		const listener = () => callback();
@@ -363,81 +368,81 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		return () => ipcRenderer.removeListener("menu-save-project-as", listener);
 	},
 	getPlatform: () => {
-		return ipcRenderer.invoke("get-platform");
+		return ipcRenderer.invoke(IPC_CHANNELS.system.getPlatform);
 	},
 	getAppVersion: () => {
-		return ipcRenderer.invoke("get-app-version");
+		return ipcRenderer.invoke(IPC_CHANNELS.system.getAppVersion);
 	},
 	getUpdaterState: () => {
-		return ipcRenderer.invoke("get-updater-state");
+		return ipcRenderer.invoke(IPC_CHANNELS.updater.getState);
 	},
 	checkForUpdates: () => {
-		return ipcRenderer.invoke("check-for-updates");
+		return ipcRenderer.invoke(IPC_CHANNELS.updater.checkForUpdates);
 	},
 	downloadUpdate: () => {
-		return ipcRenderer.invoke("download-update");
+		return ipcRenderer.invoke(IPC_CHANNELS.updater.downloadUpdate);
 	},
 	installUpdateAndRestart: () => {
-		return ipcRenderer.invoke("install-update-and-restart");
+		return ipcRenderer.invoke(IPC_CHANNELS.updater.installAndRestart);
 	},
 	dismissUpdate: () => {
-		return ipcRenderer.invoke("dismiss-update");
+		return ipcRenderer.invoke(IPC_CHANNELS.updater.dismissUpdate);
 	},
 	updateLaterForSession: () => {
-		return ipcRenderer.invoke("update-later-for-session");
+		return ipcRenderer.invoke(IPC_CHANNELS.updater.updateLaterForSession);
 	},
 	dismissWhatsNew: () => {
-		return ipcRenderer.invoke("dismiss-whats-new");
+		return ipcRenderer.invoke(IPC_CHANNELS.updater.dismissWhatsNew);
 	},
 	setUpdaterBusyState: (update: {
 		recording?: boolean;
 		exporting?: boolean;
 		transcribing?: boolean;
-	}) => ipcRenderer.invoke("set-updater-busy-state", update),
+	}) => ipcRenderer.invoke(IPC_CHANNELS.updater.setBusyState, update),
 	onUpdaterStateChanged: (callback: (state: UpdaterState) => void) => {
 		const listener = (_event: Electron.IpcRendererEvent, state: UpdaterState) => callback(state);
 		ipcRenderer.on("updater-state-changed", listener);
 		return () => ipcRenderer.removeListener("updater-state-changed", listener);
 	},
 	revealInFolder: (filePath: string) => {
-		return ipcRenderer.invoke("reveal-in-folder", filePath);
+		return ipcRenderer.invoke(IPC_CHANNELS.files.revealInFolder, filePath);
 	},
 	openRecordingsFolder: () => {
-		return ipcRenderer.invoke("open-recordings-folder");
+		return ipcRenderer.invoke(IPC_CHANNELS.files.openRecordingsFolder);
 	},
 	copyTextToClipboard: (text: string) => {
-		return ipcRenderer.invoke("copy-text-to-clipboard", text);
+		return ipcRenderer.invoke(IPC_CHANNELS.files.copyTextToClipboard, text);
 	},
 	copyExportedToClipboard: (videoData: ArrayBuffer, fileName: string) => {
-		return ipcRenderer.invoke("copy-exported-to-clipboard", videoData, fileName);
+		return ipcRenderer.invoke(IPC_CHANNELS.files.copyExportedToClipboard, videoData, fileName);
 	},
 	deleteProjectAndMedia: (payload: {
 		projectPath?: string | null;
 		videoPath?: string | null;
 		webcamPath?: string | null;
 	}) => {
-		return ipcRenderer.invoke("delete-project-and-media", payload);
+		return ipcRenderer.invoke(IPC_CHANNELS.projects.deleteAndMedia, payload);
 	},
 	getPostRecordingContext: () => {
-		return ipcRenderer.invoke("get-post-recording-context");
+		return ipcRenderer.invoke(IPC_CHANNELS.postRecording.getContext);
 	},
 	setPostRecordingContext: (context: unknown) => {
-		return ipcRenderer.invoke("set-post-recording-context", context);
+		return ipcRenderer.invoke(IPC_CHANNELS.postRecording.setContext, context);
 	},
 	clearPostRecordingContext: () => {
-		return ipcRenderer.invoke("clear-post-recording-context");
+		return ipcRenderer.invoke(IPC_CHANNELS.postRecording.clearContext);
 	},
 	getRecordingsDirectory: () => {
-		return ipcRenderer.invoke("get-recordings-directory");
+		return ipcRenderer.invoke(IPC_CHANNELS.recordingDirectory.get);
 	},
 	chooseRecordingsDirectory: () => {
-		return ipcRenderer.invoke("choose-recordings-directory");
+		return ipcRenderer.invoke(IPC_CHANNELS.recordingDirectory.choose);
 	},
 	getShortcuts: () => {
-		return ipcRenderer.invoke("get-shortcuts");
+		return ipcRenderer.invoke(IPC_CHANNELS.shortcuts.get);
 	},
 	saveShortcuts: (shortcuts: unknown) => {
-		return ipcRenderer.invoke("save-shortcuts", shortcuts);
+		return ipcRenderer.invoke(IPC_CHANNELS.shortcuts.save, shortcuts);
 	},
 	setHasUnsavedChanges: (hasChanges: boolean) => {
 		ipcRenderer.send("set-has-unsaved-changes", hasChanges);
@@ -450,27 +455,27 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		ipcRenderer.on("request-save-before-close", listener);
 		return () => ipcRenderer.removeListener("request-save-before-close", listener);
 	},
-	isWgcAvailable: () => ipcRenderer.invoke("is-wgc-available"),
-	muxWgcRecording: () => ipcRenderer.invoke("mux-wgc-recording"),
-	hideOsCursor: () => ipcRenderer.invoke("hide-cursor"),
-	getCountdownDelay: () => ipcRenderer.invoke("get-countdown-delay"),
-	setCountdownDelay: (delay: number) => ipcRenderer.invoke("set-countdown-delay", delay),
-	startCountdown: (seconds: number) => ipcRenderer.invoke("start-countdown", seconds),
-	cancelCountdown: () => ipcRenderer.invoke("cancel-countdown"),
+	isWgcAvailable: () => ipcRenderer.invoke(IPC_CHANNELS.recording.isWgcAvailable),
+	muxWgcRecording: () => ipcRenderer.invoke(IPC_CHANNELS.recording.muxWgcRecording),
+	hideOsCursor: () => ipcRenderer.invoke(IPC_CHANNELS.system.hideCursor),
+	getCountdownDelay: () => ipcRenderer.invoke(IPC_CHANNELS.countdown.getDelay),
+	setCountdownDelay: (delay: number) => ipcRenderer.invoke(IPC_CHANNELS.countdown.setDelay, delay),
+	startCountdown: (seconds: number) => ipcRenderer.invoke(IPC_CHANNELS.countdown.start, seconds),
+	cancelCountdown: () => ipcRenderer.invoke(IPC_CHANNELS.countdown.cancel),
 	onCountdownTick: (callback: (seconds: number) => void) => {
 		const listener = (_event: Electron.IpcRendererEvent, seconds: number) => callback(seconds);
 		ipcRenderer.on("countdown-tick", listener);
 		return () => ipcRenderer.removeListener("countdown-tick", listener);
 	},
 	// HUD settings
-	getHudSettings: () => ipcRenderer.invoke("get-hud-settings"),
+	getHudSettings: () => ipcRenderer.invoke(IPC_CHANNELS.hud.getSettings),
 	setHudSettings: (settings: Record<string, unknown>) =>
-		ipcRenderer.invoke("set-hud-settings", settings),
+		ipcRenderer.invoke(IPC_CHANNELS.hud.setSettings, settings),
 	openSpeakerNotesWindow: (payload: { text: string }) =>
-		ipcRenderer.invoke("open-speaker-notes-window", payload),
+		ipcRenderer.invoke(IPC_CHANNELS.speakerNotes.open, payload),
 	updateSpeakerNotesWindow: (payload: { text: string }) =>
-		ipcRenderer.invoke("update-speaker-notes-window", payload),
-	closeSpeakerNotesWindow: () => ipcRenderer.invoke("close-speaker-notes-window"),
+		ipcRenderer.invoke(IPC_CHANNELS.speakerNotes.update, payload),
+	closeSpeakerNotesWindow: () => ipcRenderer.invoke(IPC_CHANNELS.speakerNotes.close),
 	onSpeakerNotesUpdated: (callback: (payload: { text: string }) => void) => {
 		const listener = (_event: Electron.IpcRendererEvent, payload: { text: string }) =>
 			callback(payload);
@@ -478,12 +483,13 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		return () => ipcRenderer.removeListener("speaker-notes-updated", listener);
 	},
 	// Display info
-	getDisplayInfo: () => ipcRenderer.invoke("get-display-info"),
+	getDisplayInfo: () => ipcRenderer.invoke(IPC_CHANNELS.system.getDisplayInfo),
 	// Area overlay
-	createAreaOverlay: (displayId?: number) => ipcRenderer.invoke("create-area-overlay", displayId),
-	closeAreaOverlay: () => ipcRenderer.invoke("close-area-overlay"),
-	lockAreaOverlay: () => ipcRenderer.invoke("lock-area-overlay"),
-	unlockAreaOverlay: () => ipcRenderer.invoke("unlock-area-overlay"),
+	createAreaOverlay: (displayId?: number) =>
+		ipcRenderer.invoke(IPC_CHANNELS.areaOverlay.create, displayId),
+	closeAreaOverlay: () => ipcRenderer.invoke(IPC_CHANNELS.areaOverlay.close),
+	lockAreaOverlay: () => ipcRenderer.invoke(IPC_CHANNELS.areaOverlay.lock),
+	unlockAreaOverlay: () => ipcRenderer.invoke(IPC_CHANNELS.areaOverlay.unlock),
 	onAreaOverlayPhase: (callback: (phase: "selecting" | "locked") => void) => {
 		const listener = (_event: Electron.IpcRendererEvent, phase: "selecting" | "locked") =>
 			callback(phase);
@@ -491,18 +497,18 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		return () => ipcRenderer.removeListener("area-overlay-phase", listener);
 	},
 	// Desktop icons (macOS)
-	hideDesktopIcons: () => ipcRenderer.invoke("hide-desktop-icons"),
-	showDesktopIcons: () => ipcRenderer.invoke("show-desktop-icons"),
+	hideDesktopIcons: () => ipcRenderer.invoke(IPC_CHANNELS.system.hideDesktopIcons),
+	showDesktopIcons: () => ipcRenderer.invoke(IPC_CHANNELS.system.showDesktopIcons),
 	// Dock icon (macOS)
-	hideDockIcon: () => ipcRenderer.invoke("hide-dock-icon"),
-	showDockIcon: () => ipcRenderer.invoke("show-dock-icon"),
+	hideDockIcon: () => ipcRenderer.invoke(IPC_CHANNELS.system.hideDockIcon),
+	showDockIcon: () => ipcRenderer.invoke(IPC_CHANNELS.system.showDockIcon),
 	// Resize HUD
 	resizeHudWindow: (contentVisible: boolean) =>
-		ipcRenderer.invoke("resize-hud-window", contentVisible),
+		ipcRenderer.invoke(IPC_CHANNELS.hudWindow.resize, contentVisible),
 	syncHudCompactLayout: (layout: { width: number; height: number }) =>
-		ipcRenderer.invoke("sync-hud-compact-layout", layout),
+		ipcRenderer.invoke(IPC_CHANNELS.hudWindow.syncCompactLayout, layout),
 	setHudDropdownExpanded: (expanded: boolean) =>
-		ipcRenderer.invoke("hud-set-dropdown-expanded", expanded),
-	recenterHudOnCursor: () => ipcRenderer.invoke("hud-recenter-on-cursor"),
-	autoSelectCursorDisplay: () => ipcRenderer.invoke("auto-select-cursor-display"),
+		ipcRenderer.invoke(IPC_CHANNELS.hudWindow.setDropdownExpanded, expanded),
+	recenterHudOnCursor: () => ipcRenderer.invoke(IPC_CHANNELS.hudWindow.recenterOnCursor),
+	autoSelectCursorDisplay: () => ipcRenderer.invoke(IPC_CHANNELS.capture.autoSelectCursorDisplay),
 });

@@ -8,17 +8,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import {
-	app,
-	BrowserWindow,
-	clipboard,
-	desktopCapturer,
-	dialog,
-	ipcMain,
-	type SaveDialogOptions,
-	shell,
-	systemPreferences,
-} from "electron";
+import { app, BrowserWindow, clipboard, dialog, ipcMain, type SaveDialogOptions } from "electron";
 import {
 	WEBCAM_RENDER_PIPELINE_VERSION,
 	type WebcamCaptureProfile,
@@ -34,50 +24,32 @@ import type {
 	ExportV2TrimRegion,
 } from "../../src/lib/exporter/exportV2";
 import { compileNativeComposedExport } from "../../src/lib/exporter/nativeComposed";
-import {
-	buildCollisionFileName,
-	ensureFileExtension,
-	sanitizeFileNameBase,
-} from "../../src/lib/fileNames";
-import type {
-	CaptureDiagnostics,
-	CapturePermissionState,
-	CaptureSourceProbeResult,
-	HelperBinaryDiagnostics,
-} from "../../src/lib/recording/capturePermissionState";
+import { buildCollisionFileName, ensureFileExtension } from "../../src/lib/fileNames";
 import type { PostRecordingContext } from "../../src/lib/recording/postRecording";
 import type {
 	SelectedArea,
 	CursorTelemetrySample as SessionCursorTelemetrySample,
 } from "../../src/lib/recording/session";
-import {
-	cancelCaptionGeneration,
-	exportCaptionTranscript,
-	generateCaptions,
-	getCaptionModelStatus,
-	isCaptionGenerationCancelled,
-} from "../captions/transcriptionOrchestrator";
 import { RECORDINGS_DIR } from "../main";
 import { getScreenMintUpdater } from "../updater";
-import {
-	closeAreaOverlayWindow,
-	closeCountdownWindow,
-	closeSpeakerNotesWindow,
-	createAreaOverlayWindow,
-	createCountdownWindow,
-	createExportWorkerWindow,
-	createSpeakerNotesWindow,
-	getCountdownWindow,
-	lockAreaOverlayWindow,
-	unlockAreaOverlayWindow,
-	updateSpeakerNotesWindow,
-} from "../windows";
+import { createExportWorkerWindow } from "../windows";
+import { registerAppShellIpcHandlers } from "./appShellHandlers";
 import { registerAssetIpcHandlers } from "./assetHandlers";
+import { registerCaptionIpcHandlers } from "./captionHandlers";
+import { registerCaptureSourceIpcHandlers } from "./captureSourceHandlers";
+import { registerChunkSessionIpcHandlers } from "./chunkSessionHandlers";
+import { registerCurrentMediaIpcHandlers } from "./currentMediaHandlers";
 import {
 	type CursorMoveSampleCandidate,
 	shouldRecordCursorMoveSample,
 } from "./cursorTelemetryUtils";
-import { MediaRecorderChunkStore } from "./mediaRecorderChunkStore";
+import { registerExportFileIpcHandlers } from "./exportFileHandlers";
+import { registerExportV2StreamIpcHandlers } from "./exportV2StreamHandlers";
+import { registerPermissionDiagnosticsIpcHandlers } from "./permissionDiagnosticsHandlers";
+import { registerPostRecordingIpcHandlers } from "./postRecordingHandlers";
+import { registerProjectFileIpcHandlers } from "./projectFileHandlers";
+import { registerSystemSettingsIpcHandlers } from "./systemSettingsHandlers";
+import { registerTelemetryReadIpcHandlers } from "./telemetryReadHandlers";
 
 const execFileAsync = promisify(execFile);
 const nodeRequire = createRequire(import.meta.url);
@@ -87,10 +59,7 @@ const APP_BUNDLE_ID = "com.jahirsheikh.screenmint";
 const PROJECT_FILE_EXTENSION = "screenmint";
 const PROJECT_FILE_EXTENSIONS = [PROJECT_FILE_EXTENSION];
 const APP_NAME_ALIASES = ["screenmint"];
-const SHORTCUTS_FILE = path.join(app.getPath("userData"), "shortcuts.json");
 const RECORDINGS_SETTINGS_FILE = path.join(app.getPath("userData"), "recordings-settings.json");
-const COUNTDOWN_SETTINGS_FILE = path.join(app.getPath("userData"), "countdown-settings.json");
-const HUD_SETTINGS_FILE = path.join(app.getPath("userData"), "hud-overlay-settings-full.json");
 const AUTO_RECORDING_PREFIX = "recording-";
 const AUTO_RECORDING_RETENTION_COUNT = 20;
 const AUTO_RECORDING_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
@@ -207,9 +176,6 @@ let customRecordingsDir: string | null = null;
 let recordingsDirLoaded = false;
 let cachedSystemCursorAssets: Record<string, SystemCursorAsset> | null = null;
 let cachedSystemCursorAssetsSourceMtimeMs: number | null = null;
-let countdownTimer: ReturnType<typeof setInterval> | null = null;
-let countdownCancelled = false;
-let countdownInProgress = false;
 
 type ExportV2FfmpegEngine = "direct-native" | "native-composed";
 
@@ -329,38 +295,6 @@ function normalizeDesktopSourceName(value: string) {
 	return value.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
-function hasUsableSourceThumbnail(
-	thumbnail:
-		| {
-				isEmpty: () => boolean;
-				getSize: () => { width: number; height: number };
-		  }
-		| null
-		| undefined,
-) {
-	if (!thumbnail || thumbnail.isEmpty()) {
-		return false;
-	}
-
-	const size = thumbnail.getSize();
-	return size.width > 1 && size.height > 1;
-}
-
-function getMacPrivacySettingsUrl(pane: "screen" | "accessibility") {
-	return pane === "screen"
-		? "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"
-		: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility";
-}
-
-async function pathExists(targetPath: string) {
-	try {
-		await fs.access(targetPath, fsConstants.F_OK);
-		return true;
-	} catch {
-		return false;
-	}
-}
-
 function getAppBundlePath() {
 	if (process.platform !== "darwin" || !app.isPackaged) {
 		return null;
@@ -413,8 +347,6 @@ async function getRecordingsDir() {
 	await fs.mkdir(targetDir, { recursive: true });
 	return targetDir;
 }
-
-const mediaRecorderChunkStore = new MediaRecorderChunkStore(getRecordingsDir);
 
 async function persistRecordingsDirectorySetting(nextDir: string) {
 	customRecordingsDir = path.resolve(nextDir);
@@ -732,158 +664,6 @@ async function getNativeMacWindowSources(options?: { maxAgeMs?: number }) {
 	cachedNativeMacWindowSources = entries;
 	cachedNativeMacWindowSourcesAtMs = now;
 	return entries;
-}
-
-function getScreenRecordingStatus() {
-	if (process.platform !== "darwin") {
-		return "granted";
-	}
-
-	try {
-		return systemPreferences.getMediaAccessStatus("screen");
-	} catch {
-		return "unknown";
-	}
-}
-
-function getMicrophonePermissionStatus() {
-	if (process.platform !== "darwin") {
-		return "granted";
-	}
-
-	try {
-		return systemPreferences.getMediaAccessStatus("microphone");
-	} catch {
-		return "unknown";
-	}
-}
-
-function buildCapturePermissionState(): CapturePermissionState {
-	const bundlePath = getAppBundlePath();
-	const expectedBundlePath = getExpectedApplicationsBundlePath();
-	const installPathMatchesExpected =
-		process.platform !== "darwin" ||
-		!app.isPackaged ||
-		(bundlePath !== null && expectedBundlePath !== null && bundlePath === expectedBundlePath);
-
-	return {
-		platform: process.platform,
-		isPackaged: app.isPackaged,
-		appPath: process.execPath,
-		bundlePath,
-		expectedBundlePath,
-		bundleId: process.platform === "darwin" ? APP_BUNDLE_ID : null,
-		inApplicationsFolder: installPathMatchesExpected,
-		installPathMatchesExpected,
-		screenStatus: getScreenRecordingStatus(),
-		microphoneStatus: getMicrophonePermissionStatus(),
-		accessibilityTrusted:
-			process.platform !== "darwin" ? true : systemPreferences.isTrustedAccessibilityClient(false),
-	};
-}
-
-async function buildHelperBinaryDiagnostics(
-	name: string,
-	sourcePath: string,
-	userDataPath: string,
-	prebundledBinaryName?: string,
-): Promise<HelperBinaryDiagnostics> {
-	const prebundledPath = prebundledBinaryName
-		? getPrebundledNativeHelperPath(prebundledBinaryName)
-		: null;
-	const prebundledExists = prebundledPath ? await pathExists(prebundledPath) : false;
-	const userDataExists = await pathExists(userDataPath);
-	const resolvedPath =
-		prebundledPath && (prebundledExists || app.isPackaged) ? prebundledPath : userDataPath;
-
-	return {
-		name,
-		resolvedPath,
-		sourcePath,
-		prebundledPath,
-		userDataPath,
-		prebundledExists,
-		userDataExists,
-	};
-}
-
-async function probeCaptureSources(): Promise<CaptureSourceProbeResult> {
-	let screenCount = 0;
-	let windowCount = 0;
-	let nativeWindowCount = 0;
-	let desktopError: string | undefined;
-	let nativeWindowError: string | undefined;
-
-	try {
-		const sources = await desktopCapturer.getSources({
-			types: ["screen", "window"],
-			thumbnailSize: { width: 1, height: 1 },
-			fetchWindowIcons: false,
-		});
-		screenCount = sources.filter((source) => source.id.startsWith("screen:")).length;
-		windowCount = sources.filter((source) => source.id.startsWith("window:")).length;
-	} catch (error) {
-		desktopError = String(error);
-	}
-
-	if (process.platform === "darwin") {
-		try {
-			nativeWindowCount = (await getNativeMacWindowSources({ maxAgeMs: 0 })).length;
-		} catch (error) {
-			nativeWindowError = String(error);
-		}
-	}
-
-	return {
-		success: !desktopError && !nativeWindowError,
-		screenCount,
-		windowCount,
-		nativeWindowCount,
-		desktopError,
-		nativeWindowError,
-	};
-}
-
-async function getCaptureDiagnostics(): Promise<CaptureDiagnostics> {
-	const permissionState = buildCapturePermissionState();
-
-	return {
-		permissionState,
-		userDataPath: app.getPath("userData"),
-		helperPaths: await Promise.all([
-			buildHelperBinaryDiagnostics(
-				"screen capture",
-				getNativeCaptureHelperSourcePath(),
-				getNativeCaptureHelperBinaryPath(),
-				"screenmint-screencapturekit-helper",
-			),
-			buildHelperBinaryDiagnostics(
-				"window list",
-				getNativeWindowListSourcePath(),
-				getNativeWindowListBinaryPath(),
-				"screenmint-window-list",
-			),
-			buildHelperBinaryDiagnostics(
-				"window bounds monitor",
-				getNativeWindowBoundsMonitorSourcePath(),
-				getNativeWindowBoundsMonitorBinaryPath(),
-				"screenmint-window-bounds-monitor",
-			),
-			buildHelperBinaryDiagnostics(
-				"cursor assets",
-				getSystemCursorHelperSourcePath(),
-				getSystemCursorHelperBinaryPath(),
-				"screenmint-system-cursors",
-			),
-			buildHelperBinaryDiagnostics(
-				"cursor monitor",
-				getNativeCursorMonitorSourcePath(),
-				getNativeCursorMonitorBinaryPath(),
-				"screenmint-native-cursor-monitor",
-			),
-		]),
-		sourceProbe: await probeCaptureSources(),
-	};
 }
 
 async function getSystemCursorAssets() {
@@ -2206,18 +1986,6 @@ function emitRecordingInterrupted(reason: string, message: string) {
 	BrowserWindow.getAllWindows().forEach((window) => {
 		if (!window.isDestroyed()) {
 			window.webContents.send("recording-interrupted", { reason, message });
-		}
-	});
-}
-
-function emitCaptionGenerationProgress(progress: {
-	stage: string;
-	percentage: number;
-	message: string;
-}) {
-	BrowserWindow.getAllWindows().forEach((window) => {
-		if (!window.isDestroyed()) {
-			window.webContents.send("caption-generation-progress", progress);
 		}
 	});
 }
@@ -4222,280 +3990,136 @@ export function registerIpcHandlers(
 	onRecordingStateChange?: (recording: boolean, sourceName: string) => void,
 ) {
 	registerAssetIpcHandlers();
-
-	ipcMain.handle(IPC_CHANNELS.capture.getSources, async (_, opts) => {
-		const includeScreens = Array.isArray(opts?.types) ? opts.types.includes("screen") : true;
-		const includeWindows = Array.isArray(opts?.types) ? opts.types.includes("window") : true;
-		const electronTypes = [
-			...(includeScreens ? ["screen" as const] : []),
-			...(includeWindows ? ["window" as const] : []),
-		];
-		const electronSources =
-			electronTypes.length > 0
-				? await desktopCapturer.getSources({
-						...opts,
-						types: electronTypes,
-					})
-				: [];
-		const ownWindowNames = new Set(
-			[
-				app.getName(),
-				BRAND_NAME,
-				...BrowserWindow.getAllWindows().flatMap((win) => {
-					const title = win.getTitle().trim();
-					return title ? [title] : [];
-				}),
-			]
-				.map((name) => normalizeDesktopSourceName(name))
-				.filter(Boolean),
-		);
-		const ownAppName = normalizeDesktopSourceName(app.getName());
-
-		const allDisplays = getScreen().getAllDisplays();
-		const primaryDisplayId = getScreen().getPrimaryDisplay().id;
-		const displayInfoMap = new Map(allDisplays.map((d) => [String(d.id), d]));
-
-		const screenSources = electronSources
-			.filter((source) => source.id.startsWith("screen:"))
-			.map((source) => {
-				const info = displayInfoMap.get(String(source.display_id));
-				return {
-					id: source.id,
-					name: source.name,
-					display_id: source.display_id,
-					thumbnail: source.thumbnail ? source.thumbnail.toDataURL() : null,
-					appIcon: source.appIcon ? source.appIcon.toDataURL() : null,
-					width: info?.size.width,
-					height: info?.size.height,
-					scaleFactor: info?.scaleFactor,
-					isPrimary: info ? info.id === primaryDisplayId : undefined,
-					isInternal: info?.internal,
-				};
-			});
-
-		if (process.platform !== "darwin" || !includeWindows) {
-			const windowSources = electronSources
-				.filter((source) => source.id.startsWith("window:"))
-				.filter((source) => hasUsableSourceThumbnail(source.thumbnail))
-				.filter((source) => {
-					const normalizedName = normalizeDesktopSourceName(source.name);
-					if (!normalizedName) {
-						return true;
-					}
-
-					if (
-						ALLOW_OWN_WINDOW_CAPTURE &&
-						APP_NAME_ALIASES.some((alias) => normalizedName.includes(alias))
-					) {
-						return true;
-					}
-
-					for (const ownName of ownWindowNames) {
-						if (!ownName) continue;
-						if (normalizedName === ownName) {
-							return false;
-						}
-					}
-
-					return true;
-				})
-				.map((source) => ({
-					id: source.id,
-					name: source.name,
-					display_id: source.display_id,
-					thumbnail: source.thumbnail ? source.thumbnail.toDataURL() : null,
-					appIcon: source.appIcon ? source.appIcon.toDataURL() : null,
-				}));
-
-			return [...screenSources, ...windowSources];
-		}
-
-		try {
-			const nativeWindowSources = await getNativeMacWindowSources();
-			const electronWindowSourceMap = new Map(
-				electronSources
-					.filter((source) => source.id.startsWith("window:"))
-					.map((source) => [source.id, source] as const),
-			);
-
-			const mergedWindowSources = nativeWindowSources
-				.filter((source) => {
-					const normalizedWindowName = normalizeDesktopSourceName(
-						source.windowTitle ?? source.name,
-					);
-					const normalizedAppName = normalizeDesktopSourceName(source.appName ?? "");
-
-					if (!ALLOW_OWN_WINDOW_CAPTURE && normalizedAppName && normalizedAppName === ownAppName) {
-						return false;
-					}
-
-					if (
-						ALLOW_OWN_WINDOW_CAPTURE &&
-						(APP_NAME_ALIASES.includes(normalizedAppName) ||
-							APP_NAME_ALIASES.some((alias) => normalizedWindowName?.includes(alias)))
-					) {
-						return true;
-					}
-
-					if (!normalizedWindowName) {
-						return true;
-					}
-
-					for (const ownName of ownWindowNames) {
-						if (!ownName) continue;
-						if (normalizedWindowName === ownName) {
-							return false;
-						}
-					}
-
-					return true;
-				})
-				.map((source) => {
-					const electronWindowSource = electronWindowSourceMap.get(source.id);
-					return {
-						id: source.id,
-						name: source.name,
-						display_id: source.display_id ?? electronWindowSource?.display_id ?? "",
-						thumbnail: electronWindowSource?.thumbnail
-							? electronWindowSource.thumbnail.toDataURL()
-							: null,
-						appIcon:
-							source.appIcon ??
-							(electronWindowSource?.appIcon ? electronWindowSource.appIcon.toDataURL() : null),
-						appName: source.appName,
-						windowTitle: source.windowTitle,
-					};
-				})
-				.filter((source) => Boolean(source.thumbnail));
-
-			return [...screenSources, ...mergedWindowSources];
-		} catch (error) {
-			console.warn("Falling back to Electron window enumeration on macOS:", error);
-
-			const windowSources = electronSources
-				.filter((source) => source.id.startsWith("window:"))
-				.filter((source) => hasUsableSourceThumbnail(source.thumbnail))
-				.filter((source) => {
-					const normalizedName = normalizeDesktopSourceName(source.name);
-					if (!normalizedName) {
-						return true;
-					}
-
-					if (
-						ALLOW_OWN_WINDOW_CAPTURE &&
-						APP_NAME_ALIASES.some((alias) => normalizedName.includes(alias))
-					) {
-						return true;
-					}
-
-					for (const ownName of ownWindowNames) {
-						if (!ownName) continue;
-						if (
-							normalizedName === ownName ||
-							normalizedName.includes(ownName) ||
-							ownName.includes(normalizedName)
-						) {
-							return false;
-						}
-					}
-
-					return true;
-				})
-				.map((source) => ({
-					id: source.id,
-					name: source.name,
-					display_id: source.display_id,
-					thumbnail: source.thumbnail ? source.thumbnail.toDataURL() : null,
-					appIcon: source.appIcon ? source.appIcon.toDataURL() : null,
-				}));
-
-			return [...screenSources, ...windowSources];
-		}
+	registerChunkSessionIpcHandlers({
+		getRecordingsDir,
+		remuxMediaRecorderSegment,
+		persistCapturedTelemetryForVideo,
 	});
-
-	ipcMain.handle(IPC_CHANNELS.capture.selectSource, (_, source: SelectedSource) => {
-		selectedSource = source;
-		userExplicitlySelectedSource = true;
-		if (!getSelectedAreaForSource(source)) {
-			selectedArea = null;
-		}
-		notifySelectedAreaChanged();
-		stopWindowBoundsCapture();
-		const sourceSelectorWin = getSourceSelectorWindow();
-		if (sourceSelectorWin) {
-			sourceSelectorWin.close();
-		}
-		return selectedSource;
+	registerCaptureSourceIpcHandlers({
+		brandName: BRAND_NAME,
+		appNameAliases: APP_NAME_ALIASES,
+		allowOwnWindowCapture: ALLOW_OWN_WINDOW_CAPTURE,
+		getScreen,
+		getSelectedSource: () => selectedSource,
+		setSelectedSource: (source) => {
+			selectedSource = source;
+		},
+		getUserExplicitlySelectedSource: () => userExplicitlySelectedSource,
+		setUserExplicitlySelectedSource: (selected) => {
+			userExplicitlySelectedSource = selected;
+		},
+		getSelectedArea: () => selectedArea,
+		setSelectedArea: (area) => {
+			selectedArea = area;
+		},
+		notifySelectedAreaChanged,
+		getSelectedAreaForSource,
+		stopWindowBoundsCapture,
+		getSourceSelectorWindow,
+		getNativeMacWindowSources,
 	});
-
-	ipcMain.handle(IPC_CHANNELS.capture.autoSelectCursorDisplay, async () => {
-		if (userExplicitlySelectedSource && selectedSource) {
-			return { success: true, source: selectedSource };
-		}
-		try {
-			const cursor = getScreen().getCursorScreenPoint();
-			const targetDisplay = getScreen().getDisplayNearestPoint(cursor);
-			const sources = await desktopCapturer.getSources({
-				types: ["screen"],
-				thumbnailSize: { width: 1, height: 1 },
-				fetchWindowIcons: false,
-			});
-			const match = sources.find((s) => Number(s.display_id) === targetDisplay.id) ?? sources[0];
-			if (!match) {
-				return { success: false };
-			}
-			selectedSource = {
-				id: match.id,
-				name: match.name,
-				display_id: String(targetDisplay.id),
-			} as SelectedSource;
-			selectedArea = null;
-			notifySelectedAreaChanged();
-			return { success: true, source: selectedSource };
-		} catch (error) {
-			return { success: false, error: String(error) };
-		}
+	registerPermissionDiagnosticsIpcHandlers({
+		appBundleId: APP_BUNDLE_ID,
+		getAppBundlePath,
+		getExpectedApplicationsBundlePath,
+		getPrebundledNativeHelperPath,
+		getNativeCaptureHelperSourcePath,
+		getNativeCaptureHelperBinaryPath,
+		getNativeWindowListSourcePath,
+		getNativeWindowListBinaryPath,
+		getNativeWindowBoundsMonitorSourcePath,
+		getNativeWindowBoundsMonitorBinaryPath,
+		getSystemCursorHelperSourcePath,
+		getSystemCursorHelperBinaryPath,
+		getNativeCursorMonitorSourcePath,
+		getNativeCursorMonitorBinaryPath,
+		getNativeMacWindowSources,
 	});
-
-	ipcMain.handle(IPC_CHANNELS.capture.getSelectedSource, () => {
-		return selectedSource;
+	registerSystemSettingsIpcHandlers();
+	registerCaptionIpcHandlers({
+		getCurrentVideoPath: () => currentVideoPath,
+		getCurrentMicrophoneAudioPath: () => currentMicrophoneAudioPath,
+		getFfmpegBinaryPath,
+		normalizeVideoSourcePath,
 	});
-
-	ipcMain.handle(IPC_CHANNELS.capture.setSelectedArea, (_, area: SelectedArea | null) => {
-		selectedArea = area;
-		notifySelectedAreaChanged();
-		return { success: true, area: selectedArea };
+	registerCurrentMediaIpcHandlers({
+		getVideoPath: () => currentVideoPath,
+		setVideoPath: (path) => {
+			currentVideoPath = path;
+		},
+		setProjectPath: (path) => {
+			currentProjectPath = path;
+		},
+		getWebcamPath: () => currentWebcamPath,
+		setWebcamPath: (path) => {
+			currentWebcamPath = path;
+		},
+		setMicrophoneAudioPath: (path) => {
+			currentMicrophoneAudioPath = path;
+		},
+		normalizeVideoSourcePath,
 	});
-
-	ipcMain.handle(IPC_CHANNELS.capture.getSelectedArea, () => {
-		return { success: true, area: selectedArea };
+	registerPostRecordingIpcHandlers({
+		getPostRecordingContext: () => postRecordingContext,
+		setPostRecordingContext: (context) => {
+			postRecordingContext = context;
+		},
 	});
-
-	ipcMain.handle(IPC_CHANNELS.capture.clearSelectedArea, () => {
-		selectedArea = null;
-		notifySelectedAreaChanged();
-		return { success: true };
+	registerExportFileIpcHandlers({
+		getRecordingsDir,
+		getExportSaveDialogOptions,
+		setCurrentProjectPath: (path) => {
+			currentProjectPath = path;
+		},
+		writeBufferToUniqueFile,
 	});
-
-	ipcMain.handle("open-source-selector", () => {
-		const sourceSelectorWin = getSourceSelectorWindow();
-		if (sourceSelectorWin) {
-			sourceSelectorWin.focus();
-			return;
-		}
-		createSourceSelectorWindow();
+	registerProjectFileIpcHandlers({
+		brandName: BRAND_NAME,
+		projectFileExtension: PROJECT_FILE_EXTENSION,
+		projectFileExtensions: PROJECT_FILE_EXTENSIONS,
+		defaultRecordingsDir: RECORDINGS_DIR,
+		getRecordingsDir,
+		persistRecordingsDirectorySetting,
+		getCurrentProjectPath: () => currentProjectPath,
+		setCurrentProjectPath: (projectPath) => {
+			currentProjectPath = projectPath;
+		},
+		getCurrentVideoPath: () => currentVideoPath,
+		setCurrentVideoPath: (videoPath) => {
+			currentVideoPath = videoPath;
+		},
+		getCurrentWebcamPath: () => currentWebcamPath,
+		setCurrentWebcamPath: (webcamPath) => {
+			currentWebcamPath = webcamPath;
+		},
+		setCurrentMicrophoneAudioPath: (microphonePath) => {
+			currentMicrophoneAudioPath = microphonePath;
+		},
+		normalizeVideoSourcePath,
+		normalizePath,
+		isPathInsideDirectory,
+		deletePathIfExists,
+		getTelemetryPathForVideo,
+		getKeyboardTelemetryPathForVideo,
+		isTrustedProjectPath,
 	});
-
-	ipcMain.handle("switch-to-editor", () => {
-		createEditorWindow();
+	registerTelemetryReadIpcHandlers({
+		getSystemCursorAssets,
+		getCurrentVideoPath: () => currentVideoPath,
+		getTelemetryPathForVideo,
+		getKeyboardTelemetryPathForVideo,
+		normalizeVideoSourcePath,
+		isCursorVisualType,
 	});
-
-	ipcMain.handle("switch-to-hud", () => {
-		createHudOverlay();
+	registerAppShellIpcHandlers({
+		createEditorWindow,
+		createSourceSelectorWindow,
+		createHudOverlay,
+		getSourceSelectorWindow,
 	});
 
 	ipcMain.handle(
-		"start-native-screen-recording",
+		IPC_CHANNELS.recording.startNative,
 		async (_, source: SelectedSource, options?: NativeMacRecordingOptions) => {
 			// Windows WGC path
 			if (process.platform === "win32") {
@@ -4738,7 +4362,7 @@ export function registerIpcHandlers(
 		},
 	);
 
-	ipcMain.handle("stop-native-screen-recording", async () => {
+	ipcMain.handle(IPC_CHANNELS.recording.stopNative, async () => {
 		// Windows WGC stop path
 		if (process.platform === "win32" && wgcScreenRecordingActive) {
 			try {
@@ -4871,20 +4495,11 @@ export function registerIpcHandlers(
 		}
 	});
 
-	ipcMain.handle("get-system-cursor-assets", async () => {
-		try {
-			return { success: true, cursors: await getSystemCursorAssets() };
-		} catch (error) {
-			console.error("Failed to load system cursor assets:", error);
-			return { success: false, cursors: {}, error: String(error) };
-		}
-	});
-
-	ipcMain.handle("is-wgc-available", async () => {
+	ipcMain.handle(IPC_CHANNELS.recording.isWgcAvailable, async () => {
 		return { available: await isWgcCaptureAvailable() };
 	});
 
-	ipcMain.handle("mux-wgc-recording", async () => {
+	ipcMain.handle(IPC_CHANNELS.recording.muxWgcRecording, async () => {
 		const videoPath = wgcPendingVideoPath;
 		wgcPendingVideoPath = null;
 
@@ -4916,7 +4531,7 @@ export function registerIpcHandlers(
 	});
 
 	ipcMain.handle(
-		"start-ffmpeg-recording",
+		IPC_CHANNELS.recording.startFfmpeg,
 		async (_, source: SelectedSource, options?: NativeMacRecordingOptions) => {
 			if (ffmpegCaptureProcess) {
 				return { success: false, message: "An FFmpeg recording is already active." };
@@ -4959,7 +4574,7 @@ export function registerIpcHandlers(
 		},
 	);
 
-	ipcMain.handle("stop-ffmpeg-recording", async () => {
+	ipcMain.handle(IPC_CHANNELS.recording.stopFfmpeg, async () => {
 		if (!ffmpegScreenRecordingActive) {
 			return { success: false, message: "No FFmpeg recording is active." };
 		}
@@ -4993,7 +4608,7 @@ export function registerIpcHandlers(
 	});
 
 	ipcMain.handle(
-		"store-recorded-video",
+		IPC_CHANNELS.recording.storeVideo,
 		async (_, videoData: ArrayBuffer, fileName: string, finalize = true) => {
 			try {
 				const recordingsDir = await getRecordingsDir();
@@ -5016,52 +4631,7 @@ export function registerIpcHandlers(
 		},
 	);
 
-	ipcMain.handle("start-media-recorder-chunk-session", async (_, fileName: string) => {
-		try {
-			const session = await mediaRecorderChunkStore.start(fileName);
-			return { success: true, ...session };
-		} catch (error) {
-			console.error("Failed to start MediaRecorder chunk session:", error);
-			return { success: false, error: String(error) };
-		}
-	});
-
-	ipcMain.handle(
-		"append-media-recorder-chunk",
-		async (_, sessionId: string, chunkData: ArrayBuffer) => {
-			try {
-				await mediaRecorderChunkStore.append(sessionId, chunkData);
-				return { success: true };
-			} catch (error) {
-				console.error("Failed to append MediaRecorder chunk:", error);
-				return { success: false, error: String(error) };
-			}
-		},
-	);
-
-	ipcMain.handle("finish-media-recorder-chunk-session", async (_, sessionId: string) => {
-		try {
-			const result = await mediaRecorderChunkStore.finish(sessionId);
-			const segmentPath = await remuxMediaRecorderSegment(result.path);
-			await persistCapturedTelemetryForVideo(segmentPath);
-			return { success: true, path: segmentPath, bytesWritten: result.bytesWritten };
-		} catch (error) {
-			console.error("Failed to finish MediaRecorder chunk session:", error);
-			return { success: false, error: String(error) };
-		}
-	});
-
-	ipcMain.handle("discard-media-recorder-chunk-session", async (_, sessionId: string) => {
-		try {
-			await mediaRecorderChunkStore.discard(sessionId);
-			return { success: true };
-		} catch (error) {
-			console.error("Failed to discard MediaRecorder chunk session:", error);
-			return { success: false, error: String(error) };
-		}
-	});
-
-	ipcMain.handle("get-recorded-video-path", async () => {
+	ipcMain.handle(IPC_CHANNELS.recording.getRecordedVideoPath, async () => {
 		try {
 			const recordingsDir = await getRecordingsDir();
 			const files = await fs.readdir(recordingsDir);
@@ -5082,7 +4652,7 @@ export function registerIpcHandlers(
 	});
 
 	ipcMain.handle(
-		"finalize-recording-session",
+		IPC_CHANNELS.recording.finalizeSession,
 		async (
 			_,
 			payload: {
@@ -5107,7 +4677,7 @@ export function registerIpcHandlers(
 	);
 
 	ipcMain.handle(
-		"trigger-finalize-recording-session",
+		IPC_CHANNELS.recording.triggerFinalizeSession,
 		(
 			_,
 			payload: {
@@ -5156,7 +4726,7 @@ export function registerIpcHandlers(
 		},
 	);
 
-	ipcMain.handle("await-recording-finalized", async () => {
+	ipcMain.handle(IPC_CHANNELS.recording.awaitFinalized, async () => {
 		if (pendingFinalizationPromise) {
 			return await pendingFinalizationPromise;
 		}
@@ -5167,7 +4737,7 @@ export function registerIpcHandlers(
 	});
 
 	ipcMain.handle(
-		"discard-recording-artifacts",
+		IPC_CHANNELS.recording.discardArtifacts,
 		async (
 			_,
 			payload: {
@@ -5188,7 +4758,7 @@ export function registerIpcHandlers(
 		},
 	);
 
-	ipcMain.handle("set-recording-state", (_, recording: boolean) => {
+	ipcMain.handle(IPC_CHANNELS.recording.setState, (_, recording: boolean) => {
 		if (recording) {
 			stopCursorCapture();
 			stopInteractionCapture();
@@ -5241,320 +4811,6 @@ export function registerIpcHandlers(
 		void getScreenMintUpdater().setBusyState({ recording });
 	});
 
-	ipcMain.handle("get-cursor-telemetry", async (_, videoPath?: string) => {
-		const targetVideoPath = normalizeVideoSourcePath(videoPath ?? currentVideoPath);
-		if (!targetVideoPath) {
-			return { success: true, samples: [] };
-		}
-
-		const telemetryPath = getTelemetryPathForVideo(targetVideoPath);
-		try {
-			const content = await fs.readFile(telemetryPath, "utf-8");
-			const parsed = JSON.parse(content);
-			const rawSamples = Array.isArray(parsed)
-				? parsed
-				: Array.isArray(parsed?.samples)
-					? parsed.samples
-					: [];
-
-			const samples: CursorTelemetryPoint[] = rawSamples
-				.filter((sample: unknown) => Boolean(sample && typeof sample === "object"))
-				.map((sample: unknown) => {
-					const point = sample as Partial<CursorTelemetryPoint>;
-					return {
-						timeMs:
-							typeof point.timeMs === "number" && Number.isFinite(point.timeMs)
-								? Math.max(0, point.timeMs)
-								: 0,
-						cx:
-							typeof point.cx === "number" && Number.isFinite(point.cx)
-								? clamp(point.cx, 0, 1)
-								: 0.5,
-						cy:
-							typeof point.cy === "number" && Number.isFinite(point.cy)
-								? clamp(point.cy, 0, 1)
-								: 0.5,
-						interactionType:
-							point.interactionType === "mousedown" ||
-							point.interactionType === "drag-start" ||
-							point.interactionType === "drag" ||
-							point.interactionType === "drag-end" ||
-							point.interactionType === "click" ||
-							point.interactionType === "double-click" ||
-							point.interactionType === "right-click" ||
-							point.interactionType === "middle-click" ||
-							point.interactionType === "move" ||
-							point.interactionType === "mouseup"
-								? point.interactionType
-								: undefined,
-						cursorType:
-							typeof point.cursorType === "string" && isCursorVisualType(point.cursorType)
-								? point.cursorType
-								: undefined,
-						rawX:
-							typeof point.rawX === "number" && Number.isFinite(point.rawX)
-								? point.rawX
-								: undefined,
-						rawY:
-							typeof point.rawY === "number" && Number.isFinite(point.rawY)
-								? point.rawY
-								: undefined,
-						origin:
-							point.origin === "hook" ||
-							point.origin === "poll" ||
-							point.origin === "native-monitor"
-								? point.origin
-								: undefined,
-						confidence:
-							point.confidence === "high" ||
-							point.confidence === "medium" ||
-							point.confidence === "low"
-								? point.confidence
-								: undefined,
-						sourceBounds: sanitizeTelemetryBounds(point.sourceBounds),
-						displayBounds: sanitizeTelemetryBounds(point.displayBounds),
-						sourceDisplayId:
-							typeof point.sourceDisplayId === "number" && Number.isFinite(point.sourceDisplayId)
-								? point.sourceDisplayId
-								: undefined,
-						displayScaleFactor:
-							typeof point.displayScaleFactor === "number" &&
-							Number.isFinite(point.displayScaleFactor) &&
-							point.displayScaleFactor > 0
-								? point.displayScaleFactor
-								: undefined,
-						captureMode:
-							point.captureMode === "display" ||
-							point.captureMode === "window" ||
-							point.captureMode === "area"
-								? point.captureMode
-								: undefined,
-					};
-				})
-				.sort((a: CursorTelemetryPoint, b: CursorTelemetryPoint) => a.timeMs - b.timeMs);
-
-			return { success: true, samples };
-		} catch (error) {
-			const nodeError = error as NodeJS.ErrnoException;
-			if (nodeError.code === "ENOENT") {
-				return { success: true, samples: [] };
-			}
-			console.error("Failed to load cursor telemetry:", error);
-			return {
-				success: false,
-				message: "Failed to load cursor telemetry",
-				error: String(error),
-				samples: [],
-			};
-		}
-	});
-
-	ipcMain.handle("get-keyboard-telemetry", async (_, videoPath?: string) => {
-		const targetVideoPath = normalizeVideoSourcePath(videoPath ?? currentVideoPath);
-		if (!targetVideoPath) {
-			return {
-				success: true,
-				platform: normalizeKeyboardPlatform(process.platform),
-				samples: [],
-			};
-		}
-
-		const telemetryPath = getKeyboardTelemetryPathForVideo(targetVideoPath);
-		try {
-			const content = await fs.readFile(telemetryPath, "utf-8");
-			const parsed = JSON.parse(content);
-			const rawSamples = Array.isArray(parsed?.samples) ? parsed.samples : [];
-
-			const samples: KeyboardTelemetryPoint[] = rawSamples
-				.filter((sample: unknown) => Boolean(sample && typeof sample === "object"))
-				.map((sample: unknown) => {
-					const point = sample as Partial<KeyboardTelemetryPoint>;
-					return {
-						timeMs:
-							typeof point.timeMs === "number" && Number.isFinite(point.timeMs)
-								? Math.max(0, point.timeMs)
-								: 0,
-						type: point.type === "keyup" ? "keyup" : "keydown",
-						key: typeof point.key === "string" ? point.key.trim().toLowerCase() : "unknown",
-						keycode:
-							typeof point.keycode === "number" && Number.isFinite(point.keycode)
-								? Math.round(point.keycode)
-								: 0,
-						altKey: Boolean(point.altKey),
-						ctrlKey: Boolean(point.ctrlKey),
-						metaKey: Boolean(point.metaKey),
-						shiftKey: Boolean(point.shiftKey),
-					};
-				})
-				.sort((a: KeyboardTelemetryPoint, b: KeyboardTelemetryPoint) => a.timeMs - b.timeMs);
-
-			return {
-				success: true,
-				platform: normalizeKeyboardPlatform(parsed?.platform),
-				samples,
-			};
-		} catch (error) {
-			const nodeError = error as NodeJS.ErrnoException;
-			if (nodeError.code === "ENOENT") {
-				return {
-					success: true,
-					platform: normalizeKeyboardPlatform(process.platform),
-					samples: [],
-				};
-			}
-
-			console.error("Failed to load keyboard telemetry:", error);
-			return {
-				success: false,
-				message: "Failed to load keyboard telemetry",
-				error: String(error),
-				platform: normalizeKeyboardPlatform(process.platform),
-				samples: [],
-			};
-		}
-	});
-
-	ipcMain.handle("open-external-url", async (_, url: string) => {
-		try {
-			await shell.openExternal(url);
-			return { success: true };
-		} catch (error) {
-			console.error("Failed to open URL:", error);
-			return { success: false, error: String(error) };
-		}
-	});
-
-	ipcMain.handle("get-accessibility-permission-status", () => {
-		if (process.platform !== "darwin") {
-			return { success: true, trusted: true, prompted: false };
-		}
-
-		return {
-			success: true,
-			trusted: systemPreferences.isTrustedAccessibilityClient(false),
-			prompted: false,
-		};
-	});
-
-	ipcMain.handle("request-accessibility-permission", () => {
-		if (process.platform !== "darwin") {
-			return { success: true, trusted: true, prompted: false };
-		}
-
-		return {
-			success: true,
-			trusted: systemPreferences.isTrustedAccessibilityClient(true),
-			prompted: true,
-		};
-	});
-
-	ipcMain.handle("get-capture-permission-state", async () => {
-		return {
-			success: true,
-			state: buildCapturePermissionState(),
-		};
-	});
-
-	ipcMain.handle("request-microphone-access", async () => {
-		if (process.platform !== "darwin") {
-			return { success: true, granted: true, status: "granted" };
-		}
-
-		try {
-			const granted = await systemPreferences.askForMediaAccess("microphone");
-			return {
-				success: true,
-				granted,
-				status: getMicrophonePermissionStatus(),
-			};
-		} catch (error) {
-			return {
-				success: false,
-				granted: false,
-				status: getMicrophonePermissionStatus(),
-				error: String(error),
-			};
-		}
-	});
-
-	ipcMain.handle("get-screen-recording-permission-status", () => {
-		if (process.platform !== "darwin") {
-			return { success: true, status: "granted" };
-		}
-
-		try {
-			return {
-				success: true,
-				status: getScreenRecordingStatus(),
-			};
-		} catch (error) {
-			console.error("Failed to get screen recording permission status:", error);
-			return { success: false, status: "unknown", error: String(error) };
-		}
-	});
-
-	ipcMain.handle("open-screen-recording-preferences", async () => {
-		if (process.platform !== "darwin") {
-			return { success: true };
-		}
-
-		try {
-			await shell.openExternal(getMacPrivacySettingsUrl("screen"));
-			return { success: true };
-		} catch (error) {
-			console.error("Failed to open Screen Recording preferences:", error);
-			return { success: false, error: String(error) };
-		}
-	});
-
-	ipcMain.handle("open-accessibility-preferences", async () => {
-		if (process.platform !== "darwin") {
-			return { success: true };
-		}
-
-		try {
-			await shell.openExternal(getMacPrivacySettingsUrl("accessibility"));
-			return { success: true };
-		} catch (error) {
-			console.error("Failed to open Accessibility preferences:", error);
-			return { success: false, error: String(error) };
-		}
-	});
-
-	ipcMain.handle("probe-capture-sources", async () => {
-		try {
-			return {
-				success: true,
-				probe: await probeCaptureSources(),
-			};
-		} catch (error) {
-			return {
-				success: false,
-				probe: {
-					success: false,
-					screenCount: 0,
-					windowCount: 0,
-					nativeWindowCount: 0,
-				},
-				error: String(error),
-			};
-		}
-	});
-
-	ipcMain.handle("get-capture-diagnostics", async () => {
-		try {
-			return {
-				success: true,
-				diagnostics: await getCaptureDiagnostics(),
-			};
-		} catch (error) {
-			return {
-				success: false,
-				error: String(error),
-			};
-		}
-	});
-
 	ipcMain.handle(IPC_CHANNELS.exportV2.probe, async () => getCachedExportV2Capabilities());
 
 	ipcMain.handle(IPC_CHANNELS.exportV2.createWorker, async () => {
@@ -5566,7 +4822,7 @@ export function registerIpcHandlers(
 		}
 	});
 
-	ipcMain.handle("exportV2:worker-progress", async (_, progress: ExportV2Progress) => {
+	ipcMain.handle(IPC_CHANNELS.exportV2.workerProgress, async (_, progress: ExportV2Progress) => {
 		const owner = exportV2WorkerOwners.get(progress.jobId);
 		if (owner && !owner.isDestroyed()) {
 			emitExportV2Progress(owner, progress);
@@ -5574,7 +4830,7 @@ export function registerIpcHandlers(
 		return { success: true };
 	});
 
-	ipcMain.handle("exportV2:worker-complete", async (_, result: ExportV2StartResult) => {
+	ipcMain.handle(IPC_CHANNELS.exportV2.workerComplete, async (_, result: ExportV2StartResult) => {
 		if (!result.jobId) {
 			return { success: false, error: "Worker result is missing a job id." };
 		}
@@ -5586,45 +4842,14 @@ export function registerIpcHandlers(
 		return { success: true };
 	});
 
-	ipcMain.handle("exportV2:streamStart", async (_, filePath: string) => {
-		try {
-			const session = await startExportV2StreamSession(filePath);
-			return { success: true, ...session };
-		} catch (error) {
-			return { success: false, error: String(error) };
-		}
+	registerExportV2StreamIpcHandlers({
+		startExportV2StreamSession,
+		appendExportV2StreamSession,
+		finishExportV2StreamSession,
+		discardExportV2StreamSession,
 	});
 
-	ipcMain.handle(
-		"exportV2:streamAppend",
-		async (_, sessionId: string, chunk: ArrayBuffer, position: number) => {
-			try {
-				return await appendExportV2StreamSession(sessionId, chunk, position);
-			} catch (error) {
-				return { success: false, error: String(error) };
-			}
-		},
-	);
-
-	ipcMain.handle("exportV2:streamFinish", async (_, sessionId: string) => {
-		try {
-			const result = await finishExportV2StreamSession(sessionId);
-			return { success: true, ...result };
-		} catch (error) {
-			return { success: false, error: String(error) };
-		}
-	});
-
-	ipcMain.handle("exportV2:streamDiscard", async (_, sessionId: string) => {
-		try {
-			await discardExportV2StreamSession(sessionId);
-			return { success: true };
-		} catch (error) {
-			return { success: false, error: String(error) };
-		}
-	});
-
-	ipcMain.handle("exportV2:cancel", async (_, jobId: string) => {
+	ipcMain.handle(IPC_CHANNELS.exportV2.cancel, async (_, jobId: string) => {
 		const job = exportV2Jobs.get(jobId);
 		if (!job) {
 			const resolver = exportV2WorkerResolvers.get(jobId);
@@ -5649,7 +4874,7 @@ export function registerIpcHandlers(
 	});
 
 	ipcMain.handle(
-		"exportV2:start",
+		IPC_CHANNELS.exportV2.start,
 		async (event, request: ExportV2StartRequest): Promise<ExportV2StartResult> => {
 			const capabilities = getCachedExportV2Capabilities();
 			if (!capabilities.enabled) {
@@ -6027,1046 +5252,4 @@ export function registerIpcHandlers(
 			};
 		},
 	);
-
-	ipcMain.handle("show-export-save-dialog", async (_, fileName: string) => {
-		try {
-			const result = await dialog.showSaveDialog(getExportSaveDialogOptions(fileName));
-
-			if (result.canceled || !result.filePath) {
-				return {
-					success: false,
-					canceled: true,
-					message: "Export canceled",
-				};
-			}
-
-			return {
-				success: true,
-				path: result.filePath,
-			};
-		} catch (error) {
-			console.error("Failed to show export save dialog:", error);
-			return {
-				success: false,
-				message: "Failed to open save dialog",
-				error: String(error),
-			};
-		}
-	});
-
-	ipcMain.handle(
-		"write-exported-video-to-path",
-		async (_, videoData: ArrayBuffer, filePath: string) => {
-			try {
-				await fs.writeFile(filePath, Buffer.from(videoData));
-
-				return {
-					success: true,
-					path: filePath,
-					message: "Video exported successfully",
-				};
-			} catch (error) {
-				console.error("Failed to write exported video:", error);
-				return {
-					success: false,
-					message: "Failed to save exported video",
-					error: String(error),
-				};
-			}
-		},
-	);
-
-	ipcMain.handle("save-exported-video", async (_, videoData: ArrayBuffer, fileName: string) => {
-		try {
-			const result = await dialog.showSaveDialog(getExportSaveDialogOptions(fileName));
-
-			if (result.canceled || !result.filePath) {
-				return {
-					success: false,
-					canceled: true,
-					message: "Export canceled",
-				};
-			}
-
-			await fs.writeFile(result.filePath, Buffer.from(videoData));
-
-			return {
-				success: true,
-				path: result.filePath,
-				message: "Video exported successfully",
-			};
-		} catch (error) {
-			console.error("Failed to save exported video:", error);
-			return {
-				success: false,
-				message: "Failed to save exported video",
-				error: String(error),
-			};
-		}
-	});
-
-	ipcMain.handle(
-		"save-exported-video-to-recordings",
-		async (_, videoData: ArrayBuffer, fileName: string) => {
-			try {
-				const recordingsDir = await getRecordingsDir();
-				const extension = fileName.toLowerCase().endsWith(".gif") ? "gif" : "mp4";
-				const safeName = ensureFileExtension(fileName, extension);
-				const targetPath = await writeBufferToUniqueFile(
-					recordingsDir,
-					safeName,
-					Buffer.from(videoData),
-				);
-				return {
-					success: true,
-					path: targetPath,
-					message: "Video saved to recordings folder",
-				};
-			} catch (error) {
-				console.error("Failed to save exported video to recordings:", error);
-				return {
-					success: false,
-					message: "Failed to save exported video to recordings",
-					error: String(error),
-				};
-			}
-		},
-	);
-
-	ipcMain.handle("open-video-file-picker", async () => {
-		try {
-			const recordingsDir = await getRecordingsDir();
-			const result = await dialog.showOpenDialog({
-				title: "Select Video File",
-				defaultPath: recordingsDir,
-				filters: [
-					{ name: "Video Files", extensions: ["webm", "mp4", "mov", "avi", "mkv"] },
-					{ name: "All Files", extensions: ["*"] },
-				],
-				properties: ["openFile"],
-			});
-
-			if (result.canceled || result.filePaths.length === 0) {
-				return { success: false, canceled: true };
-			}
-
-			currentProjectPath = null;
-			return {
-				success: true,
-				path: result.filePaths[0],
-			};
-		} catch (error) {
-			console.error("Failed to open file picker:", error);
-			return {
-				success: false,
-				message: "Failed to open file picker",
-				error: String(error),
-			};
-		}
-	});
-
-	ipcMain.handle("open-audio-file-picker", async () => {
-		try {
-			const result = await dialog.showOpenDialog({
-				title: "Select Audio File",
-				filters: [
-					{ name: "Audio Files", extensions: ["mp3", "wav", "aac", "m4a", "flac", "ogg"] },
-					{ name: "All Files", extensions: ["*"] },
-				],
-				properties: ["openFile"],
-			});
-
-			if (result.canceled || result.filePaths.length === 0) {
-				return { success: false, canceled: true };
-			}
-
-			return {
-				success: true,
-				path: result.filePaths[0],
-			};
-		} catch (error) {
-			console.error("Failed to open audio file picker:", error);
-			return {
-				success: false,
-				message: "Failed to open audio file picker",
-				error: String(error),
-			};
-		}
-	});
-
-	ipcMain.handle("open-image-file-picker", async () => {
-		try {
-			const result = await dialog.showOpenDialog({
-				title: "Select Image File",
-				filters: [
-					{
-						name: "Image Files",
-						extensions: ["png", "jpg", "jpeg", "webp", "gif", "avif", "bmp"],
-					},
-					{ name: "All Files", extensions: ["*"] },
-				],
-				properties: ["openFile"],
-			});
-
-			if (result.canceled || result.filePaths.length === 0) {
-				return { success: false, canceled: true };
-			}
-
-			return {
-				success: true,
-				path: result.filePaths[0],
-			};
-		} catch (error) {
-			console.error("Failed to open image file picker:", error);
-			return {
-				success: false,
-				message: "Failed to open image file picker",
-				error: String(error),
-			};
-		}
-	});
-
-	ipcMain.handle("reveal-in-folder", async (_, filePath: string) => {
-		try {
-			// shell.showItemInFolder doesn't return a value, it throws on error
-			shell.showItemInFolder(filePath);
-			return { success: true };
-		} catch (error) {
-			console.error(`Error revealing item in folder: ${filePath}`, error);
-			// Fallback to open the directory if revealing the item fails
-			// This might happen if the file was moved or deleted after export,
-			// or if the path is somehow invalid for showItemInFolder
-			try {
-				const openPathResult = await shell.openPath(path.dirname(filePath));
-				if (openPathResult) {
-					// openPath returned an error message
-					return { success: false, error: openPathResult };
-				}
-				return { success: true, message: "Could not reveal item, but opened directory." };
-			} catch (openError) {
-				console.error(`Error opening directory: ${path.dirname(filePath)}`, openError);
-				return { success: false, error: String(error) };
-			}
-		}
-	});
-
-	ipcMain.handle("open-recordings-folder", async () => {
-		try {
-			const recordingsDir = await getRecordingsDir();
-			const openPathResult = await shell.openPath(recordingsDir);
-			if (openPathResult) {
-				return {
-					success: false,
-					error: openPathResult,
-					message: "Failed to open recordings folder.",
-				};
-			}
-
-			return { success: true };
-		} catch (error) {
-			console.error("Failed to open recordings folder:", error);
-			return { success: false, error: String(error), message: "Failed to open recordings folder." };
-		}
-	});
-
-	ipcMain.handle("copy-text-to-clipboard", async (_, text: string) => {
-		try {
-			clipboard.writeText(text);
-			return { success: true, message: "Copied to clipboard" };
-		} catch (error) {
-			console.error("Failed to copy text to clipboard:", error);
-			return {
-				success: false,
-				message: "Failed to copy text to clipboard",
-				error: String(error),
-			};
-		}
-	});
-
-	ipcMain.handle(
-		"copy-exported-to-clipboard",
-		async (_, videoData: ArrayBuffer, fileName: string) => {
-			try {
-				const ext = fileName.toLowerCase().endsWith(".gif") ? "gif" : "mp4";
-				const tmpPath = path.join(app.getPath("temp"), `screenmint-clipboard-${Date.now()}.${ext}`);
-				await fs.writeFile(tmpPath, Buffer.from(videoData));
-
-				if (process.platform === "darwin") {
-					const plistContent = `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><array><string>${tmpPath}</string></array></plist>`;
-					clipboard.writeBuffer("NSFilenamesPboardType", Buffer.from(plistContent, "utf8"));
-				} else {
-					clipboard.writeText(tmpPath);
-				}
-
-				return { success: true, path: tmpPath };
-			} catch (error) {
-				console.error("Failed to copy exported file to clipboard:", error);
-				return { success: false, error: String(error) };
-			}
-		},
-	);
-
-	ipcMain.handle(
-		"delete-project-and-media",
-		async (
-			_,
-			payload: {
-				projectPath?: string | null;
-				videoPath?: string | null;
-				webcamPath?: string | null;
-			},
-		) => {
-			try {
-				const recordingsDir = await getRecordingsDir();
-				const deletedPaths: string[] = [];
-				const skippedPaths: string[] = [];
-				const candidates = [
-					payload.projectPath ?? null,
-					normalizeVideoSourcePath(payload.videoPath) ?? payload.videoPath ?? null,
-					payload.webcamPath ?? null,
-				].filter((value): value is string => typeof value === "string" && value.trim().length > 0);
-
-				for (const candidate of new Set(candidates)) {
-					const normalizedCandidate = path.resolve(candidate);
-					const isProject =
-						currentProjectPath != null &&
-						normalizePath(normalizedCandidate) === normalizePath(currentProjectPath);
-					const canDelete = isProject || isPathInsideDirectory(normalizedCandidate, recordingsDir);
-
-					if (!canDelete) {
-						skippedPaths.push(normalizedCandidate);
-						continue;
-					}
-
-					const deleted = await deletePathIfExists(normalizedCandidate);
-					if (!deleted) {
-						continue;
-					}
-
-					await Promise.all([
-						fs.rm(getTelemetryPathForVideo(normalizedCandidate), { force: true }),
-						fs.rm(getKeyboardTelemetryPathForVideo(normalizedCandidate), { force: true }),
-					]);
-					deletedPaths.push(normalizedCandidate);
-					if (
-						currentProjectPath &&
-						normalizePath(currentProjectPath) === normalizePath(normalizedCandidate)
-					) {
-						currentProjectPath = null;
-					}
-					if (
-						currentVideoPath &&
-						normalizePath(currentVideoPath) === normalizePath(normalizedCandidate)
-					) {
-						currentVideoPath = null;
-					}
-					if (
-						currentWebcamPath &&
-						normalizePath(currentWebcamPath) === normalizePath(normalizedCandidate)
-					) {
-						currentWebcamPath = null;
-					}
-				}
-
-				return {
-					success: true,
-					deletedPaths,
-					skippedPaths,
-					message: deletedPaths.length > 0 ? "Deleted project assets" : "Nothing was deleted",
-				};
-			} catch (error) {
-				console.error("Failed to delete project and media:", error);
-				return {
-					success: false,
-					message: "Failed to delete project and media",
-					error: String(error),
-				};
-			}
-		},
-	);
-
-	ipcMain.handle("get-recordings-directory", async () => {
-		try {
-			const recordingsDir = await getRecordingsDir();
-			return {
-				success: true,
-				path: recordingsDir,
-				isDefault: recordingsDir === RECORDINGS_DIR,
-			};
-		} catch (error) {
-			return {
-				success: false,
-				path: RECORDINGS_DIR,
-				isDefault: true,
-				error: String(error),
-			};
-		}
-	});
-
-	ipcMain.handle("choose-recordings-directory", async () => {
-		try {
-			const current = await getRecordingsDir();
-			const result = await dialog.showOpenDialog({
-				title: "Choose recordings folder",
-				defaultPath: current,
-				properties: ["openDirectory", "createDirectory", "promptToCreate"],
-			});
-
-			if (result.canceled || result.filePaths.length === 0) {
-				return { success: false, canceled: true, path: current };
-			}
-
-			const selectedPath = path.resolve(result.filePaths[0]);
-			await fs.mkdir(selectedPath, { recursive: true });
-			await fs.access(selectedPath, fsConstants.W_OK);
-			await persistRecordingsDirectorySetting(selectedPath);
-
-			return { success: true, path: selectedPath, isDefault: selectedPath === RECORDINGS_DIR };
-		} catch (error) {
-			return { success: false, error: String(error), message: "Failed to set recordings folder" };
-		}
-	});
-
-	ipcMain.handle(
-		"save-project-file",
-		async (_, projectData: unknown, suggestedName?: string, existingProjectPath?: string) => {
-			try {
-				const recordingsDir = await getRecordingsDir();
-				const trustedExistingProjectPath = isTrustedProjectPath(existingProjectPath)
-					? existingProjectPath
-					: null;
-
-				if (trustedExistingProjectPath) {
-					await fs.writeFile(
-						trustedExistingProjectPath,
-						JSON.stringify(projectData, null, 2),
-						"utf-8",
-					);
-					currentProjectPath = trustedExistingProjectPath;
-					return {
-						success: true,
-						path: trustedExistingProjectPath,
-						message: "Project saved successfully",
-					};
-				}
-
-				const safeName = sanitizeFileNameBase(suggestedName, `project-${Date.now()}`);
-				const defaultName = ensureFileExtension(safeName, PROJECT_FILE_EXTENSION);
-
-				const result = await dialog.showSaveDialog({
-					title: `Save ${BRAND_NAME} Project`,
-					defaultPath: path.join(recordingsDir, defaultName),
-					filters: [
-						{ name: `${BRAND_NAME} Project`, extensions: [PROJECT_FILE_EXTENSION] },
-						{ name: "JSON", extensions: ["json"] },
-					],
-					properties: ["createDirectory", "showOverwriteConfirmation"],
-				});
-
-				if (result.canceled || !result.filePath) {
-					return {
-						success: false,
-						canceled: true,
-						message: "Save project canceled",
-					};
-				}
-
-				await fs.writeFile(result.filePath, JSON.stringify(projectData, null, 2), "utf-8");
-				currentProjectPath = result.filePath;
-
-				return {
-					success: true,
-					path: result.filePath,
-					message: "Project saved successfully",
-				};
-			} catch (error) {
-				console.error("Failed to save project file:", error);
-				return {
-					success: false,
-					message: "Failed to save project file",
-					error: String(error),
-				};
-			}
-		},
-	);
-
-	ipcMain.handle("load-project-file", async () => {
-		try {
-			const recordingsDir = await getRecordingsDir();
-			const result = await dialog.showOpenDialog({
-				title: `Open ${BRAND_NAME} Project`,
-				defaultPath: recordingsDir,
-				filters: [
-					{ name: `${BRAND_NAME} Project`, extensions: PROJECT_FILE_EXTENSIONS },
-					{ name: "JSON", extensions: ["json"] },
-					{ name: "All Files", extensions: ["*"] },
-				],
-				properties: ["openFile"],
-			});
-
-			if (result.canceled || result.filePaths.length === 0) {
-				return { success: false, canceled: true, message: "Open project canceled" };
-			}
-
-			const filePath = result.filePaths[0];
-			const content = await fs.readFile(filePath, "utf-8");
-			const project = JSON.parse(content);
-			currentProjectPath = filePath;
-			currentMicrophoneAudioPath = null;
-			if (project && typeof project === "object" && typeof project.videoPath === "string") {
-				currentVideoPath = normalizeVideoSourcePath(project.videoPath) ?? project.videoPath;
-			}
-
-			return {
-				success: true,
-				path: filePath,
-				project,
-			};
-		} catch (error) {
-			console.error("Failed to load project file:", error);
-			return {
-				success: false,
-				message: "Failed to load project file",
-				error: String(error),
-			};
-		}
-	});
-
-	ipcMain.handle("load-current-project-file", async () => {
-		try {
-			if (!currentProjectPath) {
-				return { success: false, message: "No active project" };
-			}
-
-			const content = await fs.readFile(currentProjectPath, "utf-8");
-			const project = JSON.parse(content);
-			currentMicrophoneAudioPath = null;
-			if (project && typeof project === "object" && typeof project.videoPath === "string") {
-				currentVideoPath = normalizeVideoSourcePath(project.videoPath) ?? project.videoPath;
-			}
-			return {
-				success: true,
-				path: currentProjectPath,
-				project,
-			};
-		} catch (error) {
-			console.error("Failed to load current project file:", error);
-			return {
-				success: false,
-				message: "Failed to load current project file",
-				error: String(error),
-			};
-		}
-	});
-	ipcMain.handle("get-post-recording-context", () => {
-		return {
-			success: true,
-			context: postRecordingContext,
-		};
-	});
-
-	ipcMain.handle("set-post-recording-context", (_, context: PostRecordingContext | null) => {
-		postRecordingContext = context;
-		return { success: true };
-	});
-
-	ipcMain.handle("clear-post-recording-context", () => {
-		postRecordingContext = null;
-		return { success: true };
-	});
-	ipcMain.handle("set-current-video-path", (_, path: string) => {
-		const normalizedPath = normalizeVideoSourcePath(path) ?? path;
-		const isSameVideoPath = currentVideoPath === normalizedPath;
-		currentVideoPath = normalizedPath;
-		currentProjectPath = null;
-		if (!isSameVideoPath) {
-			currentMicrophoneAudioPath = null;
-		}
-		return { success: true };
-	});
-
-	ipcMain.handle("get-current-video-path", () => {
-		return currentVideoPath ? { success: true, path: currentVideoPath } : { success: false };
-	});
-
-	ipcMain.handle("clear-current-video-path", () => {
-		currentVideoPath = null;
-		currentMicrophoneAudioPath = null;
-		return { success: true };
-	});
-
-	ipcMain.handle("set-current-webcam-path", (_, path: string) => {
-		currentWebcamPath = path;
-		return { success: true };
-	});
-
-	ipcMain.handle("get-current-webcam-path", () => {
-		return currentWebcamPath ? { success: true, path: currentWebcamPath } : { success: false };
-	});
-
-	ipcMain.handle("clear-current-webcam-path", () => {
-		currentWebcamPath = null;
-		return { success: true };
-	});
-
-	ipcMain.handle("check-file-available", async (_, filePath: string) => {
-		try {
-			const normalizedPath = normalizeVideoSourcePath(filePath);
-			if (!normalizedPath) {
-				return { success: true, exists: false };
-			}
-
-			await fs.access(normalizedPath);
-			return { success: true, exists: true, path: normalizedPath };
-		} catch (error) {
-			return {
-				success: true,
-				exists: false,
-				error: String(error),
-			};
-		}
-	});
-
-	ipcMain.handle("get-caption-model-status", async (_, videoPath?: string) => {
-		try {
-			const targetVideoPath = normalizeVideoSourcePath(videoPath ?? currentVideoPath);
-			if (!targetVideoPath) {
-				return { success: false, message: "No video available for captions." };
-			}
-
-			const status = await getCaptionModelStatus(
-				targetVideoPath,
-				currentMicrophoneAudioPath,
-				getFfmpegBinaryPath(),
-			);
-			return { success: true, status };
-		} catch (error) {
-			console.error("Failed to get caption model status:", error);
-			return {
-				success: false,
-				message: "Failed to get caption model status",
-				error: String(error),
-			};
-		}
-	});
-
-	ipcMain.handle(
-		"generate-captions",
-		async (
-			_,
-			request: {
-				videoPath?: string;
-				preferredBackend: "auto" | "whisper.cpp" | "apple-speech";
-				model: "base" | "small" | "medium";
-				language: string;
-				prompt: string;
-				preferredSourceAudio: "microphone" | "mixed";
-			},
-		) => {
-			try {
-				const targetVideoPath = normalizeVideoSourcePath(request.videoPath ?? currentVideoPath);
-				if (!targetVideoPath) {
-					return { success: false, message: "No video available for transcription." };
-				}
-
-				const track = await generateCaptions(
-					{
-						videoPath: targetVideoPath,
-						preferredBackend: request.preferredBackend,
-						model: request.model,
-						language: request.language,
-						prompt: request.prompt,
-						preferredSourceAudio: request.preferredSourceAudio,
-						microphoneAudioPath: currentMicrophoneAudioPath,
-						ffmpegPath: getFfmpegBinaryPath(),
-					},
-					(progress) => {
-						emitCaptionGenerationProgress(progress);
-					},
-				);
-
-				return { success: true, track };
-			} catch (error) {
-				if (isCaptionGenerationCancelled(error)) {
-					return {
-						success: false,
-						canceled: true,
-						message: "Caption generation cancelled",
-					};
-				}
-
-				console.error("Failed to generate captions:", error);
-				return {
-					success: false,
-					message: "Failed to generate captions",
-					error: String(error),
-				};
-			}
-		},
-	);
-
-	ipcMain.handle("cancel-caption-generation", async () => {
-		cancelCaptionGeneration();
-		return { success: true };
-	});
-
-	ipcMain.handle(
-		"export-captions-transcript",
-		async (
-			_,
-			payload: {
-				videoPath?: string;
-				format: "srt" | "vtt" | "txt";
-				track: import("../../src/components/video-editor/types").CaptionTrack;
-			},
-		) => {
-			try {
-				const targetVideoPath = normalizeVideoSourcePath(payload.videoPath ?? currentVideoPath);
-				if (!targetVideoPath) {
-					return { success: false, message: "No video available for transcript export." };
-				}
-
-				const transcript = await exportCaptionTranscript(
-					targetVideoPath,
-					payload.track,
-					payload.format,
-				);
-				const result = await dialog.showSaveDialog({
-					title: "Export Transcript",
-					defaultPath: path.join(app.getPath("downloads"), transcript.defaultFileName),
-					filters: [{ name: "Transcript", extensions: [payload.format] }],
-					properties: ["createDirectory", "showOverwriteConfirmation"],
-				});
-
-				if (result.canceled || !result.filePath) {
-					return { success: false, canceled: true, message: "Transcript export canceled" };
-				}
-
-				await fs.writeFile(result.filePath, transcript.content, "utf-8");
-				return { success: true, path: result.filePath };
-			} catch (error) {
-				console.error("Failed to export transcript:", error);
-				return {
-					success: false,
-					message: "Failed to export transcript",
-					error: String(error),
-				};
-			}
-		},
-	);
-
-	ipcMain.handle("get-platform", () => {
-		return process.platform;
-	});
-
-	ipcMain.handle("get-app-version", () => {
-		return getScreenMintUpdater().getAppVersion();
-	});
-
-	ipcMain.handle("get-updater-state", () => {
-		return getScreenMintUpdater().getState();
-	});
-
-	ipcMain.handle("check-for-updates", async () => {
-		return await getScreenMintUpdater().checkForUpdates("manual");
-	});
-
-	ipcMain.handle("download-update", async () => {
-		return await getScreenMintUpdater().downloadUpdate("manual");
-	});
-
-	ipcMain.handle("install-update-and-restart", async () => {
-		return await getScreenMintUpdater().installUpdateAndRestart();
-	});
-
-	ipcMain.handle("dismiss-update", async () => {
-		return await getScreenMintUpdater().dismissUpdate();
-	});
-
-	ipcMain.handle("update-later-for-session", async () => {
-		return await getScreenMintUpdater().updateLaterForSession();
-	});
-
-	ipcMain.handle("dismiss-whats-new", async () => {
-		return await getScreenMintUpdater().dismissWhatsNew();
-	});
-
-	ipcMain.handle("set-updater-busy-state", async (_, update: Record<string, unknown>) => {
-		return await getScreenMintUpdater().setBusyState({
-			exporting: typeof update.exporting === "boolean" ? update.exporting : undefined,
-			transcribing: typeof update.transcribing === "boolean" ? update.transcribing : undefined,
-			recording: typeof update.recording === "boolean" ? update.recording : undefined,
-		});
-	});
-
-	// ---------------------------------------------------------------------------
-	// Cursor hiding for the browser-capture fallback.
-	// The IPC promise resolves only after the cursor hide attempt completes.
-	// ---------------------------------------------------------------------------
-	ipcMain.handle("hide-cursor", () => {
-		// No-op: macOS excludes the cursor at the ScreenCaptureKit capture level.
-		// Windows excludes the cursor via IsCursorCaptureEnabled(false) in wgc_session.cpp.
-		// Linux uses Electron desktopCapturer which does not support cursor hiding;
-		// if WGC is unavailable on Windows the call also falls back to browser capture
-		// where cursor hiding is unsupported — those users may see the real cursor.
-		return { success: true };
-	});
-
-	ipcMain.handle("get-shortcuts", async () => {
-		try {
-			const data = await fs.readFile(SHORTCUTS_FILE, "utf-8");
-			return JSON.parse(data);
-		} catch {
-			return null;
-		}
-	});
-
-	ipcMain.handle("save-shortcuts", async (_, shortcuts: unknown) => {
-		try {
-			await fs.writeFile(SHORTCUTS_FILE, JSON.stringify(shortcuts, null, 2), "utf-8");
-			return { success: true };
-		} catch (error) {
-			console.error("Failed to save shortcuts:", error);
-			return { success: false, error: String(error) };
-		}
-	});
-
-	// ---------------------------------------------------------------------------
-	// Countdown timer before recording
-	// ---------------------------------------------------------------------------
-	ipcMain.handle("get-countdown-delay", async () => {
-		try {
-			const content = await fs.readFile(COUNTDOWN_SETTINGS_FILE, "utf-8");
-			const parsed = JSON.parse(content) as { delay?: number };
-			return { success: true, delay: parsed.delay ?? 3 };
-		} catch {
-			return { success: true, delay: 3 };
-		}
-	});
-
-	ipcMain.handle("set-countdown-delay", async (_, delay: number) => {
-		try {
-			await fs.writeFile(COUNTDOWN_SETTINGS_FILE, JSON.stringify({ delay }, null, 2), "utf-8");
-			return { success: true };
-		} catch (error) {
-			console.error("Failed to save countdown delay:", error);
-			return { success: false, error: String(error) };
-		}
-	});
-
-	ipcMain.handle("start-countdown", async (_, seconds: number) => {
-		if (countdownInProgress) {
-			return { success: false, error: "Countdown already in progress" };
-		}
-
-		countdownInProgress = true;
-		countdownCancelled = false;
-
-		const countdownWin = createCountdownWindow();
-
-		await new Promise<void>((resolve) => {
-			countdownWin.webContents.once("did-finish-load", () => {
-				resolve();
-			});
-		});
-
-		return new Promise<{ success: boolean; cancelled?: boolean }>((resolve) => {
-			let remaining = seconds;
-
-			countdownWin.webContents.send("countdown-tick", remaining);
-
-			countdownTimer = setInterval(() => {
-				if (countdownCancelled) {
-					if (countdownTimer) {
-						clearInterval(countdownTimer);
-						countdownTimer = null;
-					}
-					closeCountdownWindow();
-					countdownInProgress = false;
-					resolve({ success: false, cancelled: true });
-					return;
-				}
-
-				remaining--;
-
-				if (remaining <= 0) {
-					if (countdownTimer) {
-						clearInterval(countdownTimer);
-						countdownTimer = null;
-					}
-					closeCountdownWindow();
-					countdownInProgress = false;
-					resolve({ success: true });
-				} else {
-					const win = getCountdownWindow();
-					if (win && !win.isDestroyed()) {
-						win.webContents.send("countdown-tick", remaining);
-					}
-				}
-			}, 1000);
-		});
-	});
-
-	ipcMain.handle("cancel-countdown", () => {
-		countdownCancelled = true;
-		countdownInProgress = false;
-		if (countdownTimer) {
-			clearInterval(countdownTimer);
-			countdownTimer = null;
-		}
-		closeCountdownWindow();
-		return { success: true };
-	});
-
-	// ---------------------------------------------------------------------------
-	// HUD settings (full settings object)
-	// ---------------------------------------------------------------------------
-	ipcMain.handle("get-hud-settings", async () => {
-		try {
-			const content = await fs.readFile(HUD_SETTINGS_FILE, "utf-8");
-			const parsed = JSON.parse(content) as Record<string, unknown>;
-			return { success: true, settings: parsed };
-		} catch {
-			return { success: true, settings: null };
-		}
-	});
-
-	ipcMain.handle("set-hud-settings", async (_, settings: Record<string, unknown>) => {
-		try {
-			await fs.writeFile(HUD_SETTINGS_FILE, JSON.stringify(settings, null, 2), "utf-8");
-			return { success: true };
-		} catch (error) {
-			console.error("Failed to save HUD settings:", error);
-			return { success: false, error: String(error) };
-		}
-	});
-
-	ipcMain.handle("open-speaker-notes-window", async (_, payload: { text: string }) => {
-		try {
-			createSpeakerNotesWindow(payload.text ?? "");
-			return { success: true };
-		} catch (error) {
-			console.error("Failed to open speaker notes window:", error);
-			return { success: false, error: String(error) };
-		}
-	});
-
-	ipcMain.handle("update-speaker-notes-window", async (_, payload: { text: string }) => {
-		try {
-			updateSpeakerNotesWindow(payload.text ?? "");
-			return { success: true };
-		} catch (error) {
-			console.error("Failed to update speaker notes window:", error);
-			return { success: false, error: String(error) };
-		}
-	});
-
-	ipcMain.handle("close-speaker-notes-window", () => {
-		closeSpeakerNotesWindow();
-		return { success: true };
-	});
-
-	// ---------------------------------------------------------------------------
-	// Display info
-	// ---------------------------------------------------------------------------
-	ipcMain.handle("get-display-info", () => {
-		const electronScreen = nodeRequire("electron").screen as typeof import("electron").screen;
-		const displays = electronScreen.getAllDisplays();
-		return {
-			success: true,
-			displays: displays.map((d) => ({
-				id: d.id,
-				label: d.label || `Display ${d.id}`,
-				x: d.bounds.x,
-				y: d.bounds.y,
-				width: d.size.width,
-				height: d.size.height,
-				refreshRate: d.displayFrequency || 60,
-			})),
-		};
-	});
-
-	// ---------------------------------------------------------------------------
-	// Area overlay
-	// ---------------------------------------------------------------------------
-	ipcMain.handle("create-area-overlay", (_, displayId?: number) => {
-		createAreaOverlayWindow(displayId);
-		return { success: true };
-	});
-
-	ipcMain.handle("close-area-overlay", () => {
-		closeAreaOverlayWindow();
-		return { success: true };
-	});
-
-	// ---------------------------------------------------------------------------
-	// Desktop icons (macOS only)
-	// ---------------------------------------------------------------------------
-	ipcMain.handle("hide-desktop-icons", async () => {
-		if (process.platform !== "darwin") {
-			return { success: false, error: "Only supported on macOS" };
-		}
-		try {
-			await execFileAsync("defaults", [
-				"write",
-				"com.apple.finder",
-				"CreateDesktop",
-				"-bool",
-				"false",
-			]);
-			await execFileAsync("killall", ["Finder"]);
-			return { success: true };
-		} catch (error) {
-			return { success: false, error: String(error) };
-		}
-	});
-
-	ipcMain.handle("show-desktop-icons", async () => {
-		if (process.platform !== "darwin") {
-			return { success: false, error: "Only supported on macOS" };
-		}
-		try {
-			await execFileAsync("defaults", [
-				"write",
-				"com.apple.finder",
-				"CreateDesktop",
-				"-bool",
-				"true",
-			]);
-			await execFileAsync("killall", ["Finder"]);
-			return { success: true };
-		} catch (error) {
-			return { success: false, error: String(error) };
-		}
-	});
-
-	// ---------------------------------------------------------------------------
-	// Dock icon (macOS only)
-	// ---------------------------------------------------------------------------
-	ipcMain.handle("hide-dock-icon", () => {
-		if (process.platform === "darwin") {
-			app.dock?.hide?.();
-		}
-		return { success: true };
-	});
-
-	ipcMain.handle("show-dock-icon", () => {
-		if (process.platform === "darwin") {
-			void app.dock?.show?.();
-		}
-		return { success: true };
-	});
-
-	// ---------------------------------------------------------------------------
-	// Area overlay lock state (locked = click-through preview during recording)
-	// ---------------------------------------------------------------------------
-	ipcMain.handle("lock-area-overlay", () => {
-		lockAreaOverlayWindow();
-		return { success: true };
-	});
-
-	ipcMain.handle("unlock-area-overlay", () => {
-		unlockAreaOverlayWindow();
-		return { success: true };
-	});
 }

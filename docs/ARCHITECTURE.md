@@ -9,8 +9,9 @@ renderer-driven editing/export pipeline.
   Owns app lifecycle, tray/menu integration, native helpers, storage paths, permissions, and window
   creation.
 - IPC handlers: `electron/ipc/handlers.ts`
-  Owns main/renderer commands for capture, recording, projects, export, captions, updater state,
-  shortcuts, and file operations.
+  Wires main/renderer commands. New handler domains should live beside it under `electron/ipc/`;
+  capture source selection, chunk-session storage, assets, and system/settings handlers have already
+  been split out.
 - Preload bridge: `electron/preload.ts`
   Exposes the typed `window.electronAPI` surface used by renderer windows.
 - Renderer: `src/`
@@ -84,3 +85,24 @@ Shared IPC channel names and early request/response contracts live in
 `src/electron-ipc/contracts.ts`. New IPC work should add channel names there first, then use the
 shared constants from preload and main-process handlers. This keeps the public bridge stable while
 the large handler file is split by domain.
+
+Current domain modules:
+
+- `electron/ipc/assetHandlers.ts`
+- `electron/ipc/captureSourceHandlers.ts`
+- `electron/ipc/chunkSessionHandlers.ts`
+- `electron/ipc/systemSettingsHandlers.ts`
+
+Remaining extraction targets in `electron/ipc/handlers.ts` are recording lifecycle, export/exportV2,
+file/project media operations, captions, telemetry, and permission diagnostics.
+
+## Native Helpers
+
+Native helper source is committed under `electron/native`.
+
+- macOS Swift helpers are rebuilt with `npm run build:native-helpers`.
+- Windows WGC capture is rebuilt with `npm run build:wgc-capture` on Windows.
+- Windows cursor monitoring is rebuilt with `npm run build:cursor-monitor` on Windows.
+
+Prebuilt helper binaries under `electron/native/bin` are release artifacts generated from committed
+source. Do not add new binaries without source, build documentation, and CI or local validation.
