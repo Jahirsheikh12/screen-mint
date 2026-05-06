@@ -482,12 +482,14 @@ export function LaunchWindow() {
 							webcamEnabled={hud.webcamEnabled}
 							cameraSession={hud.cameraSession}
 							setCameraDeviceId={hud.setCameraDeviceId}
+							setMobileCameraEnabled={hud.setMobileCameraEnabled}
 							setCameraPreviewVisible={hud.setCameraPreviewVisible}
 							setCameraPreviewMirrored={hud.setCameraPreviewMirrored}
 							setCameraPreviewSize={hud.setCameraPreviewSize}
 							setCameraPreviewCorner={hud.setCameraPreviewCorner}
 							setCameraPreviewShape={hud.setCameraPreviewShape}
 							cameraDevices={hud.cameraDevices}
+							mobileCaptureState={hud.mobileCaptureState}
 							showMicControls={hud.showMicControls}
 							micDevices={hud.micDevices}
 							selectedMicDeviceId={hud.selectedMicDeviceId}

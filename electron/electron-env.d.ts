@@ -5,6 +5,12 @@ import type {
 	CaptionTrack,
 	WebcamSessionMetadata,
 } from "../src/components/video-editor/types";
+import type {
+	MobileCaptureIceCandidatePayload,
+	MobileCapturePairingResult,
+	MobileCapturePairingState,
+	MobileCaptureSignalPayload,
+} from "../src/electron-ipc/contracts";
 import type { PostRecordingContext } from "../src/lib/recording/postRecording";
 import type {
 	ExportV2Capabilities,
@@ -197,6 +203,34 @@ declare global {
 			) => () => void;
 			onCursorStateChanged: (
 				callback: (state: { cursorType: CursorTelemetryPoint["cursorType"] }) => void,
+			) => () => void;
+			startMobileCapturePairing: () => Promise<MobileCapturePairingResult>;
+			stopMobileCapturePairing: () => Promise<MobileCapturePairingResult>;
+			getMobileCapturePairingState: () => Promise<MobileCapturePairingResult>;
+			setMobileCaptureDesktopOffer: (
+				sessionId: string,
+				offer: MobileCaptureSignalPayload,
+			) => Promise<{ success: boolean; error?: string }>;
+			addMobileCaptureDesktopIceCandidate: (
+				sessionId: string,
+				candidate: MobileCaptureIceCandidatePayload,
+			) => Promise<{ success: boolean; error?: string }>;
+			getMobileCapturePhoneAnswer: (sessionId: string) => Promise<{
+				success: boolean;
+				answer?: MobileCaptureSignalPayload | null;
+				error?: string;
+			}>;
+			getMobileCapturePhoneIceCandidates: (
+				sessionId: string,
+				after: number,
+			) => Promise<{
+				success: boolean;
+				candidates?: MobileCaptureIceCandidatePayload[];
+				nextIndex?: number;
+				error?: string;
+			}>;
+			onMobileCapturePairingStateChanged: (
+				callback: (state: MobileCapturePairingState) => void,
 			) => () => void;
 			openExternalUrl: (url: string) => Promise<{ success: boolean; error?: string }>;
 			getAccessibilityPermissionStatus: () => Promise<{

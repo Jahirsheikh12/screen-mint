@@ -174,6 +174,15 @@ export const IPC_CHANNELS = {
 		setDropdownExpanded: "hud-set-dropdown-expanded",
 		recenterOnCursor: "hud-recenter-on-cursor",
 	},
+	mobileCapture: {
+		startPairing: "mobile-capture:start-pairing",
+		stopPairing: "mobile-capture:stop-pairing",
+		getPairingState: "mobile-capture:get-pairing-state",
+		setDesktopOffer: "mobile-capture:set-desktop-offer",
+		addDesktopIceCandidate: "mobile-capture:add-desktop-ice-candidate",
+		getPhoneAnswer: "mobile-capture:get-phone-answer",
+		getPhoneIceCandidates: "mobile-capture:get-phone-ice-candidates",
+	},
 	speakerNotes: {
 		open: "open-speaker-notes-window",
 		update: "update-speaker-notes-window",
@@ -234,6 +243,41 @@ export type RecordingFinalizeResult = IpcResult<{
 	webcamPath?: string | null;
 	webcamSessionMetadata?: WebcamSessionMetadata | null;
 	microphonePath?: string | null;
+}>;
+
+export type MobileCaptureStatus =
+	| "idle"
+	| "pairing"
+	| "phone-opened"
+	| "connected"
+	| "disconnected"
+	| "expired"
+	| "error";
+
+export type MobileCapturePairingState = {
+	status: MobileCaptureStatus;
+	sessionId: string | null;
+	pairingUrl: string | null;
+	qrSvg: string | null;
+	expiresAt: number | null;
+	lanAddress: string | null;
+	error?: string;
+};
+
+export type MobileCaptureSignalPayload = {
+	type: RTCSdpType;
+	sdp: string;
+};
+
+export type MobileCaptureIceCandidatePayload = {
+	candidate: string;
+	sdpMid: string | null;
+	sdpMLineIndex: number | null;
+	usernameFragment?: string | null;
+};
+
+export type MobileCapturePairingResult = IpcResult<{
+	state: MobileCapturePairingState;
 }>;
 
 export type ExportV2Bridge = {

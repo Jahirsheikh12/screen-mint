@@ -1,4 +1,4 @@
-import { Languages } from "lucide-react";
+import { Languages, Smartphone } from "lucide-react";
 import { useEffect, useState } from "react";
 import { BsRecordCircle } from "react-icons/bs";
 import { FaPause, FaPlay, FaRegStopCircle } from "react-icons/fa";
@@ -18,6 +18,7 @@ import {
 	MdWindow,
 } from "react-icons/md";
 import { useI18n, useScopedT } from "@/contexts/I18nContext";
+import type { MobileCapturePairingState } from "@/electron-ipc/contracts";
 import type { CameraDeviceOption, HudMode, HudSettings } from "@/hooks/useHudState";
 import type { AppLocale } from "@/i18n/config";
 import { SUPPORTED_LOCALES } from "@/i18n/config";
@@ -58,6 +59,7 @@ type HudToolbarProps = {
 	webcamEnabled: boolean;
 	cameraSession: {
 		enabled: boolean;
+		sourceType?: "local-device" | "mobile";
 		deviceId?: string;
 		previewVisible: boolean;
 		previewMirrored: boolean;
@@ -66,6 +68,7 @@ type HudToolbarProps = {
 		previewShape: "rounded-rect" | "circle";
 	};
 	setCameraDeviceId: (deviceId?: string) => void;
+	setMobileCameraEnabled: (enabled: boolean) => void;
 	setCameraPreviewVisible: (visible: boolean) => void;
 	setCameraPreviewMirrored: (mirrored: boolean) => void;
 	setCameraPreviewSize: (size: "small" | "medium" | "large") => void;
@@ -74,6 +77,7 @@ type HudToolbarProps = {
 	) => void;
 	setCameraPreviewShape: (shape: "rounded-rect" | "circle") => void;
 	cameraDevices: CameraDeviceOption[];
+	mobileCaptureState: MobileCapturePairingState;
 	showMicControls: boolean;
 	micDevices: Array<{ deviceId: string; label: string }>;
 	selectedMicDeviceId: string;
@@ -127,12 +131,14 @@ export function HudToolbar({
 	webcamEnabled,
 	cameraSession,
 	setCameraDeviceId,
+	setMobileCameraEnabled,
 	setCameraPreviewVisible,
 	setCameraPreviewMirrored,
 	setCameraPreviewSize,
 	setCameraPreviewCorner,
 	setCameraPreviewShape,
 	cameraDevices,
+	mobileCaptureState,
 	showMicControls,
 	micDevices,
 	selectedMicDeviceId,
@@ -157,13 +163,23 @@ export function HudToolbar({
 
 	// Tooltips for dropdown triggers — Radix `asChild` forbids wrapping, so use the hook form.
 	const cameraTooltip = useTooltip({
-		content: webcamEnabled ? t("recording.disableWebcam") : t("recording.selectCamera"),
+		content:
+			cameraSession.sourceType === "mobile"
+				? t("recording.mobileCamera")
+				: webcamEnabled
+					? t("recording.disableWebcam")
+					: t("recording.selectCamera"),
 		side: "top",
 	});
 	const micTooltip = useTooltip({
 		content: microphoneEnabled ? t("recording.disableMicrophone") : t("recording.enableMicrophone"),
 		side: "top",
 	});
+	const mobileQrDataUrl = mobileCaptureState.qrSvg
+		? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(mobileCaptureState.qrSvg)}`
+		: null;
+	const mobileConnected =
+		cameraSession.sourceType === "mobile" && mobileCaptureState.status === "connected";
 	const languageTooltip = useTooltip({
 		content: t("recording.language"),
 		side: "top",
@@ -414,11 +430,28 @@ export function HudToolbar({
 							{t("recording.selectCamera")}
 						</DropdownMenuLabel>
 						<DropdownMenuRadioGroup
-							value={cameraSession.deviceId ?? "__off__"}
-							onValueChange={(value) => setCameraDeviceId(value === "__off__" ? undefined : value)}
+							value={
+								cameraSession.sourceType === "mobile"
+									? "__mobile__"
+									: (cameraSession.deviceId ?? "__off__")
+							}
+							onValueChange={(value) => {
+								if (value === "__mobile__") {
+									setMobileCameraEnabled(true);
+									return;
+								}
+								setCameraDeviceId(value === "__off__" ? undefined : value);
+							}}
 						>
 							<DropdownMenuRadioItem value="__off__" className="text-xs">
 								{t("recording.cameraOff")}
+							</DropdownMenuRadioItem>
+							<DropdownMenuRadioItem value="__mobile__" className="text-xs">
+								<span className="inline-flex items-center gap-2">
+									<Smartphone size={13} />
+									{t("recording.mobileCamera")}
+									{mobileConnected && <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />}
+								</span>
 							</DropdownMenuRadioItem>
 							{cameraDevices.map((device) => (
 								<DropdownMenuRadioItem
@@ -434,6 +467,54 @@ export function HudToolbar({
 							<DropdownMenuItem disabled className="text-xs text-white/30">
 								{t("recording.noCameraFound")}
 							</DropdownMenuItem>
+						)}
+						{cameraSession.sourceType === "mobile" && (
+							<>
+								<DropdownMenuSeparator className="bg-white/[0.08]" />
+								<div className="px-2 py-2">
+									<div className="flex items-center justify-between gap-3">
+										<div className="min-w-0">
+											<div className="text-xs font-semibold text-white/90">
+												{t("recording.mobilePairingTitle")}
+											</div>
+											<div className="mt-0.5 truncate text-[11px] text-white/45">
+												{mobileCaptureState.status === "connected"
+													? t("recording.mobileConnected")
+													: mobileCaptureState.status === "phone-opened"
+														? t("recording.mobilePhoneOpened")
+														: mobileCaptureState.status === "error"
+															? (mobileCaptureState.error ?? t("recording.mobilePairingError"))
+															: t("recording.mobileWaiting")}
+											</div>
+										</div>
+										<button
+											type="button"
+											className="rounded-md bg-white/[0.08] px-2 py-1 text-[11px] text-white/80 hover:bg-white/[0.12]"
+											onClick={() => setMobileCameraEnabled(true)}
+										>
+											{t("recording.mobileReconnect")}
+										</button>
+									</div>
+									{mobileQrDataUrl && (
+										<div className="mt-2 grid grid-cols-[72px_minmax(0,1fr)] gap-2">
+											<img
+												src={mobileQrDataUrl}
+												alt={t("recording.mobileQrAlt")}
+												className="h-[72px] w-[72px] rounded-md bg-white p-1"
+											/>
+											<div className="min-w-0 text-[11px] leading-4 text-white/50">
+												<div>{t("recording.mobileScanHint")}</div>
+												<div className="mt-1 truncate text-white/35">
+													{mobileCaptureState.pairingUrl}
+												</div>
+											</div>
+										</div>
+									)}
+									<div className="mt-2 text-[10px] leading-3 text-white/35">
+										{t("recording.mobilePrivacyHint")}
+									</div>
+								</div>
+							</>
 						)}
 						<DropdownMenuSeparator className="bg-white/[0.08]" />
 						<DropdownMenuCheckboxItem

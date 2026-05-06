@@ -4,10 +4,12 @@ import {
 	type CameraSessionState,
 	WEBCAM_RENDER_PIPELINE_VERSION,
 } from "@/components/video-editor/types";
+import type { MobileCapturePairingState } from "@/electron-ipc/contracts";
 import { loadCameraPreferences, saveCameraPreferences } from "@/hooks/cameraPreferences";
 import { playAppAudioCue, preloadAppAudioCues } from "@/lib/appAudio";
 import { resolveCaptureSourceAccessState } from "@/lib/recording/capturePermissionState";
 import { resolveCaptureDimensions } from "@/lib/recording/captureSizing";
+import { MobileCaptureClient } from "@/lib/recording/mobileCaptureClient";
 import { buildNativeRecordingOptions } from "@/lib/recording/nativeConfig";
 import type { AfterRecordingAction, PostRecordingContext } from "@/lib/recording/postRecording";
 import {
@@ -37,6 +39,7 @@ const MIN_FRAME_RATE = 30;
 const CHROME_MEDIA_SOURCE = "desktop";
 const RECORDING_FILE_PREFIX = "recording-";
 const WEBCAM_FILE_PREFIX = "webcam-";
+const MICROPHONE_FILE_PREFIX = "microphone-";
 const VIDEO_FILE_EXTENSION = ".webm";
 const AUDIO_BITRATE_VOICE = 128_000;
 const AUDIO_BITRATE_SYSTEM = 192_000;
@@ -76,12 +79,14 @@ type UseScreenRecorderReturn = {
 	setWebcamEnabled: (enabled: boolean) => void;
 	cameraSession: CameraSessionState;
 	setCameraDeviceId: (deviceId?: string) => void;
+	setMobileCameraEnabled: (enabled: boolean) => void;
 	setCameraPreviewVisible: (visible: boolean) => void;
 	setCameraPreviewMirrored: (mirrored: boolean) => void;
 	setCameraPreviewSize: (size: CameraSessionState["previewSize"]) => void;
 	setCameraPreviewCorner: (corner: CameraSessionState["previewCorner"]) => void;
 	setCameraPreviewShape: (shape: CameraSessionState["previewShape"]) => void;
 	cameraPreviewStream: MediaStream | null;
+	mobileCaptureState: MobileCapturePairingState;
 	recordingBusy: boolean;
 	sessionState: RecordingSessionState;
 };
@@ -94,6 +99,17 @@ type ScreenRecorderOptions = Partial<RecordingRuntimeSettings> & {
 };
 
 type MutableRecorderRef<T> = { current: T };
+
+function createIdleMobileCaptureState(): MobileCapturePairingState {
+	return {
+		status: "idle",
+		sessionId: null,
+		pairingUrl: null,
+		qrSvg: null,
+		expiresAt: null,
+		lanAddress: null,
+	};
+}
 
 export function useScreenRecorder(
 	recordingSettings?: ScreenRecorderOptions,
@@ -108,6 +124,9 @@ export function useScreenRecorder(
 	const [countdownDelay, setCountdownDelayState] = useState(3);
 	const [cameraSession, setCameraSession] = useState<CameraSessionState>(initialCameraPreferences);
 	const [cameraPreviewStream, setCameraPreviewStream] = useState<MediaStream | null>(null);
+	const [mobileCaptureState, setMobileCaptureState] = useState<MobileCapturePairingState>(
+		createIdleMobileCaptureState,
+	);
 	const [sessionState, dispatchSession] = useReducer(
 		recordingSessionReducer,
 		INITIAL_RECORDING_SESSION_STATE,
@@ -127,6 +146,10 @@ export function useScreenRecorder(
 	const webcamChunkWriteChain = useRef<Promise<void>>(Promise.resolve());
 	const webcamChunkWriteError = useRef<unknown>(null);
 	const webcamChunkCount = useRef(0);
+	const microphoneChunkSessionId = useRef<string | null>(null);
+	const microphoneChunkWriteChain = useRef<Promise<void>>(Promise.resolve());
+	const microphoneChunkWriteError = useRef<unknown>(null);
+	const microphoneChunkCount = useRef(0);
 	const startTime = useRef<number>(0);
 	const nativeScreenRecording = useRef(false);
 	const wgcRecording = useRef(false);
@@ -136,6 +159,8 @@ export function useScreenRecorder(
 	const countdownDelayLoaded = useRef(false);
 	const webcamStopInFlight = useRef(false);
 	const hasShownCameraDisconnectToast = useRef(false);
+	const mobileCaptureClient = useRef<MobileCaptureClient | null>(null);
+	const mobileMicrophoneRecorder = useRef<MediaRecorder | null>(null);
 	const stopWebcamRecordingRef = useRef<() => Promise<{ path: string; durationMs: number } | null>>(
 		async () => null,
 	);
@@ -277,6 +302,9 @@ export function useScreenRecorder(
 	const releaseWebcamStream = useCallback(() => {
 		const activeStream = webcamStream.current;
 		webcamStream.current = null;
+		mobileCaptureClient.current?.stop();
+		mobileCaptureClient.current = null;
+		setMobileCaptureState(createIdleMobileCaptureState());
 
 		if (activeStream) {
 			activeStream.getTracks().forEach((track) => {
@@ -368,6 +396,23 @@ export function useScreenRecorder(
 
 	const acquireWebcamStream = useCallback(
 		async (preferredDeviceId?: string) => {
+			if (cameraSession.sourceType === "mobile") {
+				if (!mobileCaptureClient.current) {
+					const client = new MobileCaptureClient({
+						onState: setMobileCaptureState,
+						onDisconnect: handleUnexpectedWebcamEnd,
+					});
+					mobileCaptureClient.current = client;
+					await client.startPairing();
+				}
+
+				const mobileStream = await mobileCaptureClient.current.waitForStream();
+				return {
+					stream: mobileStream,
+					resolvedDeviceId: "mobile-camera",
+				};
+			}
+
 			let lastError: unknown = null;
 			const attemptedDeviceIds = new Set<string | undefined>();
 
@@ -420,7 +465,12 @@ export function useScreenRecorder(
 
 			throw lastError ?? new Error("No camera is available.");
 		},
-		[getAvailableCameraDevices, getWebcamConstraintCandidates],
+		[
+			cameraSession.sourceType,
+			getAvailableCameraDevices,
+			getWebcamConstraintCandidates,
+			handleUnexpectedWebcamEnd,
+		],
 	);
 
 	const setWebcamEnabled = useCallback(
@@ -428,6 +478,7 @@ export function useScreenRecorder(
 			setCameraSession((prev) => ({
 				...prev,
 				enabled,
+				sourceType: enabled ? (prev.sourceType ?? "local-device") : prev.sourceType,
 				resolvedCaptureProfile: enabled ? prev.resolvedCaptureProfile : undefined,
 			}));
 
@@ -443,6 +494,7 @@ export function useScreenRecorder(
 		(deviceId?: string) => {
 			setCameraSession((prev) => ({
 				...prev,
+				sourceType: "local-device",
 				deviceId,
 				enabled: Boolean(deviceId),
 				resolvedCaptureProfile: deviceId ? prev.resolvedCaptureProfile : undefined,
@@ -454,6 +506,52 @@ export function useScreenRecorder(
 			}
 		},
 		[releaseWebcamStream],
+	);
+
+	const setMobileCameraEnabled = useCallback(
+		(enabled: boolean) => {
+			setCameraSession((prev) => ({
+				...prev,
+				sourceType: enabled ? "mobile" : "local-device",
+				deviceId: enabled ? "mobile-camera" : undefined,
+				enabled,
+				resolvedCaptureProfile: undefined,
+			}));
+
+			if (!enabled) {
+				void window.electronAPI.clearCurrentWebcamPath();
+				releaseWebcamStream();
+				return;
+			}
+
+			if (webcamRecorder.current?.state !== "recording") {
+				void window.electronAPI.clearCurrentWebcamPath();
+				releaseWebcamStream();
+			}
+
+			const client = new MobileCaptureClient({
+				onState: setMobileCaptureState,
+				onDisconnect: handleUnexpectedWebcamEnd,
+			});
+			mobileCaptureClient.current = client;
+			void client.startPairing().catch((error) => {
+				console.warn("Failed to start mobile camera pairing:", error);
+				setCameraSession((prev) => ({
+					...prev,
+					enabled: false,
+					sourceType: "local-device",
+					deviceId: undefined,
+					resolvedCaptureProfile: undefined,
+				}));
+				setMobileCaptureState({
+					...createIdleMobileCaptureState(),
+					status: "error",
+					error: error instanceof Error ? error.message : String(error),
+				});
+				toast.error("Unable to start mobile camera pairing.");
+			});
+		},
+		[handleUnexpectedWebcamEnd, releaseWebcamStream],
 	);
 
 	const setCameraPreviewVisible = useCallback((visible: boolean) => {
@@ -506,6 +604,9 @@ export function useScreenRecorder(
 			webcamStream.current.getTracks().forEach((track) => track.stop());
 			webcamStream.current = null;
 		}
+		mobileCaptureClient.current?.stop();
+		mobileCaptureClient.current = null;
+		setMobileCaptureState(createIdleMobileCaptureState());
 
 		setCameraSession((prev) =>
 			prev.resolvedCaptureProfile ? { ...prev, resolvedCaptureProfile: undefined } : prev,
@@ -679,9 +780,14 @@ export function useScreenRecorder(
 				(type) => MediaRecorder.isTypeSupported(type),
 				resolvedRecordingProfile.preferHardwareEncoding,
 			);
-			const trackSettings = camStream.getVideoTracks()[0]?.getSettings();
+			const videoTrack = camStream.getVideoTracks()[0];
+			const trackSettings = videoTrack?.getSettings();
+			const recorderStream =
+				cameraSession.sourceType === "mobile" && videoTrack
+					? new MediaStream([videoTrack])
+					: camStream;
 
-			const recorder = new MediaRecorder(camStream, {
+			const recorder = new MediaRecorder(recorderStream, {
 				mimeType,
 				videoBitsPerSecond: getWebcamRecorderBitrate(trackSettings),
 			});
@@ -718,6 +824,7 @@ export function useScreenRecorder(
 	}, [
 		discardChunkWriter,
 		ensureWebcamStream,
+		cameraSession.sourceType,
 		queueChunkWrite,
 		resolvedRecordingProfile.preferHardwareEncoding,
 		startChunkWriter,
@@ -772,6 +879,85 @@ export function useScreenRecorder(
 	}, [discardChunkWriter, finishChunkWriter, releaseWebcamStream]);
 
 	stopWebcamRecordingRef.current = stopWebcamRecording;
+
+	const startMobileMicrophoneRecording = useCallback(async () => {
+		if (cameraSession.sourceType !== "mobile" || !microphoneEnabled) {
+			return;
+		}
+
+		const camStream = await ensureWebcamStream();
+		const audioTrack = camStream.getAudioTracks()[0];
+		if (!audioTrack) {
+			return;
+		}
+
+		await startChunkWriter(
+			`${MICROPHONE_FILE_PREFIX}${Date.now()}${VIDEO_FILE_EXTENSION}`,
+			microphoneChunkSessionId,
+			microphoneChunkWriteChain,
+			microphoneChunkWriteError,
+			microphoneChunkCount,
+		);
+
+		const recorder = new MediaRecorder(new MediaStream([audioTrack]), {
+			audioBitsPerSecond: AUDIO_BITRATE_VOICE,
+		});
+		mobileMicrophoneRecorder.current = recorder;
+		recorder.ondataavailable = (event) => {
+			if (event.data && event.data.size > 0) {
+				queueChunkWrite(
+					event.data,
+					microphoneChunkSessionId,
+					microphoneChunkWriteChain,
+					microphoneChunkWriteError,
+					microphoneChunkCount,
+				);
+			}
+		};
+		recorder.start(RECORDER_TIMESLICE_MS);
+	}, [
+		cameraSession.sourceType,
+		ensureWebcamStream,
+		microphoneEnabled,
+		queueChunkWrite,
+		startChunkWriter,
+	]);
+
+	const stopMobileMicrophoneRecording = useCallback(async () => {
+		const recorder = mobileMicrophoneRecorder.current;
+		try {
+			if (recorder?.state === "recording" || recorder?.state === "paused") {
+				await new Promise<void>((resolve) => {
+					recorder.onstop = () => resolve();
+					recorder.stop();
+				});
+			}
+			const path = await finishChunkWriter(
+				microphoneChunkSessionId,
+				microphoneChunkWriteChain,
+				microphoneChunkWriteError,
+				microphoneChunkCount,
+			);
+			if (!path) {
+				return null;
+			}
+			const duration =
+				recordingSegmentsRef.current.reduce((total, segment) => total + segment.durationMs, 0) ||
+				Math.max(0, Date.now() - startTime.current);
+			return { path, durationMs: duration };
+		} catch (error) {
+			console.error("Error saving mobile microphone recording:", error);
+			await discardChunkWriter(
+				microphoneChunkSessionId,
+				microphoneChunkWriteChain,
+				microphoneChunkWriteError,
+				microphoneChunkCount,
+			);
+			return null;
+		} finally {
+			mobileMicrophoneRecorder.current = null;
+		}
+	}, [discardChunkWriter, finishChunkWriter]);
 
 	const getSelectedArea = useCallback(async (): Promise<SelectedArea | null> => {
 		const result = await window.electronAPI.getSelectedArea();
@@ -939,6 +1125,10 @@ export function useScreenRecorder(
 
 	useEffect(() => {
 		const handleDeviceChange = () => {
+			if (cameraSession.sourceType === "mobile") {
+				return;
+			}
+
 			void (async () => {
 				const devices = await getAvailableCameraDevices();
 
@@ -982,6 +1172,7 @@ export function useScreenRecorder(
 	}, [
 		cameraSession.deviceId,
 		cameraSession.enabled,
+		cameraSession.sourceType,
 		getAvailableCameraDevices,
 		releaseWebcamStream,
 	]);
@@ -1076,6 +1267,8 @@ export function useScreenRecorder(
 			}
 
 			const platform = await window.electronAPI.getPlatform();
+			const usesMobileCamera = cameraSession.sourceType === "mobile";
+			const usesMobileMicrophone = usesMobileCamera && microphoneEnabled;
 			const useNativeMacScreenCapture =
 				platform === "darwin" &&
 				(selectedSource.id?.startsWith("screen:") || selectedSource.id?.startsWith("window:")) &&
@@ -1110,7 +1303,7 @@ export function useScreenRecorder(
 			if (useNativeMacScreenCapture || useWgcCapture) {
 				// WGC: resolve mic device label for native WASAPI capture
 				let micLabel: string | undefined;
-				if (useWgcCapture && microphoneEnabled) {
+				if (useWgcCapture && microphoneEnabled && !usesMobileMicrophone) {
 					try {
 						const devices = await navigator.mediaDevices.enumerateDevices();
 						const mic = devices.find(
@@ -1126,8 +1319,8 @@ export function useScreenRecorder(
 					selectedSource,
 					buildNativeRecordingOptions({
 						capturesSystemAudio: systemAudioEnabled,
-						capturesMicrophone: microphoneEnabled,
-						microphoneDeviceId,
+						capturesMicrophone: microphoneEnabled && !usesMobileMicrophone,
+						microphoneDeviceId: usesMobileMicrophone ? undefined : microphoneDeviceId,
 						microphoneLabel: micLabel,
 						selectedArea: effectiveSelectedArea,
 						recordingFps: resolvedRecordingProfile.frameRate,
@@ -1189,8 +1382,14 @@ export function useScreenRecorder(
 
 					if (!isResumingNative && webcamEnabled) {
 						void startWebcamRecording();
+						if (usesMobileMicrophone) {
+							void startMobileMicrophoneRecording();
+						}
 					} else if (isResumingNative && webcamRecorder.current?.state === "paused") {
 						webcamRecorder.current.resume();
+						if (mobileMicrophoneRecorder.current?.state === "paused") {
+							mobileMicrophoneRecorder.current.resume();
+						}
 					} else if (!webcamEnabled) {
 						await window.electronAPI.clearCurrentWebcamPath();
 					}
@@ -1263,21 +1462,29 @@ export function useScreenRecorder(
 
 				if (microphoneEnabled) {
 					try {
-						microphoneStream.current = await navigator.mediaDevices.getUserMedia({
-							audio: microphoneDeviceId
-								? {
-										deviceId: { exact: microphoneDeviceId },
-										echoCancellation: true,
-										noiseSuppression: true,
-										autoGainControl: true,
-									}
-								: {
-										echoCancellation: true,
-										noiseSuppression: true,
-										autoGainControl: true,
-									},
-							video: false,
-						});
+						if (usesMobileMicrophone) {
+							const mobileStream = await ensureWebcamStream();
+							const mobileAudioTrack = mobileStream.getAudioTracks()[0];
+							if (mobileAudioTrack) {
+								microphoneStream.current = new MediaStream([mobileAudioTrack]);
+							}
+						} else {
+							microphoneStream.current = await navigator.mediaDevices.getUserMedia({
+								audio: microphoneDeviceId
+									? {
+											deviceId: { exact: microphoneDeviceId },
+											echoCancellation: true,
+											noiseSuppression: true,
+											autoGainControl: true,
+										}
+									: {
+											echoCancellation: true,
+											noiseSuppression: true,
+											autoGainControl: true,
+										},
+								video: false,
+							});
+						}
 					} catch (audioError) {
 						console.warn("Failed to get microphone access:", audioError);
 						alert(
@@ -1526,7 +1733,9 @@ export function useScreenRecorder(
 		}
 	}, [
 		cleanupCapturedMedia,
+		cameraSession.sourceType,
 		discardChunkWriter,
+		ensureWebcamStream,
 		finishChunkWriter,
 		getCaptureMode,
 		getSelectedArea,
@@ -1545,6 +1754,7 @@ export function useScreenRecorder(
 		resetSegmentBuffers,
 		selectMimeType,
 		startChunkWriter,
+		startMobileMicrophoneRecording,
 		startWebcamRecording,
 		systemAudioEnabled,
 		webcamEnabled,
@@ -1560,6 +1770,7 @@ export function useScreenRecorder(
 			try {
 				const selectedArea =
 					sessionRef.current.captureMode === "area" ? sessionRef.current.selectedArea : null;
+				const mobileMicrophoneSegment = await stopMobileMicrophoneRecording();
 				const webcamSegment = await stopWebcamRecordingRef.current();
 				const webcamSessionMetadata: PostRecordingContext["webcamSessionMetadata"] =
 					cameraSession.enabled && webcamSegment
@@ -1578,7 +1789,9 @@ export function useScreenRecorder(
 					const finalized = await window.electronAPI.finalizeRecordingSession({
 						videoSegments: recordingSegmentsRef.current,
 						webcamSegments: webcamSegment ? [webcamSegment] : [],
-						microphoneSegments: microphoneSegmentsRef.current,
+						microphoneSegments: mobileMicrophoneSegment
+							? [...microphoneSegmentsRef.current, mobileMicrophoneSegment]
+							: microphoneSegmentsRef.current,
 						selectedArea,
 						webcamSessionMetadata,
 					});
@@ -1609,7 +1822,9 @@ export function useScreenRecorder(
 				await window.electronAPI.triggerFinalizeRecordingSession({
 					videoSegments: recordingSegmentsRef.current,
 					webcamSegments: webcamSegment ? [webcamSegment] : [],
-					microphoneSegments: microphoneSegmentsRef.current,
+					microphoneSegments: mobileMicrophoneSegment
+						? [...microphoneSegmentsRef.current, mobileMicrophoneSegment]
+						: microphoneSegmentsRef.current,
 					selectedArea,
 					webcamSessionMetadata,
 				});
@@ -1648,6 +1863,7 @@ export function useScreenRecorder(
 			recordingSettings?.openQuickShare,
 			resetSegmentBuffers,
 			startRecording,
+			stopMobileMicrophoneRecording,
 		],
 	);
 
@@ -1655,11 +1871,13 @@ export function useScreenRecorder(
 
 	const handleDiscardAction = useCallback(
 		async (action: Exclude<PendingRecordingAction, "stop" | null>) => {
+			const mobileMicrophoneSegment = await stopMobileMicrophoneRecording();
 			const webcamSegment = await stopWebcamRecordingRef.current();
 			await window.electronAPI.discardRecordingArtifacts({
 				paths: [
 					...recordingSegmentsRef.current.map((segment) => segment.path),
 					...microphoneSegmentsRef.current.map((segment) => segment.path),
+					...(mobileMicrophoneSegment?.path ? [mobileMicrophoneSegment.path] : []),
 					...(webcamSegment?.path ? [webcamSegment.path] : []),
 				],
 				clearCurrentVideo: true,
@@ -1676,7 +1894,12 @@ export function useScreenRecorder(
 				await startRecording();
 			}
 		},
-		[recordingSettings?.highlightArea, resetSegmentBuffers, startRecording],
+		[
+			recordingSettings?.highlightArea,
+			resetSegmentBuffers,
+			startRecording,
+			stopMobileMicrophoneRecording,
+		],
 	);
 
 	stopRecording.current = () => {
@@ -1738,6 +1961,9 @@ export function useScreenRecorder(
 		void (async () => {
 			if (nativeScreenRecording.current) {
 				await stopActiveNativeSegment(true);
+				if (mobileMicrophoneRecorder.current?.state === "recording") {
+					mobileMicrophoneRecorder.current.pause();
+				}
 				dispatchSession({ type: "pause" });
 				return;
 			}
@@ -1868,12 +2094,14 @@ export function useScreenRecorder(
 		setWebcamEnabled,
 		cameraSession,
 		setCameraDeviceId,
+		setMobileCameraEnabled,
 		setCameraPreviewVisible,
 		setCameraPreviewMirrored,
 		setCameraPreviewSize,
 		setCameraPreviewCorner,
 		setCameraPreviewShape,
 		cameraPreviewStream,
+		mobileCaptureState,
 		recordingBusy: starting || finalizingRecordingRef.current || browserSessionStopPending.current,
 		sessionState,
 	};

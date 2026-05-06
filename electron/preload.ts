@@ -1,6 +1,11 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type { WebcamSessionMetadata } from "../src/components/video-editor/types";
-import { IPC_CHANNELS } from "../src/electron-ipc/contracts";
+import {
+	IPC_CHANNELS,
+	type MobileCaptureIceCandidatePayload,
+	type MobileCapturePairingState,
+	type MobileCaptureSignalPayload,
+} from "../src/electron-ipc/contracts";
 import type { SelectedArea } from "../src/lib/recording/session";
 import type { UpdaterState } from "../src/lib/updater/types";
 
@@ -192,6 +197,40 @@ contextBridge.exposeInMainWorld("electronAPI", {
 			callback(payload);
 		ipcRenderer.on("selected-area-changed", listener);
 		return () => ipcRenderer.removeListener("selected-area-changed", listener);
+	},
+	startMobileCapturePairing: () => {
+		return ipcRenderer.invoke(IPC_CHANNELS.mobileCapture.startPairing);
+	},
+	stopMobileCapturePairing: () => {
+		return ipcRenderer.invoke(IPC_CHANNELS.mobileCapture.stopPairing);
+	},
+	getMobileCapturePairingState: () => {
+		return ipcRenderer.invoke(IPC_CHANNELS.mobileCapture.getPairingState);
+	},
+	setMobileCaptureDesktopOffer: (sessionId: string, offer: MobileCaptureSignalPayload) => {
+		return ipcRenderer.invoke(IPC_CHANNELS.mobileCapture.setDesktopOffer, sessionId, offer);
+	},
+	addMobileCaptureDesktopIceCandidate: (
+		sessionId: string,
+		candidate: MobileCaptureIceCandidatePayload,
+	) => {
+		return ipcRenderer.invoke(
+			IPC_CHANNELS.mobileCapture.addDesktopIceCandidate,
+			sessionId,
+			candidate,
+		);
+	},
+	getMobileCapturePhoneAnswer: (sessionId: string) => {
+		return ipcRenderer.invoke(IPC_CHANNELS.mobileCapture.getPhoneAnswer, sessionId);
+	},
+	getMobileCapturePhoneIceCandidates: (sessionId: string, after: number) => {
+		return ipcRenderer.invoke(IPC_CHANNELS.mobileCapture.getPhoneIceCandidates, sessionId, after);
+	},
+	onMobileCapturePairingStateChanged: (callback: (state: MobileCapturePairingState) => void) => {
+		const listener = (_event: Electron.IpcRendererEvent, payload: MobileCapturePairingState) =>
+			callback(payload);
+		ipcRenderer.on("mobile-capture-state-changed", listener);
+		return () => ipcRenderer.removeListener("mobile-capture-state-changed", listener);
 	},
 	openExternalUrl: (url: string) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.files.openExternalUrl, url);

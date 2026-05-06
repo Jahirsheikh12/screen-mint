@@ -45,6 +45,7 @@ import {
 } from "./cursorTelemetryUtils";
 import { registerExportFileIpcHandlers } from "./exportFileHandlers";
 import { registerExportV2StreamIpcHandlers } from "./exportV2StreamHandlers";
+import { registerMobileCaptureIpcHandlers } from "./mobileCaptureHandlers";
 import { registerPermissionDiagnosticsIpcHandlers } from "./permissionDiagnosticsHandlers";
 import { registerPostRecordingIpcHandlers } from "./postRecordingHandlers";
 import { registerProjectFileIpcHandlers } from "./projectFileHandlers";
@@ -4111,6 +4112,7 @@ export function registerIpcHandlers(
 		normalizeVideoSourcePath,
 		isCursorVisualType,
 	});
+	registerMobileCaptureIpcHandlers();
 	registerAppShellIpcHandlers({
 		createEditorWindow,
 		createSourceSelectorWindow,

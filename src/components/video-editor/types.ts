@@ -695,6 +695,7 @@ export interface WebcamSessionMetadata {
 
 export interface CameraSessionState {
 	enabled: boolean;
+	sourceType?: "local-device" | "mobile";
 	deviceId?: string;
 	previewVisible: boolean;
 	previewMirrored: boolean;

@@ -49,6 +49,7 @@ describe("cameraPreferences", () => {
 			createStorageMock({
 				[CAMERA_PREFERENCES_STORAGE_KEY]: JSON.stringify({
 					enabled: true,
+					sourceType: "mobile",
 					deviceId: "camera-1",
 					previewVisible: false,
 					previewMirrored: false,
@@ -61,6 +62,7 @@ describe("cameraPreferences", () => {
 
 		expect(loadCameraPreferences()).toEqual({
 			enabled: true,
+			sourceType: "mobile",
 			deviceId: "camera-1",
 			previewVisible: false,
 			previewMirrored: false,
@@ -82,6 +84,7 @@ describe("cameraPreferences", () => {
 
 		expect(loadCameraPreferences()).toEqual({
 			enabled: true,
+			sourceType: "local-device",
 			deviceId: "camera-2",
 			previewVisible: false,
 			previewMirrored: true,

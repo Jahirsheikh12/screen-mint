@@ -11,6 +11,7 @@ export const CAMERA_PREFERENCES_STORAGE_KEY = "screenmint.camera.preferences";
 
 export const DEFAULT_CAMERA_PREFERENCES: CameraPreferences = {
 	enabled: false,
+	sourceType: "local-device",
 	deviceId: undefined,
 	previewVisible: true,
 	previewMirrored: true,
@@ -28,6 +29,10 @@ export function normalizeCameraPreferences(candidate: unknown): CameraPreference
 
 	return {
 		enabled: typeof raw.enabled === "boolean" ? raw.enabled : DEFAULT_CAMERA_PREFERENCES.enabled,
+		sourceType:
+			raw.sourceType === "mobile" || raw.sourceType === "local-device"
+				? raw.sourceType
+				: DEFAULT_CAMERA_PREFERENCES.sourceType,
 		deviceId:
 			typeof raw.deviceId === "string" && raw.deviceId.trim().length > 0 ? raw.deviceId : undefined,
 		previewVisible:
