@@ -53,6 +53,25 @@ export function TabContent({
 	);
 }
 
+export function DisabledSettingsGroup({
+	disabled,
+	children,
+	className,
+}: {
+	disabled: boolean;
+	children: React.ReactNode;
+	className?: string;
+}) {
+	return (
+		<div
+			aria-disabled={disabled}
+			className={cn(disabled && "pointer-events-none select-none opacity-45", className)}
+		>
+			{children}
+		</div>
+	);
+}
+
 export function TabHeader({
 	title,
 	description,

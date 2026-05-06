@@ -255,6 +255,7 @@ export const DEFAULT_CAMERA_SPRING: CameraSpringSettings = {
 export const DEFAULT_HIGH_QUALITY_SVG_CURSORS = true;
 export const DEFAULT_CURSOR_COLOR = "#FFFFFF";
 export const DEFAULT_CURSOR_OPACITY = 1.0;
+export const DEFAULT_CLICK_EFFECTS_ENABLED = false;
 export const DEFAULT_CLICK_HIGHLIGHT_COLOR = "#f59e0b";
 export const DEFAULT_CLICK_HIGHLIGHT_SIZE = 1.0;
 export const DEFAULT_CLICK_HIGHLIGHT_OPACITY = 0.5;

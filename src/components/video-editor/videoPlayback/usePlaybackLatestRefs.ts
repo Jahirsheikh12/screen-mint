@@ -57,6 +57,8 @@ interface UsePlaybackLatestRefsParams {
 	cursorColorRef: MutableRefObject<string>;
 	cursorOpacity: number;
 	cursorOpacityRef: MutableRefObject<number>;
+	clickEffectsEnabled: boolean;
+	clickEffectsEnabledRef: MutableRefObject<boolean>;
 	clickHighlightColor: string;
 	clickHighlightColorRef: MutableRefObject<string>;
 	clickHighlightSize: number;
@@ -132,6 +134,8 @@ export function usePlaybackLatestRefs({
 	cursorColorRef,
 	cursorOpacity,
 	cursorOpacityRef,
+	clickEffectsEnabled,
+	clickEffectsEnabledRef,
 	clickHighlightColor,
 	clickHighlightColorRef,
 	clickHighlightSize,
@@ -250,6 +254,10 @@ export function usePlaybackLatestRefs({
 	useEffect(() => {
 		cursorOpacityRef.current = cursorOpacity;
 	}, [cursorOpacity, cursorOpacityRef]);
+
+	useEffect(() => {
+		clickEffectsEnabledRef.current = clickEffectsEnabled;
+	}, [clickEffectsEnabled, clickEffectsEnabledRef]);
 
 	useEffect(() => {
 		clickHighlightColorRef.current = clickHighlightColor;

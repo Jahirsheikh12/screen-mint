@@ -23,6 +23,7 @@ import { applyOpacityToHex, buildFrameShadowFilter, hasVisibleFrameShadow } from
 import {
 	type CursorTelemetryPoint,
 	DEFAULT_CAMERA_SPRING,
+	DEFAULT_CLICK_EFFECTS_ENABLED,
 	DEFAULT_CLICK_HIGHLIGHT_COLOR,
 	DEFAULT_CLICK_HIGHLIGHT_OPACITY,
 	DEFAULT_CLICK_HIGHLIGHT_SIZE,
@@ -65,10 +66,11 @@ import {
 import { DEFAULT_FOCUS } from "./videoPlayback/constants";
 import {
 	DEFAULT_CURSOR_CONFIG,
+	getCursorVisualState,
 	PixiCursorOverlay,
 	preloadCursorAssets,
 } from "./videoPlayback/cursorRenderer";
-import type { CursorSimulationPath } from "./videoPlayback/cursorSimulation";
+import type { CursorMotionSnapshot, CursorSimulationPath } from "./videoPlayback/cursorSimulation";
 import { resolveCursorV2Config } from "./videoPlayback/cursorV2";
 // import { computeMockupScreenRect, drawDeviceMockup } from "./videoPlayback/deviceMockups";
 import { clampFocusToStage as clampFocusToStageUtil } from "./videoPlayback/focusUtils";
@@ -110,6 +112,42 @@ import {
 	type MotionBlurState,
 	projectFrameRect,
 } from "./videoPlayback/zoomTransform";
+
+type PreviewClickPulse = {
+	startedAtMs: number;
+};
+
+const CLICK_EFFECT_VISIBLE_MS = 600;
+const PREVIEW_CLICK_PULSE_DURATION_MS = 900;
+
+function createPreviewClickMotionSnapshot(timeMs: number): CursorMotionSnapshot {
+	return {
+		timeMs,
+		cx: 0.5,
+		cy: 0.5,
+		rawCx: 0.5,
+		rawCy: 0.5,
+		predictedCx: 0.5,
+		predictedCy: 0.5,
+		velocityX: 0,
+		velocityY: 0,
+		heading: 0,
+		speed: 0,
+		cursorType: "arrow",
+		latestInteractionType: "click",
+		latestInteractionAgeMs: 0,
+		isDragging: false,
+		isDwell: false,
+		isTextInput: false,
+		intent: "targeting",
+		confidence: "high",
+		isActive: true,
+		lastActiveTimeMs: timeMs,
+		lastBecameActiveTimeMs: timeMs,
+		lastBecameInactiveTimeMs: timeMs,
+		isDiscontinuous: false,
+	};
+}
 
 const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 	(
@@ -168,6 +206,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			cursorPack = "classic",
 			cursorColor = DEFAULT_CURSOR_COLOR,
 			cursorOpacity = DEFAULT_CURSOR_OPACITY,
+			clickEffectsEnabled = DEFAULT_CLICK_EFFECTS_ENABLED,
 			clickHighlightColor = DEFAULT_CLICK_HIGHLIGHT_COLOR,
 			clickHighlightSize = DEFAULT_CLICK_HIGHLIGHT_SIZE,
 			clickHighlightOpacity = DEFAULT_CLICK_HIGHLIGHT_OPACITY,
@@ -272,9 +311,18 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const cursorPackRef = useRef(cursorPack);
 		const cursorColorRef = useRef(cursorColor);
 		const cursorOpacityRef = useRef(cursorOpacity);
+		const clickEffectsEnabledRef = useRef(clickEffectsEnabled);
 		const clickHighlightColorRef = useRef(clickHighlightColor);
 		const clickHighlightSizeRef = useRef(clickHighlightSize);
 		const clickHighlightOpacityRef = useRef(clickHighlightOpacity);
+		const previewClickPulseRef = useRef<PreviewClickPulse | null>(null);
+		const previousClickEffectsRef = useRef({
+			cursorClickBounce,
+			clickEffectsEnabled,
+			clickHighlightColor,
+			clickHighlightSize,
+			clickHighlightOpacity,
+		});
 		const cursorTrailLengthRef = useRef(cursorTrailLength);
 		const cursorTrailOpacityRef = useRef(cursorTrailOpacity);
 		const cursorTypeModeRef = useRef(cursorTypeMode);
@@ -1067,6 +1115,8 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			cursorColorRef,
 			cursorOpacity,
 			cursorOpacityRef,
+			clickEffectsEnabled,
+			clickEffectsEnabledRef,
 			clickHighlightColor,
 			clickHighlightColorRef,
 			clickHighlightSize,
@@ -1097,6 +1147,83 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			cameraSpringRef,
 			onPlayingStateRefreshed: refreshOverlayForPlayingState,
 		});
+
+		const hasRecordedClickNear = useCallback((timeMs: number) => {
+			return getCursorVisualState(cursorTelemetryRef.current, timeMs).clickProgress > 0;
+		}, []);
+
+		const getPreviewClickSample = useCallback(
+			(playbackTimeMs: number, frameTimeMs: number) => {
+				const pulse = previewClickPulseRef.current;
+				if (!pulse) {
+					return null;
+				}
+
+				const elapsedMs = frameTimeMs - pulse.startedAtMs;
+				if (elapsedMs > PREVIEW_CLICK_PULSE_DURATION_MS) {
+					previewClickPulseRef.current = null;
+					return null;
+				}
+
+				if (hasRecordedClickNear(playbackTimeMs)) {
+					return null;
+				}
+
+				const visualAgeMs = elapsedMs % CLICK_EFFECT_VISIBLE_MS;
+				return {
+					timeMs: playbackTimeMs - visualAgeMs,
+					interactionType: "click" as const,
+				};
+			},
+			[hasRecordedClickNear],
+		);
+
+		useEffect(() => {
+			const previous = previousClickEffectsRef.current;
+			const changed =
+				previous.cursorClickBounce !== cursorClickBounce ||
+				previous.clickEffectsEnabled !== clickEffectsEnabled ||
+				previous.clickHighlightColor !== clickHighlightColor ||
+				previous.clickHighlightSize !== clickHighlightSize ||
+				previous.clickHighlightOpacity !== clickHighlightOpacity;
+
+			previousClickEffectsRef.current = {
+				cursorClickBounce,
+				clickEffectsEnabled,
+				clickHighlightColor,
+				clickHighlightSize,
+				clickHighlightOpacity,
+			};
+
+			if (
+				!changed ||
+				!showCursor ||
+				!clickEffectsEnabled ||
+				clickHighlightSize <= 0 ||
+				clickHighlightOpacity <= 0 ||
+				!cursorOverlayRef.current
+			) {
+				return;
+			}
+
+			const playbackTimeMs = currentTimeRef.current || currentTime * 1000;
+			if (hasRecordedClickNear(playbackTimeMs)) {
+				return;
+			}
+
+			previewClickPulseRef.current = {
+				startedAtMs: performance.now(),
+			};
+		}, [
+			cursorClickBounce,
+			clickEffectsEnabled,
+			clickHighlightColor,
+			clickHighlightSize,
+			clickHighlightOpacity,
+			showCursor,
+			currentTime,
+			hasRecordedClickNear,
+		]);
 
 		useEffect(() => {
 			if (!pixiReady || !videoReady) return;
@@ -1288,6 +1415,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 						smoothingFactor: smoothMovementEnabledRef.current ? cursorSmoothingRef.current : 0,
 						motionBlur: cursorMotionBlurRef.current,
 						clickBounce: cursorClickBounceRef.current,
+						clickEffectsEnabled: clickEffectsEnabledRef.current,
 						sway: cursorSwayRef.current,
 						cursorStyle: cursorStyleRef.current,
 						cursorPack: resolvedCursorConfig.cursorPack,
@@ -1651,13 +1779,16 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				// Update cursor overlay
 				const cursorOverlay = cursorOverlayRef.current;
 				if (cursorOverlay) {
+					const previewClickSample = getPreviewClickSample(playbackTimeMs, nowMs);
 					cursorOverlay.updateFromMotionSnapshot(
-						evaluation.simulatedCursor,
+						evaluation.simulatedCursor ??
+							(previewClickSample ? createPreviewClickMotionSnapshot(playbackTimeMs) : null),
 						cursorTelemetryRef.current,
 						playbackTimeMs,
 						baseMaskRef.current,
 						showCursorRef.current,
 						!isPlayingRef.current || isSeekingRef.current,
+						previewClickSample,
 					);
 				}
 			};
@@ -1668,7 +1799,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					app.ticker.remove(ticker);
 				}
 			};
-		}, [pixiReady, videoReady, updateFrameBorderOverlay]);
+		}, [pixiReady, videoReady, updateFrameBorderOverlay, getPreviewClickSample]);
 
 		useEffect(() => {
 			const overlay = cursorOverlayRef.current;
@@ -1691,6 +1822,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			overlay.setSmoothingFactor(smoothMovementEnabled ? cursorSmoothing : 0);
 			overlay.setMotionBlur(cursorMotionBlur);
 			overlay.setClickBounce(cursorClickBounce);
+			overlay.setClickEffectsEnabled(clickEffectsEnabled);
 			overlay.setSway(cursorSway);
 			overlay.setCursorStyle(cursorStyle);
 			overlay.setCursorColor(cursorColor);
@@ -1712,6 +1844,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			cursorSmoothing,
 			cursorMotionBlur,
 			cursorClickBounce,
+			clickEffectsEnabled,
 			cursorSway,
 			cursorStyle,
 			cursorPack,
@@ -1779,6 +1912,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					smoothingFactor: smoothMovementEnabledRef.current ? cursorSmoothingRef.current : 0,
 					motionBlur: cursorMotionBlurRef.current,
 					clickBounce: cursorClickBounceRef.current,
+					clickEffectsEnabled: clickEffectsEnabledRef.current,
 					sway: cursorSwayRef.current,
 					cursorStyle: cursorStyleRef.current,
 					cursorPack,

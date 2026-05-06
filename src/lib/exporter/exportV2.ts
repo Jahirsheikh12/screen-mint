@@ -167,6 +167,7 @@ export interface ExportCompositionPayload {
 	cursorPack?: CursorPack;
 	cursorColor?: string;
 	cursorOpacity?: number;
+	clickEffectsEnabled?: boolean;
 	clickHighlightColor?: string;
 	clickHighlightSize?: number;
 	clickHighlightOpacity?: number;

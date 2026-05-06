@@ -92,6 +92,7 @@ interface GifExporterConfig {
 	cursorPack?: CursorPack;
 	cursorColor?: string;
 	cursorOpacity?: number;
+	clickEffectsEnabled?: boolean;
 	clickHighlightColor?: string;
 	clickHighlightSize?: number;
 	clickHighlightOpacity?: number;
@@ -274,6 +275,7 @@ export class GifExporter {
 				cursorPack: this.config.cursorPack,
 				cursorColor: this.config.cursorColor,
 				cursorOpacity: this.config.cursorOpacity,
+				clickEffectsEnabled: this.config.clickEffectsEnabled,
 				clickHighlightColor: this.config.clickHighlightColor,
 				clickHighlightSize: this.config.clickHighlightSize,
 				clickHighlightOpacity: this.config.clickHighlightOpacity,

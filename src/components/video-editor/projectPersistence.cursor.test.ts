@@ -7,6 +7,11 @@ describe("cursor project persistence", () => {
 		expect(result.cursorPack).toBe("classic");
 	});
 
+	it("defaults click effects to disabled", () => {
+		const result = normalizeProjectEditor({});
+		expect(result.clickEffectsEnabled).toBe(false);
+	});
+
 	it("round-trips cursor pack through project serialization", () => {
 		const editor = normalizeProjectEditor({
 			cursorPack: "custom",
@@ -49,6 +54,50 @@ describe("cursor project persistence", () => {
 		});
 		expect(project.editor.highQualitySvgCursors).toBe(false);
 		expect(project.editor.zoomRegions[0]?.mode).toBe("cursor-follow");
+	});
+
+	it("round-trips click effect settings through project serialization", () => {
+		const editor = normalizeProjectEditor({
+			clickEffectsEnabled: true,
+			cursorClickBounce: 2.4,
+			clickHighlightColor: "#ef4444",
+			clickHighlightSize: 1.8,
+			clickHighlightOpacity: 0.66,
+		});
+
+		const project = createProjectData("/tmp/video.mp4", editor);
+
+		expect(project.editor.clickEffectsEnabled).toBe(true);
+		expect(project.editor.cursorClickBounce).toBe(2.4);
+		expect(project.editor.clickHighlightColor).toBe("#ef4444");
+		expect(project.editor.clickHighlightSize).toBe(1.8);
+		expect(project.editor.clickHighlightOpacity).toBe(0.66);
+	});
+
+	it("clamps invalid click effect numbers during project normalization", () => {
+		expect(
+			normalizeProjectEditor({
+				cursorClickBounce: 9,
+				clickHighlightSize: 8,
+				clickHighlightOpacity: 2,
+			}),
+		).toMatchObject({
+			cursorClickBounce: 5,
+			clickHighlightSize: 3,
+			clickHighlightOpacity: 1,
+		});
+
+		expect(
+			normalizeProjectEditor({
+				cursorClickBounce: -1,
+				clickHighlightSize: -2,
+				clickHighlightOpacity: -0.5,
+			}),
+		).toMatchObject({
+			cursorClickBounce: 0,
+			clickHighlightSize: 0,
+			clickHighlightOpacity: 0,
+		});
 	});
 
 	it("migrates legacy cursor smoothing and sway into cursor v2 defaults", () => {

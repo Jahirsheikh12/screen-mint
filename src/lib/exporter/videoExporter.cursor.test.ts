@@ -30,6 +30,7 @@ vi.mock("./streamingDecoder", () => ({
 	}),
 }));
 
+import { GifExporter } from "./gifExporter";
 import { VideoExporter } from "./videoExporter";
 
 describe("VideoExporter cursor config", () => {
@@ -72,6 +73,7 @@ describe("VideoExporter cursor config", () => {
 			cursorStyle: "ring",
 			cursorColor: "#22c55e",
 			cursorOpacity: 0.72,
+			clickEffectsEnabled: true,
 			clickHighlightColor: "#ef4444",
 			clickHighlightSize: 1.8,
 			clickHighlightOpacity: 0.66,
@@ -100,6 +102,80 @@ describe("VideoExporter cursor config", () => {
 				cursorStyle: "ring",
 				cursorColor: "#22c55e",
 				cursorOpacity: 0.72,
+				clickEffectsEnabled: true,
+				clickHighlightColor: "#ef4444",
+				clickHighlightSize: 1.8,
+				clickHighlightOpacity: 0.66,
+				cursorTrailLength: 8,
+				cursorTrailOpacity: 0.41,
+				cursorTypeMode: "circle",
+				cursorTilt: 0.66,
+				hideWhenIdle: true,
+				idleHideDelayMs: 2100,
+				smoothMovementEnabled: true,
+				cursorMovementStyle: "custom",
+				cursorSpring: {
+					tension: 590,
+					friction: 41,
+					mass: 0.71,
+				},
+				highQualitySvgCursors: false,
+			}),
+		);
+	});
+
+	it("passes cursor v2 settings through to FrameRenderer for GIF exports", async () => {
+		const exporter = new GifExporter({
+			videoUrl: "file:///tmp/demo.mp4",
+			width: 640,
+			height: 360,
+			frameRate: 12,
+			loop: true,
+			preset: "balanced",
+			dedupeFrames: true,
+			colorCount: 128,
+			ditherMode: "bayer",
+			motionSensitivity: "balanced",
+			wallpaper: "#000000",
+			zoomRegions: [],
+			showShadow: false,
+			shadowIntensity: 0,
+			backgroundBlur: 0,
+			cropRegion: { x: 0, y: 0, width: 1, height: 1 },
+			showCursor: true,
+			cursorStyle: "ring",
+			cursorColor: "#22c55e",
+			cursorOpacity: 0.72,
+			clickEffectsEnabled: true,
+			clickHighlightColor: "#ef4444",
+			clickHighlightSize: 1.8,
+			clickHighlightOpacity: 0.66,
+			cursorTrailLength: 8,
+			cursorTrailOpacity: 0.41,
+			cursorTypeMode: "circle",
+			cursorTilt: 0.66,
+			hideWhenIdle: true,
+			idleHideDelayMs: 2100,
+			smoothMovementEnabled: true,
+			cursorMovementStyle: "custom",
+			cursorSpring: {
+				tension: 590,
+				friction: 41,
+				mass: 0.71,
+			},
+			highQualitySvgCursors: false,
+		});
+
+		const result = await exporter.export();
+
+		expect(result.success).toBe(false);
+		expect(mocks.frameRendererConstructor).toHaveBeenCalledWith(
+			expect.objectContaining({
+				showCursor: true,
+				cursorStyle: "ring",
+				cursorColor: "#22c55e",
+				cursorOpacity: 0.72,
+				clickEffectsEnabled: true,
 				clickHighlightColor: "#ef4444",
 				clickHighlightSize: 1.8,
 				clickHighlightOpacity: 0.66,

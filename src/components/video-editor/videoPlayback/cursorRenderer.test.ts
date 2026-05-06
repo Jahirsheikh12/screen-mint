@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { SmoothedCursorState } from "./cursorRenderer";
+import {
+	getClickBounceScale,
+	getClickRingStyle,
+	getCursorVisualState,
+	SmoothedCursorState,
+} from "./cursorRenderer";
 
 describe("SmoothedCursorState", () => {
 	it("eases toward the target on sequential frames instead of snapping", () => {
@@ -33,5 +38,58 @@ describe("SmoothedCursorState", () => {
 		state.snapTo(0.8, 0.75, 120);
 		expect(state.x).toBeCloseTo(0.8, 5);
 		expect(state.y).toBeCloseTo(0.75, 5);
+	});
+});
+
+describe("cursor click effects", () => {
+	it("derives click progress from recorded and preview click samples", () => {
+		const samples = [
+			{ timeMs: 0, cx: 0.2, cy: 0.3, cursorType: "arrow" as const },
+			{ timeMs: 1_000, cx: 0.4, cy: 0.5, interactionType: "click" as const },
+		];
+
+		expect(getCursorVisualState(samples, 1_060).clickProgress).toBeCloseTo(0.9, 5);
+
+		const previewState = getCursorVisualState(samples, 2_040, {
+			timeMs: 2_000,
+			interactionType: "click",
+		});
+		expect(previewState.clickProgress).toBeCloseTo(1 - 40 / 600, 5);
+		expect(previewState.clickBounceProgress).toBeCloseTo(1 - 40 / 140, 5);
+	});
+
+	it("lets click highlight settings control the rendered ring style", () => {
+		const style = getClickRingStyle(50, 0.5, {
+			clickHighlightColor: "#ef4444",
+			clickHighlightSize: 2,
+			clickHighlightOpacity: 0.8,
+		});
+
+		expect(style).toEqual({
+			color: 0xef4444,
+			alpha: 0.4,
+			radius: 59,
+			lineWidth: 7.5,
+		});
+		expect(
+			getClickRingStyle(50, 0.5, {
+				clickHighlightColor: "#ef4444",
+				clickHighlightSize: 0,
+				clickHighlightOpacity: 0.8,
+			}),
+		).toBeNull();
+		expect(
+			getClickRingStyle(50, 0.5, {
+				clickHighlightColor: "#ef4444",
+				clickHighlightSize: 2,
+				clickHighlightOpacity: 0,
+			}),
+		).toBeNull();
+	});
+
+	it("applies click bounce strength to cursor scale", () => {
+		expect(getClickBounceScale(0.5, 0)).toBe(1);
+		expect(getClickBounceScale(0.5, 1)).toBeCloseTo(0.92, 5);
+		expect(getClickBounceScale(0.5, 5)).toBe(0.72);
 	});
 });

@@ -63,6 +63,7 @@ import {
 	DEFAULT_CAMERA_SPRING,
 	DEFAULT_CAPTION_GENERATION_OPTIONS,
 	DEFAULT_CAPTION_SETTINGS,
+	DEFAULT_CLICK_EFFECTS_ENABLED,
 	DEFAULT_CLICK_HIGHLIGHT_COLOR,
 	DEFAULT_CLICK_HIGHLIGHT_OPACITY,
 	DEFAULT_CLICK_HIGHLIGHT_SIZE,
@@ -163,6 +164,7 @@ export interface ProjectEditorState {
 	highQualitySvgCursors: boolean;
 	cursorColor: string;
 	cursorOpacity: number;
+	clickEffectsEnabled: boolean;
 	clickHighlightColor: string;
 	clickHighlightSize: number;
 	clickHighlightOpacity: number;
@@ -1468,6 +1470,10 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		cursorOpacity: isFiniteNumber(editor.cursorOpacity)
 			? clamp(editor.cursorOpacity, 0, 1)
 			: DEFAULT_CURSOR_OPACITY,
+		clickEffectsEnabled:
+			typeof editor.clickEffectsEnabled === "boolean"
+				? editor.clickEffectsEnabled
+				: DEFAULT_CLICK_EFFECTS_ENABLED,
 		clickHighlightColor:
 			typeof editor.clickHighlightColor === "string"
 				? editor.clickHighlightColor

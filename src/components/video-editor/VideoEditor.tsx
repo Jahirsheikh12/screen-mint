@@ -335,6 +335,9 @@ export default function VideoEditor() {
 	);
 	const [cursorColor, setCursorColor] = useState(initialEditorPreferences.cursorColor);
 	const [cursorOpacity, setCursorOpacity] = useState(initialEditorPreferences.cursorOpacity);
+	const [clickEffectsEnabled, setClickEffectsEnabled] = useState(
+		initialEditorPreferences.clickEffectsEnabled,
+	);
 	const [clickHighlightColor, setClickHighlightColor] = useState(
 		initialEditorPreferences.clickHighlightColor,
 	);
@@ -611,6 +614,7 @@ export default function VideoEditor() {
 				highQualitySvgCursors,
 				cursorColor,
 				cursorOpacity,
+				clickEffectsEnabled,
 				clickHighlightColor,
 				clickHighlightSize,
 				clickHighlightOpacity,
@@ -672,6 +676,7 @@ export default function VideoEditor() {
 			highQualitySvgCursors,
 			cursorColor,
 			cursorOpacity,
+			clickEffectsEnabled,
 			clickHighlightColor,
 			clickHighlightSize,
 			clickHighlightOpacity,
@@ -738,6 +743,7 @@ export default function VideoEditor() {
 			setHighQualitySvgCursors(controls.highQualitySvgCursors);
 			setCursorColor(controls.cursorColor);
 			setCursorOpacity(controls.cursorOpacity);
+			setClickEffectsEnabled(controls.clickEffectsEnabled);
 			setClickHighlightColor(controls.clickHighlightColor);
 			setClickHighlightSize(controls.clickHighlightSize);
 			setClickHighlightOpacity(controls.clickHighlightOpacity);
@@ -1042,6 +1048,7 @@ export default function VideoEditor() {
 				highQualitySvgCursors,
 				cursorColor,
 				cursorOpacity,
+				clickEffectsEnabled,
 				clickHighlightColor,
 				clickHighlightSize,
 				clickHighlightOpacity,
@@ -1120,6 +1127,7 @@ export default function VideoEditor() {
 		highQualitySvgCursors,
 		cursorColor,
 		cursorOpacity,
+		clickEffectsEnabled,
 		clickHighlightColor,
 		clickHighlightSize,
 		clickHighlightOpacity,
@@ -1392,6 +1400,7 @@ export default function VideoEditor() {
 					highQualitySvgCursors,
 					cursorColor,
 					cursorOpacity,
+					clickEffectsEnabled,
 					clickHighlightColor,
 					clickHighlightSize,
 					clickHighlightOpacity,
@@ -1497,6 +1506,7 @@ export default function VideoEditor() {
 			highQualitySvgCursors,
 			cursorColor,
 			cursorOpacity,
+			clickEffectsEnabled,
 			clickHighlightColor,
 			clickHighlightSize,
 			clickHighlightOpacity,
@@ -3168,6 +3178,7 @@ export default function VideoEditor() {
 					cursorPack,
 					cursorColor,
 					cursorOpacity,
+					clickEffectsEnabled,
 					clickHighlightColor,
 					clickHighlightSize,
 					clickHighlightOpacity,
@@ -3389,6 +3400,7 @@ export default function VideoEditor() {
 							cursorPack,
 							cursorColor,
 							cursorOpacity,
+							clickEffectsEnabled,
 							clickHighlightColor,
 							clickHighlightSize,
 							clickHighlightOpacity,
@@ -3537,6 +3549,7 @@ export default function VideoEditor() {
 							cursorPack,
 							cursorColor,
 							cursorOpacity,
+							clickEffectsEnabled,
 							clickHighlightColor,
 							clickHighlightSize,
 							clickHighlightOpacity,
@@ -3654,6 +3667,7 @@ export default function VideoEditor() {
 			cursorPack,
 			cursorColor,
 			cursorOpacity,
+			clickEffectsEnabled,
 			clickHighlightColor,
 			clickHighlightSize,
 			clickHighlightOpacity,
@@ -4177,6 +4191,7 @@ export default function VideoEditor() {
 											cursorPack={cursorPack}
 											cursorColor={cursorColor}
 											cursorOpacity={cursorOpacity}
+											clickEffectsEnabled={clickEffectsEnabled}
 											clickHighlightColor={clickHighlightColor}
 											clickHighlightSize={clickHighlightSize}
 											clickHighlightOpacity={clickHighlightOpacity}
@@ -4286,6 +4301,8 @@ export default function VideoEditor() {
 									onCursorColorChange={setCursorColor}
 									cursorOpacity={cursorOpacity}
 									onCursorOpacityChange={setCursorOpacity}
+									clickEffectsEnabled={clickEffectsEnabled}
+									onClickEffectsEnabledChange={setClickEffectsEnabled}
 									clickHighlightColor={clickHighlightColor}
 									onClickHighlightColorChange={setClickHighlightColor}
 									clickHighlightSize={clickHighlightSize}

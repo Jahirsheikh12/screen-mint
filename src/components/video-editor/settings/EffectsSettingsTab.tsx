@@ -13,7 +13,12 @@ import {
 import { KeyboardShortcutsHelp } from "../KeyboardShortcutsHelp";
 import { DEFAULT_VIDEO_PREVIEW_PADDING } from "../projectPersistence";
 import { SliderControl } from "../SliderControl";
-import { SettingsSection, TabContent, TabHeader } from "../settingsPanelLayout";
+import {
+	DisabledSettingsGroup,
+	SettingsSection,
+	TabContent,
+	TabHeader,
+} from "../settingsPanelLayout";
 import { DEFAULT_ZOOM_MOTION_BLUR, PREVIEW_QUALITY_OPTIONS, type PreviewQuality } from "../types";
 
 type SettingsTranslator = (key: string, fallback?: string) => string;
@@ -180,6 +185,7 @@ export function EffectsSettingsTab({
 						onChange={(value) => onBackgroundBlurChange?.(value)}
 						formatValue={(value) => `${value.toFixed(1)}px`}
 						parseInput={(text) => parseFloat(text.replace(/px$/, ""))}
+						disabled={hideBackground}
 					/>
 				</div>
 				<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
@@ -279,8 +285,8 @@ export function EffectsSettingsTab({
 						/>
 					</div>
 				</div>
-				{frameBorderEnabled && (
-					<>
+				<DisabledSettingsGroup disabled={!frameBorderEnabled}>
+					<div className="flex flex-col gap-1.5">
 						<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 							<SliderControl
 								label={tSettings("effects.borderWidth")}
@@ -292,6 +298,7 @@ export function EffectsSettingsTab({
 								onChange={(value) => onFrameBorderWidthChange?.(value)}
 								formatValue={(value) => `${Math.round(value)}px`}
 								parseInput={(text) => parseFloat(text.replace(/px$/, ""))}
+								disabled={!frameBorderEnabled}
 							/>
 						</div>
 						<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
@@ -324,10 +331,11 @@ export function EffectsSettingsTab({
 								onChange={(value) => onFrameBorderOpacityChange?.(value)}
 								formatValue={(value) => `${Math.round(value * 100)}%`}
 								parseInput={(text) => parseFloat(text.replace(/%$/, "")) / 100}
+								disabled={!frameBorderEnabled}
 							/>
 						</div>
-					</>
-				)}
+					</div>
+				</DisabledSettingsGroup>
 				<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 					<SliderControl
 						label={tSettings("effects.roundness")}

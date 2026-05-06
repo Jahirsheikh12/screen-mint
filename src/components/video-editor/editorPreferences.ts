@@ -39,6 +39,7 @@ type PersistedEditorControls = Pick<
 	| "highQualitySvgCursors"
 	| "cursorColor"
 	| "cursorOpacity"
+	| "clickEffectsEnabled"
 	| "clickHighlightColor"
 	| "clickHighlightSize"
 	| "clickHighlightOpacity"
@@ -133,6 +134,7 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	highQualitySvgCursors: DEFAULT_EDITOR_CONTROLS.highQualitySvgCursors,
 	cursorColor: DEFAULT_EDITOR_CONTROLS.cursorColor,
 	cursorOpacity: DEFAULT_EDITOR_CONTROLS.cursorOpacity,
+	clickEffectsEnabled: DEFAULT_EDITOR_CONTROLS.clickEffectsEnabled,
 	clickHighlightColor: DEFAULT_EDITOR_CONTROLS.clickHighlightColor,
 	clickHighlightSize: DEFAULT_EDITOR_CONTROLS.clickHighlightSize,
 	clickHighlightOpacity: DEFAULT_EDITOR_CONTROLS.clickHighlightOpacity,
@@ -297,6 +299,7 @@ function normalizeEditorControls(
 		highQualitySvgCursors: raw.highQualitySvgCursors ?? fallback.highQualitySvgCursors,
 		cursorColor: raw.cursorColor ?? fallback.cursorColor,
 		cursorOpacity: raw.cursorOpacity ?? fallback.cursorOpacity,
+		clickEffectsEnabled: raw.clickEffectsEnabled ?? fallback.clickEffectsEnabled,
 		clickHighlightColor: raw.clickHighlightColor ?? fallback.clickHighlightColor,
 		clickHighlightSize: raw.clickHighlightSize ?? fallback.clickHighlightSize,
 		clickHighlightOpacity: raw.clickHighlightOpacity ?? fallback.clickHighlightOpacity,
@@ -378,6 +381,7 @@ function normalizeEditorControls(
 		highQualitySvgCursors: normalized.highQualitySvgCursors,
 		cursorColor: normalized.cursorColor,
 		cursorOpacity: normalized.cursorOpacity,
+		clickEffectsEnabled: normalized.clickEffectsEnabled,
 		clickHighlightColor: normalized.clickHighlightColor,
 		clickHighlightSize: normalized.clickHighlightSize,
 		clickHighlightOpacity: normalized.clickHighlightOpacity,

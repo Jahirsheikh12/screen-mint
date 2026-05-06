@@ -125,6 +125,7 @@ interface FrameRenderConfig {
 	cursorPack?: CursorPack;
 	cursorColor?: string;
 	cursorOpacity?: number;
+	clickEffectsEnabled?: boolean;
 	clickHighlightColor?: string;
 	clickHighlightSize?: number;
 	clickHighlightOpacity?: number;
@@ -318,6 +319,8 @@ export class FrameRenderer {
 				cursorPack: resolvedCursorConfig.cursorPack,
 				cursorColor: this.config.cursorColor ?? DEFAULT_CURSOR_CONFIG.cursorColor,
 				cursorOpacity: this.config.cursorOpacity ?? DEFAULT_CURSOR_CONFIG.cursorOpacity,
+				clickEffectsEnabled:
+					this.config.clickEffectsEnabled ?? DEFAULT_CURSOR_CONFIG.clickEffectsEnabled,
 				clickHighlightColor:
 					this.config.clickHighlightColor ?? DEFAULT_CURSOR_CONFIG.clickHighlightColor,
 				clickHighlightSize:

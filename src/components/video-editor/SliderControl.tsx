@@ -13,6 +13,7 @@ interface SliderControlProps {
 	formatValue: (value: number) => string;
 	parseInput: (text: string) => number | null;
 	accentColor?: "purple" | "blue";
+	disabled?: boolean;
 }
 
 export function SliderControl({
@@ -26,6 +27,7 @@ export function SliderControl({
 	formatValue,
 	parseInput,
 	accentColor = "blue",
+	disabled = false,
 }: SliderControlProps) {
 	const [editing, setEditing] = useState(false);
 	const [editText, setEditText] = useState("");
@@ -40,6 +42,11 @@ export function SliderControl({
 	}, [editing]);
 
 	const commitEdit = () => {
+		if (disabled) {
+			setEditing(false);
+			return;
+		}
+
 		const parsed = parseInput(editText);
 		if (parsed != null && !isNaN(parsed)) {
 			onChange(Math.min(max, Math.max(min, parsed)));
@@ -59,7 +66,8 @@ export function SliderControl({
 					{isModified && (
 						<button
 							type="button"
-							onClick={() => onChange(defaultValue)}
+							disabled={disabled}
+							onClick={() => !disabled && onChange(defaultValue)}
 							className="text-slate-600 hover:text-[#F59E0B] transition-colors duration-200"
 							title="Reset to default"
 						>
@@ -72,6 +80,7 @@ export function SliderControl({
 						ref={inputRef}
 						type="text"
 						value={editText}
+						disabled={disabled}
 						onChange={(e) => setEditText(e.target.value)}
 						onBlur={commitEdit}
 						onKeyDown={(e) => {
@@ -82,8 +91,13 @@ export function SliderControl({
 					/>
 				) : (
 					<span
-						className="text-[11px] text-slate-400 font-mono tabular-nums cursor-text hover:text-slate-200 bg-white/[0.04] px-1.5 py-0.5 rounded-md transition-colors duration-200"
+						className={
+							disabled
+								? "text-[11px] text-slate-600 font-mono tabular-nums bg-white/[0.02] px-1.5 py-0.5 rounded-md transition-colors duration-200"
+								: "text-[11px] text-slate-400 font-mono tabular-nums cursor-text hover:text-slate-200 bg-white/[0.04] px-1.5 py-0.5 rounded-md transition-colors duration-200"
+						}
 						onClick={() => {
+							if (disabled) return;
 							setEditText(formatValue(value));
 							setEditing(true);
 						}}
@@ -94,7 +108,8 @@ export function SliderControl({
 			</div>
 			<Slider
 				value={[value]}
-				onValueChange={(values) => onChange(values[0])}
+				onValueChange={(values) => !disabled && onChange(values[0])}
+				disabled={disabled}
 				min={min}
 				max={max}
 				step={step}

@@ -51,6 +51,7 @@ export const EDITOR_SETTINGS_COVERAGE: readonly SettingsCoverageGroup[] = [
 			"highQualitySvgCursors",
 			"cursorColor",
 			"cursorOpacity",
+			"clickEffectsEnabled",
 			"clickHighlightColor",
 			"clickHighlightSize",
 			"clickHighlightOpacity",

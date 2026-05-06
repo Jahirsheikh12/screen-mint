@@ -88,6 +88,7 @@ import type {
 import {
 	CAMERA_ZOOM_SCALE_DISABLED,
 	DEFAULT_CAMERA_SPRING,
+	DEFAULT_CLICK_EFFECTS_ENABLED,
 	DEFAULT_CLICK_HIGHLIGHT_COLOR,
 	DEFAULT_CLICK_HIGHLIGHT_OPACITY,
 	DEFAULT_CLICK_HIGHLIGHT_SIZE,
@@ -178,6 +179,8 @@ interface SettingsPanelProps {
 	onCursorColorChange?: (color: string) => void;
 	cursorOpacity?: number;
 	onCursorOpacityChange?: (opacity: number) => void;
+	clickEffectsEnabled?: boolean;
+	onClickEffectsEnabledChange?: (enabled: boolean) => void;
 	clickHighlightColor?: string;
 	onClickHighlightColorChange?: (color: string) => void;
 	clickHighlightSize?: number;
@@ -374,6 +377,8 @@ export default function SettingsPanel({
 	onCursorColorChange,
 	cursorOpacity = DEFAULT_CURSOR_OPACITY,
 	onCursorOpacityChange,
+	clickEffectsEnabled = DEFAULT_CLICK_EFFECTS_ENABLED,
+	onClickEffectsEnabledChange,
 	clickHighlightColor = DEFAULT_CLICK_HIGHLIGHT_COLOR,
 	onClickHighlightColorChange,
 	clickHighlightSize = DEFAULT_CLICK_HIGHLIGHT_SIZE,
@@ -980,6 +985,8 @@ export default function SettingsPanel({
 						onCursorTrailLengthChange={onCursorTrailLengthChange}
 						cursorTrailOpacity={cursorTrailOpacity}
 						onCursorTrailOpacityChange={onCursorTrailOpacityChange}
+						clickEffectsEnabled={clickEffectsEnabled}
+						onClickEffectsEnabledChange={onClickEffectsEnabledChange}
 						cursorClickBounce={cursorClickBounce}
 						onCursorClickBounceChange={onCursorClickBounceChange}
 						clickHighlightColor={clickHighlightColor}
@@ -1015,6 +1022,7 @@ export default function SettingsPanel({
 				{activeTab === "background" && (
 					<BackgroundSettingsTab
 						tSettings={tSettings}
+						hideBackground={hideBackground}
 						selected={selected}
 						onWallpaperChange={onWallpaperChange}
 						backgroundTab={backgroundTab}

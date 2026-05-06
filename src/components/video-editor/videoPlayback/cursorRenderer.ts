@@ -48,6 +48,21 @@ type LoadedCursorAssets = {
 	system: Partial<Record<CursorAssetKey, LoadedCursorAsset>>;
 };
 
+type ClickInteractionSample = Pick<CursorTelemetryPoint, "interactionType" | "timeMs">;
+
+export type CursorVisualState = {
+	cursorType: CursorType;
+	clickBounceProgress: number;
+	clickProgress: number;
+};
+
+export type ClickRingStyle = {
+	alpha: number;
+	radius: number;
+	lineWidth: number;
+	color: number;
+};
+
 export interface CursorViewportRect {
 	x: number;
 	y: number;
@@ -65,6 +80,7 @@ export interface CursorRenderConfig {
 	springConfig: SpringConfig | null;
 	motionBlur: number;
 	clickBounce: number;
+	clickEffectsEnabled: boolean;
 	clickHighlightColor: string;
 	clickHighlightSize: number;
 	clickHighlightOpacity: number;
@@ -90,6 +106,7 @@ export const DEFAULT_CURSOR_CONFIG: CursorRenderConfig = {
 	springConfig: null,
 	motionBlur: 0,
 	clickBounce: 1,
+	clickEffectsEnabled: false,
 	clickHighlightColor: "#f59e0b",
 	clickHighlightSize: 1,
 	clickHighlightOpacity: 0.5,
@@ -108,11 +125,20 @@ export const DEFAULT_CURSOR_CONFIG: CursorRenderConfig = {
 const REFERENCE_WIDTH = 1920;
 const MIN_CURSOR_VIEWPORT_SCALE = 0.55;
 const CLICK_ANIMATION_MS = 140;
-const CLICK_RING_FADE_MS = 240;
+const CLICK_RING_FADE_MS = 600;
 const CURSOR_MOTION_BLUR_BASE_MULTIPLIER = 0.08;
 const CURSOR_TIME_DISCONTINUITY_MS = 100;
 const CURSOR_SWAY_SMOOTHING_MULTIPLIER = 0.7;
 const CURSOR_SWAY_SMOOTHING_OFFSET = 0.18;
+
+function isClickInteraction(interactionType: CursorTelemetryPoint["interactionType"] | undefined) {
+	return (
+		interactionType === "click" ||
+		interactionType === "double-click" ||
+		interactionType === "right-click" ||
+		interactionType === "middle-click"
+	);
+}
 const CURSOR_SVG_DROP_SHADOW_FILTER = "drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.35))";
 const CURSOR_SHADOW_COLOR = 0x000000;
 const CURSOR_SHADOW_ALPHA = 0.35;
@@ -436,24 +462,33 @@ function findLatestSample(samples: CursorTelemetryPoint[], timeMs: number) {
 	return samples[lo]?.timeMs <= timeMs ? samples[lo] : null;
 }
 
-function findLatestInteractionSample(samples: CursorTelemetryPoint[], timeMs: number) {
+function findLatestInteractionSample(
+	samples: CursorTelemetryPoint[],
+	timeMs: number,
+	previewClickSample?: ClickInteractionSample | null,
+) {
+	let latestSample: ClickInteractionSample | null = null;
+
+	if (
+		previewClickSample &&
+		previewClickSample.timeMs <= timeMs &&
+		isClickInteraction(previewClickSample.interactionType)
+	) {
+		latestSample = previewClickSample;
+	}
+
 	for (let index = samples.length - 1; index >= 0; index -= 1) {
 		const sample = samples[index];
 		if (sample.timeMs > timeMs) {
 			continue;
 		}
 
-		if (
-			sample.interactionType === "click" ||
-			sample.interactionType === "double-click" ||
-			sample.interactionType === "right-click" ||
-			sample.interactionType === "middle-click"
-		) {
-			return sample;
+		if (isClickInteraction(sample.interactionType)) {
+			return latestSample && latestSample.timeMs > sample.timeMs ? latestSample : sample;
 		}
 	}
 
-	return null;
+	return latestSample;
 }
 
 function findLatestStableCursorType(samples: CursorTelemetryPoint[], timeMs: number) {
@@ -517,15 +552,15 @@ function getCursorSwaySpringConfig(smoothingFactor: number) {
 	};
 }
 
-function getCursorVisualState(samples: CursorTelemetryPoint[], timeMs: number) {
-	const latestClick = findLatestInteractionSample(samples, timeMs);
+export function getCursorVisualState(
+	samples: CursorTelemetryPoint[],
+	timeMs: number,
+	previewClickSample?: ClickInteractionSample | null,
+): CursorVisualState {
+	const latestClick = findLatestInteractionSample(samples, timeMs, previewClickSample);
 	const interactionType = latestClick?.interactionType;
 	const ageMs = latestClick ? Math.max(0, timeMs - latestClick.timeMs) : Number.POSITIVE_INFINITY;
-	const isClickEvent =
-		interactionType === "click" ||
-		interactionType === "double-click" ||
-		interactionType === "right-click" ||
-		interactionType === "middle-click";
+	const isClickEvent = isClickInteraction(interactionType);
 	const clickBounceProgress =
 		latestClick && isClickEvent && ageMs <= CLICK_ANIMATION_MS ? 1 - ageMs / CLICK_ANIMATION_MS : 0;
 
@@ -536,6 +571,34 @@ function getCursorVisualState(samples: CursorTelemetryPoint[], timeMs: number) {
 			latestClick && isClickEvent && ageMs <= CLICK_RING_FADE_MS
 				? 1 - ageMs / CLICK_RING_FADE_MS
 				: 0,
+	};
+}
+
+export function getClickBounceScale(clickBounceProgress: number, clickBounce: number) {
+	return Math.max(0.72, 1 - Math.sin(clickBounceProgress * Math.PI) * (0.08 * clickBounce));
+}
+
+export function getClickRingStyle(
+	h: number,
+	progress: number,
+	config: Pick<
+		CursorRenderConfig,
+		"clickHighlightColor" | "clickHighlightOpacity" | "clickHighlightSize"
+	>,
+): ClickRingStyle | null {
+	if (progress <= 0 || config.clickHighlightOpacity <= 0 || config.clickHighlightSize <= 0) {
+		return null;
+	}
+
+	return {
+		color: getClickHighlightColorNumber({
+			...DEFAULT_CURSOR_CONFIG,
+			...config,
+		}),
+		alpha: clamp(progress * config.clickHighlightOpacity, 0, 1),
+		radius:
+			h * 0.28 * config.clickHighlightSize + (1 - progress) * h * 0.62 * config.clickHighlightSize,
+		lineWidth: Math.max(2, h * 0.075 * Math.max(0.75, config.clickHighlightSize)),
 	};
 }
 
@@ -649,22 +712,13 @@ function drawClickRing(
 	>,
 ) {
 	graphics.clear();
-	if (progress <= 0 || config.clickHighlightOpacity <= 0 || config.clickHighlightSize <= 0) {
+	const style = getClickRingStyle(h, progress, config);
+	if (!style) {
 		return;
 	}
 
-	const color = getClickHighlightColorNumber({
-		...DEFAULT_CURSOR_CONFIG,
-		...config,
-	});
-	const alpha = clamp(progress * config.clickHighlightOpacity, 0, 1);
-	const radiusBase = h * 0.16 * config.clickHighlightSize;
-	const radius = radiusBase + (1 - progress) * h * 0.38 * config.clickHighlightSize;
-	const lineWidth = Math.max(1, h * 0.04 * Math.max(0.75, config.clickHighlightSize));
-
-	graphics.lineStyle(lineWidth, color, alpha);
-	graphics.drawCircle(px, py, radius);
-	graphics.lineStyle(0, 0, 0);
+	graphics.circle(px, py, style.radius);
+	graphics.stroke({ width: style.lineWidth, color: style.color, alpha: style.alpha });
 }
 
 export class PixiCursorOverlay {
@@ -793,6 +847,10 @@ export class PixiCursorOverlay {
 		this.config.clickBounce = Math.max(0, clickBounce);
 	}
 
+	setClickEffectsEnabled(clickEffectsEnabled: boolean) {
+		this.config.clickEffectsEnabled = clickEffectsEnabled;
+	}
+
 	setClickHighlightColor(clickHighlightColor: string) {
 		this.config.clickHighlightColor = clickHighlightColor;
 	}
@@ -874,8 +932,14 @@ export class PixiCursorOverlay {
 		viewport: CursorViewportRect,
 		visible: boolean,
 		freeze = false,
+		previewClickSample?: ClickInteractionSample | null,
 	): void {
-		if (!visible || samples.length === 0 || viewport.width <= 0 || viewport.height <= 0) {
+		if (
+			!visible ||
+			(samples.length === 0 && !previewClickSample) ||
+			viewport.width <= 0 ||
+			viewport.height <= 0
+		) {
 			this.container.visible = false;
 			this.trailGraphics.clear();
 			this.lastRenderedPoint = null;
@@ -920,7 +984,10 @@ export class PixiCursorOverlay {
 		const { cursorType, clickBounceProgress, clickProgress } = getCursorVisualState(
 			samples,
 			timeMs,
+			previewClickSample,
 		);
+		const enabledClickBounceProgress = this.config.clickEffectsEnabled ? clickBounceProgress : 0;
+		const enabledClickProgress = this.config.clickEffectsEnabled ? clickProgress : 0;
 		const visualMode = resolveCursorVisualMode({
 			cursorTypeMode: this.config.cursorTypeMode,
 			detectedCursorType: cursorType,
@@ -935,10 +1002,7 @@ export class PixiCursorOverlay {
 		const shadowSprite = this.cursorShadowSprites[spriteKey] ?? this.cursorShadowSprites.arrow!;
 		const sprite = this.cursorSprites[spriteKey] ?? this.cursorSprites.arrow!;
 		const cursorColor = getCursorColorNumber(this.config);
-		const bounceScale = Math.max(
-			0.72,
-			1 - Math.sin(clickBounceProgress * Math.PI) * (0.08 * this.config.clickBounce),
-		);
+		const bounceScale = getClickBounceScale(enabledClickBounceProgress, this.config.clickBounce);
 		const scaledH = h;
 		const swayRotation = this.updateCursorSway(
 			px,
@@ -949,7 +1013,7 @@ export class PixiCursorOverlay {
 		);
 
 		this.drawTrail(viewport, h, cursorColor);
-		drawClickRing(this.clickRingGraphics, px, py, h, clickProgress, this.config);
+		drawClickRing(this.clickRingGraphics, px, py, h, enabledClickProgress, this.config);
 
 		for (const [key, currentShadowSprite] of Object.entries(this.cursorShadowSprites) as Array<
 			[CursorAssetKey, Sprite]
@@ -1223,10 +1287,8 @@ export function drawCursorOnCanvas(
 		}
 	}
 	const asset = getCursorAsset(spriteKey, config.cursorPack, config.preferSystemCursorAssets);
-	const bounceScale = Math.max(
-		0.72,
-		1 - Math.sin(clickBounceProgress * Math.PI) * (0.08 * config.clickBounce),
-	);
+	const enabledClickBounceProgress = config.clickEffectsEnabled ? clickBounceProgress : 0;
+	const bounceScale = getClickBounceScale(enabledClickBounceProgress, config.clickBounce);
 
 	if (config.cursorTypeMode === "circle") {
 		const radius = ((h * 0.28) / 2) * bounceScale;
