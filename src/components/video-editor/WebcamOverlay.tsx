@@ -13,6 +13,7 @@ import {
 import { createWebcamCompositionScratch, drawResolvedWebcamComposition } from "./webcamEffects";
 import WebcamMaskRefinementWorker from "./webcamMaskRefinement.worker?worker";
 import { resolveWebcamPreviewSyncDecision } from "./webcamPreviewSync";
+import { createFreeWebcamRegionFromPixelRect } from "./webcamRegionUtils";
 import { resolvePreviewWebcamBudgetByMode, resolveWebcamRenderPlan } from "./webcamRenderPlan";
 import { buildWebcamHealthMetrics, resolvePreviewWebcamBudget } from "./webcamRenderSpec";
 import {
@@ -178,8 +179,6 @@ export function WebcamOverlay({
 	const { x, y, width, height } = displayRect;
 	const borderRadius =
 		renderModel.clipShape === "circle" ? "50%" : `${renderModel.borderRadiusPx}px`;
-	const compositionWidth = Math.max(compositionRect.width, 1);
-	const compositionHeight = Math.max(compositionRect.height, 1);
 	const targetFps = playbackRate >= 1.4 ? 60 : 30;
 	const previewBudget = useMemo(
 		() =>
@@ -951,29 +950,29 @@ export function WebcamOverlay({
 				isDraggingRef.current = true;
 			}}
 			onDragStop={(_event, data) => {
-				const xPercent = ((data.x - compositionRect.x) / compositionWidth) * 100;
-				const yPercent = ((data.y - compositionRect.y) / compositionHeight) * 100;
-				onPositionChange({ x: xPercent, y: yPercent });
+				const nextRegion = createFreeWebcamRegionFromPixelRect(
+					region,
+					{ x: data.x, y: data.y, width, height },
+					compositionRect,
+				);
+				onPositionChange(nextRegion.position);
 				setTimeout(() => {
 					isDraggingRef.current = false;
 				}, 100);
 			}}
 			onResizeStop={(_event, _direction, ref, _delta, position) => {
-				const xPercent = ((position.x - compositionRect.x) / compositionWidth) * 100;
-				const yPercent = ((position.y - compositionRect.y) / compositionHeight) * 100;
-				const widthPercent = (ref.offsetWidth / compositionWidth) * 100;
-				const heightPercent = (ref.offsetHeight / compositionHeight) * 100;
-				const sidePercent =
-					(Math.max(ref.offsetWidth, ref.offsetHeight) /
-						Math.min(compositionWidth, compositionHeight)) *
-					100;
-				onPositionChange({ x: xPercent, y: yPercent });
-				onSizeChange({
-					width:
-						region.shape === "circle" || region.shape === "square" ? sidePercent : widthPercent,
-					height:
-						region.shape === "circle" || region.shape === "square" ? sidePercent : heightPercent,
-				});
+				const nextRegion = createFreeWebcamRegionFromPixelRect(
+					region,
+					{
+						x: position.x,
+						y: position.y,
+						width: ref.offsetWidth,
+						height: ref.offsetHeight,
+					},
+					compositionRect,
+				);
+				onPositionChange(nextRegion.position);
+				onSizeChange(nextRegion.size);
 			}}
 			onClick={() => {
 				if (isDraggingRef.current) {

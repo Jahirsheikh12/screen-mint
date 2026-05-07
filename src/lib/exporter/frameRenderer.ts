@@ -833,6 +833,7 @@ export class FrameRenderer {
 			const webcamFrame = await this.webcamFrameProvider.getFrameAt(timeMs);
 			if (webcamFrame) {
 				try {
+					const webcamCompositionRect = this.layoutCache?.frameRect ?? this.webcamCompositionRect;
 					const webcamContentRect = this.layoutCache?.maskRect ?? this.webcamCompositionRect;
 					const webcamEvaluation = evaluateWebcamFrame({
 						state: {
@@ -849,7 +850,7 @@ export class FrameRenderer {
 						connectZooms: this.config.connectZooms,
 						cameraSizeDuringZoom: this.config.cameraSizeDuringZoom,
 						enableCursorAvoidance: this.config.webcamEffects?.subtleAvoidance,
-						compositionRect: this.webcamCompositionRect,
+						compositionRect: webcamCompositionRect,
 						contentRect: webcamContentRect,
 						containerWidth: this.config.width,
 						containerHeight: this.config.height,

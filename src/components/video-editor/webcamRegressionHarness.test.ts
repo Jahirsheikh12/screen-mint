@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_WEBCAM_EFFECTS, DEFAULT_WEBCAM_REGION } from "./types";
 import fixedCaptureFixture from "./videoPlayback/__fixtures__/captured-sessions/fixed-webcam-regression.capture.json";
 import {
 	evaluateWebcamRegressionFixture,
@@ -40,6 +41,43 @@ function getFrameAt(frames: WebcamRegressionPipelineFrame[], timeMs: number) {
 	}
 
 	return frame;
+}
+
+const insetPreviewStage = { x: 0, y: 0, width: 1000, height: 700 };
+const insetPreviewComposition = { x: 100, y: 80, width: 800, height: 450 };
+const insetExportCanvas = { x: 0, y: 0, width: 2000, height: 1400 };
+const insetExportComposition = { x: 200, y: 160, width: 1600, height: 900 };
+
+function makeInsetFixture(
+	name: string,
+	overrides: Partial<WebcamRegressionCaptureFixture> = {},
+): WebcamRegressionCaptureFixture {
+	return {
+		name,
+		sourceSize: { width: 1280, height: 720 },
+		previewStageRect: insetPreviewStage,
+		previewCompositionRect: insetPreviewComposition,
+		previewContentRect: insetPreviewComposition,
+		exportRect: insetExportCanvas,
+		exportCompositionRect: insetExportComposition,
+		exportContentRect: insetExportComposition,
+		webcamRegion: {
+			...DEFAULT_WEBCAM_REGION,
+			anchor: "free",
+			position: { x: 86, y: 75 },
+			size: { width: 18, height: 18 },
+			shape: "circle",
+		},
+		effects: DEFAULT_WEBCAM_EFFECTS,
+		showWebcam: true,
+		mirrorWebcam: false,
+		connectZooms: true,
+		cameraSizeDuringZoom: 1,
+		cameraLayouts: [],
+		zoomRegions: [],
+		samplesMs: [500],
+		...overrides,
+	};
 }
 
 describe("webcamRegressionHarness", () => {
@@ -148,5 +186,146 @@ describe("webcamRegressionHarness", () => {
 			normalizeRegressionRect(exportSpec.renderModel.displayRect, fixture.exportRect),
 		);
 		expect(previewSpec.renderModel.scale).toBeCloseTo(exportSpec.renderModel.scale, 10);
+	});
+
+	it("keeps manual right-edge webcam placement aligned across output aspect ratios", () => {
+		const cases = [
+			{ name: "16:9", preview: { width: 960, height: 540 }, export: { width: 1920, height: 1080 } },
+			{ name: "9:16", preview: { width: 360, height: 640 }, export: { width: 1080, height: 1920 } },
+			{ name: "1:1", preview: { width: 640, height: 640 }, export: { width: 1200, height: 1200 } },
+			{ name: "4:3", preview: { width: 800, height: 600 }, export: { width: 1600, height: 1200 } },
+		];
+
+		for (const testCase of cases) {
+			const testFixture: WebcamRegressionCaptureFixture = {
+				name: `manual-right-edge-${testCase.name}`,
+				sourceSize: { width: 1280, height: 720 },
+				previewStageRect: {
+					x: 0,
+					y: 0,
+					width: testCase.preview.width,
+					height: testCase.preview.height,
+				},
+				previewCompositionRect: {
+					x: 0,
+					y: 0,
+					width: testCase.preview.width,
+					height: testCase.preview.height,
+				},
+				previewContentRect: {
+					x: 0,
+					y: 0,
+					width: testCase.preview.width,
+					height: testCase.preview.height,
+				},
+				exportRect: {
+					x: 0,
+					y: 0,
+					width: testCase.export.width,
+					height: testCase.export.height,
+				},
+				webcamRegion: {
+					...DEFAULT_WEBCAM_REGION,
+					anchor: "free",
+					position: { x: 100, y: 52 },
+					size: { width: 20, height: 20 },
+					shape: "circle",
+				},
+				effects: DEFAULT_WEBCAM_EFFECTS,
+				showWebcam: true,
+				mirrorWebcam: false,
+				connectZooms: true,
+				cameraSizeDuringZoom: 1,
+				cameraLayouts: [],
+				zoomRegions: [],
+				samplesMs: [0],
+			};
+			const [frame] = evaluateWebcamRegressionFixture(testFixture, { shouldSmooth: false });
+			const previewRect = normalizeRegressionRect(
+				frame.previewDrawPlan.spec.renderModel.displayRect,
+				testFixture.previewCompositionRect,
+			);
+			const exportRect = normalizeRegressionRect(
+				frame.exportDrawSpec.renderModel.displayRect,
+				testFixture.exportRect,
+			);
+
+			expectCloseRect(previewRect, exportRect);
+			expect(previewRect.x + previewRect.width).toBeCloseTo(1, 3);
+			expect(exportRect.x + exportRect.width).toBeCloseTo(1, 3);
+		}
+	});
+
+	it("keeps free webcam placement aligned when the video frame is inset in the canvas", () => {
+		const [frame] = evaluateWebcamRegressionFixture(makeInsetFixture("inset-free-placement"), {
+			shouldSmooth: false,
+		});
+		const previewRect = normalizeRegressionRect(
+			frame.previewDrawPlan.spec.renderModel.displayRect,
+			insetPreviewComposition,
+		);
+		const exportRect = normalizeRegressionRect(
+			frame.exportDrawSpec.renderModel.displayRect,
+			insetExportComposition,
+		);
+
+		expectCloseRect(previewRect, exportRect);
+	});
+
+	it("keeps anchored webcam placement aligned when the video frame is inset", () => {
+		for (const anchor of ["top-right", "bottom-right"] as const) {
+			const [frame] = evaluateWebcamRegressionFixture(
+				makeInsetFixture(`inset-anchor-${anchor}`, {
+					webcamRegion: {
+						...DEFAULT_WEBCAM_REGION,
+						anchor,
+						position: { x: 0, y: 0 },
+						size: { width: 18, height: 18 },
+						shape: "circle",
+					},
+				}),
+				{ shouldSmooth: false },
+			);
+			const previewRect = normalizeRegressionRect(
+				frame.previewDrawPlan.spec.renderModel.displayRect,
+				insetPreviewComposition,
+			);
+			const exportRect = normalizeRegressionRect(
+				frame.exportDrawSpec.renderModel.displayRect,
+				insetExportComposition,
+			);
+
+			expectCloseRect(previewRect, exportRect);
+		}
+	});
+
+	it("targets the inset composition frame for fullscreen webcam layouts", () => {
+		const [frame] = evaluateWebcamRegressionFixture(
+			makeInsetFixture("inset-fullscreen-layout", {
+				cameraLayouts: [
+					{
+						id: "fullscreen-webcam",
+						startMs: 0,
+						endMs: 1000,
+						mode: "fullscreen",
+						transitionInMs: 0,
+						transitionOutMs: 0,
+						motionPreset: "instant",
+					},
+				],
+			}),
+			{ shouldSmooth: false },
+		);
+		const previewRect = normalizeRegressionRect(
+			frame.previewDrawPlan.spec.renderModel.displayRect,
+			insetPreviewComposition,
+		);
+		const exportRect = normalizeRegressionRect(
+			frame.exportDrawSpec.renderModel.displayRect,
+			insetExportComposition,
+		);
+
+		expectCloseRect(previewRect, { x: 0, y: 0, width: 1, height: 1 });
+		expectCloseRect(exportRect, { x: 0, y: 0, width: 1, height: 1 });
 	});
 });

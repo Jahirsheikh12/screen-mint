@@ -99,7 +99,7 @@ describe("webcam project persistence", () => {
 		});
 	});
 
-	it("clamps oversized square webcam regions inside the frame", () => {
+	it("keeps free square webcam positions available for aspect-aware rendering", () => {
 		const result = normalizeProjectEditor({
 			webcamRegion: {
 				position: { x: 65, y: 80 },
@@ -114,7 +114,7 @@ describe("webcam project persistence", () => {
 
 		expect(result.webcamRegion.shape).toBe("square");
 		expect(result.webcamRegion.size).toEqual({ width: 45, height: 45 });
-		expect(result.webcamRegion.position).toEqual({ x: 55, y: 55 });
+		expect(result.webcamRegion.position).toEqual({ x: 65, y: 80 });
 		expect(result.webcamRegion.borderRadius).toBe(25);
 	});
 

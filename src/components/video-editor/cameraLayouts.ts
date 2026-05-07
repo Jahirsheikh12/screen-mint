@@ -10,7 +10,13 @@ import { CAMERA_ZOOM_SCALE_DISABLED } from "./types";
 import { easeOutScreenStudio } from "./videoPlayback/mathUtils";
 import { findDominantRegion } from "./videoPlayback/zoomRegionUtils";
 import { smoothZoomValue } from "./videoPlayback/zoomTransform";
-import { getWebcamPixelRect, normalizeWebcamRegion } from "./webcamRegionUtils";
+import {
+	createFreeWebcamRegionFromPixelRect,
+	getWebcamPixelRect,
+	getWebcamPixelRectInRect,
+	getWebcamSizeFromPixelRect,
+	normalizeWebcamRegion,
+} from "./webcamRegionUtils";
 
 export interface PixelRect {
 	x: number;
@@ -103,42 +109,6 @@ function cloneWebcamRegion(region: WebcamRegion): WebcamRegion {
 	return normalizeWebcamRegion(clonedRegion);
 }
 
-function normalizeWebcamRegionInRect(
-	region: WebcamRegion,
-	compositionRect: PixelRect,
-): WebcamRegion {
-	const normalizedRegion = normalizeWebcamRegion({
-		...region,
-		position: { ...region.position },
-		size: { ...region.size },
-	});
-
-	if (
-		normalizedRegion.anchor !== "free" ||
-		(normalizedRegion.shape !== "circle" && normalizedRegion.shape !== "square")
-	) {
-		return normalizedRegion;
-	}
-
-	const safeCompositionWidth = Math.max(1, compositionRect.width);
-	const safeCompositionHeight = Math.max(1, compositionRect.height);
-	const sidePx =
-		(normalizedRegion.size.width / 100) *
-		Math.max(1, Math.min(safeCompositionWidth, safeCompositionHeight));
-	const maxXPercent = (Math.max(0, safeCompositionWidth - sidePx) / safeCompositionWidth) * 100;
-	const maxYPercent = (Math.max(0, safeCompositionHeight - sidePx) / safeCompositionHeight) * 100;
-	const rawX = Number.isFinite(region.position.x) ? region.position.x : normalizedRegion.position.x;
-	const rawY = Number.isFinite(region.position.y) ? region.position.y : normalizedRegion.position.y;
-
-	return {
-		...normalizedRegion,
-		position: {
-			x: clamp(rawX, 0, maxXPercent),
-			y: clamp(rawY, 0, maxYPercent),
-		},
-	};
-}
-
 function clampWebcamMotionDeltaMs(deltaMs: number) {
 	if (!Number.isFinite(deltaMs) || deltaMs <= 0) {
 		return 0;
@@ -181,75 +151,6 @@ function rectCenter(rect: PixelRect) {
 		x: rect.x + rect.width / 2,
 		y: rect.y + rect.height / 2,
 	};
-}
-
-function offsetRect(rect: PixelRect, offsetX: number, offsetY: number): PixelRect {
-	return {
-		x: rect.x + offsetX,
-		y: rect.y + offsetY,
-		width: rect.width,
-		height: rect.height,
-	};
-}
-
-function rectWidthToPercent(
-	shape: WebcamRegion["shape"],
-	widthPx: number,
-	compositionRect: PixelRect,
-) {
-	if (shape === "circle" || shape === "square") {
-		return (widthPx / Math.max(1, Math.min(compositionRect.width, compositionRect.height))) * 100;
-	}
-
-	return (widthPx / Math.max(1, compositionRect.width)) * 100;
-}
-
-function rectHeightToPercent(
-	shape: WebcamRegion["shape"],
-	heightPx: number,
-	compositionRect: PixelRect,
-) {
-	if (shape === "circle" || shape === "square") {
-		return (heightPx / Math.max(1, Math.min(compositionRect.width, compositionRect.height))) * 100;
-	}
-
-	return (heightPx / Math.max(1, compositionRect.height)) * 100;
-}
-
-function createFreeRegionFromPixelRect(
-	region: WebcamRegion,
-	rect: PixelRect,
-	compositionRect: PixelRect,
-): WebcamRegion {
-	const localRect = {
-		x: rect.x - compositionRect.x,
-		y: rect.y - compositionRect.y,
-		width: rect.width,
-		height: rect.height,
-	};
-	const size =
-		region.shape === "circle" || region.shape === "square"
-			? {
-					width: rectWidthToPercent(region.shape, localRect.width, compositionRect),
-					height: rectWidthToPercent(region.shape, localRect.width, compositionRect),
-				}
-			: {
-					width: rectWidthToPercent(region.shape, localRect.width, compositionRect),
-					height: rectHeightToPercent(region.shape, localRect.height, compositionRect),
-				};
-
-	return normalizeWebcamRegionInRect(
-		{
-			...region,
-			anchor: "free",
-			position: {
-				x: (localRect.x / Math.max(1, compositionRect.width)) * 100,
-				y: (localRect.y / Math.max(1, compositionRect.height)) * 100,
-			},
-			size,
-		},
-		compositionRect,
-	);
 }
 
 function getRectEdges(rect: PixelRect) {
@@ -316,11 +217,6 @@ function inflateRectWithinBounds(rect: PixelRect, amount: number, bounds: PixelR
 	};
 }
 
-function getWebcamPixelRectInRect(region: WebcamRegion, compositionRect: PixelRect): PixelRect {
-	const localRect = getWebcamPixelRect(region, compositionRect.width, compositionRect.height);
-	return offsetRect(localRect, compositionRect.x, compositionRect.y);
-}
-
 function areEquivalentRects(left: PixelRect, right: PixelRect, epsilon = 0.5) {
 	return (
 		Math.abs(left.x - right.x) <= epsilon &&
@@ -356,14 +252,13 @@ function createFreePositionRegion(
 	containerWidth: number,
 	containerHeight: number,
 ): WebcamRegion {
-	return normalizeWebcamRegionInRect(
+	return createFreeWebcamRegionFromPixelRect(
+		region,
 		{
-			...region,
-			anchor: "free",
-			position: {
-				x: (xPx / containerWidth) * 100,
-				y: (yPx / containerHeight) * 100,
-			},
+			x: xPx,
+			y: yPx,
+			width: getWebcamPixelRect(region, containerWidth, containerHeight).width,
+			height: getWebcamPixelRect(region, containerWidth, containerHeight).height,
 		},
 		{ x: 0, y: 0, width: containerWidth, height: containerHeight },
 	);
@@ -932,16 +827,7 @@ function smoothWebcamRegion(
 		if (currentRegion.anchor === targetRegion.anchor) {
 			const nextRegion = normalizeWebcamRegion({
 				...targetRegion,
-				size:
-					targetRegion.shape === "circle" || targetRegion.shape === "square"
-						? {
-								width: rectWidthToPercent(targetRegion.shape, nextRect.width, compositionRect),
-								height: rectWidthToPercent(targetRegion.shape, nextRect.width, compositionRect),
-							}
-						: {
-								width: rectWidthToPercent(targetRegion.shape, nextRect.width, compositionRect),
-								height: rectHeightToPercent(targetRegion.shape, nextRect.height, compositionRect),
-							},
+				size: getWebcamSizeFromPixelRect(targetRegion.shape, nextRect, compositionRect),
 				borderRadius: smoothZoomValue(
 					currentRegion.borderRadius,
 					targetRegion.borderRadius,
@@ -961,7 +847,7 @@ function smoothWebcamRegion(
 				: nextRegion;
 		}
 
-		const nextRegion = createFreeRegionFromPixelRect(
+		const nextRegion = createFreeWebcamRegionFromPixelRect(
 			{
 				...targetRegion,
 				borderRadius: smoothZoomValue(

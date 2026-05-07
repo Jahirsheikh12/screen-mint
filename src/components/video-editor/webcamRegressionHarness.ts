@@ -22,6 +22,8 @@ export interface WebcamRegressionCaptureFixture {
 	previewCompositionRect: PixelRect;
 	previewContentRect: PixelRect;
 	exportRect: PixelRect;
+	exportCompositionRect?: PixelRect;
+	exportContentRect?: PixelRect;
 	webcamRegion: WebcamRegion;
 	effects: WebcamEffects;
 	showWebcam: boolean;
@@ -77,6 +79,8 @@ export function evaluateWebcamRegressionFixture(
 	};
 
 	return samplesMs.map((timeMs) => {
+		const exportCompositionRect = fixture.exportCompositionRect ?? fixture.exportRect;
+		const exportContentRect = fixture.exportContentRect ?? exportCompositionRect;
 		const previewEvaluation = evaluateWebcamFrame({
 			state: previewState,
 			playbackTimeMs: timeMs,
@@ -112,8 +116,8 @@ export function evaluateWebcamRegressionFixture(
 			connectZooms: fixture.connectZooms,
 			cameraSizeDuringZoom: fixture.cameraSizeDuringZoom,
 			enableCursorAvoidance: fixture.effects.subtleAvoidance,
-			compositionRect: fixture.exportRect,
-			contentRect: fixture.exportRect,
+			compositionRect: exportCompositionRect,
+			contentRect: exportContentRect,
 			containerWidth: fixture.exportRect.width,
 			containerHeight: fixture.exportRect.height,
 			sourceSize: fixture.sourceSize,
