@@ -11,7 +11,7 @@ export interface MockupInset {
 	right: number;
 }
 
-interface MockupDefinition {
+export interface MockupDefinition {
 	/** Preferred aspect ratio of the full device frame (width / height) */
 	aspectRatio: number;
 	/** Inset describing where the screen sits inside the frame */

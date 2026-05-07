@@ -110,6 +110,12 @@ import {
 } from "./projectPersistence";
 import { QuickShareDialog } from "./QuickShareDialog";
 import SettingsPanel from "./SettingsPanel";
+import {
+	applyAutoBeautify,
+	applyScenePreset,
+	type BeautifyContext,
+	buildAutoZoomRegionsFromTelemetry,
+} from "./scenePresets";
 import TimelineEditor from "./timeline/TimelineEditor";
 import { buildAutoZoomSuggestions, normalizeCursorTelemetry } from "./timeline/zoomSuggestionUtils";
 import {
@@ -150,6 +156,7 @@ import {
 	type KeyboardTelemetrySample,
 	type PlaybackSpeed,
 	type PreviewQuality,
+	type ScenePresetId,
 	type SpeedRegion,
 	type TrimRegion,
 	type WebcamEffects,
@@ -457,6 +464,7 @@ export default function VideoEditor() {
 	const [gifExportSettings, setGifExportSettings] = useState<GifExportConfig>(
 		initialEditorPreferences.gifExportSettings,
 	);
+	const [scenePresetId, setScenePresetId] = useState<ScenePresetId | undefined>(undefined);
 	const [sourceFrameRate, setSourceFrameRate] = useState(60);
 	const [workspaceLayout, setWorkspaceLayout] = useState<EditorWorkspaceLayout>(
 		initialEditorPreferences.workspaceLayout,
@@ -627,6 +635,7 @@ export default function VideoEditor() {
 				keyboardShortcutOpacity,
 				keyboardShortcutDisplayMs,
 				keyboardShortcutMaxVisible,
+				deviceMockup,
 				borderRadius,
 				frameBorderEnabled,
 				frameBorderWidth,
@@ -634,6 +643,12 @@ export default function VideoEditor() {
 				frameBorderOpacity,
 				padding,
 				cropRegion,
+				zoomRegions,
+				trimRegions,
+				cutPoints,
+				speedRegions,
+				annotationRegions,
+				audioRegions,
 				aspectRatio,
 				webcamRegion,
 				webcamEffects,
@@ -641,10 +656,15 @@ export default function VideoEditor() {
 				showWebcam,
 				mirrorWebcam,
 				cameraSizeDuringZoom,
+				cameraLayouts,
+				captionTrack,
+				captionSettings,
+				captionGenerationOptions,
 				exportFormat,
 				exportDestination,
 				videoExportSettings,
 				gifExportSettings,
+				scenePresetId,
 			}),
 		[
 			wallpaper,
@@ -689,6 +709,7 @@ export default function VideoEditor() {
 			keyboardShortcutOpacity,
 			keyboardShortcutDisplayMs,
 			keyboardShortcutMaxVisible,
+			deviceMockup,
 			borderRadius,
 			frameBorderEnabled,
 			frameBorderWidth,
@@ -696,6 +717,12 @@ export default function VideoEditor() {
 			frameBorderOpacity,
 			padding,
 			cropRegion,
+			zoomRegions,
+			trimRegions,
+			cutPoints,
+			speedRegions,
+			annotationRegions,
+			audioRegions,
 			aspectRatio,
 			webcamRegion,
 			webcamEffects,
@@ -703,10 +730,15 @@ export default function VideoEditor() {
 			showWebcam,
 			mirrorWebcam,
 			cameraSizeDuringZoom,
+			cameraLayouts,
+			captionTrack,
+			captionSettings,
+			captionGenerationOptions,
 			exportFormat,
 			exportDestination,
 			videoExportSettings,
 			gifExportSettings,
+			scenePresetId,
 		],
 	);
 
@@ -781,6 +813,7 @@ export default function VideoEditor() {
 			setExportDestination(controls.exportDestination);
 			setVideoExportSettings(controls.videoExportSettings);
 			setGifExportSettings(controls.gifExportSettings);
+			setScenePresetId(controls.scenePresetId);
 
 			if (options.includeTimeline) {
 				setZoomRegions(controls.zoomRegions);
@@ -798,19 +831,7 @@ export default function VideoEditor() {
 
 	const buildHistorySnapshot = useCallback((): EditorHistorySnapshot => {
 		return {
-			zoomRegions,
-			trimRegions,
-			cutPoints,
-			speedRegions,
-			annotationRegions,
-			audioRegions,
-			cameraLayouts,
-			webcamRegion,
-			webcamEffects,
-			webcamPreviewMode,
-			showWebcam,
-			mirrorWebcam,
-			cameraSizeDuringZoom,
+			...buildCurrentPresetControls(),
 			selectedCameraLayoutId,
 			webcamSelected,
 			selectedZoomId,
@@ -818,24 +839,10 @@ export default function VideoEditor() {
 			selectedSpeedId,
 			selectedAnnotationId,
 			selectedAudioId,
-			captionTrack,
-			captionSettings,
 			selectedCaptionId,
 		};
 	}, [
-		zoomRegions,
-		trimRegions,
-		cutPoints,
-		speedRegions,
-		annotationRegions,
-		audioRegions,
-		cameraLayouts,
-		webcamRegion,
-		webcamEffects,
-		webcamPreviewMode,
-		showWebcam,
-		mirrorWebcam,
-		cameraSizeDuringZoom,
+		buildCurrentPresetControls,
 		selectedCameraLayoutId,
 		webcamSelected,
 		selectedZoomId,
@@ -843,68 +850,55 @@ export default function VideoEditor() {
 		selectedSpeedId,
 		selectedAnnotationId,
 		selectedAudioId,
-		captionTrack,
-		captionSettings,
 		selectedCaptionId,
 	]);
 
-	const applyHistorySnapshot = useCallback((snapshot: EditorHistorySnapshot) => {
-		const cloned = cloneEditorHistorySnapshot(snapshot);
-		setZoomRegions(cloned.zoomRegions);
-		setTrimRegions(cloned.trimRegions);
-		setCutPoints(cloned.cutPoints);
-		setSpeedRegions(cloned.speedRegions);
-		setAnnotationRegions(cloned.annotationRegions);
-		setAudioRegions(cloned.audioRegions);
-		setCameraLayouts(cloned.cameraLayouts);
-		setWebcamRegion(cloned.webcamRegion);
-		setWebcamEffects(cloned.webcamEffects);
-		setWebcamPreviewMode(cloned.webcamPreviewMode);
-		setShowWebcam(cloned.showWebcam);
-		setMirrorWebcam(cloned.mirrorWebcam);
-		setCameraSizeDuringZoom(cloned.cameraSizeDuringZoom);
-		setSelectedCameraLayoutId(cloned.selectedCameraLayoutId);
-		setWebcamSelected(cloned.webcamSelected);
-		setSelectedZoomId(cloned.selectedZoomId);
-		setSelectedTrimId(cloned.selectedTrimId);
-		setSelectedSpeedId(cloned.selectedSpeedId);
-		setSelectedAnnotationId(cloned.selectedAnnotationId);
-		setSelectedAudioId(cloned.selectedAudioId);
-		setCaptionTrack(cloned.captionTrack);
-		setCaptionSettings(cloned.captionSettings);
-		setSelectedCaptionId(cloned.selectedCaptionId);
+	const applyHistorySnapshot = useCallback(
+		(snapshot: EditorHistorySnapshot) => {
+			const cloned = cloneEditorHistorySnapshot(snapshot);
+			applyEditorControls(cloned, { includeTimeline: true });
+			setSelectedCameraLayoutId(cloned.selectedCameraLayoutId);
+			setWebcamSelected(cloned.webcamSelected);
+			setSelectedZoomId(cloned.selectedZoomId);
+			setSelectedTrimId(cloned.selectedTrimId);
+			setSelectedSpeedId(cloned.selectedSpeedId);
+			setSelectedAnnotationId(cloned.selectedAnnotationId);
+			setSelectedAudioId(cloned.selectedAudioId);
+			setSelectedCaptionId(cloned.selectedCaptionId);
 
-		nextZoomIdRef.current = deriveNextId(
-			"zoom",
-			cloned.zoomRegions.map((region) => region.id),
-		);
-		nextTrimIdRef.current = deriveNextId(
-			"trim",
-			cloned.trimRegions.map((region) => region.id),
-		);
-		nextSpeedIdRef.current = deriveNextId(
-			"speed",
-			cloned.speedRegions.map((region) => region.id),
-		);
-		nextAnnotationIdRef.current = deriveNextId(
-			"annotation",
-			cloned.annotationRegions.map((region) => region.id),
-		);
-		nextAudioIdRef.current = deriveNextId(
-			"audio",
-			cloned.audioRegions.map((region) => region.id),
-		);
-		nextCameraLayoutIdRef.current = deriveNextId(
-			"camera-layout",
-			cloned.cameraLayouts.map((layout) => layout.id),
-		);
-		nextCaptionIdRef.current = deriveNextId(
-			"caption",
-			(cloned.captionTrack?.segments ?? []).map((region) => region.id),
-		);
-		nextAnnotationZIndexRef.current =
-			cloned.annotationRegions.reduce((max, region) => Math.max(max, region.zIndex), 0) + 1;
-	}, []);
+			nextZoomIdRef.current = deriveNextId(
+				"zoom",
+				cloned.zoomRegions.map((region) => region.id),
+			);
+			nextTrimIdRef.current = deriveNextId(
+				"trim",
+				cloned.trimRegions.map((region) => region.id),
+			);
+			nextSpeedIdRef.current = deriveNextId(
+				"speed",
+				cloned.speedRegions.map((region) => region.id),
+			);
+			nextAnnotationIdRef.current = deriveNextId(
+				"annotation",
+				cloned.annotationRegions.map((region) => region.id),
+			);
+			nextAudioIdRef.current = deriveNextId(
+				"audio",
+				cloned.audioRegions.map((region) => region.id),
+			);
+			nextCameraLayoutIdRef.current = deriveNextId(
+				"camera-layout",
+				cloned.cameraLayouts.map((layout) => layout.id),
+			);
+			nextCaptionIdRef.current = deriveNextId(
+				"caption",
+				(cloned.captionTrack?.segments ?? []).map((region) => region.id),
+			);
+			nextAnnotationZIndexRef.current =
+				cloned.annotationRegions.reduce((max, region) => Math.max(max, region.zIndex), 0) + 1;
+		},
+		[applyEditorControls],
+	);
 
 	const { historyPastRef, historyFutureRef, handleUndo, handleRedo } = useEditorHistory({
 		buildSnapshot: buildHistorySnapshot,
@@ -1091,6 +1085,7 @@ export default function VideoEditor() {
 				exportDestination,
 				videoExportSettings,
 				gifExportSettings,
+				scenePresetId,
 			},
 			webcamSessionMetadata: webcamSessionMetadata ?? undefined,
 		}).projectSnapshot;
@@ -1169,6 +1164,7 @@ export default function VideoEditor() {
 		exportDestination,
 		videoExportSettings,
 		gifExportSettings,
+		scenePresetId,
 		webcamSessionMetadata,
 		webcamPreviewMode,
 	]);
@@ -1523,6 +1519,7 @@ export default function VideoEditor() {
 			frameBorderWidth,
 			frameBorderColor,
 			frameBorderOpacity,
+			deviceMockup,
 			borderRadius,
 			padding,
 			cropRegion,
@@ -1548,7 +1545,6 @@ export default function VideoEditor() {
 			exportDestination,
 			videoExportSettings,
 			gifExportSettings,
-			deviceMockup,
 			webcamSessionMetadata,
 		],
 	);
@@ -1767,6 +1763,97 @@ export default function VideoEditor() {
 
 		return [...zoomRegions.filter((region) => region.id !== loopEndRegion.id), loopEndRegion];
 	}, [loopCursor, zoomRegions, displayedTimelineWindow, connectZooms]);
+
+	const buildBeautifyContext = useCallback((): BeautifyContext => {
+		const video = videoPlaybackRef.current?.video;
+		const width = video?.videoWidth || sourceVideoWidth || 1920;
+		const height = video?.videoHeight || sourceVideoHeight || 1080;
+		return {
+			sourceWidth: width,
+			sourceHeight: height,
+			durationMs: Math.max(0, Math.round(duration * 1000)),
+			aspectRatio,
+			hasCursorTelemetry: effectiveCursorTelemetry.length >= 2,
+			cursorTelemetry: effectiveCursorTelemetry,
+			hasWebcam: Boolean(resolvedWebcamPath),
+			hasCaptions: captionRegions.length > 0,
+			existingZoomCount: zoomRegions.length,
+		};
+	}, [
+		aspectRatio,
+		captionRegions.length,
+		duration,
+		effectiveCursorTelemetry,
+		resolvedWebcamPath,
+		sourceVideoHeight,
+		sourceVideoWidth,
+		zoomRegions.length,
+	]);
+
+	const applyPresetUpdates = useCallback(
+		(updates: Partial<ReturnType<typeof normalizeProjectEditor>>) => {
+			const nextEditor = normalizeProjectEditor({
+				...buildCurrentPresetControls(),
+				...updates,
+			});
+			applyEditorControls(nextEditor, { includeTimeline: true });
+			nextZoomIdRef.current = deriveNextId(
+				"zoom",
+				nextEditor.zoomRegions.map((region) => region.id),
+			);
+		},
+		[applyEditorControls, buildCurrentPresetControls],
+	);
+
+	const handleApplyScenePreset = useCallback(
+		(presetId: ScenePresetId) => {
+			const currentEditor = buildCurrentPresetControls();
+			const updates = applyScenePreset(currentEditor, buildBeautifyContext(), presetId);
+			applyPresetUpdates(updates);
+			toast.success("Scene preset applied");
+		},
+		[applyPresetUpdates, buildBeautifyContext, buildCurrentPresetControls],
+	);
+
+	const handleAutoBeautify = useCallback(
+		(options: { regenerateZooms?: boolean } = {}) => {
+			const currentEditor = buildCurrentPresetControls();
+			const result = applyAutoBeautify(currentEditor, buildBeautifyContext(), {
+				regenerateZooms: options.regenerateZooms,
+				nextZoomIndex: nextZoomIdRef.current,
+			});
+			applyPresetUpdates(result.updates);
+			const zoomMessage =
+				result.zoomStatus === "created"
+					? ` Added ${result.zoomCount} smart zoom${result.zoomCount === 1 ? "" : "s"}.`
+					: result.zoomStatus === "preserved"
+						? " Existing zooms were preserved."
+						: " No smart zooms were available.";
+			toast.success("Auto Beautify applied", { description: zoomMessage });
+		},
+		[applyPresetUpdates, buildBeautifyContext, buildCurrentPresetControls],
+	);
+
+	const handleRegenerateSmartZooms = useCallback(() => {
+		const context = buildBeautifyContext();
+		const nextZoomRegions = buildAutoZoomRegionsFromTelemetry(context, 1);
+		if (nextZoomRegions.length === 0) {
+			toast.info("No smart zooms found for this recording.");
+			return;
+		}
+		setZoomRegions(nextZoomRegions);
+		setSelectedZoomId(null);
+		setScenePresetId((current) => current ?? "custom");
+		nextZoomIdRef.current = deriveNextId(
+			"zoom",
+			nextZoomRegions.map((region) => region.id),
+		);
+		toast.success("Smart zooms regenerated", {
+			description: `Created ${nextZoomRegions.length} zoom region${
+				nextZoomRegions.length === 1 ? "" : "s"
+			}.`,
+		});
+	}, [buildBeautifyContext]);
 
 	useEffect(() => {
 		const decision = resolvePostRecordingAutoZoomDecision({
@@ -3120,7 +3207,8 @@ export default function VideoEditor() {
 					frameBorderEnabled ||
 					hasFrameShadow ||
 					backgroundBlur > 0 ||
-					hideBackground;
+					hideBackground ||
+					deviceMockup !== "none";
 				const exportV2Selection = selectExportV2Engine({
 					format: settings.format,
 					hasVisualComposition,
@@ -3153,7 +3241,7 @@ export default function VideoEditor() {
 					hideBackground,
 					zoomMotionBlur,
 					connectZooms,
-					deviceMockup: "none" as const,
+					deviceMockup,
 					frameBorderEnabled,
 					frameBorderWidth,
 					frameBorderColor,
@@ -3375,7 +3463,7 @@ export default function VideoEditor() {
 							hideBackground,
 							zoomMotionBlur,
 							connectZooms,
-							deviceMockup: "none",
+							deviceMockup,
 							frameBorderEnabled,
 							frameBorderWidth,
 							frameBorderColor,
@@ -3525,7 +3613,7 @@ export default function VideoEditor() {
 							hideBackground,
 							zoomMotionBlur,
 							connectZooms,
-							deviceMockup: "none",
+							deviceMockup,
 							frameBorderEnabled,
 							frameBorderWidth,
 							frameBorderColor,
@@ -3692,6 +3780,7 @@ export default function VideoEditor() {
 			frameBorderWidth,
 			frameBorderColor,
 			frameBorderOpacity,
+			deviceMockup,
 			borderRadius,
 			padding,
 			effectiveCropRegion,
@@ -4163,6 +4252,7 @@ export default function VideoEditor() {
 											frameBorderWidth={frameBorderWidth}
 											frameBorderColor={frameBorderColor}
 											frameBorderOpacity={frameBorderOpacity}
+											deviceMockup={deviceMockup}
 											borderRadius={borderRadius}
 											padding={padding}
 											cropRegion={effectiveCropRegion}
@@ -4327,6 +4417,8 @@ export default function VideoEditor() {
 									onKeyboardShortcutDisplayMsChange={setKeyboardShortcutDisplayMs}
 									keyboardShortcutMaxVisible={keyboardShortcutMaxVisible}
 									onKeyboardShortcutMaxVisibleChange={setKeyboardShortcutMaxVisible}
+									deviceMockup={deviceMockup}
+									onDeviceMockupChange={setDeviceMockup}
 									frameBorderEnabled={frameBorderEnabled}
 									onFrameBorderEnabledChange={setFrameBorderEnabled}
 									frameBorderWidth={frameBorderWidth}
@@ -4421,6 +4513,12 @@ export default function VideoEditor() {
 									isTranscribing={isTranscribing}
 									onAutoTranscribe={handleAutoTranscribe}
 									onCancelCaptionGeneration={handleCancelCaptionGeneration}
+									activeScenePresetId={scenePresetId}
+									hasCursorTelemetry={effectiveCursorTelemetry.length >= 2}
+									hasExistingZooms={zoomRegions.length > 0}
+									onApplyScenePreset={handleApplyScenePreset}
+									onAutoBeautify={() => handleAutoBeautify()}
+									onRegenerateSmartZooms={handleRegenerateSmartZooms}
 								/>
 							</div>
 						</Panel>

@@ -74,6 +74,20 @@ describe("cursor project persistence", () => {
 		expect(project.editor.clickHighlightOpacity).toBe(0.66);
 	});
 
+	it("round-trips scene preset metadata through project serialization", () => {
+		const editor = normalizeProjectEditor({
+			scenePresetId: "social-vertical",
+		});
+
+		const project = createProjectData("/tmp/video.mp4", editor);
+
+		expect(project.editor.scenePresetId).toBe("social-vertical");
+		expect(
+			normalizeProjectEditor({ scenePresetId: "not-real" as never }).scenePresetId,
+		).toBeUndefined();
+		expect(normalizeProjectEditor({}).scenePresetId).toBeUndefined();
+	});
+
 	it("clamps invalid click effect numbers during project normalization", () => {
 		expect(
 			normalizeProjectEditor({

@@ -51,10 +51,7 @@ import {
 	type CursorSimulationPath,
 } from "@/components/video-editor/videoPlayback/cursorSimulation";
 import { resolveCursorV2Config } from "@/components/video-editor/videoPlayback/cursorV2";
-// import {
-// 	computeMockupScreenRect,
-// 	drawDeviceMockup,
-// } from "@/components/video-editor/videoPlayback/deviceMockups";
+import { getMockupDefinition } from "@/components/video-editor/videoPlayback/deviceMockups";
 import { calculateVideoLayoutGeometry } from "@/components/video-editor/videoPlayback/layoutUtils";
 import {
 	applyZoomTransform,
@@ -1090,6 +1087,43 @@ export class FrameRenderer {
 		ctx.restore();
 	}
 
+	private drawDeviceMockupFrame(ctx: CanvasRenderingContext2D): void {
+		if (!this.layoutCache || !this.config.deviceMockup || this.config.deviceMockup === "none") {
+			return;
+		}
+
+		const definition = getMockupDefinition(this.config.deviceMockup);
+		if (!definition) {
+			return;
+		}
+
+		const projectedFrame = projectFrameRect({
+			rect: this.layoutCache.maskRect,
+			transform: {
+				scale: this.animationState.appliedScale,
+				x: this.animationState.x,
+				y: this.animationState.y,
+			},
+			borderRadius: this.borderRadiusPx,
+			borderWidth: 0,
+		}).rect;
+		const inset = definition.inset;
+		const deviceW = projectedFrame.width / Math.max(0.01, 1 - inset.left - inset.right);
+		const deviceH = projectedFrame.height / Math.max(0.01, 1 - inset.top - inset.bottom);
+		const deviceX = projectedFrame.x - deviceW * inset.left;
+		const deviceY = projectedFrame.y - deviceH * inset.top;
+
+		ctx.save();
+		ctx.translate(deviceX, deviceY);
+		definition.drawFrame(ctx, deviceW, deviceH, {
+			x: projectedFrame.x - deviceX,
+			y: projectedFrame.y - deviceY,
+			w: projectedFrame.width,
+			h: projectedFrame.height,
+		});
+		ctx.restore();
+	}
+
 	private updateAnimationState(timeMs: number) {
 		if (!this.cameraContainer || !this.layoutCache) {
 			return {
@@ -1175,7 +1209,7 @@ export class FrameRenderer {
 			ctx.drawImage(videoCanvas, 0, 0, w, h);
 		}
 
-		// Device mockups are temporarily disabled in exported video.
+		this.drawDeviceMockupFrame(ctx);
 	}
 
 	getCanvas(): HTMLCanvasElement {

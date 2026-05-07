@@ -1,6 +1,7 @@
 import {
 	Camera,
 	Captions,
+	Clapperboard,
 	Crop,
 	Gauge,
 	Keyboard,
@@ -39,6 +40,7 @@ import { BackgroundSettingsTab } from "./settings/BackgroundSettingsTab";
 import { CursorSettingsTab } from "./settings/CursorSettingsTab";
 import { EffectsSettingsTab } from "./settings/EffectsSettingsTab";
 import { KeyboardSettingsTab } from "./settings/KeyboardSettingsTab";
+import { StudioSettingsTab } from "./settings/StudioSettingsTab";
 import { SpeedSettingsTab, ZoomSettingsTab } from "./settings/TimelineRegionSettingsTabs";
 import { WebcamSettingsTab } from "./settings/WebcamSettingsTab";
 import {
@@ -78,6 +80,7 @@ import type {
 	KeyboardShortcutTheme,
 	PlaybackSpeed,
 	PreviewQuality,
+	ScenePresetId,
 	WebcamEffects,
 	WebcamHealthMetrics,
 	WebcamPreviewMode,
@@ -300,6 +303,12 @@ interface SettingsPanelProps {
 	isTranscribing?: boolean;
 	onAutoTranscribe?: () => void;
 	onCancelCaptionGeneration?: () => void;
+	activeScenePresetId?: ScenePresetId;
+	hasCursorTelemetry?: boolean;
+	hasExistingZooms?: boolean;
+	onApplyScenePreset?: (presetId: ScenePresetId) => void;
+	onAutoBeautify?: () => void;
+	onRegenerateSmartZooms?: () => void;
 }
 
 // function MockupPreviewCanvas({ mockup }: { mockup: import("./types").DeviceMockup }) {
@@ -492,6 +501,12 @@ export default function SettingsPanel({
 	isTranscribing = false,
 	onAutoTranscribe,
 	onCancelCaptionGeneration,
+	activeScenePresetId,
+	hasCursorTelemetry = false,
+	hasExistingZooms = false,
+	onApplyScenePreset,
+	onAutoBeautify,
+	onRegenerateSmartZooms,
 }: SettingsPanelProps) {
 	const tSettings = useScopedT("settings");
 	const { t } = useI18n();
@@ -566,6 +581,7 @@ export default function SettingsPanel({
 	const [showAdvancedWebcam, setShowAdvancedWebcam] = useState(false);
 	const [activeTab, setActiveTab] = useState<
 		| "effects"
+		| "studio"
 		| "cursor"
 		| "keyboard"
 		| "background"
@@ -872,12 +888,14 @@ export default function SettingsPanel({
 		...(webcamPath
 			? [{ id: "webcam" as const, icon: Camera, label: tSettings("webcam.title") }]
 			: []),
+		{ id: "studio" as const, icon: Clapperboard, label: "Studio" },
 	];
 
 	const tabGroups = [
 		{ ids: ["effects", "cursor", "keyboard"], label: "Capture" },
 		{ ids: ["background", "zoom", "speed"], label: "Canvas" },
 		{ ids: ["audio", "annotation", "captions", "webcam"], label: "Overlay" },
+		{ ids: ["studio"], label: "Studio" },
 	];
 
 	return (
@@ -906,6 +924,17 @@ export default function SettingsPanel({
 
 			{/* Content area */}
 			<div className="flex-1 min-w-0 overflow-y-auto custom-scrollbar p-3 pb-0">
+				{activeTab === "studio" && (
+					<StudioSettingsTab
+						activePresetId={activeScenePresetId}
+						hasCursorTelemetry={hasCursorTelemetry}
+						hasExistingZooms={hasExistingZooms}
+						onApplyPreset={(presetId) => onApplyScenePreset?.(presetId)}
+						onAutoBeautify={() => onAutoBeautify?.()}
+						onRegenerateZooms={() => onRegenerateSmartZooms?.()}
+					/>
+				)}
+
 				{/* Effects tab */}
 				{activeTab === "effects" && (
 					<EffectsSettingsTab

@@ -101,6 +101,8 @@ import {
 	type DeviceMockup,
 	type KeyboardShortcutPosition,
 	type KeyboardShortcutTheme,
+	SCENE_PRESET_IDS,
+	type ScenePresetId,
 	type SpeedRegion,
 	type TrimRegion,
 	WEBCAM_RENDER_PIPELINE_VERSION,
@@ -207,6 +209,7 @@ export interface ProjectEditorState {
 	exportDestination: ExportDestination;
 	videoExportSettings: VideoExportSettings;
 	gifExportSettings: GifExportConfig;
+	scenePresetId?: ScenePresetId;
 }
 
 export interface EditorProjectData {
@@ -1593,6 +1596,11 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		captionGenerationOptions: normalizeCaptionGenerationOptions(
 			(editor as Partial<ProjectEditorState>).captionGenerationOptions,
 		),
+		scenePresetId:
+			typeof editor.scenePresetId === "string" &&
+			SCENE_PRESET_IDS.includes(editor.scenePresetId as ScenePresetId)
+				? (editor.scenePresetId as ScenePresetId)
+				: undefined,
 	};
 }
 

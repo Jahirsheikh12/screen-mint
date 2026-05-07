@@ -301,6 +301,23 @@ export const DEFAULT_KEYBOARD_SHORTCUT_OPACITY = 1;
 export const DEFAULT_KEYBOARD_SHORTCUT_DISPLAY_MS = 1350;
 export const DEFAULT_KEYBOARD_SHORTCUT_MAX_VISIBLE = 1;
 
+export type ScenePresetId =
+	| "saas-launch"
+	| "product-demo"
+	| "tutorial"
+	| "social-vertical"
+	| "bug-report-clean"
+	| "custom";
+
+export const SCENE_PRESET_IDS: ScenePresetId[] = [
+	"saas-launch",
+	"product-demo",
+	"tutorial",
+	"social-vertical",
+	"bug-report-clean",
+	"custom",
+];
+
 export const KEYBOARD_SHORTCUT_POSITION_OPTIONS: Array<{
 	value: KeyboardShortcutPosition;
 	label: string;

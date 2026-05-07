@@ -18,6 +18,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { getAspectRatioValue } from "@/utils/aspectRatioUtils";
 import { createWebcamZoomMotionState } from "./cameraLayouts";
 import { applyOpacityToHex, buildFrameShadowFilter, hasVisibleFrameShadow } from "./frameEffects";
 import {
@@ -72,7 +73,7 @@ import {
 } from "./videoPlayback/cursorRenderer";
 import type { CursorMotionSnapshot, CursorSimulationPath } from "./videoPlayback/cursorSimulation";
 import { resolveCursorV2Config } from "./videoPlayback/cursorV2";
-// import { computeMockupScreenRect, drawDeviceMockup } from "./videoPlayback/deviceMockups";
+import { getMockupDefinition } from "./videoPlayback/deviceMockups";
 import { clampFocusToStage as clampFocusToStageUtil } from "./videoPlayback/focusUtils";
 import { HiddenPreviewVideo } from "./videoPlayback/HiddenPreviewVideo";
 import { layoutVideoContent as layoutVideoContentUtil } from "./videoPlayback/layoutUtils";
@@ -119,6 +120,35 @@ type PreviewClickPulse = {
 
 const CLICK_EFFECT_VISIBLE_MS = 600;
 const PREVIEW_CLICK_PULSE_DURATION_MS = 900;
+
+function fitAspectRect(
+	width: number,
+	height: number,
+	aspectRatio: number,
+): { x: number; y: number; width: number; height: number } {
+	if (!width || !height || !Number.isFinite(aspectRatio) || aspectRatio <= 0) {
+		return { x: 0, y: 0, width, height };
+	}
+
+	const containerRatio = width / height;
+	if (containerRatio > aspectRatio) {
+		const rectWidth = height * aspectRatio;
+		return {
+			x: (width - rectWidth) / 2,
+			y: 0,
+			width: rectWidth,
+			height,
+		};
+	}
+
+	const rectHeight = width / aspectRatio;
+	return {
+		x: 0,
+		y: (height - rectHeight) / 2,
+		width,
+		height: rectHeight,
+	};
+}
 
 function createPreviewClickMotionSnapshot(timeMs: number): CursorMotionSnapshot {
 	return {
@@ -177,6 +207,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			frameBorderWidth = 0,
 			frameBorderColor = "#000000",
 			frameBorderOpacity = 0.5,
+			deviceMockup = "none",
 			borderRadius = 0,
 			padding = 0,
 			cropRegion,
@@ -250,6 +281,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const videoContainerRef = useRef<Container | null>(null);
 		const cursorContainerRef = useRef<Container | null>(null);
 		const cameraContainerRef = useRef<Container | null>(null);
+		const deviceMockupCanvasRef = useRef<HTMLCanvasElement | null>(null);
 		const timeUpdateAnimationRef = useRef<number | null>(null);
 		const [pixiReady, setPixiReady] = useState(false);
 		const [videoReady, setVideoReady] = useState(false);
@@ -461,6 +493,50 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			[borderRadius, frameBorderColor, frameBorderEnabled, frameBorderOpacity, frameBorderWidth],
 		);
 
+		const updateDeviceMockupOverlay = useCallback(() => {
+			const canvas = deviceMockupCanvasRef.current;
+			const container = containerRef.current;
+			if (!canvas || !container || deviceMockup === "none" || !previewGeometry) {
+				if (canvas) {
+					canvas.style.display = "none";
+				}
+				return;
+			}
+
+			const definition = getMockupDefinition(deviceMockup);
+			if (!definition) {
+				canvas.style.display = "none";
+				return;
+			}
+
+			const width = container.clientWidth;
+			const height = container.clientHeight;
+			const dpr = window.devicePixelRatio || 1;
+			canvas.width = Math.max(1, Math.round(width * dpr));
+			canvas.height = Math.max(1, Math.round(height * dpr));
+			canvas.style.display = "block";
+			const ctx = canvas.getContext("2d");
+			if (!ctx) return;
+			ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+			ctx.clearRect(0, 0, width, height);
+
+			const frame = previewGeometry.maskRect;
+			const inset = definition.inset;
+			const deviceW = frame.width / Math.max(0.01, 1 - inset.left - inset.right);
+			const deviceH = frame.height / Math.max(0.01, 1 - inset.top - inset.bottom);
+			const deviceX = frame.x - deviceW * inset.left;
+			const deviceY = frame.y - deviceH * inset.top;
+			ctx.save();
+			ctx.translate(deviceX, deviceY);
+			definition.drawFrame(ctx, deviceW, deviceH, {
+				x: frame.x - deviceX,
+				y: frame.y - deviceY,
+				w: frame.width,
+				h: frame.height,
+			});
+			ctx.restore();
+		}, [deviceMockup, previewGeometry]);
+
 		const layoutVideoContent = useCallback(() => {
 			const container = containerRef.current;
 			const app = appRef.current;
@@ -536,6 +612,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					return nextGeometry;
 				});
 				updateFrameBorderOverlay({ scale: 1, x: 0, y: 0 });
+				updateDeviceMockupOverlay();
 
 				// Reset camera container to identity
 				cameraContainer.scale.set(1);
@@ -550,6 +627,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			}
 		}, [
 			updateFrameBorderOverlay,
+			updateDeviceMockupOverlay,
 			updateOverlayForRegion,
 			cropRegion,
 			borderRadius,
@@ -564,6 +642,10 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		useEffect(() => {
 			updateFrameBorderOverlay();
 		}, [updateFrameBorderOverlay]);
+
+		useEffect(() => {
+			updateDeviceMockupOverlay();
+		}, [updateDeviceMockupOverlay]);
 
 		const selectedZoom = useMemo(() => {
 			if (!selectedZoomId) return null;
@@ -1983,8 +2065,6 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			};
 		}, []);
 
-		// Device mockups are temporarily disabled in the video editor preview.
-
 		const isImageUrl = Boolean(
 			resolvedWallpaper &&
 				(resolvedWallpaper.startsWith("file://") ||
@@ -1995,6 +2075,36 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const backgroundStyle = isImageUrl
 			? { backgroundImage: `url(${resolvedWallpaper || ""})` }
 			: { background: resolvedWallpaper || "" };
+		const ratioVideoWidth =
+			lockedVideoDimensionsRef.current?.width ?? videoRef.current?.videoWidth ?? 16;
+		const ratioVideoHeight =
+			lockedVideoDimensionsRef.current?.height ?? videoRef.current?.videoHeight ?? 9;
+		const cropX = Math.min(Math.max(cropRegion?.x ?? 0, 0), 1);
+		const cropY = Math.min(Math.max(cropRegion?.y ?? 0, 0), 1);
+		const cropWidth = Math.min(Math.max(cropRegion?.width ?? 1, 0.0001), 1 - cropX);
+		const cropHeight = Math.min(Math.max(cropRegion?.height ?? 1, 0.0001), 1 - cropY);
+		const nativeAspectRatio = Math.max(
+			0.0001,
+			(ratioVideoWidth * cropWidth) / Math.max(0.0001, ratioVideoHeight * cropHeight),
+		);
+		const outputAspectRatio = getAspectRatioValue(aspectRatio, nativeAspectRatio);
+		const backgroundStageWidth =
+			previewGeometry?.stageRect.width ?? containerRef.current?.clientWidth ?? 0;
+		const backgroundStageHeight =
+			previewGeometry?.stageRect.height ?? containerRef.current?.clientHeight ?? 0;
+		const backgroundCanvasRect = fitAspectRect(
+			backgroundStageWidth,
+			backgroundStageHeight,
+			outputAspectRatio,
+		);
+		const backgroundCanvasStyle: React.CSSProperties = {
+			left: `${backgroundCanvasRect.x}px`,
+			top: `${backgroundCanvasRect.y}px`,
+			width: `${backgroundCanvasRect.width}px`,
+			height: `${backgroundCanvasRect.height}px`,
+			borderRadius: `${Math.max(0, borderRadius)}px`,
+		};
+		const backgroundBlurInset = backgroundBlur > 0 ? Math.ceil(backgroundBlur * 2) : 0;
 		const fallbackPreviewFrameSrc = resolvePreviewFrameOverlaySource({
 			activePreviewHoldSrc,
 			cachedPreviewFrameSrc,
@@ -2009,13 +2119,16 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			<div className="relative overflow-hidden w-full h-full">
 				{/* Background layer */}
 				{!hideBackground && (
-					<div
-						className="absolute inset-0 bg-cover bg-center"
-						style={{
-							...backgroundStyle,
-							filter: backgroundBlur > 0 ? `blur(${backgroundBlur}px)` : "none",
-						}}
-					/>
+					<div className="absolute overflow-hidden" style={backgroundCanvasStyle}>
+						<div
+							className="absolute bg-cover bg-center"
+							style={{
+								...backgroundStyle,
+								inset: `-${backgroundBlurInset}px`,
+								filter: backgroundBlur > 0 ? `blur(${backgroundBlur}px)` : "none",
+							}}
+						/>
+					</div>
 				)}
 				<div
 					ref={containerRef}
@@ -2054,7 +2167,12 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 						}}
 					/>
 				)}
-				{/* Device mockup overlay is temporarily disabled in the video editor preview. */}
+				<canvas
+					ref={deviceMockupCanvasRef}
+					aria-hidden="true"
+					className="absolute inset-0 pointer-events-none"
+					style={{ display: "none", zIndex: 3, width: "100%", height: "100%" }}
+				/>
 				{/* Only render overlay after PIXI and video are fully initialized */}
 				{pixiReady && videoReady && (
 					<PlaybackOverlays

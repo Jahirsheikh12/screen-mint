@@ -127,7 +127,7 @@ export function PlaybackOverlays({
 		<div
 			ref={overlayRef}
 			className="absolute inset-0 select-none"
-			style={{ pointerEvents: "none" }}
+			style={{ pointerEvents: "none", zIndex: 4 }}
 			onPointerDown={onPointerDown}
 			onPointerMove={onPointerMove}
 			onPointerUp={onPointerUp}

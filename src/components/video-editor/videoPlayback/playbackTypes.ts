@@ -16,6 +16,7 @@ import type {
 	CursorStyle,
 	CursorTelemetryPoint,
 	CursorTypeMode,
+	DeviceMockup,
 	KeyboardShortcutCallout,
 	KeyboardShortcutPosition,
 	KeyboardShortcutTheme,
@@ -57,6 +58,7 @@ export interface VideoPlaybackProps {
 	frameBorderWidth?: number;
 	frameBorderColor?: string;
 	frameBorderOpacity?: number;
+	deviceMockup?: DeviceMockup;
 	borderRadius?: number;
 	padding?: number;
 	cropRegion?: CropRegion;
