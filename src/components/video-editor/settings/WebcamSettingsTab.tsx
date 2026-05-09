@@ -797,6 +797,7 @@ export function WebcamSettingsTab({
 						)}
 					</div>
 
+					{/*
 					<div className="rounded-2xl border border-white/[0.06] bg-white/[0.04] p-3">
 						<div className="mb-2 flex items-center justify-between">
 							<div>
@@ -913,6 +914,7 @@ export function WebcamSettingsTab({
 							</div>
 						) : null}
 					</div>
+					*/}
 				</SettingsSection>
 
 				{showAdvancedWebcam && (

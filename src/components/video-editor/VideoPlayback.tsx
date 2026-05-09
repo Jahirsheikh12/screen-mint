@@ -111,7 +111,6 @@ import {
 	applyZoomTransform,
 	createMotionBlurState,
 	type MotionBlurState,
-	projectFrameRect,
 } from "./videoPlayback/zoomTransform";
 
 type PreviewClickPulse = {
@@ -120,6 +119,21 @@ type PreviewClickPulse = {
 
 const CLICK_EFFECT_VISIBLE_MS = 600;
 const PREVIEW_CLICK_PULSE_DURATION_MS = 900;
+
+function drawPreviewClipMask(
+	graphics: Graphics,
+	rect: { x: number; y: number; width: number; height: number },
+	borderRadius: number,
+) {
+	graphics.clear();
+
+	if (rect.width <= 0 || rect.height <= 0) {
+		return;
+	}
+
+	graphics.roundRect(rect.x, rect.y, rect.width, rect.height, borderRadius);
+	graphics.fill({ color: 0xffffff });
+}
 
 function fitAspectRect(
 	width: number,
@@ -312,6 +326,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const baseMaskRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
 		const cropBoundsRef = useRef({ startX: 0, endX: 0, startY: 0, endY: 0 });
 		const maskGraphicsRef = useRef<Graphics | null>(null);
+		const previewClipMaskRef = useRef<Graphics | null>(null);
 		const isPlayingRef = useRef(isPlaying);
 		const pixiReadyRef = useRef(false);
 		const videoReadyRef = useRef(false);
@@ -450,48 +465,34 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			[],
 		);
 
-		const updateFrameBorderOverlay = useCallback(
-			(transformOverride?: { scale: number; x: number; y: number }) => {
-				const frameBorderEl = frameBorderRef.current;
-				const maskRect = baseMaskRef.current;
+		const updateFrameBorderOverlay = useCallback(() => {
+			const frameBorderEl = frameBorderRef.current;
+			const maskRect = baseMaskRef.current;
 
-				if (!frameBorderEl) {
-					return;
-				}
+			if (!frameBorderEl) {
+				return;
+			}
 
-				const shouldShowBorder =
-					frameBorderEnabled &&
-					frameBorderWidth > 0 &&
-					frameBorderOpacity > 0 &&
-					maskRect.width > 0 &&
-					maskRect.height > 0;
+			const shouldShowBorder =
+				frameBorderEnabled &&
+				frameBorderWidth > 0 &&
+				frameBorderOpacity > 0 &&
+				maskRect.width > 0 &&
+				maskRect.height > 0;
 
-				if (!shouldShowBorder) {
-					frameBorderEl.style.display = "none";
-					return;
-				}
+			if (!shouldShowBorder) {
+				frameBorderEl.style.display = "none";
+				return;
+			}
 
-				const projectedFrame = projectFrameRect({
-					rect: maskRect,
-					transform: transformOverride ?? {
-						scale: animationStateRef.current.appliedScale,
-						x: animationStateRef.current.x,
-						y: animationStateRef.current.y,
-					},
-					borderRadius,
-					borderWidth: frameBorderWidth,
-				});
-
-				frameBorderEl.style.display = "block";
-				frameBorderEl.style.left = `${projectedFrame.rect.x}px`;
-				frameBorderEl.style.top = `${projectedFrame.rect.y}px`;
-				frameBorderEl.style.width = `${projectedFrame.rect.width}px`;
-				frameBorderEl.style.height = `${projectedFrame.rect.height}px`;
-				frameBorderEl.style.borderRadius = `${projectedFrame.borderRadius}px`;
-				frameBorderEl.style.boxShadow = `0 0 0 ${projectedFrame.borderWidth}px ${applyOpacityToHex(frameBorderColor, frameBorderOpacity)}`;
-			},
-			[borderRadius, frameBorderColor, frameBorderEnabled, frameBorderOpacity, frameBorderWidth],
-		);
+			frameBorderEl.style.display = "block";
+			frameBorderEl.style.left = `${maskRect.x}px`;
+			frameBorderEl.style.top = `${maskRect.y}px`;
+			frameBorderEl.style.width = `${maskRect.width}px`;
+			frameBorderEl.style.height = `${maskRect.height}px`;
+			frameBorderEl.style.borderRadius = `${borderRadius}px`;
+			frameBorderEl.style.boxShadow = `0 0 0 ${frameBorderWidth}px ${applyOpacityToHex(frameBorderColor, frameBorderOpacity)}`;
+		}, [borderRadius, frameBorderColor, frameBorderEnabled, frameBorderOpacity, frameBorderWidth]);
 
 		const updateDeviceMockupOverlay = useCallback(() => {
 			const canvas = deviceMockupCanvasRef.current;
@@ -544,6 +545,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			const maskGraphics = maskGraphicsRef.current;
 			const videoElement = videoRef.current;
 			const cameraContainer = cameraContainerRef.current;
+			const previewClipMask = previewClipMaskRef.current;
 
 			if (
 				!container ||
@@ -551,7 +553,8 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				!videoSprite ||
 				!maskGraphics ||
 				!videoElement ||
-				!cameraContainer
+				!cameraContainer ||
+				!previewClipMask
 			) {
 				return;
 			}
@@ -588,6 +591,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				baseOffsetRef.current = result.baseOffset;
 				baseMaskRef.current = result.maskRect;
 				cropBoundsRef.current = result.cropBounds;
+				drawPreviewClipMask(previewClipMask, result.maskRect, borderRadius);
 				setPreviewGeometry((current) => {
 					const nextGeometry: PreviewGeometry = {
 						stageRect: {
@@ -611,7 +615,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 
 					return nextGeometry;
 				});
-				updateFrameBorderOverlay({ scale: 1, x: 0, y: 0 });
+				updateFrameBorderOverlay();
 				updateDeviceMockupOverlay();
 
 				// Reset camera container to identity
@@ -1469,6 +1473,11 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				cameraContainerRef.current = cameraContainer;
 				app.stage.addChild(cameraContainer);
 
+				const previewClipMask = new Graphics();
+				previewClipMaskRef.current = previewClipMask;
+				app.stage.addChild(previewClipMask);
+				cameraContainer.mask = previewClipMask;
+
 				// Video container - holds the masked video sprite
 				const videoContainer = new Container();
 				videoContainerRef.current = videoContainer;
@@ -1554,6 +1563,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				cursorContainerRef.current = null;
 				videoSpriteRef.current = null;
 				maskGraphicsRef.current = null;
+				previewClipMaskRef.current = null;
 			};
 		}, [
 			handlePreviewQualitySwitchFailure,
@@ -1821,7 +1831,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				state.x = appliedTransform.x;
 				state.y = appliedTransform.y;
 				state.appliedScale = appliedTransform.scale;
-				updateFrameBorderOverlay(appliedTransform);
+				updateFrameBorderOverlay();
 			};
 
 			const ticker = () => {
