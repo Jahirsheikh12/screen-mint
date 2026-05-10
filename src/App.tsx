@@ -70,6 +70,10 @@ function AppLoadingScreen({ label }: { label: string }) {
 	);
 }
 
+function EditorLoadingSurface() {
+	return <div className="h-screen w-screen bg-[#0c0c0f]" aria-hidden="true" />;
+}
+
 // Read windowType synchronously so the very first render picks the correct component
 // — avoids a frame of AppLoadingScreen / white flash for overlay windows.
 const INITIAL_WINDOW_TYPE = new URLSearchParams(window.location.search).get("windowType") || "";
@@ -114,11 +118,7 @@ export default function App() {
 		case "editor":
 			content = (
 				<ShortcutsProvider>
-					<Suspense
-						fallback={
-							<AppLoadingScreen label={t("app.subtitle", "Screen recording and editing")} />
-						}
-					>
+					<Suspense fallback={<EditorLoadingSurface />}>
 						<VideoEditor />
 						<ShortcutsConfigDialog />
 					</Suspense>

@@ -22,6 +22,11 @@ document.documentElement.dataset.platform = /mac/i.test(navigator.platform) ? "m
 		document.body.style.background = "transparent";
 		const root = document.getElementById("root");
 		if (root) root.style.background = "transparent";
+	} else if (wt === "editor") {
+		document.documentElement.style.background = "#0c0c0f";
+		document.body.style.background = "#0c0c0f";
+		const root = document.getElementById("root");
+		if (root) root.style.background = "#0c0c0f";
 	}
 	if (wt === "hud-overlay") {
 		document.documentElement.style.overflow = "hidden";

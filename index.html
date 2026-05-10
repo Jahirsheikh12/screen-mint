@@ -9,14 +9,19 @@
   <body>
     <div id="root"></div>
     <script>
-      // Run before any module scripts — set transparent bg for overlay windows
-      // to prevent the white flash from Tailwind's bg-background on body.
+      // Run before any module scripts so the first paint matches the target
+      // window instead of the browser's default white page background.
       (function() {
         var wt = new URLSearchParams(window.location.search).get('windowType') || '';
+        var root = document.getElementById('root');
         if (['hud-overlay','source-selector','countdown','area-overlay','speaker-notes'].indexOf(wt) !== -1) {
           document.documentElement.setAttribute('data-overlay', '');
           document.documentElement.style.background = 'transparent';
           document.body.style.background = 'transparent';
+        } else if (wt === 'editor') {
+          document.documentElement.style.background = '#0c0c0f';
+          document.body.style.background = '#0c0c0f';
+          if (root) root.style.background = '#0c0c0f';
         }
       })();
     </script>
