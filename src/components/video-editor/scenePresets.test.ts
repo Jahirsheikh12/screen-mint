@@ -71,6 +71,14 @@ describe("scene presets", () => {
 		}
 	});
 
+	it("does not reference removed cursor packs", () => {
+		const editor = normalizeProjectEditor({});
+		for (const preset of SCENE_PRESETS) {
+			const updates = applyScenePreset(editor, context(), preset.id);
+			expect(updates.cursorPack === undefined || updates.cursorPack === "classic").toBe(true);
+		}
+	});
+
 	it("chooses useful Auto Beautify presets from context", () => {
 		expect(chooseAutoBeautifyPreset(context({ aspectRatio: "9:16" }))).toBe("social-vertical");
 		expect(

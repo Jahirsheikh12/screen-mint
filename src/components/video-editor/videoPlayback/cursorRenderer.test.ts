@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { cursorAssetPacks, SUPPORTED_CURSOR_KEYS } from "./cursorAssetPacks";
 import {
 	getClickBounceScale,
 	getClickRingStyle,
@@ -91,5 +92,13 @@ describe("cursor click effects", () => {
 		expect(getClickBounceScale(0.5, 0)).toBe(1);
 		expect(getClickBounceScale(0.5, 1)).toBeCloseTo(0.92, 5);
 		expect(getClickBounceScale(0.5, 5)).toBe(0.72);
+	});
+});
+
+describe("custom cursor assets", () => {
+	it("provides SVG assets for every supported cursor state", () => {
+		for (const cursorKey of SUPPORTED_CURSOR_KEYS) {
+			expect(cursorAssetPacks.custom[cursorKey]?.url).toBeTruthy();
+		}
 	});
 });

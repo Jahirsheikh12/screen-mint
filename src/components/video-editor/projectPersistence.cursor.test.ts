@@ -1,10 +1,37 @@
 import { describe, expect, it } from "vitest";
 import { createProjectData, normalizeProjectEditor } from "./projectPersistence";
+import { CURSOR_PACK_OPTIONS } from "./types";
 
 describe("cursor project persistence", () => {
 	it("defaults missing cursor packs to classic", () => {
 		const result = normalizeProjectEditor({});
 		expect(result.cursorPack).toBe("classic");
+	});
+
+	it("only exposes classic and custom cursor packs", () => {
+		expect(CURSOR_PACK_OPTIONS).toEqual([
+			{ value: "classic", label: "Classic" },
+			{ value: "custom", label: "Custom" },
+		]);
+	});
+
+	it("migrates removed cursor packs to classic", () => {
+		const removedPacks = [
+			"neon-glow",
+			"minimal-dot",
+			"glass-frost",
+			"retro-pixel",
+			"aurora-gradient",
+			"outline-bold",
+			"sunset-warm",
+			"midnight-elegance",
+		];
+
+		for (const cursorPack of removedPacks) {
+			expect(normalizeProjectEditor({ cursorPack: cursorPack as never }).cursorPack).toBe(
+				"classic",
+			);
+		}
 	});
 
 	it("defaults click effects to disabled", () => {

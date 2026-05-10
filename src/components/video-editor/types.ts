@@ -144,17 +144,7 @@ export interface CameraSpringSettings {
 	mass: number;
 }
 
-export type CursorPack =
-	| "classic"
-	| "custom"
-	| "neon-glow"
-	| "minimal-dot"
-	| "glass-frost"
-	| "retro-pixel"
-	| "aurora-gradient"
-	| "outline-bold"
-	| "sunset-warm"
-	| "midnight-elegance";
+export type CursorPack = "classic" | "custom";
 
 export interface CursorVisualSettings {
 	size: number;
@@ -190,14 +180,6 @@ export const CURSOR_STYLE_OPTIONS: { value: CursorStyle; label: string }[] = [
 export const CURSOR_PACK_OPTIONS: { value: CursorPack; label: string }[] = [
 	{ value: "classic", label: "Classic" },
 	{ value: "custom", label: "Custom" },
-	{ value: "neon-glow", label: "Neon Glow" },
-	{ value: "minimal-dot", label: "Minimal Dot" },
-	{ value: "glass-frost", label: "Glass Frost" },
-	{ value: "retro-pixel", label: "Retro Pixel" },
-	{ value: "aurora-gradient", label: "Aurora" },
-	{ value: "outline-bold", label: "Outline Bold" },
-	{ value: "sunset-warm", label: "Sunset Warm" },
-	{ value: "midnight-elegance", label: "Midnight" },
 ];
 export const CURSOR_TYPE_VALUES: CursorType[] = [
 	"arrow",

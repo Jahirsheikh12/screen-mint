@@ -6,25 +6,22 @@ import pointerClassicUrl from "../../../assets/cursors/Cursor=Hand-(Pointing).sv
 import resizeNsClassicUrl from "../../../assets/cursors/Cursor=Resize-North-South.svg";
 import resizeEwClassicUrl from "../../../assets/cursors/Cursor=Resize-West-East.svg";
 import textClassicUrl from "../../../assets/cursors/Cursor=Text-Cursor.svg";
+import arrowCustomUrl from "../../../assets/cursors/custom/arrow.svg";
 import closedHandCustomUrl from "../../../assets/cursors/custom/closed-hand.svg";
 import copyCustomUrl from "../../../assets/cursors/custom/copy.svg";
+import crosshairCustomUrl from "../../../assets/cursors/custom/crosshair.svg";
 import helpCustomUrl from "../../../assets/cursors/custom/help.svg";
 import moveCustomUrl from "../../../assets/cursors/custom/move.svg";
 import notAllowedCustomUrl from "../../../assets/cursors/custom/not-allowed.svg";
 import openHandCustomUrl from "../../../assets/cursors/custom/open-hand.svg";
 import pointerCustomUrl from "../../../assets/cursors/custom/pointer.svg";
+import resizeEwCustomUrl from "../../../assets/cursors/custom/resize-ew.svg";
 import resizeNeswCustomUrl from "../../../assets/cursors/custom/resize-nesw.svg";
+import resizeNsCustomUrl from "../../../assets/cursors/custom/resize-ns.svg";
 import screenshotSelectionCustomUrl from "../../../assets/cursors/custom/screenshot-selection.svg";
+import textCustomUrl from "../../../assets/cursors/custom/text.svg";
 import zoomInCustomUrl from "../../../assets/cursors/custom/zoom-in.svg";
 import zoomOutCustomUrl from "../../../assets/cursors/custom/zoom-out.svg";
-import auroraGradientArrowUrl from "../../../assets/cursors/packs/aurora-gradient.svg";
-import glassFrostArrowUrl from "../../../assets/cursors/packs/glass-frost.svg";
-import midnightEleganceArrowUrl from "../../../assets/cursors/packs/midnight-elegance.svg";
-import minimalDotArrowUrl from "../../../assets/cursors/packs/minimal-dot.svg";
-import neonGlowArrowUrl from "../../../assets/cursors/packs/neon-glow.svg";
-import outlineBoldArrowUrl from "../../../assets/cursors/packs/outline-bold.svg";
-import retroPixelArrowUrl from "../../../assets/cursors/packs/retro-pixel.svg";
-import sunsetWarmArrowUrl from "../../../assets/cursors/packs/sunset-warm.svg";
 import type { CursorPack, CursorType } from "../types";
 
 export type CursorAssetDefinition = {
@@ -109,9 +106,21 @@ export const cursorAssetPacks: Record<
 		},
 	},
 	custom: {
+		arrow: {
+			url: arrowCustomUrl,
+			fallbackAnchor: { x: 0.18, y: 0.1 },
+		},
+		text: {
+			url: textCustomUrl,
+			fallbackAnchor: { x: 0.5, y: 0.5 },
+		},
 		pointer: {
 			url: pointerCustomUrl,
 			fallbackAnchor: { x: 0.36, y: 0.08 },
+		},
+		crosshair: {
+			url: crosshairCustomUrl,
+			fallbackAnchor: { x: 0.5, y: 0.5 },
 		},
 		"open-hand": {
 			url: openHandCustomUrl,
@@ -120,6 +129,14 @@ export const cursorAssetPacks: Record<
 		"closed-hand": {
 			url: closedHandCustomUrl,
 			fallbackAnchor: { x: 0.5, y: 0.28 },
+		},
+		"resize-ew": {
+			url: resizeEwCustomUrl,
+			fallbackAnchor: { x: 0.5, y: 0.5 },
+		},
+		"resize-ns": {
+			url: resizeNsCustomUrl,
+			fallbackAnchor: { x: 0.5, y: 0.5 },
 		},
 		"resize-nesw": {
 			url: resizeNeswCustomUrl,
@@ -154,65 +171,9 @@ export const cursorAssetPacks: Record<
 			fallbackAnchor: { x: 0.5, y: 0.5 },
 		},
 	},
-	"neon-glow": {
-		arrow: {
-			url: neonGlowArrowUrl,
-			fallbackAnchor: { x: 0.18, y: 0.1 },
-		},
-	},
-	"minimal-dot": {
-		arrow: {
-			url: minimalDotArrowUrl,
-			fallbackAnchor: { x: 0.18, y: 0.1 },
-		},
-	},
-	"glass-frost": {
-		arrow: {
-			url: glassFrostArrowUrl,
-			fallbackAnchor: { x: 0.18, y: 0.1 },
-		},
-	},
-	"retro-pixel": {
-		arrow: {
-			url: retroPixelArrowUrl,
-			fallbackAnchor: { x: 0.18, y: 0.1 },
-		},
-	},
-	"aurora-gradient": {
-		arrow: {
-			url: auroraGradientArrowUrl,
-			fallbackAnchor: { x: 0.18, y: 0.1 },
-		},
-	},
-	"outline-bold": {
-		arrow: {
-			url: outlineBoldArrowUrl,
-			fallbackAnchor: { x: 0.18, y: 0.1 },
-		},
-	},
-	"sunset-warm": {
-		arrow: {
-			url: sunsetWarmArrowUrl,
-			fallbackAnchor: { x: 0.18, y: 0.1 },
-		},
-	},
-	"midnight-elegance": {
-		arrow: {
-			url: midnightEleganceArrowUrl,
-			fallbackAnchor: { x: 0.18, y: 0.1 },
-		},
-	},
 };
 
 export const cursorPackPreviewUrls: Record<CursorPack, string> = {
 	classic: arrowClassicUrl,
-	custom: pointerCustomUrl,
-	"neon-glow": neonGlowArrowUrl,
-	"minimal-dot": minimalDotArrowUrl,
-	"glass-frost": glassFrostArrowUrl,
-	"retro-pixel": retroPixelArrowUrl,
-	"aurora-gradient": auroraGradientArrowUrl,
-	"outline-bold": outlineBoldArrowUrl,
-	"sunset-warm": sunsetWarmArrowUrl,
-	"midnight-elegance": midnightEleganceArrowUrl,
+	custom: arrowCustomUrl,
 };
