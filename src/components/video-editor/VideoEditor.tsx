@@ -900,7 +900,7 @@ export default function VideoEditor() {
 		[applyEditorControls],
 	);
 
-	const { historyPastRef, historyFutureRef, handleUndo, handleRedo } = useEditorHistory({
+	const { canUndo, canRedo, handleUndo, handleRedo } = useEditorHistory({
 		buildSnapshot: buildHistorySnapshot,
 		applySnapshot: applyHistorySnapshot,
 	});
@@ -4073,7 +4073,7 @@ export default function VideoEditor() {
 									type="button"
 									onClick={handleUndo}
 									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/8 hover:text-white cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-									disabled={historyPastRef.current.length === 0}
+									disabled={!canUndo}
 								>
 									<Undo2 className="h-4 w-4" />
 								</button>
@@ -4083,7 +4083,7 @@ export default function VideoEditor() {
 									type="button"
 									onClick={handleRedo}
 									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/8 hover:text-white cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-									disabled={historyFutureRef.current.length === 0}
+									disabled={!canRedo}
 								>
 									<Redo2 className="h-4 w-4" />
 								</button>

@@ -1,4 +1,4 @@
-import { AlertTriangle, Gauge, Sparkles, Upload } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronUp, Gauge, Sparkles, Upload } from "lucide-react";
 import { useMemo } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -73,9 +73,9 @@ function getWebcamTreatmentStatusClasses(tone: "neutral" | "warning" | "info"): 
 			};
 		case "info":
 			return {
-				container: "border-blue-400/20 bg-blue-400/10",
-				title: "text-blue-100",
-				body: "text-blue-100/75",
+				container: "border-amber-400/20 bg-amber-400/10",
+				title: "text-amber-100",
+				body: "text-amber-100/75",
 			};
 		case "neutral":
 		default:
@@ -186,19 +186,7 @@ export function WebcamSettingsTab({
 				title={tSettings("webcam.title")}
 				description="Configure your webcam overlay display"
 				badge={selectedCameraLayout ? tSettings("webcam.layoutBadge") : undefined}
-				badgeColor="blue"
-				trailing={
-					<Button
-						type="button"
-						onClick={onToggleAdvancedWebcam}
-						disabled={webcamControlsDisabled}
-						className="h-7 rounded-xl border border-white/[0.08] bg-white/[0.04] px-2.5 text-[10px] font-semibold text-slate-300 hover:bg-white/[0.08] transition-all duration-200"
-					>
-						{showAdvancedWebcam
-							? tSettings("webcam.hideAdvanced")
-							: tSettings("webcam.showAdvanced")}
-					</Button>
-				}
+				badgeColor="amber"
 			/>
 
 			{webcamMissing && (
@@ -237,7 +225,7 @@ export function WebcamSettingsTab({
 			<SettingsSection
 				title="Display"
 				description="Show or hide your webcam overlay"
-				accentColor="blue"
+				accentColor="amber"
 			>
 				<div className="grid grid-cols-2 gap-1.5">
 					<Button
@@ -253,7 +241,7 @@ export function WebcamSettingsTab({
 							type="button"
 							onClick={onResetSelectedCameraLayout}
 							disabled={webcamControlsDisabled}
-							className="h-8 rounded-xl border border-[#3b82f6]/25 bg-[#3b82f6]/10 text-[10px] font-semibold text-[#a9c7ff] hover:bg-[#3b82f6]/18 transition-colors duration-200"
+							className="h-8 rounded-xl border border-[#F59E0B]/25 bg-[#F59E0B]/10 text-[10px] font-semibold text-[#fde68a] hover:bg-[#F59E0B]/18 transition-colors duration-200"
 						>
 							{tSettings("webcam.resetLayout")}
 						</Button>
@@ -286,7 +274,7 @@ export function WebcamSettingsTab({
 										className={cn(
 											"h-9 rounded-lg border shadow-sm transition-all duration-200 justify-center",
 											selectedCameraLayout.mode === mode
-												? "border-[#3b82f6] bg-gradient-to-r from-[#3b82f6] to-[#2563eb] text-white shadow-sm shadow-[#3b82f6]/20"
+												? "border-[#F59E0B] bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-white shadow-sm shadow-[#F59E0B]/20"
 												: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08]",
 										)}
 									>
@@ -401,7 +389,7 @@ export function WebcamSettingsTab({
 				<SettingsSection
 					title="Position & Size"
 					description="Place and resize your webcam on the canvas"
-					accentColor="blue"
+					accentColor="amber"
 				>
 					<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
 						<label className="text-xs font-medium text-slate-300 mb-2 block">
@@ -487,7 +475,7 @@ export function WebcamSettingsTab({
 				<SettingsSection
 					title="Appearance"
 					description="Match the webcam look and treatment to the rest of your edit"
-					accentColor="blue"
+					accentColor="amber"
 				>
 					<div className="rounded-2xl border border-white/[0.06] bg-white/[0.04] p-3">
 						<div className="mb-2 flex items-center justify-between">
@@ -509,7 +497,7 @@ export function WebcamSettingsTab({
 									className={cn(
 										"h-9 rounded-xl border px-2 text-[10px] font-semibold transition-all duration-200",
 										resolvedWebcamEffects.presetId === preset.id
-											? "border-[#3b82f6]/40 bg-gradient-to-r from-[#3b82f6]/20 to-[#2563eb]/10 text-[#dbeafe] shadow-sm shadow-[#3b82f6]/10"
+											? "border-[#F59E0B]/40 bg-gradient-to-r from-[#F59E0B]/20 to-[#d97706]/10 text-[#fde68a] shadow-sm shadow-[#F59E0B]/10"
 											: "border-white/[0.06] bg-black/10 text-slate-300 hover:bg-white/[0.08]",
 									)}
 								>
@@ -576,7 +564,7 @@ export function WebcamSettingsTab({
 										className={cn(
 											"h-8 rounded-lg border text-[10px] transition-all duration-200",
 											webcamPreviewMode === mode
-												? "border-[#3b82f6]/40 bg-[#3b82f6]/12 text-[#dbeafe]"
+												? "border-[#F59E0B]/40 bg-[#F59E0B]/12 text-[#fde68a]"
 												: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08]",
 										)}
 									>
@@ -663,7 +651,7 @@ export function WebcamSettingsTab({
 										type="button"
 										disabled={webcamControlsDisabled}
 										onClick={() => void handlePickWebcamBackgroundImage()}
-										className="h-8 rounded-xl border border-[#3b82f6]/25 bg-[#3b82f6]/10 px-2.5 text-[10px] font-semibold text-[#bfdbfe] hover:bg-[#3b82f6]/18"
+										className="h-8 rounded-xl border border-[#F59E0B]/25 bg-[#F59E0B]/10 px-2.5 text-[10px] font-semibold text-[#fde68a] hover:bg-[#F59E0B]/18"
 									>
 										<Upload className="mr-1.5 h-3 w-3" />
 										Browse
@@ -755,7 +743,7 @@ export function WebcamSettingsTab({
 									className={cn(
 										"h-9 rounded-xl border shadow-sm transition-all duration-200 justify-center",
 										webcamRegion.shape === shape
-											? "border-[#3b82f6] bg-gradient-to-r from-[#3b82f6] to-[#2563eb] text-white shadow-sm shadow-[#3b82f6]/20"
+											? "border-[#F59E0B] bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-white shadow-sm shadow-[#F59E0B]/20"
 											: "border-white/[0.06] bg-black/10 text-slate-400 hover:bg-white/[0.08]",
 									)}
 								>
@@ -917,11 +905,36 @@ export function WebcamSettingsTab({
 					*/}
 				</SettingsSection>
 
+				<div className="mb-3 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5 transition-colors duration-200 hover:bg-white/[0.06]">
+					<button
+						type="button"
+						onClick={onToggleAdvancedWebcam}
+						disabled={webcamControlsDisabled}
+						className="flex w-full items-center justify-between text-left disabled:cursor-not-allowed"
+					>
+						<div>
+							<div className="text-xs font-semibold text-slate-200">
+								{showAdvancedWebcam
+									? tSettings("webcam.hideAdvanced")
+									: tSettings("webcam.showAdvanced")}
+							</div>
+							<div className="mt-0.5 text-[10px] text-slate-500">
+								Fine-tune opacity, framing, color response, and optional raw path overrides.
+							</div>
+						</div>
+						{showAdvancedWebcam ? (
+							<ChevronUp className="h-4 w-4 text-slate-400" />
+						) : (
+							<ChevronDown className="h-4 w-4 text-slate-400" />
+						)}
+					</button>
+				</div>
+
 				{showAdvancedWebcam && (
 					<SettingsSection
 						title="Advanced"
 						description="Fine-tune opacity, framing, color response, and optional raw path overrides"
-						accentColor="blue"
+						accentColor="amber"
 						className="animate-in fade-in slide-in-from-top-2 duration-200"
 					>
 						<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
@@ -989,7 +1002,7 @@ export function WebcamSettingsTab({
 										})
 									}
 									placeholder="/path/to/image.png"
-									className="h-9 w-full rounded-lg border border-white/[0.08] bg-black/20 px-3 text-xs text-slate-200 outline-none transition-colors placeholder:text-slate-500 focus:border-[#3b82f6]/50"
+									className="h-9 w-full rounded-lg border border-white/[0.08] bg-black/20 px-3 text-xs text-slate-200 outline-none transition-colors placeholder:text-slate-500 focus:border-[#F59E0B]/50"
 								/>
 							</div>
 						)}

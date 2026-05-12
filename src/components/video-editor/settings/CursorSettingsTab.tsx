@@ -38,6 +38,27 @@ import { cursorPackPreviewUrls } from "../videoPlayback/cursorAssetPacks";
 
 type SettingsTranslator = (key: string, fallback?: string) => string;
 
+/*
+const CURSOR_STATE_LABELS: Partial<Record<CursorType, string>> = {
+	arrow: "Arrow",
+	text: "Text",
+	pointer: "Pointer",
+	crosshair: "Crosshair",
+	"open-hand": "Open Hand",
+	"closed-hand": "Closed Hand",
+	"resize-ew": "Resize EW",
+	"resize-ns": "Resize NS",
+	"resize-nesw": "Resize Diagonal",
+	"not-allowed": "Blocked",
+	copy: "Copy",
+	help: "Help",
+	move: "Move",
+	"zoom-in": "Zoom In",
+	"zoom-out": "Zoom Out",
+	"screenshot-selection": "Selection",
+};
+*/
+
 interface CursorSettingsTabProps {
 	tSettings: SettingsTranslator;
 	showCursor: boolean;
@@ -144,6 +165,22 @@ export function CursorSettingsTab({
 	const cursorControlsDisabled = !showCursor;
 	const smoothingControlsDisabled = cursorControlsDisabled || !smoothMovementEnabled;
 	const clickEffectControlsDisabled = cursorControlsDisabled || !clickEffectsEnabled;
+	/*
+	const cursorStatePreviewItems = SUPPORTED_CURSOR_KEYS.map((cursorType) => {
+		const asset = cursorAssetPacks[cursorPack][cursorType];
+		if (!asset) {
+			return null;
+		}
+
+		return {
+			cursorType,
+			label: CURSOR_STATE_LABELS[cursorType] ?? cursorType,
+			url: asset.url,
+		};
+	}).filter(
+		(item): item is { cursorType: CursorType; label: string; url: string } => item !== null,
+	);
+	*/
 
 	return (
 		<TabContent>
@@ -575,6 +612,41 @@ export function CursorSettingsTab({
 										</button>
 									))}
 								</div>
+								{/*
+										{cursorStatePreviewItems.length > 0 && (
+											<div className="mt-3 border-t border-white/[0.06] pt-3">
+												<div className="mb-2 flex items-center justify-between gap-2">
+													<span className="text-[10px] font-medium uppercase tracking-[0.14em] text-slate-500">
+														States
+													</span>
+													<span className="text-[10px] text-slate-600">
+														{cursorStatePreviewItems.length}
+													</span>
+												</div>
+												<div className="grid grid-cols-4 gap-1.5">
+													{cursorStatePreviewItems.map((item) => (
+														<div
+															key={item.cursorType}
+															className="group flex min-w-0 flex-col items-center gap-1 rounded-lg border border-white/[0.04] bg-black/15 p-1.5"
+															title={item.label}
+														>
+															<div className="flex h-8 w-8 items-center justify-center rounded-md bg-white/[0.04]">
+																<img
+																	src={item.url}
+																	alt={item.label}
+																	className="h-6 w-6 object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]"
+																	draggable={false}
+																/>
+															</div>
+															<span className="w-full truncate text-center text-[8px] font-medium leading-tight text-slate-500 group-hover:text-slate-300">
+																{item.label}
+															</span>
+														</div>
+													))}
+												</div>
+											</div>
+										)}
+									*/}
 							</div>
 
 							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">

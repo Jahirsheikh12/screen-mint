@@ -96,7 +96,12 @@ export function StudioSettingsTab({
 
 	return (
 		<TabContent className="space-y-4">
-			<TabHeader title="Studio" description="Creator-grade recipes for screen videos" badge="New" />
+			<TabHeader
+				title="Studio"
+				description="Creator-grade recipes for screen videos"
+				badge="New"
+				badgeColor="amber"
+			/>
 
 			<section className="overflow-hidden rounded-xl border border-white/[0.08] bg-[#111715] shadow-lg shadow-black/20">
 				<div className="relative p-3">
@@ -116,7 +121,7 @@ export function StudioSettingsTab({
 							</div>
 							<span
 								className={cn(
-									"rounded-full border px-2 py-1 text-[9px] font-semibold uppercase tracking-wide",
+									"shrink-0 whitespace-nowrap rounded-full border px-2 py-1 text-[9px] font-semibold uppercase tracking-wide shadow-sm",
 									zoomState.tone,
 								)}
 							>
@@ -178,7 +183,7 @@ export function StudioSettingsTab({
 						</p>
 					</div>
 					{activePresetId && (
-						<span className="rounded-full bg-white/[0.05] px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-slate-400">
+						<span className="shrink-0 rounded-full border border-[#F59E0B]/25 bg-[#F59E0B]/10 px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-[#fde68a] shadow-sm shadow-[#F59E0B]/10">
 							Active
 						</span>
 					)}

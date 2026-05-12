@@ -8,10 +8,11 @@ describe("cursor project persistence", () => {
 		expect(result.cursorPack).toBe("classic");
 	});
 
-	it("only exposes classic and custom cursor packs", () => {
+	it("only exposes classic, custom, and macOS cursor packs", () => {
 		expect(CURSOR_PACK_OPTIONS).toEqual([
 			{ value: "classic", label: "Classic" },
 			{ value: "custom", label: "Custom" },
+			{ value: "macos", label: "macOS" },
 		]);
 	});
 
@@ -81,6 +82,16 @@ describe("cursor project persistence", () => {
 		});
 		expect(project.editor.highQualitySvgCursors).toBe(false);
 		expect(project.editor.zoomRegions[0]?.mode).toBe("cursor-follow");
+	});
+
+	it("round-trips the macOS cursor pack through project serialization", () => {
+		const editor = normalizeProjectEditor({
+			cursorPack: "macos",
+		});
+
+		const project = createProjectData("/tmp/video.mp4", editor);
+
+		expect(project.editor.cursorPack).toBe("macos");
 	});
 
 	it("round-trips click effect settings through project serialization", () => {

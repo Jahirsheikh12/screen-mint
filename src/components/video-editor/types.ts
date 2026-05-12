@@ -144,7 +144,7 @@ export interface CameraSpringSettings {
 	mass: number;
 }
 
-export type CursorPack = "classic" | "custom";
+export type CursorPack = "classic" | "custom" | "macos";
 
 export interface CursorVisualSettings {
 	size: number;
@@ -180,6 +180,7 @@ export const CURSOR_STYLE_OPTIONS: { value: CursorStyle; label: string }[] = [
 export const CURSOR_PACK_OPTIONS: { value: CursorPack; label: string }[] = [
 	{ value: "classic", label: "Classic" },
 	{ value: "custom", label: "Custom" },
+	{ value: "macos", label: "macOS" },
 ];
 export const CURSOR_TYPE_VALUES: CursorType[] = [
 	"arrow",

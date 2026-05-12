@@ -95,10 +95,26 @@ describe("cursor click effects", () => {
 	});
 });
 
-describe("custom cursor assets", () => {
-	it("provides SVG assets for every supported cursor state", () => {
+describe("cursor pack assets", () => {
+	it("restores the older custom cursor asset set", () => {
+		expect(Object.keys(cursorAssetPacks.custom).sort()).toEqual([
+			"closed-hand",
+			"copy",
+			"help",
+			"move",
+			"not-allowed",
+			"open-hand",
+			"pointer",
+			"resize-nesw",
+			"screenshot-selection",
+			"zoom-in",
+			"zoom-out",
+		]);
+	});
+
+	it("provides macOS SVG assets for every supported cursor state", () => {
 		for (const cursorKey of SUPPORTED_CURSOR_KEYS) {
-			expect(cursorAssetPacks.custom[cursorKey]?.url).toBeTruthy();
+			expect(cursorAssetPacks.macos[cursorKey]?.url).toBeTruthy();
 		}
 	});
 });
