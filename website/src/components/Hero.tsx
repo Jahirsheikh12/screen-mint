@@ -5,6 +5,8 @@ import { prefersReducedMotion } from "../hooks/useGSAP";
 import { REPO_URL } from "../lib/links";
 import { GITHUB_SPONSORS_URL } from "../lib/sponsors";
 import { PixelWave } from "./PixelWave";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
 
 const WORDS = ["incredible", "cinematic", "stunning", "polished"];
 const CYCLE_MS = 3000;
@@ -319,34 +321,40 @@ export function Hero() {
 			<div ref={contentRef} className="relative z-10 max-w-[900px] mx-auto text-center">
 				{/* Badge */}
 				<div ref={badgeRef} className="mb-8 opacity-0">
-					<a
-						href={REPO_URL}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="hero-badge group inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-white/[0.06] bg-white/[0.03] text-[12px] text-white/40 tracking-wide backdrop-blur-sm"
+					<Button
+						asChild
+						variant="ghost"
+						className="h-auto rounded-full bg-transparent p-0 font-normal shadow-none hover:bg-transparent hover:text-inherit focus-visible:ring-0 [&_svg]:size-[10px]"
 					>
-						<span className="relative flex h-2 w-2">
-							<span className="animate-ping absolute inset-0 rounded-full bg-brand-400 opacity-75" />
-							<span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500" />
-						</span>
-						Open Source
-						<span className="h-3.5 w-px bg-white/[0.08]" />
-						<span className="text-brand-400/80 font-medium group-hover:text-brand-300 transition-colors duration-300">
-							Star on GitHub
-						</span>
-						<svg
-							width="10"
-							height="10"
-							viewBox="0 0 16 16"
-							fill="none"
-							stroke="currentColor"
-							strokeWidth="2"
-							strokeLinecap="round"
-							className="text-white/20 group-hover:text-white/45 group-hover:translate-x-0.5 transition-all duration-300"
+						<a
+							href={REPO_URL}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="hero-badge group inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-white/[0.06] bg-white/[0.03] text-[12px] text-white/40 tracking-wide backdrop-blur-sm"
 						>
-							<path d="M3 8h10M9 4l4 4-4 4" />
-						</svg>
-					</a>
+							<Badge className="relative flex h-2 w-2 rounded-full border-0 bg-transparent p-0 shadow-none">
+								<span className="animate-ping absolute inset-0 rounded-full bg-brand-400 opacity-75" />
+								<span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500" />
+							</Badge>
+							Open Source
+							<span className="h-3.5 w-px bg-white/[0.08]" />
+							<span className="text-brand-400/80 font-medium group-hover:text-brand-300 transition-colors duration-300">
+								Star on GitHub
+							</span>
+							<svg
+								width="10"
+								height="10"
+								viewBox="0 0 16 16"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2"
+								strokeLinecap="round"
+								className="text-white/20 group-hover:text-white/45 group-hover:translate-x-0.5 transition-all duration-300"
+							>
+								<path d="M3 8h10M9 4l4 4-4 4" />
+							</svg>
+						</a>
+					</Button>
 				</div>
 
 				{/* Headline */}
@@ -379,34 +387,36 @@ export function Hero() {
 
 				{/* CTAs */}
 				<div ref={ctaRef} className="flex items-center justify-center gap-3.5 flex-wrap">
-					<a
-						ref={primaryBtnRef}
-						href="#download"
-						className="hero-btn-primary group"
-						onMouseMove={handleBtnMouseMove}
-						onMouseLeave={handleBtnMouseLeave}
+					<Button
+						asChild
+						variant="ghost"
+						className="hero-btn-primary group h-auto [&_svg]:size-[15px]"
 					>
-						<span className="hero-btn-bg" />
-						<span className="hero-btn-shine" />
-						<Download
-							className="relative z-10 w-[15px] h-[15px] transition-transform duration-300 group-hover:translate-y-0.5"
-							strokeWidth={2.5}
-						/>
-						<span className="relative z-10">Download for Free</span>
-					</a>
+						<a
+							ref={primaryBtnRef}
+							href="#download"
+							onMouseMove={handleBtnMouseMove}
+							onMouseLeave={handleBtnMouseLeave}
+						>
+							<span className="hero-btn-bg" />
+							<span className="hero-btn-shine" />
+							<Download
+								className="relative z-10 w-[15px] h-[15px] transition-transform duration-300 group-hover:translate-y-0.5"
+								strokeWidth={2.5}
+							/>
+							<span className="relative z-10">Download for Free</span>
+						</a>
+					</Button>
 
-					<a
-						href={GITHUB_SPONSORS_URL}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="hero-btn-ghost group"
-					>
-						<Heart
-							className="w-4 h-4 transition-all duration-300 group-hover:text-brand-400/80 group-hover:scale-110"
-							strokeWidth={2}
-						/>
-						Sponsor
-					</a>
+					<Button asChild variant="ghost" className="hero-btn-ghost group h-auto [&_svg]:size-4">
+						<a href={GITHUB_SPONSORS_URL} target="_blank" rel="noopener noreferrer">
+							<Heart
+								className="w-4 h-4 transition-all duration-300 group-hover:text-brand-400/80 group-hover:scale-110"
+								strokeWidth={2}
+							/>
+							Sponsor
+						</a>
+					</Button>
 				</div>
 
 				{/* Platform availability */}

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { prefersReducedMotion } from "../hooks/useGSAP";
 import { REPO_URL } from "../lib/links";
 import { CREEM_ENABLED, GITHUB_SPONSORS_URL } from "../lib/sponsors";
+import { Button } from "./ui/button";
 
 const NAV_LINKS = [
 	{ label: "Features", href: "#features" },
@@ -203,26 +204,28 @@ export function Navbar() {
 						);
 					})}
 
-					<a
-						href={GITHUB_SPONSORS_URL}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="ml-2 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-brand-500 text-[#121212] text-[13px] font-semibold hover:bg-brand-400 active:scale-[0.97] transition-all duration-200"
+					<Button
+						asChild
+						className="ml-2 h-auto rounded-full bg-brand-500 px-4 py-1.5 text-[13px] font-semibold text-[#121212] shadow-none transition-all duration-200 hover:bg-brand-400 hover:text-[#121212] active:scale-[0.97] [&_svg]:size-3.5"
 					>
-						<Heart className="w-3.5 h-3.5" strokeWidth={2.5} />
-						Sponsor
-					</a>
+						<a href={GITHUB_SPONSORS_URL} target="_blank" rel="noopener noreferrer">
+							<Heart className="w-3.5 h-3.5" strokeWidth={2.5} />
+							Sponsor
+						</a>
+					</Button>
 				</div>
 
 				{/* Mobile hamburger */}
-				<button
+				<Button
 					type="button"
-					className="relative z-10 md:hidden p-2 text-white/50 hover:text-white transition-colors"
+					variant="ghost"
+					size="icon"
+					className="relative z-10 md:hidden h-auto w-auto rounded-none bg-transparent p-2 text-white/50 shadow-none transition-colors hover:bg-transparent hover:text-white focus-visible:ring-0 [&_svg]:size-5"
 					onClick={() => setMobileOpen(!mobileOpen)}
 					aria-label="Toggle menu"
 				>
 					{mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-				</button>
+				</Button>
 			</div>
 
 			{/* Mobile backdrop */}
@@ -236,7 +239,7 @@ export function Navbar() {
 			{/* Mobile menu */}
 			<div
 				ref={mobileMenuRef}
-				className="md:hidden absolute top-20 left-4 right-4 rounded-2xl px-5 py-4 space-y-1 z-50"
+				className="md:hidden absolute top-20 left-4 right-4 rounded-2xl px-5 py-4 flex flex-col gap-1 z-50"
 				style={{
 					display: "none",
 					background: "rgba(18, 18, 18, 0.94)",
@@ -260,15 +263,19 @@ export function Navbar() {
 					);
 				})}
 				<div className="pt-2">
-					<a
-						href={GITHUB_SPONSORS_URL}
-						target="_blank"
-						rel="noopener noreferrer"
-						onClick={closeMobile}
-						className="mobile-nav-link block text-center px-4 py-2.5 rounded-full bg-brand-500 text-[#121212] text-sm font-semibold"
+					<Button
+						asChild
+						className="mobile-nav-link block h-auto w-full rounded-full bg-brand-500 px-4 py-2.5 text-center text-sm font-semibold text-[#121212] shadow-none hover:bg-brand-500 hover:text-[#121212]"
 					>
-						Sponsor ScreenMint
-					</a>
+						<a
+							href={GITHUB_SPONSORS_URL}
+							target="_blank"
+							rel="noopener noreferrer"
+							onClick={closeMobile}
+						>
+							Sponsor ScreenMint
+						</a>
+					</Button>
 				</div>
 			</div>
 		</nav>

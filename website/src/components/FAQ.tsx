@@ -121,7 +121,7 @@ export function FAQ() {
 				{/* Two-column FAQ grid */}
 				<div className="faq-grid grid md:grid-cols-2 gap-4">
 					<div className="faq-col-left">
-						<Accordion type="single" collapsible className="space-y-2">
+						<Accordion type="single" collapsible className="flex flex-col gap-2">
 							{leftColumn.map((faq) => {
 								const originalIndex = faqs.indexOf(faq);
 								return (
@@ -149,7 +149,7 @@ export function FAQ() {
 					</div>
 
 					<div className="faq-col-right">
-						<Accordion type="single" collapsible className="space-y-2">
+						<Accordion type="single" collapsible className="flex flex-col gap-2">
 							{rightColumn.map((faq) => {
 								const originalIndex = faqs.indexOf(faq);
 								return (

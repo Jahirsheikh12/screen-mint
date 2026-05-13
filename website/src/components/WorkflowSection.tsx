@@ -2,6 +2,7 @@ import gsap from "gsap";
 import { Circle, Send, Sliders, Upload } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { prefersReducedMotion } from "../hooks/useGSAP";
+import { Card } from "./ui/card";
 
 const steps = [
 	{
@@ -87,7 +88,7 @@ export function WorkflowSection() {
 						const Icon = step.icon;
 						return (
 							<div key={step.number} className="wf-step group relative">
-								<div className="wf-card">
+								<Card className="wf-card shadow-none text-inherit">
 									{/* Number + icon row */}
 									<div className="flex items-center justify-between mb-5">
 										<span className="wf-number">{step.number}</span>
@@ -108,7 +109,7 @@ export function WorkflowSection() {
 									<p className="text-[13px] leading-relaxed text-white/25 group-hover:text-white/35 transition-colors duration-400">
 										{step.description}
 									</p>
-								</div>
+								</Card>
 
 								{/* Arrow connector (hidden on last + mobile) */}
 								{i < steps.length - 1 && (

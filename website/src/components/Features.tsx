@@ -1,6 +1,8 @@
 import gsap from "gsap";
 import { useEffect, useRef } from "react";
 import { prefersReducedMotion } from "../hooks/useGSAP";
+import { Badge } from "./ui/badge";
+import { Card } from "./ui/card";
 
 const features = [
 	{
@@ -94,9 +96,9 @@ function FeatureCard({
 	const isFullWidth = index === 5;
 
 	return (
-		<div
+		<Card
 			ref={ref}
-			className={`feature-card col-span-12 ${gridClass} rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden group will-animate`}
+			className={`feature-card col-span-12 ${gridClass} rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden group will-animate shadow-none text-inherit`}
 		>
 			{/* Image */}
 			<div className={`relative overflow-hidden ${isFullWidth ? "max-h-[400px]" : "aspect-video"}`}>
@@ -109,9 +111,9 @@ function FeatureCard({
 				<div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
 
 				{/* Feature number badge */}
-				<span className="absolute top-4 left-4 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-brand-500/10 border border-brand-500/20 text-[11px] font-semibold text-brand-400 backdrop-blur-sm">
+				<Badge className="absolute top-4 left-4 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-brand-500/10 border border-brand-500/20 p-0 text-[11px] font-semibold text-brand-400 shadow-none backdrop-blur-sm">
 					0{index + 1}
-				</span>
+				</Badge>
 			</div>
 
 			{/* Content */}
@@ -121,7 +123,7 @@ function FeatureCard({
 				</h3>
 				<p className="text-[14px] text-white/30 leading-relaxed max-w-[480px]">{description}</p>
 			</div>
-		</div>
+		</Card>
 	);
 }
 

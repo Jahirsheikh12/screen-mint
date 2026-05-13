@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { prefersReducedMotion } from "../hooks/useGSAP";
 import { DOWNLOAD_LINKS, REPO_URL } from "../lib/links";
 import { GITHUB_SPONSORS_URL, SPONSOR_MISSION } from "../lib/sponsors";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
+import { Card } from "./ui/card";
 
 type Platform = "macos" | "windows" | "linux" | "unknown";
 type MacArchitecture = "apple-silicon" | "intel" | "unknown";
@@ -214,6 +217,12 @@ export function Download() {
 		}
 	};
 
+	const handleGatekeeperKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+		if (event.key !== "Enter" && event.key !== " ") return;
+		event.preventDefault();
+		setGatekeeperOpen((open) => !open);
+	};
+
 	const recommendedId = getRecommendedId(platform, macArch);
 	const recommended = allPlatforms.find((p) => p.id === recommendedId);
 	const others = allPlatforms.filter((p) => p.id !== recommendedId);
@@ -236,50 +245,56 @@ export function Download() {
 
 				{/* ── Recommended platform (prominent) ── */}
 				{recommended && (
-					<a href={recommended.href} className="dl-rec dl-card-rec group block mb-4">
-						<div className="flex items-center gap-5">
-							<div className="dl-card-rec-icon">{recommended.icon}</div>
-							<div className="flex-1 min-w-0">
-								<div className="flex items-center gap-2.5 mb-1">
-									<span className="text-[16px] font-semibold text-white">{recommended.name}</span>
-									<span className="dl-rec-badge">Recommended</span>
+					<a href={recommended.href} className="dl-rec group block mb-4">
+						<Card className="dl-card-rec shadow-none text-inherit">
+							<div className="flex items-center gap-5">
+								<div className="dl-card-rec-icon">{recommended.icon}</div>
+								<div className="flex-1 min-w-0">
+									<div className="flex items-center gap-2.5 mb-1">
+										<span className="text-[16px] font-semibold text-white">{recommended.name}</span>
+										<Badge className="dl-rec-badge border-0 shadow-none">Recommended</Badge>
+									</div>
+									<p className="text-[13px] text-white/30">{recommended.note}</p>
 								</div>
-								<p className="text-[13px] text-white/30">{recommended.note}</p>
+								<div className="dl-card-rec-dl group-hover:translate-y-0.5 transition-transform duration-300">
+									<DownloadIcon />
+									<span>Download</span>
+								</div>
 							</div>
-							<div className="dl-card-rec-dl group-hover:translate-y-0.5 transition-transform duration-300">
-								<DownloadIcon />
-								<span>Download</span>
-							</div>
-						</div>
+						</Card>
 					</a>
 				)}
 
 				{/* ── Other platforms ── */}
 				<div className="dl-others grid grid-cols-3 gap-3 mb-8">
 					{others.map((p) => (
-						<a key={p.id} href={p.href} className="dl-other dl-card-alt group">
-							<div className="dl-card-alt-icon">{p.icon}</div>
-							<p className="text-[14px] font-medium text-white/65 group-hover:text-white/90 transition-colors duration-300">
-								{p.name}
-							</p>
-							<p className="text-[11px] text-white/20 mb-3">{p.note}</p>
-							<div className="mt-auto flex items-center gap-1.5 text-[11px] font-medium text-white/20 group-hover:text-white/45 transition-colors duration-300">
-								<DownloadIcon className="transition-transform duration-300 group-hover:translate-y-0.5" />
-								Download
-							</div>
+						<a key={p.id} href={p.href} className="dl-other group">
+							<Card className="dl-card-alt h-full shadow-none text-inherit">
+								<div className="dl-card-alt-icon">{p.icon}</div>
+								<p className="text-[14px] font-medium text-white/65 group-hover:text-white/90 transition-colors duration-300">
+									{p.name}
+								</p>
+								<p className="text-[11px] text-white/20 mb-3">{p.note}</p>
+								<div className="mt-auto flex items-center gap-1.5 text-[11px] font-medium text-white/20 group-hover:text-white/45 transition-colors duration-300">
+									<DownloadIcon className="transition-transform duration-300 group-hover:translate-y-0.5" />
+									Download
+								</div>
+							</Card>
 						</a>
 					))}
 				</div>
 
 				{/* ── Bottom section: Gatekeeper + Sponsor ── */}
-				<div className="dl-bottom-wrap space-y-3">
+				<div className="dl-bottom-wrap flex flex-col gap-3">
 					{/* macOS Gatekeeper */}
 					{platform === "macos" ? (
 						<div className="dl-bottom">
-							<button
-								type="button"
+							<Card
+								role="button"
+								tabIndex={0}
 								onClick={() => setGatekeeperOpen(!gatekeeperOpen)}
-								className="dl-gatekeeper-card w-full text-left"
+								onKeyDown={handleGatekeeperKeyDown}
+								className="dl-gatekeeper-card block h-auto w-full cursor-pointer text-left font-normal shadow-none text-inherit hover:bg-white/[0.03]"
 							>
 								<div className="flex items-center gap-3">
 									<div className="dl-gatekeeper-icon">
@@ -307,10 +322,12 @@ export function Download() {
 												<span className="text-white/15 mr-2 select-none">$</span>
 												{XATTR_COMMAND}
 											</code>
-											<button
+											<Button
 												type="button"
 												onClick={handleCopyXattr}
-												className="dl-gatekeeper-copy"
+												variant="ghost"
+												size="icon"
+												className="dl-gatekeeper-copy h-auto w-auto shadow-none hover:bg-white/[0.04] [&_svg]:size-3.5"
 												title="Copy command"
 											>
 												{xattrCopied ? (
@@ -341,40 +358,41 @@ export function Download() {
 														<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
 													</svg>
 												)}
-											</button>
+											</Button>
 										</div>
 									</div>
 								</div>
-							</button>
+							</Card>
 						</div>
 					) : null}
 
 					{/* Sponsor nudge */}
-					<div className="dl-bottom dl-sponsor-card">
+					<Card className="dl-bottom dl-sponsor-card shadow-none text-inherit">
 						<div className="flex items-center gap-3">
 							<div className="dl-sponsor-icon">
 								<Heart className="w-4 h-4 text-brand-400/60" strokeWidth={1.8} />
 							</div>
 							<p className="flex-1 text-[13px] text-white/25 leading-relaxed">{SPONSOR_MISSION}</p>
-							<a
-								href={GITHUB_SPONSORS_URL}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="dl-sponsor-btn group"
+							<Button
+								asChild
+								variant="ghost"
+								className="dl-sponsor-btn group h-auto shadow-none hover:bg-[rgba(245,158,11,0.14)] [&_svg]:size-3"
 							>
-								<Heart
-									className="w-3 h-3 transition-transform duration-300 group-hover:scale-110"
-									strokeWidth={2.5}
-								/>
-								Sponsor
-							</a>
+								<a href={GITHUB_SPONSORS_URL} target="_blank" rel="noopener noreferrer">
+									<Heart
+										className="w-3 h-3 transition-transform duration-300 group-hover:scale-110"
+										strokeWidth={2.5}
+									/>
+									Sponsor
+								</a>
+							</Button>
 						</div>
-					</div>
+					</Card>
 				</div>
 
 				{/* ── Badges ── */}
 				<div className="flex items-center justify-center gap-2 flex-wrap mt-10">
-					<span className="dl-badge dl-badge--brand">
+					<Badge className="dl-badge dl-badge--brand shadow-none">
 						<svg
 							width="9"
 							height="9"
@@ -388,8 +406,8 @@ export function Download() {
 							<polyline points="20 6 9 17 4 12" />
 						</svg>
 						Open Source
-					</span>
-					<span className="dl-badge dl-badge--muted">
+					</Badge>
+					<Badge className="dl-badge dl-badge--muted shadow-none">
 						<svg
 							width="9"
 							height="9"
@@ -403,18 +421,19 @@ export function Download() {
 							<polyline points="20 6 9 17 4 12" />
 						</svg>
 						No Watermarks
-					</span>
-					<a
-						href={REPO_URL}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="dl-badge dl-badge--muted hover:text-white/45 transition-colors duration-300"
+					</Badge>
+					<Button
+						asChild
+						variant="ghost"
+						className="dl-badge dl-badge--muted h-auto shadow-none hover:text-white/45 transition-colors duration-300 [&_svg]:size-2.5"
 					>
-						<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
-							<path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-						</svg>
-						Star on GitHub
-					</a>
+						<a href={REPO_URL} target="_blank" rel="noopener noreferrer">
+							<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+								<path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+							</svg>
+							Star on GitHub
+						</a>
+					</Button>
 				</div>
 			</div>
 		</section>

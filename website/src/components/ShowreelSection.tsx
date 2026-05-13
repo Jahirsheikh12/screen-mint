@@ -1,6 +1,7 @@
 import gsap from "gsap";
 import { useEffect, useRef, useState } from "react";
 import { prefersReducedMotion } from "../hooks/useGSAP";
+import { Card } from "./ui/card";
 
 const showcaseItems = [
 	{
@@ -153,7 +154,7 @@ export function ShowreelSection() {
 								key={item.title}
 								className="showreel-card group flex-shrink-0 w-[75vw] max-w-[960px]"
 							>
-								<div className="relative rounded-xl overflow-hidden border border-white/[0.06] bg-[#121212] transition-all duration-500 group-hover:border-brand-500/15">
+								<Card className="relative rounded-xl overflow-hidden border border-white/[0.06] bg-[#121212] shadow-none transition-all duration-500 group-hover:border-brand-500/15">
 									<div className="flex items-center gap-2 px-4 py-2.5 bg-[#0d0d0d] border-b border-white/[0.05]">
 										<div className="w-2.5 h-2.5 rounded-full bg-white/[0.06] transition-colors group-hover:bg-[#ff5f57]" />
 										<div className="w-2.5 h-2.5 rounded-full bg-white/[0.06] transition-colors group-hover:bg-[#febc2e]" />
@@ -168,7 +169,7 @@ export function ShowreelSection() {
 											loading="lazy"
 										/>
 									</div>
-								</div>
+								</Card>
 								<div className="mt-4 px-1">
 									<h3 className="text-[16px] font-semibold text-white/80 mb-1">{item.title}</h3>
 									<p className="text-[14px] text-white/25">{item.description}</p>
