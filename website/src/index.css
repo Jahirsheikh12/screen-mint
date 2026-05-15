@@ -255,14 +255,15 @@
 /* ── Keyword slot (overflow-hidden vertical carousel) ── */
 .hero-keyword-slot {
 	display: inline-flex;
-	overflow: hidden;
-	height: 1.1em;
-	vertical-align: bottom;
 	position: relative;
 }
 
 .hero-keyword {
 	display: inline-block;
+	padding-bottom: 0.2em;
+	margin-bottom: -0.2em;
+	padding-right: 0.05em;
+	margin-right: -0.05em;
 	background-image: linear-gradient(135deg, #fbbf24 0%, #f59e0b 40%, #f97316 100%);
 	background-size: 200% 200%;
 	-webkit-background-clip: text;

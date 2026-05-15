@@ -360,13 +360,13 @@ export function Hero() {
 				{/* Headline */}
 				<h1 className="hero-headline mb-7">
 					{/* Line 1 */}
-					<span className="block overflow-hidden">
+					<span className="block overflow-hidden pb-[0.2em] -mb-[0.2em]">
 						<span ref={line1Ref} className="block will-change-transform">
 							Screen recordings
 						</span>
 					</span>
 					{/* Line 2 with rotating keyword */}
-					<span className="block overflow-hidden mt-1">
+					<span className="block overflow-hidden mt-1 pb-[0.2em] -mb-[0.2em]">
 						<span ref={line2Ref} className="block will-change-transform">
 							<span className="hero-text-dim">that look</span>{" "}
 							<span className="hero-keyword-slot">
