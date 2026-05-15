@@ -531,6 +531,8 @@ declare global {
 			syncHudCompactLayout: (layout: { width: number; height: number }) => Promise<void>;
 			/** Expand HUD window vertically while a dropdown is open */
 			setHudDropdownExpanded: (expanded: boolean) => Promise<void>;
+			/** Let mouse input pass through transparent compact HUD pixels */
+			setHudMousePassthrough: (enabled: boolean) => Promise<void>;
 			/** Reposition the HUD onto the display containing the cursor */
 			recenterHudOnCursor: () => Promise<void>;
 			/** Default the active capture source to the display under the cursor */

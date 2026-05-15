@@ -88,12 +88,12 @@ describe("scene presets", () => {
 		expect(chooseAutoBeautifyPreset(context({ durationMs: 40_000 }))).toBe("product-demo");
 	});
 
-	it("generates cursor-follow zoom regions from telemetry", () => {
+	it("generates smart zoom regions from telemetry", () => {
 		const regions = buildAutoZoomRegionsFromTelemetry(context(), 4);
 		expect(regions.length).toBeGreaterThan(0);
 		expect(regions[0]).toMatchObject({
 			id: "zoom-4",
-			mode: "cursor-follow",
+			mode: "static",
 			depth: 3,
 		});
 	});

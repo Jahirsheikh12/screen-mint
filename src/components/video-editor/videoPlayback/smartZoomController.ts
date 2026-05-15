@@ -6,7 +6,7 @@ import {
 	type ZoomRegion,
 } from "../types";
 import type { CursorMotionSnapshot } from "./cursorSimulation";
-import { clampFocusToScale, softenFocusToScale } from "./focusUtils";
+import { clampFocusToScale } from "./focusUtils";
 
 export interface ZoomRegionFocusResult {
 	focus: ZoomFocus;
@@ -14,6 +14,8 @@ export interface ZoomRegionFocusResult {
 }
 
 const PREDICTION_SPEED_THRESHOLD = 0.16;
+const FOLLOW_SAFE_BOX_VISIBLE_RATIO = 0.62;
+const FOLLOW_SAFE_BOX_EDGE_TOLERANCE = 0.006;
 
 function clamp(value: number, min: number, max: number) {
 	return Math.min(max, Math.max(min, value));
@@ -47,17 +49,20 @@ function mergeTrackingConfig(tracking?: Partial<CursorFollowTracking>): CursorFo
 
 function deriveIntentAwareTargetFocus(
 	cursor: CursorMotionSnapshot,
-	_currentFocus: ZoomFocus,
 	tracking: CursorFollowTracking,
 ): {
 	targetFocus: ZoomFocus;
-	deadzone: number;
-	hysteresisMultiplier: number;
 	hold: boolean;
 	smoothTimeFactor: number;
 } {
 	const lookAheadScale = tracking.lookAheadMs / 1000;
+	const canUseLookAhead =
+		cursor.intent === "targeting" ||
+		cursor.intent === "dragging" ||
+		cursor.intent === "selecting" ||
+		cursor.intent === "precision";
 	const shouldLead =
+		canUseLookAhead &&
 		cursor.confidence !== "low" &&
 		!cursor.isDiscontinuous &&
 		cursor.speed >= PREDICTION_SPEED_THRESHOLD;
@@ -67,8 +72,6 @@ function deriveIntentAwareTargetFocus(
 	};
 
 	let targetFocus = predictedFocus;
-	let deadzone = tracking.deadzone;
-	let hysteresisMultiplier = cursor.isDwell ? 1.75 : 1;
 	let hold = false;
 	let smoothTimeFactor = 1.0;
 
@@ -79,36 +82,26 @@ function deriveIntentAwareTargetFocus(
 			break;
 		case "reading":
 			targetFocus = { cx: cursor.cx, cy: cursor.cy };
-			deadzone *= 2.1;
-			hysteresisMultiplier = 2.6;
 			smoothTimeFactor = 3.2;
 			break;
 		case "dropdown":
 			targetFocus = predictedFocus;
-			deadzone *= 1.55;
-			hysteresisMultiplier = Math.max(hysteresisMultiplier, 2.2);
 			smoothTimeFactor = 2.0;
 			break;
 		case "dragging":
 			targetFocus = { cx: cursor.cx, cy: cursor.cy };
-			deadzone *= 1.2;
-			hysteresisMultiplier = Math.max(hysteresisMultiplier, 1.9);
 			smoothTimeFactor = 1.8;
 			break;
 		case "selecting":
 			targetFocus = { cx: cursor.cx, cy: cursor.cy };
-			deadzone *= 1.7;
-			hysteresisMultiplier = Math.max(hysteresisMultiplier, 2.4);
 			smoothTimeFactor = 2.5;
 			break;
 		case "precision":
 			targetFocus = predictedFocus;
-			deadzone *= 0.44;
 			smoothTimeFactor = 0.7;
 			break;
 		case "targeting":
 			targetFocus = predictedFocus;
-			deadzone *= 0.52;
 			smoothTimeFactor = 0.6;
 			break;
 		case "idle":
@@ -118,11 +111,61 @@ function deriveIntentAwareTargetFocus(
 
 	return {
 		targetFocus,
-		deadzone,
-		hysteresisMultiplier,
 		hold,
 		smoothTimeFactor,
 	};
+}
+
+export function resolveViewportContainedFocus(args: {
+	currentFocus: ZoomFocus;
+	cursorFocus: ZoomFocus;
+	zoomScale: number;
+	visibleSafeRatio?: number;
+	edgeTolerance?: number;
+}): ZoomFocus {
+	const {
+		cursorFocus,
+		zoomScale,
+		visibleSafeRatio = FOLLOW_SAFE_BOX_VISIBLE_RATIO,
+		edgeTolerance = FOLLOW_SAFE_BOX_EDGE_TOLERANCE,
+	} = args;
+	const currentFocus = clampFocusToScale(args.currentFocus, zoomScale);
+	const halfWidth = 1 / (2 * zoomScale);
+	const halfHeight = 1 / (2 * zoomScale);
+	const safeRatio = clamp(visibleSafeRatio, 0.2, 0.95);
+	const safeInsetX = halfWidth * (1 - safeRatio);
+	const safeInsetY = halfHeight * (1 - safeRatio);
+	const safeLeft = currentFocus.cx - halfWidth + safeInsetX;
+	const safeRight = currentFocus.cx + halfWidth - safeInsetX;
+	const safeTop = currentFocus.cy - halfHeight + safeInsetY;
+	const safeBottom = currentFocus.cy + halfHeight - safeInsetY;
+	let nextFocus = currentFocus;
+
+	if (cursorFocus.cx < safeLeft - edgeTolerance) {
+		nextFocus = {
+			...nextFocus,
+			cx: cursorFocus.cx + halfWidth - safeInsetX,
+		};
+	} else if (cursorFocus.cx > safeRight + edgeTolerance) {
+		nextFocus = {
+			...nextFocus,
+			cx: cursorFocus.cx - halfWidth + safeInsetX,
+		};
+	}
+
+	if (cursorFocus.cy < safeTop - edgeTolerance) {
+		nextFocus = {
+			...nextFocus,
+			cy: cursorFocus.cy + halfHeight - safeInsetY,
+		};
+	} else if (cursorFocus.cy > safeBottom + edgeTolerance) {
+		nextFocus = {
+			...nextFocus,
+			cy: cursorFocus.cy - halfHeight + safeInsetY,
+		};
+	}
+
+	return clampFocusToScale(nextFocus, zoomScale);
 }
 
 export function resolveZoomRegionFocus(
@@ -140,49 +183,25 @@ export function resolveZoomRegionFocus(
 	const tracking = mergeTrackingConfig(region.tracking);
 	if (cursor.isDiscontinuous) {
 		return {
-			focus: softenFocusToScale({ cx: cursor.cx, cy: cursor.cy }, zoomScale),
+			focus: clampFocusToScale({ cx: cursor.cx, cy: cursor.cy }, zoomScale),
 			smoothTimeFactor: 1.0,
 		};
 	}
 
-	const holdForRecentInteraction =
-		cursor.latestInteractionAgeMs <= tracking.dwellHoldMs &&
-		(cursor.latestInteractionType === "click" ||
-			cursor.latestInteractionType === "double-click" ||
-			cursor.latestInteractionType === "right-click" ||
-			cursor.latestInteractionType === "middle-click");
-	const holdForText =
-		(cursor.intent === "typing" || cursor.isTextInput) &&
-		cursor.latestInteractionAgeMs <= tracking.textHoldMs;
-	const intentAdjusted = deriveIntentAwareTargetFocus(cursor, currentFocus, tracking);
-	if (
-		holdForRecentInteraction ||
-		holdForText ||
-		intentAdjusted.hold ||
-		cursor.confidence === "low"
-	) {
+	const intentAdjusted = deriveIntentAwareTargetFocus(cursor, tracking);
+	if (intentAdjusted.hold || cursor.confidence === "low") {
 		return {
-			focus: softenFocusToScale(currentFocus, zoomScale),
-			smoothTimeFactor: intentAdjusted.smoothTimeFactor,
-		};
-	}
-
-	const targetFocus = softenFocusToScale(intentAdjusted.targetFocus, zoomScale);
-	const deltaX = targetFocus.cx - currentFocus.cx;
-	const deltaY = targetFocus.cy - currentFocus.cy;
-	const distance = Math.hypot(deltaX, deltaY);
-	if (
-		distance <= intentAdjusted.deadzone ||
-		(cursor.isDwell && distance <= intentAdjusted.deadzone * intentAdjusted.hysteresisMultiplier)
-	) {
-		return {
-			focus: softenFocusToScale(currentFocus, zoomScale),
+			focus: clampFocusToScale(currentFocus, zoomScale),
 			smoothTimeFactor: intentAdjusted.smoothTimeFactor,
 		};
 	}
 
 	return {
-		focus: targetFocus,
+		focus: resolveViewportContainedFocus({
+			currentFocus,
+			cursorFocus: intentAdjusted.targetFocus,
+			zoomScale,
+		}),
 		smoothTimeFactor: intentAdjusted.smoothTimeFactor,
 	};
 }

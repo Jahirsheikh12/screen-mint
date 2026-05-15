@@ -1891,7 +1891,7 @@ export default function VideoEditor() {
 				endMs: suggestion.endMs,
 				depth: DEFAULT_ZOOM_DEPTH,
 				focus: clampFocusToDepth(suggestion.focus, DEFAULT_ZOOM_DEPTH),
-				mode: "cursor-follow",
+				mode: suggestion.mode ?? "cursor-follow",
 				tracking: DEFAULT_CURSOR_FOLLOW_TRACKING,
 			}));
 
@@ -2019,7 +2019,7 @@ export default function VideoEditor() {
 		setSelectedAnnotationId(null);
 	}, []);
 
-	const handleZoomSuggested = useCallback((span: Span, focus: ZoomFocus) => {
+	const handleZoomSuggested = useCallback((span: Span, focus: ZoomFocus, mode?: ZoomMode) => {
 		const id = `zoom-${nextZoomIdRef.current++}`;
 		const newRegion: ZoomRegion = {
 			id,
@@ -2027,7 +2027,7 @@ export default function VideoEditor() {
 			endMs: Math.round(span.end),
 			depth: DEFAULT_ZOOM_DEPTH,
 			focus: clampFocusToDepth(focus, DEFAULT_ZOOM_DEPTH),
-			mode: "cursor-follow",
+			mode: mode ?? "cursor-follow",
 			tracking: DEFAULT_CURSOR_FOLLOW_TRACKING,
 		};
 		setZoomRegions((prev) => [...prev, newRegion]);
@@ -2058,7 +2058,12 @@ export default function VideoEditor() {
 					}
 
 					if (mode === "static") {
-						const { focus } = resolveZoomRegionFocus(region, simulatedCursor, region.focus, 0);
+						const focus = simulatedCursor
+							? clampFocusToDepth(
+									{ cx: simulatedCursor.rawCx, cy: simulatedCursor.rawCy },
+									region.depth,
+								)
+							: resolveZoomRegionFocus(region, simulatedCursor, region.focus, 0).focus;
 						return {
 							...region,
 							mode,

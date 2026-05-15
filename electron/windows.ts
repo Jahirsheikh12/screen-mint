@@ -32,6 +32,8 @@ let exportWorkerWindow: BrowserWindow | null = null;
 let hudCompactLayout: HudCompactLayout = DEFAULT_HUD_COMPACT_LAYOUT;
 let hudContentVisible = false;
 let hudDropdownExpanded = false;
+let hudMousePassthroughRequested = false;
+let hudMousePassthroughApplied = false;
 
 const HUD_DROPDOWN_EXPAND_HEIGHT = 640;
 
@@ -137,6 +139,20 @@ function applyHudDropdownExpandedBounds(): void {
 		width: compactBounds.width,
 		height: desiredHeight,
 	});
+}
+
+function applyHudMousePassthrough(): void {
+	if (!hudOverlayWindow || hudOverlayWindow.isDestroyed()) {
+		return;
+	}
+
+	const enabled = !hudContentVisible && hudMousePassthroughRequested;
+	if (enabled === hudMousePassthroughApplied) {
+		return;
+	}
+
+	hudMousePassthroughApplied = enabled;
+	hudOverlayWindow.setIgnoreMouseEvents(enabled, { forward: true });
 }
 
 function pinOverlayWindow(win: BrowserWindow, allowFullscreenVisibility = true): void {
@@ -299,6 +315,7 @@ export function createHudOverlayWindow(): BrowserWindow {
 	win.on("closed", () => {
 		if (hudOverlayWindow === win) {
 			hudOverlayWindow = null;
+			hudMousePassthroughApplied = false;
 		}
 	});
 
@@ -843,12 +860,20 @@ ipcMain.handle(IPC_CHANNELS.hudWindow.setDropdownExpanded, (_event, expanded: bo
 	}
 });
 
+ipcMain.handle(IPC_CHANNELS.hudWindow.setMousePassthrough, (_event, enabled: boolean) => {
+	if (!hudOverlayWindow || hudOverlayWindow.isDestroyed()) return;
+
+	hudMousePassthroughRequested = Boolean(enabled);
+	applyHudMousePassthrough();
+});
+
 ipcMain.handle(IPC_CHANNELS.hudWindow.resize, (_event, contentVisible: boolean) => {
 	if (!hudOverlayWindow || hudOverlayWindow.isDestroyed()) return;
 
 	// Skip if already in the desired state — prevents redundant setBounds flicker
 	if (contentVisible === hudContentVisible) return;
 	hudContentVisible = contentVisible;
+	applyHudMousePassthrough();
 
 	const primaryDisplay = getScreen().getPrimaryDisplay();
 	const workArea =

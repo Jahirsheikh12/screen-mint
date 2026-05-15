@@ -172,6 +172,7 @@ export const IPC_CHANNELS = {
 		resize: "resize-hud-window",
 		syncCompactLayout: "sync-hud-compact-layout",
 		setDropdownExpanded: "hud-set-dropdown-expanded",
+		setMousePassthrough: "hud-set-mouse-passthrough",
 		recenterOnCursor: "hud-recenter-on-cursor",
 	},
 	mobileCapture: {

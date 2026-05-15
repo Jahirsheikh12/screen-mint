@@ -548,6 +548,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		ipcRenderer.invoke(IPC_CHANNELS.hudWindow.syncCompactLayout, layout),
 	setHudDropdownExpanded: (expanded: boolean) =>
 		ipcRenderer.invoke(IPC_CHANNELS.hudWindow.setDropdownExpanded, expanded),
+	setHudMousePassthrough: (enabled: boolean) =>
+		ipcRenderer.invoke(IPC_CHANNELS.hudWindow.setMousePassthrough, enabled),
 	recenterHudOnCursor: () => ipcRenderer.invoke(IPC_CHANNELS.hudWindow.recenterOnCursor),
 	autoSelectCursorDisplay: () => ipcRenderer.invoke(IPC_CHANNELS.capture.autoSelectCursorDisplay),
 });

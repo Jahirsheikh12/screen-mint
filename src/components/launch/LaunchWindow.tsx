@@ -23,6 +23,17 @@ import { DisplayTab } from "./tabs/DisplayTab";
 import { WindowTab } from "./tabs/WindowTab";
 
 const DROPDOWN_CLASSES = "border-white/10 bg-[#1c1c1e] text-white/90 shadow-xl shadow-black/50";
+const HUD_INTERACTIVE_SELECTOR = "[data-hud-interactive]";
+
+function pointHitsHudInteractiveElement(clientX: number, clientY: number): boolean {
+	return document
+		.elementsFromPoint(clientX, clientY)
+		.some((element) => element.closest(HUD_INTERACTIVE_SELECTOR));
+}
+
+function hasHoveredHudInteractiveElement(): boolean {
+	return document.querySelector(`${HUD_INTERACTIVE_SELECTOR}:hover`) !== null;
+}
 
 export function LaunchWindow() {
 	const hud = useHudState();
@@ -35,6 +46,16 @@ export function LaunchWindow() {
 	const compactHudRef = useRef<HTMLDivElement | null>(null);
 	const cameraPreviewRef = useRef<HTMLVideoElement | null>(null);
 	const lastSyncedLayoutRef = useRef<{ width: number; height: number } | null>(null);
+	const mousePassthroughRef = useRef<boolean | null>(null);
+
+	const setHudMousePassthrough = useCallback((enabled: boolean) => {
+		if (mousePassthroughRef.current === enabled) {
+			return;
+		}
+
+		mousePassthroughRef.current = enabled;
+		void window.electronAPI?.setHudMousePassthrough?.(enabled);
+	}, []);
 
 	// Sync mic device id
 	useEffect(() => {
@@ -268,6 +289,64 @@ export function LaunchWindow() {
 		};
 	}, []);
 
+	useEffect(() => {
+		if (showOverlay) {
+			setHudMousePassthrough(false);
+			return;
+		}
+
+		let frameId: number | null = null;
+		const syncFromPoint = (clientX?: number, clientY?: number) => {
+			if (frameId !== null) {
+				window.cancelAnimationFrame(frameId);
+			}
+
+			frameId = window.requestAnimationFrame(() => {
+				frameId = null;
+				const overInteractive =
+					typeof clientX === "number" && typeof clientY === "number"
+						? pointHitsHudInteractiveElement(clientX, clientY)
+						: hasHoveredHudInteractiveElement();
+				setHudMousePassthrough(!overInteractive);
+			});
+		};
+
+		const handleMouseMove = (event: MouseEvent) => {
+			syncFromPoint(event.clientX, event.clientY);
+		};
+
+		const handleMouseLeave = () => {
+			setHudMousePassthrough(true);
+		};
+
+		const handleBlur = () => {
+			setHudMousePassthrough(true);
+		};
+
+		syncFromPoint();
+		const observer = new MutationObserver(() => syncFromPoint());
+		observer.observe(document.body, {
+			attributeFilter: ["data-hud-interactive"],
+			attributes: true,
+			childList: true,
+			subtree: true,
+		});
+		window.addEventListener("mousemove", handleMouseMove, true);
+		document.addEventListener("mouseleave", handleMouseLeave);
+		window.addEventListener("blur", handleBlur);
+
+		return () => {
+			if (frameId !== null) {
+				window.cancelAnimationFrame(frameId);
+			}
+			observer.disconnect();
+			window.removeEventListener("mousemove", handleMouseMove, true);
+			document.removeEventListener("mouseleave", handleMouseLeave);
+			window.removeEventListener("blur", handleBlur);
+			setHudMousePassthrough(false);
+		};
+	}, [setHudMousePassthrough, showOverlay]);
+
 	return (
 		<div className="fixed inset-0 pointer-events-none">
 			{/* Fullscreen overlay backdrop */}
@@ -284,6 +363,7 @@ export function LaunchWindow() {
 				>
 					{/* Overlay content card */}
 					<div
+						data-hud-interactive=""
 						className={`rounded-2xl border w-full mx-8 ${overlayExiting ? styles.overlayExit : styles.overlayEnter} ${styles.electronNoDrag}`}
 						style={{
 							maxWidth: hud.mode === "window" ? "800px" : "680px",
@@ -414,6 +494,7 @@ export function LaunchWindow() {
 					hud.cameraSession.previewVisible &&
 					hud.cameraPreviewStream && (
 						<div
+							data-hud-interactive=""
 							className={`${styles.electronNoDrag} pointer-events-auto`}
 							style={{
 								order: hudWebcamPreviewLayout.order,
@@ -450,6 +531,7 @@ export function LaunchWindow() {
 				{/* Bottom toolbar */}
 				<div className={`flex justify-center pointer-events-none ${styles.hudToolbarEnter}`}>
 					<div
+						data-hud-interactive=""
 						className={`${styles.hudBar} w-fit max-w-full pointer-events-auto`}
 						style={{
 							borderRadius: 14,

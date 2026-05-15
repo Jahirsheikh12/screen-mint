@@ -1,15 +1,25 @@
-import type { CursorTelemetryPoint, ZoomFocus } from "../types";
+import type { CursorInteractionType, CursorTelemetryPoint, ZoomFocus, ZoomMode } from "../types";
+import { projectCursorSample } from "../videoPlayback/cursorProjection";
 
 export const MIN_DWELL_DURATION_MS = 450;
 export const MAX_DWELL_DURATION_MS = 2600;
 export const DWELL_MOVE_THRESHOLD = 0.02;
-export const AUTO_ZOOM_REGION_DURATION_MS = 1000;
-export const AUTO_ZOOM_SUGGESTION_SPACING_MS = 1800;
+export const AUTO_ZOOM_REGION_DURATION_MS = 1800;
+export const AUTO_ZOOM_SUGGESTION_SPACING_MS = 2400;
+const AUTO_ZOOM_MIN_REGION_DURATION_MS = 1200;
+const AUTO_ZOOM_MAX_REGION_DURATION_MS = 9000;
+const AUTO_ZOOM_LEAD_IN_MS = 420;
+const AUTO_ZOOM_LEAD_OUT_MS = 760;
+const AUTO_ZOOM_CLUSTER_GAP_MS = 900;
+const STATIC_LOCK_SPEED_THRESHOLD = 0.05;
+const ACTIVE_FOLLOW_DISTANCE_THRESHOLD = 0.04;
 
 export interface ZoomDwellCandidate {
 	centerTimeMs: number;
 	focus: ZoomFocus;
 	strength: number;
+	startMs?: number;
+	endMs?: number;
 }
 
 export interface CursorInteractionCandidate extends ZoomDwellCandidate {
@@ -27,51 +37,14 @@ export interface AutoZoomSuggestion {
 	startMs: number;
 	endMs: number;
 	focus: ZoomFocus;
+	mode?: ZoomMode;
+	confidence?: "high" | "medium" | "low";
+	kind?: CursorInteractionCandidate["kind"];
 }
 
 export interface AutoZoomSuggestionResult {
 	suggestions: AutoZoomSuggestion[];
 	status: "ok" | "insufficient-telemetry" | "no-candidates" | "no-slots";
-}
-
-function normalizeTelemetrySample(
-	sample: CursorTelemetryPoint,
-	totalMs: number,
-): CursorTelemetryPoint {
-	const bounds = sample.sourceBounds;
-	const hasSourceBounds =
-		bounds &&
-		Number.isFinite(bounds.x) &&
-		Number.isFinite(bounds.y) &&
-		Number.isFinite(bounds.width) &&
-		Number.isFinite(bounds.height) &&
-		bounds.width > 0 &&
-		bounds.height > 0;
-	const reprojectedCx =
-		hasSourceBounds && typeof sample.rawX === "number" && Number.isFinite(sample.rawX)
-			? (sample.rawX - bounds.x) / bounds.width
-			: sample.cx;
-	const reprojectedCy =
-		hasSourceBounds && typeof sample.rawY === "number" && Number.isFinite(sample.rawY)
-			? (sample.rawY - bounds.y) / bounds.height
-			: sample.cy;
-
-	return {
-		timeMs: Math.max(0, Math.min(sample.timeMs, totalMs)),
-		cx: Math.max(0, Math.min(reprojectedCx, 1)),
-		cy: Math.max(0, Math.min(reprojectedCy, 1)),
-		interactionType: sample.interactionType,
-		cursorType: sample.cursorType,
-		rawX: sample.rawX,
-		rawY: sample.rawY,
-		origin: sample.origin,
-		confidence: sample.confidence,
-		sourceBounds: sample.sourceBounds,
-		displayBounds: sample.displayBounds,
-		sourceDisplayId: sample.sourceDisplayId,
-		displayScaleFactor: sample.displayScaleFactor,
-		captureMode: sample.captureMode,
-	};
 }
 
 function applyCursorTypeInRange(
@@ -157,7 +130,7 @@ export function normalizeCursorTelemetry(
 					Number.isFinite(sample.cy),
 			)
 			.sort((a, b) => a.timeMs - b.timeMs)
-			.map((sample) => normalizeTelemetrySample(sample, totalMs)),
+			.map((sample) => projectCursorSample(sample, { totalMs })),
 	);
 
 	const interactions = detectInteractionCandidates(normalized);
@@ -227,7 +200,7 @@ export function detectZoomDwellCandidates(samples: CursorTelemetryPoint[]): Zoom
 		const start = samples[startIndex];
 		const end = samples[endIndexExclusive - 1];
 		const runDuration = end.timeMs - start.timeMs;
-		if (runDuration < MIN_DWELL_DURATION_MS || runDuration > MAX_DWELL_DURATION_MS) {
+		if (runDuration < MIN_DWELL_DURATION_MS) {
 			return;
 		}
 
@@ -238,7 +211,9 @@ export function detectZoomDwellCandidates(samples: CursorTelemetryPoint[]): Zoom
 		dwellCandidates.push({
 			centerTimeMs: Math.round((start.timeMs + end.timeMs) / 2),
 			focus: { cx: avgCx, cy: avgCy },
-			strength: runDuration,
+			strength: Math.min(runDuration, MAX_DWELL_DURATION_MS),
+			startMs: start.timeMs,
+			endMs: end.timeMs,
 		});
 	};
 
@@ -339,11 +314,6 @@ export function buildAutoZoomSuggestions(
 		return { suggestions: [], status: "insufficient-telemetry" };
 	}
 
-	const defaultDuration = Math.min(AUTO_ZOOM_REGION_DURATION_MS, totalMs);
-	if (defaultDuration <= 0) {
-		return { suggestions: [], status: "insufficient-telemetry" };
-	}
-
 	const candidates = detectInteractionCandidates(samples);
 	if (candidates.length === 0) {
 		return { suggestions: [], status: "no-candidates" };
@@ -352,7 +322,9 @@ export function buildAutoZoomSuggestions(
 	const blockedSpans = [...reservedSpans];
 	const acceptedCenters: number[] = [];
 	const suggestions: AutoZoomSuggestion[] = [];
-	const sortedCandidates = [...candidates].sort((a, b) => b.strength - a.strength);
+	const sortedCandidates = mergeInteractionClusters(samples, candidates).sort(
+		(a, b) => b.strength - a.strength,
+	);
 
 	for (const candidate of sortedCandidates) {
 		const tooCloseToAccepted = acceptedCenters.some(
@@ -362,9 +334,16 @@ export function buildAutoZoomSuggestions(
 			continue;
 		}
 
-		const centeredStart = Math.round(candidate.centerTimeMs - defaultDuration / 2);
-		const startMs = Math.max(0, Math.min(centeredStart, totalMs - defaultDuration));
-		const endMs = Math.min(totalMs, startMs + defaultDuration);
+		const desiredDuration = Math.min(
+			totalMs,
+			Math.max(
+				AUTO_ZOOM_MIN_REGION_DURATION_MS,
+				Math.min(AUTO_ZOOM_MAX_REGION_DURATION_MS, candidate.endMs - candidate.startMs),
+			),
+		);
+		const centeredStart = Math.round(candidate.centerTimeMs - desiredDuration * 0.45);
+		const startMs = Math.max(0, Math.min(centeredStart, Math.max(0, totalMs - desiredDuration)));
+		const endMs = Math.min(totalMs, startMs + desiredDuration);
 		const hasOverlap = blockedSpans.some((span) => endMs > span.start && startMs < span.end);
 
 		if (hasOverlap) {
@@ -375,6 +354,9 @@ export function buildAutoZoomSuggestions(
 			startMs,
 			endMs,
 			focus: candidate.focus,
+			mode: candidate.mode,
+			confidence: candidate.confidence,
+			kind: candidate.kind,
 		});
 		blockedSpans.push({ start: startMs, end: endMs });
 		acceptedCenters.push(candidate.centerTimeMs);
@@ -465,4 +447,222 @@ function classifyPostClickBehavior(
 	}
 
 	return "click-like";
+}
+
+interface AutoZoomCluster {
+	startMs: number;
+	endMs: number;
+	centerTimeMs: number;
+	focus: ZoomFocus;
+	strength: number;
+	kind: CursorInteractionCandidate["kind"];
+	mode: ZoomMode;
+	confidence: "high" | "medium" | "low";
+}
+
+function isExplicitInteraction(type: CursorInteractionType | undefined) {
+	return Boolean(type && type !== "move" && type !== "mouseup");
+}
+
+function getSamplesInRange(samples: CursorTelemetryPoint[], startMs: number, endMs: number) {
+	return samples.filter((sample) => sample.timeMs >= startMs && sample.timeMs <= endMs);
+}
+
+function getClusterWindow(
+	samples: CursorTelemetryPoint[],
+	candidate: CursorInteractionCandidate,
+): { startMs: number; endMs: number } {
+	const baseStart = Math.max(0, candidate.centerTimeMs - AUTO_ZOOM_LEAD_IN_MS);
+	const baseEnd = candidate.centerTimeMs + AUTO_ZOOM_LEAD_OUT_MS;
+
+	if (candidate.kind === "text-selection") {
+		const dragEnd = samples.find(
+			(sample) =>
+				sample.timeMs >= candidate.centerTimeMs &&
+				(sample.interactionType === "drag-end" || sample.interactionType === "mouseup"),
+		);
+		return {
+			startMs: baseStart,
+			endMs: Math.max(baseEnd, (dragEnd?.timeMs ?? candidate.centerTimeMs) + 900),
+		};
+	}
+
+	if (candidate.kind === "dropdown-open") {
+		return { startMs: baseStart, endMs: candidate.centerTimeMs + 1800 };
+	}
+
+	if (
+		candidate.kind === "text-field-click" ||
+		candidate.kind === "text-focus-like" ||
+		candidate.kind === "double-click-like"
+	) {
+		if (
+			candidate.kind === "text-focus-like" &&
+			candidate.startMs !== undefined &&
+			candidate.endMs !== undefined
+		) {
+			return {
+				startMs: Math.max(0, candidate.startMs - AUTO_ZOOM_LEAD_IN_MS),
+				endMs: candidate.endMs + AUTO_ZOOM_LEAD_OUT_MS,
+			};
+		}
+		return { startMs: baseStart, endMs: candidate.centerTimeMs + 1500 };
+	}
+
+	return { startMs: baseStart, endMs: baseEnd };
+}
+
+function getWeightedFocus(
+	samples: CursorTelemetryPoint[],
+	candidate: CursorInteractionCandidate,
+	startMs: number,
+	endMs: number,
+): ZoomFocus {
+	const windowSamples = getSamplesInRange(samples, startMs, endMs);
+	const meaningful = windowSamples.filter(
+		(sample) => sample.confidence !== "low" || isExplicitInteraction(sample.interactionType),
+	);
+	const source = meaningful.length > 0 ? meaningful : windowSamples;
+
+	if (source.length === 0) {
+		return candidate.focus;
+	}
+
+	let totalWeight = 0;
+	let x = 0;
+	let y = 0;
+	for (const sample of source) {
+		const age = Math.abs(sample.timeMs - candidate.centerTimeMs);
+		const proximityWeight = Math.max(0.25, 1 - age / Math.max(1, endMs - startMs));
+		const interactionWeight = isExplicitInteraction(sample.interactionType) ? 2.2 : 1;
+		const confidenceWeight =
+			sample.confidence === "low" ? 0.4 : sample.confidence === "medium" ? 0.8 : 1;
+		const weight = proximityWeight * interactionWeight * confidenceWeight;
+		totalWeight += weight;
+		x += sample.cx * weight;
+		y += sample.cy * weight;
+	}
+
+	return totalWeight > 0 ? { cx: x / totalWeight, cy: y / totalWeight } : candidate.focus;
+}
+
+function shouldUseCursorFollow(
+	samples: CursorTelemetryPoint[],
+	startMs: number,
+	endMs: number,
+	kind: CursorInteractionCandidate["kind"],
+) {
+	if (
+		kind === "text-field-click" ||
+		kind === "text-focus-like" ||
+		kind === "text-selection" ||
+		kind === "double-click-like"
+	) {
+		return false;
+	}
+
+	const windowSamples = getSamplesInRange(samples, startMs, endMs).filter(
+		(sample) => sample.confidence !== "low",
+	);
+	if (windowSamples.length < 2) {
+		return false;
+	}
+
+	let maxDistance = 0;
+	let maxSpeed = 0;
+	const first = windowSamples[0];
+	for (let index = 1; index < windowSamples.length; index += 1) {
+		const current = windowSamples[index];
+		maxDistance = Math.max(maxDistance, Math.hypot(current.cx - first.cx, current.cy - first.cy));
+		maxSpeed = Math.max(maxSpeed, Math.hypot(current.velocityX ?? 0, current.velocityY ?? 0));
+	}
+
+	return maxDistance >= ACTIVE_FOLLOW_DISTANCE_THRESHOLD || maxSpeed >= STATIC_LOCK_SPEED_THRESHOLD;
+}
+
+function getClusterConfidence(samples: CursorTelemetryPoint[], startMs: number, endMs: number) {
+	const windowSamples = getSamplesInRange(samples, startMs, endMs);
+	if (windowSamples.length === 0) {
+		return "low" as const;
+	}
+
+	const lowCount = windowSamples.filter((sample) => sample.confidence === "low").length;
+	if (lowCount / windowSamples.length > 0.45) {
+		return "low" as const;
+	}
+	return lowCount > 0 ? ("medium" as const) : ("high" as const);
+}
+
+function mergeInteractionClusters(
+	samples: CursorTelemetryPoint[],
+	candidates: CursorInteractionCandidate[],
+): AutoZoomCluster[] {
+	const sorted = [...candidates].sort((a, b) => a.centerTimeMs - b.centerTimeMs);
+	const clusters: AutoZoomCluster[] = [];
+
+	for (const candidate of sorted) {
+		const window = getClusterWindow(samples, candidate);
+		const focus = getWeightedFocus(samples, candidate, window.startMs, window.endMs);
+		const mode = shouldUseCursorFollow(samples, window.startMs, window.endMs, candidate.kind)
+			? "cursor-follow"
+			: "static";
+		const cluster: AutoZoomCluster = {
+			startMs: window.startMs,
+			endMs: window.endMs,
+			centerTimeMs: candidate.centerTimeMs,
+			focus,
+			strength: candidate.strength,
+			kind: candidate.kind,
+			mode,
+			confidence: getClusterConfidence(samples, window.startMs, window.endMs),
+		};
+
+		const previous = clusters[clusters.length - 1];
+		const shouldMerge =
+			previous &&
+			cluster.startMs - previous.endMs <= AUTO_ZOOM_CLUSTER_GAP_MS &&
+			Math.hypot(cluster.focus.cx - previous.focus.cx, cluster.focus.cy - previous.focus.cy) <=
+				0.18;
+
+		if (!shouldMerge || !previous) {
+			clusters.push(cluster);
+			continue;
+		}
+
+		const totalStrength = previous.strength + cluster.strength;
+		previous.startMs = Math.min(previous.startMs, cluster.startMs);
+		previous.endMs = Math.max(previous.endMs, cluster.endMs);
+		previous.centerTimeMs = Math.round(
+			(previous.centerTimeMs * previous.strength + cluster.centerTimeMs * cluster.strength) /
+				totalStrength,
+		);
+		previous.focus = {
+			cx:
+				(previous.focus.cx * previous.strength + cluster.focus.cx * cluster.strength) /
+				totalStrength,
+			cy:
+				(previous.focus.cy * previous.strength + cluster.focus.cy * cluster.strength) /
+				totalStrength,
+		};
+		previous.strength = totalStrength + 300;
+		previous.mode =
+			previous.mode === "cursor-follow" || cluster.mode === "cursor-follow"
+				? "cursor-follow"
+				: "static";
+		previous.confidence =
+			previous.confidence === "low" || cluster.confidence === "low"
+				? "low"
+				: previous.confidence === "medium" || cluster.confidence === "medium"
+					? "medium"
+					: "high";
+		if (
+			cluster.kind === "double-click-like" ||
+			cluster.kind === "text-selection" ||
+			cluster.kind === "text-focus-like"
+		) {
+			previous.kind = cluster.kind;
+		}
+	}
+
+	return clusters;
 }

@@ -960,7 +960,11 @@ export default function TimelineEditor({
 		let addedCount = 0;
 
 		for (const suggestion of suggestionResult.suggestions) {
-			onZoomSuggested({ start: suggestion.startMs, end: suggestion.endMs }, suggestion.focus);
+			onZoomSuggested(
+				{ start: suggestion.startMs, end: suggestion.endMs },
+				suggestion.focus,
+				suggestion.mode,
+			);
 			addedCount += 1;
 		}
 

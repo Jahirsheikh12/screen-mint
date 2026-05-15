@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_CURSOR_FOLLOW_TRACKING, type ZoomRegion } from "../types";
 import type { CursorMotionSnapshot } from "./cursorSimulation";
-import { resolveZoomRegionFocus } from "./smartZoomController";
+import { resolveViewportContainedFocus, resolveZoomRegionFocus } from "./smartZoomController";
 
 const baseRegion: ZoomRegion = {
 	id: "zoom-1",
@@ -33,12 +33,50 @@ function makeCursor(overrides: Partial<CursorMotionSnapshot> = {}): CursorMotion
 		isTextInput: false,
 		intent: "idle",
 		confidence: "high",
+		isActive: true,
+		lastActiveTimeMs: 500,
+		lastBecameActiveTimeMs: 0,
+		lastBecameInactiveTimeMs: 0,
 		isDiscontinuous: false,
 		...overrides,
 	};
 }
 
 describe("resolveZoomRegionFocus", () => {
+	it("keeps focus fixed while the cursor remains inside the zoom safe box", () => {
+		const result = resolveViewportContainedFocus({
+			currentFocus: { cx: 0.5, cy: 0.5 },
+			cursorFocus: { cx: 0.58, cy: 0.43 },
+			zoomScale: 3,
+		});
+
+		expect(result.cx).toBeCloseTo(0.5, 5);
+		expect(result.cy).toBeCloseTo(0.5, 5);
+	});
+
+	it("pans minimally when the cursor exits the zoom safe box", () => {
+		const result = resolveViewportContainedFocus({
+			currentFocus: { cx: 0.5, cy: 0.5 },
+			cursorFocus: { cx: 0.72, cy: 0.5 },
+			zoomScale: 3,
+		});
+
+		expect(result.cx).toBeCloseTo(0.617, 3);
+		expect(result.cy).toBeCloseTo(0.5, 5);
+		expect(result.cx).toBeLessThan(0.72);
+	});
+
+	it("ignores tiny boundary noise around the zoom safe box", () => {
+		const result = resolveViewportContainedFocus({
+			currentFocus: { cx: 0.5, cy: 0.5 },
+			cursorFocus: { cx: 0.606, cy: 0.5 },
+			zoomScale: 3,
+		});
+
+		expect(result.cx).toBeCloseTo(0.5, 5);
+		expect(result.cy).toBeCloseTo(0.5, 5);
+	});
+
 	it("returns static focus for static zoom regions", () => {
 		const result = resolveZoomRegionFocus(
 			{ ...baseRegion, mode: "static", focus: { cx: 0.42, cy: 0.61 } },
@@ -50,12 +88,15 @@ describe("resolveZoomRegionFocus", () => {
 		expect(result.smoothTimeFactor).toBe(1.0);
 	});
 
-	it("holds focus during text interactions", () => {
+	it("holds current focus during fresh text interactions", () => {
 		const result = resolveZoomRegionFocus(
 			baseRegion,
 			makeCursor({
+				cx: 0.78,
+				cy: 0.68,
 				cursorType: "text",
 				isTextInput: true,
+				intent: "typing",
 				latestInteractionType: "click",
 				latestInteractionAgeMs: 120,
 			}),
@@ -78,7 +119,7 @@ describe("resolveZoomRegionFocus", () => {
 		expect(result.focus.cy).toBeCloseTo(0.5, 1);
 	});
 
-	it("returns raw target for large cursor movements (no speed capping)", () => {
+	it("pans minimally for large active cursor movements outside the safe box", () => {
 		const result = resolveZoomRegionFocus(
 			baseRegion,
 			makeCursor({ cx: 0.9, cy: 0.82, velocityX: 0, velocityY: 0 }),
@@ -86,17 +127,18 @@ describe("resolveZoomRegionFocus", () => {
 			1 / 60,
 		);
 
-		// With speed capping removed, target should be near the cursor position
-		// (soft-clamped to viewport bounds for depth 3 / scale 1.8)
 		expect(result.focus.cx).toBeGreaterThan(0.7);
-		expect(result.focus.cy).toBeGreaterThan(0.7);
+		expect(result.focus.cx).toBeLessThan(0.9);
+		expect(result.focus.cy).toBeCloseTo(0.648, 3);
 		expect(result.smoothTimeFactor).toBe(1.0);
 	});
 
-	it("locks focus during typing intent even without a fresh click", () => {
+	it("holds focus during typing intent even without a fresh click", () => {
 		const result = resolveZoomRegionFocus(
 			baseRegion,
 			makeCursor({
+				cx: 0.7,
+				cy: 0.62,
 				cursorType: "text",
 				isTextInput: true,
 				intent: "typing",
@@ -107,6 +149,25 @@ describe("resolveZoomRegionFocus", () => {
 		);
 		expect(result.focus.cx).toBeCloseTo(0.48, 1);
 		expect(result.focus.cy).toBeCloseTo(0.51, 1);
+	});
+
+	it("holds focus for inactive cursor jitter", () => {
+		const result = resolveZoomRegionFocus(
+			baseRegion,
+			makeCursor({
+				cx: 0.56,
+				cy: 0.54,
+				velocityX: 0.01,
+				velocityY: 0.01,
+				speed: Math.hypot(0.01, 0.01),
+				isActive: false,
+			}),
+			{ cx: 0.5, cy: 0.5 },
+			1 / 60,
+		);
+
+		expect(result.focus.cx).toBeCloseTo(0.5, 2);
+		expect(result.focus.cy).toBeCloseTo(0.5, 2);
 	});
 
 	it("returns lower smoothTimeFactor for targeting intent (faster tracking)", () => {

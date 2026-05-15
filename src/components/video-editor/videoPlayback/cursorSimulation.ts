@@ -4,6 +4,7 @@ import type {
 	CursorTelemetryPoint,
 	CursorType,
 } from "../types";
+import { projectCursorSample } from "./cursorProjection";
 
 const SIMULATION_SAMPLE_MS = 1000 / 60;
 const GAP_FILL_LIMIT_MS = 180;
@@ -156,53 +157,13 @@ function mergeSamplesAtSameTimestamp(
 	};
 }
 
-function hasTelemetryBounds(
-	bounds: CursorTelemetryPoint["sourceBounds"] | CursorTelemetryPoint["displayBounds"],
-) {
-	return Boolean(
-		bounds &&
-			Number.isFinite(bounds.x) &&
-			Number.isFinite(bounds.y) &&
-			Number.isFinite(bounds.width) &&
-			Number.isFinite(bounds.height) &&
-			bounds.width > 0 &&
-			bounds.height > 0,
-	);
-}
-
-function reprojectTelemetrySample(sample: CursorTelemetryPoint): CursorTelemetryPoint {
-	const bounds = sample.sourceBounds;
-	if (
-		!bounds ||
-		typeof sample.rawX !== "number" ||
-		!Number.isFinite(sample.rawX) ||
-		typeof sample.rawY !== "number" ||
-		!Number.isFinite(sample.rawY) ||
-		!hasTelemetryBounds(bounds)
-	) {
-		return sample;
-	}
-
-	return {
-		...sample,
-		cx: (sample.rawX - bounds.x) / bounds.width,
-		cy: (sample.rawY - bounds.y) / bounds.height,
-	};
-}
-
 function normalizeSimulationSamples(samples: CursorTelemetryPoint[], durationMs: number) {
 	const normalized = [...samples]
 		.filter(
 			(sample) =>
 				Number.isFinite(sample.timeMs) && Number.isFinite(sample.cx) && Number.isFinite(sample.cy),
 		)
-		.map((sample) => reprojectTelemetrySample(sample))
-		.map((sample) => ({
-			...sample,
-			timeMs: clamp(Math.round(sample.timeMs), 0, durationMs),
-			cx: clamp01(sample.cx),
-			cy: clamp01(sample.cy),
-		}))
+		.map((sample) => projectCursorSample(sample, { totalMs: durationMs }))
 		.sort((left, right) => left.timeMs - right.timeMs);
 
 	if (normalized.length <= 1) {

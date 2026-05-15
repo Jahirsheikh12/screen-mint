@@ -120,4 +120,237 @@ describe("cameraEvaluator parity", () => {
 		expect(Math.abs(lowFpsState.focusY - highFpsState.focusY)).toBeLessThan(0.1);
 		expect(Math.abs(lowFpsState.scale - highFpsState.scale)).toBeLessThan(0.1);
 	});
+
+	it("holds the camera target through cursor-follow jitter", () => {
+		const jitterPath = buildCursorSimulationPath(
+			[
+				{ timeMs: 0, cx: 0.5, cy: 0.5, confidence: "high" },
+				{ timeMs: 80, cx: 0.508, cy: 0.494, confidence: "high" },
+				{ timeMs: 160, cx: 0.492, cy: 0.506, confidence: "high" },
+				{ timeMs: 240, cx: 0.509, cy: 0.493, confidence: "high" },
+				{ timeMs: 320, cx: 0.491, cy: 0.507, confidence: "high" },
+				{ timeMs: 400, cx: 0.5, cy: 0.5, confidence: "high" },
+			],
+			400,
+		);
+		let state = createPlaybackCameraState();
+		const heldTargets: Array<{ x: number; y: number }> = [];
+
+		for (let timeMs = 0; timeMs <= 400; timeMs += 1000 / 60) {
+			const evaluation = evaluatePlaybackCameraFrame({
+				state,
+				frameTimeMs: timeMs,
+				playbackTimeMs: timeMs,
+				cursorSimulationPath: jitterPath,
+				zoomRegions: [
+					{
+						id: "jitter-follow",
+						startMs: 0,
+						endMs: 400,
+						depth: 3,
+						focus: { cx: 0.5, cy: 0.5 },
+						mode: "cursor-follow",
+					},
+				],
+				geometry: {
+					stageSize: { width: 1920, height: 1080 },
+					baseMask: { x: 160, y: 90, width: 1600, height: 900 },
+				},
+				shouldSmooth: true,
+			});
+			state = evaluation.state;
+			heldTargets.push({ x: state.targetFocusX, y: state.targetFocusY });
+		}
+
+		const xRange =
+			Math.max(...heldTargets.map((target) => target.x)) -
+			Math.min(...heldTargets.map((target) => target.x));
+		const yRange =
+			Math.max(...heldTargets.map((target) => target.y)) -
+			Math.min(...heldTargets.map((target) => target.y));
+
+		expect(xRange).toBeLessThan(0.001);
+		expect(yRange).toBeLessThan(0.001);
+	});
+
+	it("does not move the cursor-follow camera while the cursor travels inside the zoom safe area", () => {
+		const insideSafeAreaPath = buildCursorSimulationPath(
+			[
+				{ timeMs: 0, cx: 0.5, cy: 0.5, confidence: "high" },
+				{ timeMs: 120, cx: 0.54, cy: 0.47, confidence: "high" },
+				{ timeMs: 240, cx: 0.58, cy: 0.43, confidence: "high" },
+				{ timeMs: 360, cx: 0.59, cy: 0.56, confidence: "high" },
+			],
+			360,
+		);
+		let state = createPlaybackCameraState();
+		const targets: Array<{ x: number; y: number }> = [];
+
+		for (let timeMs = 0; timeMs <= 360; timeMs += 1000 / 60) {
+			const evaluation = evaluatePlaybackCameraFrame({
+				state,
+				frameTimeMs: timeMs,
+				playbackTimeMs: timeMs,
+				cursorSimulationPath: insideSafeAreaPath,
+				zoomRegions: [
+					{
+						id: "safe-area-follow",
+						startMs: 0,
+						endMs: 360,
+						depth: 3,
+						focus: { cx: 0.5, cy: 0.5 },
+						mode: "cursor-follow",
+					},
+				],
+				geometry: {
+					stageSize: { width: 1920, height: 1080 },
+					baseMask: { x: 160, y: 90, width: 1600, height: 900 },
+				},
+				shouldSmooth: true,
+			});
+			state = evaluation.state;
+			targets.push({ x: state.targetFocusX, y: state.targetFocusY });
+		}
+
+		expect(Math.max(...targets.map((target) => target.x))).toBeCloseTo(0.5, 5);
+		expect(Math.min(...targets.map((target) => target.x))).toBeCloseTo(0.5, 5);
+		expect(Math.max(...targets.map((target) => target.y))).toBeCloseTo(0.5, 5);
+		expect(Math.min(...targets.map((target) => target.y))).toBeCloseTo(0.5, 5);
+	});
+
+	it("moves the cursor-follow target minimally after the cursor exits the zoom safe area", () => {
+		const outsideSafeAreaPath = buildCursorSimulationPath(
+			[
+				{ timeMs: 0, cx: 0.72, cy: 0.5, confidence: "high", interactionType: "move" },
+				{ timeMs: 120, cx: 0.72, cy: 0.5, confidence: "high", interactionType: "move" },
+			],
+			120,
+		);
+		const evaluation = evaluatePlaybackCameraFrame({
+			state: createPlaybackCameraState(),
+			frameTimeMs: 0,
+			playbackTimeMs: 0,
+			cursorSimulationPath: outsideSafeAreaPath,
+			zoomRegions: [
+				{
+					id: "outside-safe-area-follow",
+					startMs: 0,
+					endMs: 120,
+					depth: 3,
+					focus: { cx: 0.5, cy: 0.5 },
+					mode: "cursor-follow",
+				},
+			],
+			geometry: {
+				stageSize: { width: 1920, height: 1080 },
+				baseMask: { x: 160, y: 90, width: 1600, height: 900 },
+			},
+			shouldSmooth: true,
+		});
+
+		expect(evaluation.state.targetFocusX).toBeCloseTo(0.548, 3);
+		expect(evaluation.state.targetFocusX).toBeLessThan(0.72);
+		expect(evaluation.state.targetFocusY).toBeCloseTo(0.5, 5);
+	});
+
+	it("eases the camera target during continuous cursor-follow movement", () => {
+		const movingPath = buildCursorSimulationPath(
+			[
+				{ timeMs: 0, cx: 0.5, cy: 0.45, confidence: "high", interactionType: "move" },
+				{ timeMs: 120, cx: 0.56, cy: 0.48, confidence: "high", interactionType: "move" },
+				{ timeMs: 240, cx: 0.62, cy: 0.5, confidence: "high", interactionType: "move" },
+				{ timeMs: 360, cx: 0.74, cy: 0.52, confidence: "high", interactionType: "move" },
+				{ timeMs: 480, cx: 0.9, cy: 0.54, confidence: "high", interactionType: "move" },
+			],
+			480,
+		);
+		let state = createPlaybackCameraState();
+		const heldTargets: number[] = [];
+
+		for (let timeMs = 0; timeMs <= 480; timeMs += 1000 / 60) {
+			const evaluation = evaluatePlaybackCameraFrame({
+				state,
+				frameTimeMs: timeMs,
+				playbackTimeMs: timeMs,
+				cursorSimulationPath: movingPath,
+				zoomRegions: [
+					{
+						id: "smooth-follow",
+						startMs: 0,
+						endMs: 1000,
+						depth: 3,
+						focus: { cx: 0.5, cy: 0.5 },
+						mode: "cursor-follow",
+					},
+				],
+				geometry: {
+					stageSize: { width: 1920, height: 1080 },
+					baseMask: { x: 160, y: 90, width: 1600, height: 900 },
+				},
+				shouldSmooth: true,
+			});
+			state = evaluation.state;
+			heldTargets.push(state.targetFocusX);
+		}
+
+		const maxStep = Math.max(
+			...heldTargets.slice(1).map((target, index) => Math.abs(target - heldTargets[index])),
+		);
+		const reversals = heldTargets.slice(2).filter((target, index) => {
+			const previous = heldTargets[index + 1];
+			const beforePrevious = heldTargets[index];
+			return target < previous && previous >= beforePrevious;
+		});
+
+		expect(maxStep).toBeLessThan(0.08);
+		expect(reversals).toHaveLength(0);
+		expect(heldTargets[heldTargets.length - 1]).toBeGreaterThan(heldTargets[0]);
+	});
+
+	it("moves camera focus monotonically without spring rebound", () => {
+		const movingPath = buildCursorSimulationPath(
+			[
+				{ timeMs: 0, cx: 0.5, cy: 0.5, confidence: "high", interactionType: "move" },
+				{ timeMs: 120, cx: 0.6, cy: 0.5, confidence: "high", interactionType: "move" },
+				{ timeMs: 240, cx: 0.76, cy: 0.5, confidence: "high", interactionType: "move" },
+				{ timeMs: 360, cx: 0.84, cy: 0.5, confidence: "high", interactionType: "move" },
+				{ timeMs: 480, cx: 0.9, cy: 0.5, confidence: "high", interactionType: "move" },
+			],
+			480,
+		);
+		let state = createPlaybackCameraState();
+		const focusX: number[] = [];
+
+		for (let timeMs = 0; timeMs <= 480; timeMs += 1000 / 60) {
+			const evaluation = evaluatePlaybackCameraFrame({
+				state,
+				frameTimeMs: timeMs,
+				playbackTimeMs: timeMs,
+				cursorSimulationPath: movingPath,
+				zoomRegions: [
+					{
+						id: "monotonic-follow",
+						startMs: 0,
+						endMs: 1000,
+						depth: 3,
+						focus: { cx: 0.5, cy: 0.5 },
+						mode: "cursor-follow",
+					},
+				],
+				geometry: {
+					stageSize: { width: 1920, height: 1080 },
+					baseMask: { x: 160, y: 90, width: 1600, height: 900 },
+				},
+				shouldSmooth: true,
+			});
+			state = evaluation.state;
+			focusX.push(state.focusX);
+		}
+
+		const backwardsSteps = focusX.slice(1).filter((value, index) => value < focusX[index] - 0.0001);
+
+		expect(backwardsSteps).toHaveLength(0);
+		expect(Math.max(...focusX)).toBeLessThanOrEqual(state.targetFocusX + 0.0001);
+		expect(focusX[focusX.length - 1]).toBeGreaterThan(focusX[0]);
+	});
 });

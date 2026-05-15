@@ -374,7 +374,7 @@ export function buildAutoZoomRegionsFromTelemetry(
 		endMs: suggestion.endMs,
 		depth: context.aspectRatio === "9:16" ? 4 : 3,
 		focus: suggestion.focus,
-		mode: "cursor-follow",
+		mode: suggestion.mode ?? "cursor-follow",
 		tracking: DEFAULT_CURSOR_FOLLOW_TRACKING,
 	}));
 }
