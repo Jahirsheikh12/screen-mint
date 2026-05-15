@@ -1,8 +1,6 @@
 import gsap from "gsap";
 import { useEffect, useRef } from "react";
 import { prefersReducedMotion } from "../hooks/useGSAP";
-import { Badge } from "./ui/badge";
-import { Card } from "./ui/card";
 
 const features = [
 	{
@@ -96,34 +94,44 @@ function FeatureCard({
 	const isFullWidth = index === 5;
 
 	return (
-		<Card
+		<div
 			ref={ref}
-			className={`feature-card col-span-12 ${gridClass} rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden group will-animate shadow-none text-inherit`}
+			className={`col-span-12 ${gridClass} group relative flex flex-col overflow-hidden rounded-[2rem] bg-[#0a0a0a]/80 border border-white/[0.05] backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:border-brand-500/30 hover:bg-[#0f0f0f]/90 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] hover:shadow-2xl hover:shadow-black/60 will-animate`}
 		>
-			{/* Image */}
-			<div className={`relative overflow-hidden ${isFullWidth ? "max-h-[400px]" : "aspect-video"}`}>
+			{/* Hover Radial Glow Inside Card */}
+			<div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/[0.03] to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100 pointer-events-none"></div>
+
+			{/* Image Area */}
+			<div className={`relative w-full ${isFullWidth ? "h-[300px] md:h-[400px]" : "h-[220px] md:h-[260px]"} overflow-hidden bg-black/50`}>
+				{/* Image with subtle zoom on hover */}
 				<img
 					src={image}
 					alt={title}
-					className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+					className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
 					loading="lazy"
 				/>
-				<div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+				
+				{/* Gradient Mask to fade image into card background */}
+				<div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a]/90 via-[#0a0a0a]/30 to-transparent group-hover:from-[#0f0f0f]/95 transition-colors duration-500 pointer-events-none" />
 
-				{/* Feature number badge */}
-				<Badge className="absolute top-4 left-4 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-brand-500/10 border border-brand-500/20 p-0 text-[11px] font-semibold text-brand-400 shadow-none backdrop-blur-sm">
-					0{index + 1}
-				</Badge>
+				{/* Premium Glowing Pill Badge */}
+				<div className="absolute top-5 left-5 z-10 flex items-center justify-center px-3.5 py-1.5 rounded-full bg-black/40 border border-white/10 backdrop-blur-md shadow-lg group-hover:bg-brand-500/20 group-hover:border-brand-500/40 group-hover:shadow-[0_0_15px_rgba(245,158,11,0.3)] transition-all duration-500">
+					<span className="text-[11px] font-bold tracking-widest text-white/70 uppercase group-hover:text-brand-400 transition-colors duration-500">
+						{index + 1 < 10 ? `0${index + 1}` : index + 1}
+					</span>
+				</div>
 			</div>
 
-			{/* Content */}
-			<div className="p-6">
-				<h3 className="text-[18px] md:text-[20px] font-semibold tracking-[-0.02em] text-white mb-2 group-hover:text-brand-400 transition-colors duration-300">
+			{/* Text Content Area */}
+			<div className="relative z-10 flex flex-col p-6 md:p-8 pt-0 mt-[-20px] md:mt-[-40px]">
+				<h3 className="text-[20px] md:text-[22px] font-semibold tracking-[-0.02em] text-white/90 mb-3 group-hover:text-white transition-colors duration-300 drop-shadow-md">
 					{title}
 				</h3>
-				<p className="text-[14px] text-white/30 leading-relaxed max-w-[480px]">{description}</p>
+				<p className="text-[14px] md:text-[15px] text-white/40 leading-relaxed max-w-[500px] group-hover:text-white/60 transition-colors duration-500">
+					{description}
+				</p>
 			</div>
-		</Card>
+		</div>
 	);
 }
 
@@ -175,24 +183,28 @@ export function Features() {
 	}, []);
 
 	return (
-		<section ref={sectionRef} id="features" className="relative py-20 md:py-28 px-6">
-			<div className="section-divider max-w-6xl mx-auto mb-20" />
+		<section ref={sectionRef} id="features" className="relative py-24 md:py-32 px-6 overflow-hidden">
+			{/* Ambient Background Glows */}
+			<div className="absolute top-[20%] left-[-10%] w-[600px] h-[600px] bg-brand-500/5 blur-[120px] rounded-full pointer-events-none"></div>
+			<div className="absolute bottom-[-10%] right-[-10%] w-[800px] h-[800px] bg-blue-500/5 blur-[120px] rounded-full pointer-events-none"></div>
 
-			<div className="max-w-6xl mx-auto">
-				<div className="text-center mb-16 lg:mb-20">
+			<div className="section-divider max-w-6xl mx-auto mb-24 relative z-10" />
+
+			<div className="max-w-6xl mx-auto relative z-10">
+				<div className="text-center mb-16 lg:mb-24">
 					<p className="features-eyebrow section-eyebrow mb-4 will-animate">Features</p>
-					<h2 className="features-headline section-headline mb-5 will-animate">
+					<h2 className="features-headline section-headline mb-6 will-animate">
 						Everything you need.
 						<br />
 						<span className="text-white/20">Nothing you don&apos;t.</span>
 					</h2>
-					<p className="features-copy section-copy max-w-md mx-auto will-animate">
-						Record, edit, and export polished screen recordings. All in one app, all for free.
+					<p className="features-copy section-copy max-w-[540px] mx-auto will-animate">
+						Record, edit, and export polished screen recordings. All in one app, all for free. Designed for creators who care about the details.
 					</p>
 				</div>
 
-				{/* Bento grid */}
-				<div className="grid grid-cols-12 gap-4">
+				{/* Premium Bento grid */}
+				<div className="grid grid-cols-12 gap-5 md:gap-6 lg:gap-8">
 					{features.map((feature, index) => (
 						<FeatureCard
 							key={feature.title}
