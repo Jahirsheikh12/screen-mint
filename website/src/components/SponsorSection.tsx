@@ -33,39 +33,39 @@ export function SponsorSection() {
 		const ctx = gsap.context(() => {
 			gsap.fromTo(
 				".sponsor-heading",
-				{ opacity: 0, y: 30 },
+				{ opacity: 0, y: 15 },
 				{
 					opacity: 1,
 					y: 0,
 					duration: 0.7,
 					ease: "power2.out",
-					scrollTrigger: { trigger: ".sponsor-heading", start: "top 85%", once: true },
+					scrollTrigger: { trigger: ".sponsor-heading", start: "top 95%", once: true },
 				},
 			);
 
 			gsap.fromTo(
 				".sponsor-hero-cta",
-				{ opacity: 0, y: 30, scale: 0.97 },
+				{ opacity: 0, y: 15, scale: 0.98 },
 				{
 					opacity: 1,
 					y: 0,
 					scale: 1,
 					duration: 0.8,
 					ease: "power2.out",
-					scrollTrigger: { trigger: ".sponsor-hero-cta", start: "top 85%", once: true },
+					scrollTrigger: { trigger: ".sponsor-hero-cta", start: "top 95%", once: true },
 				},
 			);
 
 			gsap.fromTo(
 				".sponsor-card",
-				{ opacity: 0, y: 24 },
+				{ opacity: 0, y: 15 },
 				{
 					opacity: 1,
 					y: 0,
 					duration: 0.6,
 					stagger: 0.1,
 					ease: "power2.out",
-					scrollTrigger: { trigger: ".sponsor-grid", start: "top 85%", once: true },
+					scrollTrigger: { trigger: ".sponsor-grid", start: "top 95%", once: true },
 				},
 			);
 		}, sectionRef);

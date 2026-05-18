@@ -62,39 +62,39 @@ export function FAQ() {
 		const ctx = gsap.context(() => {
 			gsap.fromTo(
 				".faq-heading",
-				{ opacity: 0, y: 30 },
+				{ opacity: 0, y: 15 },
 				{
 					opacity: 1,
 					y: 0,
 					duration: 0.7,
 					ease: "power2.out",
-					scrollTrigger: { trigger: ".faq-heading", start: "top 85%", once: true },
+					scrollTrigger: { trigger: ".faq-heading", start: "top 95%", once: true },
 				},
 			);
 
 			gsap.fromTo(
 				".faq-col-left .faq-item-wrap",
-				{ opacity: 0, x: -20 },
+				{ opacity: 0, x: -10 },
 				{
 					opacity: 1,
 					x: 0,
 					duration: 0.5,
 					stagger: 0.06,
 					ease: "power2.out",
-					scrollTrigger: { trigger: ".faq-grid", start: "top 85%", once: true },
+					scrollTrigger: { trigger: ".faq-grid", start: "top 95%", once: true },
 				},
 			);
 
 			gsap.fromTo(
 				".faq-col-right .faq-item-wrap",
-				{ opacity: 0, x: 20 },
+				{ opacity: 0, x: 10 },
 				{
 					opacity: 1,
 					x: 0,
 					duration: 0.5,
 					stagger: 0.06,
 					ease: "power2.out",
-					scrollTrigger: { trigger: ".faq-grid", start: "top 85%", once: true },
+					scrollTrigger: { trigger: ".faq-grid", start: "top 95%", once: true },
 				},
 			);
 		}, sectionRef);

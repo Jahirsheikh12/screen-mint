@@ -72,7 +72,7 @@ function FeatureCard({
 		const ctx = gsap.context(() => {
 			gsap.fromTo(
 				ref.current,
-				{ opacity: 0, y: 40, scale: 0.97 },
+				{ opacity: 0, y: 20, scale: 0.98 },
 				{
 					opacity: 1,
 					y: 0,
@@ -81,7 +81,7 @@ function FeatureCard({
 					ease: "power2.out",
 					scrollTrigger: {
 						trigger: ref.current,
-						start: "top 85%",
+						start: "top 95%",
 						once: true,
 					},
 				},
@@ -144,37 +144,37 @@ export function Features() {
 		const ctx = gsap.context(() => {
 			gsap.fromTo(
 				".features-eyebrow",
-				{ opacity: 0, y: 20 },
+				{ opacity: 0, y: 15 },
 				{
 					opacity: 1,
 					y: 0,
 					duration: 0.6,
 					ease: "power2.out",
-					scrollTrigger: { trigger: ".features-eyebrow", start: "top 85%", once: true },
+					scrollTrigger: { trigger: ".features-eyebrow", start: "top 95%", once: true },
 				},
 			);
 
 			gsap.fromTo(
 				".features-headline",
-				{ opacity: 0, y: 30 },
+				{ opacity: 0, y: 20 },
 				{
 					opacity: 1,
 					y: 0,
 					duration: 0.7,
 					ease: "power2.out",
-					scrollTrigger: { trigger: ".features-headline", start: "top 85%", once: true },
+					scrollTrigger: { trigger: ".features-headline", start: "top 95%", once: true },
 				},
 			);
 
 			gsap.fromTo(
 				".features-copy",
-				{ opacity: 0, y: 20 },
+				{ opacity: 0, y: 15 },
 				{
 					opacity: 1,
 					y: 0,
 					duration: 0.6,
 					ease: "power2.out",
-					scrollTrigger: { trigger: ".features-copy", start: "top 85%", once: true },
+					scrollTrigger: { trigger: ".features-copy", start: "top 95%", once: true },
 				},
 			);
 		}, sectionRef);

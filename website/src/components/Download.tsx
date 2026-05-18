@@ -152,51 +152,51 @@ export function Download() {
 		const ctx = gsap.context(() => {
 			gsap.fromTo(
 				".dl-head",
-				{ opacity: 0, y: 24 },
+				{ opacity: 0, y: 15 },
 				{
 					opacity: 1,
 					y: 0,
 					duration: 0.7,
 					ease: "power3.out",
-					scrollTrigger: { trigger: ".dl-head", start: "top 85%", once: true },
+					scrollTrigger: { trigger: ".dl-head", start: "top 95%", once: true },
 				},
 			);
 
 			gsap.fromTo(
 				".dl-rec",
-				{ opacity: 0, y: 20 },
+				{ opacity: 0, y: 15 },
 				{
 					opacity: 1,
 					y: 0,
 					duration: 0.6,
 					ease: "power3.out",
-					scrollTrigger: { trigger: ".dl-rec", start: "top 88%", once: true },
+					scrollTrigger: { trigger: ".dl-rec", start: "top 95%", once: true },
 				},
 			);
 
 			gsap.fromTo(
 				".dl-other",
-				{ opacity: 0, y: 20 },
+				{ opacity: 0, y: 15 },
 				{
 					opacity: 1,
 					y: 0,
 					duration: 0.5,
 					stagger: 0.06,
 					ease: "power3.out",
-					scrollTrigger: { trigger: ".dl-others", start: "top 88%", once: true },
+					scrollTrigger: { trigger: ".dl-others", start: "top 95%", once: true },
 				},
 			);
 
 			gsap.fromTo(
 				".dl-bottom",
-				{ opacity: 0, y: 16 },
+				{ opacity: 0, y: 12 },
 				{
 					opacity: 1,
 					y: 0,
 					duration: 0.5,
 					stagger: 0.08,
 					ease: "power3.out",
-					scrollTrigger: { trigger: ".dl-bottom-wrap", start: "top 90%", once: true },
+					scrollTrigger: { trigger: ".dl-bottom-wrap", start: "top 95%", once: true },
 				},
 			);
 		}, sectionRef);

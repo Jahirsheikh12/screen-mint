@@ -40,27 +40,27 @@ export function WorkflowSection() {
 			/* Heading */
 			gsap.fromTo(
 				".wf-head",
-				{ opacity: 0, y: 24 },
+				{ opacity: 0, y: 15 },
 				{
 					opacity: 1,
 					y: 0,
 					duration: 0.7,
 					ease: "power3.out",
-					scrollTrigger: { trigger: ".wf-head", start: "top 85%", once: true },
+					scrollTrigger: { trigger: ".wf-head", start: "top 95%", once: true },
 				},
 			);
 
 			/* Step cards stagger */
 			gsap.fromTo(
 				".wf-step",
-				{ opacity: 0, y: 32 },
+				{ opacity: 0, y: 20 },
 				{
 					opacity: 1,
 					y: 0,
 					duration: 0.6,
 					stagger: 0.1,
 					ease: "power3.out",
-					scrollTrigger: { trigger: ".wf-steps", start: "top 82%", once: true },
+					scrollTrigger: { trigger: ".wf-steps", start: "top 95%", once: true },
 				},
 			);
 		}, sectionRef);
