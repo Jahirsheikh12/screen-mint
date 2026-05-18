@@ -1,199 +1,213 @@
 import gsap from "gsap";
-import { useEffect, useRef, useState } from "react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useEffect, useRef } from "react";
 import { prefersReducedMotion } from "../hooks/useGSAP";
-import { Card } from "./ui/card";
+
+gsap.registerPlugin(ScrollTrigger);
 
 const showcaseItems = [
 	{
 		title: "Cursor Effects",
-		description: "Smooth tracking with click highlights and motion blur",
+		description:
+			"Smooth tracking with click highlights and motion blur that feels organic and natural.",
 		image: "/images/CursorLoop.gif",
 	},
 	{
 		title: "Cursor Sway",
-		description: "Organic movement that makes recordings feel alive",
+		description:
+			"Organic movement that makes recordings feel alive, eliminating rigid straight lines.",
 		image: "/images/CursorSwayDemo.gif",
 	},
 	{
 		title: "Export Quality",
-		description: "GPU-accelerated MP4 and GIF rendering",
+		description:
+			"GPU-accelerated MP4 and GIF rendering for pristine, lossless output without the wait.",
 		image: "/images/demo.gif",
 	},
 ];
 
 export function ShowreelSection() {
-	const sectionRef = useRef<HTMLDivElement>(null);
-	const stickyRef = useRef<HTMLDivElement>(null);
-	const trackRef = useRef<HTMLDivElement>(null);
-	const spacerRef = useRef<HTMLDivElement>(null);
-	const [activeIndex, setActiveIndex] = useState(0);
+	const containerRef = useRef<HTMLDivElement>(null);
+	const textRefs = useRef<(HTMLDivElement | null)[]>([]);
+	const mediaRefs = useRef<(HTMLImageElement | null)[]>([]);
 
 	useEffect(() => {
-		const section = sectionRef.current;
-		const sticky = stickyRef.current;
-		const track = trackRef.current;
-		const spacer = spacerRef.current;
-		if (!section || !sticky || !track || !spacer) return;
-
-		const LEAD_IN = window.innerHeight * 0.5;
-		const SLOWNESS = 1.8; // >1 means more scroll distance per px of horizontal travel
-
-		const updateSpacer = () => {
-			const distance = track.scrollWidth - window.innerWidth;
-			spacer.style.height = `${Math.max(0, distance) * SLOWNESS + LEAD_IN}px`;
-		};
-		updateSpacer();
-		window.addEventListener("resize", updateSpacer);
+		const container = containerRef.current;
+		if (!container) return;
 
 		if (prefersReducedMotion()) {
-			return () => window.removeEventListener("resize", updateSpacer);
+			return;
 		}
 
-		gsap.set(sticky, { opacity: 0 });
-
 		const ctx = gsap.context(() => {
-			/* Fade in sticky content */
-			gsap.to(sticky, {
-				opacity: 1,
-				ease: "none",
-				scrollTrigger: {
-					trigger: section,
-					start: "top 90%",
-					end: "top 20%",
-					scrub: true,
-				},
-			});
+			const numItems = showcaseItems.length;
 
-			/* Horizontal scroll */
-			const scrollTween = gsap.to(track, {
-				x: () => -(track.scrollWidth - window.innerWidth),
-				ease: "none",
+			const tl = gsap.timeline({
 				scrollTrigger: {
-					trigger: section,
-					start: () => `top top-=${LEAD_IN}`,
+					trigger: container,
+					start: "top top",
 					end: "bottom bottom",
-					scrub: 1.5,
-					invalidateOnRefresh: true,
-					onUpdate: (self) => {
-						const progress = self.progress;
-						const idx = Math.min(
-							showcaseItems.length - 1,
-							Math.floor(progress * showcaseItems.length),
-						);
-						setActiveIndex(idx);
+					scrub: 0.5, // Snappy scrub delay
+					// Snap exactly to the center of each item
+					snap: {
+						snapTo: 1 / (numItems - 1),
+						duration: { min: 0.2, max: 0.5 },
+						delay: 0.1,
+						ease: "power2.inOut",
 					},
 				},
 			});
 
-			/* Card scale effect as they pass through center */
-			const cards = track.querySelectorAll(".showreel-card");
-			cards.forEach((card) => {
-				gsap.fromTo(
-					card,
-					{ scale: 0.95, opacity: 0.7 },
-					{
-						scale: 1,
-						opacity: 1,
-						ease: "none",
-						scrollTrigger: {
-							trigger: card,
-							containerAnimation: scrollTween,
-							start: "left 80%",
-							end: "left 50%",
-							scrub: true,
-						},
-					},
-				);
-				gsap.fromTo(
-					card,
-					{ scale: 1, opacity: 1 },
-					{
-						scale: 0.95,
-						opacity: 0.7,
-						ease: "none",
-						scrollTrigger: {
-							trigger: card,
-							containerAnimation: scrollTween,
-							start: "left 30%",
-							end: "left 10%",
-							scrub: true,
-						},
-					},
-				);
-			});
-		});
+			// Hide all but the first initially
+			gsap.set(textRefs.current[0], { autoAlpha: 1, y: 0 });
+			gsap.set(textRefs.current.slice(1), { autoAlpha: 0, y: 40 });
+			gsap.set(mediaRefs.current[0], { autoAlpha: 1, scale: 1 });
+			gsap.set(mediaRefs.current.slice(1), { autoAlpha: 0, scale: 1.05 });
 
-		return () => {
-			window.removeEventListener("resize", updateSpacer);
-			ctx.revert();
-		};
+			// Build a perfectly symmetric timeline
+			// Total duration will be (numItems - 1)
+			// Item 0 is centered at time 0.0
+			// Item 1 is centered at time 1.0
+			// Item 2 is centered at time 2.0
+			for (let i = 0; i < numItems - 1; i++) {
+				const transCenter = i + 0.5; // e.g. 0.5 for Transition 0->1
+				const transDurationMedia = 0.6; // Crossfade duration
+				const transDurationText = 0.3; // Text in/out duration (shorter to sequence them)
+
+				// FADE OUT CURRENT (i)
+				// Text fades out BEFORE the center
+				tl.to(
+					textRefs.current[i],
+					{ autoAlpha: 0, y: -40, duration: transDurationText, ease: "power2.in" },
+					transCenter - transDurationText, // e.g. 0.5 - 0.3 = 0.2
+				);
+				// Media starts crossfading
+				tl.to(
+					mediaRefs.current[i],
+					{ autoAlpha: 0, scale: 0.95, duration: transDurationMedia, ease: "power2.inOut" },
+					transCenter - transDurationMedia / 2, // e.g. 0.5 - 0.3 = 0.2
+				);
+
+				// FADE IN NEXT (i + 1)
+				// Text fades in AFTER the center, ensuring NO overlap
+				tl.fromTo(
+					textRefs.current[i + 1],
+					{ autoAlpha: 0, y: 40 },
+					{ autoAlpha: 1, y: 0, duration: transDurationText, ease: "power2.out" },
+					transCenter, // e.g. 0.5
+				);
+				// Media crossfades concurrently
+				tl.fromTo(
+					mediaRefs.current[i + 1],
+					{ autoAlpha: 0, scale: 1.05 },
+					{ autoAlpha: 1, scale: 1, duration: transDurationMedia, ease: "power2.inOut" },
+					transCenter - transDurationMedia / 2, // e.g. 0.2
+				);
+			}
+
+			// Ensure timeline extends to exactly (numItems - 1)
+			tl.to({}, { duration: 0.01 }, numItems - 1);
+		}, container);
+
+		return () => ctx.revert();
 	}, []);
 
 	return (
 		<>
 			{/* Divider */}
-			<div className="pt-20 md:pt-28 px-6">
+			<div className="pt-20 md:pt-32 px-6">
 				<div className="section-divider max-w-6xl mx-auto" />
 			</div>
 
-			{/* Scroll section */}
-			<div ref={sectionRef} className="relative">
+			{/* Height adjusted for exactly 3 items to feel responsive without excessive scrolling */}
+			<div ref={containerRef} className="relative w-full h-[300vh]">
 				{/* Sticky viewport */}
-				<div
-					ref={stickyRef}
-					className="sticky top-0 h-screen overflow-hidden flex flex-col justify-center"
-				>
-					<div className="px-[max(24px,calc((100vw-1152px)/2))] mb-6">
-						<p className="section-eyebrow mb-3">Showreel</p>
-						<h2 className="section-headline">See it in action</h2>
-					</div>
+				<div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center bg-[#121212]">
+					{/* Background ambient glow matching the hero section slightly */}
+					<div className="absolute top-1/2 right-[20%] w-[800px] h-[800px] -translate-y-1/2 rounded-full bg-brand-500/[0.03] blur-[120px] pointer-events-none" />
 
-					<div ref={trackRef} className="flex gap-6 pl-[max(24px,calc((100vw-1152px)/2))]">
-						{showcaseItems.map((item) => (
-							<div
-								key={item.title}
-								className="showreel-card group flex-shrink-0 w-[75vw] max-w-[960px]"
-							>
-								<Card className="relative rounded-xl overflow-hidden border border-white/[0.06] bg-[#121212] shadow-none transition-all duration-500 group-hover:border-brand-500/15">
-									<div className="flex items-center gap-2 px-4 py-2.5 bg-[#0d0d0d] border-b border-white/[0.05]">
-										<div className="w-2.5 h-2.5 rounded-full bg-white/[0.06] transition-colors group-hover:bg-[#ff5f57]" />
-										<div className="w-2.5 h-2.5 rounded-full bg-white/[0.06] transition-colors group-hover:bg-[#febc2e]" />
-										<div className="w-2.5 h-2.5 rounded-full bg-white/[0.06] transition-colors group-hover:bg-[#28c840]" />
-										<span className="ml-2 text-[10px] text-white/10 font-mono">{item.title}</span>
-									</div>
-									<div className="relative aspect-video overflow-hidden">
-										<img
-											src={item.image}
-											alt={item.title}
-											className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-											loading="lazy"
-										/>
-									</div>
-								</Card>
-								<div className="mt-4 px-1">
-									<h3 className="text-[16px] font-semibold text-white/80 mb-1">{item.title}</h3>
-									<p className="text-[14px] text-white/25">{item.description}</p>
+					{/* Expanded Max-Width for a wider preview grid */}
+					<div className="max-w-[1600px] w-full mx-auto px-6 md:px-12 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-12 items-center h-full max-h-[900px] py-16 relative z-10">
+						
+						{/* Left Column: Typography / Content (Now narrower: col-span-4) */}
+						<div className="lg:col-span-4 flex flex-col justify-center relative h-[300px] lg:h-[400px]">
+							<div className="absolute top-0 left-0 w-full text-left">
+								<p className="section-eyebrow mb-6 tracking-widest text-brand-500/80">Showreel</p>
+
+								{/* Dynamic Text Items Overlaying Each Other */}
+								<div className="relative w-full h-full mt-4">
+									{showcaseItems.map((item, i) => (
+										<div
+											key={item.title}
+											ref={(el) => {
+												textRefs.current[i] = el;
+											}}
+											className="absolute top-0 left-0 w-full opacity-0 invisible translate-y-10"
+										>
+											<div className="text-brand-500 font-mono text-sm mb-6 font-semibold tracking-[0.2em] opacity-90">
+												0{i + 1} <span className="opacity-40">/ 0{showcaseItems.length}</span>
+											</div>
+											<h2 className="text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-extrabold tracking-tight text-white mb-6 leading-[1.05]">
+												{item.title}
+											</h2>
+											<p className="text-lg md:text-xl text-white/50 max-w-[400px] leading-relaxed">
+												{item.description}
+											</p>
+										</div>
+									))}
 								</div>
 							</div>
-						))}
-						<div className="flex-shrink-0 w-[10vw]" />
-					</div>
+						</div>
 
-					{/* Progress dots */}
-					<div className="flex items-center justify-center gap-2 mt-8">
-						{showcaseItems.map((item, i) => (
-							<div
-								key={item.title}
-								className={`h-1.5 rounded-full transition-all duration-500 ${
-									i === activeIndex ? "w-8 bg-brand-500" : "w-1.5 bg-white/10"
-								}`}
-							/>
-						))}
+						{/* Right Column: Media Display (Now wider: col-span-8) */}
+						<div className="lg:col-span-8 relative h-[45vh] min-h-[350px] lg:h-[75vh] lg:min-h-[550px] w-full flex items-center justify-center">
+							{/* Cinematic wrapper with animated border equivalent styling */}
+							<div className="w-full h-full relative rounded-2xl md:rounded-[36px] p-[1px] overflow-hidden group">
+								{/* Border Gradient (static but elegant) */}
+								<div className="absolute inset-0 bg-gradient-to-br from-brand-500/30 via-white/5 to-brand-500/10 opacity-70" />
+
+								{/* Outer glowing drop shadow behind the card */}
+								<div className="absolute inset-0 bg-brand-500/10 blur-3xl rounded-[36px] -z-10" />
+
+								{/* Inner Window Container */}
+								<div className="relative w-full h-full rounded-2xl md:rounded-[35px] bg-[#050505] overflow-hidden flex flex-col shadow-2xl">
+									{/* Window Chrome / Header */}
+									<div className="flex items-center gap-2.5 px-6 py-4 bg-[#0a0a0a] border-b border-white/[0.04]">
+										<div className="w-3.5 h-3.5 rounded-full bg-[#ff5f57] border border-[#e0443e]" />
+										<div className="w-3.5 h-3.5 rounded-full bg-[#febc2e] border border-[#d89f24]" />
+										<div className="w-3.5 h-3.5 rounded-full bg-[#28c840] border border-[#22ab35]" />
+										<div className="ml-auto text-[11px] font-mono text-white/20 uppercase tracking-widest">
+											Preview
+										</div>
+									</div>
+
+									{/* Media Viewport */}
+									<div className="relative flex-1 w-full h-full bg-[#030303] overflow-hidden">
+										{showcaseItems.map((item, i) => (
+											<img
+												key={item.title}
+												ref={(el) => {
+													mediaRefs.current[i] = el;
+												}}
+												src={item.image}
+												alt={item.title}
+												className="absolute inset-0 w-full h-full object-cover opacity-0 invisible"
+												loading={i === 0 ? "eager" : "lazy"}
+											/>
+										))}
+										
+										{/* Subtle inner shadow / vignette over the media */}
+										<div className="absolute inset-0 shadow-[inset_0_0_80px_rgba(0,0,0,0.8)] pointer-events-none" />
+										
+										{/* Glass reflection overlay */}
+										<div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.02] to-white/[0.08] pointer-events-none mix-blend-overlay" />
+									</div>
+								</div>
+							</div>
+						</div>
+
 					</div>
 				</div>
-
-				{/* Spacer */}
-				<div ref={spacerRef} />
 			</div>
 		</>
 	);
