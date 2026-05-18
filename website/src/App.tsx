@@ -11,6 +11,7 @@ import { ShowreelSection } from "./components/ShowreelSection";
 import { SponsorSection } from "./components/SponsorSection";
 import { WorkflowSection } from "./components/WorkflowSection";
 import { getFundingPageFromSearch } from "./lib/sponsors";
+import { CursorTrail } from "./components/CursorTrail";
 
 export default function App() {
 	const page =
@@ -39,6 +40,7 @@ export default function App() {
 				<FAQ />
 			</main>
 			<Footer />
+			<CursorTrail />
 		</>
 	);
 }
