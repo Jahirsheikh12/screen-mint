@@ -8,7 +8,6 @@ import {
 	GITHUB_SPONSORS_URL,
 	getCreemProductById,
 	getSupportReturnState,
-	SPONSOR_SUPPORT_COPY,
 	SPONSOR_TIERS,
 	SUPPORT_EMAIL_HREF,
 } from "../lib/sponsors";
@@ -17,6 +16,26 @@ import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 
 const TIER_ICONS = [Star, Zap, Rocket] as const;
+
+function SpotlightCard({ children, className = "", ...props }: React.ComponentProps<typeof Card>) {
+	const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+		const rect = e.currentTarget.getBoundingClientRect();
+		const x = e.clientX - rect.left;
+		const y = e.clientY - rect.top;
+		e.currentTarget.style.setProperty("--mouse-x", `${x}px`);
+		e.currentTarget.style.setProperty("--mouse-y", `${y}px`);
+	};
+
+	return (
+		<Card
+			className={`sponsor-spotlight-card ${className}`}
+			onMouseMove={handleMouseMove}
+			{...props}
+		>
+			{children}
+		</Card>
+	);
+}
 
 export function SponsorSection() {
 	const sectionRef = useRef<HTMLElement>(null);
@@ -33,39 +52,38 @@ export function SponsorSection() {
 		const ctx = gsap.context(() => {
 			gsap.fromTo(
 				".sponsor-heading",
-				{ opacity: 0, y: 15 },
+				{ opacity: 0, y: 20 },
 				{
 					opacity: 1,
 					y: 0,
-					duration: 0.7,
-					ease: "power2.out",
+					duration: 0.8,
+					ease: "power3.out",
 					scrollTrigger: { trigger: ".sponsor-heading", start: "top 95%", once: true },
 				},
 			);
 
 			gsap.fromTo(
-				".sponsor-hero-cta",
-				{ opacity: 0, y: 15, scale: 0.98 },
+				".sponsor-bento > *",
+				{ opacity: 0, y: 30 },
 				{
 					opacity: 1,
 					y: 0,
-					scale: 1,
 					duration: 0.8,
-					ease: "power2.out",
-					scrollTrigger: { trigger: ".sponsor-hero-cta", start: "top 95%", once: true },
+					stagger: 0.15,
+					ease: "power3.out",
+					scrollTrigger: { trigger: ".sponsor-bento", start: "top 90%", once: true },
 				},
 			);
 
 			gsap.fromTo(
-				".sponsor-card",
-				{ opacity: 0, y: 15 },
+				".sponsor-creem-strip",
+				{ opacity: 0, y: 20 },
 				{
 					opacity: 1,
 					y: 0,
-					duration: 0.6,
-					stagger: 0.1,
-					ease: "power2.out",
-					scrollTrigger: { trigger: ".sponsor-grid", start: "top 95%", once: true },
+					duration: 0.8,
+					ease: "power3.out",
+					scrollTrigger: { trigger: ".sponsor-creem-strip", start: "top 95%", once: true },
 				},
 			);
 		}, sectionRef);
@@ -80,192 +98,191 @@ export function SponsorSection() {
 			<div className="mx-auto max-w-6xl">
 				{/* Support return state banner */}
 				{supportState && !dismissedSupportState ? (
-					<Card
-						className={`mb-8 rounded-2xl border px-5 py-4 ${
-							supportState.status === "success"
-								? "border-brand-500/20 bg-brand-500/[0.06]"
-								: "border-white/[0.08] bg-white/[0.03]"
-						} shadow-none text-inherit`}
-					>
-						<div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+					<div className="mb-12 flex justify-center">
+						<div
+							className={`inline-flex items-center gap-4 rounded-full border px-5 py-2.5 backdrop-blur-md ${
+								supportState.status === "success"
+									? "border-brand-500/30 bg-brand-500/10 shadow-[0_0_30px_rgba(245,158,11,0.15)]"
+									: "border-white/10 bg-white/5"
+							}`}
+						>
 							<div>
-								<Badge className="border-0 bg-transparent p-0 text-[12px] font-medium uppercase tracking-[0.18em] text-brand-400 shadow-none">
-									{supportState.status === "success" ? "Support Received" : "Checkout Cancelled"}
-								</Badge>
-								<p className="mt-2 text-[16px] text-white">
-									{supportState.status === "success"
-										? `Thank you for supporting ScreenMint${supportProduct ? ` with ${supportProduct.name}` : ""}.`
-										: "No problem. GitHub Sponsors is still the main way to support the project."}
-								</p>
-								<p className="mt-2 text-[14px] leading-relaxed text-white/30">
-									{supportState.status === "success"
-										? "Your support helps fund fixes, release work, and future development. If you need billing help, use the support email below."
-										: "If you had a billing or checkout problem, reach out and we can help."}
+								<p className="text-[14px] font-medium text-white">
+									{supportState.status === "success" ? (
+										<>
+											<span className="text-brand-400">Support Received:</span> Thank you for supporting ScreenMint{supportProduct ? ` with ${supportProduct.name}` : ""}!
+										</>
+									) : (
+										<>Checkout Cancelled. No worries!</>
+									)}
 								</p>
 								<a
 									href={SUPPORT_EMAIL_HREF}
-									className="mt-3 inline-flex text-[13px] text-white/55 transition-colors hover:text-white"
+									className="text-[12px] text-white/50 transition-colors hover:text-white"
 								>
-									Contact support
+									{supportState.status === "success" ? "Need billing help?" : "Having issues? Contact us."}
 								</a>
 							</div>
-							<Button
+							<div className="h-6 w-[1px] bg-white/10 mx-2" />
+							<button
 								type="button"
 								onClick={() => setDismissedSupportState(true)}
-								variant="outline"
-								className="h-auto self-start rounded-full border border-white/[0.08] bg-transparent px-3 py-1.5 text-[12px] text-white/45 shadow-none transition-colors hover:bg-transparent hover:text-white/70"
+								className="text-[12px] font-semibold uppercase tracking-wider text-white/40 hover:text-white transition-colors"
 							>
 								Dismiss
-							</Button>
+							</button>
 						</div>
-					</Card>
+					</div>
 				) : null}
 
 				{/* Section heading */}
-				<div className="sponsor-heading will-animate text-center mb-12">
-					<p className="section-eyebrow mb-4">Sponsor</p>
-					<h2 className="section-headline mb-5">
+				<div className="sponsor-heading will-animate text-center mb-16">
+					<p className="sponsor-eyebrow mb-4">Community Supported</p>
+					<h2 className="section-headline">
 						Help keep ScreenMint shipping<span className="text-brand-500">.</span>
 					</h2>
-					<p className="section-copy mx-auto max-w-2xl">
-						{SPONSOR_SUPPORT_COPY} Sponsorship keeps the project sustainable without turning the app
-						into a paid product.
-					</p>
 				</div>
 
-				{/* Hero CTA card */}
-				<Card className="sponsor-hero-cta will-animate mb-10 rounded-3xl border border-brand-500/15 bg-gradient-to-b from-brand-500/[0.08] to-transparent p-8 md:p-10 text-center shadow-none text-inherit">
-					<div className="flex justify-center mb-5">
-						<div className="relative">
-							<Heart className="w-10 h-10 text-brand-500" strokeWidth={1.5} />
-							<div className="absolute inset-0 animate-ping">
-								<Heart className="w-10 h-10 text-brand-500/30" strokeWidth={1.5} />
+				{/* Bento Grid */}
+				<div className="sponsor-bento will-animate mb-16">
+					{/* Main Bento Cell */}
+					<SpotlightCard className="sponsor-bento-main flex flex-col justify-center p-8 md:p-12 text-inherit">
+						<div className="sponsor-card-content flex flex-col h-full">
+							<div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+								<div className="flex items-center gap-3">
+									<div className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-brand-500/30 bg-brand-500/10 shadow-glow-sm">
+										<Heart className="w-6 h-6 text-brand-400" strokeWidth={2.5} />
+										<div className="absolute inset-0 animate-ping rounded-2xl border border-brand-500/40"></div>
+									</div>
+									<div>
+										<p className="sponsor-eyebrow mb-0.5">Primary Support</p>
+										<p className="text-[15px] font-bold tracking-tight text-white">GitHub Sponsors</p>
+									</div>
+								</div>
+								<Badge className="border-brand-500/20 bg-brand-500/10 text-brand-400 hover:bg-brand-500/20 shadow-none font-medium text-[11px] uppercase tracking-widest hidden sm:inline-flex">
+									Recommended
+								</Badge>
+							</div>
+
+							<h3 className="sponsor-main-heading mb-5 max-w-2xl">
+								Support the roadmap without changing what makes ScreenMint special.
+							</h3>
+
+							<p className="text-[16px] text-white/40 leading-relaxed max-w-2xl mb-10 flex-grow">
+								Sponsorship keeps the project sustainable without turning the app into a paid product.
+								It helps fund bug fixes, platform support, and future releases without gating the app
+								behind accounts, telemetry, or paywalls.
+							</p>
+
+							<div>
+								<Button
+									asChild
+									className="h-auto rounded-full bg-gradient-to-r from-brand-500 to-brand-400 px-8 py-4 text-[15px] font-bold text-[#121212] shadow-glow-sm transition-all duration-300 hover:shadow-glow-md hover:scale-[1.02] active:scale-[0.98]"
+								>
+									<a href={GITHUB_SPONSORS_URL} target="_blank" rel="noopener noreferrer">
+										<Heart className="w-4 h-4 mr-2" strokeWidth={2.5} />
+										Sponsor on GitHub
+									</a>
+								</Button>
 							</div>
 						</div>
-					</div>
-					<h3 className="text-[22px] md:text-[26px] font-bold tracking-[-0.03em] text-white mb-3">
-						Support the roadmap without changing what makes ScreenMint special.
-					</h3>
-					<p className="text-[15px] text-white/30 leading-relaxed max-w-xl mx-auto mb-6">
-						GitHub Sponsors stays the primary home for recurring support. It helps fund bug fixes,
-						platform support, and future releases without gating the app behind accounts, telemetry,
-						or paywalls.
-					</p>
-					<Button
-						asChild
-						className="h-auto rounded-full bg-brand-500 px-7 py-3.5 text-[15px] font-semibold text-[#121212] shadow-none transition-all duration-300 hover:bg-brand-400 hover:text-[#121212] hover:shadow-glow-md active:scale-[0.97]"
-					>
-						<a href={GITHUB_SPONSORS_URL} target="_blank" rel="noopener noreferrer">
-							<Heart className="w-4 h-4" strokeWidth={2.5} />
-							Sponsor on GitHub
-						</a>
-					</Button>
-				</Card>
+					</SpotlightCard>
 
-				{/* Tier cards */}
-				<div className="sponsor-grid grid gap-4 md:grid-cols-3 mb-8">
-					{SPONSOR_TIERS.map((tier, i) => {
-						const Icon = TIER_ICONS[i];
-						const isPopular = i === 1;
-						return (
-							<a
-								key={tier.name}
-								href={GITHUB_SPONSORS_URL}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="group"
-							>
-								<Card
-									className={`sponsor-card will-animate relative h-full rounded-2xl border p-6 shadow-none transition-all duration-500 hover:-translate-y-1 ${
-										isPopular
-											? "border-brand-500/20 bg-brand-500/[0.04] hover:border-brand-500/30 hover:bg-brand-500/[0.06]"
-											: "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12] hover:bg-white/[0.04]"
-									} text-inherit`}
-								>
-									{/* Gradient top accent */}
-									<div
-										className={`absolute top-0 left-4 right-4 h-px ${
-											isPopular
-												? "bg-gradient-to-r from-transparent via-brand-500/50 to-transparent"
-												: "bg-gradient-to-r from-transparent via-white/[0.08] to-transparent"
-										}`}
-									/>
-
-									{isPopular && (
-										<Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full border-0 bg-brand-500 px-3 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#121212] shadow-none">
-											Popular
-										</Badge>
-									)}
-
-									<div className="flex items-center gap-3 mb-4">
-										<div
-											className={`flex items-center justify-center w-9 h-9 rounded-xl ${
-												isPopular
-													? "bg-brand-500/10 border border-brand-500/20"
-													: "bg-white/[0.04] border border-white/[0.06]"
-											}`}
-										>
-											<Icon
-												className={`w-4 h-4 ${isPopular ? "text-brand-400" : "text-white/30 group-hover:text-white/60"} transition-colors`}
-												strokeWidth={1.5}
-											/>
-										</div>
-										<p className="text-[11px] font-medium uppercase tracking-[0.18em] text-brand-400/70">
-											GitHub Sponsors
-										</p>
-									</div>
-
-									<h3 className="text-[22px] font-semibold tracking-[-0.03em] text-white mb-2">
-										{tier.name}
-									</h3>
-									<p className="text-[14px] leading-relaxed text-white/30">{tier.description}</p>
-								</Card>
-							</a>
-						);
-					})}
-				</div>
-
-				{/* Creem section */}
-				{CREEM_ENABLED ? (
-					<Card className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 shadow-none md:p-8 text-inherit">
-						<p className="text-[12px] font-medium uppercase tracking-[0.18em] text-white/45 mb-4">
-							Support via Card
-						</p>
-						<p className="text-[14px] leading-relaxed text-white/30 mb-6 max-w-xl">
-							Prefer a one-time card checkout instead of GitHub? Use one of these Creem support
-							options.
-						</p>
-						<div className="grid gap-3 md:grid-cols-3">
-							{CREEM_PRODUCTS.map((product) => (
+					{/* Side Bento Cells for Tiers */}
+					<div className="sponsor-bento-side">
+						{SPONSOR_TIERS.map((tier, i) => {
+							const Icon = TIER_ICONS[i];
+							const isPopular = i === 1;
+							return (
 								<a
-									key={product.id}
-									href={product.checkoutUrl}
+									key={tier.name}
+									href={GITHUB_SPONSORS_URL}
 									target="_blank"
 									rel="noopener noreferrer"
-									className="group"
+									className="group block flex-1"
 								>
-									<Card className="h-full rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 shadow-none transition-all duration-300 hover:-translate-y-1 hover:border-brand-500/25 hover:bg-brand-500/[0.04] text-inherit">
-										<div className="flex items-start justify-between gap-3 mb-3">
-											<p className="text-[11px] font-medium uppercase tracking-[0.16em] text-white/40">
-												{product.label}
+									<SpotlightCard
+										className={`h-full p-6 text-inherit ${
+											isPopular ? "border-brand-500/30 bg-brand-500/[0.04]" : ""
+										}`}
+									>
+										<div className="sponsor-card-content flex flex-col h-full justify-center">
+											<div className="flex items-start justify-between mb-4">
+												<div
+													className={`flex items-center justify-center w-12 h-12 rounded-xl ${
+														isPopular
+															? "bg-brand-500/15 border border-brand-500/30"
+															: "bg-white/[0.03] border border-white/[0.06]"
+													} transition-all duration-300 group-hover:scale-110 group-hover:bg-brand-500/20 group-hover:border-brand-500/40`}
+												>
+													<Icon
+														className={`w-6 h-6 ${
+															isPopular ? "text-brand-400" : "text-white/40 group-hover:text-brand-300"
+														} transition-colors duration-300`}
+														strokeWidth={1.5}
+													/>
+												</div>
+												{isPopular && (
+													<Badge className="border-0 bg-brand-500 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#121212] shadow-glow-sm">
+														Popular
+													</Badge>
+												)}
+											</div>
+											<h4 className="text-[20px] font-bold tracking-tight text-white mb-2">
+												{tier.name}
+											</h4>
+											<p className="text-[13px] leading-relaxed text-white/30">
+												{tier.description}
 											</p>
-											<Badge className="rounded-full border border-brand-500/18 bg-brand-500/[0.08] px-2.5 py-0.5 text-[12px] font-semibold text-brand-300 shadow-none">
-												{product.price}
-											</Badge>
 										</div>
-										<h4 className="text-[16px] font-semibold tracking-[-0.02em] text-white mb-2">
-											{product.name}
-										</h4>
-										<p className="text-[13px] leading-relaxed text-white/25">
-											{product.description}
-										</p>
-									</Card>
+									</SpotlightCard>
 								</a>
-							))}
+							);
+						})}
+					</div>
+				</div>
+
+				{/* Creem section (One-time support) */}
+				{CREEM_ENABLED ? (
+					<div className="sponsor-creem-strip will-animate">
+						<div className="flex flex-col justify-center shrink-0 w-[280px] md:w-72 pr-6 md:pr-10">
+							<p className="sponsor-eyebrow mb-3 text-white/40">Support via Card</p>
+							<h4 className="text-[24px] font-bold tracking-tight text-white mb-3">One-time Support</h4>
+							<p className="text-[14px] leading-relaxed text-white/30">
+								Prefer a single card checkout instead of recurring GitHub sponsors? Pick an option here.
+							</p>
 						</div>
-					</Card>
+						
+						{CREEM_PRODUCTS.map((product) => (
+							<a
+								key={product.id}
+								href={product.checkoutUrl}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="group shrink-0"
+							>
+								<div className="creem-card h-full flex flex-col">
+									<div className="flex items-start justify-between gap-3 mb-5">
+										<p className="text-[10px] font-bold uppercase tracking-widest text-white/30 group-hover:text-brand-400/70 transition-colors">
+											{product.label}
+										</p>
+										<Badge className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[12px] font-semibold text-white/70 shadow-none group-hover:border-brand-500/30 group-hover:bg-brand-500/10 group-hover:text-brand-300 transition-all duration-300">
+											{product.price}
+										</Badge>
+									</div>
+									<h4 className="text-[18px] font-bold tracking-tight text-white mb-2">
+										{product.name}
+									</h4>
+									<p className="text-[13px] leading-relaxed text-white/30 flex-grow">
+										{product.description}
+									</p>
+								</div>
+							</a>
+						))}
+					</div>
 				) : null}
 			</div>
 		</section>
 	);
 }
+

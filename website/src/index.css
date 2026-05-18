@@ -971,6 +971,131 @@
 	}
 }
 
+/* ══════════════════════════════════════════════════
+   SPONSOR SECTION (Bento & Spotlight)
+   ══════════════════════════════════════════════════ */
+
+/* ── Bento Grid ── */
+.sponsor-bento {
+	display: grid;
+	gap: 16px;
+	grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+	.sponsor-bento {
+		grid-template-columns: repeat(12, 1fr);
+	}
+	.sponsor-bento-main {
+		grid-column: span 8;
+	}
+	.sponsor-bento-side {
+		grid-column: span 4;
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
+}
+
+/* ── Spotlight Card Base ── */
+.sponsor-spotlight-card {
+	position: relative;
+	border-radius: 24px;
+	background: rgba(255, 255, 255, 0.02);
+	border: 1px solid rgba(255, 255, 255, 0.05);
+	overflow: hidden;
+	transition: border-color 0.4s ease, transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+.sponsor-spotlight-card:hover {
+	border-color: rgba(245, 158, 11, 0.2);
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Noise Texture Overlay */
+.sponsor-spotlight-card::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	opacity: 0.03;
+	background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+	background-repeat: repeat;
+	background-size: 200px 200px;
+	pointer-events: none;
+	z-index: 0;
+}
+
+/* Dynamic Spotlight Glow */
+.sponsor-spotlight-card::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: radial-gradient(
+		600px circle at var(--mouse-x, 0px) var(--mouse-y, 0px),
+		rgba(245, 158, 11, 0.1),
+		transparent 40%
+	);
+	opacity: 0;
+	transition: opacity 0.4s ease;
+	pointer-events: none;
+	z-index: 1;
+}
+
+.sponsor-spotlight-card:hover::before {
+	opacity: 1;
+}
+
+/* Ensure content stays above effects */
+.sponsor-card-content {
+	position: relative;
+	z-index: 10;
+}
+
+/* ── Typography Enhancements ── */
+.sponsor-eyebrow {
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.3em;
+	text-transform: uppercase;
+	color: #f59e0b;
+}
+
+.sponsor-main-heading {
+	font-size: clamp(2rem, 4vw, 3rem);
+	font-weight: 800;
+	letter-spacing: -0.04em;
+	line-height: 1.1;
+	color: #ffffff;
+}
+
+/* ── Creem Single Purchase Strip ── */
+.sponsor-creem-strip {
+	display: flex;
+	gap: 16px;
+	overflow-x: auto;
+	padding-bottom: 16px;
+	scrollbar-width: none; /* Firefox */
+	-ms-overflow-style: none; /* IE/Edge */
+}
+.sponsor-creem-strip::-webkit-scrollbar {
+	display: none; /* Chrome/Safari */
+}
+
+.creem-card {
+	flex: 0 0 280px;
+	border-radius: 16px;
+	background: rgba(255, 255, 255, 0.015);
+	border: 1px solid rgba(255, 255, 255, 0.04);
+	padding: 20px;
+	transition: background 0.3s, border-color 0.3s, transform 0.3s;
+}
+
+.creem-card:hover {
+	background: rgba(245, 158, 11, 0.03);
+	border-color: rgba(245, 158, 11, 0.15);
+	transform: translateY(-2px);
+}
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
 	.hero-keyword,
