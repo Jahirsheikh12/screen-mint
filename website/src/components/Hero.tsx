@@ -1,6 +1,6 @@
 import gsap from "gsap";
 import { Download, Heart, MousePointer2 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { prefersReducedMotion } from "../hooks/useGSAP";
 import { REPO_URL } from "../lib/links";
 import { GITHUB_SPONSORS_URL } from "../lib/sponsors";
@@ -383,10 +383,7 @@ export function Hero() {
                 that look
               </span>{" "}
               <span className="hero-keyword-slot relative inline-block text-brand-400 drop-shadow-[0_0_20px_rgba(245,158,11,0.4)]">
-                <span
-                  ref={wordRef}
-                  className="block"
-                >
+                <span ref={wordRef} className="block">
                   <RotatingText
                     texts={WORDS}
                     mainClassName="px-4 py-1 bg-brand-500/15 text-brand-400 overflow-hidden justify-center rounded-2xl inline-flex text-[0.85em] align-middle -mt-2 shadow-[inset_0_0_0_1px_rgba(245,158,11,0.2)]"

@@ -14,33 +14,35 @@ import { getFundingPageFromSearch } from "./lib/sponsors";
 import { CursorTrail } from "./components/CursorTrail";
 
 export default function App() {
-	const page =
-		typeof window === "undefined" ? null : getFundingPageFromSearch(window.location.search);
+  const page =
+    typeof window === "undefined"
+      ? null
+      : getFundingPageFromSearch(window.location.search);
 
-	useEffect(() => {
-		return () => {
-			ScrollTrigger.getAll().forEach((t) => t.kill());
-		};
-	}, []);
+  useEffect(() => {
+    return () => {
+      ScrollTrigger.getAll().forEach((t) => t.kill());
+    };
+  }, []);
 
-	if (page) {
-		return <LegalPage page={page} />;
-	}
+  if (page) {
+    return <LegalPage page={page} />;
+  }
 
-	return (
-		<>
-			<Navbar />
-			<main>
-				<Hero />
-				<Features />
-				<ShowreelSection />
-				<WorkflowSection />
-				<SponsorSection />
-				<Download />
-				<FAQ />
-			</main>
-			<Footer />
-			<CursorTrail />
-		</>
-	);
+  return (
+    <>
+      <Navbar />
+      <main>
+        <Hero />
+        <Features />
+        <ShowreelSection />
+        <WorkflowSection />
+        <SponsorSection />
+        <Download />
+        <FAQ />
+      </main>
+      <Footer />
+      <CursorTrail />
+    </>
+  );
 }
