@@ -42,6 +42,14 @@ type CursorVisualType =
 
 type KeyboardTelemetryEventType = "keydown" | "keyup";
 type KeyboardTelemetryPlatform = "darwin" | "win32" | "linux";
+type CursorCapturePlatform = "darwin" | "win32" | "linux";
+type CursorTelemetryGeometrySource =
+	| "electron-display"
+	| "selected-area"
+	| "win32-window"
+	| "x11-window"
+	| "macos-window"
+	| "fallback-display";
 
 interface CursorTelemetryPoint {
 	timeMs: number;
@@ -58,6 +66,9 @@ interface CursorTelemetryPoint {
 	sourceDisplayId?: number;
 	displayScaleFactor?: number;
 	captureMode?: "display" | "window" | "area";
+	capturePlatform?: CursorCapturePlatform;
+	geometrySource?: CursorTelemetryGeometrySource;
+	projectionConfidence?: "high" | "medium" | "low";
 }
 
 interface KeyboardTelemetryPoint {
@@ -220,6 +231,27 @@ export function registerTelemetryReadIpcHandlers(options: RegisterTelemetryReadH
 							point.captureMode === "window" ||
 							point.captureMode === "area"
 								? point.captureMode
+								: undefined,
+						capturePlatform:
+							point.capturePlatform === "darwin" ||
+							point.capturePlatform === "win32" ||
+							point.capturePlatform === "linux"
+								? point.capturePlatform
+								: undefined,
+						geometrySource:
+							point.geometrySource === "electron-display" ||
+							point.geometrySource === "selected-area" ||
+							point.geometrySource === "win32-window" ||
+							point.geometrySource === "x11-window" ||
+							point.geometrySource === "macos-window" ||
+							point.geometrySource === "fallback-display"
+								? point.geometrySource
+								: undefined,
+						projectionConfidence:
+							point.projectionConfidence === "high" ||
+							point.projectionConfidence === "medium" ||
+							point.projectionConfidence === "low"
+								? point.projectionConfidence
 								: undefined,
 					};
 				})

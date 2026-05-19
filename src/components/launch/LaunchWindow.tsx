@@ -1,4 +1,5 @@
 import { ChevronDown } from "lucide-react";
+import type { PointerEvent } from "react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { BsRecordCircle } from "react-icons/bs";
 import { resolveHudWebcamPreviewLayout } from "@/components/video-editor/webcamRenderPlan";
@@ -16,14 +17,18 @@ import {
 	DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { HudToolbar } from "./HudToolbar";
+import { subscribeHudDropdownOpen } from "./hudDropdownExpansion";
 import styles from "./LaunchWindow.module.css";
 import { AreaTab } from "./tabs/AreaTab";
 import { DeviceTab } from "./tabs/DeviceTab";
 import { DisplayTab } from "./tabs/DisplayTab";
 import { WindowTab } from "./tabs/WindowTab";
 
-const DROPDOWN_CLASSES = "border-white/10 bg-[#1c1c1e] text-white/90 shadow-xl shadow-black/50";
+const DROPDOWN_CLASSES =
+	"border-white/10 bg-[#1c1c1e] text-white/90 shadow-none data-[state=open]:!animate-none data-[state=closed]:!animate-none";
 const HUD_INTERACTIVE_SELECTOR = "[data-hud-interactive]";
+const HUD_DRAG_BLOCK_SELECTOR =
+	"button, a, input, select, textarea, [role='button'], [role='menuitem'], [data-hud-no-drag]";
 
 function pointHitsHudInteractiveElement(clientX: number, clientY: number): boolean {
 	return document
@@ -35,18 +40,24 @@ function hasHoveredHudInteractiveElement(): boolean {
 	return document.querySelector(`${HUD_INTERACTIVE_SELECTOR}:hover`) !== null;
 }
 
+function blocksHudDrag(target: EventTarget | null): boolean {
+	return target instanceof Element && target.closest(HUD_DRAG_BLOCK_SELECTOR) !== null;
+}
+
 export function LaunchWindow() {
 	const hud = useHudState();
 	const t = useScopedT("launch");
 
 	const [recordingStart, setRecordingStart] = useState<number | null>(null);
 	const [elapsed, setElapsed] = useState(0);
+	const [hudDropdownOpen, setHudDropdownOpen] = useState(false);
 	const pausedAtRef = useRef<number | null>(null);
 	const totalPausedRef = useRef(0);
 	const compactHudRef = useRef<HTMLDivElement | null>(null);
 	const cameraPreviewRef = useRef<HTMLVideoElement | null>(null);
 	const lastSyncedLayoutRef = useRef<{ width: number; height: number } | null>(null);
 	const mousePassthroughRef = useRef<boolean | null>(null);
+	const hudDragPointerIdRef = useRef<number | null>(null);
 
 	const setHudMousePassthrough = useCallback((enabled: boolean) => {
 		if (mousePassthroughRef.current === enabled) {
@@ -172,6 +183,70 @@ export function LaunchWindow() {
 		hud.resizeHudWindow(false);
 	}, [hud.resizeHudWindow]);
 
+	const endHudDrag = useCallback(
+		(target?: Element | null, pointerId?: number) => {
+			if (hudDragPointerIdRef.current === null) {
+				return;
+			}
+
+			if (target && typeof pointerId === "number" && target.hasPointerCapture?.(pointerId)) {
+				target.releasePointerCapture(pointerId);
+			}
+
+			hudDragPointerIdRef.current = null;
+			window.electronAPI?.endHudDrag?.();
+			setHudMousePassthrough(false);
+		},
+		[setHudMousePassthrough],
+	);
+
+	const handleHudDragPointerDown = useCallback(
+		(event: PointerEvent<HTMLDivElement>) => {
+			if (event.button !== 0 || hud.contentPanelVisible || blocksHudDrag(event.target)) {
+				return;
+			}
+
+			hudDragPointerIdRef.current = event.pointerId;
+			event.currentTarget.setPointerCapture(event.pointerId);
+			setHudMousePassthrough(false);
+			window.electronAPI?.startHudDrag?.({
+				screenX: event.screenX,
+				screenY: event.screenY,
+			});
+		},
+		[hud.contentPanelVisible, setHudMousePassthrough],
+	);
+
+	const handleHudDragPointerMove = useCallback(
+		(event: PointerEvent<HTMLDivElement>) => {
+			if (hudDragPointerIdRef.current !== event.pointerId) {
+				return;
+			}
+
+			if ((event.buttons & 1) === 0) {
+				endHudDrag(event.currentTarget, event.pointerId);
+				return;
+			}
+
+			window.electronAPI?.moveHudDrag?.({
+				screenX: event.screenX,
+				screenY: event.screenY,
+			});
+		},
+		[endHudDrag],
+	);
+
+	const handleHudDragPointerUp = useCallback(
+		(event: PointerEvent<HTMLDivElement>) => {
+			if (hudDragPointerIdRef.current !== event.pointerId) {
+				return;
+			}
+
+			endHudDrag(event.currentTarget, event.pointerId);
+		},
+		[endHudDrag],
+	);
+
 	const handleTabClick = useCallback(
 		(tab: HudMode) => {
 			if (hud.recording) return;
@@ -240,6 +315,8 @@ export function LaunchWindow() {
 		(hud.mode === "area" && !hud.hasSelectedArea);
 	const hudWebcamPreviewLayout = resolveHudWebcamPreviewLayout(hud.cameraSession);
 
+	useEffect(() => subscribeHudDropdownOpen(setHudDropdownOpen), []);
+
 	useLayoutEffect(() => {
 		const compactHud = compactHudRef.current;
 		if (!compactHud) {
@@ -290,7 +367,7 @@ export function LaunchWindow() {
 	}, []);
 
 	useEffect(() => {
-		if (showOverlay) {
+		if (showOverlay || hudDropdownOpen) {
 			setHudMousePassthrough(false);
 			return;
 		}
@@ -345,7 +422,7 @@ export function LaunchWindow() {
 			window.removeEventListener("blur", handleBlur);
 			setHudMousePassthrough(false);
 		};
-	}, [setHudMousePassthrough, showOverlay]);
+	}, [hudDropdownOpen, setHudMousePassthrough, showOverlay]);
 
 	return (
 		<div className="fixed inset-0 pointer-events-none">
@@ -370,7 +447,6 @@ export function LaunchWindow() {
 							background:
 								"linear-gradient(180deg, rgba(30,30,32,0.94) 0%, rgba(22,22,24,0.96) 100%)",
 							borderColor: "rgba(255,255,255,0.07)",
-							boxShadow: "0 24px 80px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(255,255,255,0.05)",
 							backdropFilter: "blur(40px) saturate(160%)",
 							WebkitBackdropFilter: "blur(40px) saturate(160%)",
 						}}
@@ -417,7 +493,7 @@ export function LaunchWindow() {
 											className={`flex items-center gap-2.5 rounded-full px-6 py-2.5 text-[13px] font-semibold transition-all ${
 												isRecordDisabled
 													? "bg-red-500/15 text-white/30 cursor-not-allowed"
-													: "bg-red-500 text-white hover:bg-red-600 cursor-pointer shadow-lg shadow-red-500/20"
+													: "bg-red-500 text-white hover:bg-red-600 cursor-pointer"
 											}`}
 										>
 											<BsRecordCircle size={13} />
@@ -503,7 +579,6 @@ export function LaunchWindow() {
 								border: "1px solid rgba(255,255,255,0.1)",
 								background: "#161618",
 								padding: 6,
-								boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
 							}}
 						>
 							<div
@@ -533,15 +608,16 @@ export function LaunchWindow() {
 					<div
 						data-hud-interactive=""
 						className={`${styles.hudBar} w-fit max-w-full pointer-events-auto`}
+						onPointerDown={handleHudDragPointerDown}
+						onPointerMove={handleHudDragPointerMove}
+						onPointerUp={handleHudDragPointerUp}
+						onPointerCancel={handleHudDragPointerUp}
 						style={{
 							borderRadius: 14,
 							background: hud.recording ? "#1d1416" : "#1d1d20",
 							border: hud.recording
 								? "1px solid rgba(239,68,68,0.22)"
 								: "1px solid rgba(255,255,255,0.14)",
-							boxShadow: hud.recording
-								? "0 6px 22px rgba(0,0,0,0.42), 0 0 0 0.5px rgba(0,0,0,0.5)"
-								: "0 6px 22px rgba(0,0,0,0.38), 0 0 0 0.5px rgba(0,0,0,0.45)",
 						}}
 					>
 						<HudToolbar
@@ -562,6 +638,7 @@ export function LaunchWindow() {
 							systemAudioEnabled={hud.systemAudioEnabled}
 							setSystemAudioEnabled={hud.setSystemAudioEnabled}
 							webcamEnabled={hud.webcamEnabled}
+							setWebcamEnabled={hud.setWebcamEnabled}
 							cameraSession={hud.cameraSession}
 							setCameraDeviceId={hud.setCameraDeviceId}
 							setMobileCameraEnabled={hud.setMobileCameraEnabled}

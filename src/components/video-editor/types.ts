@@ -66,6 +66,14 @@ export type CursorTelemetryOrigin =
 	| "synthetic";
 
 export type CursorTelemetryConfidence = "high" | "medium" | "low";
+export type CursorCapturePlatform = "darwin" | "win32" | "linux";
+export type CursorTelemetryGeometrySource =
+	| "electron-display"
+	| "selected-area"
+	| "win32-window"
+	| "x11-window"
+	| "macos-window"
+	| "fallback-display";
 
 export interface CursorTelemetryBounds {
 	x: number;
@@ -91,6 +99,9 @@ export interface CursorTelemetryPoint {
 	sourceDisplayId?: number;
 	displayScaleFactor?: number;
 	captureMode?: CursorCaptureMode;
+	capturePlatform?: CursorCapturePlatform;
+	geometrySource?: CursorTelemetryGeometrySource;
+	projectionConfidence?: CursorTelemetryConfidence;
 	velocityX?: number;
 	velocityY?: number;
 	heading?: number;

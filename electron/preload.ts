@@ -550,6 +550,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		ipcRenderer.invoke(IPC_CHANNELS.hudWindow.setDropdownExpanded, expanded),
 	setHudMousePassthrough: (enabled: boolean) =>
 		ipcRenderer.invoke(IPC_CHANNELS.hudWindow.setMousePassthrough, enabled),
+	startHudDrag: (point: { screenX: number; screenY: number }) =>
+		ipcRenderer.send(IPC_CHANNELS.hudWindow.startDrag, point),
+	moveHudDrag: (point: { screenX: number; screenY: number }) =>
+		ipcRenderer.send(IPC_CHANNELS.hudWindow.moveDrag, point),
+	endHudDrag: () => ipcRenderer.send(IPC_CHANNELS.hudWindow.endDrag),
 	recenterHudOnCursor: () => ipcRenderer.invoke(IPC_CHANNELS.hudWindow.recenterOnCursor),
 	autoSelectCursorDisplay: () => ipcRenderer.invoke(IPC_CHANNELS.capture.autoSelectCursorDisplay),
 });

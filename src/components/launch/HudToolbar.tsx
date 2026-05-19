@@ -57,6 +57,7 @@ type HudToolbarProps = {
 	systemAudioEnabled: boolean;
 	setSystemAudioEnabled: (enabled: boolean) => void;
 	webcamEnabled: boolean;
+	setWebcamEnabled: (enabled: boolean) => void;
 	cameraSession: {
 		enabled: boolean;
 		sourceType?: "local-device" | "mobile";
@@ -105,7 +106,9 @@ const MODE_ICONS: Record<HudMode, React.ComponentType<{ size?: number; className
 	device: MdDevices,
 };
 
-const DROPDOWN_CLASSES = "border-white/10 bg-[#1c1c1e] text-white/90 shadow-xl shadow-black/50";
+const DROPDOWN_CLASSES =
+	"border-white/10 bg-[#1c1c1e] text-white/90 shadow-none data-[state=open]:!animate-none data-[state=closed]:!animate-none";
+const DEFAULT_CAMERA_VALUE = "__default_camera__";
 
 const LOCALE_LABELS: Record<string, string> = { en: "EN", es: "ES", "zh-CN": "\u4E2D\u6587" };
 
@@ -129,6 +132,7 @@ export function HudToolbar({
 	systemAudioEnabled,
 	setSystemAudioEnabled,
 	webcamEnabled,
+	setWebcamEnabled,
 	cameraSession,
 	setCameraDeviceId,
 	setMobileCameraEnabled,
@@ -200,6 +204,13 @@ export function HudToolbar({
 	const finalizing = showCompact && !recording;
 
 	const tabs: HudMode[] = ["display", "window", "area"];
+	const cameraDropdownValue =
+		cameraSession.sourceType === "mobile"
+			? "__mobile__"
+			: webcamEnabled
+				? (cameraSession.deviceId ?? DEFAULT_CAMERA_VALUE)
+				: "__off__";
+	const cameraDeviceOptions = cameraDevices.filter((device) => device.deviceId);
 
 	const formatTime = (seconds: number) => {
 		const m = Math.floor(seconds / 60)
@@ -366,9 +377,7 @@ export function HudToolbar({
 							onClick={() => onTabClick(tab)}
 							disabled={recording}
 							className={`flex shrink-0 items-center gap-1.5 rounded-[7px] px-2.5 py-[6px] text-[11px] font-medium transition-all ${
-								isActive
-									? "bg-white/[0.1] text-white/90 shadow-sm"
-									: "text-white/65 hover:text-white/95"
+								isActive ? "bg-white/[0.1] text-white/90" : "text-white/65 hover:text-white/95"
 							} cursor-pointer`}
 						>
 							<Icon size={13} className="shrink-0" />
@@ -390,7 +399,7 @@ export function HudToolbar({
 						className={`${ND} flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-semibold transition-all ${
 							quickRecordDisabled
 								? "cursor-not-allowed bg-red-500/15 text-white/30"
-								: "cursor-pointer bg-red-500 text-white shadow-lg shadow-red-500/20 hover:bg-red-600"
+								: "cursor-pointer bg-red-500 text-white hover:bg-red-600"
 						}`}
 					>
 						<BsRecordCircle size={12} className="shrink-0" />
@@ -430,17 +439,21 @@ export function HudToolbar({
 							{t("recording.selectCamera")}
 						</DropdownMenuLabel>
 						<DropdownMenuRadioGroup
-							value={
-								cameraSession.sourceType === "mobile"
-									? "__mobile__"
-									: (cameraSession.deviceId ?? "__off__")
-							}
+							value={cameraDropdownValue}
 							onValueChange={(value) => {
 								if (value === "__mobile__") {
 									setMobileCameraEnabled(true);
 									return;
 								}
-								setCameraDeviceId(value === "__off__" ? undefined : value);
+								if (value === "__off__") {
+									setCameraDeviceId(undefined);
+									return;
+								}
+								if (value === DEFAULT_CAMERA_VALUE) {
+									setWebcamEnabled(true);
+									return;
+								}
+								setCameraDeviceId(value);
 							}}
 						>
 							<DropdownMenuRadioItem value="__off__" className="text-xs">
@@ -453,10 +466,13 @@ export function HudToolbar({
 									{mobileConnected && <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />}
 								</span>
 							</DropdownMenuRadioItem>
-							{cameraDevices.map((device) => (
+							<DropdownMenuRadioItem value={DEFAULT_CAMERA_VALUE} className="text-xs">
+								Default camera
+							</DropdownMenuRadioItem>
+							{cameraDeviceOptions.map((device) => (
 								<DropdownMenuRadioItem
-									key={device.deviceId}
-									value={device.deviceId}
+									key={device.deviceId || DEFAULT_CAMERA_VALUE}
+									value={device.deviceId || DEFAULT_CAMERA_VALUE}
 									className="text-xs"
 								>
 									{device.label}

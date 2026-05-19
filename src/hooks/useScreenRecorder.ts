@@ -478,11 +478,14 @@ export function useScreenRecorder(
 			setCameraSession((prev) => ({
 				...prev,
 				enabled,
-				sourceType: enabled ? (prev.sourceType ?? "local-device") : prev.sourceType,
+				sourceType: enabled ? "local-device" : prev.sourceType,
 				resolvedCaptureProfile: enabled ? prev.resolvedCaptureProfile : undefined,
 			}));
 
 			if (!enabled) {
+				void window.electronAPI.clearCurrentWebcamPath();
+				releaseWebcamStream();
+			} else if (webcamRecorder.current?.state !== "recording") {
 				void window.electronAPI.clearCurrentWebcamPath();
 				releaseWebcamStream();
 			}

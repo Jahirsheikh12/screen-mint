@@ -533,6 +533,10 @@ declare global {
 			setHudDropdownExpanded: (expanded: boolean) => Promise<void>;
 			/** Let mouse input pass through transparent compact HUD pixels */
 			setHudMousePassthrough: (enabled: boolean) => Promise<void>;
+			/** Move the compact HUD with explicit pointer dragging */
+			startHudDrag: (point: { screenX: number; screenY: number }) => void;
+			moveHudDrag: (point: { screenX: number; screenY: number }) => void;
+			endHudDrag: () => void;
 			/** Reposition the HUD onto the display containing the cursor */
 			recenterHudOnCursor: () => Promise<void>;
 			/** Default the active capture source to the display under the cursor */
@@ -618,6 +622,15 @@ declare global {
 		sourceDisplayId?: number;
 		displayScaleFactor?: number;
 		captureMode?: "display" | "window" | "area";
+		capturePlatform?: "darwin" | "win32" | "linux";
+		geometrySource?:
+			| "electron-display"
+			| "selected-area"
+			| "win32-window"
+			| "x11-window"
+			| "macos-window"
+			| "fallback-display";
+		projectionConfidence?: "high" | "medium" | "low";
 	}
 
 	interface KeyboardTelemetrySample {

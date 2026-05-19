@@ -8,6 +8,7 @@ import {
 	computeHudCompactBounds,
 	DEFAULT_HUD_COMPACT_LAYOUT,
 	type HudCompactLayout,
+	type RectLike,
 } from "./hudCompactBounds";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -34,6 +35,11 @@ let hudContentVisible = false;
 let hudDropdownExpanded = false;
 let hudMousePassthroughRequested = false;
 let hudMousePassthroughApplied = false;
+let hudPositionManuallyMoved = false;
+let hudDragState: {
+	startPointer: { x: number; y: number };
+	startBounds: { x: number; y: number; width: number; height: number };
+} | null = null;
 
 const HUD_DROPDOWN_EXPAND_HEIGHT = 640;
 
@@ -100,12 +106,45 @@ function getHudOverlayWorkArea() {
 	return getCursorDisplayWorkArea();
 }
 
+function clampBoundsToWorkArea(bounds: RectLike, workArea: RectLike): RectLike {
+	const maxX = Math.max(workArea.x, workArea.x + workArea.width - bounds.width);
+	const maxY = Math.max(workArea.y, workArea.y + workArea.height - bounds.height);
+
+	return {
+		x: Math.min(Math.max(Math.round(bounds.x), workArea.x), maxX),
+		y: Math.min(Math.max(Math.round(bounds.y), workArea.y), maxY),
+		width: bounds.width,
+		height: bounds.height,
+	};
+}
+
+function getHudBoundsPreservingBottom(width: number, height: number, workArea: RectLike): RectLike {
+	const currentBounds = hudOverlayWindow?.getBounds();
+	const bottom = currentBounds
+		? currentBounds.y + currentBounds.height
+		: workArea.y + workArea.height;
+
+	return clampBoundsToWorkArea(
+		{
+			x: currentBounds?.x ?? workArea.x + Math.floor((workArea.width - width) / 2),
+			y: bottom - height,
+			width,
+			height,
+		},
+		workArea,
+	);
+}
+
 function applyHudCompactBounds(): void {
 	if (!hudOverlayWindow || hudOverlayWindow.isDestroyed()) {
 		return;
 	}
 
-	const bounds = computeHudCompactBounds(getHudOverlayWorkArea(), hudCompactLayout);
+	const workArea = getHudOverlayWorkArea();
+	const computedBounds = computeHudCompactBounds(workArea, hudCompactLayout);
+	const bounds = hudPositionManuallyMoved
+		? getHudBoundsPreservingBottom(computedBounds.width, computedBounds.height, workArea)
+		: computedBounds;
 	const currentBounds = hudOverlayWindow.getBounds();
 	if (
 		currentBounds.x === bounds.x &&
@@ -131,14 +170,9 @@ function applyHudDropdownExpandedBounds(): void {
 		HUD_DROPDOWN_EXPAND_HEIGHT,
 		Math.max(compactBounds.height, workArea.height - safeBottomMargin),
 	);
-	const y = Math.max(workArea.y, workArea.y + workArea.height - desiredHeight - safeBottomMargin);
+	const bounds = getHudBoundsPreservingBottom(compactBounds.width, desiredHeight, workArea);
 
-	hudOverlayWindow.setBounds({
-		x: compactBounds.x,
-		y,
-		width: compactBounds.width,
-		height: desiredHeight,
-	});
+	hudOverlayWindow.setBounds(bounds);
 }
 
 function applyHudMousePassthrough(): void {
@@ -146,13 +180,49 @@ function applyHudMousePassthrough(): void {
 		return;
 	}
 
-	const enabled = !hudContentVisible && hudMousePassthroughRequested;
+	const enabled = !hudDragState && !hudContentVisible && hudMousePassthroughRequested;
 	if (enabled === hudMousePassthroughApplied) {
 		return;
 	}
 
 	hudMousePassthroughApplied = enabled;
 	hudOverlayWindow.setIgnoreMouseEvents(enabled, { forward: true });
+}
+
+function coerceScreenPoint(point: unknown): { x: number; y: number } | null {
+	if (!point || typeof point !== "object") {
+		return null;
+	}
+
+	const maybePoint = point as { screenX?: unknown; screenY?: unknown };
+	const x = Number(maybePoint.screenX);
+	const y = Number(maybePoint.screenY);
+	if (!Number.isFinite(x) || !Number.isFinite(y)) {
+		return null;
+	}
+
+	return { x, y };
+}
+
+function clampHudBoundsToPointDisplay(
+	x: number,
+	y: number,
+	width: number,
+	height: number,
+	pointer: { x: number; y: number },
+): { x: number; y: number; width: number; height: number } {
+	const workArea = getScreen().getDisplayNearestPoint(pointer).workArea;
+	const maxX = Math.max(workArea.x, workArea.x + workArea.width - width);
+	const maxY = Math.max(workArea.y, workArea.y + workArea.height - height);
+	const clampedX = Math.min(Math.max(Math.round(x), workArea.x), maxX);
+	const clampedY = Math.min(Math.max(Math.round(y), workArea.y), maxY);
+
+	return {
+		x: clampedX,
+		y: clampedY,
+		width,
+		height,
+	};
 }
 
 function pinOverlayWindow(win: BrowserWindow, allowFullscreenVisibility = true): void {
@@ -819,6 +889,7 @@ function moveHudToCursorDisplay(): void {
 	if (hudContentVisible) return;
 
 	const workArea = getCursorDisplayWorkArea();
+	hudPositionManuallyMoved = false;
 	if (hudDropdownExpanded) {
 		const compactBounds = computeHudCompactBounds(workArea, hudCompactLayout);
 		const safeBottomMargin = 5;
@@ -864,6 +935,47 @@ ipcMain.handle(IPC_CHANNELS.hudWindow.setMousePassthrough, (_event, enabled: boo
 	if (!hudOverlayWindow || hudOverlayWindow.isDestroyed()) return;
 
 	hudMousePassthroughRequested = Boolean(enabled);
+	applyHudMousePassthrough();
+});
+
+ipcMain.on(IPC_CHANNELS.hudWindow.startDrag, (_event, point: unknown) => {
+	if (!hudOverlayWindow || hudOverlayWindow.isDestroyed() || hudContentVisible) return;
+
+	const startPointer = coerceScreenPoint(point);
+	if (!startPointer) return;
+
+	hudDragState = {
+		startPointer,
+		startBounds: hudOverlayWindow.getBounds(),
+	};
+	hudPositionManuallyMoved = true;
+	applyHudMousePassthrough();
+});
+
+ipcMain.on(IPC_CHANNELS.hudWindow.moveDrag, (_event, point: unknown) => {
+	if (!hudOverlayWindow || hudOverlayWindow.isDestroyed() || !hudDragState) return;
+
+	const pointer = coerceScreenPoint(point);
+	if (!pointer) return;
+
+	const dx = pointer.x - hudDragState.startPointer.x;
+	const dy = pointer.y - hudDragState.startPointer.y;
+	const { startBounds } = hudDragState;
+	hudOverlayWindow.setBounds(
+		clampHudBoundsToPointDisplay(
+			startBounds.x + dx,
+			startBounds.y + dy,
+			startBounds.width,
+			startBounds.height,
+			pointer,
+		),
+	);
+});
+
+ipcMain.on(IPC_CHANNELS.hudWindow.endDrag, () => {
+	if (!hudDragState) return;
+
+	hudDragState = null;
 	applyHudMousePassthrough();
 });
 

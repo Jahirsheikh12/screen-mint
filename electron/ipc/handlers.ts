@@ -40,7 +40,12 @@ import { registerCaptureSourceIpcHandlers } from "./captureSourceHandlers";
 import { registerChunkSessionIpcHandlers } from "./chunkSessionHandlers";
 import { registerCurrentMediaIpcHandlers } from "./currentMediaHandlers";
 import {
+	type CursorCapturePlatform,
 	type CursorMoveSampleCandidate,
+	type CursorProjectionConfidence,
+	type CursorTelemetryGeometrySource,
+	physicalBoundsToDip,
+	physicalPointToDip,
 	shouldRecordCursorMoveSample,
 } from "./cursorTelemetryUtils";
 import { registerExportFileIpcHandlers } from "./exportFileHandlers";
@@ -1500,6 +1505,60 @@ async function resolveLinuxWindowBounds(source: SelectedSource): Promise<WindowB
 	}
 }
 
+async function resolveWindowsWindowBounds(source: SelectedSource): Promise<WindowBounds | null> {
+	const windowId = parseWindowId(source?.id);
+	if (!windowId || process.platform !== "win32") {
+		return null;
+	}
+
+	const script = `
+$ErrorActionPreference = "Stop"
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public static class ScreenMintWin32Bounds {
+  [StructLayout(LayoutKind.Sequential)]
+  public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
+  [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr hWnd);
+  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
+  [DllImport("dwmapi.dll")] public static extern int DwmGetWindowAttribute(IntPtr hWnd, int attr, out RECT rect, int size);
+}
+"@
+$hwnd = [IntPtr]([Int64]${Math.trunc(windowId)})
+if (-not [ScreenMintWin32Bounds]::IsWindow($hwnd)) { exit 2 }
+$rect = New-Object ScreenMintWin32Bounds+RECT
+$size = [Runtime.InteropServices.Marshal]::SizeOf([type][ScreenMintWin32Bounds+RECT])
+$ok = ([ScreenMintWin32Bounds]::DwmGetWindowAttribute($hwnd, 9, [ref]$rect, $size) -eq 0)
+if (-not $ok) { $ok = [ScreenMintWin32Bounds]::GetWindowRect($hwnd, [ref]$rect) }
+if (-not $ok) { exit 3 }
+[pscustomobject]@{
+  x = $rect.Left
+  y = $rect.Top
+  width = [Math]::Max(0, $rect.Right - $rect.Left)
+  height = [Math]::Max(0, $rect.Bottom - $rect.Top)
+} | ConvertTo-Json -Compress
+`;
+
+	try {
+		const { stdout } = await execFileAsync(
+			"powershell.exe",
+			["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script],
+			{
+				timeout: 1500,
+			},
+		);
+		const parsed = JSON.parse(stdout) as Partial<WindowBounds>;
+		const physicalBounds = sanitizeTelemetryBounds(parsed);
+		if (!physicalBounds) {
+			return null;
+		}
+
+		return physicalBoundsToDip(physicalBounds, getTelemetryDisplays());
+	} catch {
+		return null;
+	}
+}
+
 function clampCaptureFps(value: number | undefined) {
 	if (!Number.isFinite(value)) {
 		return 30;
@@ -2766,6 +2825,9 @@ interface CursorTelemetryPoint {
 	sourceDisplayId?: number;
 	displayScaleFactor?: number;
 	captureMode?: "display" | "window" | "area";
+	capturePlatform?: CursorCapturePlatform;
+	geometrySource?: CursorTelemetryGeometrySource;
+	projectionConfidence?: CursorProjectionConfidence;
 }
 
 interface KeyboardTelemetryPoint {
@@ -2891,6 +2953,8 @@ let activePointerState: {
 } | null = null;
 let lastRecordedCursorPositionSample: CursorMoveSampleCandidate | null = null;
 let selectedWindowBounds: WindowBounds | null = null;
+let selectedWindowGeometrySource: CursorTelemetryGeometrySource | null = null;
+let selectedWindowProjectionConfidence: CursorProjectionConfidence = "medium";
 let windowBoundsCaptureInterval: NodeJS.Timeout | null = null;
 let windowBoundsCaptureSessionId = 0;
 let keyboardCapturePlatform: KeyboardTelemetryPlatform =
@@ -3100,6 +3164,8 @@ function stopWindowBoundsCapture() {
 	}
 	stopNativeWindowBoundsMonitor();
 	selectedWindowBounds = null;
+	selectedWindowGeometrySource = null;
+	selectedWindowProjectionConfidence = "medium";
 }
 
 function getWindowBoundsFromNativeSource(
@@ -3143,6 +3209,55 @@ function cloneWindowBounds(bounds: WindowBounds | null | undefined): WindowBound
 	};
 }
 
+function getCursorCapturePlatform(): CursorCapturePlatform {
+	return process.platform === "darwin"
+		? "darwin"
+		: process.platform === "linux"
+			? "linux"
+			: "win32";
+}
+
+function combineCursorConfidence(
+	sampleConfidence?: CursorProjectionConfidence,
+	projectionConfidence?: CursorProjectionConfidence,
+): CursorProjectionConfidence | undefined {
+	if (sampleConfidence === "low" || projectionConfidence === "low") {
+		return "low";
+	}
+
+	if (sampleConfidence === "medium" || projectionConfidence === "medium") {
+		return "medium";
+	}
+
+	return sampleConfidence ?? projectionConfidence;
+}
+
+function getTelemetryDisplays() {
+	return getScreen()
+		.getAllDisplays()
+		.map((display) => ({
+			id: display.id,
+			bounds: cloneWindowBounds(display.bounds) ?? { x: 0, y: 0, width: 1, height: 1 },
+			scaleFactor: display.scaleFactor,
+		}));
+}
+
+function normalizeHookPointToDip(point: { x: number; y: number }) {
+	if (process.platform !== "win32") {
+		return point;
+	}
+
+	const electronPoint = getScreen().getCursorScreenPoint();
+	const convertedPoint = physicalPointToDip(point, getTelemetryDisplays());
+	const rawDistance = Math.hypot(point.x - electronPoint.x, point.y - electronPoint.y);
+	const convertedDistance = Math.hypot(
+		convertedPoint.x - electronPoint.x,
+		convertedPoint.y - electronPoint.y,
+	);
+
+	return convertedDistance < rawDistance ? convertedPoint : point;
+}
+
 function getDisplayForBounds(bounds: WindowBounds): Electron.Display {
 	const centerPoint = {
 		x: Math.round(bounds.x + bounds.width / 2),
@@ -3174,14 +3289,44 @@ async function refreshSelectedWindowBounds() {
 	}
 
 	let bounds: WindowBounds | null = null;
+	let geometrySource: CursorTelemetryGeometrySource | null = null;
+	let projectionConfidence: CursorProjectionConfidence = "medium";
 
 	if (process.platform === "darwin") {
 		bounds = await resolveMacWindowBounds(selectedSource);
+		geometrySource = bounds ? "macos-window" : null;
+		projectionConfidence = bounds ? "high" : "medium";
+	} else if (process.platform === "win32") {
+		bounds = await resolveWindowsWindowBounds(selectedSource);
+		geometrySource = bounds ? "win32-window" : null;
+		projectionConfidence = bounds ? "high" : "medium";
 	} else if (process.platform === "linux") {
 		bounds = await resolveLinuxWindowBounds(selectedSource);
+		geometrySource = bounds ? "x11-window" : null;
+		projectionConfidence = bounds ? "high" : "medium";
 	}
 
 	selectedWindowBounds = bounds;
+	selectedWindowGeometrySource = geometrySource;
+	selectedWindowProjectionConfidence = projectionConfidence;
+}
+
+async function refreshWindowBoundsForSource(source: SelectedSource | null | undefined) {
+	if (!source?.id?.startsWith("window:")) {
+		selectedWindowBounds = null;
+		selectedWindowGeometrySource = null;
+		selectedWindowProjectionConfidence = "medium";
+		return null;
+	}
+
+	const previousSource = selectedSource;
+	selectedSource = source;
+	try {
+		await refreshSelectedWindowBounds();
+		return selectedWindowBounds;
+	} finally {
+		selectedSource = previousSource;
+	}
 }
 
 function handleNativeWindowBoundsMonitorStdout(chunk: Buffer) {
@@ -3200,6 +3345,8 @@ function handleNativeWindowBoundsMonitorStdout(chunk: Buffer) {
 			const bounds = sanitizeTelemetryBounds(parsed);
 			if (bounds) {
 				selectedWindowBounds = bounds;
+				selectedWindowGeometrySource = "macos-window";
+				selectedWindowProjectionConfidence = "high";
 			}
 		} catch {
 			// Ignore malformed monitor payloads and continue falling back to polling.
@@ -3282,7 +3429,7 @@ function startWindowBoundsCapture() {
 	const sessionId = windowBoundsCaptureSessionId;
 
 	if (
-		!["darwin", "linux"].includes(process.platform) ||
+		!["darwin", "win32", "linux"].includes(process.platform) ||
 		!selectedSource?.id?.startsWith("window:")
 	) {
 		return;
@@ -3322,6 +3469,7 @@ function getCursorCaptureElapsedMs() {
 }
 
 function getCursorGeometrySnapshot(cursor: { x: number; y: number }) {
+	const capturePlatform = getCursorCapturePlatform();
 	const area = getSelectedAreaForSource(selectedSource);
 	if (area) {
 		const display =
@@ -3336,6 +3484,9 @@ function getCursorGeometrySnapshot(cursor: { x: number; y: number }) {
 			sourceDisplayId: area.displayId,
 			displayScaleFactor: display.scaleFactor,
 			captureMode: "area" as const,
+			capturePlatform,
+			geometrySource: "selected-area" as const,
+			projectionConfidence: "high" as const,
 		};
 	}
 
@@ -3348,6 +3499,15 @@ function getCursorGeometrySnapshot(cursor: { x: number; y: number }) {
 				sourceDisplayId: display.id,
 				displayScaleFactor: display.scaleFactor,
 				captureMode: "window" as const,
+				capturePlatform,
+				geometrySource:
+					selectedWindowGeometrySource ??
+					(process.platform === "win32"
+						? "win32-window"
+						: process.platform === "linux"
+							? "x11-window"
+							: "macos-window"),
+				projectionConfidence: selectedWindowProjectionConfidence,
 			};
 		}
 
@@ -3357,6 +3517,9 @@ function getCursorGeometrySnapshot(cursor: { x: number; y: number }) {
 			sourceDisplayId: fallbackDisplay.id,
 			displayScaleFactor: fallbackDisplay.scaleFactor,
 			captureMode: "window" as const,
+			capturePlatform,
+			geometrySource: "fallback-display" as const,
+			projectionConfidence: "medium" as const,
 		};
 	}
 
@@ -3373,6 +3536,9 @@ function getCursorGeometrySnapshot(cursor: { x: number; y: number }) {
 		sourceDisplayId: display.id,
 		displayScaleFactor: display.scaleFactor,
 		captureMode: "display" as const,
+		capturePlatform,
+		geometrySource: "electron-display" as const,
+		projectionConfidence: "high" as const,
 	};
 }
 
@@ -3439,7 +3605,7 @@ function getHookCursorScreenPoint(
 		return null;
 	}
 
-	return { x: rawX, y: rawY };
+	return normalizeHookPointToDip({ x: rawX, y: rawY });
 }
 
 function pushCursorSample(
@@ -3458,6 +3624,9 @@ function pushCursorSample(
 		sourceDisplayId?: number;
 		displayScaleFactor?: number;
 		captureMode?: "display" | "window" | "area";
+		capturePlatform?: CursorCapturePlatform;
+		geometrySource?: CursorTelemetryGeometrySource;
+		projectionConfidence?: CursorProjectionConfidence;
 	},
 ) {
 	const sample: CursorTelemetryPoint = {
@@ -3469,12 +3638,15 @@ function pushCursorSample(
 		rawX: options?.rawX,
 		rawY: options?.rawY,
 		origin: options?.origin,
-		confidence: options?.confidence,
+		confidence: combineCursorConfidence(options?.confidence, options?.projectionConfidence),
 		sourceBounds: cloneWindowBounds(options?.sourceBounds),
 		displayBounds: cloneWindowBounds(options?.displayBounds),
 		sourceDisplayId: options?.sourceDisplayId,
 		displayScaleFactor: options?.displayScaleFactor,
 		captureMode: options?.captureMode,
+		capturePlatform: options?.capturePlatform,
+		geometrySource: options?.geometrySource,
+		projectionConfidence: options?.projectionConfidence,
 	};
 
 	activeCursorSamples.push(sample);
@@ -3490,6 +3662,9 @@ function pushCursorSample(
 		sourceDisplayId: sample.sourceDisplayId,
 		displayScaleFactor: sample.displayScaleFactor,
 		captureMode: sample.captureMode,
+		capturePlatform: sample.capturePlatform,
+		geometrySource: sample.geometrySource,
+		projectionConfidence: sample.projectionConfidence,
 	};
 
 	if (activeCursorSamples.length > MAX_CURSOR_SAMPLES) {
@@ -3519,6 +3694,9 @@ function pushMoveCursorSample(
 		sourceDisplayId: point.sourceDisplayId,
 		displayScaleFactor: point.displayScaleFactor,
 		captureMode: point.captureMode,
+		capturePlatform: point.capturePlatform,
+		geometrySource: point.geometrySource,
+		projectionConfidence: point.projectionConfidence,
 	};
 
 	if (
@@ -3542,6 +3720,9 @@ function pushMoveCursorSample(
 		sourceDisplayId: point.sourceDisplayId,
 		displayScaleFactor: point.displayScaleFactor,
 		captureMode: point.captureMode,
+		capturePlatform: point.capturePlatform,
+		geometrySource: point.geometrySource,
+		projectionConfidence: point.projectionConfidence,
 	});
 }
 
@@ -3756,6 +3937,9 @@ async function startInteractionCapture() {
 				sourceDisplayId: point.sourceDisplayId,
 				displayScaleFactor: point.displayScaleFactor,
 				captureMode: point.captureMode,
+				capturePlatform: point.capturePlatform,
+				geometrySource: point.geometrySource,
+				projectionConfidence: point.projectionConfidence,
 			});
 		};
 
@@ -3793,6 +3977,9 @@ async function startInteractionCapture() {
 					sourceDisplayId: point.sourceDisplayId,
 					displayScaleFactor: point.displayScaleFactor,
 					captureMode: point.captureMode,
+					capturePlatform: point.capturePlatform,
+					geometrySource: point.geometrySource,
+					projectionConfidence: point.projectionConfidence,
 				},
 			);
 
@@ -3827,6 +4014,9 @@ async function startInteractionCapture() {
 					sourceDisplayId: point.sourceDisplayId,
 					displayScaleFactor: point.displayScaleFactor,
 					captureMode: point.captureMode,
+					capturePlatform: point.capturePlatform,
+					geometrySource: point.geometrySource,
+					projectionConfidence: point.projectionConfidence,
 				});
 			}
 
@@ -3879,6 +4069,9 @@ async function startInteractionCapture() {
 					sourceDisplayId: normalizedPoint.sourceDisplayId,
 					displayScaleFactor: normalizedPoint.displayScaleFactor,
 					captureMode: normalizedPoint.captureMode,
+					capturePlatform: normalizedPoint.capturePlatform,
+					geometrySource: normalizedPoint.geometrySource,
+					projectionConfidence: normalizedPoint.projectionConfidence,
 				});
 				return;
 			}
@@ -3895,6 +4088,9 @@ async function startInteractionCapture() {
 					sourceDisplayId: normalizedPoint.sourceDisplayId,
 					displayScaleFactor: normalizedPoint.displayScaleFactor,
 					captureMode: normalizedPoint.captureMode,
+					capturePlatform: normalizedPoint.capturePlatform,
+					geometrySource: normalizedPoint.geometrySource,
+					projectionConfidence: normalizedPoint.projectionConfidence,
 				});
 			}
 		};
@@ -4190,6 +4386,7 @@ export function registerIpcHandlers(
 
 					const windowId = parseWindowId(source?.id);
 					if (windowId && source?.id?.startsWith("window:")) {
+						await refreshWindowBoundsForSource(source);
 						config.windowHandle = windowId;
 					} else {
 						const screenId = Number(source?.display_id);
@@ -4544,6 +4741,9 @@ export function registerIpcHandlers(
 				const ffmpegPath = getFfmpegBinaryPath();
 				const outputPath = path.join(recordingsDir, `recording-${Date.now()}.mp4`);
 				const args = await buildFfmpegCaptureArgs(source, outputPath, options);
+				if (source?.id?.startsWith("window:")) {
+					await refreshWindowBoundsForSource(source);
+				}
 
 				ffmpegCaptureOutputBuffer = "";
 				ffmpegCaptureTargetPath = outputPath;

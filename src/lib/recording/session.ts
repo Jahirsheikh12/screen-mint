@@ -159,6 +159,15 @@ export type CursorTelemetrySample = {
 	sourceDisplayId?: number;
 	displayScaleFactor?: number;
 	captureMode?: CaptureMode;
+	capturePlatform?: "darwin" | "win32" | "linux";
+	geometrySource?:
+		| "electron-display"
+		| "selected-area"
+		| "win32-window"
+		| "x11-window"
+		| "macos-window"
+		| "fallback-display";
+	projectionConfidence?: "high" | "medium" | "low";
 	velocityX?: number;
 	velocityY?: number;
 	heading?: number;

@@ -26,7 +26,8 @@ type SettingsDropdownProps = {
 	onUpdateSettings: (update: Partial<HudSettings>) => void;
 };
 
-const DROPDOWN_CLASSES = "border-white/10 bg-[#1c1c1e] text-white/90 shadow-xl shadow-black/50";
+const DROPDOWN_CLASSES =
+	"border-white/10 bg-[#1c1c1e] text-white/90 shadow-none data-[state=open]:!animate-none data-[state=closed]:!animate-none";
 
 // Override the global Radix `accent` (which resolves to a near-white in light mode)
 // with a dark-friendly hover so menu text stays readable on the HUD's dark popover.

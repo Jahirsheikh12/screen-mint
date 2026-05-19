@@ -1,9 +1,17 @@
 let openCount = 0;
 let pending: ReturnType<typeof setTimeout> | null = null;
+const subscribers = new Set<(open: boolean) => void>();
 
-function flush(target: boolean) {
+function emit(open: boolean): void {
+	for (const subscriber of subscribers) {
+		subscriber(open);
+	}
+}
+
+async function flush(target: boolean) {
 	pending = null;
-	void window.electronAPI?.setHudDropdownExpanded?.(target);
+	await window.electronAPI?.setHudDropdownExpanded?.(target);
+	emit(target);
 }
 
 export function notifyHudDropdownToggle(open: boolean): void {
@@ -14,7 +22,7 @@ export function notifyHudDropdownToggle(open: boolean): void {
 				clearTimeout(pending);
 				pending = null;
 			}
-			flush(true);
+			void flush(true);
 		}
 		return;
 	}
@@ -22,7 +30,7 @@ export function notifyHudDropdownToggle(open: boolean): void {
 	openCount = Math.max(0, openCount - 1);
 	if (openCount === 0) {
 		if (pending) clearTimeout(pending);
-		pending = setTimeout(() => flush(false), 80);
+		pending = setTimeout(() => void flush(false), 80);
 	}
 }
 
@@ -32,5 +40,14 @@ export function bindHudDropdown(
 	return (open: boolean) => {
 		notifyHudDropdownToggle(open);
 		handler?.(open);
+	};
+}
+
+export function subscribeHudDropdownOpen(handler: (open: boolean) => void): () => void {
+	subscribers.add(handler);
+	handler(openCount > 0);
+
+	return () => {
+		subscribers.delete(handler);
 	};
 }

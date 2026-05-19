@@ -63,4 +63,22 @@ describe("projectCursorSample", () => {
 		expect(projected.confidence).toBe("high");
 		expect(projected.projection?.reason).toBe("missing-bounds");
 	});
+
+	it("keeps platform fallback telemetry conservative", () => {
+		const projected = projectCursorSample(
+			sample({
+				rawX: 500,
+				rawY: 350,
+				sourceBounds: { x: 100, y: 50, width: 800, height: 600 },
+				capturePlatform: "linux",
+				geometrySource: "fallback-display",
+				projectionConfidence: "medium",
+			}),
+		);
+
+		expect(projected.cx).toBeCloseTo(0.5);
+		expect(projected.cy).toBeCloseTo(0.5);
+		expect(projected.confidence).toBe("medium");
+		expect(projected.geometrySource).toBe("fallback-display");
+	});
 });

@@ -3,7 +3,7 @@
 }
 
 .hudBar {
-	-webkit-app-region: drag;
+	-webkit-app-region: no-drag;
 }
 
 .electronNoDrag {
@@ -92,27 +92,6 @@
 	animation: backdrop-fade-out 0.16s ease-in both;
 	will-change: opacity;
 	pointer-events: none;
-}
-
-/* Recording bar glow */
-@keyframes recording-glow {
-	0%,
-	100% {
-		box-shadow:
-			0 0 0 0.5px rgba(239, 68, 68, 0.15),
-			0 4px 24px rgba(0, 0, 0, 0.35);
-	}
-	50% {
-		box-shadow:
-			0 0 0 0.5px rgba(239, 68, 68, 0.25),
-			0 4px 24px rgba(0, 0, 0, 0.35),
-			0 0 20px rgba(239, 68, 68, 0.06);
-	}
-}
-
-.recordingGlow {
-	animation: recording-glow 2s ease-in-out infinite;
-	will-change: box-shadow;
 }
 
 /* HUD toolbar entrance — subtle scale-up + fade on launch */

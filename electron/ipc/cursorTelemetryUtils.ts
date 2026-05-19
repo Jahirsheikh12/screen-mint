@@ -5,6 +5,27 @@ export interface CursorTelemetryBoundsLike {
 	height: number;
 }
 
+export type CursorCapturePlatform = "darwin" | "win32" | "linux";
+export type CursorTelemetryGeometrySource =
+	| "electron-display"
+	| "selected-area"
+	| "win32-window"
+	| "x11-window"
+	| "macos-window"
+	| "fallback-display";
+export type CursorProjectionConfidence = "high" | "medium" | "low";
+
+export interface CursorTelemetryDisplayLike {
+	id: number;
+	bounds: CursorTelemetryBoundsLike;
+	scaleFactor: number;
+}
+
+export interface CursorTelemetryPointLike {
+	x: number;
+	y: number;
+}
+
 export interface CursorMoveSampleCandidate {
 	timeMs: number;
 	cx: number;
@@ -16,6 +37,9 @@ export interface CursorMoveSampleCandidate {
 	sourceDisplayId?: number;
 	displayScaleFactor?: number;
 	captureMode?: "display" | "window" | "area";
+	capturePlatform?: CursorCapturePlatform;
+	geometrySource?: CursorTelemetryGeometrySource;
+	projectionConfidence?: CursorProjectionConfidence;
 }
 
 export interface CursorMoveSamplePolicy {
@@ -54,7 +78,10 @@ export function hasCursorGeometryChange(
 		!boundsEqual(previous.displayBounds, next.displayBounds) ||
 		previous.sourceDisplayId !== next.sourceDisplayId ||
 		previous.displayScaleFactor !== next.displayScaleFactor ||
-		previous.captureMode !== next.captureMode
+		previous.captureMode !== next.captureMode ||
+		previous.capturePlatform !== next.capturePlatform ||
+		previous.geometrySource !== next.geometrySource ||
+		previous.projectionConfidence !== next.projectionConfidence
 	);
 }
 
@@ -86,4 +113,92 @@ export function shouldRecordCursorMoveSample(
 	}
 
 	return elapsedMs >= policy.minIntervalMs;
+}
+
+function getDisplayPhysicalBounds(display: CursorTelemetryDisplayLike) {
+	const scaleFactor =
+		Number.isFinite(display.scaleFactor) && display.scaleFactor > 0 ? display.scaleFactor : 1;
+
+	return {
+		x: display.bounds.x * scaleFactor,
+		y: display.bounds.y * scaleFactor,
+		width: display.bounds.width * scaleFactor,
+		height: display.bounds.height * scaleFactor,
+		scaleFactor,
+	};
+}
+
+function containsPoint(bounds: CursorTelemetryBoundsLike, point: CursorTelemetryPointLike) {
+	return (
+		point.x >= bounds.x &&
+		point.x <= bounds.x + bounds.width &&
+		point.y >= bounds.y &&
+		point.y <= bounds.y + bounds.height
+	);
+}
+
+function squaredDistanceToBoundsCenter(
+	bounds: CursorTelemetryBoundsLike,
+	point: CursorTelemetryPointLike,
+) {
+	const centerX = bounds.x + bounds.width / 2;
+	const centerY = bounds.y + bounds.height / 2;
+	return (centerX - point.x) ** 2 + (centerY - point.y) ** 2;
+}
+
+function findDisplayForPhysicalPoint(
+	displays: CursorTelemetryDisplayLike[],
+	point: CursorTelemetryPointLike,
+) {
+	const withPhysicalBounds = displays.map((display) => ({
+		display,
+		physicalBounds: getDisplayPhysicalBounds(display),
+	}));
+	return (
+		withPhysicalBounds.find((entry) => containsPoint(entry.physicalBounds, point)) ??
+		withPhysicalBounds.sort(
+			(left, right) =>
+				squaredDistanceToBoundsCenter(left.physicalBounds, point) -
+				squaredDistanceToBoundsCenter(right.physicalBounds, point),
+		)[0] ??
+		null
+	);
+}
+
+export function physicalPointToDip(
+	point: CursorTelemetryPointLike,
+	displays: CursorTelemetryDisplayLike[],
+): CursorTelemetryPointLike {
+	const match = findDisplayForPhysicalPoint(displays, point);
+	if (!match) {
+		return point;
+	}
+
+	const { display, physicalBounds } = match;
+	return {
+		x: display.bounds.x + (point.x - physicalBounds.x) / physicalBounds.scaleFactor,
+		y: display.bounds.y + (point.y - physicalBounds.y) / physicalBounds.scaleFactor,
+	};
+}
+
+export function physicalBoundsToDip(
+	bounds: CursorTelemetryBoundsLike,
+	displays: CursorTelemetryDisplayLike[],
+): CursorTelemetryBoundsLike {
+	const center = {
+		x: bounds.x + bounds.width / 2,
+		y: bounds.y + bounds.height / 2,
+	};
+	const match = findDisplayForPhysicalPoint(displays, center);
+	if (!match) {
+		return bounds;
+	}
+
+	const { display, physicalBounds } = match;
+	return {
+		x: display.bounds.x + (bounds.x - physicalBounds.x) / physicalBounds.scaleFactor,
+		y: display.bounds.y + (bounds.y - physicalBounds.y) / physicalBounds.scaleFactor,
+		width: bounds.width / physicalBounds.scaleFactor,
+		height: bounds.height / physicalBounds.scaleFactor,
+	};
 }

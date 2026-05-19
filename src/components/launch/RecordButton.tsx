@@ -78,7 +78,7 @@ export function RecordButton({
 				className={`flex items-center gap-2.5 rounded-l-xl px-6 py-2.5 text-sm font-medium transition-all ${
 					isDisabled
 						? "bg-purple-600/30 text-white/40 cursor-not-allowed"
-						: "bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-500 hover:to-purple-400 shadow-lg shadow-purple-600/25 cursor-pointer"
+						: "bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-500 hover:to-purple-400 cursor-pointer"
 				}`}
 			>
 				<BsRecordCircle size={14} />
@@ -103,7 +103,7 @@ export function RecordButton({
 				<DropdownMenuContent
 					side="top"
 					align="center"
-					className="min-w-[240px] border-white/10 bg-[rgba(17,28,24,0.97)] text-white/90 backdrop-blur-xl"
+					className="min-w-[240px] border-white/10 bg-[rgba(17,28,24,0.97)] text-white/90 backdrop-blur-xl data-[state=open]:!animate-none data-[state=closed]:!animate-none"
 				>
 					<DropdownMenuRadioGroup
 						value={hudSettings.afterRecordingAction}

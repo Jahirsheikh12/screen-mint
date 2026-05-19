@@ -71,7 +71,7 @@ export function projectCursorSample(
 	const diagnostics: CursorProjectionDiagnostics = {
 		reprojectedFromRaw: false,
 		clamped: false,
-		lowConfidence: sample.confidence === "low",
+		lowConfidence: sample.confidence === "low" || sample.projectionConfidence === "low",
 	};
 	let cx = sample.cx;
 	let cy = sample.cy;
@@ -111,7 +111,10 @@ export function projectCursorSample(
 		timeMs,
 		cx: clampedCx,
 		cy: clampedCy,
-		confidence: sample.confidence ?? (diagnostics.lowConfidence ? "medium" : "high"),
+		confidence:
+			sample.confidence ??
+			sample.projectionConfidence ??
+			(diagnostics.lowConfidence ? "medium" : "high"),
 		projection: diagnostics,
 	};
 }
