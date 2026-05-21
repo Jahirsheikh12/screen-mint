@@ -166,14 +166,12 @@ export function Navbar() {
 
 				{/* Logo */}
 				<a href="#" className="relative z-10 flex items-center gap-2.5 group">
-					<span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.04] border border-white/[0.06]">
-						<img
-							src="/images/screenmint-mark.svg"
-							alt="ScreenMint mark"
-							className="h-5 w-5 object-contain"
-							loading="eager"
-						/>
-					</span>
+					<img
+						src="/images/screenmint-mark.png"
+						alt="ScreenMint mark"
+						className="h-9 w-auto object-contain drop-shadow-[0_6px_16px_rgba(0,108,255,0.28)]"
+						loading="eager"
+					/>
 					<span className="text-[15px] font-semibold tracking-[-0.02em] text-white/90 group-hover:text-white transition-colors">
 						Screen<span className="text-brand-400">Mint</span>
 					</span>
