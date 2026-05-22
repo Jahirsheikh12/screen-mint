@@ -310,13 +310,14 @@ workerScope.onmessage = (event: MessageEvent) => {
 	if (message.type === "finalize") {
 		try {
 			const bytes = encodeGif();
+			const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
 			workerScope.postMessage(
 				{
 					type: "done",
-					buffer: bytes.buffer,
+					buffer,
 					dedupedFrames: encodedFrames,
 				},
-				[bytes.buffer],
+				[buffer],
 			);
 			paletteSamples = [];
 			samplePreviousFrame = null;

@@ -3317,7 +3317,9 @@ export default function VideoEditor() {
 					formatName: "GIF" | "video";
 				}): Promise<{ handled: boolean; keepDialogOpen: boolean }> => {
 					const capabilities = await window.electronAPI.exportV2Probe();
-					if (!capabilities.enabled) {
+					const canUseGifPipeline =
+						request.format === "gif" && capabilities.gif.ffmpegPalettePipeline;
+					if (!capabilities.enabled && !canUseGifPipeline) {
 						return { handled: false, keepDialogOpen: true };
 					}
 
@@ -3416,12 +3418,10 @@ export default function VideoEditor() {
 							speedRegions,
 							compositionPayload,
 							audioPlan: {
-								mode:
-									audioRegions.length > 0 || speedRegions.length > 0 ? "timeline-mix" : "source",
-								expectAudio: true,
-								sourcePath: videoPath,
-								audioRegionCount: audioRegions.length,
-								hasSpeedRegions: speedRegions.length > 0,
+								mode: "none",
+								expectAudio: false,
+								audioRegionCount: 0,
+								hasSpeedRegions: false,
 							},
 							validationPolicy: "warn",
 							gif: {

@@ -119,6 +119,7 @@ interface GifExporterConfig {
 	captionRegions?: CaptionRegion[];
 	captionSettings?: CaptionSettings;
 	outputPath?: string;
+	jobId?: string;
 	onProgress?: (progress: ExportProgress) => void;
 }
 
@@ -302,18 +303,6 @@ export class GifExporter {
 			});
 			await this.renderer.initialize();
 
-			this.worker = new Worker(GIF_ENCODER_WORKER_URL, { type: "module" });
-			this.worker.postMessage({
-				type: "init",
-				width: this.config.width,
-				height: this.config.height,
-				loop: this.config.loop,
-				dedupeFrames: this.config.dedupeFrames,
-				colorCount: this.config.colorCount,
-				ditherMode: this.config.ditherMode,
-				dedupeThreshold: getMotionDedupeThreshold(this.config.motionSensitivity),
-			});
-
 			const effectiveDuration = this.streamingDecoder.getEffectiveDuration(
 				this.config.trimRegions,
 				this.config.speedRegions,
@@ -332,6 +321,44 @@ export class GifExporter {
 			if (!canvasCtx) {
 				throw new Error("Failed to read rendered GIF frames");
 			}
+
+			if (this.config.outputPath) {
+				try {
+					return await this.exportWithFfmpegPipe({
+						canvasCtx,
+						effectiveDuration,
+						totalFrames,
+						warnings,
+					});
+				} catch (error) {
+					if (this.cancelled) {
+						return { success: false, error: "Export cancelled" };
+					}
+					console.warn(
+						"[GifExporter] FFmpeg GIF pipe failed; falling back to worker encoder:",
+						error,
+					);
+					this.streamingDecoder?.destroy();
+					this.streamingDecoder = new StreamingVideoDecoder();
+					await this.streamingDecoder.loadMetadata(this.config.videoUrl);
+					this.reportProgress(0, totalFrames, "rendering", undefined, [
+						...warnings,
+						"FFmpeg GIF encoder failed; using slower fallback encoder.",
+					]);
+				}
+			}
+
+			this.worker = new Worker(GIF_ENCODER_WORKER_URL, { type: "module" });
+			this.worker.postMessage({
+				type: "init",
+				width: this.config.width,
+				height: this.config.height,
+				loop: this.config.loop,
+				dedupeFrames: this.config.dedupeFrames,
+				colorCount: this.config.colorCount,
+				ditherMode: this.config.ditherMode,
+				dedupeThreshold: getMotionDedupeThreshold(this.config.motionSensitivity),
+			});
 
 			let frameIndex = 0;
 			await this.streamingDecoder.decodeAll(
@@ -460,6 +487,124 @@ export class GifExporter {
 			};
 		} finally {
 			this.cleanup();
+		}
+	}
+
+	private async exportWithFfmpegPipe({
+		canvasCtx,
+		effectiveDuration,
+		totalFrames,
+		warnings,
+	}: {
+		canvasCtx: CanvasRenderingContext2D;
+		effectiveDuration: number;
+		totalFrames: number;
+		warnings: string[];
+	}): Promise<ExportResult> {
+		const outputPath = this.config.outputPath;
+		if (!outputPath) {
+			throw new Error("FFmpeg GIF pipe requires an output path");
+		}
+
+		const startResult = await window.electronAPI.exportV2GifPipeStart({
+			jobId: this.config.jobId,
+			outputPath,
+			width: this.config.width,
+			height: this.config.height,
+			frameRate: this.config.frameRate,
+			durationMs: Math.round(effectiveDuration * 1000),
+			gif: {
+				colorCount: this.config.colorCount,
+				ditherMode: this.config.ditherMode,
+				motionSensitivity: this.config.motionSensitivity,
+				loop: this.config.loop,
+				dedupeFrames: this.config.dedupeFrames,
+			},
+		});
+		if (!startResult.success || !startResult.id) {
+			throw new Error(startResult.error || "Failed to start FFmpeg GIF encoder");
+		}
+
+		const sessionId = startResult.id;
+		let frameIndex = 0;
+		try {
+			await this.streamingDecoder!.decodeAll(
+				this.config.frameRate,
+				this.config.trimRegions,
+				this.config.speedRegions,
+				async (videoFrame, _exportTimestampUs, sourceTimestampMs) => {
+					if (this.cancelled) {
+						videoFrame.close();
+						return;
+					}
+
+					const sourceTimestampUs = sourceTimestampMs * 1000;
+					this.reportProgress(frameIndex, totalFrames, "rendering", undefined, warnings);
+					await this.renderer!.renderFrame(videoFrame, sourceTimestampUs);
+					videoFrame.close();
+
+					const imageData = canvasCtx.getImageData(0, 0, this.config.width, this.config.height);
+					const frameBuffer = imageData.data.buffer.slice(
+						imageData.data.byteOffset,
+						imageData.data.byteOffset + imageData.data.byteLength,
+					);
+					const appendResult = await window.electronAPI.exportV2GifPipeAppend(
+						sessionId,
+						frameBuffer,
+					);
+					if (!appendResult.success) {
+						throw new Error(appendResult.error || "Failed to stream GIF frame to FFmpeg");
+					}
+
+					frameIndex++;
+					if (shouldYieldExportFrame(frameIndex)) {
+						await yieldToExportScheduler();
+					}
+					this.reportProgress(frameIndex, totalFrames, "rendering", undefined, warnings);
+				},
+			);
+
+			if (this.cancelled) {
+				await window.electronAPI.exportV2GifPipeDiscard(sessionId).catch(() => undefined);
+				return { success: false, error: "Export cancelled" };
+			}
+
+			this.reportProgress(totalFrames, totalFrames, "finalizing", 0, warnings);
+			const finishResult = await window.electronAPI.exportV2GifPipeFinish(sessionId);
+			if (!finishResult.success || !finishResult.path) {
+				throw new Error(finishResult.error || "Failed to finish FFmpeg GIF encoder");
+			}
+
+			const elapsedMs = Math.round(performance.now() - this.exportStartedAtMs);
+			const details: ExportDetails = {
+				format: "gif",
+				width: this.config.width,
+				height: this.config.height,
+				frameRate: this.config.frameRate,
+				colorCount: this.config.colorCount,
+				ditherMode: this.config.ditherMode,
+				motionSensitivity: this.config.motionSensitivity,
+				loop: this.config.loop,
+				dedupeFrames: this.config.dedupeFrames,
+				elapsedMs,
+				fileSizeBytes: finishResult.bytesWritten,
+				engine: "composited-hardware",
+				encoder: "ffmpeg-palette",
+				hardwareAcceleration: "software",
+				throughputFps: totalFrames > 0 ? (totalFrames / Math.max(elapsedMs, 1)) * 1000 : undefined,
+				dedupedFrames: frameIndex,
+				paletteMode: "ffmpeg",
+				warnings,
+			};
+
+			return {
+				success: true,
+				path: finishResult.path,
+				details,
+			};
+		} catch (error) {
+			await window.electronAPI.exportV2GifPipeDiscard(sessionId).catch(() => undefined);
+			throw error;
 		}
 	}
 

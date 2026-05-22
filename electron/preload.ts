@@ -298,6 +298,18 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	exportV2StreamDiscard: (sessionId: string) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.exportV2.streamDiscard, sessionId);
 	},
+	exportV2GifPipeStart: (request: unknown) => {
+		return ipcRenderer.invoke(IPC_CHANNELS.exportV2.gifPipeStart, request);
+	},
+	exportV2GifPipeAppend: (sessionId: string, chunk: ArrayBuffer) => {
+		return ipcRenderer.invoke(IPC_CHANNELS.exportV2.gifPipeAppend, sessionId, chunk);
+	},
+	exportV2GifPipeFinish: (sessionId: string) => {
+		return ipcRenderer.invoke(IPC_CHANNELS.exportV2.gifPipeFinish, sessionId);
+	},
+	exportV2GifPipeDiscard: (sessionId: string) => {
+		return ipcRenderer.invoke(IPC_CHANNELS.exportV2.gifPipeDiscard, sessionId);
+	},
 	onExportV2Progress: (callback: (progress: unknown) => void) => {
 		const listener = (_event: Electron.IpcRendererEvent, progress: unknown) => callback(progress);
 		ipcRenderer.on("exportV2:progress", listener);

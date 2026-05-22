@@ -50,6 +50,7 @@ async function runWorkerExport(request: ExportV2StartRequest) {
 						ditherMode: request.gif?.ditherMode ?? "bayer",
 						motionSensitivity: request.gif?.motionSensitivity ?? "balanced",
 						outputPath: request.outputPath,
+						jobId: request.jobId,
 						onProgress,
 					}).export()
 				: await new VideoExporter({

@@ -115,6 +115,22 @@ export interface ExportV2StartRequest {
 	selection: ExportV2EngineSelection;
 }
 
+export interface ExportV2GifPipeStartRequest {
+	jobId?: string;
+	outputPath: string;
+	width: number;
+	height: number;
+	frameRate: number;
+	durationMs?: number;
+	gif: {
+		colorCount: GifColorCount;
+		ditherMode: GifDitherMode;
+		motionSensitivity: GifMotionSensitivity;
+		loop: boolean;
+		dedupeFrames: boolean;
+	};
+}
+
 export interface ExportV2AudioPlan {
 	mode: "none" | "source" | "timeline-mix";
 	expectAudio: boolean;

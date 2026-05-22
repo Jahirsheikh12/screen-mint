@@ -18,11 +18,17 @@ import { IPC_CHANNELS } from "../../src/electron-ipc/contracts";
 import type {
 	ExportV2Capabilities,
 	ExportV2EncoderCandidate,
+	ExportV2GifPipeStartRequest,
 	ExportV2Progress,
 	ExportV2StartRequest,
 	ExportV2StartResult,
 	ExportV2TrimRegion,
 } from "../../src/lib/exporter/exportV2";
+import {
+	buildGifPaletteFilter,
+	buildGifRawPipeFfmpegArgs,
+	resolveGifFfmpegLoop,
+} from "../../src/lib/exporter/gifFfmpeg";
 import { compileNativeComposedExport } from "../../src/lib/exporter/nativeComposed";
 import { buildCollisionFileName, ensureFileExtension } from "../../src/lib/fileNames";
 import type { PostRecordingContext } from "../../src/lib/recording/postRecording";
@@ -178,6 +184,19 @@ type ExportV2StreamSession = {
 	closed: boolean;
 };
 const exportV2StreamSessions = new Map<string, ExportV2StreamSession>();
+type ExportV2GifPipeSession = {
+	id: string;
+	jobId?: string;
+	path: string;
+	process: ChildProcessWithoutNullStreams;
+	pending: Promise<void>;
+	closePromise: Promise<{ code: number | null; signal: NodeJS.Signals | null; error?: Error }>;
+	frameBytes: number;
+	framesWritten: number;
+	stderr: string;
+	closed: boolean;
+};
+const exportV2GifPipeSessions = new Map<string, ExportV2GifPipeSession>();
 let customRecordingsDir: string | null = null;
 let recordingsDirLoaded = false;
 let cachedSystemCursorAssets: Record<string, SystemCursorAsset> | null = null;
@@ -1070,6 +1089,148 @@ async function discardExportV2StreamSession(id: string) {
 	await fs.rm(session.path, { force: true }).catch(() => undefined);
 }
 
+async function startExportV2GifPipeSession(request: ExportV2GifPipeStartRequest) {
+	if (request.width <= 0 || request.height <= 0 || request.frameRate <= 0) {
+		throw new Error("Invalid GIF pipe dimensions or frame rate.");
+	}
+
+	await fs.mkdir(path.dirname(request.outputPath), { recursive: true });
+	await fs.rm(request.outputPath, { force: true }).catch(() => undefined);
+	const id = `export-gif-pipe-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+	const ffmpegPath = getFfmpegBinaryPath();
+	const child = spawn(
+		ffmpegPath,
+		buildGifRawPipeFfmpegArgs({
+			width: request.width,
+			height: request.height,
+			frameRate: request.frameRate,
+			outputPath: request.outputPath,
+			settings: request.gif,
+		}),
+		{
+			windowsHide: true,
+		},
+	);
+	const closePromise = new Promise<{
+		code: number | null;
+		signal: NodeJS.Signals | null;
+		error?: Error;
+	}>((resolve) => {
+		child.once("error", (error) => resolve({ code: 1, signal: null, error }));
+		child.once("close", (code, signal) => resolve({ code, signal }));
+	});
+	const session: ExportV2GifPipeSession = {
+		id,
+		jobId: request.jobId,
+		path: request.outputPath,
+		process: child,
+		pending: Promise.resolve(),
+		closePromise,
+		frameBytes: request.width * request.height * 4,
+		framesWritten: 0,
+		stderr: "",
+		closed: false,
+	};
+
+	child.stderr.on("data", (chunk: Buffer) => {
+		session.stderr = `${session.stderr}${chunk.toString()}`.slice(-16 * 1024);
+	});
+
+	child.on("error", (error) => {
+		session.stderr = `${session.stderr}\n${error.message}`.slice(-16 * 1024);
+	});
+
+	exportV2GifPipeSessions.set(id, session);
+	return { id, path: request.outputPath };
+}
+
+function getExportV2GifPipeSession(id: string) {
+	const session = exportV2GifPipeSessions.get(id);
+	if (!session || session.closed) {
+		throw new Error("GIF pipe session is not available.");
+	}
+	return session;
+}
+
+function writeExportV2GifPipeChunk(session: ExportV2GifPipeSession, buffer: Buffer) {
+	return new Promise<void>((resolve, reject) => {
+		if (session.process.stdin.destroyed || session.process.killed) {
+			reject(new Error("GIF encoder process is no longer accepting frames."));
+			return;
+		}
+
+		session.process.stdin.write(buffer, (error) => {
+			if (error) {
+				reject(error);
+				return;
+			}
+			resolve();
+		});
+	});
+}
+
+async function appendExportV2GifPipeSession(id: string, chunk: ArrayBuffer | Uint8Array) {
+	const session = getExportV2GifPipeSession(id);
+	const buffer = Buffer.from(chunk instanceof Uint8Array ? chunk : new Uint8Array(chunk));
+	if (buffer.byteLength !== session.frameBytes) {
+		throw new Error(
+			`GIF pipe frame size mismatch: expected ${session.frameBytes} bytes, received ${buffer.byteLength}.`,
+		);
+	}
+
+	session.pending = session.pending.then(async () => {
+		await writeExportV2GifPipeChunk(session, buffer);
+		session.framesWritten++;
+	});
+	await session.pending;
+	return { success: true, framesWritten: session.framesWritten };
+}
+
+async function finishExportV2GifPipeSession(id: string) {
+	const session = getExportV2GifPipeSession(id);
+	session.closed = true;
+	await session.pending;
+
+	session.process.stdin.end();
+	const closeResult = await session.closePromise;
+
+	exportV2GifPipeSessions.delete(id);
+	if (closeResult.error || closeResult.code !== 0) {
+		await fs.rm(session.path, { force: true }).catch(() => undefined);
+		const stderr = session.stderr.trim();
+		throw new Error(
+			stderr ||
+				closeResult.error?.message ||
+				`FFmpeg GIF encoder failed with code ${closeResult.code ?? closeResult.signal ?? "unknown"}.`,
+		);
+	}
+
+	const stat = await fs.stat(session.path);
+	return { path: session.path, bytesWritten: stat.size };
+}
+
+async function discardExportV2GifPipeSession(id: string) {
+	const session = exportV2GifPipeSessions.get(id);
+	if (!session) {
+		return;
+	}
+
+	session.closed = true;
+	exportV2GifPipeSessions.delete(id);
+	await session.pending.catch(() => undefined);
+	session.process.stdin.destroy();
+	session.process.kill("SIGTERM");
+	await session.closePromise.catch(() => undefined);
+	await fs.rm(session.path, { force: true }).catch(() => undefined);
+}
+
+async function discardExportV2GifPipeSessionsForJob(jobId: string) {
+	const matchingSessions = [...exportV2GifPipeSessions.values()].filter(
+		(session) => session.jobId === jobId,
+	);
+	await Promise.all(matchingSessions.map((session) => discardExportV2GifPipeSession(session.id)));
+}
+
 function getAvailableExportV2VideoEncoders(capabilities: ExportV2Capabilities) {
 	return capabilities.videoEncoders.filter((encoder) => encoder.available);
 }
@@ -1163,21 +1324,20 @@ function buildExportV2GifArgs(
 ): ExportV2FfmpegAttempt {
 	const fps = request.frameRate;
 	const trimExpression = buildTrimSelectExpression(request.trimRegions);
-	const baseFilters: string[] = [];
-	if (trimExpression) {
-		baseFilters.push(`select='${trimExpression}',setpts=N/FRAME_RATE/TB`);
-	}
-	baseFilters.push(`fps=${fps}`);
-	baseFilters.push(`scale=${request.width}:${request.height}:flags=lanczos`);
-	const statsMode = request.gif?.motionSensitivity === "high" ? "full" : "diff";
-	const dither =
-		request.gif?.ditherMode === "floyd-steinberg"
-			? "floyd_steinberg"
-			: request.gif?.ditherMode === "off"
-				? "none"
-				: "bayer";
-	const colorCount = request.gif?.colorCount ?? 128;
-	const filter = `${baseFilters.join(",")},split[s0][s1];[s0]palettegen=max_colors=${colorCount}:stats_mode=${statsMode}[p];[s1][p]paletteuse=dither=${dither}`;
+	const gifSettings = {
+		colorCount: request.gif?.colorCount ?? 128,
+		ditherMode: request.gif?.ditherMode ?? "bayer",
+		motionSensitivity: request.gif?.motionSensitivity ?? "balanced",
+		loop: request.gif?.loop ?? true,
+		dedupeFrames: request.gif?.dedupeFrames ?? true,
+	} as const;
+	const filter = buildGifPaletteFilter({
+		width: request.width,
+		height: request.height,
+		frameRate: fps,
+		trimSelectExpression: trimExpression,
+		settings: gifSettings,
+	});
 	const args = [
 		"-y",
 		"-hide_banner",
@@ -1188,8 +1348,13 @@ function buildExportV2GifArgs(
 		normalizeExportV2SourcePath(request.sourcePath),
 		"-filter_complex",
 		filter,
+		"-map",
+		"[gif]",
+		"-an",
 		"-loop",
-		request.gif?.loop === false ? "-1" : "0",
+		resolveGifFfmpegLoop(gifSettings.loop),
+		"-f",
+		"gif",
 		outputPath,
 	];
 
@@ -5051,6 +5216,47 @@ export function registerIpcHandlers(
 		discardExportV2StreamSession,
 	});
 
+	ipcMain.handle(
+		IPC_CHANNELS.exportV2.gifPipeStart,
+		async (_, request: ExportV2GifPipeStartRequest) => {
+			try {
+				const session = await startExportV2GifPipeSession(request);
+				return { success: true, ...session };
+			} catch (error) {
+				return { success: false, error: error instanceof Error ? error.message : String(error) };
+			}
+		},
+	);
+
+	ipcMain.handle(
+		IPC_CHANNELS.exportV2.gifPipeAppend,
+		async (_, sessionId: string, chunk: ArrayBuffer) => {
+			try {
+				return await appendExportV2GifPipeSession(sessionId, chunk);
+			} catch (error) {
+				return { success: false, error: error instanceof Error ? error.message : String(error) };
+			}
+		},
+	);
+
+	ipcMain.handle(IPC_CHANNELS.exportV2.gifPipeFinish, async (_, sessionId: string) => {
+		try {
+			const result = await finishExportV2GifPipeSession(sessionId);
+			return { success: true, ...result };
+		} catch (error) {
+			return { success: false, error: error instanceof Error ? error.message : String(error) };
+		}
+	});
+
+	ipcMain.handle(IPC_CHANNELS.exportV2.gifPipeDiscard, async (_, sessionId: string) => {
+		try {
+			await discardExportV2GifPipeSession(sessionId);
+			return { success: true };
+		} catch (error) {
+			return { success: false, error: error instanceof Error ? error.message : String(error) };
+		}
+	});
+
 	ipcMain.handle(IPC_CHANNELS.exportV2.cancel, async (_, jobId: string) => {
 		const job = exportV2Jobs.get(jobId);
 		if (!job) {
@@ -5065,12 +5271,14 @@ export function registerIpcHandlers(
 			if (worker && !worker.isDestroyed()) {
 				worker.close();
 			}
+			await discardExportV2GifPipeSessionsForJob(jobId);
 			exportV2CanceledJobs.add(jobId);
 			return { success: true };
 		}
 
 		exportV2CanceledJobs.add(jobId);
 		job.process.kill("SIGTERM");
+		await discardExportV2GifPipeSessionsForJob(jobId);
 		await fs.rm(job.outputPath, { force: true }).catch(() => undefined);
 		return { success: true };
 	});
@@ -5079,7 +5287,9 @@ export function registerIpcHandlers(
 		IPC_CHANNELS.exportV2.start,
 		async (event, request: ExportV2StartRequest): Promise<ExportV2StartResult> => {
 			const capabilities = getCachedExportV2Capabilities();
-			if (!capabilities.enabled) {
+			const canUseGifPipeline =
+				request.format === "gif" && capabilities.gif.ffmpegPalettePipeline;
+			if (!capabilities.enabled && !canUseGifPipeline) {
 				return {
 					success: false,
 					fallbackToLegacy: true,
@@ -5424,6 +5634,13 @@ export function registerIpcHandlers(
 						bitrate: request.bitrate,
 						codec: request.format === "mp4" ? "avc1" : undefined,
 						codecLabel: request.format === "mp4" ? "H.264" : undefined,
+						colorCount: request.format === "gif" ? request.gif?.colorCount : undefined,
+						ditherMode: request.format === "gif" ? request.gif?.ditherMode : undefined,
+						motionSensitivity:
+							request.format === "gif" ? request.gif?.motionSensitivity : undefined,
+						loop: request.format === "gif" ? request.gif?.loop : undefined,
+						dedupeFrames: request.format === "gif" ? request.gif?.dedupeFrames : undefined,
+						paletteMode: request.format === "gif" ? "ffmpeg" : undefined,
 						elapsedMs,
 						fileSizeBytes: stat.size,
 						fallbackApplied: failedAttempts.length > 0,

@@ -7,6 +7,7 @@ export type {
 	ExportV2Engine,
 	ExportV2EngineSelection,
 	ExportV2EngineSignals,
+	ExportV2GifPipeStartRequest,
 	ExportV2HardwareAcceleration,
 	ExportV2Progress,
 	ExportV2SpeedRegion,
@@ -17,6 +18,13 @@ export type {
 export { selectExportV2Engine, shouldUseDirectNativeExport } from "./exportV2";
 export { FrameRenderer } from "./frameRenderer";
 export { calculateOutputDimensions, GifExporter } from "./gifExporter";
+export {
+	buildGifPaletteFilter,
+	buildGifRawPipeFfmpegArgs,
+	resolveGifFfmpegDither,
+	resolveGifFfmpegLoop,
+	resolveGifMpdecimateFilter,
+} from "./gifFfmpeg";
 export { VideoMuxer } from "./muxer";
 export type { NativeComposedCompileResult } from "./nativeComposed";
 export { compileNativeComposedExport } from "./nativeComposed";

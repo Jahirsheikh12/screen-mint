@@ -14,6 +14,7 @@ import type {
 import type { PostRecordingContext } from "../src/lib/recording/postRecording";
 import type {
 	ExportV2Capabilities,
+	ExportV2GifPipeStartRequest,
 	ExportV2Progress,
 	ExportV2StartRequest,
 	ExportV2StartResult,
@@ -314,6 +315,17 @@ declare global {
 				sessionId: string,
 			) => Promise<{ success: boolean; path?: string; bytesWritten?: number; error?: string }>;
 			exportV2StreamDiscard: (sessionId: string) => Promise<{ success: boolean; error?: string }>;
+			exportV2GifPipeStart: (
+				request: ExportV2GifPipeStartRequest,
+			) => Promise<{ success: boolean; id?: string; path?: string; error?: string }>;
+			exportV2GifPipeAppend: (
+				sessionId: string,
+				chunk: ArrayBuffer,
+			) => Promise<{ success: boolean; framesWritten?: number; error?: string }>;
+			exportV2GifPipeFinish: (
+				sessionId: string,
+			) => Promise<{ success: boolean; path?: string; bytesWritten?: number; error?: string }>;
+			exportV2GifPipeDiscard: (sessionId: string) => Promise<{ success: boolean; error?: string }>;
 			onExportV2Progress: (callback: (progress: ExportV2Progress) => void) => () => void;
 			onExportV2WorkerStart: (callback: (request: ExportV2StartRequest) => void) => () => void;
 			exportV2WorkerProgress: (
