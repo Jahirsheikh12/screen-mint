@@ -17,6 +17,16 @@ export const DEFAULT_HUD_COMPACT_LAYOUT: HudCompactLayout = {
 	height: 400,
 };
 
+export function reserveHudCompactWindowHeight(
+	layout: HudCompactLayout,
+	minHeight: number,
+): HudCompactLayout {
+	return {
+		width: layout.width,
+		height: Math.max(layout.height, minHeight),
+	};
+}
+
 export function computeHudCompactBounds(
 	workArea: RectLike,
 	layout: HudCompactLayout,

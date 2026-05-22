@@ -13,6 +13,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import styles from "./LaunchWindow.module.css";
 
 type RecordButtonProps = {
 	recording: boolean;
@@ -103,7 +104,7 @@ export function RecordButton({
 				<DropdownMenuContent
 					side="top"
 					align="center"
-					className="min-w-[240px] border-white/10 bg-[rgba(17,28,24,0.97)] text-white/90 backdrop-blur-xl data-[state=open]:!animate-none data-[state=closed]:!animate-none"
+					className={`min-w-[240px] border-white/10 bg-[rgba(17,28,24,0.97)] text-white/90 backdrop-blur-xl data-[state=open]:!animate-none data-[state=closed]:!animate-none ${styles.hudScrollArea}`}
 				>
 					<DropdownMenuRadioGroup
 						value={hudSettings.afterRecordingAction}

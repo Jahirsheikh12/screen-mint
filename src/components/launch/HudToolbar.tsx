@@ -433,7 +433,7 @@ export function HudToolbar({
 					<DropdownMenuContent
 						side="top"
 						align="center"
-						className={`min-w-[220px] ${DROPDOWN_CLASSES}`}
+						className={`min-w-[220px] ${DROPDOWN_CLASSES} ${styles.hudScrollArea}`}
 					>
 						<DropdownMenuLabel className="text-[11px] text-white/45 font-medium">
 							{t("recording.selectCamera")}
@@ -635,7 +635,7 @@ export function HudToolbar({
 					<DropdownMenuContent
 						side="top"
 						align="center"
-						className={`min-w-[240px] ${DROPDOWN_CLASSES}`}
+						className={`min-w-[240px] ${DROPDOWN_CLASSES} ${styles.hudScrollArea}`}
 					>
 						<DropdownMenuCheckboxItem
 							checked={microphoneEnabled}
@@ -746,7 +746,7 @@ export function HudToolbar({
 					<DropdownMenuContent
 						side="top"
 						align="end"
-						className={`min-w-[90px] ${DROPDOWN_CLASSES}`}
+						className={`min-w-[90px] ${DROPDOWN_CLASSES} ${styles.hudScrollArea}`}
 					>
 						{SUPPORTED_LOCALES.map((code) => (
 							<DropdownMenuItem

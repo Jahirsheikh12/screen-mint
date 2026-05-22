@@ -9,7 +9,9 @@ import {
 	DEFAULT_HUD_COMPACT_LAYOUT,
 	type HudCompactLayout,
 	type RectLike,
+	reserveHudCompactWindowHeight,
 } from "./hudCompactBounds";
+import { shouldEnableHudMousePassthrough } from "./hudMousePassthrough";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const nodeRequire = createRequire(import.meta.url);
@@ -41,7 +43,7 @@ let hudDragState: {
 	startBounds: { x: number; y: number; width: number; height: number };
 } | null = null;
 
-const HUD_DROPDOWN_EXPAND_HEIGHT = 640;
+const HUD_COMPACT_WINDOW_MIN_HEIGHT = 640;
 
 const HUD_OVERLAY_SETTINGS_FILE = path.join(app.getPath("userData"), "hud-overlay-settings.json");
 
@@ -135,13 +137,17 @@ function getHudBoundsPreservingBottom(width: number, height: number, workArea: R
 	);
 }
 
+function getHudCompactWindowLayout(): HudCompactLayout {
+	return reserveHudCompactWindowHeight(hudCompactLayout, HUD_COMPACT_WINDOW_MIN_HEIGHT);
+}
+
 function applyHudCompactBounds(): void {
 	if (!hudOverlayWindow || hudOverlayWindow.isDestroyed()) {
 		return;
 	}
 
 	const workArea = getHudOverlayWorkArea();
-	const computedBounds = computeHudCompactBounds(workArea, hudCompactLayout);
+	const computedBounds = computeHudCompactBounds(workArea, getHudCompactWindowLayout());
 	const bounds = hudPositionManuallyMoved
 		? getHudBoundsPreservingBottom(computedBounds.width, computedBounds.height, workArea)
 		: computedBounds;
@@ -158,29 +164,17 @@ function applyHudCompactBounds(): void {
 	hudOverlayWindow.setBounds(bounds);
 }
 
-function applyHudDropdownExpandedBounds(): void {
-	if (!hudOverlayWindow || hudOverlayWindow.isDestroyed()) {
-		return;
-	}
-
-	const workArea = getHudOverlayWorkArea();
-	const compactBounds = computeHudCompactBounds(workArea, hudCompactLayout);
-	const safeBottomMargin = 5;
-	const desiredHeight = Math.min(
-		HUD_DROPDOWN_EXPAND_HEIGHT,
-		Math.max(compactBounds.height, workArea.height - safeBottomMargin),
-	);
-	const bounds = getHudBoundsPreservingBottom(compactBounds.width, desiredHeight, workArea);
-
-	hudOverlayWindow.setBounds(bounds);
-}
-
 function applyHudMousePassthrough(): void {
 	if (!hudOverlayWindow || hudOverlayWindow.isDestroyed()) {
 		return;
 	}
 
-	const enabled = !hudDragState && !hudContentVisible && hudMousePassthroughRequested;
+	const enabled = shouldEnableHudMousePassthrough({
+		dragActive: hudDragState !== null,
+		contentVisible: hudContentVisible,
+		dropdownExpanded: hudDropdownExpanded,
+		passthroughRequested: hudMousePassthroughRequested,
+	});
 	if (enabled === hudMousePassthroughApplied) {
 		return;
 	}
@@ -308,11 +302,7 @@ ipcMain.handle(
 		if (hudContentVisible) {
 			return;
 		}
-		if (hudDropdownExpanded) {
-			applyHudDropdownExpandedBounds();
-		} else {
-			applyHudCompactBounds();
-		}
+		applyHudCompactBounds();
 	},
 );
 
@@ -320,7 +310,10 @@ export function createHudOverlayWindow(): BrowserWindow {
 	loadHudOverlayCaptureProtectionSetting();
 	bindDisplayChangeListeners();
 
-	const compactBounds = computeHudCompactBounds(getCursorDisplayWorkArea(), hudCompactLayout);
+	const compactBounds = computeHudCompactBounds(
+		getCursorDisplayWorkArea(),
+		getHudCompactWindowLayout(),
+	);
 
 	const win = new BrowserWindow({
 		width: compactBounds.width,
@@ -890,24 +883,8 @@ function moveHudToCursorDisplay(): void {
 
 	const workArea = getCursorDisplayWorkArea();
 	hudPositionManuallyMoved = false;
-	if (hudDropdownExpanded) {
-		const compactBounds = computeHudCompactBounds(workArea, hudCompactLayout);
-		const safeBottomMargin = 5;
-		const desiredHeight = Math.min(
-			HUD_DROPDOWN_EXPAND_HEIGHT,
-			Math.max(compactBounds.height, workArea.height - safeBottomMargin),
-		);
-		const y = Math.max(workArea.y, workArea.y + workArea.height - desiredHeight - safeBottomMargin);
-		hudOverlayWindow.setBounds({
-			x: compactBounds.x,
-			y,
-			width: compactBounds.width,
-			height: desiredHeight,
-		});
-	} else {
-		const bounds = computeHudCompactBounds(workArea, hudCompactLayout);
-		hudOverlayWindow.setBounds(bounds);
-	}
+	const bounds = computeHudCompactBounds(workArea, getHudCompactWindowLayout());
+	hudOverlayWindow.setBounds(bounds);
 }
 
 ipcMain.handle(IPC_CHANNELS.hudWindow.recenterOnCursor, () => {
@@ -920,15 +897,10 @@ ipcMain.handle(IPC_CHANNELS.hudWindow.setDropdownExpanded, (_event, expanded: bo
 	const next = Boolean(expanded);
 	if (next === hudDropdownExpanded) return;
 	hudDropdownExpanded = next;
+	applyHudMousePassthrough();
 
 	// Don't fight the fullscreen content overlay — it owns the bounds while open.
 	if (hudContentVisible) return;
-
-	if (hudDropdownExpanded) {
-		applyHudDropdownExpandedBounds();
-	} else {
-		applyHudCompactBounds();
-	}
 });
 
 ipcMain.handle(IPC_CHANNELS.hudWindow.setMousePassthrough, (_event, enabled: boolean) => {
@@ -999,8 +971,6 @@ ipcMain.handle(IPC_CHANNELS.hudWindow.resize, (_event, contentVisible: boolean) 
 			width: workArea.width,
 			height: workArea.height,
 		});
-	} else if (hudDropdownExpanded) {
-		applyHudDropdownExpandedBounds();
 	} else {
 		applyHudCompactBounds();
 	}

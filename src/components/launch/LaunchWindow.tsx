@@ -507,7 +507,7 @@ export function LaunchWindow() {
 									<DropdownMenuContent
 										side="top"
 										align="center"
-										className={`min-w-[240px] ${DROPDOWN_CLASSES}`}
+										className={`min-w-[240px] ${DROPDOWN_CLASSES} ${styles.hudScrollArea}`}
 									>
 										{/* Start recording action at top */}
 										<DropdownMenuItem

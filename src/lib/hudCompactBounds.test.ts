@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
 	computeHudCompactBounds,
 	HUD_COMPACT_BOTTOM_MARGIN,
+	reserveHudCompactWindowHeight,
 } from "../../electron/hudCompactBounds";
 
 describe("computeHudCompactBounds", () => {
@@ -39,6 +40,22 @@ describe("computeHudCompactBounds", () => {
 			y: 20,
 			width: 500,
 			height: 295,
+		});
+	});
+});
+
+describe("reserveHudCompactWindowHeight", () => {
+	it("keeps a stable dropdown-safe window height without changing the measured width", () => {
+		expect(reserveHudCompactWindowHeight({ width: 720, height: 96 }, 640)).toEqual({
+			width: 720,
+			height: 640,
+		});
+	});
+
+	it("preserves taller compact layouts", () => {
+		expect(reserveHudCompactWindowHeight({ width: 720, height: 700 }, 640)).toEqual({
+			width: 720,
+			height: 700,
 		});
 	});
 });
