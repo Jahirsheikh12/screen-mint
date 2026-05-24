@@ -706,6 +706,22 @@
 	min-width: 0;
 }
 
+.windowLayerBadge {
+	display: inline-flex;
+	align-items: center;
+	height: 18px;
+	padding: 0 7px;
+	border-radius: 5px;
+	background: rgba(245, 158, 11, 0.14);
+	border: 1px solid rgba(245, 158, 11, 0.3);
+	color: #fde68a;
+	font-size: 9px;
+	font-weight: 750;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	flex-shrink: 0;
+}
+
 .windowAppIcon {
 	width: 22px;
 	height: 22px;

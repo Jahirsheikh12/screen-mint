@@ -66,6 +66,33 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	clearSelectedArea: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.capture.clearSelectedArea);
 	},
+	captureScreenshot: (request?: unknown) => {
+		return ipcRenderer.invoke(IPC_CHANNELS.screenshot.capture, request);
+	},
+	copyScreenshotToClipboard: (request: { pngData?: Uint8Array; path?: string }) => {
+		return ipcRenderer.invoke(IPC_CHANNELS.screenshot.copyToClipboard, request);
+	},
+	setLayeredCaptureSources: (request: unknown) => {
+		return ipcRenderer.invoke(IPC_CHANNELS.layeredCapture.setSources, request);
+	},
+	getLayeredCaptureSources: () => {
+		return ipcRenderer.invoke(IPC_CHANNELS.layeredCapture.getSources);
+	},
+	clearLayeredCaptureSources: () => {
+		return ipcRenderer.invoke(IPC_CHANNELS.layeredCapture.clearSources);
+	},
+	startLayeredCapture: (request: unknown) => {
+		return ipcRenderer.invoke(IPC_CHANNELS.layeredCapture.start, request);
+	},
+	stopLayeredCapture: () => {
+		return ipcRenderer.invoke(IPC_CHANNELS.layeredCapture.stop);
+	},
+	getLayeredCaptureStatus: () => {
+		return ipcRenderer.invoke(IPC_CHANNELS.layeredCapture.status);
+	},
+	getHostValidationReport: () => {
+		return ipcRenderer.invoke(IPC_CHANNELS.hostValidation.getReport);
+	},
 	startNativeScreenRecording: (
 		source: SelectedCaptureSource,
 		options?: {

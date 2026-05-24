@@ -4,6 +4,7 @@ import type {
 	ExportV2StartRequest,
 	ExportV2StartResult,
 } from "@/lib/exporter/exportV2";
+import type { LayerCaptureSource, LayeredRecordingManifest } from "@/lib/recording/layeredCapture";
 import type { SelectedArea } from "@/lib/recording/session";
 
 export type IpcSelectedSource = {
@@ -31,6 +32,10 @@ export const IPC_CHANNELS = {
 		clearSelectedArea: "clear-selected-area",
 		autoSelectCursorDisplay: "auto-select-cursor-display",
 	},
+	screenshot: {
+		capture: "screenshot:capture",
+		copyToClipboard: "screenshot:copy-to-clipboard",
+	},
 	windows: {
 		openSourceSelector: "open-source-selector",
 		switchToEditor: "switch-to-editor",
@@ -54,6 +59,17 @@ export const IPC_CHANNELS = {
 		setState: "set-recording-state",
 		isWgcAvailable: "is-wgc-available",
 		muxWgcRecording: "mux-wgc-recording",
+	},
+	layeredCapture: {
+		setSources: "layered-capture:set-sources",
+		getSources: "layered-capture:get-sources",
+		clearSources: "layered-capture:clear-sources",
+		start: "layered-capture:start",
+		stop: "layered-capture:stop",
+		status: "layered-capture:status",
+	},
+	hostValidation: {
+		getReport: "host-validation:get-report",
 	},
 	telemetry: {
 		setCursorScale: "set-cursor-scale",
@@ -233,6 +249,28 @@ export type CaptureSourceResult = IpcResult<{
 	source?: IpcSelectedSource | null;
 }>;
 
+export type ScreenshotCaptureRequest = {
+	source?: IpcSelectedSource | null;
+	selectedArea?: SelectedArea | null;
+	saveToRecordings?: boolean;
+	copyToClipboard?: boolean;
+	fileName?: string;
+};
+
+export type ScreenshotCaptureMetadata = {
+	path?: string;
+	width: number;
+	height: number;
+	capturedAt: string;
+	source: IpcSelectedSource | null;
+	selectedArea?: SelectedArea | null;
+};
+
+export type ScreenshotCaptureResult = IpcResult<{
+	screenshot?: ScreenshotCaptureMetadata;
+	pngData?: Uint8Array;
+}>;
+
 export type RecordingSegment = {
 	path: string;
 	durationMs: number;
@@ -252,6 +290,24 @@ export type RecordingFinalizeResult = IpcResult<{
 	webcamSessionMetadata?: WebcamSessionMetadata | null;
 	microphonePath?: string | null;
 }>;
+
+export type LayeredCaptureStartRequest = {
+	sources: LayerCaptureSource[];
+};
+
+export type LayeredCaptureResult = IpcResult<{
+	manifest?: LayeredRecordingManifest | null;
+}>;
+
+export type HostValidationReport = {
+	generatedAt: string;
+	platform: NodeJS.Platform;
+	arch: string;
+	osRelease: string;
+	helpers: Record<string, boolean>;
+	checklist: Array<{ name: string; status: "PENDING" | "PASS" | "FAIL" | "N/A"; notes: string }>;
+	knownLimitations: string[];
+};
 
 export type MobileCaptureStatus =
 	| "idle"

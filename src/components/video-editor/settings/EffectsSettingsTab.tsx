@@ -104,7 +104,7 @@ export function EffectsSettingsTab({
 				title={tSettings("previewQuality.title")}
 				description={tSettings("previewQuality.description")}
 			>
-				<div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-2.5">
+				<div className="rounded-xl border border-white/5 bg-white/[0.04] p-2.5">
 					<div className="grid grid-cols-3 gap-1.5">
 						{PREVIEW_QUALITY_OPTIONS.map((option) => {
 							const isActive = previewQuality === option.value;
@@ -118,7 +118,7 @@ export function EffectsSettingsTab({
 										"duration-200 ease-out",
 										isActive
 											? "border-[#F59E0B] bg-gradient-to-br from-[#F59E0B] to-[#d97706] text-white shadow-lg shadow-[#F59E0B]/25"
-											: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:border-white/[0.1] hover:text-slate-200",
+											: "border-white/5 bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:border-white/[0.1] hover:text-slate-200",
 									)}
 								>
 									<span className="text-xs font-semibold">
@@ -138,7 +138,7 @@ export function EffectsSettingsTab({
 				title="Transitions"
 				description="How zoom transitions connect and blend together"
 			>
-				<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+				<div className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 					<div>
 						<div className="text-xs font-medium text-slate-300">
 							{tSettings("effects.connectZooms")}
@@ -153,7 +153,7 @@ export function EffectsSettingsTab({
 						className="data-[state=checked]:bg-[#F59E0B] scale-90"
 					/>
 				</div>
-				<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+				<div className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 					<div>
 						<div className="text-xs font-medium text-slate-300">
 							{tSettings("effects.removeBackground")}
@@ -174,7 +174,7 @@ export function EffectsSettingsTab({
 				title="Visual Effects"
 				description="Fine-tune blur, shadow, and motion effects"
 			>
-				<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+				<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 					<SliderControl
 						label={tSettings("effects.backgroundBlur")}
 						value={backgroundBlur}
@@ -188,7 +188,7 @@ export function EffectsSettingsTab({
 						disabled={hideBackground}
 					/>
 				</div>
-				<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+				<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 					<SliderControl
 						label={tSettings("effects.zoomMotionBlur")}
 						value={zoomMotionBlur}
@@ -201,7 +201,7 @@ export function EffectsSettingsTab({
 						parseInput={(text) => parseFloat(text.replace(/×$/, ""))}
 					/>
 				</div>
-				<div className="rounded-xl border border-white/[0.06] bg-white/[0.04] transition-colors duration-200 hover:bg-white/[0.06]">
+				<div className="rounded-xl border border-white/5 bg-white/[0.04] transition-colors duration-200 hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]">
 					<button
 						type="button"
 						onClick={onToggleAdvancedShadowSettings}
@@ -222,8 +222,8 @@ export function EffectsSettingsTab({
 						)}
 					</button>
 					{showAdvancedShadowSettings && (
-						<div className="flex flex-col gap-1.5 border-t border-white/[0.06] px-2.5 py-2.5">
-							<div className="rounded-xl border border-white/[0.06] bg-black/10 p-2.5">
+						<div className="flex flex-col gap-1.5 border-t border-white/5 px-2.5 py-2.5">
+							<div className="rounded-xl border border-white/5 bg-black/10 p-2.5">
 								<SliderControl
 									label={tSettings("effects.shadowSize")}
 									value={frameShadowSize}
@@ -236,7 +236,7 @@ export function EffectsSettingsTab({
 									parseInput={(text) => parseFloat(text.replace(/px$/, ""))}
 								/>
 							</div>
-							<div className="rounded-xl border border-white/[0.06] bg-black/10 p-2.5">
+							<div className="rounded-xl border border-white/5 bg-black/10 p-2.5">
 								<SliderControl
 									label={tSettings("effects.shadowOpacity")}
 									value={frameShadowOpacity}
@@ -249,7 +249,7 @@ export function EffectsSettingsTab({
 									parseInput={(text) => parseFloat(text.replace(/%$/, "")) / 100}
 								/>
 							</div>
-							<div className="rounded-xl border border-white/[0.06] bg-black/10 p-2.5">
+							<div className="rounded-xl border border-white/5 bg-black/10 p-2.5">
 								<SliderControl
 									label={tSettings("effects.shadowBlur")}
 									value={frameShadowBlur}
@@ -268,7 +268,7 @@ export function EffectsSettingsTab({
 			</SettingsSection>
 
 			<SettingsSection title="Frame" description="Adjust the recording frame shape and spacing">
-				<div className="rounded-xl border border-white/[0.06] bg-white/[0.04] px-3 py-2.5 transition-colors duration-200 hover:bg-white/[0.06]">
+				<div className="rounded-xl border border-white/5 bg-white/[0.04] px-3 py-2.5 transition-colors duration-200 hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]">
 					<div className="flex items-center justify-between gap-3">
 						<div>
 							<div className="text-[11px] font-medium text-slate-200">
@@ -287,7 +287,7 @@ export function EffectsSettingsTab({
 				</div>
 				<DisabledSettingsGroup disabled={!frameBorderEnabled}>
 					<div className="flex flex-col gap-1.5">
-						<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+						<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 							<SliderControl
 								label={tSettings("effects.borderWidth")}
 								value={frameBorderWidth}
@@ -301,7 +301,7 @@ export function EffectsSettingsTab({
 								disabled={!frameBorderEnabled}
 							/>
 						</div>
-						<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+						<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 							<label className="mb-2 block text-xs font-medium text-slate-300">
 								{tSettings("effects.borderColor")}
 							</label>
@@ -320,7 +320,7 @@ export function EffectsSettingsTab({
 								]}
 							/>
 						</div>
-						<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+						<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 							<SliderControl
 								label={tSettings("effects.borderOpacity")}
 								value={frameBorderOpacity}
@@ -336,7 +336,7 @@ export function EffectsSettingsTab({
 						</div>
 					</div>
 				</DisabledSettingsGroup>
-				<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+				<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 					<SliderControl
 						label={tSettings("effects.roundness")}
 						value={borderRadius}
@@ -349,7 +349,7 @@ export function EffectsSettingsTab({
 						parseInput={(text) => parseFloat(text.replace(/px$/, ""))}
 					/>
 				</div>
-				<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+				<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 					<SliderControl
 						label={tSettings("effects.padding")}
 						value={padding}

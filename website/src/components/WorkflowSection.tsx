@@ -69,7 +69,11 @@ export function WorkflowSection() {
 	}, []);
 
 	return (
-		<section ref={sectionRef} id="how-it-works" className="relative py-24 md:py-32 px-6 overflow-hidden">
+		<section
+			ref={sectionRef}
+			id="how-it-works"
+			className="relative py-24 md:py-32 px-6 overflow-hidden"
+		>
 			{/* Ambient Background Glow */}
 			<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-amber-500/5 blur-[100px] rounded-full pointer-events-none"></div>
 
@@ -98,9 +102,8 @@ export function WorkflowSection() {
 								<div key={step.number} className="wf-step group relative h-full">
 									{/* Hover Glow Behind Card */}
 									<div className="absolute -inset-0.5 bg-gradient-to-br from-amber-500/20 to-orange-600/0 rounded-[1.75rem] blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
-									
+
 									<div className="relative h-full p-8 rounded-[1.5rem] bg-[#0a0a0a]/90 border border-white/[0.06] backdrop-blur-xl transition-all duration-500 group-hover:bg-[#0f0f0f]/90 group-hover:border-amber-500/30 group-hover:-translate-y-2 group-hover:shadow-[0_20px_40px_-15px_rgba(245,158,11,0.15)] overflow-hidden flex flex-col">
-										
 										{/* Background Watermark Number */}
 										<div className="absolute -bottom-4 -right-2 text-[120px] font-black tracking-tighter text-white/[0.02] group-hover:text-amber-500/[0.04] transition-colors duration-700 pointer-events-none select-none leading-none">
 											{step.number}
@@ -114,7 +117,9 @@ export function WorkflowSection() {
 										{/* Content */}
 										<div className="relative z-10 flex-1 flex flex-col">
 											<div className="flex items-center gap-3 mb-3">
-												<span className="text-[11px] font-bold tracking-widest text-amber-500/60 uppercase group-hover:text-amber-500 transition-colors duration-300">Step {step.number}</span>
+												<span className="text-[11px] font-bold tracking-widest text-amber-500/60 uppercase group-hover:text-amber-500 transition-colors duration-300">
+													Step {step.number}
+												</span>
 											</div>
 											<h3 className="text-[18px] font-semibold text-white/90 mb-3 group-hover:text-white transition-colors duration-300">
 												{step.title}
@@ -128,8 +133,17 @@ export function WorkflowSection() {
 									{/* Mobile Connector Arrow */}
 									{i < steps.length - 1 && (
 										<div className="sm:hidden absolute -bottom-5 left-1/2 -translate-x-1/2 z-0 text-white/[0.08] animate-pulse">
-											<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-												<path d="M12 5v14M19 12l-7 7-7-7"/>
+											<svg
+												width="20"
+												height="20"
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												strokeWidth="2"
+												strokeLinecap="round"
+												strokeLinejoin="round"
+											>
+												<path d="M12 5v14M19 12l-7 7-7-7" />
 											</svg>
 										</div>
 									)}

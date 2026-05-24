@@ -55,7 +55,7 @@ export function AnnotationSettingsTab({
 				</>
 			) : (
 				<div className="flex flex-col items-center justify-center py-12 text-center">
-					<div className="w-14 h-14 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-4">
+					<div className="w-14 h-14 rounded-2xl bg-black/40 border border-white/5 shadow-inner flex items-center justify-center mb-4">
 						<MessageSquare className="w-7 h-7 text-slate-600" />
 					</div>
 					<p className="text-sm font-medium text-slate-400">No Annotation Selected</p>

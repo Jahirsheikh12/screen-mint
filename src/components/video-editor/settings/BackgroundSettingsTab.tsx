@@ -102,25 +102,25 @@ export function BackgroundSettingsTab({
 					onValueChange={(value) => onBackgroundTabChange(value as BackgroundTab)}
 					className="w-full"
 				>
-					<TabsList className="mb-3 bg-white/[0.04] border border-white/[0.06] p-0.5 w-full grid grid-cols-3 h-8 rounded-xl">
+					<TabsList className="mb-3 bg-black/40 border border-white/5 shadow-inner p-1 w-full grid grid-cols-3 h-9 rounded-xl">
 						<TabsTrigger
 							value="image"
 							disabled={hideBackground}
-							className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#F59E0B] data-[state=active]:to-[#d97706] data-[state=active]:text-white data-[state=active]:shadow-sm text-slate-400 text-[10px] font-medium py-1 rounded-lg transition-all duration-200"
+							className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#F59E0B] data-[state=active]:to-[#d97706] data-[state=active]:text-white data-[state=active]:shadow-sm text-slate-400 text-[11px] font-medium py-1 rounded-lg transition-all duration-300 ease-out"
 						>
 							{tSettings("background.image")}
 						</TabsTrigger>
 						<TabsTrigger
 							value="color"
 							disabled={hideBackground}
-							className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#F59E0B] data-[state=active]:to-[#d97706] data-[state=active]:text-white data-[state=active]:shadow-sm text-slate-400 text-[10px] font-medium py-1 rounded-lg transition-all duration-200"
+							className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#F59E0B] data-[state=active]:to-[#d97706] data-[state=active]:text-white data-[state=active]:shadow-sm text-slate-400 text-[11px] font-medium py-1 rounded-lg transition-all duration-300 ease-out"
 						>
 							{tSettings("background.color")}
 						</TabsTrigger>
 						<TabsTrigger
 							value="gradient"
 							disabled={hideBackground}
-							className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#F59E0B] data-[state=active]:to-[#d97706] data-[state=active]:text-white data-[state=active]:shadow-sm text-slate-400 text-[10px] font-medium py-1 rounded-lg transition-all duration-200"
+							className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#F59E0B] data-[state=active]:to-[#d97706] data-[state=active]:text-white data-[state=active]:shadow-sm text-slate-400 text-[11px] font-medium py-1 rounded-lg transition-all duration-300 ease-out"
 						>
 							{tSettings("background.gradient")}
 						</TabsTrigger>
@@ -160,8 +160,8 @@ export function BackgroundSettingsTab({
 											className={cn(
 												"aspect-square w-9 h-9 rounded-lg border-2 overflow-hidden cursor-pointer transition-all duration-200 relative group shadow-sm hover:scale-105",
 												isSelected
-													? "border-[#F59E0B] ring-1 ring-[#F59E0B]/30"
-													: "border-white/10 hover:border-[#F59E0B]/40 opacity-80 hover:opacity-100 bg-white/5",
+													? "border-amber-500 ring-2 ring-amber-500/30 shadow-[0_0_12px_rgba(245,158,11,0.5)]"
+													: "border-white/10 hover:border-amber-500/40 opacity-80 hover:opacity-100 bg-white/5",
 											)}
 											style={{
 												backgroundImage: `url(${imageUrl})`,
@@ -219,8 +219,8 @@ export function BackgroundSettingsTab({
 												className={cn(
 													"aspect-square w-9 h-9 rounded-lg border-2 overflow-hidden cursor-pointer transition-all duration-200 shadow-sm hover:scale-105 p-0 bg-white/5",
 													isSelected
-														? "border-[#F59E0B] ring-1 ring-[#F59E0B]/30"
-														: "border-white/10 hover:border-[#F59E0B]/40 opacity-80 hover:opacity-100",
+														? "border-amber-500 ring-2 ring-amber-500/30 shadow-[0_0_12px_rgba(245,158,11,0.5)]"
+														: "border-white/10 hover:border-amber-500/40 opacity-80 hover:opacity-100",
 												)}
 												aria-label={label}
 												title={label}
@@ -288,8 +288,8 @@ export function BackgroundSettingsTab({
 								<div className="border-t border-dashed border-white/[0.08] pt-3">
 									<div className="grid grid-cols-2 gap-3">
 										<div className="flex flex-col gap-1.5">
-											<span className="text-[10px] text-slate-500 font-medium">From</span>
-											<div className="flex items-center gap-1.5 h-8 rounded-lg border border-white/[0.08] bg-white/[0.04] px-1.5">
+											<span className="text-[11px] text-slate-300 font-medium">From</span>
+											<div className="flex items-center gap-1.5 h-8 rounded-lg border border-white/10 bg-black/40 px-1.5 shadow-inner focus-within:border-amber-500/50 focus-within:ring-1 focus-within:ring-amber-500/20 transition-all">
 												<label className="relative w-6 h-6 rounded-md overflow-hidden shrink-0 cursor-pointer border border-white/10">
 													<div
 														className="absolute inset-0 rounded-md"
@@ -334,8 +334,8 @@ export function BackgroundSettingsTab({
 											</div>
 										</div>
 										<div className="flex flex-col gap-1.5">
-											<span className="text-[10px] text-slate-500 font-medium">To</span>
-											<div className="flex items-center gap-1.5 h-8 rounded-lg border border-white/[0.08] bg-white/[0.04] px-1.5">
+											<span className="text-[11px] text-slate-300 font-medium">To</span>
+											<div className="flex items-center gap-1.5 h-8 rounded-lg border border-white/10 bg-black/40 px-1.5 shadow-inner focus-within:border-amber-500/50 focus-within:ring-1 focus-within:ring-amber-500/20 transition-all">
 												<label className="relative w-6 h-6 rounded-md overflow-hidden shrink-0 cursor-pointer border border-white/10">
 													<div
 														className="absolute inset-0 rounded-md"

@@ -36,7 +36,7 @@ class Particle {
 		const opacity = Math.max(0, this.life / this.maxLife);
 		ctx.beginPath();
 		ctx.arc(this.x, this.y, this.size * opacity, 0, Math.PI * 2);
-		
+
 		// Convert hex/rgb to rgba for fading
 		ctx.fillStyle = `rgba(245, 158, 11, ${opacity * 0.8})`; // #f59e0b with opacity
 		ctx.fill();
@@ -69,7 +69,7 @@ export function CursorTrail() {
 		const handleMouseMove = (e: MouseEvent) => {
 			const dx = e.clientX - mouseRef.current.x;
 			const dy = e.clientY - mouseRef.current.y;
-			
+
 			// Calculate velocity
 			mouseRef.current.vx = dx;
 			mouseRef.current.vy = dy;
@@ -77,7 +77,7 @@ export function CursorTrail() {
 			mouseRef.current.y = e.clientY;
 
 			isMovingRef.current = true;
-			
+
 			if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
 			timeoutRef.current = window.setTimeout(() => {
 				isMovingRef.current = false;
@@ -90,17 +90,17 @@ export function CursorTrail() {
 
 			for (let i = 0; i < spawnCount; i++) {
 				// Add some randomness to velocity
-				const vx = (dx * 0.1) + (Math.random() - 0.5) * 2;
-				const vy = (dy * 0.1) + (Math.random() - 0.5) * 2;
-				
+				const vx = dx * 0.1 + (Math.random() - 0.5) * 2;
+				const vy = dy * 0.1 + (Math.random() - 0.5) * 2;
+
 				particlesRef.current.push(
 					new Particle(
 						e.clientX + (Math.random() - 0.5) * 10,
 						e.clientY + (Math.random() - 0.5) * 10,
 						vx,
 						vy,
-						"#f59e0b"
-					)
+						"#f59e0b",
+					),
 				);
 			}
 		};
@@ -117,7 +117,7 @@ export function CursorTrail() {
 			for (let i = particles.length - 1; i >= 0; i--) {
 				const p = particles[i];
 				p.update();
-				
+
 				if (p.life <= 0) {
 					particles.splice(i, 1);
 				} else {

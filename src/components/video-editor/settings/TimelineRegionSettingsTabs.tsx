@@ -72,7 +72,7 @@ export function ZoomSettingsTab({
 									zoomEnabled ? "opacity-100 cursor-pointer" : "opacity-40 cursor-not-allowed",
 									isActive
 										? "border-[#F59E0B] bg-gradient-to-br from-[#F59E0B] to-[#d97706] text-white shadow-lg shadow-[#F59E0B]/25"
-										: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:border-white/[0.1] hover:text-slate-200",
+										: "border-white/5 bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:border-white/[0.1] hover:text-slate-200",
 								)}
 							>
 								<span className="text-xs font-semibold">{option.label}</span>
@@ -95,7 +95,7 @@ export function ZoomSettingsTab({
 									zoomEnabled ? "opacity-100 cursor-pointer" : "opacity-40 cursor-not-allowed",
 									isActive
 										? "border-[#F59E0B] bg-gradient-to-br from-[#F59E0B] to-[#d97706] text-white shadow-lg shadow-[#F59E0B]/25"
-										: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:border-white/[0.1] hover:text-slate-200",
+										: "border-white/5 bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:border-white/[0.1] hover:text-slate-200",
 								)}
 							>
 								<span className="text-xs font-semibold">{option.label}</span>
@@ -193,7 +193,7 @@ export function SpeedSettingsTab({
 									selectedSpeedId ? "opacity-100 cursor-pointer" : "opacity-40 cursor-not-allowed",
 									isActive
 										? "border-[#d97706] bg-gradient-to-br from-[#d97706] to-[#b45309] text-white shadow-lg shadow-[#d97706]/25"
-										: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:border-white/[0.1] hover:text-slate-200",
+										: "border-white/5 bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:border-white/[0.1] hover:text-slate-200",
 								)}
 							>
 								<span className="text-xs font-semibold">{option.label}</span>

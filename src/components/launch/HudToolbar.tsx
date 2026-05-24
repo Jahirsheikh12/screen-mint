@@ -1,4 +1,4 @@
-import { Languages, Smartphone } from "lucide-react";
+import { Camera, Languages, Smartphone } from "lucide-react";
 import { useEffect, useState } from "react";
 import { BsRecordCircle } from "react-icons/bs";
 import { FaPause, FaPlay, FaRegStopCircle } from "react-icons/fa";
@@ -97,6 +97,10 @@ type HudToolbarProps = {
 	showQuickRecord: boolean;
 	quickRecordDisabled: boolean;
 	onQuickRecord: () => void;
+	screenshotDisabled: boolean;
+	screenshotBusy: boolean;
+	onCaptureScreenshot: () => void;
+	showScreenshot?: boolean;
 };
 
 const MODE_ICONS: Record<HudMode, React.ComponentType<{ size?: number; className?: string }>> = {
@@ -161,6 +165,10 @@ export function HudToolbar({
 	showQuickRecord,
 	quickRecordDisabled,
 	onQuickRecord,
+	screenshotDisabled,
+	screenshotBusy,
+	onCaptureScreenshot,
+	showScreenshot = false,
 }: HudToolbarProps) {
 	const { locale, setLocale } = useI18n();
 	const t = useScopedT("launch");
@@ -709,6 +717,31 @@ export function HudToolbar({
 
 			{/* Right utilities */}
 			<div className={`${ND} flex shrink-0 items-center`}>
+				{showScreenshot ? (
+					<Tooltip content={t("recording.captureScreenshot")} side="top">
+						<button
+							type="button"
+							onClick={onCaptureScreenshot}
+							disabled={screenshotDisabled || screenshotBusy}
+							aria-label={t("recording.captureScreenshot")}
+							className={`flex items-center justify-center rounded-lg w-8 h-8 transition-colors ${
+								screenshotDisabled || screenshotBusy
+									? "cursor-not-allowed text-white/25"
+									: "cursor-pointer text-white/60 hover:text-white/95 hover:bg-white/[0.08]"
+							}`}
+						>
+							{screenshotBusy ? (
+								<span
+									className="h-[13px] w-[13px] rounded-full border-[1.5px] border-white/20 border-t-white/80 animate-spin"
+									aria-hidden="true"
+								/>
+							) : (
+								<Camera size={14} strokeWidth={2.5} />
+							)}
+						</button>
+					</Tooltip>
+				) : null}
+
 				{/* File options temporarily hidden — keep wired for future re-enable */}
 				{/*
 				<button

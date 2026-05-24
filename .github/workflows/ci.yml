@@ -40,6 +40,9 @@ jobs:
       - name: Validate i18n files
         run: npm run i18n:check
 
+      - name: Generate host validation report
+        run: npm run validate:host
+
       - name: Run tests
         run: npm run test
 

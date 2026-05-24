@@ -74,7 +74,7 @@ export function AudioSettingsTab({
 				title="Audio Source"
 				description="Upload your own track or browse the built-in library"
 			>
-				<div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+				<div className="p-3 rounded-xl bg-black/40 border border-white/5 shadow-inner">
 					<p className="text-[11px] text-slate-400 leading-relaxed">
 						{tSettings(
 							"audio.subtitle",
@@ -95,7 +95,7 @@ export function AudioSettingsTab({
 			</SettingsSection>
 
 			<SettingsSection title="Built-in Library" description="Curated tracks organized by mood">
-				<div className="rounded-xl bg-white/[0.04] border border-white/[0.06] overflow-hidden">
+				<div className="rounded-xl bg-black/40 border border-white/5 shadow-inner overflow-hidden">
 					{Object.entries(builtInTracksByMood).map(([mood, tracks], moodIndex) => (
 						<div
 							key={mood}
@@ -116,7 +116,7 @@ export function AudioSettingsTab({
 												"w-full rounded-xl border px-2.5 py-2 text-left transition-all duration-200",
 												isSelected
 													? "border-[#F59E0B]/40 bg-[#F59E0B]/10 shadow-sm shadow-[#F59E0B]/10"
-													: "border-white/[0.06] bg-black/10 hover:bg-white/[0.04] hover:border-white/[0.1]",
+													: "border-white/5 bg-black/10 hover:bg-white/[0.04] hover:border-white/[0.1]",
 											)}
 										>
 											<div className="flex items-center justify-between gap-3">
@@ -174,7 +174,7 @@ export function AudioSettingsTab({
 			>
 				{selectedAudio ? (
 					<>
-						<div className="rounded-xl bg-white/[0.04] border border-white/[0.06] px-3 py-2.5">
+						<div className="rounded-xl bg-black/40 border border-white/5 shadow-inner px-3 py-2.5">
 							<div className="text-xs font-medium text-slate-200">
 								{getAudioRegionDisplayName(selectedAudio)}
 							</div>
@@ -230,7 +230,7 @@ export function AudioSettingsTab({
 							</div>
 						)}
 
-						<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+						<div className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 							<div>
 								<div className="text-xs font-medium text-slate-300">
 									{tSettings("audio.loop", "Loop audio")}
@@ -244,7 +244,7 @@ export function AudioSettingsTab({
 							/>
 						</div>
 
-						<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+						<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 							<SliderControl
 								label={tSettings("audio.volume", "Volume")}
 								value={selectedAudio.volume}
@@ -257,7 +257,7 @@ export function AudioSettingsTab({
 								parseInput={(text) => parseFloat(text.replace(/%$/, "")) / 100}
 							/>
 						</div>
-						<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+						<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 							<SliderControl
 								label={tSettings("audio.fadeIn", "Fade In")}
 								value={selectedAudio.fadeInMs}
@@ -270,7 +270,7 @@ export function AudioSettingsTab({
 								parseInput={(text) => parseFloat(text.replace(/ms$/, ""))}
 							/>
 						</div>
-						<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+						<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 							<SliderControl
 								label={tSettings("audio.fadeOut", "Fade Out")}
 								value={selectedAudio.fadeOutMs}

@@ -46,7 +46,8 @@
 		"test": "vitest --run",
 		"test:watch": "vitest",
 		"benchmark:export:native-composed": "node scripts/benchmark-native-composed-export.mjs",
-		"release:validate-provenance": "node scripts/validate-asset-provenance.mjs"
+		"release:validate-provenance": "node scripts/validate-asset-provenance.mjs",
+		"validate:host": "node scripts/validate-host.mjs"
 	},
 	"dependencies": {
 		"@fix-webm-duration/fix": "^1.0.1",
@@ -96,6 +97,7 @@
 		"sonner": "^2.0.7",
 		"tailwind-merge": "^3.3.1",
 		"tailwindcss-animate": "^1.0.7",
+		"three": "^0.184.0",
 		"uiohook-napi": "^1.5.4",
 		"uuid": "^13.0.0",
 		"web-demuxer": "^4.0.0"
@@ -106,6 +108,7 @@
 		"@types/qrcode": "^1.5.6",
 		"@types/react": "^18.2.64",
 		"@types/react-dom": "^18.2.21",
+		"@types/three": "^0.184.1",
 		"@types/uuid": "^10.0.0",
 		"@vitejs/plugin-react": "^4.2.1",
 		"autoprefixer": "^10.4.21",

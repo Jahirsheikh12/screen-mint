@@ -1,6 +1,7 @@
 import { RotateCcw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Slider } from "@/components/ui/slider";
+import { cn } from "@/lib/utils";
 
 interface SliderControlProps {
 	label: string;
@@ -87,14 +88,14 @@ export function SliderControl({
 							if (e.key === "Enter") commitEdit();
 							if (e.key === "Escape") cancelEdit();
 						}}
-						className="w-14 text-[11px] text-right font-mono bg-white/10 border border-white/20 rounded-md px-1.5 py-0.5 text-slate-200 outline-none focus:border-[#F59E0B]/50 focus:ring-1 focus:ring-[#F59E0B]/20 transition-all duration-200"
+						className="w-14 text-[11px] text-right font-mono bg-black/40 border border-white/10 rounded-md px-1.5 py-1 text-slate-200 outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 shadow-inner transition-all duration-200"
 					/>
 				) : (
 					<span
 						className={
 							disabled
-								? "text-[11px] text-slate-600 font-mono tabular-nums bg-white/[0.02] px-1.5 py-0.5 rounded-md transition-colors duration-200"
-								: "text-[11px] text-slate-400 font-mono tabular-nums cursor-text hover:text-slate-200 bg-white/[0.04] px-1.5 py-0.5 rounded-md transition-colors duration-200"
+								? "text-[11px] text-slate-600 font-mono tabular-nums bg-white/[0.02] px-1.5 py-1 rounded-md transition-colors duration-200"
+								: "text-[11px] text-slate-300 font-mono tabular-nums cursor-text hover:text-white bg-black/30 border border-white/[0.04] px-1.5 py-1 rounded-md transition-colors duration-200 hover:border-white/10 shadow-sm"
 						}
 						onClick={() => {
 							if (disabled) return;
@@ -113,11 +114,10 @@ export function SliderControl({
 				min={min}
 				max={max}
 				step={step}
-				className={
-					accentColor === "purple"
-						? "w-full [&_[role=slider]]:bg-[#8b5cf6] [&_[role=slider]]:border-[#8b5cf6] [&_[role=slider]]:h-3.5 [&_[role=slider]]:w-3.5"
-						: "w-full [&_[role=slider]]:bg-[#F59E0B] [&_[role=slider]]:border-[#F59E0B] [&_[role=slider]]:h-3.5 [&_[role=slider]]:w-3.5"
-				}
+				className={cn(
+					"w-full pt-2 pb-1",
+					accentColor === "purple" && "[&_[role=slider]]:ring-purple-500/50",
+				)}
 			/>
 		</div>
 	);

@@ -63,7 +63,7 @@ export function KeyboardSettingsTab({
 			/>
 
 			<SettingsSection title="Display" description="Toggle keyboard shortcut overlay visibility">
-				<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+				<div className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 					<div>
 						<div className="text-xs font-medium text-slate-300">
 							{tSettings("keyboard.showShortcuts")}
@@ -82,7 +82,7 @@ export function KeyboardSettingsTab({
 
 			<DisabledSettingsGroup disabled={!showKeyboardShortcuts}>
 				<SettingsSection title="Layout" description="Position and style of the shortcut display">
-					<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+					<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 						<div className="text-xs font-medium text-slate-300 mb-2">
 							{tSettings("keyboard.position")}
 						</div>
@@ -106,7 +106,7 @@ export function KeyboardSettingsTab({
 						</div>
 					</div>
 
-					<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+					<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 						<div className="text-xs font-medium text-slate-300 mb-2">
 							{tSettings("keyboard.theme")}
 						</div>
@@ -132,7 +132,7 @@ export function KeyboardSettingsTab({
 				</SettingsSection>
 
 				<SettingsSection title="Appearance" description="Fine-tune size, opacity, and timing">
-					<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+					<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 						<SliderControl
 							label={tSettings("keyboard.scale")}
 							value={keyboardShortcutScale}
@@ -147,7 +147,7 @@ export function KeyboardSettingsTab({
 						/>
 					</div>
 
-					<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+					<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 						<SliderControl
 							label={tSettings("keyboard.opacity")}
 							value={keyboardShortcutOpacity}
@@ -162,7 +162,7 @@ export function KeyboardSettingsTab({
 						/>
 					</div>
 
-					<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+					<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 						<SliderControl
 							label={tSettings("keyboard.displayDuration")}
 							value={keyboardShortcutDisplayMs}
@@ -177,7 +177,7 @@ export function KeyboardSettingsTab({
 						/>
 					</div>
 
-					<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+					<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 						<SliderControl
 							label={tSettings("keyboard.maxVisible")}
 							value={keyboardShortcutMaxVisible}

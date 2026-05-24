@@ -899,13 +899,13 @@ export default function SettingsPanel({
 	];
 
 	return (
-		<div className="w-[400px] shrink-0 min-w-0 bg-[#0A0F0D] border border-white/[0.06] rounded-2xl flex flex-row shadow-2xl shadow-black/40 h-full overflow-hidden">
+		<div className="w-full h-full shrink-0 min-w-0 bg-[#0B0F0D]/90 backdrop-blur-2xl border border-white/[0.08] rounded-2xl flex flex-row shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden">
 			{/* Sidebar navigation */}
-			<div className="flex flex-col gap-0.5 p-1.5 border-r border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-transparent">
+			<div className="flex flex-col gap-2 p-2 border-r border-white/[0.04] bg-black/40 w-[60px] shrink-0 overflow-y-auto custom-scrollbar items-center">
 				{tabGroups.map((group, groupIndex) => (
-					<div key={group.label}>
+					<div key={group.label} className="flex flex-col items-center w-full gap-1.5">
 						{groupIndex > 0 && (
-							<div className="mx-2 my-1.5 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+							<div className="w-6 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent my-1" />
 						)}
 						{sidebarTabs
 							.filter((tab) => group.ids.includes(tab.id))
@@ -923,7 +923,7 @@ export default function SettingsPanel({
 			</div>
 
 			{/* Content area */}
-			<div className="flex-1 min-w-0 overflow-y-auto custom-scrollbar p-3 pb-0">
+			<div className="flex-1 min-w-0 overflow-y-auto custom-scrollbar p-4 pb-0 relative">
 				{activeTab === "studio" && (
 					<StudioSettingsTab
 						activePresetId={activeScenePresetId}

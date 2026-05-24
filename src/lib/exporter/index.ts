@@ -25,6 +25,12 @@ export {
 	resolveGifFfmpegLoop,
 	resolveGifMpdecimateFilter,
 } from "./gifFfmpeg";
+export type { LayeredExportComposition } from "./layeredComposition";
+export {
+	buildLayeredExportComposition,
+	getCompositionLayersAtTime,
+	normalizeLayeredExportComposition,
+} from "./layeredComposition";
 export { VideoMuxer } from "./muxer";
 export type { NativeComposedCompileResult } from "./nativeComposed";
 export { compileNativeComposedExport } from "./nativeComposed";
@@ -45,6 +51,7 @@ export {
 	resolveVideoExportPlan,
 } from "./planner";
 export { StreamingVideoDecoder } from "./streamingDecoder";
+export { isWebGLAvailable, renderThreeSceneFrame } from "./threeSceneRenderer";
 export type {
 	ExportConfig,
 	ExportDestination,

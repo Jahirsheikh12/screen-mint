@@ -153,6 +153,7 @@ export function useScreenRecorder(
 	const startTime = useRef<number>(0);
 	const nativeScreenRecording = useRef(false);
 	const wgcRecording = useRef(false);
+	const layeredRecordingActive = useRef(false);
 	const startInFlight = useRef(false);
 	const hasPromptedForReselect = useRef(false);
 	const hasShownWgcFallbackToast = useRef(false);
@@ -1270,6 +1271,26 @@ export function useScreenRecorder(
 			}
 
 			const platform = await window.electronAPI.getPlatform();
+			if (!isResumingNative) {
+				try {
+					const layeredPlan = await window.electronAPI.getLayeredCaptureSources();
+					const plannedSources = layeredPlan.success ? (layeredPlan.manifest?.sources ?? []) : [];
+					if (plannedSources.length > 1) {
+						const layeredStart = await window.electronAPI.startLayeredCapture({
+							sources: plannedSources,
+						});
+						layeredRecordingActive.current = layeredStart.success;
+						if (layeredStart.success && layeredStart.manifest?.limitations.length) {
+							toast.info("Layered recording has platform limitations.", {
+								description: layeredStart.manifest.limitations[0],
+							});
+						}
+					}
+				} catch (layeredError) {
+					console.warn("Unable to start layered capture planning:", layeredError);
+					layeredRecordingActive.current = false;
+				}
+			}
 			const usesMobileCamera = cameraSession.sourceType === "mobile";
 			const usesMobileMicrophone = usesMobileCamera && microphoneEnabled;
 			const useNativeMacScreenCapture =
@@ -1775,6 +1796,15 @@ export function useScreenRecorder(
 					sessionRef.current.captureMode === "area" ? sessionRef.current.selectedArea : null;
 				const mobileMicrophoneSegment = await stopMobileMicrophoneRecording();
 				const webcamSegment = await stopWebcamRecordingRef.current();
+				if (layeredRecordingActive.current) {
+					try {
+						await window.electronAPI.stopLayeredCapture();
+					} catch (layeredError) {
+						console.warn("Unable to stop layered capture planning:", layeredError);
+					} finally {
+						layeredRecordingActive.current = false;
+					}
+				}
 				const webcamSessionMetadata: PostRecordingContext["webcamSessionMetadata"] =
 					cameraSession.enabled && webcamSegment
 						? {

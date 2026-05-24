@@ -10,6 +10,11 @@ import type {
 	MobileCapturePairingResult,
 	MobileCapturePairingState,
 	MobileCaptureSignalPayload,
+	ScreenshotCaptureRequest,
+	ScreenshotCaptureResult,
+	HostValidationReport,
+	LayeredCaptureResult,
+	LayeredCaptureStartRequest,
 } from "../src/electron-ipc/contracts";
 import type { PostRecordingContext } from "../src/lib/recording/postRecording";
 import type {
@@ -69,6 +74,20 @@ declare global {
 			onSelectedAreaChanged: (
 				callback: (state: { area: SelectedArea | null }) => void,
 			) => () => void;
+			captureScreenshot: (request?: ScreenshotCaptureRequest) => Promise<ScreenshotCaptureResult>;
+			copyScreenshotToClipboard: (request: {
+				pngData?: Uint8Array;
+				path?: string;
+			}) => Promise<{ success: boolean; message?: string; error?: string }>;
+			setLayeredCaptureSources: (
+				request: LayeredCaptureStartRequest,
+			) => Promise<LayeredCaptureResult>;
+			getLayeredCaptureSources: () => Promise<LayeredCaptureResult>;
+			clearLayeredCaptureSources: () => Promise<LayeredCaptureResult>;
+			startLayeredCapture: (request: LayeredCaptureStartRequest) => Promise<LayeredCaptureResult>;
+			stopLayeredCapture: () => Promise<LayeredCaptureResult>;
+			getLayeredCaptureStatus: () => Promise<LayeredCaptureResult>;
+			getHostValidationReport: () => Promise<HostValidationReport>;
 			startNativeScreenRecording: (
 				source: SelectedCaptureSource,
 				options?: {

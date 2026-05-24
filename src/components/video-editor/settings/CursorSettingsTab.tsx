@@ -193,7 +193,7 @@ export function CursorSettingsTab({
 				title="Visibility"
 				description="Control whether the cursor shows and when it fades away"
 			>
-				<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+				<div className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 					<div>
 						<div className="text-xs font-medium text-slate-300">
 							{tSettings("effects.showCursor", "Cursor")}
@@ -209,7 +209,7 @@ export function CursorSettingsTab({
 					/>
 				</div>
 				<DisabledSettingsGroup disabled={cursorControlsDisabled}>
-					<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+					<div className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 						<div>
 							<div className="text-xs font-medium text-slate-300">
 								{tSettings("cursor.hideWhenIdle", "Hide When Idle")}
@@ -226,7 +226,7 @@ export function CursorSettingsTab({
 						/>
 					</div>
 					<DisabledSettingsGroup disabled={!hideWhenIdle}>
-						<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+						<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner">
 							<SliderControl
 								label={tSettings("cursor.idleDelay", "Idle Delay")}
 								value={idleHideDelayMs}
@@ -271,7 +271,7 @@ export function CursorSettingsTab({
 										"flex items-start gap-3 rounded-xl border p-3 text-left transition-all duration-200",
 										cursorTypeMode === option.value
 											? "border-[#F59E0B]/55 bg-[#F59E0B]/10 shadow-[0_0_0_1px_rgba(245,158,11,0.2)]"
-											: "border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06]",
+											: "border-white/5 bg-black/30 hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]",
 									)}
 								>
 									<div
@@ -292,7 +292,7 @@ export function CursorSettingsTab({
 							);
 						})}
 					</div>
-					<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+					<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner">
 						<SliderControl
 							label={tSettings("effects.cursorSize", "Size")}
 							value={cursorSize}
@@ -306,7 +306,7 @@ export function CursorSettingsTab({
 							disabled={cursorControlsDisabled}
 						/>
 					</div>
-					<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+					<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner">
 						<SliderControl
 							label={tSettings("cursor.tilt", "Tilt")}
 							value={cursorTilt}
@@ -346,7 +346,7 @@ export function CursorSettingsTab({
 											"flex items-start gap-3 rounded-xl border p-3 text-left transition-all duration-200",
 											cursorMovementStyle === option.value
 												? "border-[#F59E0B]/55 bg-[#F59E0B]/10 shadow-[0_0_0_1px_rgba(245,158,11,0.2)]"
-												: "border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06]",
+												: "border-white/5 bg-black/30 hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]",
 										)}
 									>
 										<div
@@ -368,7 +368,7 @@ export function CursorSettingsTab({
 							})}
 						</div>
 					</DisabledSettingsGroup>
-					<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+					<div className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner">
 						<div>
 							<div className="text-xs font-medium text-slate-300">
 								{tSettings("cursor.smoothMovement", "Smooth Movement")}
@@ -386,7 +386,7 @@ export function CursorSettingsTab({
 					</div>
 					{smoothMovementEnabled && cursorMovementStyle === "custom" && (
 						<>
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+							<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner">
 								<SliderControl
 									label={tSettings("cursor.tension", "Tension")}
 									value={cursorSpring.tension}
@@ -400,7 +400,7 @@ export function CursorSettingsTab({
 									disabled={smoothingControlsDisabled}
 								/>
 							</div>
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+							<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner">
 								<SliderControl
 									label={tSettings("cursor.friction", "Friction")}
 									value={cursorSpring.friction}
@@ -414,7 +414,7 @@ export function CursorSettingsTab({
 									disabled={smoothingControlsDisabled}
 								/>
 							</div>
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+							<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner">
 								<SliderControl
 									label={tSettings("cursor.mass", "Mass")}
 									value={cursorSpring.mass}
@@ -436,7 +436,7 @@ export function CursorSettingsTab({
 					title={tSettings("cursor.cameraTracking", "Camera Tracking")}
 					description="Fine-tune how the camera follows the cursor during zoom."
 				>
-					<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+					<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner">
 						<SliderControl
 							label={tSettings("cursor.cameraTension", "Tension")}
 							value={cameraSpring?.tension ?? DEFAULT_CAMERA_SPRING.tension}
@@ -455,7 +455,7 @@ export function CursorSettingsTab({
 							disabled={cursorControlsDisabled}
 						/>
 					</div>
-					<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+					<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner">
 						<SliderControl
 							label={tSettings("cursor.cameraFriction", "Friction")}
 							value={cameraSpring?.friction ?? DEFAULT_CAMERA_SPRING.friction}
@@ -474,7 +474,7 @@ export function CursorSettingsTab({
 							disabled={cursorControlsDisabled}
 						/>
 					</div>
-					<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+					<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner">
 						<SliderControl
 							label={tSettings("cursor.cameraMass", "Mass")}
 							value={cameraSpring?.mass ?? DEFAULT_CAMERA_SPRING.mass}
@@ -499,7 +499,7 @@ export function CursorSettingsTab({
 					title={tSettings("cursor.rendering", "Rendering")}
 					description="Choose how cursor assets are rendered in preview and export."
 				>
-					<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+					<div className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner">
 						<div>
 							<div className="text-xs font-medium text-slate-300">
 								{tSettings("cursor.highQualitySvg", "High Quality SVG Cursors")}
@@ -517,7 +517,7 @@ export function CursorSettingsTab({
 					</div>
 				</SettingsSection>
 
-				<div className="mb-3 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
+				<div className="mb-3 rounded-xl border border-white/5 bg-black/30 px-3 py-2.5">
 					<button
 						type="button"
 						onClick={onToggleLegacyCursorSettings}
@@ -546,7 +546,7 @@ export function CursorSettingsTab({
 							title="Legacy Visibility"
 							description="Compatibility controls for older projects"
 						>
-							<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+							<div className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 								<div>
 									<div className="text-xs font-medium text-slate-300">
 										{tSettings("effects.loopCursor")}
@@ -565,7 +565,7 @@ export function CursorSettingsTab({
 						</SettingsSection>
 
 						<SettingsSection title="Appearance" description="Customize how your cursor looks">
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+							<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 								<div className="text-xs font-medium text-slate-300 mb-2">
 									{tSettings("cursor.pack")}
 								</div>
@@ -580,7 +580,7 @@ export function CursorSettingsTab({
 												"group relative flex flex-col items-center gap-1 p-1.5 rounded-lg transition-all duration-200 cursor-pointer",
 												cursorPack === opt.value
 													? "bg-gradient-to-b from-[#F59E0B]/20 to-[#d97706]/10 ring-1 ring-[#F59E0B]/60 shadow-sm shadow-[#F59E0B]/10"
-													: "bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.04] hover:border-white/[0.1]",
+													: "bg-black/30 hover:bg-white/[0.08] border border-white/[0.04] hover:border-white/[0.1]",
 											)}
 											title={opt.label}
 										>
@@ -614,7 +614,7 @@ export function CursorSettingsTab({
 								</div>
 								{/*
 										{cursorStatePreviewItems.length > 0 && (
-											<div className="mt-3 border-t border-white/[0.06] pt-3">
+											<div className="mt-3 border-t border-white/5 pt-3">
 												<div className="mb-2 flex items-center justify-between gap-2">
 													<span className="text-[10px] font-medium uppercase tracking-[0.14em] text-slate-500">
 														States
@@ -649,7 +649,7 @@ export function CursorSettingsTab({
 									*/}
 							</div>
 
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+							<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 								<div className="flex items-center justify-between mb-2.5">
 									<span className="text-[11px] font-medium text-slate-300">Cursor Color</span>
 									<button
@@ -680,12 +680,12 @@ export function CursorSettingsTab({
 										value={cursorColor}
 										disabled={cursorControlsDisabled}
 										onChange={(e) => onCursorColorChange?.(e.target.value)}
-										className="flex-1 h-8 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 text-[11px] text-slate-200 font-mono tracking-wider focus:outline-none focus:border-[#F59E0B]/40 focus:ring-1 focus:ring-[#F59E0B]/20 transition-all duration-200"
+										className="flex-1 h-8 rounded-lg border border-white/5 bg-black/30 px-2.5 text-[11px] text-slate-200 font-mono tracking-wider focus:outline-none focus:border-[#F59E0B]/40 focus:ring-1 focus:ring-[#F59E0B]/20 transition-all duration-200"
 									/>
 								</div>
 							</div>
 
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+							<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 								<SliderControl
 									label="Cursor Opacity"
 									value={cursorOpacity}
@@ -702,7 +702,7 @@ export function CursorSettingsTab({
 						</SettingsSection>
 
 						<SettingsSection title="Motion" description="Fine-tune motion blur and trail effects">
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+							<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 								<SliderControl
 									label={tSettings("effects.cursorMotionBlur")}
 									value={cursorMotionBlur}
@@ -717,7 +717,7 @@ export function CursorSettingsTab({
 								/>
 							</div>
 
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+							<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 								<SliderControl
 									label="Trail Length"
 									value={cursorTrailLength}
@@ -736,7 +736,7 @@ export function CursorSettingsTab({
 							</div>
 
 							{cursorTrailLength > 0 && (
-								<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200 animate-in fade-in slide-in-from-top-1 duration-200">
+								<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200 animate-in fade-in slide-in-from-top-1 duration-200">
 									<SliderControl
 										label="Trail Opacity"
 										value={cursorTrailOpacity}
@@ -758,7 +758,7 @@ export function CursorSettingsTab({
 							description="Visual feedback when clicking"
 							accentColor="amber"
 						>
-							<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+							<div className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 								<div>
 									<div className="text-xs font-medium text-slate-300">Enable Click Effects</div>
 									<div className="text-[10px] text-slate-500 mt-0.5">
@@ -774,10 +774,10 @@ export function CursorSettingsTab({
 							</div>
 							<div
 								className={cn(
-									"p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] transition-colors duration-200",
+									"p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner transition-colors duration-200",
 									clickEffectControlsDisabled
 										? "opacity-45 pointer-events-none"
-										: "hover:bg-white/[0.06]",
+										: "hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]",
 								)}
 							>
 								<SliderControl
@@ -796,10 +796,10 @@ export function CursorSettingsTab({
 
 							<div
 								className={cn(
-									"p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] transition-colors duration-200",
+									"p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner transition-colors duration-200",
 									clickEffectControlsDisabled
 										? "opacity-45 pointer-events-none"
-										: "hover:bg-white/[0.06]",
+										: "hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]",
 								)}
 							>
 								<div className="flex items-center justify-between mb-2.5">
@@ -834,17 +834,17 @@ export function CursorSettingsTab({
 										value={clickHighlightColor}
 										disabled={clickEffectControlsDisabled}
 										onChange={(e) => onClickHighlightColorChange?.(e.target.value)}
-										className="flex-1 h-8 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 text-[11px] text-slate-200 font-mono tracking-wider focus:outline-none focus:border-[#F59E0B]/40 focus:ring-1 focus:ring-[#F59E0B]/20 transition-all duration-200"
+										className="flex-1 h-8 rounded-lg border border-white/5 bg-black/30 px-2.5 text-[11px] text-slate-200 font-mono tracking-wider focus:outline-none focus:border-[#F59E0B]/40 focus:ring-1 focus:ring-[#F59E0B]/20 transition-all duration-200"
 									/>
 								</div>
 							</div>
 
 							<div
 								className={cn(
-									"p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] transition-colors duration-200",
+									"p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner transition-colors duration-200",
 									clickEffectControlsDisabled
 										? "opacity-45 pointer-events-none"
-										: "hover:bg-white/[0.06]",
+										: "hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]",
 								)}
 							>
 								<SliderControl
@@ -866,10 +866,10 @@ export function CursorSettingsTab({
 
 							<div
 								className={cn(
-									"p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] transition-colors duration-200",
+									"p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner transition-colors duration-200",
 									clickEffectControlsDisabled
 										? "opacity-45 pointer-events-none"
-										: "hover:bg-white/[0.06]",
+										: "hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]",
 								)}
 							>
 								<SliderControl

@@ -2,10 +2,12 @@ import { ChevronDown } from "lucide-react";
 import type { PointerEvent } from "react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { BsRecordCircle } from "react-icons/bs";
+import { toast } from "sonner";
 import { resolveHudWebcamPreviewLayout } from "@/components/video-editor/webcamRenderPlan";
 import { useScopedT } from "@/contexts/I18nContext";
 import type { AfterRecordingAction, HudMode } from "@/hooks/useHudState";
 import { useHudState } from "@/hooks/useHudState";
+import { isFeatureEnabled } from "@/lib/featureFlags";
 import {
 	DropdownMenu,
 	DropdownMenuCheckboxItem,
@@ -51,6 +53,8 @@ export function LaunchWindow() {
 	const [recordingStart, setRecordingStart] = useState<number | null>(null);
 	const [elapsed, setElapsed] = useState(0);
 	const [hudDropdownOpen, setHudDropdownOpen] = useState(false);
+	const [screenshotBusy, setScreenshotBusy] = useState(false);
+	const screenshotsEnabled = isFeatureEnabled("screenshots");
 	const pausedAtRef = useRef<number | null>(null);
 	const totalPausedRef = useRef(0);
 	const compactHudRef = useRef<HTMLDivElement | null>(null);
@@ -313,7 +317,58 @@ export function LaunchWindow() {
 		hud.recordingBusy ||
 		!hud.hasSelectedSource ||
 		(hud.mode === "area" && !hud.hasSelectedArea);
+	const screenshotDisabled =
+		!screenshotsEnabled ||
+		hud.recording ||
+		hud.countdownActive ||
+		hud.recordingBusy ||
+		!hud.hasSelectedSource ||
+		(hud.mode === "area" && !hud.hasSelectedArea);
 	const hudWebcamPreviewLayout = resolveHudWebcamPreviewLayout(hud.cameraSession);
+
+	const handleCaptureScreenshot = useCallback(async () => {
+		if (screenshotDisabled || screenshotBusy) {
+			return;
+		}
+
+		setScreenshotBusy(true);
+		try {
+			const selectedArea =
+				hud.mode === "area" ? ((await window.electronAPI.getSelectedArea()).area ?? null) : null;
+			const result = await window.electronAPI.captureScreenshot({
+				selectedArea,
+				saveToRecordings: true,
+				copyToClipboard: true,
+			});
+
+			if (!result.success || !result.screenshot) {
+				toast.error(
+					!result.success
+						? (result.message ?? t("recording.screenshotFailed"))
+						: t("recording.screenshotFailed"),
+				);
+				return;
+			}
+
+			toast.success(t("recording.screenshotSaved"), {
+				description: result.screenshot.path,
+				action: result.screenshot.path
+					? {
+							label: "Show",
+							onClick: () => {
+								void window.electronAPI.revealInFolder(result.screenshot?.path ?? "");
+							},
+						}
+					: undefined,
+			});
+		} catch (error) {
+			toast.error(t("recording.screenshotFailed"), {
+				description: error instanceof Error ? error.message : String(error),
+			});
+		} finally {
+			setScreenshotBusy(false);
+		}
+	}, [hud.mode, screenshotBusy, screenshotDisabled, t]);
 
 	useEffect(() => subscribeHudDropdownOpen(setHudDropdownOpen), []);
 
@@ -667,6 +722,10 @@ export function LaunchWindow() {
 							showQuickRecord={showAreaQuickRecord}
 							quickRecordDisabled={isRecordDisabled}
 							onQuickRecord={hud.toggleRecording}
+							screenshotDisabled={screenshotDisabled}
+							screenshotBusy={screenshotBusy}
+							onCaptureScreenshot={handleCaptureScreenshot}
+							showScreenshot={screenshotsEnabled}
 						/>
 					</div>
 				</div>

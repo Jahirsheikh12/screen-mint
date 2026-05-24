@@ -80,7 +80,7 @@ function getWebcamTreatmentStatusClasses(tone: "neutral" | "warning" | "info"): 
 		case "neutral":
 		default:
 			return {
-				container: "border-white/[0.06] bg-black/10",
+				container: "border-white/5 bg-black/10",
 				title: "text-slate-200",
 				body: "text-slate-400",
 			};
@@ -246,7 +246,7 @@ export function WebcamSettingsTab({
 							{tSettings("webcam.resetLayout")}
 						</Button>
 					) : (
-						<div className="h-8 rounded-xl border border-white/[0.06] bg-white/[0.02] px-2 text-[10px] font-medium text-slate-500 flex items-center justify-center">
+						<div className="h-8 rounded-xl border border-white/5 bg-white/[0.02] px-2 text-[10px] font-medium text-slate-500 flex items-center justify-center">
 							{tSettings("webcam.recommendedDefaults")}
 						</div>
 					)}
@@ -254,7 +254,7 @@ export function WebcamSettingsTab({
 
 				<DisabledSettingsGroup disabled={webcamControlsDisabled}>
 					{selectedCameraLayout && (
-						<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+						<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 							<label className="text-xs font-medium text-slate-300 mb-2 block">
 								{tSettings("webcam.cameraLayout")}
 							</label>
@@ -275,7 +275,7 @@ export function WebcamSettingsTab({
 											"h-9 rounded-lg border shadow-sm transition-all duration-200 justify-center",
 											selectedCameraLayout.mode === mode
 												? "border-[#F59E0B] bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-white shadow-sm shadow-[#F59E0B]/20"
-												: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08]",
+												: "border-white/5 bg-white/[0.04] text-slate-400 hover:bg-white/[0.08]",
 										)}
 									>
 										<span className="text-xs font-semibold">{label}</span>
@@ -283,7 +283,7 @@ export function WebcamSettingsTab({
 								))}
 							</div>
 							<div className="mt-3 grid grid-cols-1 gap-2">
-								<div className="rounded-lg border border-white/[0.06] bg-black/10 p-2">
+								<div className="rounded-lg border border-white/5 bg-black/10 p-2">
 									<SliderControl
 										label="Transition in"
 										value={selectedCameraLayout.transitionInMs ?? 260}
@@ -301,7 +301,7 @@ export function WebcamSettingsTab({
 										disabled={webcamControlsDisabled}
 									/>
 								</div>
-								<div className="rounded-lg border border-white/[0.06] bg-black/10 p-2">
+								<div className="rounded-lg border border-white/5 bg-black/10 p-2">
 									<SliderControl
 										label="Transition out"
 										value={selectedCameraLayout.transitionOutMs ?? 220}
@@ -319,7 +319,7 @@ export function WebcamSettingsTab({
 										disabled={webcamControlsDisabled}
 									/>
 								</div>
-								<div className="rounded-lg border border-white/[0.06] bg-black/10 p-2">
+								<div className="rounded-lg border border-white/5 bg-black/10 p-2">
 									<label className="mb-2 block text-xs font-medium text-slate-300">
 										Motion preset
 									</label>
@@ -338,7 +338,7 @@ export function WebcamSettingsTab({
 													"h-8 rounded-lg border text-[10px] transition-all duration-200",
 													(selectedCameraLayout.motionPreset ?? "focused") === preset
 														? "border-[#F59E0B]/40 bg-[#F59E0B]/10 text-[#fde68a]"
-														: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08]",
+														: "border-white/5 bg-white/[0.04] text-slate-400 hover:bg-white/[0.08]",
 												)}
 											>
 												{preset}
@@ -351,7 +351,7 @@ export function WebcamSettingsTab({
 					)}
 				</DisabledSettingsGroup>
 
-				<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+				<div className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 					<div>
 						<div className="text-xs font-medium text-slate-300">
 							{tSettings("webcam.showWebcam")}
@@ -366,7 +366,7 @@ export function WebcamSettingsTab({
 				</div>
 
 				<DisabledSettingsGroup disabled={webcamControlsDisabled}>
-					<div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+					<div className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 						<div>
 							<div className="text-xs font-medium text-slate-300">
 								{tSettings("webcam.mirrorCamera")}
@@ -391,7 +391,7 @@ export function WebcamSettingsTab({
 					description="Place and resize your webcam on the canvas"
 					accentColor="amber"
 				>
-					<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+					<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 						<label className="text-xs font-medium text-slate-300 mb-2 block">
 							{tSettings("webcam.position")}
 						</label>
@@ -416,7 +416,7 @@ export function WebcamSettingsTab({
 										"h-8 rounded-lg border text-[10px] transition-all duration-200",
 										webcamRegion.anchor === preset.anchor
 											? "border-[#F59E0B]/40 bg-[#F59E0B]/10 text-[#fde68a] shadow-sm shadow-[#F59E0B]/10"
-											: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08]",
+											: "border-white/5 bg-white/[0.04] text-slate-400 hover:bg-white/[0.08]",
 									)}
 								>
 									{preset.label}
@@ -425,7 +425,7 @@ export function WebcamSettingsTab({
 						</div>
 					</div>
 
-					<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+					<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 						<SliderControl
 							label={tSettings("webcam.size")}
 							value={webcamSizeValue}
@@ -440,7 +440,7 @@ export function WebcamSettingsTab({
 						/>
 					</div>
 
-					<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+					<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 						<SliderControl
 							label={tSettings("webcam.cameraDuringZoom")}
 							value={cameraSizeDuringZoom}
@@ -477,7 +477,7 @@ export function WebcamSettingsTab({
 					description="Match the webcam look and treatment to the rest of your edit"
 					accentColor="amber"
 				>
-					<div className="rounded-2xl border border-white/[0.06] bg-white/[0.04] p-3">
+					<div className="rounded-2xl border border-white/5 bg-white/[0.04] p-3">
 						<div className="mb-2 flex items-center justify-between">
 							<div>
 								<div className="text-[11px] font-semibold text-slate-200">Studio presets</div>
@@ -498,7 +498,7 @@ export function WebcamSettingsTab({
 										"h-9 rounded-xl border px-2 text-[10px] font-semibold transition-all duration-200",
 										resolvedWebcamEffects.presetId === preset.id
 											? "border-[#F59E0B]/40 bg-gradient-to-r from-[#F59E0B]/20 to-[#d97706]/10 text-[#fde68a] shadow-sm shadow-[#F59E0B]/10"
-											: "border-white/[0.06] bg-black/10 text-slate-300 hover:bg-white/[0.08]",
+											: "border-white/5 bg-black/10 text-slate-300 hover:bg-white/[0.08]",
 									)}
 								>
 									{preset.label}
@@ -507,7 +507,7 @@ export function WebcamSettingsTab({
 						</div>
 					</div>
 
-					<div className="rounded-2xl border border-white/[0.06] bg-white/[0.04] p-3">
+					<div className="rounded-2xl border border-white/5 bg-white/[0.04] p-3">
 						<div className="mb-3 flex items-center justify-between">
 							<div>
 								<div className="text-[11px] font-semibold text-slate-200">Background treatment</div>
@@ -546,7 +546,7 @@ export function WebcamSettingsTab({
 							) : null}
 						</div>
 
-						<div className="mb-3 rounded-xl border border-white/[0.06] bg-black/10 p-2.5">
+						<div className="mb-3 rounded-xl border border-white/5 bg-black/10 p-2.5">
 							<div className="mb-2 text-[11px] font-medium text-slate-300">Preview mode</div>
 							<div className="grid grid-cols-3 gap-1.5">
 								{(
@@ -565,7 +565,7 @@ export function WebcamSettingsTab({
 											"h-8 rounded-lg border text-[10px] transition-all duration-200",
 											webcamPreviewMode === mode
 												? "border-[#F59E0B]/40 bg-[#F59E0B]/12 text-[#fde68a]"
-												: "border-white/[0.06] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08]",
+												: "border-white/5 bg-white/[0.04] text-slate-400 hover:bg-white/[0.08]",
 										)}
 									>
 										{label}
@@ -597,7 +597,7 @@ export function WebcamSettingsTab({
 							}
 							className="w-full"
 						>
-							<TabsList className="mb-3 grid h-9 w-full grid-cols-4 rounded-xl border border-white/[0.06] bg-black/10 p-0.5">
+							<TabsList className="mb-3 grid h-9 w-full grid-cols-4 rounded-xl border border-white/5 bg-black/10 p-0.5">
 								{(["none", "blur", "solid", "image"] as const).map((mode) => (
 									<TabsTrigger
 										key={mode}
@@ -612,7 +612,7 @@ export function WebcamSettingsTab({
 						</Tabs>
 
 						{resolvedWebcamEffects.backgroundMode === "solid" && (
-							<div className="rounded-xl border border-white/[0.06] bg-black/10 p-2.5">
+							<div className="rounded-xl border border-white/5 bg-black/10 p-2.5">
 								<label className="mb-1 block text-[11px] font-medium text-slate-300">
 									Background color
 								</label>
@@ -639,7 +639,7 @@ export function WebcamSettingsTab({
 						)}
 
 						{resolvedWebcamEffects.backgroundMode === "image" && (
-							<div className="space-y-2 rounded-xl border border-white/[0.06] bg-black/10 p-2.5">
+							<div className="space-y-2 rounded-xl border border-white/5 bg-black/10 p-2.5">
 								<div className="flex items-center justify-between gap-2">
 									<div>
 										<div className="text-[11px] font-medium text-slate-200">Background image</div>
@@ -657,7 +657,7 @@ export function WebcamSettingsTab({
 										Browse
 									</Button>
 								</div>
-								<div className="truncate rounded-lg border border-white/[0.06] bg-white/[0.04] px-2.5 py-2 text-[10px] text-slate-300">
+								<div className="truncate rounded-lg border border-white/5 bg-white/[0.04] px-2.5 py-2 text-[10px] text-slate-300">
 									{resolvedWebcamEffects.backgroundImagePath ?? "No image selected"}
 								</div>
 								{resolvedWebcamEffects.backgroundImagePath ? (
@@ -681,7 +681,7 @@ export function WebcamSettingsTab({
 						)}
 
 						{resolvedWebcamEffects.backgroundMode === "blur" && (
-							<div className="rounded-xl border border-white/[0.06] bg-black/10 p-2.5">
+							<div className="rounded-xl border border-white/5 bg-black/10 p-2.5">
 								<SliderControl
 									label="Background blur"
 									value={resolvedWebcamEffects.backgroundBlurStrength}
@@ -704,7 +704,7 @@ export function WebcamSettingsTab({
 
 						{resolvedWebcamEffects.backgroundMode !== "none" &&
 						webcamEffectCapability.canApplyEdgeFeather ? (
-							<div className="mt-2 rounded-xl border border-white/[0.06] bg-black/10 p-2.5">
+							<div className="mt-2 rounded-xl border border-white/5 bg-black/10 p-2.5">
 								<SliderControl
 									label="Edge feather"
 									value={resolvedWebcamEffects.edgeFeather}
@@ -731,7 +731,7 @@ export function WebcamSettingsTab({
 						) : null}
 					</div>
 
-					<div className="rounded-2xl border border-white/[0.06] bg-white/[0.04] p-3">
+					<div className="rounded-2xl border border-white/5 bg-white/[0.04] p-3">
 						<div className="mb-2 text-[11px] font-semibold text-slate-200">Frame styling</div>
 						<div className="grid grid-cols-3 gap-1.5">
 							{(["circle", "square", "rectangle"] as const).map((shape) => (
@@ -744,7 +744,7 @@ export function WebcamSettingsTab({
 										"h-9 rounded-xl border shadow-sm transition-all duration-200 justify-center",
 										webcamRegion.shape === shape
 											? "border-[#F59E0B] bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-white shadow-sm shadow-[#F59E0B]/20"
-											: "border-white/[0.06] bg-black/10 text-slate-400 hover:bg-white/[0.08]",
+											: "border-white/5 bg-black/10 text-slate-400 hover:bg-white/[0.08]",
 									)}
 								>
 									<span className="text-[10px] font-semibold capitalize">{shape}</span>
@@ -752,7 +752,7 @@ export function WebcamSettingsTab({
 							))}
 						</div>
 
-						<div className="mt-2 rounded-xl border border-white/[0.06] bg-black/10 p-2.5">
+						<div className="mt-2 rounded-xl border border-white/5 bg-black/10 p-2.5">
 							<SliderControl
 								label={tSettings("webcam.borderWidth")}
 								value={webcamRegion.borderWidth}
@@ -768,7 +768,7 @@ export function WebcamSettingsTab({
 						</div>
 
 						{(webcamRegion.shape === "rectangle" || webcamRegion.shape === "square") && (
-							<div className="mt-2 rounded-xl border border-white/[0.06] bg-black/10 p-2.5">
+							<div className="mt-2 rounded-xl border border-white/5 bg-black/10 p-2.5">
 								<SliderControl
 									label={tSettings("webcam.roundness")}
 									value={webcamRegion.borderRadius}
@@ -786,7 +786,7 @@ export function WebcamSettingsTab({
 					</div>
 
 					{/*
-					<div className="rounded-2xl border border-white/[0.06] bg-white/[0.04] p-3">
+					<div className="rounded-2xl border border-white/5 bg-white/[0.04] p-3">
 						<div className="mb-2 flex items-center justify-between">
 							<div>
 								<div className="text-xs font-medium text-slate-300">Webcam health</div>
@@ -797,61 +797,61 @@ export function WebcamSettingsTab({
 							<Gauge className="h-4 w-4 text-[#F59E0B]" />
 						</div>
 						<div className="grid grid-cols-2 gap-2 text-[11px] text-slate-300">
-							<div className="rounded-lg border border-white/[0.06] bg-black/10 px-2.5 py-2">
+							<div className="rounded-lg border border-white/5 bg-black/10 px-2.5 py-2">
 								<div className="text-slate-500">Preview mode</div>
 								<div className="mt-1 font-semibold capitalize">
 									{(webcamHealthMetrics?.previewMode ?? webcamPreviewMode).replace(/-/g, " ")}
 								</div>
 							</div>
-							<div className="rounded-lg border border-white/[0.06] bg-black/10 px-2.5 py-2">
+							<div className="rounded-lg border border-white/5 bg-black/10 px-2.5 py-2">
 								<div className="text-slate-500">Target FPS</div>
 								<div className="mt-1 font-semibold">
 									{Math.round(webcamHealthMetrics?.targetFps ?? 0)}
 								</div>
 							</div>
-							<div className="rounded-lg border border-white/[0.06] bg-black/10 px-2.5 py-2">
+							<div className="rounded-lg border border-white/5 bg-black/10 px-2.5 py-2">
 								<div className="text-slate-500">Observed FPS</div>
 								<div className="mt-1 font-semibold">
 									{(webcamHealthMetrics?.observedFps ?? 0).toFixed(1)}
 								</div>
 							</div>
-							<div className="rounded-lg border border-white/[0.06] bg-black/10 px-2.5 py-2">
+							<div className="rounded-lg border border-white/5 bg-black/10 px-2.5 py-2">
 								<div className="text-slate-500">Segmentation FPS</div>
 								<div className="mt-1 font-semibold">
 									{(webcamHealthMetrics?.segmentationFps ?? 0).toFixed(1)}
 								</div>
 							</div>
-							<div className="rounded-lg border border-white/[0.06] bg-black/10 px-2.5 py-2">
+							<div className="rounded-lg border border-white/5 bg-black/10 px-2.5 py-2">
 								<div className="text-slate-500">Dropped ratio</div>
 								<div className="mt-1 font-semibold">
 									{Math.round((webcamHealthMetrics?.droppedFrameRatio ?? 0) * 100)}%
 								</div>
 							</div>
-							<div className="rounded-lg border border-white/[0.06] bg-black/10 px-2.5 py-2">
+							<div className="rounded-lg border border-white/5 bg-black/10 px-2.5 py-2">
 								<div className="text-slate-500">Fallback</div>
 								<div className="mt-1 font-semibold capitalize">
 									{(webcamHealthMetrics?.effectFallbackState ?? "none").replace(/-/g, " ")}
 								</div>
 							</div>
-							<div className="rounded-lg border border-white/[0.06] bg-black/10 px-2.5 py-2">
+							<div className="rounded-lg border border-white/5 bg-black/10 px-2.5 py-2">
 								<div className="text-slate-500">Preview tier</div>
 								<div className="mt-1 font-semibold capitalize">
 									{(webcamHealthMetrics?.previewQualityTier ?? "full-preview").replace(/-/g, " ")}
 								</div>
 							</div>
-							<div className="rounded-lg border border-white/[0.06] bg-black/10 px-2.5 py-2">
+							<div className="rounded-lg border border-white/5 bg-black/10 px-2.5 py-2">
 								<div className="text-slate-500">Configured mode</div>
 								<div className="mt-1 font-semibold capitalize">
 									{webcamHealthMetrics?.configuredBackgroundMode ?? "none"}
 								</div>
 							</div>
-							<div className="rounded-lg border border-white/[0.06] bg-black/10 px-2.5 py-2">
+							<div className="rounded-lg border border-white/5 bg-black/10 px-2.5 py-2">
 								<div className="text-slate-500">Applied mode</div>
 								<div className="mt-1 font-semibold capitalize">
 									{webcamHealthMetrics?.appliedBackgroundMode ?? "none"}
 								</div>
 							</div>
-							<div className="rounded-lg border border-white/[0.06] bg-black/10 px-2.5 py-2">
+							<div className="rounded-lg border border-white/5 bg-black/10 px-2.5 py-2">
 								<div className="text-slate-500">Segmentation size</div>
 								<div className="mt-1 font-semibold">
 									{webcamHealthMetrics?.segmentationWorkingWidth &&
@@ -860,7 +860,7 @@ export function WebcamSettingsTab({
 										: "n/a"}
 								</div>
 							</div>
-							<div className="rounded-lg border border-white/[0.06] bg-black/10 px-2.5 py-2">
+							<div className="rounded-lg border border-white/5 bg-black/10 px-2.5 py-2">
 								<div className="text-slate-500">Render scale</div>
 								<div className="mt-1 font-semibold">
 									{webcamHealthMetrics?.renderResolutionScale
@@ -868,7 +868,7 @@ export function WebcamSettingsTab({
 										: "n/a"}
 								</div>
 							</div>
-							<div className="rounded-lg border border-white/[0.06] bg-black/10 px-2.5 py-2">
+							<div className="rounded-lg border border-white/5 bg-black/10 px-2.5 py-2">
 								<div className="text-slate-500">Segmentation provider</div>
 								<div className="mt-1 font-semibold capitalize">
 									{(webcamHealthMetrics?.segmentationProviderStatus ?? "not-required").replace(
@@ -877,19 +877,19 @@ export function WebcamSettingsTab({
 									)}
 								</div>
 							</div>
-							<div className="rounded-lg border border-white/[0.06] bg-black/10 px-2.5 py-2">
+							<div className="rounded-lg border border-white/5 bg-black/10 px-2.5 py-2">
 								<div className="text-slate-500">Drift</div>
 								<div className="mt-1 font-semibold">
 									{`${Math.round(webcamHealthMetrics?.driftMs ?? 0)}ms`}
 								</div>
 							</div>
-							<div className="rounded-lg border border-white/[0.06] bg-black/10 px-2.5 py-2">
+							<div className="rounded-lg border border-white/5 bg-black/10 px-2.5 py-2">
 								<div className="text-slate-500">Render latency</div>
 								<div className="mt-1 font-semibold">
 									{`${Math.round(webcamHealthMetrics?.renderLatencyMs ?? 0)}ms`}
 								</div>
 							</div>
-							<div className="rounded-lg border border-white/[0.06] bg-black/10 px-2.5 py-2">
+							<div className="rounded-lg border border-white/5 bg-black/10 px-2.5 py-2">
 								<div className="text-slate-500">Frame queue</div>
 								<div className="mt-1 font-semibold">
 									{Math.round(webcamHealthMetrics?.frameQueueDepth ?? 0)}
@@ -897,7 +897,7 @@ export function WebcamSettingsTab({
 							</div>
 						</div>
 						{webcamHealthMetrics?.fallbackReason ? (
-							<div className="mt-2 rounded-lg border border-white/[0.06] bg-black/10 px-2.5 py-2 text-[10px] text-slate-400">
+							<div className="mt-2 rounded-lg border border-white/5 bg-black/10 px-2.5 py-2 text-[10px] text-slate-400">
 								{webcamHealthMetrics.fallbackReason}
 							</div>
 						) : null}
@@ -905,7 +905,7 @@ export function WebcamSettingsTab({
 					*/}
 				</SettingsSection>
 
-				<div className="mb-3 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5 transition-colors duration-200 hover:bg-white/[0.06]">
+				<div className="mb-3 rounded-xl border border-white/5 bg-black/30 px-3 py-2.5 transition-colors duration-200 hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]">
 					<button
 						type="button"
 						onClick={onToggleAdvancedWebcam}
@@ -937,7 +937,7 @@ export function WebcamSettingsTab({
 						accentColor="amber"
 						className="animate-in fade-in slide-in-from-top-2 duration-200"
 					>
-						<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+						<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 							<SliderControl
 								label={tSettings("webcam.opacity")}
 								value={webcamRegion.opacity}
@@ -952,7 +952,7 @@ export function WebcamSettingsTab({
 							/>
 						</div>
 
-						<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+						<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 							<SliderControl
 								label="Portrait scale"
 								value={resolvedWebcamEffects.portraitScale}
@@ -969,7 +969,7 @@ export function WebcamSettingsTab({
 							/>
 						</div>
 
-						<div className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.04] p-2.5">
+						<div className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.04] p-2.5">
 							<div>
 								<div className="text-xs font-medium text-slate-300">Subtle avoidance</div>
 								<div className="mt-0.5 text-[10px] text-slate-500">
@@ -987,7 +987,7 @@ export function WebcamSettingsTab({
 						</div>
 
 						{resolvedWebcamEffects.backgroundMode === "image" && (
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors duration-200">
+							<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 								<label className="mb-1 block text-[11px] font-medium text-slate-300">
 									Background image path
 								</label>
@@ -1008,7 +1008,7 @@ export function WebcamSettingsTab({
 						)}
 
 						<div className="grid grid-cols-2 gap-2">
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+							<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner">
 								<SliderControl
 									label="Exposure"
 									value={resolvedWebcamEffects.exposure}
@@ -1024,7 +1024,7 @@ export function WebcamSettingsTab({
 									disabled={webcamControlsDisabled}
 								/>
 							</div>
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+							<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner">
 								<SliderControl
 									label="Contrast"
 									value={resolvedWebcamEffects.contrast}
@@ -1040,7 +1040,7 @@ export function WebcamSettingsTab({
 									disabled={webcamControlsDisabled}
 								/>
 							</div>
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+							<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner">
 								<SliderControl
 									label="Saturation"
 									value={resolvedWebcamEffects.saturation}
@@ -1056,7 +1056,7 @@ export function WebcamSettingsTab({
 									disabled={webcamControlsDisabled}
 								/>
 							</div>
-							<div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+							<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner">
 								<SliderControl
 									label="Warmth"
 									value={resolvedWebcamEffects.warmth}

@@ -30,6 +30,7 @@
     "dist-electron",
     "electron/native",
     "!dist/wallpapers{,/**}",
+    "!node_modules/three{,/**}",
     "!**/node_modules/ffmpeg-static/{LICENSE,README.md,example.js,ffmpeg.LICENSE,ffmpeg.README,install.js,types{,/**}}",
     "!*.png",
     "!preview*.png",
@@ -73,7 +74,7 @@
       "AppImage"
     ],
     "icon": "icons/icons/png",
-    "artifactName": "ScreenMint-linux-x64.${ext}",
+    "artifactName": "ScreenMint-linux-${arch}.${ext}",
     "category": "AudioVideo"
   },
   "win": {

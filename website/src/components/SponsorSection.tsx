@@ -110,7 +110,8 @@ export function SponsorSection() {
 								<p className="text-[14px] font-medium text-white">
 									{supportState.status === "success" ? (
 										<>
-											<span className="text-brand-400">Support Received:</span> Thank you for supporting ScreenMint{supportProduct ? ` with ${supportProduct.name}` : ""}!
+											<span className="text-brand-400">Support Received:</span> Thank you for
+											supporting ScreenMint{supportProduct ? ` with ${supportProduct.name}` : ""}!
 										</>
 									) : (
 										<>Checkout Cancelled. No worries!</>
@@ -120,7 +121,9 @@ export function SponsorSection() {
 									href={SUPPORT_EMAIL_HREF}
 									className="text-[12px] text-white/50 transition-colors hover:text-white"
 								>
-									{supportState.status === "success" ? "Need billing help?" : "Having issues? Contact us."}
+									{supportState.status === "success"
+										? "Need billing help?"
+										: "Having issues? Contact us."}
 								</a>
 							</div>
 							<div className="h-6 w-[1px] bg-white/10 mx-2" />
@@ -156,7 +159,9 @@ export function SponsorSection() {
 									</div>
 									<div>
 										<p className="sponsor-eyebrow mb-0.5">Primary Support</p>
-										<p className="text-[15px] font-bold tracking-tight text-white">GitHub Sponsors</p>
+										<p className="text-[15px] font-bold tracking-tight text-white">
+											GitHub Sponsors
+										</p>
 									</div>
 								</div>
 								<Badge className="border-brand-500/20 bg-brand-500/10 text-brand-400 hover:bg-brand-500/20 shadow-none font-medium text-[11px] uppercase tracking-widest hidden sm:inline-flex">
@@ -169,9 +174,9 @@ export function SponsorSection() {
 							</h3>
 
 							<p className="text-[16px] text-white/40 leading-relaxed max-w-2xl mb-10 flex-grow">
-								Sponsorship keeps the project sustainable without turning the app into a paid product.
-								It helps fund bug fixes, platform support, and future releases without gating the app
-								behind accounts, telemetry, or paywalls.
+								Sponsorship keeps the project sustainable without turning the app into a paid
+								product. It helps fund bug fixes, platform support, and future releases without
+								gating the app behind accounts, telemetry, or paywalls.
 							</p>
 
 							<div>
@@ -217,7 +222,9 @@ export function SponsorSection() {
 												>
 													<Icon
 														className={`w-6 h-6 ${
-															isPopular ? "text-brand-400" : "text-white/40 group-hover:text-brand-300"
+															isPopular
+																? "text-brand-400"
+																: "text-white/40 group-hover:text-brand-300"
 														} transition-colors duration-300`}
 														strokeWidth={1.5}
 													/>
@@ -247,12 +254,15 @@ export function SponsorSection() {
 					<div className="sponsor-creem-strip will-animate">
 						<div className="flex flex-col justify-center shrink-0 w-[280px] md:w-72 pr-6 md:pr-10">
 							<p className="sponsor-eyebrow mb-3 text-white/40">Support via Card</p>
-							<h4 className="text-[24px] font-bold tracking-tight text-white mb-3">One-time Support</h4>
+							<h4 className="text-[24px] font-bold tracking-tight text-white mb-3">
+								One-time Support
+							</h4>
 							<p className="text-[14px] leading-relaxed text-white/30">
-								Prefer a single card checkout instead of recurring GitHub sponsors? Pick an option here.
+								Prefer a single card checkout instead of recurring GitHub sponsors? Pick an option
+								here.
 							</p>
 						</div>
-						
+
 						{CREEM_PRODUCTS.map((product) => (
 							<a
 								key={product.id}
@@ -285,4 +295,3 @@ export function SponsorSection() {
 		</section>
 	);
 }
-

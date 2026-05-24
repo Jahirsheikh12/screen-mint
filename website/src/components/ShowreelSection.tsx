@@ -128,7 +128,6 @@ export function ShowreelSection() {
 
 					{/* Expanded Max-Width for a wider preview grid */}
 					<div className="max-w-[1600px] w-full mx-auto px-6 md:px-12 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-12 items-center h-full max-h-[900px] py-16 relative z-10">
-						
 						{/* Left Column: Typography / Content (Now narrower: col-span-4) */}
 						<div className="lg:col-span-4 flex flex-col justify-center relative h-[300px] lg:h-[400px]">
 							<div className="absolute top-0 left-0 w-full text-left">
@@ -195,17 +194,16 @@ export function ShowreelSection() {
 												loading={i === 0 ? "eager" : "lazy"}
 											/>
 										))}
-										
+
 										{/* Subtle inner shadow / vignette over the media */}
 										<div className="absolute inset-0 shadow-[inset_0_0_80px_rgba(0,0,0,0.8)] pointer-events-none" />
-										
+
 										{/* Glass reflection overlay */}
 										<div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.02] to-white/[0.08] pointer-events-none mix-blend-overlay" />
 									</div>
 								</div>
 							</div>
 						</div>
-
 					</div>
 				</div>
 			</div>

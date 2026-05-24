@@ -15,21 +15,32 @@ export function SettingsSection({
 	className?: string;
 	accentColor?: "amber" | "blue" | "red";
 }) {
-	const borderMap = {
-		amber: "border-l-amber-500/60",
-		blue: "border-l-blue-500/60",
-		red: "border-l-red-500/60",
-	};
-
 	return (
-		<div className={cn("mb-5 last:mb-2", className)}>
-			<div className={cn("mb-2 pl-2.5 border-l-2", borderMap[accentColor])}>
-				<h3 className="text-[11px] font-semibold text-slate-200 tracking-wide">{title}</h3>
+		<div
+			className={cn(
+				"mb-6 relative rounded-xl border border-white/10 bg-black/20 p-4 pt-5 shadow-[0_8px_32px_rgba(0,0,0,0.2)] backdrop-blur-md overflow-hidden",
+				className,
+			)}
+		>
+			<div
+				className={cn(
+					"absolute left-0 top-0 h-[1px] w-full bg-gradient-to-r to-transparent opacity-60",
+					accentColor === "amber" && "from-amber-500",
+					accentColor === "blue" && "from-blue-500",
+					accentColor === "red" && "from-red-500",
+				)}
+			/>
+			<div className="mb-4 pl-1">
+				<h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-400 flex items-center gap-2">
+					{title}
+				</h3>
 				{description && (
-					<p className="text-[10px] text-slate-500 mt-0.5 leading-relaxed">{description}</p>
+					<p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed font-medium">
+						{description}
+					</p>
 				)}
 			</div>
-			<div className="flex flex-col gap-1.5">{children}</div>
+			<div className="flex flex-col gap-3">{children}</div>
 		</div>
 	);
 }
@@ -91,10 +102,11 @@ export function TabHeader({
 	};
 
 	return (
-		<div className="mb-5 pb-3 border-b border-white/[0.06]">
+		<div className="mb-6 pb-4 border-b border-white/[0.04] relative">
+			<div className="absolute bottom-0 left-0 w-1/3 h-[1px] bg-gradient-to-r from-amber-500/50 to-transparent" />
 			<div className="flex items-center justify-between">
-				<div className="flex items-center gap-2">
-					<span className="text-[13px] font-semibold text-white tracking-tight">{title}</span>
+				<div className="flex items-center gap-2.5">
+					<span className="text-[14px] font-bold text-white tracking-tight">{title}</span>
 					{badge && (
 						<span
 							className={cn(
@@ -109,7 +121,9 @@ export function TabHeader({
 				{trailing}
 			</div>
 			{description && (
-				<p className="text-[11px] text-slate-500 mt-1.5 leading-relaxed">{description}</p>
+				<p className="text-[12px] text-slate-400 mt-1.5 leading-relaxed font-medium">
+					{description}
+				</p>
 			)}
 		</div>
 	);
@@ -140,21 +154,18 @@ export function SidebarTabButton({
 			onMouseEnter={onMouseEnter}
 			onMouseLeave={onMouseLeave}
 			className={cn(
-				"relative flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-300 ease-out group",
+				"relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 ease-out group",
 				isActive
-					? "bg-gradient-to-br from-[#F59E0B] to-[#d97706] text-white shadow-lg shadow-[#F59E0B]/25 scale-105"
-					: "text-slate-500 hover:text-slate-200 hover:bg-white/[0.06] hover:scale-105 active:scale-95",
+					? "bg-amber-500/10 text-amber-400 shadow-[inset_0_0_12px_rgba(245,158,11,0.2)] border border-amber-500/20"
+					: "text-slate-400 hover:text-slate-200 hover:bg-white/5 border border-transparent",
 			)}
 		>
 			<Icon
 				className={cn(
-					"w-[18px] h-[18px] transition-transform duration-300",
-					isActive && "drop-shadow-sm",
+					"w-5 h-5 transition-transform duration-300",
+					isActive && "scale-110 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]",
 				)}
 			/>
-			{isActive && (
-				<div className="absolute inset-0 rounded-lg bg-[#F59E0B]/10 animate-pulse pointer-events-none" />
-			)}
 		</button>
 	);
 }

@@ -30,6 +30,7 @@ import {
 	resolveGifFfmpegLoop,
 } from "../../src/lib/exporter/gifFfmpeg";
 import { compileNativeComposedExport } from "../../src/lib/exporter/nativeComposed";
+import { isFeatureEnabled } from "../../src/lib/featureFlags";
 import { buildCollisionFileName, ensureFileExtension } from "../../src/lib/fileNames";
 import type { PostRecordingContext } from "../../src/lib/recording/postRecording";
 import type {
@@ -56,10 +57,13 @@ import {
 } from "./cursorTelemetryUtils";
 import { registerExportFileIpcHandlers } from "./exportFileHandlers";
 import { registerExportV2StreamIpcHandlers } from "./exportV2StreamHandlers";
+import { registerHostValidationIpcHandlers } from "./hostValidationHandlers";
+import { registerLayeredCaptureIpcHandlers } from "./layeredCaptureHandlers";
 import { registerMobileCaptureIpcHandlers } from "./mobileCaptureHandlers";
 import { registerPermissionDiagnosticsIpcHandlers } from "./permissionDiagnosticsHandlers";
 import { registerPostRecordingIpcHandlers } from "./postRecordingHandlers";
 import { registerProjectFileIpcHandlers } from "./projectFileHandlers";
+import { registerScreenshotIpcHandlers } from "./screenshotHandlers";
 import { registerSystemSettingsIpcHandlers } from "./systemSettingsHandlers";
 import { registerTelemetryReadIpcHandlers } from "./telemetryReadHandlers";
 
@@ -4380,6 +4384,16 @@ export function registerIpcHandlers(
 		getSourceSelectorWindow,
 		getNativeMacWindowSources,
 	});
+	registerScreenshotIpcHandlers({
+		getRecordingsDir,
+		getSelectedSource: () => selectedSource,
+		getSelectedArea: () => selectedArea,
+		getScreen,
+		writeBufferToUniqueFile,
+		isEnabled: () => isFeatureEnabled("screenshots"),
+	});
+	registerLayeredCaptureIpcHandlers();
+	registerHostValidationIpcHandlers();
 	registerPermissionDiagnosticsIpcHandlers({
 		appBundleId: APP_BUNDLE_ID,
 		getAppBundlePath,
@@ -5287,8 +5301,7 @@ export function registerIpcHandlers(
 		IPC_CHANNELS.exportV2.start,
 		async (event, request: ExportV2StartRequest): Promise<ExportV2StartResult> => {
 			const capabilities = getCachedExportV2Capabilities();
-			const canUseGifPipeline =
-				request.format === "gif" && capabilities.gif.ffmpegPalettePipeline;
+			const canUseGifPipeline = request.format === "gif" && capabilities.gif.ffmpegPalettePipeline;
 			if (!capabilities.enabled && !canUseGifPipeline) {
 				return {
 					success: false,

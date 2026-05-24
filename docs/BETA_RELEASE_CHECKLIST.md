@@ -55,6 +55,9 @@ Use this checklist before publishing a public beta release.
 
 ## Platform Checks
 
+Use [the platform validation matrix](./PLATFORM_VALIDATION_MATRIX.md) as the source of truth for
+real-host certification before making "fully working" platform claims.
+
 - macOS: verify Screen Recording, Microphone, Accessibility, and Speech Recognition flows.
 - macOS: verify unsigned build instructions or signing/notarization status.
 - Windows: verify `npm run build:wgc-capture`, `npm run build:cursor-monitor`, WGC capture, and

@@ -6,9 +6,11 @@ import {
 	FolderOpen,
 	Keyboard,
 	Languages,
+	Layers,
 	Pencil,
 	Redo2,
 	Save,
+	SlidersHorizontal,
 	Sparkles,
 	SplitSquareHorizontal,
 	Trash2,
@@ -48,6 +50,7 @@ import { useShortcuts } from "@/contexts/ShortcutsContext";
 import { type AppLocale, SUPPORTED_LOCALES } from "@/i18n/config";
 import { getBackgroundMusicAssetById } from "@/lib/backgroundMusic";
 import {
+	buildLayeredExportComposition,
 	type ExportDestination,
 	type ExportDetails,
 	type ExportFormat,
@@ -56,6 +59,8 @@ import {
 	type ExportV2StartRequest,
 	type GifExportConfig,
 	GifExporter,
+	getGifExportSettingsForPreset,
+	getVideoExportSettingsForPreset,
 	resolveGifExportPlan,
 	resolveVideoExportPlan,
 	StreamingVideoDecoder,
@@ -69,7 +74,9 @@ import {
 	normalizeVideoDisplayName,
 } from "@/lib/fileNames";
 import { type AspectRatio, getAspectRatioValue } from "@/utils/aspectRatioUtils";
+import { type AudioMixSettings, DEFAULT_AUDIO_MIX_SETTINGS } from "./audioMix";
 import { loadAudioSelectionDurationMs } from "./audioRegionUtils";
+import { type AutoPolishContentType, buildAutoPolishResult } from "./autoPolish";
 import { ConfirmActionDialog, PresetNameDialog } from "./EditorDialogs";
 import { ExportDialog } from "./ExportDialog";
 import { ExportSettingsDialog } from "./ExportSettingsDialog";
@@ -95,6 +102,8 @@ import {
 } from "./exportUtils";
 import { getLegacyShadowIntensityFromFrameShadow } from "./frameEffects";
 import { deriveKeyboardShortcutCallouts } from "./keyboardShortcuts";
+import { LayerPanel } from "./LayerPanel";
+import { type EditorLayer, ensurePrimaryVideoLayer } from "./layerModel";
 import {
 	type PostRecordingAutoZoomBootstrapState,
 	resolvePostRecordingAutoZoomDecision,
@@ -109,7 +118,13 @@ import {
 	validateProjectData,
 } from "./projectPersistence";
 import { QuickShareDialog } from "./QuickShareDialog";
+import { SceneAudioPolishPanel } from "./SceneAudioPolishPanel";
 import SettingsPanel from "./SettingsPanel";
+import {
+	DEFAULT_SCENE_3D_SETTINGS,
+	normalizeScene3DSettings,
+	type Scene3DSettings,
+} from "./scene3d";
 import {
 	applyAutoBeautify,
 	applyScenePreset,
@@ -271,6 +286,12 @@ export default function VideoEditor() {
 	);
 	const [videoPath, setVideoPath] = useState<string | null>(null);
 	const [videoSourcePath, setVideoSourcePath] = useState<string | null>(null);
+	const [editorLayers, setEditorLayers] = useState<EditorLayer[]>([]);
+	const [scene3D, setScene3D] = useState<Scene3DSettings>(DEFAULT_SCENE_3D_SETTINGS);
+	const [audioMix, setAudioMix] = useState<AudioMixSettings>(DEFAULT_AUDIO_MIX_SETTINGS);
+	const [rightSidebarSection, setRightSidebarSection] = useState<"edit" | "layers" | "polish">(
+		"edit",
+	);
 	const {
 		videoName,
 		setVideoName,
@@ -665,6 +686,9 @@ export default function VideoEditor() {
 				videoExportSettings,
 				gifExportSettings,
 				scenePresetId,
+				layers: editorLayers,
+				scene3D,
+				audioMix,
 			}),
 		[
 			wallpaper,
@@ -739,6 +763,9 @@ export default function VideoEditor() {
 			videoExportSettings,
 			gifExportSettings,
 			scenePresetId,
+			editorLayers,
+			scene3D,
+			audioMix,
 		],
 	);
 
@@ -814,6 +841,9 @@ export default function VideoEditor() {
 			setVideoExportSettings(controls.videoExportSettings);
 			setGifExportSettings(controls.gifExportSettings);
 			setScenePresetId(controls.scenePresetId);
+			setEditorLayers(controls.layers);
+			setScene3D(normalizeScene3DSettings(controls.scene3D));
+			setAudioMix(controls.audioMix);
 
 			if (options.includeTimeline) {
 				setZoomRegions(controls.zoomRegions);
@@ -916,7 +946,9 @@ export default function VideoEditor() {
 			const loadedVideoName = normalizeVideoDisplayName(
 				project.videoName ?? deriveVideoNameFromPath(path ?? sourcePath),
 			);
-			const normalizedEditor = normalizeProjectEditor(project.editor);
+			const normalizedEditor = normalizeProjectEditor(project.editor, {
+				fallbackVideoPath: sourcePath,
+			});
 			const normalizedWebcamSessionMetadata =
 				normalizeWebcamSessionMetadata(project.webcamSessionMetadata) ?? null;
 
@@ -1220,7 +1252,26 @@ export default function VideoEditor() {
 							// Reset every editor control (and timeline data) to defaults so
 							// a brand-new recording never inherits the previous video's
 							// tweaks. Users restore prior settings via presets.
-							applyEditorControls(normalizeProjectEditor({}), { includeTimeline: true });
+							let newRecordingEditor = normalizeProjectEditor(
+								{},
+								{ fallbackVideoPath: sourcePath },
+							);
+							try {
+								const layeredResult = await window.electronAPI.getLayeredCaptureSources();
+								if (layeredResult.success && layeredResult.manifest?.layers.length) {
+									newRecordingEditor = normalizeProjectEditor(
+										{
+											...newRecordingEditor,
+											layers: ensurePrimaryVideoLayer(layeredResult.manifest.layers, sourcePath),
+										},
+										{ fallbackVideoPath: sourcePath },
+									);
+									await window.electronAPI.clearLayeredCaptureSources();
+								}
+							} catch {
+								// Layer planning is optional; the primary recording layer remains usable.
+							}
+							applyEditorControls(newRecordingEditor, { includeTimeline: true });
 							setAspectRatio("native");
 							setPadding(DEFAULT_VIDEO_PREVIEW_PADDING);
 
@@ -1245,7 +1296,9 @@ export default function VideoEditor() {
 							setWebcamSessionMetadata(null);
 							dispatchSession({ type: "set-current-project-path", path: null });
 							dispatchSession({ type: "set-last-saved-snapshot", snapshot: null });
-							applyEditorControls(normalizeProjectEditor({}), { includeTimeline: true });
+							applyEditorControls(normalizeProjectEditor({}, { fallbackVideoPath: sourcePath }), {
+								includeTimeline: true,
+							});
 							setAspectRatio("native");
 							setPadding(DEFAULT_VIDEO_PREVIEW_PADDING);
 
@@ -1439,6 +1492,9 @@ export default function VideoEditor() {
 					exportDestination,
 					videoExportSettings,
 					gifExportSettings,
+					layers: editorLayers,
+					scene3D,
+					audioMix,
 				},
 				webcamSessionMetadata: webcamSessionMetadata ?? undefined,
 			});
@@ -1545,6 +1601,9 @@ export default function VideoEditor() {
 			exportDestination,
 			videoExportSettings,
 			gifExportSettings,
+			editorLayers,
+			scene3D,
+			audioMix,
 			webcamSessionMetadata,
 		],
 	);
@@ -1718,6 +1777,42 @@ export default function VideoEditor() {
 		[cropRegion, legacyCaptureCorrectionCrop],
 	);
 
+	const activeLayeredComposition = useMemo(
+		() =>
+			buildLayeredExportComposition({
+				layers: editorLayers,
+				scene3D,
+				audioMix,
+				width: sourceVideoWidth || 1920,
+				height: sourceVideoHeight || 1080,
+				durationMs: Math.max(0, Math.round(duration * 1000)),
+				primaryVideoPath: videoSourcePath,
+			}),
+		[
+			audioMix,
+			duration,
+			editorLayers,
+			scene3D,
+			sourceVideoHeight,
+			sourceVideoWidth,
+			videoSourcePath,
+		],
+	);
+
+	const activePrimaryVideoLayer = useMemo(
+		() =>
+			activeLayeredComposition.layers.find((layer) => layer.type === "video" && layer.isPrimary) ??
+			null,
+		[activeLayeredComposition.layers],
+	);
+	const effectiveLayerCropRegion = useMemo(
+		() =>
+			activePrimaryVideoLayer?.transform.crop
+				? composeCropRegions(effectiveCropRegion, activePrimaryVideoLayer.transform.crop)
+				: effectiveCropRegion,
+		[activePrimaryVideoLayer, effectiveCropRegion],
+	);
+
 	const cursorSimulationPath = useMemo(
 		() =>
 			buildCursorSimulationPath(
@@ -1832,6 +1927,42 @@ export default function VideoEditor() {
 			toast.success("Auto Beautify applied", { description: zoomMessage });
 		},
 		[applyPresetUpdates, buildBeautifyContext, buildCurrentPresetControls],
+	);
+
+	const handleAutoPolish = useCallback(
+		(contentType: AutoPolishContentType) => {
+			const result = buildAutoPolishResult({
+				aspectRatio,
+				durationMs: Math.max(0, Math.round(duration * 1000)),
+				cursorTelemetry: effectiveCursorTelemetry,
+				captionTrack,
+				contentType,
+			});
+			setScene3D(result.scene3D);
+			setAudioMix(result.audioMix);
+			if (result.zoomRegions.length > 0) {
+				setZoomRegions(result.zoomRegions);
+				nextZoomIdRef.current = deriveNextId(
+					"zoom",
+					result.zoomRegions.map((region) => region.id),
+				);
+			}
+			setShowCursor(result.showCursor);
+			setVideoExportSettings(getVideoExportSettingsForPreset(result.exportPreset));
+			setGifExportSettings(
+				getGifExportSettingsForPreset(
+					result.exportPreset === "fast-share"
+						? "small-share"
+						: result.exportPreset === "master"
+							? "quality"
+							: result.exportPreset,
+				),
+			);
+			toast.success("Auto Polish applied", {
+				description: `${contentType.split("-").join(" ")} preset with ${result.zoomRegions.length} zoom${result.zoomRegions.length === 1 ? "" : "s"}.`,
+			});
+		},
+		[aspectRatio, captionTrack, duration, effectiveCursorTelemetry],
 	);
 
 	const handleRegenerateSmartZooms = useCallback(() => {
@@ -2944,6 +3075,11 @@ export default function VideoEditor() {
 		void syncAudioAvailability(audioRegions);
 	}, [audioRegions, syncAudioAvailability]);
 
+	useEffect(() => {
+		if (!videoSourcePath) return;
+		setEditorLayers((prev) => ensurePrimaryVideoLayer(prev, videoSourcePath, duration * 1000));
+	}, [duration, videoSourcePath]);
+
 	useVideoEditorAudioPreview({
 		audioRegions,
 		currentTime,
@@ -3191,10 +3327,10 @@ export default function VideoEditor() {
 				const previewHeight = containerElement?.clientHeight || 1080;
 
 				const isDefaultCropRegion =
-					Math.abs(effectiveCropRegion.x - DEFAULT_CROP_REGION.x) < 0.0001 &&
-					Math.abs(effectiveCropRegion.y - DEFAULT_CROP_REGION.y) < 0.0001 &&
-					Math.abs(effectiveCropRegion.width - DEFAULT_CROP_REGION.width) < 0.0001 &&
-					Math.abs(effectiveCropRegion.height - DEFAULT_CROP_REGION.height) < 0.0001;
+					Math.abs(effectiveLayerCropRegion.x - DEFAULT_CROP_REGION.x) < 0.0001 &&
+					Math.abs(effectiveLayerCropRegion.y - DEFAULT_CROP_REGION.y) < 0.0001 &&
+					Math.abs(effectiveLayerCropRegion.width - DEFAULT_CROP_REGION.width) < 0.0001 &&
+					Math.abs(effectiveLayerCropRegion.height - DEFAULT_CROP_REGION.height) < 0.0001;
 				const hasFrameShadow =
 					frameShadowOpacity > 0 && (frameShadowSize > 0 || frameShadowBlur > 0);
 				const hasCaptionExport =
@@ -3254,7 +3390,7 @@ export default function VideoEditor() {
 					borderRadius,
 					padding,
 					videoPadding: padding,
-					cropRegion: effectiveCropRegion,
+					cropRegion: effectiveLayerCropRegion,
 					aspectRatio,
 					annotationRegions,
 					zoomRegions: effectiveZoomRegions,
@@ -3476,7 +3612,7 @@ export default function VideoEditor() {
 							borderRadius,
 							padding,
 							videoPadding: padding,
-							cropRegion: effectiveCropRegion,
+							cropRegion: effectiveLayerCropRegion,
 							aspectRatio,
 							annotationRegions,
 							zoomRegions: effectiveZoomRegions,
@@ -3625,7 +3761,7 @@ export default function VideoEditor() {
 							frameBorderOpacity,
 							borderRadius,
 							padding,
-							cropRegion: effectiveCropRegion,
+							cropRegion: effectiveLayerCropRegion,
 							aspectRatio,
 							annotationRegions,
 							zoomRegions: effectiveZoomRegions,
@@ -3788,7 +3924,7 @@ export default function VideoEditor() {
 			deviceMockup,
 			borderRadius,
 			padding,
-			effectiveCropRegion,
+			effectiveLayerCropRegion,
 			annotationRegions,
 			isPlaying,
 			aspectRatio,
@@ -4196,9 +4332,13 @@ export default function VideoEditor() {
 					<PanelGroup ref={panelGroupRef} direction="vertical" className="flex-1 min-h-0">
 						{/* Top section: Video preview + Settings sidebar */}
 						<Panel defaultSize={workspaceLayoutSizes[0]} minSize={35}>
-							<div className="flex h-full pb-0 gap-3 pr-3 pl-3 pt-3">
+							<PanelGroup
+								direction="horizontal"
+								autoSaveId="video-editor-horizontal-layout"
+								className="flex h-full pb-0 pt-3 pl-3 pr-3 gap-3"
+							>
 								{/* Video preview area */}
-								<div className="flex-1 min-w-0 flex flex-col overflow-hidden rounded-xl">
+								<Panel minSize={40} className="flex flex-col min-w-0 overflow-hidden rounded-xl">
 									{missingWebcamPath && (
 										<div className="mx-3 mt-3 rounded-lg border border-amber-400/20 bg-amber-400/10 px-3 py-2.5 text-xs text-amber-100">
 											<div className="flex items-center justify-between gap-3">
@@ -4260,7 +4400,7 @@ export default function VideoEditor() {
 											deviceMockup={deviceMockup}
 											borderRadius={borderRadius}
 											padding={padding}
-											cropRegion={effectiveCropRegion}
+											cropRegion={effectiveLayerCropRegion}
 											trimRegions={trimRegions}
 											speedRegions={speedRegions}
 											annotationRegions={annotationRegions}
@@ -4321,211 +4461,285 @@ export default function VideoEditor() {
 											onCaptionPositionOverrideChange={handleCaptionPositionOverrideChange}
 										/>
 									</div>
-								</div>
+								</Panel>
+
+								<PanelResizeHandle className="w-1.5 flex items-center justify-center group cursor-col-resize z-10 transition-colors rounded-full hover:bg-white/10 active:bg-white/20">
+									<div className="h-16 w-1 rounded-full bg-white/10 group-hover:bg-[#F59E0B]/50 group-active:bg-[#F59E0B] transition-colors" />
+								</PanelResizeHandle>
 
 								{/* Right section: settings sidebar */}
-								<SettingsPanel
-									selected={wallpaper}
-									onWallpaperChange={setWallpaper}
-									previewQuality={previewQuality}
-									onPreviewQualityChange={setPreviewQuality}
-									selectedZoomDepth={
-										selectedZoomId ? zoomRegions.find((z) => z.id === selectedZoomId)?.depth : null
-									}
-									selectedZoomMode={
-										selectedZoomId
-											? (zoomRegions.find((z) => z.id === selectedZoomId)?.mode ??
-												DEFAULT_ZOOM_MODE)
-											: null
-									}
-									onZoomDepthChange={(depth) => selectedZoomId && handleZoomDepthChange(depth)}
-									onZoomModeChange={handleZoomModeChange}
-									selectedZoomId={selectedZoomId}
-									onZoomDelete={handleZoomDelete}
-									selectedTrimId={selectedTrimId}
-									onTrimDelete={handleTrimDelete}
-									frameShadowSize={frameShadowSize}
-									onFrameShadowSizeChange={setFrameShadowSize}
-									frameShadowOpacity={frameShadowOpacity}
-									onFrameShadowOpacityChange={setFrameShadowOpacity}
-									frameShadowBlur={frameShadowBlur}
-									onFrameShadowBlurChange={setFrameShadowBlur}
-									backgroundBlur={backgroundBlur}
-									hideBackground={hideBackground}
-									onHideBackgroundChange={setHideBackground}
-									onBackgroundBlurChange={setBackgroundBlur}
-									zoomMotionBlur={zoomMotionBlur}
-									onZoomMotionBlurChange={setZoomMotionBlur}
-									connectZooms={connectZooms}
-									onConnectZoomsChange={setConnectZooms}
-									showCursor={showCursor}
-									onShowCursorChange={setShowCursor}
-									loopCursor={loopCursor}
-									onLoopCursorChange={setLoopCursor}
-									cursorSize={cursorSize}
-									onCursorSizeChange={setCursorSize}
-									cursorSmoothing={cursorSmoothing}
-									onCursorSmoothingChange={setCursorSmoothing}
-									cursorMotionBlur={cursorMotionBlur}
-									onCursorMotionBlurChange={setCursorMotionBlur}
-									cursorClickBounce={cursorClickBounce}
-									onCursorClickBounceChange={setCursorClickBounce}
-									cursorSway={cursorSway}
-									onCursorSwayChange={setCursorSway}
-									cursorPack={cursorPack}
-									onCursorPackChange={setCursorPack}
-									cursorTypeMode={cursorTypeMode}
-									onCursorTypeModeChange={setCursorTypeMode}
-									cursorTilt={cursorTilt}
-									onCursorTiltChange={setCursorTilt}
-									hideWhenIdle={hideWhenIdle}
-									onHideWhenIdleChange={setHideWhenIdle}
-									idleHideDelayMs={idleHideDelayMs}
-									onIdleHideDelayMsChange={setIdleHideDelayMs}
-									smoothMovementEnabled={smoothMovementEnabled}
-									onSmoothMovementEnabledChange={setSmoothMovementEnabled}
-									cursorMovementStyle={cursorMovementStyle}
-									onCursorMovementStyleChange={setCursorMovementStyle}
-									cursorSpring={cursorSpring}
-									onCursorSpringChange={setCursorSpring}
-									cameraSpring={cameraSpring}
-									onCameraSpringChange={setCameraSpring}
-									highQualitySvgCursors={highQualitySvgCursors}
-									onHighQualitySvgCursorsChange={setHighQualitySvgCursors}
-									cursorColor={cursorColor}
-									onCursorColorChange={setCursorColor}
-									cursorOpacity={cursorOpacity}
-									onCursorOpacityChange={setCursorOpacity}
-									clickEffectsEnabled={clickEffectsEnabled}
-									onClickEffectsEnabledChange={setClickEffectsEnabled}
-									clickHighlightColor={clickHighlightColor}
-									onClickHighlightColorChange={setClickHighlightColor}
-									clickHighlightSize={clickHighlightSize}
-									onClickHighlightSizeChange={setClickHighlightSize}
-									clickHighlightOpacity={clickHighlightOpacity}
-									onClickHighlightOpacityChange={setClickHighlightOpacity}
-									cursorTrailLength={cursorTrailLength}
-									onCursorTrailLengthChange={setCursorTrailLength}
-									cursorTrailOpacity={cursorTrailOpacity}
-									onCursorTrailOpacityChange={setCursorTrailOpacity}
-									showKeyboardShortcuts={showKeyboardShortcuts}
-									onShowKeyboardShortcutsChange={setShowKeyboardShortcuts}
-									keyboardShortcutPosition={keyboardShortcutPosition}
-									onKeyboardShortcutPositionChange={setKeyboardShortcutPosition}
-									keyboardShortcutTheme={keyboardShortcutTheme}
-									onKeyboardShortcutThemeChange={setKeyboardShortcutTheme}
-									keyboardShortcutScale={keyboardShortcutScale}
-									onKeyboardShortcutScaleChange={setKeyboardShortcutScale}
-									keyboardShortcutOpacity={keyboardShortcutOpacity}
-									onKeyboardShortcutOpacityChange={setKeyboardShortcutOpacity}
-									keyboardShortcutDisplayMs={keyboardShortcutDisplayMs}
-									onKeyboardShortcutDisplayMsChange={setKeyboardShortcutDisplayMs}
-									keyboardShortcutMaxVisible={keyboardShortcutMaxVisible}
-									onKeyboardShortcutMaxVisibleChange={setKeyboardShortcutMaxVisible}
-									deviceMockup={deviceMockup}
-									onDeviceMockupChange={setDeviceMockup}
-									frameBorderEnabled={frameBorderEnabled}
-									onFrameBorderEnabledChange={setFrameBorderEnabled}
-									frameBorderWidth={frameBorderWidth}
-									onFrameBorderWidthChange={setFrameBorderWidth}
-									frameBorderColor={frameBorderColor}
-									onFrameBorderColorChange={setFrameBorderColor}
-									frameBorderOpacity={frameBorderOpacity}
-									onFrameBorderOpacityChange={setFrameBorderOpacity}
-									borderRadius={borderRadius}
-									onBorderRadiusChange={setBorderRadius}
-									padding={padding}
-									onPaddingChange={setPadding}
-									cropRegion={cropRegion}
-									baseCropRegion={legacyCaptureCorrectionCrop}
-									onCropChange={setCropRegion}
-									aspectRatio={aspectRatio}
-									onAspectRatioChange={setAspectRatio}
-									videoElement={videoPlaybackRef.current?.video || null}
-									selectedAnnotationId={selectedAnnotationId}
-									annotationRegions={annotationRegions}
-									onAnnotationContentChange={handleAnnotationContentChange}
-									onAnnotationTypeChange={handleAnnotationTypeChange}
-									onAnnotationStyleChange={handleAnnotationStyleChange}
-									onAnnotationFigureDataChange={handleAnnotationFigureDataChange}
-									onAnnotationBlurDataChange={handleAnnotationBlurDataChange}
-									onAnnotationDelete={handleAnnotationDelete}
-									webcamPath={webcamPath}
-									webcamMissing={Boolean(missingWebcamPath)}
-									missingWebcamPath={missingWebcamPath}
-									showWebcam={showWebcam}
-									mirrorWebcam={mirrorWebcam}
-									cameraSizeDuringZoom={cameraSizeDuringZoom}
-									onShowWebcamChange={setShowWebcam}
-									webcamRegion={webcamRegion}
-									webcamEffects={webcamEffects}
-									webcamPreviewMode={webcamPreviewMode}
-									webcamHealthMetrics={webcamHealthMetrics}
-									onWebcamPreviewModeChange={setWebcamPreviewMode}
-									onWebcamRegionChange={handleWebcamRegionChange}
-									onWebcamEffectsChange={handleWebcamEffectsChange}
-									onApplyWebcamPreset={handleApplyWebcamPreset}
-									onResetRecommendedWebcam={handleResetRecommendedWebcam}
-									onResetSelectedCameraLayout={handleResetSelectedCameraLayout}
-									onRelinkMissingWebcam={() => void handleRelinkMissingWebcam()}
-									onRemoveMissingWebcam={() => void handleRemoveWebcamFromProject()}
-									onMirrorWebcamChange={setMirrorWebcam}
-									selectedCameraLayoutId={selectedCameraLayoutId}
-									cameraLayouts={cameraLayouts}
-									onCameraLayoutChange={handleCameraLayoutChange}
-									cameraSelected={webcamSelected}
-									onCameraSizeDuringZoomChange={setCameraSizeDuringZoom}
-									selectedSpeedId={selectedSpeedId}
-									selectedSpeedValue={
-										selectedSpeedId
-											? (speedRegions.find((r) => r.id === selectedSpeedId)?.speed ?? null)
-											: null
-									}
-									onSpeedChange={handleSpeedChange}
-									onSpeedDelete={handleSpeedDelete}
-									audioRegions={audioRegions}
-									selectedAudioId={selectedAudioId}
-									onAudioAddAtPlayhead={handleAudioAdded}
-									onReplaceSelectedAudio={handleReplaceSelectedAudioSource}
-									onAudioVolumeChange={handleAudioVolumeChange}
-									onAudioFadeChange={handleAudioFadeChange}
-									onAudioLoopChange={handleAudioLoopChange}
-									onAudioDelete={handleAudioDelete}
-									missingAudioPath={missingSelectedAudioPath}
-									onRelinkMissingAudio={handleRelinkMissingAudio}
-									onRemoveMissingAudio={handleRemoveMissingAudio}
-									captionRegions={captionRegions}
-									captionGenerationOptions={captionGenerationOptions}
-									captionGenerationProgress={captionGenerationProgress}
-									captionModelStatus={captionModelStatus}
-									captionSettings={captionSettings}
-									selectedCaptionId={selectedCaptionId}
-									onSelectCaption={setSelectedCaptionId}
-									onCaptionTextChange={handleCaptionTextChange}
-									onCaptionDelete={handleCaptionDelete}
-									onDeleteAllCaptions={handleDeleteAllCaptions}
-									onCaptionSplit={handleCaptionSplit}
-									onCaptionMergeNext={handleCaptionMergeNext}
-									onCaptionStylePresetChange={handleCaptionStylePresetChange}
-									onCaptionSettingsChange={handleCaptionSettingsChange}
-									onCaptionStyleChange={handleCaptionStyleChange}
-									onCaptionGenerationOptionsChange={handleCaptionGenerationOptionsChange}
-									onCaptionExport={handleTranscriptExport}
-									onCaptionImport={handleCaptionImport}
-									onApplyCaptionPreset={handleApplyCaptionPreset}
-									isEditingCaptionPosition={isEditingCaptionPosition}
-									onToggleCaptionPositionEditing={handleToggleCaptionPositionEditing}
-									isTranscribing={isTranscribing}
-									onAutoTranscribe={handleAutoTranscribe}
-									onCancelCaptionGeneration={handleCancelCaptionGeneration}
-									activeScenePresetId={scenePresetId}
-									hasCursorTelemetry={effectiveCursorTelemetry.length >= 2}
-									hasExistingZooms={zoomRegions.length > 0}
-									onApplyScenePreset={handleApplyScenePreset}
-									onAutoBeautify={() => handleAutoBeautify()}
-									onRegenerateSmartZooms={handleRegenerateSmartZooms}
-								/>
-							</div>
+								<Panel
+									defaultSize={25}
+									minSize={20}
+									maxSize={45}
+									className="flex flex-col min-w-0 h-full gap-2 relative"
+								>
+									<div className="shrink-0 flex items-center justify-center z-10">
+										<div className="inline-grid grid-cols-3 gap-1 rounded-full border border-white/[0.08] bg-[#0A0F0D]/80 p-1 backdrop-blur-xl shadow-lg shadow-black/50">
+											<button
+												type="button"
+												onClick={() => setRightSidebarSection("edit")}
+												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full px-4 py-1.5 text-[11px] font-semibold transition-all duration-300 ${
+													rightSidebarSection === "edit"
+														? "bg-gradient-to-r from-amber-400 to-amber-600 text-black shadow-md shadow-amber-500/20 scale-100"
+														: "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+												}`}
+											>
+												<SlidersHorizontal className="h-3.5 w-3.5 shrink-0" />
+												<span className="truncate">Edit</span>
+											</button>
+											<button
+												type="button"
+												onClick={() => setRightSidebarSection("layers")}
+												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full px-4 py-1.5 text-[11px] font-semibold transition-all duration-300 ${
+													rightSidebarSection === "layers"
+														? "bg-gradient-to-r from-amber-400 to-amber-600 text-black shadow-md shadow-amber-500/20 scale-100"
+														: "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+												}`}
+											>
+												<Layers className="h-3.5 w-3.5 shrink-0" />
+												<span className="truncate">Layers</span>
+											</button>
+											<button
+												type="button"
+												onClick={() => setRightSidebarSection("polish")}
+												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full px-4 py-1.5 text-[11px] font-semibold transition-all duration-300 ${
+													rightSidebarSection === "polish"
+														? "bg-gradient-to-r from-amber-400 to-amber-600 text-black shadow-md shadow-amber-500/20 scale-100"
+														: "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+												}`}
+											>
+												<Sparkles className="h-3.5 w-3.5 shrink-0" />
+												<span className="truncate">Polish</span>
+											</button>
+										</div>
+									</div>
+									<div className="min-h-0 flex-1">
+										{rightSidebarSection === "layers" ? (
+											<LayerPanel
+												embedded
+												layers={activeLayeredComposition.layers}
+												onLayersChange={setEditorLayers}
+											/>
+										) : rightSidebarSection === "polish" ? (
+											<SceneAudioPolishPanel
+												embedded
+												scene3D={scene3D}
+												audioMix={audioMix}
+												onScene3DChange={setScene3D}
+												onAudioMixChange={setAudioMix}
+												onAutoPolish={handleAutoPolish}
+											/>
+										) : (
+											<SettingsPanel
+												selected={wallpaper}
+												onWallpaperChange={setWallpaper}
+												previewQuality={previewQuality}
+												onPreviewQualityChange={setPreviewQuality}
+												selectedZoomDepth={
+													selectedZoomId
+														? zoomRegions.find((z) => z.id === selectedZoomId)?.depth
+														: null
+												}
+												selectedZoomMode={
+													selectedZoomId
+														? (zoomRegions.find((z) => z.id === selectedZoomId)?.mode ??
+															DEFAULT_ZOOM_MODE)
+														: null
+												}
+												onZoomDepthChange={(depth) =>
+													selectedZoomId && handleZoomDepthChange(depth)
+												}
+												onZoomModeChange={handleZoomModeChange}
+												selectedZoomId={selectedZoomId}
+												onZoomDelete={handleZoomDelete}
+												selectedTrimId={selectedTrimId}
+												onTrimDelete={handleTrimDelete}
+												frameShadowSize={frameShadowSize}
+												onFrameShadowSizeChange={setFrameShadowSize}
+												frameShadowOpacity={frameShadowOpacity}
+												onFrameShadowOpacityChange={setFrameShadowOpacity}
+												frameShadowBlur={frameShadowBlur}
+												onFrameShadowBlurChange={setFrameShadowBlur}
+												backgroundBlur={backgroundBlur}
+												hideBackground={hideBackground}
+												onHideBackgroundChange={setHideBackground}
+												onBackgroundBlurChange={setBackgroundBlur}
+												zoomMotionBlur={zoomMotionBlur}
+												onZoomMotionBlurChange={setZoomMotionBlur}
+												connectZooms={connectZooms}
+												onConnectZoomsChange={setConnectZooms}
+												showCursor={showCursor}
+												onShowCursorChange={setShowCursor}
+												loopCursor={loopCursor}
+												onLoopCursorChange={setLoopCursor}
+												cursorSize={cursorSize}
+												onCursorSizeChange={setCursorSize}
+												cursorSmoothing={cursorSmoothing}
+												onCursorSmoothingChange={setCursorSmoothing}
+												cursorMotionBlur={cursorMotionBlur}
+												onCursorMotionBlurChange={setCursorMotionBlur}
+												cursorClickBounce={cursorClickBounce}
+												onCursorClickBounceChange={setCursorClickBounce}
+												cursorSway={cursorSway}
+												onCursorSwayChange={setCursorSway}
+												cursorPack={cursorPack}
+												onCursorPackChange={setCursorPack}
+												cursorTypeMode={cursorTypeMode}
+												onCursorTypeModeChange={setCursorTypeMode}
+												cursorTilt={cursorTilt}
+												onCursorTiltChange={setCursorTilt}
+												hideWhenIdle={hideWhenIdle}
+												onHideWhenIdleChange={setHideWhenIdle}
+												idleHideDelayMs={idleHideDelayMs}
+												onIdleHideDelayMsChange={setIdleHideDelayMs}
+												smoothMovementEnabled={smoothMovementEnabled}
+												onSmoothMovementEnabledChange={setSmoothMovementEnabled}
+												cursorMovementStyle={cursorMovementStyle}
+												onCursorMovementStyleChange={setCursorMovementStyle}
+												cursorSpring={cursorSpring}
+												onCursorSpringChange={setCursorSpring}
+												cameraSpring={cameraSpring}
+												onCameraSpringChange={setCameraSpring}
+												highQualitySvgCursors={highQualitySvgCursors}
+												onHighQualitySvgCursorsChange={setHighQualitySvgCursors}
+												cursorColor={cursorColor}
+												onCursorColorChange={setCursorColor}
+												cursorOpacity={cursorOpacity}
+												onCursorOpacityChange={setCursorOpacity}
+												clickEffectsEnabled={clickEffectsEnabled}
+												onClickEffectsEnabledChange={setClickEffectsEnabled}
+												clickHighlightColor={clickHighlightColor}
+												onClickHighlightColorChange={setClickHighlightColor}
+												clickHighlightSize={clickHighlightSize}
+												onClickHighlightSizeChange={setClickHighlightSize}
+												clickHighlightOpacity={clickHighlightOpacity}
+												onClickHighlightOpacityChange={setClickHighlightOpacity}
+												cursorTrailLength={cursorTrailLength}
+												onCursorTrailLengthChange={setCursorTrailLength}
+												cursorTrailOpacity={cursorTrailOpacity}
+												onCursorTrailOpacityChange={setCursorTrailOpacity}
+												showKeyboardShortcuts={showKeyboardShortcuts}
+												onShowKeyboardShortcutsChange={setShowKeyboardShortcuts}
+												keyboardShortcutPosition={keyboardShortcutPosition}
+												onKeyboardShortcutPositionChange={setKeyboardShortcutPosition}
+												keyboardShortcutTheme={keyboardShortcutTheme}
+												onKeyboardShortcutThemeChange={setKeyboardShortcutTheme}
+												keyboardShortcutScale={keyboardShortcutScale}
+												onKeyboardShortcutScaleChange={setKeyboardShortcutScale}
+												keyboardShortcutOpacity={keyboardShortcutOpacity}
+												onKeyboardShortcutOpacityChange={setKeyboardShortcutOpacity}
+												keyboardShortcutDisplayMs={keyboardShortcutDisplayMs}
+												onKeyboardShortcutDisplayMsChange={setKeyboardShortcutDisplayMs}
+												keyboardShortcutMaxVisible={keyboardShortcutMaxVisible}
+												onKeyboardShortcutMaxVisibleChange={setKeyboardShortcutMaxVisible}
+												deviceMockup={deviceMockup}
+												onDeviceMockupChange={setDeviceMockup}
+												frameBorderEnabled={frameBorderEnabled}
+												onFrameBorderEnabledChange={setFrameBorderEnabled}
+												frameBorderWidth={frameBorderWidth}
+												onFrameBorderWidthChange={setFrameBorderWidth}
+												frameBorderColor={frameBorderColor}
+												onFrameBorderColorChange={setFrameBorderColor}
+												frameBorderOpacity={frameBorderOpacity}
+												onFrameBorderOpacityChange={setFrameBorderOpacity}
+												borderRadius={borderRadius}
+												onBorderRadiusChange={setBorderRadius}
+												padding={padding}
+												onPaddingChange={setPadding}
+												cropRegion={cropRegion}
+												baseCropRegion={legacyCaptureCorrectionCrop}
+												onCropChange={setCropRegion}
+												aspectRatio={aspectRatio}
+												onAspectRatioChange={setAspectRatio}
+												videoElement={videoPlaybackRef.current?.video || null}
+												selectedAnnotationId={selectedAnnotationId}
+												annotationRegions={annotationRegions}
+												onAnnotationContentChange={handleAnnotationContentChange}
+												onAnnotationTypeChange={handleAnnotationTypeChange}
+												onAnnotationStyleChange={handleAnnotationStyleChange}
+												onAnnotationFigureDataChange={handleAnnotationFigureDataChange}
+												onAnnotationBlurDataChange={handleAnnotationBlurDataChange}
+												onAnnotationDelete={handleAnnotationDelete}
+												webcamPath={webcamPath}
+												webcamMissing={Boolean(missingWebcamPath)}
+												missingWebcamPath={missingWebcamPath}
+												showWebcam={showWebcam}
+												mirrorWebcam={mirrorWebcam}
+												cameraSizeDuringZoom={cameraSizeDuringZoom}
+												onShowWebcamChange={setShowWebcam}
+												webcamRegion={webcamRegion}
+												webcamEffects={webcamEffects}
+												webcamPreviewMode={webcamPreviewMode}
+												webcamHealthMetrics={webcamHealthMetrics}
+												onWebcamPreviewModeChange={setWebcamPreviewMode}
+												onWebcamRegionChange={handleWebcamRegionChange}
+												onWebcamEffectsChange={handleWebcamEffectsChange}
+												onApplyWebcamPreset={handleApplyWebcamPreset}
+												onResetRecommendedWebcam={handleResetRecommendedWebcam}
+												onResetSelectedCameraLayout={handleResetSelectedCameraLayout}
+												onRelinkMissingWebcam={() => void handleRelinkMissingWebcam()}
+												onRemoveMissingWebcam={() => void handleRemoveWebcamFromProject()}
+												onMirrorWebcamChange={setMirrorWebcam}
+												selectedCameraLayoutId={selectedCameraLayoutId}
+												cameraLayouts={cameraLayouts}
+												onCameraLayoutChange={handleCameraLayoutChange}
+												cameraSelected={webcamSelected}
+												onCameraSizeDuringZoomChange={setCameraSizeDuringZoom}
+												selectedSpeedId={selectedSpeedId}
+												selectedSpeedValue={
+													selectedSpeedId
+														? (speedRegions.find((r) => r.id === selectedSpeedId)?.speed ?? null)
+														: null
+												}
+												onSpeedChange={handleSpeedChange}
+												onSpeedDelete={handleSpeedDelete}
+												audioRegions={audioRegions}
+												selectedAudioId={selectedAudioId}
+												onAudioAddAtPlayhead={handleAudioAdded}
+												onReplaceSelectedAudio={handleReplaceSelectedAudioSource}
+												onAudioVolumeChange={handleAudioVolumeChange}
+												onAudioFadeChange={handleAudioFadeChange}
+												onAudioLoopChange={handleAudioLoopChange}
+												onAudioDelete={handleAudioDelete}
+												missingAudioPath={missingSelectedAudioPath}
+												onRelinkMissingAudio={handleRelinkMissingAudio}
+												onRemoveMissingAudio={handleRemoveMissingAudio}
+												captionRegions={captionRegions}
+												captionGenerationOptions={captionGenerationOptions}
+												captionGenerationProgress={captionGenerationProgress}
+												captionModelStatus={captionModelStatus}
+												captionSettings={captionSettings}
+												selectedCaptionId={selectedCaptionId}
+												onSelectCaption={setSelectedCaptionId}
+												onCaptionTextChange={handleCaptionTextChange}
+												onCaptionDelete={handleCaptionDelete}
+												onDeleteAllCaptions={handleDeleteAllCaptions}
+												onCaptionSplit={handleCaptionSplit}
+												onCaptionMergeNext={handleCaptionMergeNext}
+												onCaptionStylePresetChange={handleCaptionStylePresetChange}
+												onCaptionSettingsChange={handleCaptionSettingsChange}
+												onCaptionStyleChange={handleCaptionStyleChange}
+												onCaptionGenerationOptionsChange={handleCaptionGenerationOptionsChange}
+												onCaptionExport={handleTranscriptExport}
+												onCaptionImport={handleCaptionImport}
+												onApplyCaptionPreset={handleApplyCaptionPreset}
+												isEditingCaptionPosition={isEditingCaptionPosition}
+												onToggleCaptionPositionEditing={handleToggleCaptionPositionEditing}
+												isTranscribing={isTranscribing}
+												onAutoTranscribe={handleAutoTranscribe}
+												onCancelCaptionGeneration={handleCancelCaptionGeneration}
+												activeScenePresetId={scenePresetId}
+												hasCursorTelemetry={effectiveCursorTelemetry.length >= 2}
+												hasExistingZooms={zoomRegions.length > 0}
+												onApplyScenePreset={handleApplyScenePreset}
+												onAutoBeautify={() => handleAutoBeautify()}
+												onRegenerateSmartZooms={handleRegenerateSmartZooms}
+											/>
+										)}
+									</div>
+								</Panel>
+							</PanelGroup>
 						</Panel>
 
 						<PanelResizeHandle className="h-3 bg-[#0c0c0f]/80 hover:bg-[#0c0c0f] transition-colors flex items-center justify-center mx-4">

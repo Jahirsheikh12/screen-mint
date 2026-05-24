@@ -151,7 +151,7 @@ export function StudioSettingsTab({
 						</div>
 
 						<div className="mt-3 grid grid-cols-2 gap-2">
-							<div className="rounded-lg border border-white/[0.06] bg-black/15 px-2.5 py-2">
+							<div className="rounded-lg border border-white/5 bg-black/15 px-2.5 py-2">
 								<div className="flex items-center gap-1.5 text-[10px] text-slate-400">
 									<MousePointerClick className="h-3 w-3" />
 									Cursor data
@@ -160,7 +160,7 @@ export function StudioSettingsTab({
 									{hasCursorTelemetry ? "Ready" : "Missing"}
 								</div>
 							</div>
-							<div className="rounded-lg border border-white/[0.06] bg-black/15 px-2.5 py-2">
+							<div className="rounded-lg border border-white/5 bg-black/15 px-2.5 py-2">
 								<div className="flex items-center gap-1.5 text-[10px] text-slate-400">
 									<RefreshCw className="h-3 w-3" />
 									Zooms
@@ -202,10 +202,10 @@ export function StudioSettingsTab({
 								onClick={() => onApplyPreset(preset.id)}
 								className={cn(
 									"group relative overflow-hidden rounded-xl border p-2.5 text-left transition-all duration-200",
-									"bg-white/[0.035] hover:-translate-y-0.5 hover:bg-white/[0.06]",
+									"bg-white/[0.035] hover:-translate-y-0.5 hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]",
 									isActive
 										? cn("border-[#F59E0B]/60 shadow-lg", visual.glow)
-										: "border-white/[0.06] hover:border-white/[0.14]",
+										: "border-white/5 hover:border-white/[0.14]",
 								)}
 							>
 								<div
@@ -238,7 +238,7 @@ export function StudioSettingsTab({
 											{visual.chips.map((chip) => (
 												<span
 													key={chip}
-													className="rounded-md border border-white/[0.06] bg-black/15 px-1.5 py-0.5 text-[9px] font-medium text-slate-400"
+													className="rounded-md border border-white/5 bg-black/15 px-1.5 py-0.5 text-[9px] font-medium text-slate-400"
 												>
 													{chip}
 												</span>
