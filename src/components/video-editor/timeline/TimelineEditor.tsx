@@ -215,8 +215,15 @@ function Timeline({
 	return (
 		<div
 			ref={setRefs}
-			style={{ ...style, height: "auto" }}
-			className={`select-none bg-[#0c0c0f] min-h-[120px] relative group ${trimMode ? "cursor-crosshair" : "cursor-pointer"}`}
+			style={{
+				...style,
+				height: "auto",
+				backgroundImage:
+					"linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px)",
+				backgroundSize: "24px 24px",
+				backgroundPosition: "0 0",
+			}}
+			className={`select-none bg-transparent min-h-[120px] relative group ${trimMode ? "cursor-crosshair" : "cursor-pointer"}`}
 			onClick={handleTimelineClick}
 			onMouseMove={handleTimelineMouseMove}
 			onMouseLeave={handleTimelineMouseLeave}
@@ -1623,9 +1630,9 @@ export default function TimelineEditor({
 	}
 
 	return (
-		<div className="flex-1 min-h-0 flex flex-col bg-[#0c0c0f] overflow-auto">
+		<div className="flex-1 min-h-0 flex flex-col bg-[#121214] overflow-hidden">
 			{/* Transport Controls Bar */}
-			<div className="relative flex items-center px-3 py-1.5 border-b border-white/5 bg-[#111114]">
+			<div className="relative flex items-center px-3 py-1.5 bg-transparent z-20">
 				{/* Left: Layer visibility */}
 				<div className="flex items-center z-10">
 					<DropdownMenu>
@@ -1915,7 +1922,7 @@ export default function TimelineEditor({
 			{/* Timeline Area */}
 			<div
 				ref={timelineContainerRef}
-				className="flex-1 min-h-0 overflow-auto bg-[#0c0c0f] relative timeline-scrollbar"
+				className="flex-1 min-h-0 overflow-auto bg-[#121214] relative timeline-scrollbar"
 				onClick={() => setSelectedKeyframeId(null)}
 				onWheel={handleTimelineWheel}
 			>

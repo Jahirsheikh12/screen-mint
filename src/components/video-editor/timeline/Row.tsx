@@ -74,10 +74,10 @@ export default function Row({
 
 	const bgClass =
 		variant === "zoom"
-			? "border-b border-[#1a1a2e] bg-[#12121f] relative group/row"
+			? "bg-[#161622]/80 border-b border-white/[0.03] relative group/row backdrop-blur-sm"
 			: variant === "clip"
-				? "border-b border-[#1a1810] bg-[#141210] relative group/row"
-				: "border-b border-[#18181b] bg-[#141416] relative group/row";
+				? "bg-[#1a1815]/80 border-b border-white/[0.03] relative group/row backdrop-blur-sm"
+				: "bg-[#161618]/80 border-b border-white/[0.03] relative group/row backdrop-blur-sm";
 
 	return (
 		<div
@@ -86,7 +86,8 @@ export default function Row({
 			style={{
 				...rowWrapperStyle,
 				minHeight: variant === "clip" ? 52 : 48,
-				marginBottom: 2,
+				marginBottom: 6,
+				marginTop: 2,
 				paddingLeft: iconPadding,
 			}}
 			onMouseEnter={() => setIsHovered(true)}
@@ -94,16 +95,16 @@ export default function Row({
 			onMouseMove={handleMouseMove}
 		>
 			{Icon && (
-				<div className="absolute left-1.5 top-1/2 -translate-y-1/2 z-20 pointer-events-none select-none">
-					<div className="w-9 h-9 rounded-xl border border-white/10 bg-white/[0.03] flex items-center justify-center">
-						<Icon className="w-4 h-4 text-slate-400" />
+				<div className="absolute left-2 top-1/2 -translate-y-1/2 z-20 pointer-events-none select-none">
+					<div className="w-8 h-8 rounded-full border border-white/5 bg-white/5 flex items-center justify-center shadow-sm">
+						<Icon className="w-3.5 h-3.5 text-white/50 group-hover/row:text-white/70 transition-colors" />
 					</div>
 				</div>
 			)}
 			{label && (
 				<div
-					className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[9px] font-semibold uppercase tracking-widest z-20 pointer-events-none select-none"
-					style={{ color: labelColor, writingMode: "horizontal-tb" }}
+					className="absolute left-[44px] top-1/2 -translate-y-1/2 text-[10px] font-medium tracking-wide z-20 pointer-events-none select-none opacity-40 group-hover/row:opacity-70 transition-opacity"
+					style={{ color: labelColor }}
 				>
 					{label}
 				</div>

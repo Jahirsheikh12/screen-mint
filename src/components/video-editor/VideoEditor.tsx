@@ -4742,13 +4742,13 @@ export default function VideoEditor() {
 							</PanelGroup>
 						</Panel>
 
-						<PanelResizeHandle className="h-3 bg-[#0c0c0f]/80 hover:bg-[#0c0c0f] transition-colors flex items-center justify-center mx-4">
-							<div className="w-8 h-1 bg-white/20 rounded-full"></div>
+						<PanelResizeHandle className="h-4 flex items-center justify-center mx-2 group/handle outline-none cursor-row-resize">
+							<div className="w-12 h-1 bg-white/10 group-hover/handle:bg-white/30 rounded-full transition-colors duration-200"></div>
 						</PanelResizeHandle>
 
 						{/* Full-width Timeline section */}
 						<Panel defaultSize={workspaceLayoutSizes[1]} minSize={12}>
-							<div className="h-[calc(100%-0.5rem)] min-h-0 mx-4 mb-2 bg-[#0c0c0f] rounded-2xl border border-white/5 shadow-lg overflow-hidden flex flex-col">
+							<div className="h-[calc(100%-0.5rem)] min-h-0 mx-2 mb-2 bg-[#121214] rounded-2xl border border-[#27272a]/80 shadow-2xl overflow-hidden flex flex-col relative z-10">
 								<TimelineEditor
 									videoDuration={duration}
 									currentTime={currentTime}

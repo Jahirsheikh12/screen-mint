@@ -135,22 +135,6 @@ export default function Item({
 								? glassStyles.glassCyan
 								: glassStyles.glassYellow;
 
-	const endCapColor = isClip
-		? "#f59e0b"
-		: isZoom
-			? "#F59E0B"
-			: isTrim
-				? "#ef4444"
-				: isSpeed
-					? "#d97706"
-					: isCamera
-						? "#3b82f6"
-						: isAudio
-							? "#a855f7"
-							: isCaption
-								? "#f97316"
-								: "#B4A046";
-
 	const timeLabel = useMemo(
 		() => `${formatMs(span.start)} – ${formatMs(span.end)}`,
 		[span.start, span.end],
@@ -167,7 +151,7 @@ export default function Item({
 			{...attributes}
 			onPointerDownCapture={() => onSelect?.()}
 			onContextMenu={handleContextMenu}
-			className="group"
+			className="group outline-none focus:outline-none"
 			data-timeline-item
 		>
 			{/* Right-click context menu with backdrop to block Row hover events */}
@@ -214,9 +198,6 @@ export default function Item({
 						style={{
 							cursor: "col-resize",
 							pointerEvents: "auto",
-							width: 8,
-							opacity: 0.9,
-							background: endCapColor,
 						}}
 						title="Resize left"
 					/>
@@ -225,9 +206,6 @@ export default function Item({
 						style={{
 							cursor: "col-resize",
 							pointerEvents: "auto",
-							width: 8,
-							opacity: 0.9,
-							background: endCapColor,
 						}}
 						title="Resize right"
 					/>
