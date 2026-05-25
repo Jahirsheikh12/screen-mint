@@ -83,6 +83,14 @@ import {
 } from "./timelineTypes";
 import { buildAutoZoomSuggestions, normalizeCursorTelemetry } from "./zoomSuggestionUtils";
 
+function formatPlaybackTime(ms: number) {
+	const totalSeconds = Math.floor(ms / 1000);
+	const minutes = Math.floor(totalSeconds / 60);
+	const seconds = totalSeconds % 60;
+	const fraction = Math.floor((ms % 1000) / 100);
+	return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}.${fraction}`;
+}
+
 function Timeline({
 	items,
 	videoDurationMs,
@@ -1716,6 +1724,15 @@ export default function TimelineEditor({
 						</Tooltip>
 					</div>
 				)}
+
+				{/* Time Display */}
+				<div className="flex items-center gap-1.5 ml-3 bg-white/5 hover:bg-white/10 transition-colors px-2.5 py-1 rounded-md border border-white/5 z-10 tabular-nums text-[11px] cursor-default">
+					<span className="text-slate-200 font-medium">
+						{formatPlaybackTime(displayCurrentTimeMs)}
+					</span>
+					<span className="text-slate-500 font-medium">/</span>
+					<span className="text-slate-500 font-medium">{formatPlaybackTime(displayTotalMs)}</span>
+				</div>
 
 				{/* Center: Play controls only - absolutely centered */}
 				<div className="absolute inset-0 flex items-center justify-center pointer-events-none">

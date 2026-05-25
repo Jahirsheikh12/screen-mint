@@ -30,7 +30,10 @@ export function WindowTab({
 }: WindowTabProps) {
 	const t = useScopedT("launch");
 	const [selectedId, setSelectedId] = useState<string | null>(null);
-	const sourceOptions = useMemo<Electron.SourcesOptions>(() => ({ types: ["window"] }), []);
+	const sourceOptions = useMemo<Electron.SourcesOptions>(
+		() => ({ types: ["window"], thumbnailSize: { width: 600, height: 375 } }),
+		[],
+	);
 	const { sources, loading, loadError, refresh, accessState } = useCaptureSourceAccess(
 		sourceOptions,
 		{
@@ -45,8 +48,6 @@ export function WindowTab({
 		onSelectSource(source);
 	};
 
-	// Auto-dismiss the overlay when permission is denied — the OS permission prompt
-	// is already visible, so our custom notice is redundant and blocks the view.
 	useEffect(() => {
 		if (accessState && !accessState.canProbeSources && onPermissionDenied) {
 			onPermissionDenied();
@@ -55,8 +56,8 @@ export function WindowTab({
 
 	if (loading && windows.length === 0) {
 		return (
-			<div className="flex items-center justify-center py-12 text-white/40 text-xs">
-				{t("window.loadingWindows")}
+			<div className="flex items-center justify-center py-12 text-white/40 text-xs font-medium">
+				{t("window.loadingWindows", "Loading windows...")}
 			</div>
 		);
 	}
@@ -85,25 +86,27 @@ export function WindowTab({
 	if (windows.length === 0) {
 		return (
 			<div className="flex flex-col items-center gap-4 py-12">
-				<span className="text-white/40 text-xs">{t("window.noWindows")}</span>
+				<div className="w-12 h-12 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
+					<MdMonitor size={24} className="text-white/20" />
+				</div>
+				<span className="text-white/50 text-xs font-medium">
+					{t("window.noWindows", "No available windows found")}
+				</span>
 				<button
 					type="button"
 					onClick={onFallbackToDisplay}
-					className="text-white/50 text-xs hover:text-white/70 hover:underline cursor-pointer"
+					className="px-4 py-1.5 rounded bg-white/10 hover:bg-white/15 text-white/80 text-[11px] font-medium transition-colors"
 				>
-					{t("window.recordEntireDisplay")}
+					{t("window.recordEntireDisplay", "Record Entire Display Instead")}
 				</button>
 			</div>
 		);
 	}
 
 	return (
-		<div className="px-5 py-5">
-			<h3 className="text-white/40 text-[11px] font-medium mb-4 uppercase tracking-widest">
-				{t("window.selectWindow")}
-			</h3>
+		<div className="px-4 py-4">
 			<div
-				className={`grid grid-cols-3 gap-3 max-h-[280px] overflow-y-auto pr-1 ${styles.hudScrollArea}`}
+				className={`grid grid-cols-3 gap-3 max-h-[340px] overflow-y-auto pr-2 pb-2 ${styles.hudScrollArea}`}
 			>
 				{windows.map((source) => {
 					const isSelected = selectedId === source.id;
@@ -113,30 +116,58 @@ export function WindowTab({
 							type="button"
 							onClick={() => handleSelect(source)}
 							disabled={disabled}
-							className={`relative flex flex-col items-center gap-2.5 rounded-xl p-3 transition-all ${
+							className={`relative flex flex-col overflow-hidden rounded-md transition-colors text-left ${
 								isSelected
-									? "bg-white/[0.08] ring-1 ring-white/20"
-									: "bg-white/[0.03] hover:bg-white/[0.06]"
-							} ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
+									? "bg-white/10 ring-1 ring-[#0A84FF]"
+									: "bg-white/5 border border-transparent hover:bg-white/10"
+							} ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
 						>
-							{source.thumbnail ? (
-								<img
-									src={source.thumbnail}
-									alt={source.name}
-									className="w-full h-[90px] rounded-lg object-cover border border-white/[0.08]"
-								/>
-							) : (
-								<div className="flex w-full h-[90px] items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.03]">
-									<MdMonitor size={22} className="text-white/20" />
-								</div>
-							)}
-							<div className="flex items-center gap-2 w-full px-0.5">
-								{source.appIcon && (
-									<img src={source.appIcon} alt="" className="h-4 w-4 rounded-sm shrink-0" />
+							<div className="flex items-center gap-1 px-2 h-5 bg-white/5 border-b border-white/5 w-full">
+								<div className="w-1.5 h-1.5 rounded-full bg-[#ff5f57]" />
+								<div className="w-1.5 h-1.5 rounded-full bg-[#febc2e]" />
+								<div className="w-1.5 h-1.5 rounded-full bg-[#28c840]" />
+							</div>
+
+							<div className="relative w-full aspect-[16/10] bg-black/30 overflow-hidden border-b border-white/5">
+								{source.thumbnail ? (
+									<img
+										src={source.thumbnail}
+										alt={source.name}
+										className="w-full h-full object-cover"
+									/>
+								) : (
+									<div className="flex h-full w-full items-center justify-center">
+										{source.appIcon ? (
+											<img src={source.appIcon} alt="" className="w-8 h-8 opacity-40 grayscale" />
+										) : (
+											<MdMonitor size={20} className="text-white/10" />
+										)}
+									</div>
 								)}
-								<span className="text-[11px] text-white/55 truncate leading-tight">
-									{source.appName || source.name}
-								</span>
+							</div>
+
+							<div className="flex items-center gap-2 w-full px-2 py-2">
+								{source.appIcon ? (
+									<div className="w-4 h-4 rounded-sm overflow-hidden shrink-0 bg-white/5 flex items-center justify-center p-[1px]">
+										<img src={source.appIcon} alt="" className="w-full h-full object-contain" />
+									</div>
+								) : (
+									<div className="w-4 h-4 rounded-sm shrink-0 bg-white/5 flex items-center justify-center">
+										<div className="w-1.5 h-1.5 border border-white/30 rounded-[1px]" />
+									</div>
+								)}
+								<div className="flex flex-col min-w-0">
+									<span
+										className={`text-[11px] font-medium truncate leading-none ${isSelected ? "text-white" : "text-white/90"}`}
+									>
+										{source.appName || source.name}
+									</span>
+									{source.windowTitle && source.windowTitle !== source.appName && (
+										<span className="text-[9px] truncate leading-none text-white/40 mt-0.5">
+											{source.windowTitle}
+										</span>
+									)}
+								</div>
 							</div>
 						</button>
 					);

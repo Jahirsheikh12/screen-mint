@@ -360,7 +360,7 @@ export function HudToolbar({
 			}}
 		>
 			{/* Close button */}
-			<Tooltip content={t("recording.closeApp")} side="bottom">
+			<Tooltip content={t("recording.closeApp")} side="top">
 				<button
 					type="button"
 					onClick={onClose}

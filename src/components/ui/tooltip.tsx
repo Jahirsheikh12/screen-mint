@@ -211,11 +211,25 @@ function useTooltipHandlers({
 			}
 
 			if (side === "top" || side === "bottom") {
-				el.style.left = `${Math.max(tooltipRect.width / 2 + 4, Math.min(x, window.innerWidth - tooltipRect.width / 2 - 4))}px`;
+				const actualLeft = Math.max(
+					tooltipRect.width / 2 + 4,
+					Math.min(x, window.innerWidth - tooltipRect.width / 2 - 4),
+				);
+				el.style.left = `${actualLeft}px`;
 				el.style.top = `${Math.max(4, y)}px`;
+				if (actualLeft !== x) {
+					arrow.style.marginLeft = `calc(-4px + ${x - actualLeft}px)`;
+				}
 			} else {
+				const actualTop = Math.max(
+					tooltipRect.height / 2 + 4,
+					Math.min(y, window.innerHeight - tooltipRect.height / 2 - 4),
+				);
 				el.style.left = `${Math.max(4, x)}px`;
-				el.style.top = `${Math.max(tooltipRect.height / 2 + 4, Math.min(y, window.innerHeight - tooltipRect.height / 2 - 4))}px`;
+				el.style.top = `${actualTop}px`;
+				if (actualTop !== y) {
+					arrow.style.marginTop = `calc(-4px + ${y - actualTop}px)`;
+				}
 			}
 
 			requestAnimationFrame(() => {

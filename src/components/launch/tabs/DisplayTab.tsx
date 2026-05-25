@@ -31,7 +31,10 @@ export function DisplayTab({ disabled, onSelectSource, onPermissionDenied }: Dis
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const onSelectSourceRef = useRef(onSelectSource);
 	onSelectSourceRef.current = onSelectSource;
-	const sourceOptions = useMemo<Electron.SourcesOptions>(() => ({ types: ["screen"] }), []);
+	const sourceOptions = useMemo<Electron.SourcesOptions>(
+		() => ({ types: ["screen"], thumbnailSize: { width: 600, height: 375 } }),
+		[],
+	);
 	const { sources, loading, loadError, refresh, accessState } =
 		useCaptureSourceAccess(sourceOptions);
 	const displays = sources as DisplaySource[];
@@ -74,8 +77,6 @@ export function DisplayTab({ disabled, onSelectSource, onPermissionDenied }: Dis
 		return displayInfo.find((d) => String(d.id) === source.display_id);
 	};
 
-	// Auto-dismiss the overlay when permission is denied — the OS permission prompt
-	// is already visible, so our custom notice is redundant and blocks the view.
 	useEffect(() => {
 		if (accessState && !accessState.canProbeSources && onPermissionDenied) {
 			onPermissionDenied();
@@ -84,8 +85,8 @@ export function DisplayTab({ disabled, onSelectSource, onPermissionDenied }: Dis
 
 	if (loading) {
 		return (
-			<div className="flex items-center justify-center py-12 text-white/40 text-xs">
-				{t("sourceSelector.loadingSources")}
+			<div className="flex items-center justify-center py-12 text-white/40 text-xs font-medium">
+				{t("sourceSelector.loadingSources", "Loading displays...")}
 			</div>
 		);
 	}
@@ -112,11 +113,8 @@ export function DisplayTab({ disabled, onSelectSource, onPermissionDenied }: Dis
 	}
 
 	return (
-		<div className="px-6 py-6">
-			<h3 className="text-white/40 text-[11px] font-medium mb-4 uppercase tracking-widest">
-				{t("display.selectDisplay")}
-			</h3>
-			<div className="flex gap-3 justify-center flex-wrap">
+		<div className="px-4 py-4">
+			<div className="grid grid-cols-2 gap-4 justify-center">
 				{displays.map((source) => {
 					const info = getInfoForDisplay(source);
 					const isSelected = selectedId === source.id;
@@ -126,30 +124,35 @@ export function DisplayTab({ disabled, onSelectSource, onPermissionDenied }: Dis
 							type="button"
 							onClick={() => handleSelect(source)}
 							disabled={disabled}
-							className={`relative flex flex-col items-center gap-3 rounded-xl p-4 transition-all min-w-[150px] ${
+							className={`relative flex flex-col items-center gap-3 rounded-lg p-3 transition-colors text-left overflow-hidden ${
 								isSelected
-									? "bg-white/[0.08] ring-1 ring-white/20"
-									: "bg-white/[0.03] hover:bg-white/[0.06]"
-							} ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
+									? "bg-white/10 ring-1 ring-[#0A84FF]"
+									: "bg-white/5 border border-transparent hover:bg-white/10"
+							} ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
 						>
-							{source.thumbnail ? (
-								<img
-									src={source.thumbnail}
-									alt={source.name}
-									className="h-[76px] w-[124px] rounded-lg object-cover border border-white/[0.08]"
-								/>
-							) : (
-								<div className="flex h-[76px] w-[124px] items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.03]">
-									<MdMonitor size={26} className="text-white/20" />
-								</div>
-							)}
-							<div className="flex flex-col items-center gap-1">
-								<span className="text-[11px] text-white/65 max-w-[124px] truncate font-medium">
+							<div className="relative w-full aspect-[16/10] rounded border border-white/10 overflow-hidden bg-black/50">
+								{source.thumbnail ? (
+									<img
+										src={source.thumbnail}
+										alt={source.name}
+										className="w-full h-full object-cover"
+									/>
+								) : (
+									<div className="flex h-full w-full items-center justify-center">
+										<MdMonitor size={24} className="text-white/20" />
+									</div>
+								)}
+							</div>
+
+							<div className="flex flex-col items-center gap-0.5 w-full">
+								<span
+									className={`text-xs font-medium truncate w-full text-center ${isSelected ? "text-white" : "text-white/80"}`}
+								>
 									{source.name}
 								</span>
 								{info && (
-									<span className="text-[10px] text-white/30">
-										{info.width} x {info.height} @ {info.refreshRate}Hz
+									<span className="text-[10px] text-white/40 tabular-nums">
+										{info.width} &times; {info.height} &bull; {Math.round(info.refreshRate)}Hz
 									</span>
 								)}
 							</div>
