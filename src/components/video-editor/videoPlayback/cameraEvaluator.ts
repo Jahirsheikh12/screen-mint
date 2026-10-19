@@ -7,16 +7,23 @@ import {
 import { DEFAULT_FOCUS } from "./constants";
 import type { CursorMotionSnapshot, CursorSimulationPath } from "./cursorSimulation";
 import { evaluateCursorMotionSnapshot } from "./cursorSimulation";
-import { createSpringState, type SpringState } from "./motionSmoothing";
+import {
+	createSpringState,
+	getCameraFocusSpringConfig,
+	getZoomProgressSpringConfig,
+	getZoomScaleSpringConfig,
+	type SpringConfig,
+	type SpringState,
+	stepSpringValue,
+} from "./motionSmoothing";
 import { resolveZoomRegionFocus } from "./smartZoomController";
 import { findDominantRegion } from "./zoomRegionUtils";
-import { computeFocusFromTransform, computeZoomTransform, smoothZoomValue } from "./zoomTransform";
+import { computeFocusFromTransform, computeZoomTransform } from "./zoomTransform";
 
 const CAMERA_FIXED_STEP_MS = 1000 / 120;
 const CAMERA_MAX_SUBSTEPS = 12;
 const CAMERA_MAX_FRAME_DELTA_MS = 250;
 const SMOOTH_TIME_FACTOR_RESPONSE = 6;
-const CAMERA_FOCUS_RESPONSE = 18;
 
 export interface PlaybackCameraState {
 	scale: number;
@@ -28,6 +35,8 @@ export interface PlaybackCameraState {
 	targetRegionId: string | null;
 	springX: SpringState;
 	springY: SpringState;
+	scaleSpring: SpringState;
+	progressSpring: SpringState;
 	smoothTimeFactor: number;
 	progress: number;
 	x: number;
@@ -189,6 +198,8 @@ export function createPlaybackCameraState(): PlaybackCameraState {
 		targetRegionId: null,
 		springX: createSpringState(DEFAULT_FOCUS.cx),
 		springY: createSpringState(DEFAULT_FOCUS.cy),
+		scaleSpring: createSpringState(1),
+		progressSpring: createSpringState(0),
 		smoothTimeFactor: 1.0,
 		progress: 0,
 		x: 0,
@@ -198,19 +209,20 @@ export function createPlaybackCameraState(): PlaybackCameraState {
 	};
 }
 
-function smoothCameraFocusValue(
-	current: number,
-	target: number,
-	deltaSeconds: number,
-	smoothTimeFactor: number,
-) {
-	if (!Number.isFinite(deltaSeconds) || deltaSeconds <= 0) {
-		return target;
-	}
-
-	const response = CAMERA_FOCUS_RESPONSE / Math.max(0.45, smoothTimeFactor);
-	const alpha = 1 - Math.exp(-response * Math.min(0.1, deltaSeconds));
-	return current + (target - current) * alpha;
+/**
+ * Modulate a spring config's stiffness and damping based on the smooth time factor.
+ * Higher smoothTimeFactor → slower, more relaxed spring (e.g. "reading" intent = 3.2).
+ * Lower smoothTimeFactor → snappier, more responsive spring (e.g. "targeting" intent = 0.6).
+ */
+function modulateSpringConfig(baseConfig: SpringConfig, smoothTimeFactor: number): SpringConfig {
+	const factor = Math.max(0.3, smoothTimeFactor);
+	return {
+		...baseConfig,
+		// Lower stiffness makes the spring lazier (slower to reach target)
+		stiffness: baseConfig.stiffness / factor,
+		// Scale damping to maintain similar damping ratio at the new stiffness
+		damping: baseConfig.damping / Math.sqrt(factor),
+	};
 }
 
 export function evaluatePlaybackCameraFrame(args: {
@@ -233,13 +245,10 @@ export function evaluatePlaybackCameraFrame(args: {
 		connectZooms,
 		geometry,
 		shouldSmooth,
+		cameraSpring,
 	} = args;
 
 	const previousPlaybackTimeMs = state.lastPlaybackTimeMs;
-	const previousFocus = {
-		cx: state.focusX,
-		cy: state.focusY,
-	};
 	const prevScale = state.appliedScale;
 	const prevX = state.x;
 	const prevY = state.y;
@@ -248,6 +257,8 @@ export function evaluatePlaybackCameraFrame(args: {
 		...state,
 		springX: { ...state.springX },
 		springY: { ...state.springY },
+		scaleSpring: { ...state.scaleSpring },
+		progressSpring: { ...state.progressSpring },
 		targetFocusX: state.targetFocusX ?? state.focusX,
 		targetFocusY: state.targetFocusY ?? state.focusY,
 		targetRegionId: state.targetRegionId ?? null,
@@ -262,7 +273,7 @@ export function evaluatePlaybackCameraFrame(args: {
 		zoomRegions,
 		connectZooms,
 		geometry,
-		currentFocus: previousFocus,
+		currentFocus: { cx: state.focusX, cy: state.focusY },
 		deltaSeconds: 0,
 	});
 
@@ -278,6 +289,10 @@ export function evaluatePlaybackCameraFrame(args: {
 		nextState.springX.velocity = 0;
 		nextState.springY.value = targetFocus.cy;
 		nextState.springY.velocity = 0;
+		nextState.scaleSpring.value = finalTargets.targetScaleFactor;
+		nextState.scaleSpring.velocity = 0;
+		nextState.progressSpring.value = finalTargets.targetProgress;
+		nextState.progressSpring.velocity = 0;
 		nextState.smoothTimeFactor = finalTargets.smoothTimeFactor;
 		nextState.progress = finalTargets.targetProgress;
 	} else {
@@ -286,9 +301,11 @@ export function evaluatePlaybackCameraFrame(args: {
 		const playbackDeltaMs =
 			previousPlaybackTimeMs === null ? 0 : Math.max(0, playbackTimeMs - previousPlaybackTimeMs);
 		const substeps = getSubstepDeltaMs(frameDeltaMs);
-		let steppedFocus = previousFocus;
-		let steppedScale = state.scale;
-		let steppedProgress = state.progress;
+
+		// Resolve the base focus spring config from user settings
+		const baseFocusSpringConfig = getCameraFocusSpringConfig(cameraSpring);
+		const scaleSpringConfig = getZoomScaleSpringConfig();
+
 		let steppedSmoothTimeFactor = state.smoothTimeFactor;
 		let steppedTarget = {
 			cx: nextState.targetFocusX,
@@ -305,21 +322,25 @@ export function evaluatePlaybackCameraFrame(args: {
 				zoomRegions,
 				connectZooms,
 				geometry,
-				currentFocus: steppedFocus,
+				currentFocus: { cx: nextState.springX.value, cy: nextState.springY.value },
 				deltaSeconds: 0,
 			});
 			steppedTarget = finalTargets.targetFocus;
 			steppedTargetRegionId = finalTargets.region?.id ?? null;
-			steppedFocus = steppedTarget;
-			nextState.springX.value = steppedFocus.cx;
+			// Snap springs to target on first frame
+			nextState.springX.value = steppedTarget.cx;
 			nextState.springX.velocity = 0;
 			nextState.springX.initialized = true;
-			nextState.springY.value = steppedFocus.cy;
+			nextState.springY.value = steppedTarget.cy;
 			nextState.springY.velocity = 0;
 			nextState.springY.initialized = true;
+			nextState.scaleSpring.value = finalTargets.targetScaleFactor;
+			nextState.scaleSpring.velocity = 0;
+			nextState.scaleSpring.initialized = true;
+			nextState.progressSpring.value = finalTargets.targetProgress;
+			nextState.progressSpring.velocity = 0;
+			nextState.progressSpring.initialized = true;
 			steppedSmoothTimeFactor = finalTargets.smoothTimeFactor;
-			steppedScale = finalTargets.targetScaleFactor;
-			steppedProgress = finalTargets.targetProgress;
 		} else {
 			for (const stepDeltaMs of substeps) {
 				elapsedMs += stepDeltaMs;
@@ -337,7 +358,7 @@ export function evaluatePlaybackCameraFrame(args: {
 					zoomRegions,
 					connectZooms,
 					geometry,
-					currentFocus: steppedFocus,
+					currentFocus: { cx: nextState.springX.value, cy: nextState.springY.value },
 					deltaSeconds: stepDeltaSeconds,
 				});
 
@@ -348,59 +369,58 @@ export function evaluatePlaybackCameraFrame(args: {
 				steppedTargetRegionId = finalTargets.region?.id ?? null;
 
 				if (finalTargets.motionSnapshot?.isDiscontinuous) {
-					steppedFocus = steppedTarget;
-					nextState.springX.value = steppedFocus.cx;
+					// On discontinuity (e.g. seek, loop), snap all springs to targets
+					nextState.springX.value = steppedTarget.cx;
 					nextState.springX.velocity = 0;
 					nextState.springX.initialized = true;
-					nextState.springY.value = steppedFocus.cy;
+					nextState.springY.value = steppedTarget.cy;
 					nextState.springY.velocity = 0;
 					nextState.springY.initialized = true;
+					nextState.scaleSpring.value = finalTargets.targetScaleFactor;
+					nextState.scaleSpring.velocity = 0;
+					nextState.scaleSpring.initialized = true;
+					nextState.progressSpring.value = finalTargets.targetProgress;
+					nextState.progressSpring.velocity = 0;
+					nextState.progressSpring.initialized = true;
 				} else {
-					const stepDeltaSeconds = stepDeltaMs / 1000;
-					const newFocusX = smoothCameraFocusValue(
-						steppedFocus.cx,
-						steppedTarget.cx,
-						stepDeltaSeconds,
+					// Spring-based focus smoothing with intent-modulated response
+					const modulatedFocusConfig = modulateSpringConfig(
+						baseFocusSpringConfig,
 						steppedSmoothTimeFactor,
 					);
-					const newFocusY = smoothCameraFocusValue(
-						steppedFocus.cy,
-						steppedTarget.cy,
-						stepDeltaSeconds,
-						steppedSmoothTimeFactor,
+
+					stepSpringValue(nextState.springX, steppedTarget.cx, stepDeltaMs, modulatedFocusConfig);
+					stepSpringValue(nextState.springY, steppedTarget.cy, stepDeltaMs, modulatedFocusConfig);
+
+					// Spring-based zoom scale
+					stepSpringValue(
+						nextState.scaleSpring,
+						finalTargets.targetScaleFactor,
+						stepDeltaMs,
+						scaleSpringConfig,
 					);
-					steppedFocus = {
-						cx: newFocusX,
-						cy: newFocusY,
-					};
-					nextState.springX.value = steppedFocus.cx;
-					nextState.springX.velocity = 0;
-					nextState.springX.initialized = true;
-					nextState.springY.value = steppedFocus.cy;
-					nextState.springY.velocity = 0;
-					nextState.springY.initialized = true;
+
+					// Asymmetric spring for zoom progress (snappy in, gentle out)
+					const isZoomingIn = finalTargets.targetProgress > nextState.progressSpring.value;
+					const progressSpringConfig = getZoomProgressSpringConfig(isZoomingIn);
+					stepSpringValue(
+						nextState.progressSpring,
+						finalTargets.targetProgress,
+						stepDeltaMs,
+						progressSpringConfig,
+					);
 				}
-				steppedScale = smoothZoomValue(
-					steppedScale,
-					finalTargets.targetScaleFactor,
-					stepDeltaSeconds,
-				);
-				steppedProgress = smoothZoomValue(
-					steppedProgress,
-					finalTargets.targetProgress,
-					stepDeltaSeconds,
-				);
 			}
 		}
 
-		nextState.focusX = steppedFocus.cx;
-		nextState.focusY = steppedFocus.cy;
+		nextState.focusX = nextState.springX.value;
+		nextState.focusY = nextState.springY.value;
 		nextState.targetFocusX = steppedTarget.cx;
 		nextState.targetFocusY = steppedTarget.cy;
 		nextState.targetRegionId = steppedTargetRegionId;
 		nextState.smoothTimeFactor = steppedSmoothTimeFactor;
-		nextState.scale = steppedScale;
-		nextState.progress = steppedProgress;
+		nextState.scale = nextState.scaleSpring.value;
+		nextState.progress = nextState.progressSpring.value;
 	}
 
 	const projectedTransform = computeZoomTransform({

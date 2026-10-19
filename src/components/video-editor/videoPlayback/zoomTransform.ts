@@ -1,7 +1,7 @@
 import { BlurFilter, Container } from "pixi.js";
 import { MotionBlurFilter } from "pixi-filters/motion-blur";
 
-const PEAK_VELOCITY_PPS = 2000;
+const BASE_PEAK_VELOCITY_PPS = 2000;
 const MAX_BLUR_PX = 8;
 const VELOCITY_THRESHOLD_PPS = 15;
 const ZOOM_SMOOTHING_RESPONSE = 18;
@@ -247,6 +247,10 @@ export function applyZoomTransform({
 			motionBlurState.prevCamY = transform.y;
 			motionBlurState.prevCamScale = transform.scale;
 
+			// Scale peak velocity inversely with zoom level — at higher zoom, less
+			// camera velocity is needed to produce the same perceived motion blur.
+			const peakVelocity = BASE_PEAK_VELOCITY_PPS / Math.max(1, transform.scale * 0.7);
+
 			// Velocity in px/s (translation + scale-change contribution)
 			const velocityX = dx / dtSeconds;
 			const velocityY = dy / dtSeconds;
@@ -254,7 +258,7 @@ export function applyZoomTransform({
 				Math.abs(dScale / dtSeconds) * Math.max(stageSize.width, stageSize.height) * 0.5;
 			const speed = Math.sqrt(velocityX * velocityX + velocityY * velocityY) + scaleVelocity;
 
-			const normalised = Math.min(1, speed / PEAK_VELOCITY_PPS);
+			const normalised = Math.min(1, speed / peakVelocity);
 			const targetBlur =
 				speed < VELOCITY_THRESHOLD_PPS
 					? 0

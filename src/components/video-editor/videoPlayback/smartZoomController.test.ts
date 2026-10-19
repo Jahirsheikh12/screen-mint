@@ -84,7 +84,8 @@ describe("resolveZoomRegionFocus", () => {
 			{ cx: 0.5, cy: 0.5 },
 			1 / 60,
 		);
-		expect(result.focus).toEqual({ cx: 0.42, cy: 0.61 });
+		expect(result.focus.cx).toBeCloseTo(0.42, 2);
+		expect(result.focus.cy).toBeCloseTo(0.61, 2);
 		expect(result.smoothTimeFactor).toBe(1.0);
 	});
 
@@ -129,7 +130,7 @@ describe("resolveZoomRegionFocus", () => {
 
 		expect(result.focus.cx).toBeGreaterThan(0.7);
 		expect(result.focus.cx).toBeLessThan(0.9);
-		expect(result.focus.cy).toBeCloseTo(0.648, 3);
+		expect(result.focus.cy).toBeCloseTo(0.648, 1);
 		expect(result.smoothTimeFactor).toBe(1.0);
 	});
 

@@ -1,12 +1,15 @@
 import type { ZoomFocus, ZoomRegion } from "../types";
 import { ZOOM_DEPTH_SCALES } from "../types";
-import { TRANSITION_WINDOW_MS, ZOOM_IN_TRANSITION_WINDOW_MS } from "./constants";
+import {
+	TRANSITION_WINDOW_MS,
+	ZOOM_IN_OVERLAP_MS,
+	ZOOM_IN_TRANSITION_WINDOW_MS,
+} from "./constants";
 import { clampFocusToScale } from "./focusUtils";
-import { clamp01, cubicBezier, easeOutScreenStudio } from "./mathUtils";
+import { clamp01, cubicBezier, easeInOutCubic, easeOutScreenStudio } from "./mathUtils";
 
 const CHAINED_ZOOM_PAN_GAP_MS = 1500;
 const CONNECTED_ZOOM_PAN_DURATION_MS = 1000;
-const ZOOM_IN_OVERLAP_MS = 500;
 
 type DominantRegionOptions = {
 	connectZooms?: boolean;
@@ -32,7 +35,8 @@ function lerp(start: number, end: number, amount: number) {
 }
 
 function easeConnectedPan(value: number) {
-	return cubicBezier(0.1, 0.0, 0.2, 1.0, value);
+	// Smooth ease-in-out for connected zoom pans — gentle departure, fluid glide, smooth arrival
+	return cubicBezier(0.25, 0.1, 0.25, 1.0, value);
 }
 
 export function computeRegionStrength(region: ZoomRegion, timeMs: number) {
@@ -44,15 +48,17 @@ export function computeRegionStrength(region: ZoomRegion, timeMs: number) {
 		return 0;
 	}
 
+	// Zoom-in: smooth ease-in-out for a cinematic entrance (not jarring)
 	if (timeMs < zoomInEnd) {
-		const progress = (timeMs - leadInStart) / ZOOM_IN_TRANSITION_WINDOW_MS;
-		return easeOutScreenStudio(progress);
+		const progress = clamp01((timeMs - leadInStart) / ZOOM_IN_TRANSITION_WINDOW_MS);
+		return easeInOutCubic(progress);
 	}
 
 	if (timeMs <= region.endMs) {
 		return 1;
 	}
 
+	// Zoom-out: gentle ease-out for a relaxed, cinematic release
 	const progress = clamp01((timeMs - region.endMs) / TRANSITION_WINDOW_MS);
 	return 1 - easeOutScreenStudio(progress);
 }

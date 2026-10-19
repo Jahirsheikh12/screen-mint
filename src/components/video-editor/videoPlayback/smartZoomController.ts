@@ -6,7 +6,7 @@ import {
 	type ZoomRegion,
 } from "../types";
 import type { CursorMotionSnapshot } from "./cursorSimulation";
-import { clampFocusToScale } from "./focusUtils";
+import { clampFocusToScale, softenFocusToScale } from "./focusUtils";
 
 export interface ZoomRegionFocusResult {
 	focus: ZoomFocus;
@@ -165,7 +165,7 @@ export function resolveViewportContainedFocus(args: {
 		};
 	}
 
-	return clampFocusToScale(nextFocus, zoomScale);
+	return softenFocusToScale(nextFocus, zoomScale);
 }
 
 export function resolveZoomRegionFocus(
@@ -175,7 +175,7 @@ export function resolveZoomRegionFocus(
 	_deltaSeconds: number,
 ): ZoomRegionFocusResult {
 	const zoomScale = ZOOM_DEPTH_SCALES[region.depth];
-	const staticFocus = clampFocusToScale(region.focus, zoomScale);
+	const staticFocus = softenFocusToScale(region.focus, zoomScale);
 	if (region.mode !== "cursor-follow" || !cursor) {
 		return { focus: staticFocus, smoothTimeFactor: 1.0 };
 	}
@@ -183,7 +183,7 @@ export function resolveZoomRegionFocus(
 	const tracking = mergeTrackingConfig(region.tracking);
 	if (cursor.isDiscontinuous) {
 		return {
-			focus: clampFocusToScale({ cx: cursor.cx, cy: cursor.cy }, zoomScale),
+			focus: softenFocusToScale({ cx: cursor.cx, cy: cursor.cy }, zoomScale),
 			smoothTimeFactor: 1.0,
 		};
 	}
@@ -191,7 +191,7 @@ export function resolveZoomRegionFocus(
 	const intentAdjusted = deriveIntentAwareTargetFocus(cursor, tracking);
 	if (intentAdjusted.hold || cursor.confidence === "low") {
 		return {
-			focus: clampFocusToScale(currentFocus, zoomScale),
+			focus: softenFocusToScale(currentFocus, zoomScale),
 			smoothTimeFactor: intentAdjusted.smoothTimeFactor,
 		};
 	}

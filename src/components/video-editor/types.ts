@@ -242,9 +242,9 @@ export const DEFAULT_CURSOR_SPRING: CursorSpringSettings = {
 	mass: 1.0396666666666667,
 };
 export const DEFAULT_CAMERA_SPRING: CameraSpringSettings = {
-	tension: 170,
-	friction: 26,
-	mass: 1.0,
+	tension: 220,
+	friction: 24,
+	mass: 0.85,
 };
 export const DEFAULT_HIGH_QUALITY_SVG_CURSORS = true;
 export const DEFAULT_CURSOR_COLOR = "#FFFFFF";

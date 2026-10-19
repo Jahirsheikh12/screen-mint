@@ -147,3 +147,73 @@ export function getZoomSpringConfig(): SpringConfig {
 		restSpeed: 0.015,
 	};
 }
+
+/**
+ * Converts user-facing CameraSpringSettings (tension/friction/mass) to the
+ * internal SpringConfig format (stiffness/damping/mass) used by the spring stepper.
+ * Falls back to tuned defaults optimised for Screen.studio-like camera feel.
+ */
+export function getCameraFocusSpringConfig(cameraSpring?: {
+	tension: number;
+	friction: number;
+	mass: number;
+}): SpringConfig {
+	if (!cameraSpring) {
+		// Default: responsive but smooth — slight natural overshoot, fast settle
+		return {
+			stiffness: 220,
+			damping: 24,
+			mass: 0.85,
+			restDelta: 0.0003,
+			restSpeed: 0.008,
+		};
+	}
+
+	return {
+		stiffness: cameraSpring.tension,
+		damping: cameraSpring.friction,
+		mass: cameraSpring.mass,
+		restDelta: 0.0003,
+		restSpeed: 0.008,
+	};
+}
+
+/**
+ * Spring config for zoom scale transitions.
+ * Stiffer and more damped than focus springs to prevent wobbly zoom levels.
+ */
+export function getZoomScaleSpringConfig(): SpringConfig {
+	return {
+		stiffness: 280,
+		damping: 32,
+		mass: 0.8,
+		restDelta: 0.0004,
+		restSpeed: 0.01,
+	};
+}
+
+/**
+ * Asymmetric spring configs for zoom progress (0→1 zoom-in, 1→0 zoom-out).
+ * Zoom-in: snappy response, subtle overshoot for cinematic feel.
+ * Zoom-out: gentle, relaxed deceleration for smooth release.
+ */
+export function getZoomProgressSpringConfig(isZoomingIn: boolean): SpringConfig {
+	if (isZoomingIn) {
+		return {
+			stiffness: 300,
+			damping: 28,
+			mass: 0.75,
+			restDelta: 0.0004,
+			restSpeed: 0.01,
+		};
+	}
+
+	// Zoom-out: softer, more damped for gentle release
+	return {
+		stiffness: 180,
+		damping: 30,
+		mass: 0.9,
+		restDelta: 0.0004,
+		restSpeed: 0.01,
+	};
+}
