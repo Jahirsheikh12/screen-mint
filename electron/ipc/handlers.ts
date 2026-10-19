@@ -38,6 +38,7 @@ import type {
 	CursorTelemetrySample as SessionCursorTelemetrySample,
 } from "../../src/lib/recording/session";
 import { RECORDINGS_DIR } from "../main";
+import { markRecordingStarted, markRecordingStopped } from "../recordingRecovery";
 import { getScreenMintUpdater } from "../updater";
 import { createExportWorkerWindow } from "../windows";
 import { registerAppShellIpcHandlers } from "./appShellHandlers";
@@ -368,6 +369,12 @@ async function loadRecordingsDirectorySetting() {
 	} catch {
 		customRecordingsDir = null;
 	}
+}
+
+/** Makes a recovered recording the current editor video. */
+export function adoptRecoveredRecording(videoPath: string) {
+	currentVideoPath = videoPath;
+	currentProjectPath = null;
 }
 
 async function getRecordingsDir() {
@@ -5140,6 +5147,11 @@ export function registerIpcHandlers(
 	);
 
 	ipcMain.handle(IPC_CHANNELS.recording.setState, (_, recording: boolean) => {
+		if (recording) {
+			void getRecordingsDir().then(markRecordingStarted);
+		} else {
+			void markRecordingStopped();
+		}
 		if (recording) {
 			stopCursorCapture();
 			stopInteractionCapture();

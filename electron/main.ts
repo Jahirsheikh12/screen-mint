@@ -10,9 +10,16 @@ import {
 	Menu,
 	nativeImage,
 	session,
+	shell,
 	Tray,
 } from "electron";
-import { getSelectedSourceId, killWgcCaptureProcess, registerIpcHandlers } from "./ipc/handlers";
+import {
+	adoptRecoveredRecording,
+	getSelectedSourceId,
+	killWgcCaptureProcess,
+	registerIpcHandlers,
+} from "./ipc/handlers";
+import { takeInterruptedRecordings } from "./recordingRecovery";
 import { getScreenMintUpdater } from "./updater";
 import {
 	createEditorWindow,
@@ -383,6 +390,26 @@ function updateTrayMenu(recording: boolean = false) {
 	tray.setContextMenu(Menu.buildFromTemplate(menuTemplate));
 }
 
+/** If the last session crashed mid-recording, offer the partial video. */
+async function offerInterruptedRecordingRecovery() {
+	const files = await takeInterruptedRecordings();
+	if (files.length === 0) return;
+	const { response } = await dialog.showMessageBox({
+		type: "warning",
+		buttons: ["Open in Editor", "Show in Folder", "Not Now"],
+		defaultId: 0,
+		cancelId: 2,
+		message: "ScreenMint closed while recording",
+		detail: `Your last recording stopped unexpectedly. The part that was saved is here:\n${files[0]}`,
+	});
+	if (response === 0) {
+		adoptRecoveredRecording(files[0]);
+		createEditorWindowWrapper();
+	} else if (response === 1) {
+		shell.showItemInFolder(files[0]);
+	}
+}
+
 function createEditorWindowWrapper() {
 	if (mainWindow && !mainWindow.isDestroyed()) {
 		const outgoing = mainWindow;
@@ -550,6 +577,7 @@ app.whenReady().then(async () => {
 			}
 		},
 	);
+	void offerInterruptedRecordingRecovery();
 
 	// Register the display media handler so that renderer's getDisplayMedia()
 	// calls land on the pre-selected source without showing a system picker.

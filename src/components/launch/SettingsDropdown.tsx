@@ -1,10 +1,12 @@
 import { Settings } from "lucide-react";
+import { useState } from "react";
 import { useScopedT } from "@/contexts/I18nContext";
 import type { HudSettings } from "@/hooks/useHudState";
 import {
 	DropdownMenu,
 	DropdownMenuCheckboxItem,
 	DropdownMenuContent,
+	DropdownMenuItem,
 	DropdownMenuRadioGroup,
 	DropdownMenuRadioItem,
 	DropdownMenuSeparator,
@@ -47,9 +49,19 @@ export function SettingsDropdown({
 	const supportsHudCaptureProtection = platform !== "linux";
 	const supportsSpeakerNotes = platform !== null;
 	const settingsTooltip = useTooltip({ content: "Settings", side: "top" });
+	const [recordingsDir, setRecordingsDir] = useState<string | null>(null);
+
+	const handleOpenChange = (open: boolean) => {
+		notifyHudDropdownToggle(open);
+		if (open) {
+			void window.electronAPI
+				.getRecordingsDirectory()
+				.then((result) => setRecordingsDir(result.success ? result.path : null));
+		}
+	};
 
 	return (
-		<DropdownMenu onOpenChange={notifyHudDropdownToggle}>
+		<DropdownMenu onOpenChange={handleOpenChange}>
 			<DropdownMenuTrigger asChild>
 				<button
 					ref={settingsTooltip.triggerRef as React.RefObject<HTMLButtonElement>}
@@ -222,6 +234,35 @@ export function SettingsDropdown({
 						{t("settings.hideHudFromCapture")}
 					</DropdownMenuCheckboxItem>
 				)}
+
+				<DropdownMenuSeparator className="bg-white/[0.08]" />
+				<DropdownMenuSub>
+					<DropdownMenuSubTrigger className={`text-xs ${ITEM_HOVER}`}>
+						Recordings folder
+					</DropdownMenuSubTrigger>
+					<DropdownMenuSubContent className="max-w-[260px]">
+						{recordingsDir && (
+							<div className="px-2 py-1.5 text-[10px] text-white/50 break-all">{recordingsDir}</div>
+						)}
+						<DropdownMenuItem
+							disabled={recording}
+							onSelect={() => {
+								void window.electronAPI.chooseRecordingsDirectory().then((result) => {
+									if (result.success && result.path) setRecordingsDir(result.path);
+								});
+							}}
+							className={`text-xs ${ITEM_HOVER}`}
+						>
+							Choose folder…
+						</DropdownMenuItem>
+						<DropdownMenuItem
+							onSelect={() => void window.electronAPI.openRecordingsFolder()}
+							className={`text-xs ${ITEM_HOVER}`}
+						>
+							Open folder
+						</DropdownMenuItem>
+					</DropdownMenuSubContent>
+				</DropdownMenuSub>
 			</DropdownMenuContent>
 		</DropdownMenu>
 	);
