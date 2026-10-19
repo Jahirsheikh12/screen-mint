@@ -23,6 +23,14 @@ interface ExportDialogProps {
 	exportedFilePath?: string;
 }
 
+const EXPORT_TIP_INTERVAL_MS = 6000;
+const EXPORT_TIPS = [
+	"Tip: Fewer zoom regions render faster. You can turn off automatic zooms in Settings.",
+	"Tip: Motion presets in the Cursor tab switch zoom and cursor feel in one click.",
+	"Tip: Click effects can be set to Ripple, Spotlight or Echo.",
+	"Tip: Save the project to come back and re-export with different settings.",
+];
+
 export function ExportDialog({
 	isOpen,
 	onClose,
@@ -41,6 +49,16 @@ export function ExportDialog({
 	const [isVisible, setIsVisible] = useState(false);
 	const [isClosing, setIsClosing] = useState(false);
 	const prevIsOpenRef = useRef(isOpen);
+	const [tipIndex, setTipIndex] = useState(0);
+
+	useEffect(() => {
+		if (!isExporting) return;
+		const timer = window.setInterval(
+			() => setTipIndex((index) => (index + 1) % EXPORT_TIPS.length),
+			EXPORT_TIP_INTERVAL_MS,
+		);
+		return () => window.clearInterval(timer);
+	}, [isExporting]);
 
 	// Handle open/close transitions
 	useEffect(() => {
@@ -405,6 +423,12 @@ export function ExportDialog({
 										</div>
 									</div>
 								</div>
+
+								{isExporting && (
+									<p className="mb-4 text-[11px] leading-relaxed text-slate-400" aria-live="polite">
+										{EXPORT_TIPS[tipIndex]}
+									</p>
+								)}
 
 								{/* Progress section */}
 								<div className="space-y-5">
