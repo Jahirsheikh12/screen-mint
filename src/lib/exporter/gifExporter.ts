@@ -4,6 +4,7 @@ import type {
 	CaptionRegion,
 	CaptionSettings,
 	CropRegion,
+	CursorClickStyleSettings,
 	CursorMovementStyle,
 	CursorPack,
 	CursorSpringSettings,
@@ -100,6 +101,7 @@ interface GifExporterConfig {
 	clickHighlightColor?: string;
 	clickHighlightSize?: number;
 	clickHighlightOpacity?: number;
+	cursorClickStyle?: CursorClickStyleSettings;
 	cursorTrailLength?: number;
 	cursorTrailOpacity?: number;
 	cursorTypeMode?: CursorTypeMode;
@@ -286,6 +288,7 @@ export class GifExporter {
 				clickHighlightColor: this.config.clickHighlightColor,
 				clickHighlightSize: this.config.clickHighlightSize,
 				clickHighlightOpacity: this.config.clickHighlightOpacity,
+				cursorClickStyle: this.config.cursorClickStyle,
 				cursorTrailLength: this.config.cursorTrailLength,
 				cursorTrailOpacity: this.config.cursorTrailOpacity,
 				cursorTypeMode: this.config.cursorTypeMode,

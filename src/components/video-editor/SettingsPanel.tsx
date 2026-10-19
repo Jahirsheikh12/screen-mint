@@ -71,6 +71,7 @@ import type {
 	CaptionStylePreset,
 	CaptionUserPreset,
 	CropRegion,
+	CursorClickStyleSettings,
 	CursorMovementStyle,
 	CursorPack,
 	CursorSpringSettings,
@@ -78,6 +79,7 @@ import type {
 	FigureData,
 	KeyboardShortcutPosition,
 	KeyboardShortcutTheme,
+	MotionPresetId,
 	PlaybackSpeed,
 	PreviewQuality,
 	ScenePresetId,
@@ -97,6 +99,7 @@ import {
 	DEFAULT_CLICK_HIGHLIGHT_COLOR,
 	DEFAULT_CLICK_HIGHLIGHT_OPACITY,
 	DEFAULT_CLICK_HIGHLIGHT_SIZE,
+	DEFAULT_CURSOR_CLICK_STYLE,
 	DEFAULT_CURSOR_COLOR,
 	DEFAULT_CURSOR_IDLE_HIDE_DELAY_MS,
 	DEFAULT_CURSOR_MOVEMENT_STYLE,
@@ -198,6 +201,10 @@ interface SettingsPanelProps {
 	onClickHighlightSizeChange?: (size: number) => void;
 	clickHighlightOpacity?: number;
 	onClickHighlightOpacityChange?: (opacity: number) => void;
+	cursorClickStyle?: CursorClickStyleSettings;
+	onCursorClickStyleChange?: (style: CursorClickStyleSettings) => void;
+	motionPreset?: MotionPresetId | null;
+	onApplyMotionPreset?: (preset: MotionPresetId) => void;
 	cursorTrailLength?: number;
 	onCursorTrailLengthChange?: (length: number) => void;
 	cursorTrailOpacity?: number;
@@ -406,6 +413,10 @@ export default function SettingsPanel({
 	onClickHighlightSizeChange,
 	clickHighlightOpacity = DEFAULT_CLICK_HIGHLIGHT_OPACITY,
 	onClickHighlightOpacityChange,
+	cursorClickStyle = DEFAULT_CURSOR_CLICK_STYLE,
+	onCursorClickStyleChange,
+	motionPreset = null,
+	onApplyMotionPreset,
 	cursorTrailLength = DEFAULT_CURSOR_TRAIL_LENGTH,
 	onCursorTrailLengthChange,
 	cursorTrailOpacity = DEFAULT_CURSOR_TRAIL_OPACITY,
@@ -1040,6 +1051,10 @@ export default function SettingsPanel({
 						onClickHighlightSizeChange={onClickHighlightSizeChange}
 						clickHighlightOpacity={clickHighlightOpacity}
 						onClickHighlightOpacityChange={onClickHighlightOpacityChange}
+						cursorClickStyle={cursorClickStyle}
+						onCursorClickStyleChange={onCursorClickStyleChange}
+						motionPreset={motionPreset}
+						onApplyMotionPreset={onApplyMotionPreset}
 					/>
 				)}
 

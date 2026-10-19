@@ -1,11 +1,14 @@
 import { Assets, BlurFilter, Container, Graphics, Sprite, Texture } from "pixi.js";
 import { MotionBlurFilter } from "pixi-filters/motion-blur";
-import type {
-	CursorPack,
-	CursorStyle,
-	CursorTelemetryPoint,
-	CursorType,
-	CursorTypeMode,
+import {
+	type CursorClickEffectStyle,
+	type CursorClickStyleSettings,
+	type CursorPack,
+	type CursorStyle,
+	type CursorTelemetryPoint,
+	type CursorType,
+	type CursorTypeMode,
+	DEFAULT_CURSOR_CLICK_STYLE,
 } from "../types";
 import {
 	CURSOR_ASSET_SAMPLE_SIZE,
@@ -84,6 +87,7 @@ export interface CursorRenderConfig {
 	clickHighlightColor: string;
 	clickHighlightSize: number;
 	clickHighlightOpacity: number;
+	clickStyle: CursorClickStyleSettings;
 	sway: number;
 	cursorPack: CursorPack;
 	cursorStyle: CursorStyle;
@@ -110,6 +114,7 @@ export const DEFAULT_CURSOR_CONFIG: CursorRenderConfig = {
 	clickHighlightColor: "#f59e0b",
 	clickHighlightSize: 1,
 	clickHighlightOpacity: 0.5,
+	clickStyle: DEFAULT_CURSOR_CLICK_STYLE,
 	sway: 0,
 	cursorPack: "classic",
 	cursorStyle: "default",
@@ -124,8 +129,6 @@ export const DEFAULT_CURSOR_CONFIG: CursorRenderConfig = {
 
 const REFERENCE_WIDTH = 1920;
 const MIN_CURSOR_VIEWPORT_SCALE = 0.55;
-const CLICK_ANIMATION_MS = 140;
-const CLICK_RING_FADE_MS = 600;
 const CURSOR_MOTION_BLUR_BASE_MULTIPLIER = 0.08;
 const CURSOR_TIME_DISCONTINUITY_MS = 100;
 const CURSOR_SWAY_SMOOTHING_MULTIPLIER = 0.7;
@@ -556,21 +559,24 @@ export function getCursorVisualState(
 	samples: CursorTelemetryPoint[],
 	timeMs: number,
 	previewClickSample?: ClickInteractionSample | null,
+	clickStyle: Pick<
+		CursorClickStyleSettings,
+		"effectDurationMs" | "bounceDurationMs"
+	> = DEFAULT_CURSOR_CLICK_STYLE,
 ): CursorVisualState {
+	const bounceMs = Math.max(1, clickStyle.bounceDurationMs);
+	const effectMs = Math.max(1, clickStyle.effectDurationMs);
 	const latestClick = findLatestInteractionSample(samples, timeMs, previewClickSample);
 	const interactionType = latestClick?.interactionType;
 	const ageMs = latestClick ? Math.max(0, timeMs - latestClick.timeMs) : Number.POSITIVE_INFINITY;
 	const isClickEvent = isClickInteraction(interactionType);
 	const clickBounceProgress =
-		latestClick && isClickEvent && ageMs <= CLICK_ANIMATION_MS ? 1 - ageMs / CLICK_ANIMATION_MS : 0;
+		latestClick && isClickEvent && ageMs <= bounceMs ? 1 - ageMs / bounceMs : 0;
 
 	return {
 		cursorType: findLatestStableCursorType(samples, timeMs),
 		clickBounceProgress,
-		clickProgress:
-			latestClick && isClickEvent && ageMs <= CLICK_RING_FADE_MS
-				? 1 - ageMs / CLICK_RING_FADE_MS
-				: 0,
+		clickProgress: latestClick && isClickEvent && ageMs <= effectMs ? 1 - ageMs / effectMs : 0,
 	};
 }
 
@@ -600,6 +606,65 @@ export function getClickRingStyle(
 			h * 0.28 * config.clickHighlightSize + (1 - progress) * h * 0.62 * config.clickHighlightSize,
 		lineWidth: Math.max(2, h * 0.075 * Math.max(0.75, config.clickHighlightSize)),
 	};
+}
+
+export interface ClickEffectShape {
+	radius: number;
+	color: number;
+	alpha: number;
+	/** Stroke width; undefined means a filled disc. */
+	lineWidth?: number;
+}
+
+/**
+ * Shapes for one frame of a click effect. `progress` runs 1 → 0 over the effect duration.
+ */
+export function getClickEffectShapes(
+	effect: CursorClickEffectStyle,
+	h: number,
+	progress: number,
+	config: Pick<
+		CursorRenderConfig,
+		"clickHighlightColor" | "clickHighlightOpacity" | "clickHighlightSize"
+	>,
+): ClickEffectShape[] {
+	const ring = getClickRingStyle(h, progress, config);
+	if (!ring) return [];
+	const size = config.clickHighlightSize;
+	const elapsed = 1 - progress;
+
+	switch (effect) {
+		case "spotlight": {
+			const radius = h * (0.45 + elapsed * 0.45) * size;
+			return [
+				{ radius, color: ring.color, alpha: ring.alpha * 0.35 },
+				{ radius: radius * 0.6, color: ring.color, alpha: ring.alpha * 0.25 },
+			];
+		}
+		case "echo": {
+			const lineWidth = Math.max(1.5, ring.lineWidth * 0.6);
+			return [
+				{ radius: ring.radius, color: ring.color, alpha: ring.alpha, lineWidth },
+				{
+					radius: h * 0.2 * size + elapsed * h * 0.95 * size,
+					color: ring.color,
+					alpha: ring.alpha * 0.6,
+					lineWidth,
+				},
+			];
+		}
+		default: {
+			const shapes: ClickEffectShape[] = [
+				{ radius: ring.radius, color: ring.color, alpha: ring.alpha, lineWidth: ring.lineWidth },
+			];
+			// Second ring trails the first by a quarter of the effect.
+			const trailing = getClickRingStyle(h, Math.min(1, progress + 0.25), config);
+			if (trailing && progress < 0.75) {
+				shapes.push({ ...trailing, alpha: trailing.alpha * 0.55 });
+			}
+			return shapes;
+		}
+	}
 }
 
 export class SmoothedCursorState {
@@ -708,17 +773,18 @@ function drawClickRing(
 	progress: number,
 	config: Pick<
 		CursorRenderConfig,
-		"clickHighlightColor" | "clickHighlightOpacity" | "clickHighlightSize"
+		"clickHighlightColor" | "clickHighlightOpacity" | "clickHighlightSize" | "clickStyle"
 	>,
 ) {
 	graphics.clear();
-	const style = getClickRingStyle(h, progress, config);
-	if (!style) {
-		return;
+	for (const shape of getClickEffectShapes(config.clickStyle.effect, h, progress, config)) {
+		graphics.circle(px, py, shape.radius);
+		if (shape.lineWidth === undefined) {
+			graphics.fill({ color: shape.color, alpha: shape.alpha });
+		} else {
+			graphics.stroke({ width: shape.lineWidth, color: shape.color, alpha: shape.alpha });
+		}
 	}
-
-	graphics.circle(px, py, style.radius);
-	graphics.stroke({ width: style.lineWidth, color: style.color, alpha: style.alpha });
 }
 
 export class PixiCursorOverlay {
@@ -859,6 +925,10 @@ export class PixiCursorOverlay {
 		this.config.clickHighlightSize = Math.max(0, clickHighlightSize);
 	}
 
+	setClickStyle(clickStyle: CursorClickStyleSettings) {
+		this.config.clickStyle = clickStyle;
+	}
+
 	setClickHighlightOpacity(clickHighlightOpacity: number) {
 		this.config.clickHighlightOpacity = clamp(clickHighlightOpacity, 0, 1);
 	}
@@ -985,8 +1055,10 @@ export class PixiCursorOverlay {
 			samples,
 			timeMs,
 			previewClickSample,
+			this.config.clickStyle,
 		);
-		const enabledClickBounceProgress = this.config.clickEffectsEnabled ? clickBounceProgress : 0;
+		// Bounce is independent of the click graphic; clickBounce = 0 turns it off.
+		const enabledClickBounceProgress = clickBounceProgress;
 		const enabledClickProgress = this.config.clickEffectsEnabled ? clickProgress : 0;
 		const visualMode = resolveCursorVisualMode({
 			cursorTypeMode: this.config.cursorTypeMode,
@@ -1276,7 +1348,12 @@ export function drawCursorOnCanvas(
 	const px = viewport.x + smoothedState.x * viewport.width;
 	const py = viewport.y + smoothedState.y * viewport.height;
 	const h = config.dotRadius * getCursorViewportScale(viewport);
-	const { cursorType, clickBounceProgress } = getCursorVisualState(samples, timeMs);
+	const { cursorType, clickBounceProgress } = getCursorVisualState(
+		samples,
+		timeMs,
+		null,
+		config.clickStyle,
+	);
 	let spriteKey: CursorAssetKey = "arrow";
 	if (config.cursorTypeMode !== "circle" && cursorType) {
 		try {
@@ -1287,8 +1364,7 @@ export function drawCursorOnCanvas(
 		}
 	}
 	const asset = getCursorAsset(spriteKey, config.cursorPack, config.preferSystemCursorAssets);
-	const enabledClickBounceProgress = config.clickEffectsEnabled ? clickBounceProgress : 0;
-	const bounceScale = getClickBounceScale(enabledClickBounceProgress, config.clickBounce);
+	const bounceScale = getClickBounceScale(clickBounceProgress, config.clickBounce);
 
 	if (config.cursorTypeMode === "circle") {
 		const radius = ((h * 0.28) / 2) * bounceScale;

@@ -53,7 +53,10 @@ import {
 	type CaptionTrack,
 	type CaptionWord,
 	type CropRegion,
+	CURSOR_CLICK_EFFECT_STYLE_OPTIONS,
 	CURSOR_PACK_OPTIONS,
+	type CursorClickEffectStyle,
+	type CursorClickStyleSettings,
 	type CursorMovementStyle,
 	type CursorPack,
 	type CursorSpringSettings,
@@ -80,6 +83,7 @@ import {
 	DEFAULT_CLICK_HIGHLIGHT_SIZE,
 	DEFAULT_CROP_REGION,
 	DEFAULT_CURSOR_CLICK_BOUNCE,
+	DEFAULT_CURSOR_CLICK_STYLE,
 	DEFAULT_CURSOR_COLOR,
 	DEFAULT_CURSOR_FOLLOW_TRACKING,
 	DEFAULT_CURSOR_MOTION_BLUR,
@@ -114,6 +118,7 @@ import {
 	type DeviceMockup,
 	type KeyboardShortcutPosition,
 	type KeyboardShortcutTheme,
+	LEGACY_CURSOR_CLICK_STYLE,
 	LEGACY_ZOOM_TIMING,
 	SCENE_PRESET_IDS,
 	type ScenePresetId,
@@ -190,6 +195,7 @@ export interface ProjectEditorState {
 	clickHighlightColor: string;
 	clickHighlightSize: number;
 	clickHighlightOpacity: number;
+	cursorClickStyle: CursorClickStyleSettings;
 	cursorTrailLength: number;
 	cursorTrailOpacity: number;
 	showKeyboardShortcuts: boolean;
@@ -994,14 +1000,39 @@ export function normalizeZoomTemporalBlur(candidate: unknown): ZoomTemporalBlurS
 	};
 }
 
-/** Projects saved before v12 had fixed zoom timing; keep their motion unchanged on load. */
+export function normalizeCursorClickStyle(candidate: unknown): CursorClickStyleSettings {
+	const raw =
+		candidate && typeof candidate === "object"
+			? (candidate as Partial<CursorClickStyleSettings>)
+			: {};
+	return {
+		effect: CURSOR_CLICK_EFFECT_STYLE_OPTIONS.some((option) => option.value === raw.effect)
+			? (raw.effect as CursorClickEffectStyle)
+			: DEFAULT_CURSOR_CLICK_STYLE.effect,
+		effectDurationMs: isFiniteNumber(raw.effectDurationMs)
+			? clamp(raw.effectDurationMs, 100, 3000)
+			: DEFAULT_CURSOR_CLICK_STYLE.effectDurationMs,
+		bounceDurationMs: isFiniteNumber(raw.bounceDurationMs)
+			? clamp(raw.bounceDurationMs, 50, 1500)
+			: DEFAULT_CURSOR_CLICK_STYLE.bounceDurationMs,
+	};
+}
+
+/**
+ * Projects saved before v12 had fixed zoom/click timing and only bounced the cursor when click
+ * effects were on; keep their look unchanged on load.
+ */
 export function withLegacyZoomTiming(
 	version: number,
 	editor: Partial<ProjectEditorState>,
 ): Partial<ProjectEditorState> {
-	return version < 12 && !editor.zoomTiming
-		? { ...editor, zoomTiming: LEGACY_ZOOM_TIMING }
-		: editor;
+	if (version >= 12) return editor;
+	return {
+		...editor,
+		zoomTiming: editor.zoomTiming ?? LEGACY_ZOOM_TIMING,
+		cursorClickStyle: editor.cursorClickStyle ?? LEGACY_CURSOR_CLICK_STYLE,
+		...(editor.clickEffectsEnabled ? {} : { cursorClickBounce: 0 }),
+	};
 }
 
 function normalizeCursorFollowTracking(candidate: unknown) {
@@ -1650,6 +1681,7 @@ export function normalizeProjectEditor(
 		clickHighlightOpacity: isFiniteNumber(editor.clickHighlightOpacity)
 			? clamp(editor.clickHighlightOpacity, 0, 1)
 			: DEFAULT_CLICK_HIGHLIGHT_OPACITY,
+		cursorClickStyle: normalizeCursorClickStyle(editor.cursorClickStyle),
 		cursorTrailLength: isFiniteNumber(editor.cursorTrailLength)
 			? clamp(editor.cursorTrailLength, 0, 20)
 			: DEFAULT_CURSOR_TRAIL_LENGTH,

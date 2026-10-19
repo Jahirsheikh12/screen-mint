@@ -57,6 +57,7 @@ export const EDITOR_SETTINGS_COVERAGE: readonly SettingsCoverageGroup[] = [
 			"clickHighlightColor",
 			"clickHighlightSize",
 			"clickHighlightOpacity",
+			"cursorClickStyle",
 			"cursorTrailLength",
 			"cursorTrailOpacity",
 		],

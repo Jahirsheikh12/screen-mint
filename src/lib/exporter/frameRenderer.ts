@@ -16,6 +16,7 @@ import type {
 	CaptionRegion,
 	CaptionSettings,
 	CropRegion,
+	CursorClickStyleSettings,
 	CursorMovementStyle,
 	CursorPack,
 	CursorSpringSettings,
@@ -131,6 +132,7 @@ interface FrameRenderConfig {
 	clickHighlightColor?: string;
 	clickHighlightSize?: number;
 	clickHighlightOpacity?: number;
+	cursorClickStyle?: CursorClickStyleSettings;
 	cursorTrailLength?: number;
 	cursorTrailOpacity?: number;
 	cursorTypeMode?: CursorTypeMode;
@@ -331,6 +333,7 @@ export class FrameRenderer {
 					this.config.clickHighlightSize ?? DEFAULT_CURSOR_CONFIG.clickHighlightSize,
 				clickHighlightOpacity:
 					this.config.clickHighlightOpacity ?? DEFAULT_CURSOR_CONFIG.clickHighlightOpacity,
+				clickStyle: this.config.cursorClickStyle ?? DEFAULT_CURSOR_CONFIG.clickStyle,
 				trailLength: this.config.cursorTrailLength ?? DEFAULT_CURSOR_CONFIG.trailLength,
 				trailOpacity: this.config.cursorTrailOpacity ?? DEFAULT_CURSOR_CONFIG.trailOpacity,
 				springConfig: resolvedCursorConfig.springConfig,

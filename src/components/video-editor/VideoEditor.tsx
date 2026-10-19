@@ -170,6 +170,8 @@ import {
 	getRecommendedWebcamDefaults,
 	type KeyboardPlatform,
 	type KeyboardTelemetrySample,
+	MOTION_PRESETS,
+	type MotionPresetId,
 	type PlaybackSpeed,
 	type PreviewQuality,
 	type ScenePresetId,
@@ -207,6 +209,7 @@ import {
 	buildCursorSimulationPath,
 	evaluateCursorMotionSnapshot,
 } from "./videoPlayback/cursorSimulation";
+import { detectMotionPreset, motionPresetToCursorSpring } from "./videoPlayback/cursorV2";
 import { composeCropRegions, deriveLegacyCaptureCorrectionCrop } from "./videoPlayback/layoutUtils";
 import type { VideoPlaybackRef } from "./videoPlayback/playbackTypes";
 import { resolveZoomRegionFocus } from "./videoPlayback/smartZoomController";
@@ -380,6 +383,40 @@ export default function VideoEditor() {
 	const [clickHighlightOpacity, setClickHighlightOpacity] = useState(
 		initialEditorPreferences.clickHighlightOpacity,
 	);
+	const [cursorClickStyle, setCursorClickStyle] = useState(
+		initialEditorPreferences.cursorClickStyle,
+	);
+	const motionPreset = useMemo(
+		() =>
+			detectMotionPreset({
+				zoomInDurationMs: zoomTiming.zoomInDurationMs,
+				zoomOutDurationMs: zoomTiming.zoomOutDurationMs,
+				cursorSize,
+				cursorSmoothing,
+				cursorClickBounce,
+				cursorClickBounceDurationMs: cursorClickStyle.bounceDurationMs,
+				cursorSpring,
+			}),
+		[zoomTiming, cursorSize, cursorSmoothing, cursorClickBounce, cursorClickStyle, cursorSpring],
+	);
+	const applyMotionPreset = useCallback((presetId: MotionPresetId) => {
+		const preset = MOTION_PRESETS[presetId];
+		setZoomTiming((timing) => ({
+			...timing,
+			zoomInDurationMs: preset.zoomInDurationMs,
+			zoomOutDurationMs: preset.zoomOutDurationMs,
+		}));
+		setCursorSize(preset.cursorSize);
+		setCursorSmoothing(preset.cursorSmoothing);
+		setCursorClickBounce(preset.cursorClickBounce);
+		setCursorClickStyle((style) => ({
+			...style,
+			bounceDurationMs: preset.cursorClickBounceDurationMs,
+		}));
+		setSmoothMovementEnabled(true);
+		setCursorMovementStyle("custom");
+		setCursorSpring(motionPresetToCursorSpring(preset));
+	}, []);
 	const [cursorTrailLength, setCursorTrailLength] = useState(
 		initialEditorPreferences.cursorTrailLength,
 	);
@@ -654,6 +691,7 @@ export default function VideoEditor() {
 				clickHighlightColor,
 				clickHighlightSize,
 				clickHighlightOpacity,
+				cursorClickStyle,
 				cursorTrailLength,
 				cursorTrailOpacity,
 				showKeyboardShortcuts,
@@ -733,6 +771,7 @@ export default function VideoEditor() {
 			clickHighlightColor,
 			clickHighlightSize,
 			clickHighlightOpacity,
+			cursorClickStyle,
 			cursorTrailLength,
 			cursorTrailOpacity,
 			showKeyboardShortcuts,
@@ -817,6 +856,7 @@ export default function VideoEditor() {
 			setClickHighlightColor(controls.clickHighlightColor);
 			setClickHighlightSize(controls.clickHighlightSize);
 			setClickHighlightOpacity(controls.clickHighlightOpacity);
+			setCursorClickStyle(controls.cursorClickStyle);
 			setCursorTrailLength(controls.cursorTrailLength);
 			setCursorTrailOpacity(controls.cursorTrailOpacity);
 			setShowKeyboardShortcuts(controls.showKeyboardShortcuts);
@@ -1092,6 +1132,7 @@ export default function VideoEditor() {
 				clickHighlightColor,
 				clickHighlightSize,
 				clickHighlightOpacity,
+				cursorClickStyle,
 				cursorTrailLength,
 				cursorTrailOpacity,
 				showKeyboardShortcuts,
@@ -1174,6 +1215,7 @@ export default function VideoEditor() {
 		clickHighlightColor,
 		clickHighlightSize,
 		clickHighlightOpacity,
+		cursorClickStyle,
 		cursorTrailLength,
 		cursorTrailOpacity,
 		showKeyboardShortcuts,
@@ -1471,6 +1513,7 @@ export default function VideoEditor() {
 					clickHighlightColor,
 					clickHighlightSize,
 					clickHighlightOpacity,
+					cursorClickStyle,
 					cursorTrailLength,
 					cursorTrailOpacity,
 					showKeyboardShortcuts,
@@ -1582,6 +1625,7 @@ export default function VideoEditor() {
 			clickHighlightColor,
 			clickHighlightSize,
 			clickHighlightOpacity,
+			cursorClickStyle,
 			cursorTrailLength,
 			cursorTrailOpacity,
 			showKeyboardShortcuts,
@@ -3434,6 +3478,7 @@ export default function VideoEditor() {
 					clickHighlightColor,
 					clickHighlightSize,
 					clickHighlightOpacity,
+					cursorClickStyle,
 					cursorTrailLength,
 					cursorTrailOpacity,
 					cursorTypeMode,
@@ -3658,6 +3703,7 @@ export default function VideoEditor() {
 							clickHighlightColor,
 							clickHighlightSize,
 							clickHighlightOpacity,
+							cursorClickStyle,
 							cursorTrailLength,
 							cursorTrailOpacity,
 							cursorTypeMode,
@@ -3809,6 +3855,7 @@ export default function VideoEditor() {
 							clickHighlightColor,
 							clickHighlightSize,
 							clickHighlightOpacity,
+							cursorClickStyle,
 							cursorTrailLength,
 							cursorTrailOpacity,
 							cursorTypeMode,
@@ -3929,6 +3976,7 @@ export default function VideoEditor() {
 			clickHighlightColor,
 			clickHighlightSize,
 			clickHighlightOpacity,
+			cursorClickStyle,
 			cursorTrailLength,
 			cursorTrailOpacity,
 			cursorTypeMode,
@@ -4460,6 +4508,7 @@ export default function VideoEditor() {
 											clickHighlightColor={clickHighlightColor}
 											clickHighlightSize={clickHighlightSize}
 											clickHighlightOpacity={clickHighlightOpacity}
+											cursorClickStyle={cursorClickStyle}
 											cursorTrailLength={cursorTrailLength}
 											cursorTrailOpacity={cursorTrailOpacity}
 											cursorTypeMode={cursorTypeMode}
@@ -4648,7 +4697,11 @@ export default function VideoEditor() {
 												clickHighlightSize={clickHighlightSize}
 												onClickHighlightSizeChange={setClickHighlightSize}
 												clickHighlightOpacity={clickHighlightOpacity}
+												cursorClickStyle={cursorClickStyle}
 												onClickHighlightOpacityChange={setClickHighlightOpacity}
+												onCursorClickStyleChange={setCursorClickStyle}
+												motionPreset={motionPreset}
+												onApplyMotionPreset={applyMotionPreset}
 												cursorTrailLength={cursorTrailLength}
 												onCursorTrailLengthChange={setCursorTrailLength}
 												cursorTrailOpacity={cursorTrailOpacity}

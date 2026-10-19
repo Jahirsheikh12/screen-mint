@@ -56,7 +56,7 @@ describe("cursor click effects", () => {
 			interactionType: "click",
 		});
 		expect(previewState.clickProgress).toBeCloseTo(1 - 40 / 600, 5);
-		expect(previewState.clickBounceProgress).toBeCloseTo(1 - 40 / 140, 5);
+		expect(previewState.clickBounceProgress).toBeCloseTo(1 - 40 / 350, 5);
 	});
 
 	it("lets click highlight settings control the rendered ring style", () => {

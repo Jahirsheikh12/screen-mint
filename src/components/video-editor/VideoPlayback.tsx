@@ -29,6 +29,7 @@ import {
 	DEFAULT_CLICK_HIGHLIGHT_OPACITY,
 	DEFAULT_CLICK_HIGHLIGHT_SIZE,
 	DEFAULT_CURSOR_CLICK_BOUNCE,
+	DEFAULT_CURSOR_CLICK_STYLE,
 	DEFAULT_CURSOR_COLOR,
 	DEFAULT_CURSOR_IDLE_HIDE_DELAY_MS,
 	DEFAULT_CURSOR_MOTION_BLUR,
@@ -256,6 +257,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			clickHighlightColor = DEFAULT_CLICK_HIGHLIGHT_COLOR,
 			clickHighlightSize = DEFAULT_CLICK_HIGHLIGHT_SIZE,
 			clickHighlightOpacity = DEFAULT_CLICK_HIGHLIGHT_OPACITY,
+			cursorClickStyle = DEFAULT_CURSOR_CLICK_STYLE,
 			cursorTrailLength = DEFAULT_CURSOR_TRAIL_LENGTH,
 			cursorTrailOpacity = DEFAULT_CURSOR_TRAIL_OPACITY,
 			cursorTypeMode = DEFAULT_CURSOR_TYPE_MODE,
@@ -365,6 +367,8 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const clickHighlightColorRef = useRef(clickHighlightColor);
 		const clickHighlightSizeRef = useRef(clickHighlightSize);
 		const clickHighlightOpacityRef = useRef(clickHighlightOpacity);
+		const cursorClickStyleRef = useRef(cursorClickStyle);
+		cursorClickStyleRef.current = cursorClickStyle;
 		const previewClickPulseRef = useRef<PreviewClickPulse | null>(null);
 		const previousClickEffectsRef = useRef({
 			cursorClickBounce,
@@ -372,6 +376,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			clickHighlightColor,
 			clickHighlightSize,
 			clickHighlightOpacity,
+			cursorClickStyle,
 		});
 		const cursorTrailLengthRef = useRef(cursorTrailLength);
 		const cursorTrailOpacityRef = useRef(cursorTrailOpacity);
@@ -1275,7 +1280,8 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				previous.clickEffectsEnabled !== clickEffectsEnabled ||
 				previous.clickHighlightColor !== clickHighlightColor ||
 				previous.clickHighlightSize !== clickHighlightSize ||
-				previous.clickHighlightOpacity !== clickHighlightOpacity;
+				previous.clickHighlightOpacity !== clickHighlightOpacity ||
+				previous.cursorClickStyle !== cursorClickStyle;
 
 			previousClickEffectsRef.current = {
 				cursorClickBounce,
@@ -1283,6 +1289,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				clickHighlightColor,
 				clickHighlightSize,
 				clickHighlightOpacity,
+				cursorClickStyle,
 			};
 
 			if (
@@ -1310,6 +1317,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			clickHighlightColor,
 			clickHighlightSize,
 			clickHighlightOpacity,
+			cursorClickStyle,
 			showCursor,
 			currentTime,
 			hasRecordedClickNear,
@@ -1519,6 +1527,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 						clickHighlightColor: clickHighlightColorRef.current,
 						clickHighlightSize: clickHighlightSizeRef.current,
 						clickHighlightOpacity: clickHighlightOpacityRef.current,
+						clickStyle: cursorClickStyleRef.current,
 						trailLength: cursorTrailLengthRef.current,
 						trailOpacity: cursorTrailOpacityRef.current,
 						springConfig: resolvedCursorConfig.springConfig,
@@ -1927,6 +1936,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			overlay.setClickHighlightColor(clickHighlightColor);
 			overlay.setClickHighlightSize(clickHighlightSize);
 			overlay.setClickHighlightOpacity(clickHighlightOpacity);
+			overlay.setClickStyle(cursorClickStyle);
 			overlay.setTrailLength(cursorTrailLength);
 			overlay.setTrailOpacity(cursorTrailOpacity);
 			overlay.setSpringConfig(resolvedCursorConfig.springConfig);
@@ -1950,6 +1960,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			clickHighlightColor,
 			clickHighlightSize,
 			clickHighlightOpacity,
+			cursorClickStyle,
 			cursorTrailLength,
 			cursorTrailOpacity,
 			cursorTypeMode,
@@ -2018,6 +2029,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					clickHighlightColor: clickHighlightColorRef.current,
 					clickHighlightSize: clickHighlightSizeRef.current,
 					clickHighlightOpacity: clickHighlightOpacityRef.current,
+					clickStyle: cursorClickStyleRef.current,
 					trailLength: cursorTrailLengthRef.current,
 					trailOpacity: cursorTrailOpacityRef.current,
 					springConfig: resolvedCursorConfig.springConfig,

@@ -155,7 +155,7 @@ export interface CameraSpringSettings {
 	mass: number;
 }
 
-export type CursorPack = "classic" | "custom" | "macos";
+export type CursorPack = "classic" | "custom" | "macos" | "inverted";
 
 export interface CursorVisualSettings {
 	size: number;
@@ -192,6 +192,7 @@ export const CURSOR_PACK_OPTIONS: { value: CursorPack; label: string }[] = [
 	{ value: "classic", label: "Classic" },
 	{ value: "custom", label: "Custom" },
 	{ value: "macos", label: "macOS" },
+	{ value: "inverted", label: "Inverted" },
 ];
 export const CURSOR_TYPE_VALUES: CursorType[] = [
 	"arrow",
@@ -250,6 +251,37 @@ export const DEFAULT_HIGH_QUALITY_SVG_CURSORS = true;
 export const DEFAULT_CURSOR_COLOR = "#FFFFFF";
 export const DEFAULT_CURSOR_OPACITY = 1.0;
 export const DEFAULT_CLICK_EFFECTS_ENABLED = false;
+
+export type CursorClickEffectStyle = "ripple" | "spotlight" | "echo";
+
+export const CURSOR_CLICK_EFFECT_STYLE_OPTIONS: Array<{
+	value: CursorClickEffectStyle;
+	label: string;
+	description: string;
+}> = [
+	{ value: "ripple", label: "Ripple", description: "Rings expand outward from each click." },
+	{ value: "spotlight", label: "Spotlight", description: "A soft glow blooms around the click." },
+	{ value: "echo", label: "Echo", description: "Two thin rings pulse out together." },
+];
+
+export interface CursorClickStyleSettings {
+	effect: CursorClickEffectStyle;
+	effectDurationMs: number;
+	bounceDurationMs: number;
+}
+
+export const DEFAULT_CURSOR_CLICK_STYLE: CursorClickStyleSettings = {
+	effect: "ripple",
+	effectDurationMs: 600,
+	bounceDurationMs: 350,
+};
+
+/** Click timing before it became configurable (project v11 and older). */
+export const LEGACY_CURSOR_CLICK_STYLE: CursorClickStyleSettings = {
+	effect: "ripple",
+	effectDurationMs: 600,
+	bounceDurationMs: 140,
+};
 export const DEFAULT_CLICK_HIGHLIGHT_COLOR = "#f59e0b";
 export const DEFAULT_CLICK_HIGHLIGHT_SIZE = 1.0;
 export const DEFAULT_CLICK_HIGHLIGHT_OPACITY = 0.5;
@@ -897,18 +929,6 @@ export const MOTION_PRESETS: Record<MotionPresetId, MotionPresetValues> = {
 		cursorSpringDampingMultiplier: 1.36,
 	},
 };
-
-/** Returns the preset whose values all match, or null ("Custom"). */
-export function matchMotionPreset(values: MotionPresetValues): MotionPresetId | null {
-	for (const id of Object.keys(MOTION_PRESETS) as MotionPresetId[]) {
-		const preset = MOTION_PRESETS[id];
-		const keys = Object.keys(preset) as Array<keyof MotionPresetValues>;
-		if (keys.every((key) => Math.abs(preset[key] - values[key]) < 1e-6)) {
-			return id;
-		}
-	}
-	return null;
-}
 
 // ── Captions ──
 

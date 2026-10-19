@@ -45,6 +45,7 @@ type PersistedEditorControls = Pick<
 	| "clickHighlightColor"
 	| "clickHighlightSize"
 	| "clickHighlightOpacity"
+	| "cursorClickStyle"
 	| "cursorTrailLength"
 	| "cursorTrailOpacity"
 	| "showKeyboardShortcuts"
@@ -142,6 +143,7 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	clickHighlightColor: DEFAULT_EDITOR_CONTROLS.clickHighlightColor,
 	clickHighlightSize: DEFAULT_EDITOR_CONTROLS.clickHighlightSize,
 	clickHighlightOpacity: DEFAULT_EDITOR_CONTROLS.clickHighlightOpacity,
+	cursorClickStyle: DEFAULT_EDITOR_CONTROLS.cursorClickStyle,
 	cursorTrailLength: DEFAULT_EDITOR_CONTROLS.cursorTrailLength,
 	cursorTrailOpacity: DEFAULT_EDITOR_CONTROLS.cursorTrailOpacity,
 	showKeyboardShortcuts: DEFAULT_EDITOR_CONTROLS.showKeyboardShortcuts,
@@ -309,6 +311,7 @@ function normalizeEditorControls(
 		clickHighlightColor: raw.clickHighlightColor ?? fallback.clickHighlightColor,
 		clickHighlightSize: raw.clickHighlightSize ?? fallback.clickHighlightSize,
 		clickHighlightOpacity: raw.clickHighlightOpacity ?? fallback.clickHighlightOpacity,
+		cursorClickStyle: raw.cursorClickStyle ?? fallback.cursorClickStyle,
 		cursorTrailLength: raw.cursorTrailLength ?? fallback.cursorTrailLength,
 		cursorTrailOpacity: raw.cursorTrailOpacity ?? fallback.cursorTrailOpacity,
 		showKeyboardShortcuts: raw.showKeyboardShortcuts ?? fallback.showKeyboardShortcuts,
@@ -393,6 +396,7 @@ function normalizeEditorControls(
 		clickHighlightColor: normalized.clickHighlightColor,
 		clickHighlightSize: normalized.clickHighlightSize,
 		clickHighlightOpacity: normalized.clickHighlightOpacity,
+		cursorClickStyle: normalized.cursorClickStyle,
 		cursorTrailLength: normalized.cursorTrailLength,
 		cursorTrailOpacity: normalized.cursorTrailOpacity,
 		showKeyboardShortcuts: normalized.showKeyboardShortcuts,

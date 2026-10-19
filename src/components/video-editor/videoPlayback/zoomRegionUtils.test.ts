@@ -4,10 +4,10 @@ import {
 	DEFAULT_ZOOM_TIMING,
 	LEGACY_ZOOM_TIMING,
 	MOTION_PRESETS,
-	matchMotionPreset,
 	ZOOM_TRANSITION_EASING_OPTIONS,
 	type ZoomRegion,
 } from "../types";
+import { detectMotionPreset, motionPresetToCursorSpring } from "./cursorV2";
 import { applyZoomEasing } from "./mathUtils";
 import { computeRegionStrength, findDominantRegion } from "./zoomRegionUtils";
 
@@ -69,10 +69,13 @@ describe("zoom timing", () => {
 		expect(withLegacyZoomTiming(12, {}).zoomTiming).toBeUndefined();
 	});
 
-	it("matches motion presets and reports custom otherwise", () => {
-		expect(matchMotionPreset(MOTION_PRESETS.focused)).toBe("focused");
-		expect(matchMotionPreset(MOTION_PRESETS.smooth)).toBe("smooth");
-		expect(matchMotionPreset({ ...MOTION_PRESETS.smooth, cursorSize: 4 })).toBeNull();
+	it("detects motion presets from applied values and reports custom otherwise", () => {
+		for (const id of ["focused", "smooth"] as const) {
+			const preset = MOTION_PRESETS[id];
+			const applied = { ...preset, cursorSpring: motionPresetToCursorSpring(preset) };
+			expect(detectMotionPreset(applied)).toBe(id);
+			expect(detectMotionPreset({ ...applied, cursorSize: 4 })).toBeNull();
+		}
 	});
 });
 
