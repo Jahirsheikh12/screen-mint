@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { createProjectData, normalizeProjectEditor, PROJECT_VERSION } from "./projectPersistence";
 
 describe("project persistence v11 layers", () => {
-	it("saves new projects with schema version 11 and a primary video layer", () => {
+	it("saves new projects with schema version 12 and a primary video layer", () => {
 		const editor = normalizeProjectEditor({});
 		const project = createProjectData("/tmp/recording.mp4", editor);
 
 		expect(project.version).toBe(PROJECT_VERSION);
-		expect(project.version).toBe(11);
+		expect(project.version).toBe(12);
 		expect(project.editor.layers[0]).toMatchObject({
 			id: "layer-primary-video",
 			type: "video",

@@ -19,7 +19,14 @@ import {
 	TabContent,
 	TabHeader,
 } from "../settingsPanelLayout";
-import { DEFAULT_ZOOM_MOTION_BLUR, PREVIEW_QUALITY_OPTIONS, type PreviewQuality } from "../types";
+import {
+	DEFAULT_ZOOM_MOTION_BLUR,
+	PREVIEW_QUALITY_OPTIONS,
+	type PreviewQuality,
+	type ZoomTemporalBlurSettings,
+	type ZoomTimingSettings,
+} from "../types";
+import { ZoomTimingControls } from "./ZoomTimingControls";
 
 type SettingsTranslator = (key: string, fallback?: string) => string;
 
@@ -29,12 +36,16 @@ interface EffectsSettingsTabProps {
 	onPreviewQualityChange?: (quality: PreviewQuality) => void;
 	connectZooms: boolean;
 	onConnectZoomsChange?: (enabled: boolean) => void;
+	zoomTiming: ZoomTimingSettings;
+	onZoomTimingChange?: (timing: ZoomTimingSettings) => void;
 	hideBackground: boolean;
 	onHideBackgroundChange?: (hidden: boolean) => void;
 	backgroundBlur: number;
 	onBackgroundBlurChange?: (amount: number) => void;
 	zoomMotionBlur: number;
 	onZoomMotionBlurChange?: (amount: number) => void;
+	zoomTemporalBlur: ZoomTemporalBlurSettings;
+	onZoomTemporalBlurChange?: (settings: ZoomTemporalBlurSettings) => void;
 	showAdvancedShadowSettings: boolean;
 	onToggleAdvancedShadowSettings: () => void;
 	frameShadowSize: number;
@@ -64,12 +75,16 @@ export function EffectsSettingsTab({
 	onPreviewQualityChange,
 	connectZooms,
 	onConnectZoomsChange,
+	zoomTiming,
+	onZoomTimingChange,
 	hideBackground,
 	onHideBackgroundChange,
 	backgroundBlur,
 	onBackgroundBlurChange,
 	zoomMotionBlur,
 	onZoomMotionBlurChange,
+	zoomTemporalBlur,
+	onZoomTemporalBlurChange,
 	showAdvancedShadowSettings,
 	onToggleAdvancedShadowSettings,
 	frameShadowSize,
@@ -153,6 +168,11 @@ export function EffectsSettingsTab({
 						className="data-[state=checked]:bg-[#F59E0B] scale-90"
 					/>
 				</div>
+				<ZoomTimingControls
+					zoomTiming={zoomTiming}
+					connectZooms={connectZooms}
+					onZoomTimingChange={onZoomTimingChange}
+				/>
 				<div className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 					<div>
 						<div className="text-xs font-medium text-slate-300">
@@ -200,6 +220,53 @@ export function EffectsSettingsTab({
 						formatValue={(value) => `${value.toFixed(2)}×`}
 						parseInput={(text) => parseFloat(text.replace(/×$/, ""))}
 					/>
+				</div>
+				<div className="space-y-3 p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner">
+					<div className="flex items-center justify-between">
+						<div>
+							<div className="text-xs font-medium text-slate-300">Temporal Zoom Blur</div>
+							<div className="text-[10px] text-slate-500 mt-0.5">
+								Blend sub-frame samples during zoom motion. Applied on export.
+							</div>
+						</div>
+						<Switch
+							checked={zoomTemporalBlur.enabled}
+							onCheckedChange={(enabled) =>
+								onZoomTemporalBlurChange?.({ ...zoomTemporalBlur, enabled })
+							}
+							className="data-[state=checked]:bg-[#F59E0B] scale-90"
+						/>
+					</div>
+					{zoomTemporalBlur.enabled && (
+						<>
+							<SliderControl
+								label="Blur Samples"
+								value={zoomTemporalBlur.sampleCount ?? 8}
+								defaultValue={8}
+								min={2}
+								max={32}
+								step={1}
+								onChange={(value) =>
+									onZoomTemporalBlurChange?.({ ...zoomTemporalBlur, sampleCount: value })
+								}
+								formatValue={(value) => `${Math.round(value)}`}
+								parseInput={(text) => parseInt(text, 10)}
+							/>
+							<SliderControl
+								label="Shutter"
+								value={zoomTemporalBlur.shutterFraction ?? 0.5}
+								defaultValue={0.5}
+								min={0}
+								max={1}
+								step={0.05}
+								onChange={(value) =>
+									onZoomTemporalBlurChange?.({ ...zoomTemporalBlur, shutterFraction: value })
+								}
+								formatValue={(value) => `${Math.round(value * 360)}°`}
+								parseInput={(text) => parseFloat(text.replace(/°$/, "")) / 360}
+							/>
+						</>
+					)}
 				</div>
 				<div className="rounded-xl border border-white/5 bg-white/[0.04] transition-colors duration-200 hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]">
 					<button

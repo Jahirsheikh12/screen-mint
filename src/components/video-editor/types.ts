@@ -281,6 +281,20 @@ export const DEVICE_MOCKUP_OPTIONS: { value: DeviceMockup; label: string }[] = [
 ];
 
 export const DEFAULT_ZOOM_MOTION_BLUR = 0.35;
+
+export interface ZoomTemporalBlurSettings {
+	enabled: boolean;
+	/** Sub-frame samples per output frame; null = auto. */
+	sampleCount: number | null;
+	/** Portion of the frame interval the shutter is open (0–1); null = auto. */
+	shutterFraction: number | null;
+}
+
+export const DEFAULT_ZOOM_TEMPORAL_BLUR: ZoomTemporalBlurSettings = {
+	enabled: false,
+	sampleCount: null,
+	shutterFraction: null,
+};
 export const DEFAULT_PREVIEW_QUALITY: PreviewQuality = "medium";
 export const PREVIEW_QUALITY_OPTIONS: Array<{ value: PreviewQuality; label: string }> = [
 	{ value: "low", label: "Low" },
@@ -799,6 +813,102 @@ export const ZOOM_DEPTH_SCALES: Record<ZoomDepth, number> = {
 };
 
 export const DEFAULT_ZOOM_DEPTH: ZoomDepth = 3;
+
+export type ZoomTransitionEasing = "signature" | "glide" | "smooth" | "snappy" | "linear";
+
+export const ZOOM_TRANSITION_EASING_OPTIONS: Array<{ value: ZoomTransitionEasing; label: string }> =
+	[
+		{ value: "signature", label: "Signature" },
+		{ value: "glide", label: "Glide" },
+		{ value: "smooth", label: "Smooth" },
+		{ value: "snappy", label: "Snappy" },
+		{ value: "linear", label: "Linear" },
+	];
+
+export interface ZoomTimingSettings {
+	zoomInDurationMs: number;
+	zoomInOverlapMs: number;
+	zoomOutDurationMs: number;
+	connectedZoomGapMs: number;
+	connectedZoomDurationMs: number;
+	zoomInEasing: ZoomTransitionEasing;
+	zoomOutEasing: ZoomTransitionEasing;
+	connectedZoomEasing: ZoomTransitionEasing;
+}
+
+export const DEFAULT_ZOOM_TIMING: ZoomTimingSettings = {
+	zoomInDurationMs: 1522.575,
+	zoomInOverlapMs: 500,
+	zoomOutDurationMs: 1015.05,
+	connectedZoomGapMs: 1500,
+	connectedZoomDurationMs: 1000,
+	zoomInEasing: "signature",
+	zoomOutEasing: "signature",
+	connectedZoomEasing: "glide",
+};
+
+/** Timing used before zoom timing became configurable (project v11 and older). */
+export const LEGACY_ZOOM_TIMING: ZoomTimingSettings = {
+	zoomInDurationMs: 700,
+	zoomInOverlapMs: 350,
+	zoomOutDurationMs: 1100,
+	connectedZoomGapMs: 1500,
+	connectedZoomDurationMs: 1000,
+	zoomInEasing: "smooth",
+	zoomOutEasing: "signature",
+	connectedZoomEasing: "glide",
+};
+
+export type MotionPresetId = "focused" | "smooth";
+
+export interface MotionPresetValues {
+	zoomInDurationMs: number;
+	zoomOutDurationMs: number;
+	cursorSize: number;
+	cursorSmoothing: number;
+	cursorClickBounce: number;
+	cursorClickBounceDurationMs: number;
+	cursorSpringStiffnessMultiplier: number;
+	cursorSpringDampingMultiplier: number;
+	cursorSpringMassMultiplier: number;
+}
+
+const SHARED_MOTION_PRESET_VALUES = {
+	cursorSize: 2.5,
+	cursorSmoothing: 0.67,
+	cursorClickBounce: 2,
+	cursorClickBounceDurationMs: 350,
+	cursorSpringMassMultiplier: 1.29,
+};
+
+export const MOTION_PRESETS: Record<MotionPresetId, MotionPresetValues> = {
+	focused: {
+		...SHARED_MOTION_PRESET_VALUES,
+		zoomInDurationMs: 200,
+		zoomOutDurationMs: 200,
+		cursorSpringStiffnessMultiplier: 1.35,
+		cursorSpringDampingMultiplier: 0.79,
+	},
+	smooth: {
+		...SHARED_MOTION_PRESET_VALUES,
+		zoomInDurationMs: DEFAULT_ZOOM_TIMING.zoomInDurationMs,
+		zoomOutDurationMs: DEFAULT_ZOOM_TIMING.zoomOutDurationMs,
+		cursorSpringStiffnessMultiplier: 0.92,
+		cursorSpringDampingMultiplier: 1.36,
+	},
+};
+
+/** Returns the preset whose values all match, or null ("Custom"). */
+export function matchMotionPreset(values: MotionPresetValues): MotionPresetId | null {
+	for (const id of Object.keys(MOTION_PRESETS) as MotionPresetId[]) {
+		const preset = MOTION_PRESETS[id];
+		const keys = Object.keys(preset) as Array<keyof MotionPresetValues>;
+		if (keys.every((key) => Math.abs(preset[key] - values[key]) < 1e-6)) {
+			return id;
+		}
+	}
+	return null;
+}
 
 // ── Captions ──
 

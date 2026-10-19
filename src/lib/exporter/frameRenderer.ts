@@ -30,6 +30,8 @@ import type {
 	WebcamEffects,
 	WebcamRegion,
 	ZoomRegion,
+	ZoomTemporalBlurSettings,
+	ZoomTimingSettings,
 } from "@/components/video-editor/types";
 import {
 	DEFAULT_CURSOR_SPRING,
@@ -88,7 +90,10 @@ interface FrameRenderConfig {
 	backgroundBlur: number;
 	hideBackground?: boolean;
 	zoomMotionBlur?: number;
+	/** Average several sub-frame camera positions across the shutter window (export only). */
+	zoomTemporalBlur?: ZoomTemporalBlurSettings;
 	connectZooms?: boolean;
+	zoomTiming?: Partial<ZoomTimingSettings>;
 	deviceMockup?: DeviceMockup;
 	frameBorderEnabled?: boolean;
 	frameBorderWidth?: number;
@@ -184,6 +189,8 @@ export class FrameRenderer {
 	private shadowCtx: CanvasRenderingContext2D | null = null;
 	private compositeCanvas: HTMLCanvasElement | null = null;
 	private compositeCtx: CanvasRenderingContext2D | null = null;
+	private temporalCanvas: HTMLCanvasElement | null = null;
+	private previousCameraTransform: { scale: number; x: number; y: number } | null = null;
 	private config: FrameRenderConfig;
 	private animationState: PlaybackCameraState;
 	private webcamMotionState: WebcamZoomMotionState;
@@ -733,8 +740,9 @@ export class FrameRenderer {
 		const evaluation = this.updateAnimationState(timeMs);
 		const maxMotionIntensity = evaluation.motionIntensity;
 
+		const temporalBlur = this.config.zoomTemporalBlur?.enabled === true;
 		// Apply transform once with maximum motion intensity from all ticks
-		applyZoomTransform({
+		const appliedTransform = applyZoomTransform({
 			cameraContainer: this.cameraContainer,
 			blurFilter: this.blurFilter,
 			motionBlurFilter: this.motionBlurFilter,
@@ -747,7 +755,7 @@ export class FrameRenderer {
 			motionIntensity: maxMotionIntensity,
 			motionVector: this.lastMotionVector,
 			isPlaying: true,
-			motionBlurAmount: this.config.zoomMotionBlur ?? 0,
+			motionBlurAmount: temporalBlur ? 0 : (this.config.zoomMotionBlur ?? 0),
 			transformOverride: {
 				scale: this.animationState.appliedScale,
 				x: this.animationState.x,
@@ -769,10 +777,14 @@ export class FrameRenderer {
 		}
 
 		// Render the PixiJS stage to its canvas (video only, transparent background)
-		this.app.renderer.render(this.app.stage);
+		const temporalSource = temporalBlur ? this.renderTemporalZoomBlur(appliedTransform) : null;
+		if (!temporalSource) {
+			this.app.renderer.render(this.app.stage);
+		}
+		this.previousCameraTransform = appliedTransform;
 
 		// Composite with shadows to final output canvas
-		this.compositeWithShadows();
+		this.compositeWithShadows(temporalSource ?? undefined);
 
 		// Render annotations on top if present
 		if (
@@ -848,6 +860,7 @@ export class FrameRenderer {
 						zoomRegions: this.config.zoomRegions,
 						cursorTelemetry: this.config.cursorTelemetry,
 						connectZooms: this.config.connectZooms,
+						zoomTiming: this.config.zoomTiming,
 						cameraSizeDuringZoom: this.config.cameraSizeDuringZoom,
 						enableCursorAvoidance: this.config.webcamEffects?.subtleAvoidance,
 						compositionRect: webcamCompositionRect,
@@ -1150,6 +1163,7 @@ export class FrameRenderer {
 			cursorSimulationPath: this.cursorSimulationPath,
 			zoomRegions: this.config.zoomRegions,
 			connectZooms: this.config.connectZooms,
+			zoomTiming: this.config.zoomTiming,
 			geometry: {
 				stageSize: this.layoutCache.stageSize,
 				baseMask: this.layoutCache.maskRect,
@@ -1163,10 +1177,59 @@ export class FrameRenderer {
 		return evaluation;
 	}
 
-	private compositeWithShadows(): void {
+	/**
+	 * Renders the stage at several camera positions between the previous and current frame and
+	 * averages them. Returns null when the camera is still (single render is enough).
+	 */
+	private renderTemporalZoomBlur(current: {
+		scale: number;
+		x: number;
+		y: number;
+	}): HTMLCanvasElement | null {
+		const previous = this.previousCameraTransform;
+		if (!this.app || !this.cameraContainer || !previous) return null;
+		const fractions = getTemporalSampleFractions(
+			previous,
+			current,
+			this.config.zoomTemporalBlur?.sampleCount,
+			this.config.zoomTemporalBlur?.shutterFraction,
+		);
+		if (fractions.length < 2) return null;
+
+		const source = this.app.canvas as HTMLCanvasElement;
+		if (!this.temporalCanvas) {
+			this.temporalCanvas = document.createElement("canvas");
+		}
+		const target = this.temporalCanvas;
+		if (target.width !== source.width || target.height !== source.height) {
+			target.width = source.width;
+			target.height = source.height;
+		}
+		const ctx = target.getContext("2d");
+		if (!ctx) return null;
+		ctx.clearRect(0, 0, target.width, target.height);
+
+		fractions.forEach((fraction, index) => {
+			this.cameraContainer?.scale.set(lerpNumber(previous.scale, current.scale, fraction));
+			this.cameraContainer?.position.set(
+				lerpNumber(previous.x, current.x, fraction),
+				lerpNumber(previous.y, current.y, fraction),
+			);
+			this.app?.renderer.render(this.app.stage);
+			// Running mean: sample k blended at 1/(k+1) keeps every sample equally weighted.
+			ctx.globalAlpha = 1 / (index + 1);
+			ctx.drawImage(source, 0, 0);
+		});
+		ctx.globalAlpha = 1;
+		this.cameraContainer.scale.set(current.scale);
+		this.cameraContainer.position.set(current.x, current.y);
+		return target;
+	}
+
+	private compositeWithShadows(sourceCanvas?: HTMLCanvasElement): void {
 		if (!this.compositeCanvas || !this.compositeCtx || !this.app) return;
 
-		const videoCanvas = this.app.canvas as HTMLCanvasElement;
+		const videoCanvas = sourceCanvas ?? (this.app.canvas as HTMLCanvasElement);
 		const ctx = this.compositeCtx;
 		const w = this.compositeCanvas.width;
 		const h = this.compositeCanvas.height;
@@ -1261,6 +1324,37 @@ export class FrameRenderer {
 		this.shadowCanvas = null;
 		this.shadowCtx = null;
 		this.compositeCanvas = null;
+		this.temporalCanvas = null;
+		this.previousCameraTransform = null;
 		this.compositeCtx = null;
 	}
+}
+
+function lerpNumber(start: number, end: number, amount: number) {
+	return start + (end - start) * amount;
+}
+
+const DEFAULT_TEMPORAL_SAMPLES = 8;
+const DEFAULT_TEMPORAL_SHUTTER = 0.5;
+const TEMPORAL_MOTION_EPSILON = 0.25;
+
+/**
+ * Interpolation fractions (0 = previous frame, 1 = current frame) for temporal zoom blur.
+ * The shutter window ends at the current frame. Returns [] when the camera barely moved.
+ */
+export function getTemporalSampleFractions(
+	previous: { scale: number; x: number; y: number },
+	current: { scale: number; x: number; y: number },
+	sampleCount?: number | null,
+	shutterFraction?: number | null,
+): number[] {
+	const moved =
+		Math.abs(current.x - previous.x) > TEMPORAL_MOTION_EPSILON ||
+		Math.abs(current.y - previous.y) > TEMPORAL_MOTION_EPSILON ||
+		Math.abs(current.scale - previous.scale) > 0.0005;
+	if (!moved) return [];
+	const samples = Math.round(Math.min(32, Math.max(2, sampleCount ?? DEFAULT_TEMPORAL_SAMPLES)));
+	const shutter = Math.min(1, Math.max(0, shutterFraction ?? DEFAULT_TEMPORAL_SHUTTER));
+	if (shutter === 0) return [];
+	return Array.from({ length: samples }, (_, index) => 1 - shutter * (1 - index / (samples - 1)));
 }

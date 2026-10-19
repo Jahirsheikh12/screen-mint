@@ -20,6 +20,8 @@ import type {
 	WebcamEffects,
 	WebcamRegion,
 	ZoomRegion,
+	ZoomTemporalBlurSettings,
+	ZoomTimingSettings,
 } from "@/components/video-editor/types";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import { AudioProcessor, type PreparedAudioTrack } from "./audioEncoder";
@@ -52,7 +54,9 @@ interface VideoExporterConfig extends ExportConfig {
 	backgroundBlur: number;
 	hideBackground?: boolean;
 	zoomMotionBlur?: number;
+	zoomTemporalBlur?: ZoomTemporalBlurSettings;
 	connectZooms?: boolean;
+	zoomTiming?: Partial<ZoomTimingSettings>;
 	deviceMockup?: DeviceMockup;
 	frameBorderEnabled?: boolean;
 	frameBorderWidth?: number;
@@ -217,7 +221,9 @@ export class VideoExporter {
 				backgroundBlur: this.config.backgroundBlur,
 				hideBackground: this.config.hideBackground,
 				zoomMotionBlur: this.config.zoomMotionBlur,
+				zoomTemporalBlur: this.config.zoomTemporalBlur,
 				connectZooms: this.config.connectZooms,
+				zoomTiming: this.config.zoomTiming,
 				deviceMockup: this.config.deviceMockup,
 				frameBorderEnabled: this.config.frameBorderEnabled,
 				frameBorderWidth: this.config.frameBorderWidth,

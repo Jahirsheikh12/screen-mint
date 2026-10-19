@@ -116,6 +116,7 @@ import {
 	normalizeWebcamSessionMetadata,
 	toFileUrl,
 	validateProjectData,
+	withLegacyZoomTiming,
 } from "./projectPersistence";
 import { QuickShareDialog } from "./QuickShareDialog";
 import { SceneAudioPolishPanel } from "./SceneAudioPolishPanel";
@@ -324,7 +325,11 @@ export default function VideoEditor() {
 	const [frameShadowBlur, setFrameShadowBlur] = useState(initialEditorPreferences.frameShadowBlur);
 	const [backgroundBlur, setBackgroundBlur] = useState(initialEditorPreferences.backgroundBlur);
 	const [zoomMotionBlur, setZoomMotionBlur] = useState(initialEditorPreferences.zoomMotionBlur);
+	const [zoomTemporalBlur, setZoomTemporalBlur] = useState(
+		initialEditorPreferences.zoomTemporalBlur,
+	);
 	const [connectZooms, setConnectZooms] = useState(initialEditorPreferences.connectZooms);
+	const [zoomTiming, setZoomTiming] = useState(initialEditorPreferences.zoomTiming);
 	const [showCursor, setShowCursor] = useState(initialEditorPreferences.showCursor);
 	const [previewQuality, setPreviewQuality] = useState<PreviewQuality>(
 		initialEditorPreferences.previewQuality,
@@ -622,7 +627,9 @@ export default function VideoEditor() {
 				frameShadowBlur,
 				backgroundBlur,
 				zoomMotionBlur,
+				zoomTemporalBlur,
 				connectZooms,
+				zoomTiming,
 				showCursor,
 				loopCursor,
 				cursorSize,
@@ -699,7 +706,9 @@ export default function VideoEditor() {
 			frameShadowBlur,
 			backgroundBlur,
 			zoomMotionBlur,
+			zoomTemporalBlur,
 			connectZooms,
+			zoomTiming,
 			showCursor,
 			loopCursor,
 			cursorSize,
@@ -781,7 +790,9 @@ export default function VideoEditor() {
 			setFrameShadowBlur(controls.frameShadowBlur);
 			setBackgroundBlur(controls.backgroundBlur);
 			setZoomMotionBlur(controls.zoomMotionBlur);
+			setZoomTemporalBlur(controls.zoomTemporalBlur);
 			setConnectZooms(controls.connectZooms);
+			setZoomTiming(controls.zoomTiming);
 			setShowCursor(controls.showCursor);
 			setLoopCursor(controls.loopCursor);
 			setCursorSize(controls.cursorSize);
@@ -946,9 +957,10 @@ export default function VideoEditor() {
 			const loadedVideoName = normalizeVideoDisplayName(
 				project.videoName ?? deriveVideoNameFromPath(path ?? sourcePath),
 			);
-			const normalizedEditor = normalizeProjectEditor(project.editor, {
-				fallbackVideoPath: sourcePath,
-			});
+			const normalizedEditor = normalizeProjectEditor(
+				withLegacyZoomTiming(project.version, project.editor),
+				{ fallbackVideoPath: sourcePath },
+			);
 			const normalizedWebcamSessionMetadata =
 				normalizeWebcamSessionMetadata(project.webcamSessionMetadata) ?? null;
 
@@ -1053,7 +1065,9 @@ export default function VideoEditor() {
 				frameShadowBlur,
 				backgroundBlur,
 				zoomMotionBlur,
+				zoomTemporalBlur,
 				connectZooms,
+				zoomTiming,
 				showCursor,
 				loopCursor,
 				cursorSize,
@@ -1133,7 +1147,9 @@ export default function VideoEditor() {
 		frameShadowBlur,
 		backgroundBlur,
 		zoomMotionBlur,
+		zoomTemporalBlur,
 		connectZooms,
+		zoomTiming,
 		showCursor,
 		loopCursor,
 		cursorSize,
@@ -1428,7 +1444,9 @@ export default function VideoEditor() {
 					frameShadowBlur,
 					backgroundBlur,
 					zoomMotionBlur,
+					zoomTemporalBlur,
 					connectZooms,
+					zoomTiming,
 					showCursor,
 					loopCursor,
 					cursorSize,
@@ -1537,7 +1555,9 @@ export default function VideoEditor() {
 			frameShadowBlur,
 			backgroundBlur,
 			zoomMotionBlur,
+			zoomTemporalBlur,
 			connectZooms,
+			zoomTiming,
 			showCursor,
 			loopCursor,
 			cursorSize,
@@ -1836,6 +1856,7 @@ export default function VideoEditor() {
 
 		const dominantAtStart = findDominantRegion(zoomRegions, displayedTimelineWindow.startMs, {
 			connectZooms,
+			zoomTiming,
 		}).region;
 		if (!dominantAtStart) {
 			return zoomRegions;
@@ -1857,7 +1878,7 @@ export default function VideoEditor() {
 		};
 
 		return [...zoomRegions.filter((region) => region.id !== loopEndRegion.id), loopEndRegion];
-	}, [loopCursor, zoomRegions, displayedTimelineWindow, connectZooms]);
+	}, [loopCursor, zoomRegions, displayedTimelineWindow, connectZooms, zoomTiming]);
 
 	const buildBeautifyContext = useCallback((): BeautifyContext => {
 		const video = videoPlaybackRef.current?.video;
@@ -3381,7 +3402,9 @@ export default function VideoEditor() {
 					backgroundBlur,
 					hideBackground,
 					zoomMotionBlur,
+					zoomTemporalBlur,
 					connectZooms,
+					zoomTiming,
 					deviceMockup,
 					frameBorderEnabled,
 					frameBorderWidth,
@@ -3603,7 +3626,9 @@ export default function VideoEditor() {
 							backgroundBlur,
 							hideBackground,
 							zoomMotionBlur,
+							zoomTemporalBlur,
 							connectZooms,
+							zoomTiming,
 							deviceMockup,
 							frameBorderEnabled,
 							frameBorderWidth,
@@ -3753,7 +3778,9 @@ export default function VideoEditor() {
 							backgroundBlur,
 							hideBackground,
 							zoomMotionBlur,
+							zoomTemporalBlur,
 							connectZooms,
+							zoomTiming,
 							deviceMockup,
 							frameBorderEnabled,
 							frameBorderWidth,
@@ -3882,7 +3909,9 @@ export default function VideoEditor() {
 			backgroundBlur,
 			hideBackground,
 			zoomMotionBlur,
+			zoomTemporalBlur,
 			connectZooms,
+			zoomTiming,
 			showCursor,
 			showKeyboardShortcuts,
 			effectiveCursorTelemetry,
@@ -4393,6 +4422,7 @@ export default function VideoEditor() {
 											backgroundBlur={backgroundBlur}
 											zoomMotionBlur={zoomMotionBlur}
 											connectZooms={connectZooms}
+											zoomTiming={zoomTiming}
 											frameBorderEnabled={frameBorderEnabled}
 											frameBorderWidth={frameBorderWidth}
 											frameBorderColor={frameBorderColor}
@@ -4567,8 +4597,12 @@ export default function VideoEditor() {
 												onBackgroundBlurChange={setBackgroundBlur}
 												zoomMotionBlur={zoomMotionBlur}
 												onZoomMotionBlurChange={setZoomMotionBlur}
+												zoomTemporalBlur={zoomTemporalBlur}
+												onZoomTemporalBlurChange={setZoomTemporalBlur}
 												connectZooms={connectZooms}
+												zoomTiming={zoomTiming}
 												onConnectZoomsChange={setConnectZooms}
+												onZoomTimingChange={setZoomTiming}
 												showCursor={showCursor}
 												onShowCursorChange={setShowCursor}
 												loopCursor={loopCursor}

@@ -87,6 +87,8 @@ import type {
 	WebcamRegion,
 	ZoomDepth,
 	ZoomMode,
+	ZoomTemporalBlurSettings,
+	ZoomTimingSettings,
 } from "./types";
 import {
 	CAMERA_ZOOM_SCALE_DISABLED,
@@ -115,6 +117,8 @@ import {
 	DEFAULT_PREVIEW_QUALITY,
 	DEFAULT_SMOOTH_CURSOR_MOVEMENT,
 	DEFAULT_ZOOM_MODE,
+	DEFAULT_ZOOM_TEMPORAL_BLUR,
+	DEFAULT_ZOOM_TIMING,
 } from "./types";
 
 interface SettingsPanelProps {
@@ -142,8 +146,12 @@ interface SettingsPanelProps {
 	onHideBackgroundChange?: (hidden: boolean) => void;
 	zoomMotionBlur?: number;
 	onZoomMotionBlurChange?: (amount: number) => void;
+	zoomTemporalBlur?: ZoomTemporalBlurSettings;
+	onZoomTemporalBlurChange?: (settings: ZoomTemporalBlurSettings) => void;
 	connectZooms?: boolean;
 	onConnectZoomsChange?: (enabled: boolean) => void;
+	zoomTiming?: ZoomTimingSettings;
+	onZoomTimingChange?: (timing: ZoomTimingSettings) => void;
 	showCursor?: boolean;
 	onShowCursorChange?: (enabled: boolean) => void;
 	loopCursor?: boolean;
@@ -350,8 +358,12 @@ export default function SettingsPanel({
 	onHideBackgroundChange,
 	zoomMotionBlur = 0,
 	onZoomMotionBlurChange,
+	zoomTemporalBlur = DEFAULT_ZOOM_TEMPORAL_BLUR,
+	onZoomTemporalBlurChange,
 	connectZooms = true,
 	onConnectZoomsChange,
+	zoomTiming = DEFAULT_ZOOM_TIMING,
+	onZoomTimingChange,
 	showCursor = false,
 	onShowCursorChange,
 	loopCursor = false,
@@ -943,12 +955,16 @@ export default function SettingsPanel({
 						onPreviewQualityChange={onPreviewQualityChange}
 						connectZooms={connectZooms}
 						onConnectZoomsChange={onConnectZoomsChange}
+						zoomTiming={zoomTiming}
+						onZoomTimingChange={onZoomTimingChange}
 						hideBackground={hideBackground}
 						onHideBackgroundChange={onHideBackgroundChange}
 						backgroundBlur={backgroundBlur}
 						onBackgroundBlurChange={onBackgroundBlurChange}
 						zoomMotionBlur={zoomMotionBlur}
 						onZoomMotionBlurChange={onZoomMotionBlurChange}
+						zoomTemporalBlur={zoomTemporalBlur}
+						onZoomTemporalBlurChange={onZoomTemporalBlurChange}
 						showAdvancedShadowSettings={showAdvancedShadowSettings}
 						onToggleAdvancedShadowSettings={() => setShowAdvancedShadowSettings((value) => !value)}
 						frameShadowSize={frameShadowSize}

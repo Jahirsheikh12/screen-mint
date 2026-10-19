@@ -108,10 +108,13 @@ import {
 	DEFAULT_ZOOM_DEPTH,
 	DEFAULT_ZOOM_MODE,
 	DEFAULT_ZOOM_MOTION_BLUR,
+	DEFAULT_ZOOM_TEMPORAL_BLUR,
+	DEFAULT_ZOOM_TIMING,
 	DEVICE_MOCKUP_OPTIONS,
 	type DeviceMockup,
 	type KeyboardShortcutPosition,
 	type KeyboardShortcutTheme,
+	LEGACY_ZOOM_TIMING,
 	SCENE_PRESET_IDS,
 	type ScenePresetId,
 	type SpeedRegion,
@@ -122,8 +125,12 @@ import {
 	type WebcamPreviewMode,
 	type WebcamRegion,
 	type WebcamSessionMetadata,
+	ZOOM_TRANSITION_EASING_OPTIONS,
 	type ZoomMode,
 	type ZoomRegion,
+	type ZoomTemporalBlurSettings,
+	type ZoomTimingSettings,
+	type ZoomTransitionEasing,
 } from "./types";
 import { normalizeCursorSpring, resolveCursorV2Fields } from "./videoPlayback/cursorV2";
 import { normalizeWebcamEffects } from "./webcamEffects";
@@ -144,7 +151,7 @@ function normalizeCameraSpring(
 	};
 }
 
-export const PROJECT_VERSION = 11;
+export const PROJECT_VERSION = 12;
 export const DEFAULT_VIDEO_PREVIEW_PADDING = 40;
 
 export interface ProjectEditorState {
@@ -156,7 +163,9 @@ export interface ProjectEditorState {
 	frameShadowBlur: number;
 	backgroundBlur: number;
 	zoomMotionBlur: number;
+	zoomTemporalBlur: ZoomTemporalBlurSettings;
 	connectZooms: boolean;
+	zoomTiming: ZoomTimingSettings;
 	showCursor: boolean;
 	loopCursor: boolean;
 	cursorSize: number;
@@ -945,6 +954,56 @@ function normalizeZoomMode(value: unknown): ZoomMode {
 	return value === "cursor-follow" || value === "static" ? value : DEFAULT_ZOOM_MODE;
 }
 
+function normalizeZoomEasing(value: unknown, fallback: ZoomTransitionEasing): ZoomTransitionEasing {
+	return ZOOM_TRANSITION_EASING_OPTIONS.some((option) => option.value === value)
+		? (value as ZoomTransitionEasing)
+		: fallback;
+}
+
+export function normalizeZoomTiming(candidate: unknown): ZoomTimingSettings {
+	const raw =
+		candidate && typeof candidate === "object" ? (candidate as Partial<ZoomTimingSettings>) : {};
+	const ms = (value: unknown, fallback: number, max: number) =>
+		isFiniteNumber(value) ? clamp(value, 0, max) : fallback;
+	return {
+		zoomInDurationMs: ms(raw.zoomInDurationMs, DEFAULT_ZOOM_TIMING.zoomInDurationMs, 5000),
+		zoomInOverlapMs: ms(raw.zoomInOverlapMs, DEFAULT_ZOOM_TIMING.zoomInOverlapMs, 5000),
+		zoomOutDurationMs: ms(raw.zoomOutDurationMs, DEFAULT_ZOOM_TIMING.zoomOutDurationMs, 5000),
+		connectedZoomGapMs: ms(raw.connectedZoomGapMs, DEFAULT_ZOOM_TIMING.connectedZoomGapMs, 10000),
+		connectedZoomDurationMs: ms(
+			raw.connectedZoomDurationMs,
+			DEFAULT_ZOOM_TIMING.connectedZoomDurationMs,
+			5000,
+		),
+		zoomInEasing: normalizeZoomEasing(raw.zoomInEasing, DEFAULT_ZOOM_TIMING.zoomInEasing),
+		zoomOutEasing: normalizeZoomEasing(raw.zoomOutEasing, DEFAULT_ZOOM_TIMING.zoomOutEasing),
+		connectedZoomEasing: normalizeZoomEasing(
+			raw.connectedZoomEasing,
+			DEFAULT_ZOOM_TIMING.connectedZoomEasing,
+		),
+	};
+}
+
+export function normalizeZoomTemporalBlur(candidate: unknown): ZoomTemporalBlurSettings {
+	if (!candidate || typeof candidate !== "object") return { ...DEFAULT_ZOOM_TEMPORAL_BLUR };
+	const raw = candidate as Partial<ZoomTemporalBlurSettings>;
+	return {
+		enabled: raw.enabled === true,
+		sampleCount: isFiniteNumber(raw.sampleCount) ? clamp(Math.round(raw.sampleCount), 2, 32) : null,
+		shutterFraction: isFiniteNumber(raw.shutterFraction) ? clamp(raw.shutterFraction, 0, 1) : null,
+	};
+}
+
+/** Projects saved before v12 had fixed zoom timing; keep their motion unchanged on load. */
+export function withLegacyZoomTiming(
+	version: number,
+	editor: Partial<ProjectEditorState>,
+): Partial<ProjectEditorState> {
+	return version < 12 && !editor.zoomTiming
+		? { ...editor, zoomTiming: LEGACY_ZOOM_TIMING }
+		: editor;
+}
+
 function normalizeCursorFollowTracking(candidate: unknown) {
 	if (!candidate || typeof candidate !== "object") {
 		return { ...DEFAULT_CURSOR_FOLLOW_TRACKING };
@@ -1534,7 +1593,9 @@ export function normalizeProjectEditor(
 		frameShadowBlur: normalizedFrameShadow.blur,
 		backgroundBlur: normalizedBackgroundBlur,
 		zoomMotionBlur: normalizedZoomMotionBlur,
+		zoomTemporalBlur: normalizeZoomTemporalBlur(editor.zoomTemporalBlur),
 		connectZooms: typeof editor.connectZooms === "boolean" ? editor.connectZooms : true,
+		zoomTiming: normalizeZoomTiming(editor.zoomTiming),
 		showCursor: typeof editor.showCursor === "boolean" ? editor.showCursor : true,
 		loopCursor: typeof editor.loopCursor === "boolean" ? editor.loopCursor : false,
 		cursorSize: isFiniteNumber(editor.cursorSize)

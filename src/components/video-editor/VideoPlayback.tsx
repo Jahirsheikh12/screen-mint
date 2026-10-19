@@ -217,6 +217,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			hideBackground = false,
 			zoomMotionBlur = 0,
 			connectZooms = true,
+			zoomTiming,
 			frameBorderEnabled = false,
 			frameBorderWidth = 0,
 			frameBorderColor = "#000000",
@@ -344,6 +345,8 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const speedRegionsRef = useRef<SpeedRegion[]>([]);
 		const zoomMotionBlurRef = useRef(zoomMotionBlur);
 		const connectZoomsRef = useRef(connectZooms);
+		const zoomTimingRef = useRef(zoomTiming);
+		zoomTimingRef.current = zoomTiming;
 		const videoReadyRafRef = useRef<number | null>(null);
 		const cursorOverlayRef = useRef<PixiCursorOverlay | null>(null);
 		const cursorTelemetryRef = useRef<CursorTelemetryPoint[]>([]);
@@ -422,6 +425,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			zoomRegions,
 			cursorTelemetry,
 			connectZooms,
+			zoomTiming,
 			cameraSizeDuringZoom,
 			webcamEffects,
 			webcamPreviewMode,
@@ -1852,6 +1856,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					cursorSimulationPath: cursorSimulationPathRef.current,
 					zoomRegions: shouldShowUnzoomedView ? [] : zoomRegionsRef.current,
 					connectZooms: connectZoomsRef.current,
+					zoomTiming: zoomTimingRef.current,
 					geometry: {
 						stageSize: stageSizeRef.current,
 						baseMask: baseMaskRef.current,

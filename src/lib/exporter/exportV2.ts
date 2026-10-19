@@ -20,6 +20,8 @@ import type {
 	WebcamEffects,
 	WebcamRegion,
 	ZoomRegion,
+	ZoomTemporalBlurSettings,
+	ZoomTimingSettings,
 } from "@/components/video-editor/types";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import type {
@@ -153,7 +155,9 @@ export interface ExportCompositionPayload {
 	backgroundBlur: number;
 	hideBackground?: boolean;
 	zoomMotionBlur?: number;
+	zoomTemporalBlur?: ZoomTemporalBlurSettings;
 	connectZooms?: boolean;
+	zoomTiming?: Partial<ZoomTimingSettings>;
 	deviceMockup?: DeviceMockup;
 	frameBorderEnabled?: boolean;
 	frameBorderWidth?: number;

@@ -55,8 +55,8 @@ export function ZoomSettingsTab({
 				<div className="grid grid-cols-2 gap-1.5">
 					{(
 						[
-							{ value: "static", label: "Static" },
-							{ value: "cursor-follow", label: "Cursor Follow" },
+							{ value: "cursor-follow", label: "Auto" },
+							{ value: "static", label: "Manual" },
 						] as const
 					).map((option) => {
 						const isActive = selectedZoomMode === option.value;
@@ -80,6 +80,13 @@ export function ZoomSettingsTab({
 						);
 					})}
 				</div>
+				{zoomEnabled && selectedZoomMode && (
+					<p className="text-[10px] leading-relaxed text-slate-500">
+						{selectedZoomMode === "cursor-follow"
+							? "Camera recenters when the cursor nears the edge of the zoomed view"
+							: "Set a fixed focus point for this zoom"}
+					</p>
+				)}
 				<div className="grid grid-cols-3 gap-1.5">
 					{ZOOM_DEPTH_OPTIONS.map((option) => {
 						const isActive = selectedZoomDepth === option.depth;

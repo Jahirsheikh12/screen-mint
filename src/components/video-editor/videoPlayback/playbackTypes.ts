@@ -29,6 +29,7 @@ import type {
 	WebcamRegion,
 	ZoomFocus,
 	ZoomRegion,
+	ZoomTimingSettings,
 } from "../types";
 import type { PreviewHoldReason } from "./previewHoldState";
 
@@ -54,6 +55,7 @@ export interface VideoPlaybackProps {
 	hideBackground?: boolean;
 	zoomMotionBlur?: number;
 	connectZooms?: boolean;
+	zoomTiming?: Partial<ZoomTimingSettings>;
 	frameBorderEnabled?: boolean;
 	frameBorderWidth?: number;
 	frameBorderColor?: string;

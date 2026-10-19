@@ -17,6 +17,7 @@ import {
 	type WebcamRegion,
 	type WebcamRenderQualityTier,
 	type WebcamSegmentationProviderStatus,
+	type ZoomTimingSettings,
 } from "./types";
 import {
 	type ResolvedWebcamCompositionModel,
@@ -216,6 +217,7 @@ export function resolveWebcamRenderSpec(params: {
 	zoomRegions?: import("./types").ZoomRegion[];
 	cursorTelemetry?: CursorTelemetryPoint[];
 	connectZooms?: boolean;
+	zoomTiming?: Partial<ZoomTimingSettings>;
 	cameraSizeDuringZoom?: number;
 	enableCursorAvoidance?: boolean;
 	containerWidth: number;
@@ -254,6 +256,7 @@ export function resolveWebcamRenderSpec(params: {
 			zoomRegions: params.zoomRegions,
 			cursorTelemetry: params.cursorTelemetry,
 			connectZooms: params.connectZooms,
+			zoomTiming: params.zoomTiming,
 			cameraSizeDuringZoom: params.cameraSizeDuringZoom,
 			enableCursorAvoidance: params.enableCursorAvoidance,
 			containerWidth: params.containerWidth,

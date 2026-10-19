@@ -2,7 +2,6 @@ import type {
 	AnnotationRegion,
 	CaptionRegion,
 	CaptionSettings,
-	ZoomDepth,
 } from "@/components/video-editor/types";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import type { ExportV2EncoderCandidate, ExportV2StartRequest } from "./exportV2";
@@ -13,15 +12,6 @@ export interface NativeComposedCompileResult {
 	fallbackReason?: string;
 	featureReport: string[];
 }
-
-const ZOOM_DEPTH_SCALES: Record<ZoomDepth, number> = {
-	1: 1.25,
-	2: 1.5,
-	3: 1.8,
-	4: 2.2,
-	5: 3.5,
-	6: 5,
-};
 
 const DEFAULT_CROP = { x: 0, y: 0, width: 1, height: 1 };
 
@@ -98,10 +88,7 @@ export function compileNativeComposedExport(
 		return unsupported(background.reason, featureReport);
 	}
 
-	const zoom = resolveZoomExpression(
-		composition.zoomRegions ?? [],
-		Boolean(request.trimRegions?.length),
-	);
+	const zoom = resolveZoomExpression(composition.zoomRegions ?? []);
 	if (!zoom.supported) {
 		return unsupported(zoom.reason, featureReport);
 	}
@@ -275,36 +262,15 @@ function resolveZoomExpression(
 	zoomRegions: ExportV2StartRequest["compositionPayload"] extends infer _T
 		? NonNullable<NonNullable<ExportV2StartRequest["compositionPayload"]>["zoomRegions"]>
 		: never,
-	hasTrim: boolean,
 ) {
-	if (zoomRegions.length === 0) {
-		return { supported: true as const, expression: "1", focusX: 0.5, focusY: 0.5 };
-	}
-	if (hasTrim) {
+	if (zoomRegions.length > 0) {
+		// The filtergraph can only step between scales; eased zoom-in/out needs the renderer.
 		return {
 			supported: false as const,
-			reason: "Zoom with trimmed timelines requires the renderer path.",
+			reason: "Animated zoom transitions require the renderer path.",
 		};
 	}
-	if (zoomRegions.length > 1) {
-		return {
-			supported: false as const,
-			reason: "Multiple or connected zoom regions require the renderer path.",
-		};
-	}
-	const zoom = zoomRegions[0];
-	if (zoom.mode && zoom.mode !== "static") {
-		return { supported: false as const, reason: "Cursor-follow zoom requires the renderer path." };
-	}
-	const scale = ZOOM_DEPTH_SCALES[zoom.depth] ?? 1.8;
-	const startSec = Math.max(0, zoom.startMs / 1000);
-	const endSec = Math.max(startSec, zoom.endMs / 1000);
-	return {
-		supported: true as const,
-		expression: `if(between(t\\,${startSec.toFixed(3)}\\,${endSec.toFixed(3)})\\,${scale}\\,1)`,
-		focusX: clamp01(zoom.focus.cx),
-		focusY: clamp01(zoom.focus.cy),
-	};
+	return { supported: true as const, expression: "1", focusX: 0.5, focusY: 0.5 };
 }
 
 function compileCaptionFilters(

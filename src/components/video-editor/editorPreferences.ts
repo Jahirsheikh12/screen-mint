@@ -18,7 +18,9 @@ type PersistedEditorControls = Pick<
 	| "frameShadowBlur"
 	| "backgroundBlur"
 	| "zoomMotionBlur"
+	| "zoomTemporalBlur"
 	| "connectZooms"
+	| "zoomTiming"
 	| "showCursor"
 	| "loopCursor"
 	| "cursorSize"
@@ -113,7 +115,9 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	frameShadowBlur: DEFAULT_EDITOR_CONTROLS.frameShadowBlur,
 	backgroundBlur: DEFAULT_EDITOR_CONTROLS.backgroundBlur,
 	zoomMotionBlur: DEFAULT_EDITOR_CONTROLS.zoomMotionBlur,
+	zoomTemporalBlur: DEFAULT_EDITOR_CONTROLS.zoomTemporalBlur,
 	connectZooms: DEFAULT_EDITOR_CONTROLS.connectZooms,
+	zoomTiming: DEFAULT_EDITOR_CONTROLS.zoomTiming,
 	showCursor: DEFAULT_EDITOR_CONTROLS.showCursor,
 	loopCursor: DEFAULT_EDITOR_CONTROLS.loopCursor,
 	cursorSize: DEFAULT_EDITOR_CONTROLS.cursorSize,
@@ -278,7 +282,9 @@ function normalizeEditorControls(
 		frameShadowBlur: raw.frameShadowBlur ?? fallback.frameShadowBlur,
 		backgroundBlur: raw.backgroundBlur ?? fallback.backgroundBlur,
 		zoomMotionBlur: raw.zoomMotionBlur ?? fallback.zoomMotionBlur,
+		zoomTemporalBlur: raw.zoomTemporalBlur ?? fallback.zoomTemporalBlur,
 		connectZooms: raw.connectZooms ?? fallback.connectZooms,
+		zoomTiming: raw.zoomTiming ?? fallback.zoomTiming,
 		showCursor: raw.showCursor ?? fallback.showCursor,
 		loopCursor: raw.loopCursor ?? fallback.loopCursor,
 		cursorSize: raw.cursorSize ?? fallback.cursorSize,
@@ -360,7 +366,9 @@ function normalizeEditorControls(
 		frameShadowBlur: normalized.frameShadowBlur,
 		backgroundBlur: normalized.backgroundBlur,
 		zoomMotionBlur: normalized.zoomMotionBlur,
+		zoomTemporalBlur: normalized.zoomTemporalBlur,
 		connectZooms: normalized.connectZooms,
+		zoomTiming: normalized.zoomTiming,
 		showCursor: normalized.showCursor,
 		loopCursor: normalized.loopCursor,
 		cursorSize: normalized.cursorSize,
