@@ -2,7 +2,7 @@ import { useRef } from "react";
 import { Rnd } from "react-rnd";
 import { cn } from "@/lib/utils";
 import { getArrowComponent } from "./arrowComponent";
-import type { AnnotationRegion } from "./types";
+import { type AnnotationRegion, DEFAULT_BLUR_DATA } from "./types";
 
 interface AnnotationOverlayProps {
 	annotation: AnnotationRegion;
@@ -116,15 +116,18 @@ export function AnnotationOverlay({
 			case "blur": {
 				const blurAmount = annotation.blurData?.blurAmount ?? 10;
 				const isCircle = annotation.blurData?.shape === "circle";
+				const isSolid = annotation.blurData?.mode === "solid";
 				return (
 					<div
 						className="w-full h-full"
 						style={{
-							backdropFilter: `blur(${blurAmount}px)`,
-							WebkitBackdropFilter: `blur(${blurAmount}px)`,
-							borderRadius: isCircle ? "50%" : "8px",
-							backgroundColor: "rgba(128, 128, 128, 0.08)",
-							border: isSelected ? "none" : "1px dashed rgba(255,255,255,0.2)",
+							backdropFilter: isSolid ? undefined : `blur(${blurAmount}px)`,
+							WebkitBackdropFilter: isSolid ? undefined : `blur(${blurAmount}px)`,
+							borderRadius: isCircle ? "50%" : `${annotation.blurData?.borderRadius ?? 8}px`,
+							backgroundColor: isSolid
+								? (annotation.blurData?.solidColor ?? DEFAULT_BLUR_DATA.solidColor)
+								: "rgba(128, 128, 128, 0.08)",
+							border: isSelected || isSolid ? "none" : "1px dashed rgba(255,255,255,0.2)",
 						}}
 					/>
 				);

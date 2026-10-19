@@ -414,11 +414,19 @@ export type ArrowDirection =
 export interface BlurData {
 	blurAmount: number;
 	shape: "rectangle" | "circle";
+	/** "solid" covers the area with an opaque color (censorship) instead of blurring. */
+	mode?: "blur" | "solid";
+	solidColor?: string;
+	/** Corner radius in px for rectangles. */
+	borderRadius?: number;
 }
 
 export const DEFAULT_BLUR_DATA: BlurData = {
 	blurAmount: 10,
 	shape: "rectangle",
+	mode: "blur",
+	solidColor: "#000000",
+	borderRadius: 8,
 };
 
 export interface FigureData {

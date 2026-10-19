@@ -278,6 +278,7 @@ function renderBlur(
 	height: number,
 ) {
 	const { blurAmount, shape } = blurData;
+	const isSolid = blurData.mode === "solid";
 
 	ctx.save();
 
@@ -290,9 +291,16 @@ function renderBlur(
 		const ry = height / 2;
 		ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
 	} else {
-		ctx.roundRect(x, y, width, height, 8);
+		ctx.roundRect(x, y, width, height, blurData.borderRadius ?? 8);
 	}
 	ctx.clip();
+
+	if (isSolid) {
+		ctx.fillStyle = blurData.solidColor ?? "#000000";
+		ctx.fillRect(x, y, width, height);
+		ctx.restore();
+		return;
+	}
 
 	// Use CanvasRenderingContext2D filter to blur the region
 	// We draw the current canvas content back into itself within the clip
