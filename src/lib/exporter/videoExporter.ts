@@ -16,6 +16,7 @@ import type {
 	KeyboardShortcutCallout,
 	KeyboardShortcutPosition,
 	KeyboardShortcutTheme,
+	PaddingValue,
 	SpeedRegion,
 	TrimRegion,
 	WebcamEffects,
@@ -64,7 +65,7 @@ interface VideoExporterConfig extends ExportConfig {
 	frameBorderColor?: string;
 	frameBorderOpacity?: number;
 	borderRadius?: number;
-	padding?: number;
+	padding?: PaddingValue;
 	videoPadding?: number;
 	cropRegion: CropRegion;
 	aspectRatio?: AspectRatio;

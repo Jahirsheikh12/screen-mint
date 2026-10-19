@@ -379,6 +379,20 @@ export const KEYBOARD_SHORTCUT_THEME_OPTIONS: Array<{
 	{ value: "glass", label: "Glass" },
 ];
 
+export interface PaddingSides {
+	top: number;
+	bottom: number;
+	left: number;
+	right: number;
+}
+
+/** Uniform padding (0–100) or per-side padding. */
+export type PaddingValue = number | PaddingSides;
+
+/** Linked padding max is 100; unlinked top/bottom may go to 250 for tall layouts. */
+export const PADDING_LINKED_MAX = 100;
+export const PADDING_UNLINKED_VERTICAL_MAX = 250;
+
 export interface TrimRegion {
 	id: string;
 	startMs: number;

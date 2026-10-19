@@ -120,6 +120,9 @@ import {
 	type KeyboardShortcutTheme,
 	LEGACY_CURSOR_CLICK_STYLE,
 	LEGACY_ZOOM_TIMING,
+	PADDING_LINKED_MAX,
+	PADDING_UNLINKED_VERTICAL_MAX,
+	type PaddingSides,
 	SCENE_PRESET_IDS,
 	type ScenePresetId,
 	type SpeedRegion,
@@ -212,6 +215,8 @@ export interface ProjectEditorState {
 	frameBorderOpacity: number;
 	borderRadius: number;
 	padding: number;
+	/** Per-side padding; null = linked (uses `padding`). */
+	paddingSides: PaddingSides | null;
 	cropRegion: CropRegion;
 	zoomRegions: ZoomRegion[];
 	trimRegions: TrimRegion[];
@@ -1000,6 +1005,18 @@ export function normalizeZoomTemporalBlur(candidate: unknown): ZoomTemporalBlurS
 	};
 }
 
+export function normalizePaddingSides(candidate: unknown): PaddingSides | null {
+	if (!candidate || typeof candidate !== "object") return null;
+	const raw = candidate as Partial<PaddingSides>;
+	const side = (value: unknown, max: number) => (isFiniteNumber(value) ? clamp(value, 0, max) : 0);
+	return {
+		top: side(raw.top, PADDING_UNLINKED_VERTICAL_MAX),
+		bottom: side(raw.bottom, PADDING_UNLINKED_VERTICAL_MAX),
+		left: side(raw.left, PADDING_LINKED_MAX),
+		right: side(raw.right, PADDING_LINKED_MAX),
+	};
+}
+
 export function normalizeCursorClickStyle(candidate: unknown): CursorClickStyleSettings {
 	const raw =
 		candidate && typeof candidate === "object"
@@ -1730,6 +1747,7 @@ export function normalizeProjectEditor(
 		frameBorderOpacity: normalizedFrameBorder.opacity,
 		borderRadius: typeof editor.borderRadius === "number" ? editor.borderRadius : 12.5,
 		padding: normalizedPadding,
+		paddingSides: normalizePaddingSides(editor.paddingSides),
 		cropRegion: {
 			x: cropX,
 			y: cropY,

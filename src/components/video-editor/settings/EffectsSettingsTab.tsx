@@ -21,6 +21,9 @@ import {
 } from "../settingsPanelLayout";
 import {
 	DEFAULT_ZOOM_MOTION_BLUR,
+	PADDING_LINKED_MAX,
+	PADDING_UNLINKED_VERTICAL_MAX,
+	type PaddingSides,
 	PREVIEW_QUALITY_OPTIONS,
 	type PreviewQuality,
 	type ZoomTemporalBlurSettings,
@@ -66,6 +69,8 @@ interface EffectsSettingsTabProps {
 	onBorderRadiusChange?: (radius: number) => void;
 	padding: number;
 	onPaddingChange?: (padding: number) => void;
+	paddingSides: PaddingSides | null;
+	onPaddingSidesChange?: (sides: PaddingSides | null) => void;
 	onCropToggle: () => void;
 }
 
@@ -105,6 +110,8 @@ export function EffectsSettingsTab({
 	onBorderRadiusChange,
 	padding,
 	onPaddingChange,
+	paddingSides,
+	onPaddingSidesChange,
 	onCropToggle,
 }: EffectsSettingsTabProps) {
 	return (
@@ -416,18 +423,69 @@ export function EffectsSettingsTab({
 						parseInput={(text) => parseFloat(text.replace(/px$/, ""))}
 					/>
 				</div>
-				<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
-					<SliderControl
-						label={tSettings("effects.padding")}
-						value={padding}
-						defaultValue={DEFAULT_VIDEO_PREVIEW_PADDING}
-						min={0}
-						max={100}
-						step={1}
-						onChange={(value) => onPaddingChange?.(value)}
-						formatValue={(value) => `${value}%`}
-						parseInput={(text) => parseFloat(text.replace(/%$/, ""))}
-					/>
+				<div className="space-y-3 p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+					<div className="flex items-center justify-between">
+						<span className="text-xs font-medium text-slate-300">
+							{tSettings("effects.padding")}
+						</span>
+						<div className="grid grid-cols-2 gap-1 rounded-lg bg-white/[0.04] p-0.5">
+							{(["linked", "unlinked"] as const).map((mode) => {
+								const isActive = (mode === "linked") === (paddingSides === null);
+								return (
+									<button
+										key={mode}
+										type="button"
+										aria-pressed={isActive}
+										onClick={() =>
+											onPaddingSidesChange?.(
+												mode === "linked"
+													? null
+													: { top: padding, bottom: padding, left: padding, right: padding },
+											)
+										}
+										className={cn(
+											"rounded-md px-2 py-1 text-[10px] font-medium transition-colors",
+											isActive ? "bg-[#F59E0B] text-white" : "text-slate-400 hover:text-slate-200",
+										)}
+									>
+										{mode === "linked" ? "Linked" : "Per side"}
+									</button>
+								);
+							})}
+						</div>
+					</div>
+					{paddingSides === null ? (
+						<SliderControl
+							label="All sides"
+							value={padding}
+							defaultValue={DEFAULT_VIDEO_PREVIEW_PADDING}
+							min={0}
+							max={PADDING_LINKED_MAX}
+							step={1}
+							onChange={(value) => onPaddingChange?.(value)}
+							formatValue={(value) => `${value}%`}
+							parseInput={(text) => parseFloat(text.replace(/%$/, ""))}
+						/>
+					) : (
+						(["top", "bottom", "left", "right"] as const).map((side) => (
+							<SliderControl
+								key={side}
+								label={side[0].toUpperCase() + side.slice(1)}
+								value={paddingSides[side]}
+								defaultValue={padding}
+								min={0}
+								max={
+									side === "top" || side === "bottom"
+										? PADDING_UNLINKED_VERTICAL_MAX
+										: PADDING_LINKED_MAX
+								}
+								step={1}
+								onChange={(value) => onPaddingSidesChange?.({ ...paddingSides, [side]: value })}
+								formatValue={(value) => `${value}%`}
+								parseInput={(text) => parseFloat(text.replace(/%$/, ""))}
+							/>
+						))
+					)}
 				</div>
 				<Button
 					onClick={onCropToggle}

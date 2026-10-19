@@ -1,6 +1,6 @@
 import { Application, Graphics, Sprite } from "pixi.js";
 import { type AspectRatio, getAspectRatioValue } from "@/utils/aspectRatioUtils";
-import type { CropRegion, CursorTelemetryPoint } from "../types";
+import type { CropRegion, CursorTelemetryPoint, PaddingValue } from "../types";
 
 interface LayoutParams {
 	container: HTMLDivElement;
@@ -11,7 +11,7 @@ interface LayoutParams {
 	cropRegion?: CropRegion;
 	lockedVideoDimensions?: { width: number; height: number } | null;
 	borderRadius?: number;
-	padding?: number;
+	padding?: PaddingValue;
 	aspectRatio?: AspectRatio;
 }
 
@@ -31,8 +31,34 @@ interface VideoLayoutGeometryParams {
 	videoWidth: number;
 	videoHeight: number;
 	cropRegion?: CropRegion;
-	padding?: number;
+	padding?: PaddingValue;
 	aspectRatio?: AspectRatio;
+}
+
+/**
+ * Area left for the frame after padding. Each side unit insets 0.2% of the container, so a
+ * uniform value p shrinks the frame to (1 - 0.4·p/100) and stays centered.
+ */
+export function resolvePaddedArea(
+	containerWidth: number,
+	containerHeight: number,
+	padding: PaddingValue = 0,
+) {
+	const sides =
+		typeof padding === "number"
+			? { top: padding, bottom: padding, left: padding, right: padding }
+			: padding;
+	const inset = (value: number, size: number) => (Math.max(0, value) / 100) * 0.2 * size;
+	const left = inset(sides.left, containerWidth);
+	const right = inset(sides.right, containerWidth);
+	const top = inset(sides.top, containerHeight);
+	const bottom = inset(sides.bottom, containerHeight);
+	return {
+		x: left,
+		y: top,
+		width: Math.max(1, containerWidth - left - right),
+		height: Math.max(1, containerHeight - top - bottom),
+	};
 }
 
 export interface LegacyCaptureCorrectionParams {
@@ -219,12 +245,12 @@ export function calculateVideoLayoutGeometry(
 	const cropEndY = cropStartY + croppedVideoHeight;
 
 	const croppedVideoAspectRatio = croppedVideoWidth / croppedVideoHeight;
-	const paddingScale = 1.0 - (padding / 100) * 0.4;
-	const availableWidth = containerWidth * paddingScale;
-	const availableHeight = containerHeight * paddingScale;
+	const area = resolvePaddedArea(containerWidth, containerHeight, padding);
 	const targetFrameAspectRatio = getAspectRatioValue(aspectRatio, croppedVideoAspectRatio);
-	const frameSize = fitRectWithin(availableWidth, availableHeight, targetFrameAspectRatio);
-	const frameRect = centerRect(containerWidth, containerHeight, frameSize.width, frameSize.height);
+	const frameSize = fitRectWithin(area.width, area.height, targetFrameAspectRatio);
+	const frameRect = centerRect(area.width, area.height, frameSize.width, frameSize.height);
+	frameRect.x += area.x;
+	frameRect.y += area.y;
 	const contentSize = fitRectWithin(frameRect.width, frameRect.height, croppedVideoAspectRatio);
 	const maskRect = centerRect(
 		frameRect.width,

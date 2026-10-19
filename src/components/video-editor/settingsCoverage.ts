@@ -26,6 +26,7 @@ export const EDITOR_SETTINGS_COVERAGE: readonly SettingsCoverageGroup[] = [
 			"frameBorderOpacity",
 			"borderRadius",
 			"padding",
+			"paddingSides",
 			"deviceMockup",
 		],
 	},

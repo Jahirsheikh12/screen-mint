@@ -62,6 +62,7 @@ type PersistedEditorControls = Pick<
 	| "frameBorderOpacity"
 	| "borderRadius"
 	| "padding"
+	| "paddingSides"
 	| "cropRegion"
 	| "aspectRatio"
 	| "webcamRegion"
@@ -160,6 +161,7 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	frameBorderOpacity: DEFAULT_EDITOR_CONTROLS.frameBorderOpacity,
 	borderRadius: DEFAULT_EDITOR_CONTROLS.borderRadius,
 	padding: DEFAULT_EDITOR_CONTROLS.padding,
+	paddingSides: DEFAULT_EDITOR_CONTROLS.paddingSides,
 	cropRegion: DEFAULT_EDITOR_CONTROLS.cropRegion,
 	aspectRatio: DEFAULT_EDITOR_CONTROLS.aspectRatio,
 	webcamRegion: DEFAULT_EDITOR_CONTROLS.webcamRegion,
@@ -329,6 +331,7 @@ function normalizeEditorControls(
 		frameBorderOpacity: raw.frameBorderOpacity ?? fallback.frameBorderOpacity,
 		borderRadius: raw.borderRadius ?? fallback.borderRadius,
 		padding: candidatePadding,
+		paddingSides: raw.paddingSides ?? fallback.paddingSides,
 		cropRegion: normalizeCropRegion(raw.cropRegion, fallback.cropRegion),
 		aspectRatio: candidateAspectRatio,
 		webcamRegion: raw.webcamRegion ?? fallback.webcamRegion,
@@ -413,6 +416,7 @@ function normalizeEditorControls(
 		frameBorderOpacity: normalized.frameBorderOpacity,
 		borderRadius: normalized.borderRadius,
 		padding: normalized.padding,
+		paddingSides: normalized.paddingSides,
 		cropRegion: normalized.cropRegion,
 		aspectRatio: normalized.aspectRatio,
 		webcamRegion: normalized.webcamRegion,

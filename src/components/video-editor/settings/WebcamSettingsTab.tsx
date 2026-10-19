@@ -35,6 +35,8 @@ interface WebcamSettingsTabProps {
 	aspectRatio: AspectRatio;
 	webcamMissing: boolean;
 	missingWebcamPath?: string | null;
+	/** Linked webcam footage for this video, if any. */
+	webcamPath?: string | null;
 	onRelinkMissingWebcam?: () => void;
 	onRemoveMissingWebcam?: () => void;
 	showAdvancedWebcam: boolean;
@@ -92,6 +94,7 @@ export function WebcamSettingsTab({
 	aspectRatio,
 	webcamMissing,
 	missingWebcamPath,
+	webcamPath,
 	onRelinkMissingWebcam,
 	onRemoveMissingWebcam,
 	showAdvancedWebcam,
@@ -220,6 +223,40 @@ export function WebcamSettingsTab({
 						</div>
 					</div>
 				</div>
+			)}
+
+			{!webcamMissing && (
+				<SettingsSection
+					title="Webcam Footage"
+					description={
+						webcamPath ? "Footage linked to this video" : "No webcam footage linked to this video"
+					}
+				>
+					{webcamPath && (
+						<div className="truncate rounded-lg border border-white/5 bg-white/[0.04] px-2.5 py-2 font-mono text-[10px] text-slate-300">
+							{webcamPath.split(/[\\/]/).pop()}
+						</div>
+					)}
+					<div className={cn("grid gap-2", webcamPath ? "grid-cols-2" : "grid-cols-1")}>
+						<Button
+							type="button"
+							onClick={onRelinkMissingWebcam}
+							className="h-8 rounded-xl border border-[#F59E0B]/25 bg-[#F59E0B]/10 text-[10px] font-semibold text-[#fde68a] hover:bg-[#F59E0B]/18"
+						>
+							<Upload className="mr-1.5 h-3 w-3" />
+							{webcamPath ? "Replace footage" : "Upload footage"}
+						</Button>
+						{webcamPath && (
+							<Button
+								type="button"
+								onClick={onRemoveMissingWebcam}
+								className="h-8 rounded-xl border border-white/10 bg-white/[0.04] text-[10px] font-semibold text-slate-200 hover:bg-white/[0.08]"
+							>
+								Remove footage
+							</Button>
+						)}
+					</div>
+				</SettingsSection>
 			)}
 
 			<SettingsSection

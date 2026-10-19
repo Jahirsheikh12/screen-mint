@@ -16,6 +16,7 @@ import type {
 	KeyboardShortcutCallout,
 	KeyboardShortcutPosition,
 	KeyboardShortcutTheme,
+	PaddingValue,
 	SpeedRegion,
 	TrimRegion,
 	WebcamEffects,
@@ -165,7 +166,7 @@ export interface ExportCompositionPayload {
 	frameBorderColor?: string;
 	frameBorderOpacity?: number;
 	borderRadius?: number;
-	padding?: number;
+	padding?: PaddingValue;
 	videoPadding?: number;
 	cropRegion: CropRegion;
 	aspectRatio?: AspectRatio;

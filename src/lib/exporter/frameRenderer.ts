@@ -27,6 +27,7 @@ import type {
 	KeyboardShortcutCallout,
 	KeyboardShortcutPosition,
 	KeyboardShortcutTheme,
+	PaddingValue,
 	SpeedRegion,
 	WebcamEffects,
 	WebcamRegion,
@@ -101,7 +102,7 @@ interface FrameRenderConfig {
 	frameBorderColor?: string;
 	frameBorderOpacity?: number;
 	borderRadius?: number;
-	padding?: number;
+	padding?: PaddingValue;
 	cropRegion: CropRegion;
 	aspectRatio?: AspectRatio;
 	videoWidth: number;

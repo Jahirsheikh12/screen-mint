@@ -2,7 +2,9 @@ import type {
 	AnnotationRegion,
 	CaptionRegion,
 	CaptionSettings,
+	PaddingValue,
 } from "@/components/video-editor/types";
+import { resolvePaddedArea } from "@/components/video-editor/videoPlayback/layoutUtils";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import type { ExportV2EncoderCandidate, ExportV2StartRequest } from "./exportV2";
 
@@ -388,7 +390,7 @@ function resolveNativeLayout(params: {
 	sourceWidth: number;
 	sourceHeight: number;
 	cropRegion?: { x: number; y: number; width: number; height: number };
-	padding?: number;
+	padding?: PaddingValue;
 	aspectRatio?: AspectRatio;
 }) {
 	const crop = normalizeCrop(params.cropRegion);
@@ -396,17 +398,12 @@ function resolveNativeLayout(params: {
 	const cropHeight = params.sourceHeight * crop.height;
 	if (cropWidth <= 0 || cropHeight <= 0) return null;
 	const croppedAspect = cropWidth / cropHeight;
-	const paddingScale = 1 - ((params.padding ?? 0) / 100) * 0.4;
-	const availableWidth = params.outputWidth * paddingScale;
-	const availableHeight = params.outputHeight * paddingScale;
+	const area = resolvePaddedArea(params.outputWidth, params.outputHeight, params.padding);
 	const targetAspect = getAspectRatioValue(params.aspectRatio, croppedAspect);
-	const frameSize = fitRectWithin(availableWidth, availableHeight, targetAspect);
-	const frameRect = centerRect(
-		params.outputWidth,
-		params.outputHeight,
-		frameSize.width,
-		frameSize.height,
-	);
+	const frameSize = fitRectWithin(area.width, area.height, targetAspect);
+	const frameRect = centerRect(area.width, area.height, frameSize.width, frameSize.height);
+	frameRect.x += area.x;
+	frameRect.y += area.y;
 	const contentSize = fitRectWithin(frameRect.width, frameRect.height, croppedAspect);
 	const maskRect = centerRect(
 		frameRect.width,

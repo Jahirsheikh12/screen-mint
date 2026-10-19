@@ -80,6 +80,7 @@ import type {
 	KeyboardShortcutPosition,
 	KeyboardShortcutTheme,
 	MotionPresetId,
+	PaddingSides,
 	PlaybackSpeed,
 	PreviewQuality,
 	ScenePresetId,
@@ -237,6 +238,8 @@ interface SettingsPanelProps {
 	onBorderRadiusChange?: (radius: number) => void;
 	padding?: number;
 	onPaddingChange?: (padding: number) => void;
+	paddingSides?: PaddingSides | null;
+	onPaddingSidesChange?: (sides: PaddingSides | null) => void;
 	cropRegion?: CropRegion;
 	baseCropRegion?: CropRegion;
 	onCropChange?: (region: CropRegion) => void;
@@ -447,6 +450,8 @@ export default function SettingsPanel({
 	onBorderRadiusChange,
 	padding = DEFAULT_VIDEO_PREVIEW_PADDING,
 	onPaddingChange,
+	paddingSides = null,
+	onPaddingSidesChange,
 	cropRegion,
 	baseCropRegion,
 	onCropChange,
@@ -996,6 +1001,8 @@ export default function SettingsPanel({
 						onBorderRadiusChange={onBorderRadiusChange}
 						padding={padding}
 						onPaddingChange={onPaddingChange}
+						paddingSides={paddingSides}
+						onPaddingSidesChange={onPaddingSidesChange}
 						onCropToggle={handleCropToggle}
 					/>
 				)}
@@ -1210,6 +1217,7 @@ export default function SettingsPanel({
 						aspectRatio={aspectRatio}
 						webcamMissing={webcamMissing}
 						missingWebcamPath={missingWebcamPath}
+						webcamPath={webcamPath}
 						onRelinkMissingWebcam={onRelinkMissingWebcam}
 						onRemoveMissingWebcam={onRemoveMissingWebcam}
 						showAdvancedWebcam={showAdvancedWebcam}

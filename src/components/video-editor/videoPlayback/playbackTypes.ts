@@ -21,6 +21,7 @@ import type {
 	KeyboardShortcutCallout,
 	KeyboardShortcutPosition,
 	KeyboardShortcutTheme,
+	PaddingValue,
 	PreviewQuality,
 	SpeedRegion,
 	TrimRegion,
@@ -63,7 +64,7 @@ export interface VideoPlaybackProps {
 	frameBorderOpacity?: number;
 	deviceMockup?: DeviceMockup;
 	borderRadius?: number;
-	padding?: number;
+	padding?: PaddingValue;
 	cropRegion?: CropRegion;
 	trimRegions?: TrimRegion[];
 	speedRegions?: SpeedRegion[];

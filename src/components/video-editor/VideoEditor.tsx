@@ -172,6 +172,8 @@ import {
 	type KeyboardTelemetrySample,
 	MOTION_PRESETS,
 	type MotionPresetId,
+	type PaddingSides,
+	type PaddingValue,
 	type PlaybackSpeed,
 	type PreviewQuality,
 	type ScenePresetId,
@@ -459,6 +461,10 @@ export default function VideoEditor() {
 	);
 	const [borderRadius, setBorderRadius] = useState(initialEditorPreferences.borderRadius);
 	const [padding, setPadding] = useState(initialEditorPreferences.padding);
+	const [paddingSides, setPaddingSides] = useState<PaddingSides | null>(
+		initialEditorPreferences.paddingSides,
+	);
+	const effectivePadding: PaddingValue = paddingSides ?? padding;
 	const [cropRegion, setCropRegion] = useState<CropRegion>(initialEditorPreferences.cropRegion);
 	const [zoomRegions, setZoomRegions] = useState<ZoomRegion[]>([]);
 	const [cursorTelemetry, setCursorTelemetry] = useState<CursorTelemetryPoint[]>([]);
@@ -708,6 +714,7 @@ export default function VideoEditor() {
 				frameBorderColor,
 				frameBorderOpacity,
 				padding,
+				paddingSides,
 				cropRegion,
 				zoomRegions,
 				trimRegions,
@@ -788,6 +795,7 @@ export default function VideoEditor() {
 			frameBorderColor,
 			frameBorderOpacity,
 			padding,
+			paddingSides,
 			cropRegion,
 			zoomRegions,
 			trimRegions,
@@ -873,6 +881,7 @@ export default function VideoEditor() {
 			setFrameBorderOpacity(controls.frameBorderOpacity);
 			setBorderRadius(controls.borderRadius);
 			setPadding(controls.padding);
+			setPaddingSides(controls.paddingSides);
 			setCropRegion(controls.cropRegion);
 			setAspectRatio(controls.aspectRatio);
 			setShowWebcam(controls.showWebcam);
@@ -1149,6 +1158,7 @@ export default function VideoEditor() {
 				frameBorderOpacity,
 				borderRadius,
 				padding,
+				paddingSides,
 				cropRegion,
 				zoomRegions,
 				trimRegions,
@@ -1232,6 +1242,7 @@ export default function VideoEditor() {
 		frameBorderOpacity,
 		borderRadius,
 		padding,
+		paddingSides,
 		cropRegion,
 		zoomRegions,
 		trimRegions,
@@ -1530,6 +1541,7 @@ export default function VideoEditor() {
 					frameBorderOpacity,
 					borderRadius,
 					padding,
+					paddingSides,
 					cropRegion,
 					zoomRegions,
 					trimRegions,
@@ -1642,6 +1654,7 @@ export default function VideoEditor() {
 			deviceMockup,
 			borderRadius,
 			padding,
+			paddingSides,
 			cropRegion,
 			zoomRegions,
 			trimRegions,
@@ -3408,6 +3421,7 @@ export default function VideoEditor() {
 					effectiveZoomRegions.length > 0 ||
 					!isDefaultCropRegion ||
 					aspectRatio !== "native" ||
+					paddingSides !== null ||
 					padding !== 0 ||
 					borderRadius !== 0 ||
 					frameBorderEnabled ||
@@ -3455,7 +3469,7 @@ export default function VideoEditor() {
 					frameBorderColor,
 					frameBorderOpacity,
 					borderRadius,
-					padding,
+					padding: effectivePadding,
 					videoPadding: padding,
 					cropRegion: effectiveLayerCropRegion,
 					aspectRatio,
@@ -3680,7 +3694,7 @@ export default function VideoEditor() {
 							frameBorderColor,
 							frameBorderOpacity,
 							borderRadius,
-							padding,
+							padding: effectivePadding,
 							videoPadding: padding,
 							cropRegion: effectiveLayerCropRegion,
 							aspectRatio,
@@ -3833,7 +3847,7 @@ export default function VideoEditor() {
 							frameBorderColor,
 							frameBorderOpacity,
 							borderRadius,
-							padding,
+							padding: effectivePadding,
 							cropRegion: effectiveLayerCropRegion,
 							aspectRatio,
 							annotationRegions,
@@ -4001,6 +4015,8 @@ export default function VideoEditor() {
 			deviceMockup,
 			borderRadius,
 			padding,
+			effectivePadding,
+			paddingSides,
 			effectiveLayerCropRegion,
 			annotationRegions,
 			isPlaying,
@@ -4477,7 +4493,7 @@ export default function VideoEditor() {
 											frameBorderOpacity={frameBorderOpacity}
 											deviceMockup={deviceMockup}
 											borderRadius={borderRadius}
-											padding={padding}
+											padding={effectivePadding}
 											cropRegion={effectiveLayerCropRegion}
 											trimRegions={trimRegions}
 											speedRegions={speedRegions}
@@ -4733,6 +4749,8 @@ export default function VideoEditor() {
 												borderRadius={borderRadius}
 												onBorderRadiusChange={setBorderRadius}
 												padding={padding}
+												paddingSides={paddingSides}
+												onPaddingSidesChange={setPaddingSides}
 												onPaddingChange={setPadding}
 												cropRegion={cropRegion}
 												baseCropRegion={legacyCaptureCorrectionCrop}
