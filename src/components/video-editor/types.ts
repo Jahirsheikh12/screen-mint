@@ -822,6 +822,8 @@ export interface AudioRegion extends AudioRegionSource {
 	fadeInMs: number;
 	fadeOutMs: number;
 	loop: boolean;
+	/** Scale the clip so its peak sits just under full scale. */
+	normalize?: boolean;
 }
 
 export const DEFAULT_AUDIO_REGION_VOLUME = 0.18;

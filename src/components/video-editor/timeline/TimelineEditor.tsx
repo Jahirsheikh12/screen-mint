@@ -8,7 +8,9 @@ import {
 	Clapperboard,
 	Gauge,
 	Layers,
+	Maximize2,
 	MessageSquare,
+	Minimize2,
 	Music,
 	Pause,
 	Play,
@@ -17,6 +19,7 @@ import {
 	Search,
 	SkipBack,
 	SkipForward,
+	Unlink,
 	Volume2,
 	VolumeOff,
 	WandSparkles,
@@ -529,6 +532,9 @@ export default function TimelineEditor({
 	hasAudio = false,
 	clipVolume = 1,
 	onClipVolumeChange,
+	onSeparateClipAudio,
+	timelineExpanded = false,
+	onToggleTimelineExpanded,
 }: TimelineEditorProps) {
 	const initialEditorPreferences = useMemo(() => loadEditorPreferences(), []);
 	const prevVolumeRef = useRef(clipVolume || 1);
@@ -1722,6 +1728,19 @@ export default function TimelineEditor({
 								className="w-16 h-1 accent-amber-500 cursor-pointer opacity-60 group-hover/vol:opacity-100 transition-opacity"
 							/>
 						</Tooltip>
+						{onSeparateClipAudio && (
+							<Tooltip content="Separate clip from audio" side="bottom">
+								<Button
+									variant="ghost"
+									size="icon"
+									aria-label="Separate clip from audio"
+									className="h-7 w-7 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+									onClick={onSeparateClipAudio}
+								>
+									<Unlink className="w-3.5 h-3.5" />
+								</Button>
+							</Tooltip>
+						)}
 					</div>
 				)}
 
@@ -1842,6 +1861,26 @@ export default function TimelineEditor({
 							<ZoomOut className="w-4 h-4" />
 						</Button>
 					</Tooltip>
+					{onToggleTimelineExpanded && (
+						<Tooltip
+							content={timelineExpanded ? "Collapse Timeline" : "Expand Timeline"}
+							side="bottom"
+						>
+							<Button
+								onClick={onToggleTimelineExpanded}
+								variant="ghost"
+								size="icon"
+								aria-label={timelineExpanded ? "Collapse timeline" : "Expand timeline"}
+								className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+							>
+								{timelineExpanded ? (
+									<Minimize2 className="w-4 h-4" />
+								) : (
+									<Maximize2 className="w-4 h-4" />
+								)}
+							</Button>
+						</Tooltip>
+					)}
 
 					<div className="w-[1px] h-5 bg-white/10 mx-1" />
 

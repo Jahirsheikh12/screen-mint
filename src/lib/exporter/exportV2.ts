@@ -206,6 +206,7 @@ export interface ExportCompositionPayload {
 	highQualitySvgCursors?: boolean;
 	cameraSpring?: import("@/components/video-editor/types").CameraSpringSettings;
 	audioRegions?: AudioRegion[];
+	sourceAudioVolume?: number;
 	previewWidth?: number;
 	previewHeight?: number;
 	webcamPath?: string | null;

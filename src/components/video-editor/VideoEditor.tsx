@@ -256,6 +256,9 @@ function LanguageSwitcher() {
 	);
 }
 
+/** Preview / timeline split when the timeline is expanded. */
+const EXPANDED_TIMELINE_LAYOUT = [40, 60];
+
 export default function VideoEditor() {
 	const { t } = useI18n();
 	const tSettings = useScopedT("settings");
@@ -313,7 +316,23 @@ export default function VideoEditor() {
 		handleVideoNameInputKeyDown,
 	} = useVideoNameEditing("Untitled");
 	const [videoHasAudio, setVideoHasAudio] = useState(false);
-	const [clipVolume, setClipVolume] = useState(1);
+	// Clip volume/mute lives on the saved recording-audio track so it persists and exports.
+	const primaryAudioTrack = audioMix.tracks.find((track) => track.kind === "primary");
+	const clipVolume = primaryAudioTrack
+		? primaryAudioTrack.muted
+			? 0
+			: primaryAudioTrack.volume
+		: 1;
+	const setClipVolume = useCallback((volume: number) => {
+		setAudioMix((mix) => ({
+			...mix,
+			tracks: mix.tracks.map((track) =>
+				track.kind === "primary"
+					? { ...track, muted: volume <= 0, volume: volume > 0 ? volume : track.volume }
+					: track,
+			),
+		}));
+	}, []);
 	const [loading, setLoading] = useState(true);
 	const [skeletonVisible, setSkeletonVisible] = useState(true);
 	const [editorReady, setEditorReady] = useState(false);
@@ -2570,6 +2589,37 @@ export default function VideoEditor() {
 		[audioRegions, currentTime, duration],
 	);
 
+	const [timelineExpanded, setTimelineExpanded] = useState(false);
+	const handleToggleTimelineExpanded = useCallback(() => {
+		const next = !timelineExpanded;
+		panelGroupRef.current?.setLayout(next ? EXPANDED_TIMELINE_LAYOUT : workspaceLayoutSizes);
+		setTimelineExpanded(next);
+	}, [timelineExpanded, workspaceLayoutSizes]);
+
+	const handleSeparateClipAudio = useCallback(() => {
+		const sourcePath = videoSourcePath ?? (videoPath ? fromFileUrl(videoPath) : null);
+		const totalMs = Math.round(duration * 1000);
+		if (!sourcePath || totalMs <= 0) return;
+		const id = `audio-${nextAudioIdRef.current++}`;
+		setAudioRegions((prev) => [
+			...prev,
+			{
+				id,
+				startMs: 0,
+				endMs: totalMs,
+				sourceType: "file",
+				audioPath: sourcePath,
+				volume: clipVolume > 0 ? clipVolume : 1,
+				fadeInMs: 0,
+				fadeOutMs: 0,
+				loop: false,
+			},
+		]);
+		setClipVolume(0);
+		setSelectedAudioId(id);
+		toast.success("Clip audio moved to its own track");
+	}, [videoSourcePath, videoPath, duration, clipVolume, setClipVolume]);
+
 	const handleReplaceSelectedAudioSource = useCallback(
 		async (selection: AudioTrackSelection) => {
 			if (!selectedAudioRegion) {
@@ -2645,6 +2695,12 @@ export default function VideoEditor() {
 	const handleAudioLoopChange = useCallback((id: string, loop: boolean) => {
 		setAudioRegions((prev) =>
 			prev.map((region) => (region.id === id ? { ...region, loop } : region)),
+		);
+	}, []);
+
+	const handleAudioNormalizeChange = useCallback((id: string, normalize: boolean) => {
+		setAudioRegions((prev) =>
+			prev.map((region) => (region.id === id ? { ...region, normalize } : region)),
 		);
 	}, []);
 
@@ -3432,7 +3488,7 @@ export default function VideoEditor() {
 				const exportV2Selection = selectExportV2Engine({
 					format: settings.format,
 					hasVisualComposition,
-					hasExternalAudio: audioRegions.length > 0,
+					hasExternalAudio: audioRegions.length > 0 || clipVolume !== 1,
 					hasWebcam: hasWebcamExport,
 					hasCaptions: hasCaptionExport,
 					hasAnnotations: annotationRegions.length > 0,
@@ -3510,6 +3566,7 @@ export default function VideoEditor() {
 					keyboardShortcutOpacity,
 					keyboardShortcutMaxVisible,
 					audioRegions,
+					sourceAudioVolume: clipVolume,
 					previewWidth,
 					previewHeight,
 					webcamPath: resolvedWebcamPath,
@@ -3887,6 +3944,7 @@ export default function VideoEditor() {
 							keyboardShortcutOpacity,
 							keyboardShortcutMaxVisible,
 							audioRegions,
+							sourceAudioVolume: clipVolume,
 							previewWidth,
 							previewHeight,
 							webcamPath: resolvedWebcamPath,
@@ -4016,6 +4074,7 @@ export default function VideoEditor() {
 			borderRadius,
 			padding,
 			effectivePadding,
+			clipVolume,
 			paddingSides,
 			effectiveLayerCropRegion,
 			annotationRegions,
@@ -4806,6 +4865,7 @@ export default function VideoEditor() {
 												onAudioVolumeChange={handleAudioVolumeChange}
 												onAudioFadeChange={handleAudioFadeChange}
 												onAudioLoopChange={handleAudioLoopChange}
+												onAudioNormalizeChange={handleAudioNormalizeChange}
 												onAudioDelete={handleAudioDelete}
 												missingAudioPath={missingSelectedAudioPath}
 												onRelinkMissingAudio={handleRelinkMissingAudio}
@@ -4861,6 +4921,9 @@ export default function VideoEditor() {
 									hasAudio={videoHasAudio}
 									clipVolume={clipVolume}
 									onClipVolumeChange={setClipVolume}
+									onSeparateClipAudio={handleSeparateClipAudio}
+									timelineExpanded={timelineExpanded}
+									onToggleTimelineExpanded={handleToggleTimelineExpanded}
 									onSeek={handleSeek}
 									cursorTelemetry={effectiveCursorTelemetry}
 									zoomRegions={effectiveZoomRegions}

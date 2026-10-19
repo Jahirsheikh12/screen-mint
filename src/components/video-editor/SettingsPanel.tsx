@@ -293,6 +293,7 @@ interface SettingsPanelProps {
 		updates: Partial<Pick<AudioRegion, "fadeInMs" | "fadeOutMs">>,
 	) => void;
 	onAudioLoopChange?: (id: string, loop: boolean) => void;
+	onAudioNormalizeChange?: (id: string, normalize: boolean) => void;
 	onAudioDelete?: (id: string) => void;
 	missingAudioPath?: string | null;
 	onRelinkMissingAudio?: () => void;
@@ -501,6 +502,7 @@ export default function SettingsPanel({
 	onAudioVolumeChange,
 	onAudioFadeChange,
 	onAudioLoopChange,
+	onAudioNormalizeChange,
 	onAudioDelete,
 	missingAudioPath,
 	onRelinkMissingAudio,
@@ -1159,6 +1161,7 @@ export default function SettingsPanel({
 						onRelinkMissingAudio={onRelinkMissingAudio}
 						onRemoveMissingAudio={onRemoveMissingAudio}
 						onAudioLoopChange={onAudioLoopChange}
+						onAudioNormalizeChange={onAudioNormalizeChange}
 						onAudioVolumeChange={onAudioVolumeChange}
 						onAudioFadeChange={onAudioFadeChange}
 						onAudioDelete={onAudioDelete}

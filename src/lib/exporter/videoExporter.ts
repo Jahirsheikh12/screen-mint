@@ -105,6 +105,8 @@ interface VideoExporterConfig extends ExportConfig {
 	highQualitySvgCursors?: boolean;
 	cameraSpring?: import("@/components/video-editor/types").CameraSpringSettings;
 	audioRegions?: AudioRegion[];
+	/** Recording audio gain (0 = muted). */
+	sourceAudioVolume?: number;
 	previewWidth?: number;
 	previewHeight?: number;
 	webcamPath?: string | null;
@@ -632,7 +634,7 @@ export class VideoExporter {
 				this.config.speedRegions,
 				undefined,
 				this.config.audioRegions,
-				{ independentDemuxer: true },
+				{ independentDemuxer: true, sourceVolume: this.config.sourceAudioVolume },
 			),
 		)
 			.then((audioTrack) => ({ audioTrack }))

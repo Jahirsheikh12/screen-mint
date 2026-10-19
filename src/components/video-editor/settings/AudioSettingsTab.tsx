@@ -33,6 +33,7 @@ interface AudioSettingsTabProps {
 	onRelinkMissingAudio?: () => void;
 	onRemoveMissingAudio?: () => void;
 	onAudioLoopChange?: (id: string, loop: boolean) => void;
+	onAudioNormalizeChange?: (id: string, normalize: boolean) => void;
 	onAudioVolumeChange?: (id: string, volume: number) => void;
 	onAudioFadeChange?: (
 		id: string,
@@ -58,6 +59,7 @@ export function AudioSettingsTab({
 	onRelinkMissingAudio,
 	onRemoveMissingAudio,
 	onAudioLoopChange,
+	onAudioNormalizeChange,
 	onAudioVolumeChange,
 	onAudioFadeChange,
 	onAudioDelete,
@@ -240,6 +242,20 @@ export function AudioSettingsTab({
 							<Switch
 								checked={selectedAudio.loop}
 								onCheckedChange={(checked) => onAudioLoopChange?.(selectedAudio.id, checked)}
+								className="data-[state=checked]:bg-[#F59E0B] scale-90"
+							/>
+						</div>
+
+						<div className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+							<div>
+								<div className="text-xs font-medium text-slate-300">Normalize</div>
+								<div className="text-[10px] text-slate-500 mt-0.5">
+									Even out loudness so the clip peaks just below full volume
+								</div>
+							</div>
+							<Switch
+								checked={selectedAudio.normalize === true}
+								onCheckedChange={(checked) => onAudioNormalizeChange?.(selectedAudio.id, checked)}
 								className="data-[state=checked]:bg-[#F59E0B] scale-90"
 							/>
 						</div>

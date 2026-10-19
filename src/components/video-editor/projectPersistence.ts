@@ -1443,6 +1443,7 @@ export function normalizeProjectEditor(
 							: DEFAULT_AUDIO_FADE_OUT_MS,
 						loop:
 							typeof region.loop === "boolean" ? region.loop : normalizedSourceType === "built-in",
+						...(region.normalize === true ? { normalize: true } : {}),
 					};
 				})
 		: [];
