@@ -415,7 +415,7 @@ export function renderCaptions(
 	);
 	const blockHeight =
 		visibleLines.length * lineHeight + Math.max(0, visibleLines.length - 1) * lineGap + padY * 2;
-	const blockWidthMax = canvasWidth * 0.85;
+	const blockWidthMax = canvasWidth * ((settings.maxWidthPercent ?? 85) / 100);
 	const blockWidth = Math.min(blockWidthMax, Math.max(...lineWidths, 0) + padX * 2);
 
 	const placement = getCaptionPlacement(settings, canvasWidth, canvasHeight, blockHeight);
@@ -427,6 +427,10 @@ export function renderCaptions(
 		ctx.translate(cx, cy);
 		ctx.scale(renderBlock.blockScale, renderBlock.blockScale);
 		ctx.translate(-cx, -cy);
+	}
+
+	if (renderBlock.blockOffsetY !== 0) {
+		ctx.translate(0, renderBlock.blockOffsetY * blockHeight);
 	}
 
 	const bx = cx - blockWidth / 2;

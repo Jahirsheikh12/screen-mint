@@ -20,6 +20,7 @@ import {
 	type CaptionAnimationMode,
 	type CaptionGenerationOptions,
 	type CaptionGenerationProgress,
+	type CaptionModel,
 	type CaptionModelStatus,
 	type CaptionPosition,
 	type CaptionRegion,
@@ -54,6 +55,12 @@ const ANIMATION_MODES: {
 		i18nKey: "editor.captions.animation.pop",
 		fallback: "Pop",
 		description: "Scale-in bounce",
+	},
+	{
+		value: "rise",
+		i18nKey: "editor.captions.animation.rise",
+		fallback: "Rise",
+		description: "Slide up while fading in",
 	},
 	{
 		value: "active-word",
@@ -91,6 +98,7 @@ export interface CaptionsTabProps {
 	captionGenerationOptions?: CaptionGenerationOptions;
 	captionGenerationProgress?: CaptionGenerationProgress | null;
 	captionModelStatus?: CaptionModelStatus | null;
+	onDeleteCaptionModel?: (model: CaptionModel) => void;
 	isTranscribing?: boolean;
 	selectedCaptionId?: string | null;
 	isEditingCaptionPosition: boolean;
@@ -122,6 +130,7 @@ export function CaptionsTab(props: CaptionsTabProps) {
 		captionGenerationOptions,
 		captionGenerationProgress,
 		captionModelStatus,
+		onDeleteCaptionModel,
 		isTranscribing = false,
 		selectedCaptionId,
 		isEditingCaptionPosition,
@@ -412,6 +421,17 @@ export function CaptionsTab(props: CaptionsTabProps) {
 						formatValue={(v) => `${v}%`}
 						parseInput={(val) => parseFloat(val.replace(/%$/, ""))}
 					/>
+					<SliderControl
+						label={t("editor.captions.maxWidth", "Max Width")}
+						value={captionSettings.maxWidthPercent}
+						defaultValue={85}
+						min={40}
+						max={95}
+						step={1}
+						onChange={(v) => onCaptionSettingsChange({ maxWidthPercent: v })}
+						formatValue={(v) => `${v}%`}
+						parseInput={(val) => parseFloat(val.replace(/%$/, ""))}
+					/>
 				</div>
 			</Section>
 
@@ -460,6 +480,23 @@ export function CaptionsTab(props: CaptionsTabProps) {
 							</div>
 						)}
 					</div>
+					{onDeleteCaptionModel &&
+					!isTranscribing &&
+					captionModelStatus?.downloadedModels.length ? (
+						<div className="flex flex-wrap gap-1.5">
+							{captionModelStatus.downloadedModels.map((model) => (
+								<button
+									key={model}
+									type="button"
+									onClick={() => onDeleteCaptionModel(model)}
+									aria-label={`Delete ${model} model`}
+									className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] text-slate-300 hover:border-red-500/30 hover:text-red-300"
+								>
+									Delete {model} model
+								</button>
+							))}
+						</div>
+					) : null}
 
 					<div className="grid grid-cols-3 gap-2">
 						<select

@@ -285,9 +285,60 @@ async function ensureModelFile(
 		throw new Error(`Failed to download Whisper model (${response.status}).`);
 	}
 
-	const buffer = Buffer.from(await response.arrayBuffer());
-	await fs.writeFile(targetPath, buffer);
+	await downloadToFile(response, targetPath, (fraction) =>
+		onProgress({
+			stage: "model",
+			percentage: 8 + Math.round(fraction * 8),
+			message: `Downloading Whisper ${model} model... ${Math.round(fraction * 100)}%`,
+		}),
+	);
 	return targetPath;
+}
+
+/**
+ * Streams a download to `<target>.part` and renames on success, so an interrupted download is
+ * never mistaken for an installed model and large models are not buffered in memory.
+ */
+async function downloadToFile(
+	response: Response,
+	targetPath: string,
+	onFraction?: (fraction: number) => void,
+) {
+	const partPath = `${targetPath}.part`;
+	const total = Number(response.headers.get("content-length")) || 0;
+	const handle = await fs.open(partPath, "w");
+	try {
+		if (!response.body) throw new Error("Download has no body.");
+		const reader = response.body.getReader();
+		let received = 0;
+		let lastReported = -1;
+		for (;;) {
+			const { done, value } = await reader.read();
+			if (done) break;
+			await handle.write(value);
+			received += value.byteLength;
+			if (total > 0 && onFraction) {
+				const percent = Math.floor((received / total) * 100);
+				if (percent !== lastReported) {
+					lastReported = percent;
+					onFraction(received / total);
+				}
+			}
+		}
+	} catch (error) {
+		await handle.close();
+		await fs.rm(partPath, { force: true });
+		throw error;
+	}
+	await handle.close();
+	await fs.rename(partPath, targetPath);
+}
+
+export async function deleteCaptionModel(model: CaptionModel): Promise<void> {
+	const fileName = MODEL_FILE_NAMES[model];
+	if (!fileName) throw new Error(`Unknown caption model: ${model}`);
+	const captionsDir = await ensureCaptionsDir();
+	await fs.rm(path.join(captionsDir, "models", fileName), { force: true });
 }
 
 async function ensureVadModelFile(captionsDir: string, onProgress: CaptionProgressCallback) {
@@ -312,8 +363,7 @@ async function ensureVadModelFile(captionsDir: string, onProgress: CaptionProgre
 		throw new Error(`Failed to download Whisper VAD model (${response.status}).`);
 	}
 
-	const buffer = Buffer.from(await response.arrayBuffer());
-	await fs.writeFile(targetPath, buffer);
+	await downloadToFile(response, targetPath);
 	return targetPath;
 }
 

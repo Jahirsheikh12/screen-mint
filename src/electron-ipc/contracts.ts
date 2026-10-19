@@ -149,6 +149,7 @@ export const IPC_CHANNELS = {
 		generate: "generate-captions",
 		cancelGeneration: "cancel-caption-generation",
 		exportTranscript: "export-captions-transcript",
+		deleteModel: "delete-caption-model",
 	},
 	system: {
 		getPlatform: "get-platform",

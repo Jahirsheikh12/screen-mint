@@ -10,6 +10,9 @@ const FADE_IN_MS = 160;
 const FADE_OUT_MS = 160;
 const POP_DURATION_MS = 200;
 const POP_SCALE_FROM = 0.88;
+const RISE_DURATION_MS = 260;
+/** Rise starts this many block heights below its resting place. */
+const RISE_OFFSET_FROM = 0.6;
 
 export interface CaptionRenderWord extends CaptionWord {
 	isActive: boolean;
@@ -28,6 +31,8 @@ export interface CaptionRenderBlock {
 	lines: CaptionRenderLine[];
 	blockOpacity: number;
 	blockScale: number;
+	/** Vertical offset in block heights (positive = lower), used by "rise". */
+	blockOffsetY: number;
 	/** 0..1 progress across entire segment, used for karaoke-fill. */
 	segmentProgress: number;
 	animationMode: CaptionAnimationMode;
@@ -81,6 +86,7 @@ export function createCaptionRenderBlock(
 
 	const blockOpacity = computeBlockOpacity(mode, currentTimeMs, segment.startMs, segment.endMs);
 	const blockScale = computeBlockScale(mode, elapsed);
+	const blockOffsetY = computeBlockOffsetY(mode, elapsed);
 
 	if (words.length === 0) {
 		return {
@@ -103,6 +109,7 @@ export function createCaptionRenderBlock(
 			],
 			blockOpacity,
 			blockScale,
+			blockOffsetY,
 			segmentProgress,
 			animationMode: mode,
 		};
@@ -140,6 +147,7 @@ export function createCaptionRenderBlock(
 		lines: finalLines,
 		blockOpacity,
 		blockScale,
+		blockOffsetY,
 		segmentProgress,
 		animationMode: mode,
 	};
@@ -177,7 +185,7 @@ export function getCaptionPlacement(
 	containerHeight: number,
 	blockHeightEstimate: number,
 ): CaptionPlacement {
-	const maxWidth = containerWidth * 0.85;
+	const maxWidth = containerWidth * ((settings.maxWidthPercent ?? 85) / 100);
 	if (settings.positionOverride) {
 		return {
 			cx: (settings.positionOverride.xPercent / 100) * containerWidth,
@@ -261,6 +269,9 @@ function computeBlockOpacity(
 	startMs: number,
 	endMs: number,
 ): number {
+	if (mode === "rise") {
+		return clamp((currentTimeMs - startMs) / RISE_DURATION_MS, 0, 1);
+	}
 	if (mode !== "fade") return 1;
 	const fadeIn = clamp((currentTimeMs - startMs) / FADE_IN_MS, 0, 1);
 	const fadeOut = clamp((endMs - currentTimeMs) / FADE_OUT_MS, 0, 1);
@@ -272,6 +283,12 @@ function computeBlockScale(mode: CaptionAnimationMode, elapsed: number): number 
 	const progress = clamp(elapsed / POP_DURATION_MS, 0, 1);
 	const eased = easeOutBack(progress);
 	return POP_SCALE_FROM + (1 - POP_SCALE_FROM) * eased;
+}
+
+function computeBlockOffsetY(mode: CaptionAnimationMode, elapsed: number): number {
+	if (mode !== "rise") return 0;
+	const progress = clamp(elapsed / RISE_DURATION_MS, 0, 1);
+	return RISE_OFFSET_FROM * (1 - progress) ** 3;
 }
 
 function easeOutBack(x: number): number {

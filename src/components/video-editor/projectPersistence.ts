@@ -773,6 +773,7 @@ const VALID_CAPTION_ANIMATION_MODES: CaptionSettings["animationMode"][] = [
 	"active-word",
 	"fade",
 	"pop",
+	"rise",
 	"typewriter",
 	"karaoke-fill",
 ];
@@ -866,6 +867,9 @@ function normalizeCaptionSettings(candidate: unknown): CaptionSettings {
 		safeAreaInset: isFiniteNumber(settings.safeAreaInset)
 			? clamp(settings.safeAreaInset, 2, 20)
 			: DEFAULT_CAPTION_SETTINGS.safeAreaInset,
+		maxWidthPercent: isFiniteNumber(settings.maxWidthPercent)
+			? clamp(settings.maxWidthPercent, 40, 95)
+			: DEFAULT_CAPTION_SETTINGS.maxWidthPercent,
 		showTranscriptPanel:
 			typeof settings.showTranscriptPanel === "boolean"
 				? settings.showTranscriptPanel

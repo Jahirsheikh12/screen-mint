@@ -399,6 +399,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	cancelCaptionGeneration: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.captions.cancelGeneration);
 	},
+	deleteCaptionModel: (model: "base" | "small" | "medium") => {
+		return ipcRenderer.invoke(IPC_CHANNELS.captions.deleteModel, model);
+	},
 	exportCaptionsTranscript: (payload: {
 		videoPath?: string;
 		format: "srt" | "vtt" | "txt";

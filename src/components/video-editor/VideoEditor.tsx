@@ -3144,6 +3144,7 @@ export default function VideoEditor() {
 		handleCaptionMergeNext,
 		handleTranscriptExport,
 		handleCancelCaptionGeneration,
+		handleDeleteCaptionModel,
 	} = useVideoEditorCaptions({
 		t,
 		videoPath,
@@ -4874,6 +4875,7 @@ export default function VideoEditor() {
 												captionGenerationOptions={captionGenerationOptions}
 												captionGenerationProgress={captionGenerationProgress}
 												captionModelStatus={captionModelStatus}
+												onDeleteCaptionModel={handleDeleteCaptionModel}
 												captionSettings={captionSettings}
 												selectedCaptionId={selectedCaptionId}
 												onSelectCaption={setSelectedCaptionId}

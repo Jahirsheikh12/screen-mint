@@ -6,6 +6,7 @@ import {
 	CAPTION_STYLE_PRESETS,
 	type CaptionGenerationOptions,
 	type CaptionGenerationProgress,
+	type CaptionModel,
 	type CaptionModelStatus,
 	type CaptionPositionOverride,
 	type CaptionRegion,
@@ -527,7 +528,26 @@ export function useVideoEditorCaptions({
 		toast.info(t("editor.captions.cancelled", "Caption generation cancelled"));
 	}, [t, dispatchSession, setCaptionGenerationProgress]);
 
+	const handleDeleteCaptionModel = useCallback(
+		async (model: CaptionModel) => {
+			const result = await window.electronAPI.deleteCaptionModel(model);
+			if (!result.success) {
+				toast.error(result.message ?? "Failed to delete caption model");
+				return;
+			}
+			if (videoPath) {
+				const status = await window.electronAPI.getCaptionModelStatus(videoPath);
+				if (status.success && status.status) {
+					setCaptionModelStatus(status.status);
+				}
+			}
+			toast.success(`Deleted the ${model} speech model`);
+		},
+		[videoPath, setCaptionModelStatus],
+	);
+
 	return {
+		handleDeleteCaptionModel,
 		handleCaptionAdded,
 		handleCaptionSpanChange,
 		handleCaptionTextChange,

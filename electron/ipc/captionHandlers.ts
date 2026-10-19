@@ -10,6 +10,7 @@ import {
 	getCaptionModelStatus,
 	isCaptionGenerationCancelled,
 } from "../captions/transcriptionOrchestrator";
+import { deleteCaptionModel } from "../captions/whisperService";
 
 interface CaptionIpcHandlersContext {
 	getCurrentVideoPath: () => string | null;
@@ -36,6 +37,19 @@ export function registerCaptionIpcHandlers({
 	getFfmpegBinaryPath,
 	normalizeVideoSourcePath,
 }: CaptionIpcHandlersContext) {
+	ipcMain.handle(IPC_CHANNELS.captions.deleteModel, async (_, model: unknown) => {
+		if (model !== "base" && model !== "small" && model !== "medium") {
+			return { success: false, message: "Unknown caption model." };
+		}
+		try {
+			await deleteCaptionModel(model);
+			return { success: true };
+		} catch (error) {
+			console.error("Failed to delete caption model:", error);
+			return { success: false, message: "Failed to delete caption model", error: String(error) };
+		}
+	});
+
 	ipcMain.handle(IPC_CHANNELS.captions.getModelStatus, async (_, videoPath?: string) => {
 		try {
 			const targetVideoPath = normalizeVideoSourcePath(videoPath ?? getCurrentVideoPath());

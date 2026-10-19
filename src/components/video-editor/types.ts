@@ -962,6 +962,7 @@ export type CaptionAnimationMode =
 	| "active-word"
 	| "fade"
 	| "pop"
+	| "rise"
 	| "typewriter"
 	| "karaoke-fill";
 export type CaptionBackend = "whisper.cpp" | "apple-speech";
@@ -975,6 +976,7 @@ export const CAPTION_ANIMATION_MODES: CaptionAnimationMode[] = [
 	"active-word",
 	"fade",
 	"pop",
+	"rise",
 	"typewriter",
 	"karaoke-fill",
 ];
@@ -1035,6 +1037,8 @@ export interface CaptionSettings {
 	maxLines: number;
 	maxWordsPerLine: number;
 	safeAreaInset: number;
+	/** Widest a caption block may get, as % of the frame width (40–95). */
+	maxWidthPercent: number;
 	showTranscriptPanel: boolean;
 }
 
@@ -1203,6 +1207,7 @@ export const DEFAULT_CAPTION_SETTINGS: CaptionSettings = {
 	maxLines: 2,
 	maxWordsPerLine: 6,
 	safeAreaInset: 8,
+	maxWidthPercent: 85,
 	showTranscriptPanel: true,
 };
 

@@ -63,6 +63,7 @@ import type {
 	CameraLayoutRegion,
 	CaptionGenerationOptions,
 	CaptionGenerationProgress,
+	CaptionModel,
 	CaptionModelStatus,
 	CaptionRegion,
 	CaptionSegment,
@@ -302,6 +303,7 @@ interface SettingsPanelProps {
 	captionGenerationOptions?: CaptionGenerationOptions;
 	captionGenerationProgress?: CaptionGenerationProgress | null;
 	captionModelStatus?: CaptionModelStatus | null;
+	onDeleteCaptionModel?: (model: CaptionModel) => void;
 	captionSettings?: CaptionSettings;
 	selectedCaptionId?: string | null;
 	onSelectCaption?: (id: string | null) => void;
@@ -511,6 +513,7 @@ export default function SettingsPanel({
 	captionGenerationOptions,
 	captionGenerationProgress,
 	captionModelStatus,
+	onDeleteCaptionModel,
 	captionSettings,
 	selectedCaptionId,
 	onSelectCaption,
@@ -1189,6 +1192,7 @@ export default function SettingsPanel({
 						captionGenerationOptions={captionGenerationOptions}
 						captionGenerationProgress={captionGenerationProgress}
 						captionModelStatus={captionModelStatus}
+						onDeleteCaptionModel={onDeleteCaptionModel}
 						isTranscribing={isTranscribing}
 						selectedCaptionId={selectedCaptionId}
 						isEditingCaptionPosition={isEditingCaptionPosition}

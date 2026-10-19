@@ -386,6 +386,9 @@ declare global {
 				error?: string;
 			}>;
 			cancelCaptionGeneration: () => Promise<{ success: boolean }>;
+			deleteCaptionModel: (
+				model: "base" | "small" | "medium",
+			) => Promise<{ success: boolean; message?: string; error?: string }>;
 			exportCaptionsTranscript: (payload: {
 				videoPath?: string;
 				format: "srt" | "vtt" | "txt";
