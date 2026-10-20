@@ -430,6 +430,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	loadProjectFile: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.projects.loadFile);
 	},
+	listProjectFiles: () => {
+		return ipcRenderer.invoke(IPC_CHANNELS.projects.list);
+	},
+	openProjectFileAtPath: (filePath: string) => {
+		return ipcRenderer.invoke(IPC_CHANNELS.projects.openPath, filePath);
+	},
 	loadCurrentProjectFile: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.projects.loadCurrentFile);
 	},

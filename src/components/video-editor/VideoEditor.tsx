@@ -104,6 +104,7 @@ import { getLegacyShadowIntensityFromFrameShadow } from "./frameEffects";
 import { deriveKeyboardShortcutCallouts } from "./keyboardShortcuts";
 import { LayerPanel } from "./LayerPanel";
 import { type EditorLayer, ensurePrimaryVideoLayer } from "./layerModel";
+import { ProjectBrowserDialog } from "./ProjectBrowserDialog";
 import {
 	type PostRecordingAutoZoomBootstrapState,
 	resolvePostRecordingAutoZoomDecision,
@@ -118,6 +119,7 @@ import {
 	validateProjectData,
 	withLegacyZoomTiming,
 } from "./projectPersistence";
+import { captureProjectThumbnail } from "./projectThumbnail";
 import { QuickShareDialog } from "./QuickShareDialog";
 import { SceneAudioPolishPanel } from "./SceneAudioPolishPanel";
 import SettingsPanel from "./SettingsPanel";
@@ -1590,8 +1592,9 @@ export default function VideoEditor() {
 				},
 				webcamSessionMetadata: webcamSessionMetadata ?? undefined,
 			});
+			const thumbnail = captureProjectThumbnail(videoPlaybackRef.current?.app ?? null);
 			const result = await window.electronAPI.saveProjectFile(
-				projectArtifacts.projectData,
+				thumbnail ? { ...projectArtifacts.projectData, thumbnail } : projectArtifacts.projectData,
 				projectArtifacts.fileNameBase,
 				forceSaveAs ? undefined : (currentProjectPath ?? undefined),
 			);
@@ -1704,13 +1707,15 @@ export default function VideoEditor() {
 		],
 	);
 
-	const { handleSaveProject, handleLoadProject } = useVideoEditorProjectFileActions({
-		hasUnsavedChanges,
-		isExporting,
-		isTranscribing,
-		saveProject,
-		applyLoadedProject,
-	});
+	const [projectBrowserOpen, setProjectBrowserOpen] = useState(false);
+	const { handleSaveProject, handleLoadProject, handleOpenProjectAtPath } =
+		useVideoEditorProjectFileActions({
+			hasUnsavedChanges,
+			isExporting,
+			isTranscribing,
+			saveProject,
+			applyLoadedProject,
+		});
 
 	useEffect(() => {
 		let mounted = true;
@@ -4458,6 +4463,22 @@ export default function VideoEditor() {
 									<SplitSquareHorizontal className="h-4 w-4" />
 								</button>
 							</Tooltip>
+
+							<Tooltip content="Projects" side="bottom">
+								<button
+									type="button"
+									aria-label="Open project browser"
+									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
+									onClick={() => setProjectBrowserOpen(true)}
+								>
+									<FolderOpen className="h-4 w-4" />
+								</button>
+							</Tooltip>
+							<ProjectBrowserDialog
+								open={projectBrowserOpen}
+								onOpenChange={setProjectBrowserOpen}
+								onOpenProject={handleOpenProjectAtPath}
+							/>
 
 							{/* Language Switcher */}
 							<LanguageSwitcher />

@@ -126,6 +126,8 @@ export const IPC_CHANNELS = {
 		loadFile: "load-project-file",
 		loadCurrentFile: "load-current-project-file",
 		deleteAndMedia: "delete-project-and-media",
+		list: "list-project-files",
+		openPath: "open-project-file-at-path",
 	},
 	currentMedia: {
 		setVideoPath: "set-current-video-path",

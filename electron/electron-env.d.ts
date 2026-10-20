@@ -422,6 +422,23 @@ declare global {
 				canceled?: boolean;
 				error?: string;
 			}>;
+			listProjectFiles: () => Promise<{
+				success: boolean;
+				projects: Array<{
+					path: string;
+					name: string;
+					modifiedAt: number;
+					thumbnail: string | null;
+				}>;
+				error?: string;
+			}>;
+			openProjectFileAtPath: (filePath: string) => Promise<{
+				success: boolean;
+				path?: string;
+				project?: unknown;
+				message?: string;
+				error?: string;
+			}>;
 			loadCurrentProjectFile: () => Promise<{
 				success: boolean;
 				path?: string;
