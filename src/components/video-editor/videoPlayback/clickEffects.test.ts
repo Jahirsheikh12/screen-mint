@@ -24,6 +24,14 @@ describe("click effects", () => {
 		expect(getClickEffectShapes("echo", 50, 0.5, config)).toHaveLength(2);
 	});
 
+	it("handles recordings with no cursor samples", () => {
+		expect(getCursorVisualState([], 500)).toMatchObject({
+			cursorType: "arrow",
+			clickBounceProgress: 0,
+			clickProgress: 0,
+		});
+	});
+
 	it("uses configured bounce and effect durations", () => {
 		const click = { timeMs: 1000, cx: 0.5, cy: 0.5, interactionType: "click" as const };
 		const timing = { effectDurationMs: 400, bounceDurationMs: 200 };

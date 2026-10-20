@@ -4,9 +4,9 @@ import type {
 	CaptionSettings,
 	PaddingValue,
 } from "@/components/video-editor/types";
-import { resolvePaddedArea } from "@/components/video-editor/videoPlayback/layoutUtils";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import type { ExportV2EncoderCandidate, ExportV2StartRequest } from "./exportV2";
+import { resolvePaddedArea } from "./paddedArea";
 
 export interface NativeComposedCompileResult {
 	supported: boolean;

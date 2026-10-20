@@ -1,4 +1,4 @@
-import { AudioLines, Box, ChevronDown, Sparkles } from "lucide-react";
+import { AudioLines, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AudioMixSettings, AudioMixTrack } from "./audioMix";
 import { normalizeAudioMixSettings } from "./audioMix";

@@ -586,6 +586,161 @@ export function CursorSettingsTab({
 					</div>
 				</SettingsSection>
 
+				<SettingsSection
+					title="Click Effects"
+					description="Visual feedback when clicking"
+					accentColor="amber"
+				>
+					<div className="grid grid-cols-4 gap-1.5">
+						{([{ value: "off", label: "Off" }, ...CURSOR_CLICK_EFFECT_STYLE_OPTIONS] as const).map(
+							(option) => {
+								const isActive =
+									option.value === "off"
+										? !clickEffectsEnabled
+										: clickEffectsEnabled && cursorClickStyle.effect === option.value;
+								return (
+									<Button
+										key={option.value}
+										type="button"
+										disabled={cursorControlsDisabled}
+										onClick={() => {
+											if (option.value === "off") {
+												onClickEffectsEnabledChange?.(false);
+												return;
+											}
+											onClickEffectsEnabledChange?.(true);
+											onCursorClickStyleChange?.({ ...cursorClickStyle, effect: option.value });
+										}}
+										className={cn(
+											"h-9 rounded-xl border text-xs font-semibold transition-all duration-200",
+											isActive
+												? "border-[#F59E0B] bg-gradient-to-br from-[#F59E0B] to-[#d97706] text-white"
+												: "border-white/5 bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200",
+										)}
+									>
+										{option.label}
+									</Button>
+								);
+							},
+						)}
+					</div>
+					<p className="text-[10px] leading-relaxed text-slate-500">
+						{clickEffectsEnabled
+							? CURSOR_CLICK_EFFECT_STYLE_OPTIONS.find(
+									(option) => option.value === cursorClickStyle.effect,
+								)?.description
+							: "No click graphic. Only the cursor bounce changes when you click."}
+					</p>
+
+					<div
+						className={cn(CLICK_CARD, cursorControlsDisabled && "opacity-45 pointer-events-none")}
+					>
+						<SliderControl
+							label={tSettings("effects.cursorClickBounce")}
+							value={cursorClickBounce}
+							defaultValue={DEFAULT_CURSOR_CLICK_BOUNCE}
+							min={0}
+							max={5}
+							step={0.05}
+							onChange={(v) => onCursorClickBounceChange?.(v)}
+							formatValue={(v) => (v <= 0 ? "Off" : `${v.toFixed(2)}×`)}
+							parseInput={(t) => parseFloat(t.replace(/×$/, ""))}
+							disabled={cursorControlsDisabled}
+						/>
+						<SliderControl
+							label="Bounce Speed"
+							value={cursorClickStyle.bounceDurationMs}
+							defaultValue={DEFAULT_CURSOR_CLICK_STYLE.bounceDurationMs}
+							min={50}
+							max={1000}
+							step={10}
+							onChange={(v) =>
+								onCursorClickStyleChange?.({ ...cursorClickStyle, bounceDurationMs: v })
+							}
+							formatValue={(v) => `${Math.round(v)}ms`}
+							parseInput={(t) => parseFloat(t.replace(/ms$/, ""))}
+							disabled={cursorControlsDisabled || cursorClickBounce <= 0}
+						/>
+					</div>
+
+					<button
+						type="button"
+						disabled={clickEffectControlsDisabled}
+						onClick={() => setShowAdvancedClickEffects((value) => !value)}
+						aria-expanded={showAdvancedClickEffects}
+						className="flex w-full items-center justify-between rounded-xl border border-white/5 bg-white/[0.04] px-3 py-2 text-left text-[11px] font-medium text-slate-300 disabled:opacity-45"
+					>
+						Advanced
+						<span className="text-[10px] text-slate-500">
+							{showAdvancedClickEffects ? "Hide" : "Show"}
+						</span>
+					</button>
+
+					{showAdvancedClickEffects && !clickEffectControlsDisabled && (
+						<div className={cn(CLICK_CARD, "space-y-3")}>
+							<div className="flex items-center justify-between">
+								<span className="text-[11px] font-medium text-slate-300">Effect Color</span>
+								<div className="flex items-center gap-2">
+									<label className="relative w-7 h-7 rounded-lg border border-white/[0.08] cursor-pointer overflow-hidden">
+										<span
+											className="absolute inset-[3px] rounded-[5px]"
+											style={{ backgroundColor: clickHighlightColor }}
+										/>
+										<input
+											type="color"
+											aria-label="Effect color"
+											value={clickHighlightColor}
+											onChange={(e) => onClickHighlightColorChange?.(e.target.value)}
+											className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+										/>
+									</label>
+									<button
+										type="button"
+										onClick={() => onClickHighlightColorChange?.(DEFAULT_CLICK_HIGHLIGHT_COLOR)}
+										className="text-[10px] text-slate-500 hover:text-[#F59E0B]"
+									>
+										Reset
+									</button>
+								</div>
+							</div>
+							<SliderControl
+								label="Effect Size"
+								value={clickHighlightSize}
+								defaultValue={DEFAULT_CLICK_HIGHLIGHT_SIZE}
+								min={0.1}
+								max={3}
+								step={0.1}
+								onChange={(v) => onClickHighlightSizeChange?.(v)}
+								formatValue={(v) => `${v.toFixed(1)}×`}
+								parseInput={(t) => parseFloat(t.replace(/×$/, ""))}
+							/>
+							<SliderControl
+								label="Effect Opacity"
+								value={clickHighlightOpacity}
+								defaultValue={DEFAULT_CLICK_HIGHLIGHT_OPACITY}
+								min={0.05}
+								max={1}
+								step={0.05}
+								onChange={(v) => onClickHighlightOpacityChange?.(v)}
+								formatValue={(v) => `${Math.round(v * 100)}%`}
+								parseInput={(t) => parseFloat(t.replace(/%$/, "")) / 100}
+							/>
+							<SliderControl
+								label="Effect Duration"
+								value={cursorClickStyle.effectDurationMs}
+								defaultValue={DEFAULT_CURSOR_CLICK_STYLE.effectDurationMs}
+								min={100}
+								max={2000}
+								step={50}
+								onChange={(v) =>
+									onCursorClickStyleChange?.({ ...cursorClickStyle, effectDurationMs: v })
+								}
+								formatValue={(v) => `${Math.round(v)}ms`}
+								parseInput={(t) => parseFloat(t.replace(/ms$/, ""))}
+							/>
+						</div>
+					)}
+				</SettingsSection>
 				<div className="mb-3 rounded-xl border border-white/5 bg-black/30 px-3 py-2.5">
 					<button
 						type="button"
@@ -817,165 +972,6 @@ export function CursorSettingsTab({
 										formatValue={(v) => `${Math.round(v * 100)}%`}
 										parseInput={(t) => parseFloat(t.replace(/%$/, "")) / 100}
 										disabled={cursorControlsDisabled}
-									/>
-								</div>
-							)}
-						</SettingsSection>
-
-						<SettingsSection
-							title="Click Effects"
-							description="Visual feedback when clicking"
-							accentColor="amber"
-						>
-							<div className="grid grid-cols-4 gap-1.5">
-								{(
-									[{ value: "off", label: "Off" }, ...CURSOR_CLICK_EFFECT_STYLE_OPTIONS] as const
-								).map((option) => {
-									const isActive =
-										option.value === "off"
-											? !clickEffectsEnabled
-											: clickEffectsEnabled && cursorClickStyle.effect === option.value;
-									return (
-										<Button
-											key={option.value}
-											type="button"
-											disabled={cursorControlsDisabled}
-											onClick={() => {
-												if (option.value === "off") {
-													onClickEffectsEnabledChange?.(false);
-													return;
-												}
-												onClickEffectsEnabledChange?.(true);
-												onCursorClickStyleChange?.({ ...cursorClickStyle, effect: option.value });
-											}}
-											className={cn(
-												"h-9 rounded-xl border text-xs font-semibold transition-all duration-200",
-												isActive
-													? "border-[#F59E0B] bg-gradient-to-br from-[#F59E0B] to-[#d97706] text-white"
-													: "border-white/5 bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200",
-											)}
-										>
-											{option.label}
-										</Button>
-									);
-								})}
-							</div>
-							<p className="text-[10px] leading-relaxed text-slate-500">
-								{clickEffectsEnabled
-									? CURSOR_CLICK_EFFECT_STYLE_OPTIONS.find(
-											(option) => option.value === cursorClickStyle.effect,
-										)?.description
-									: "No click graphic. Only the cursor bounce changes when you click."}
-							</p>
-
-							<div
-								className={cn(
-									CLICK_CARD,
-									cursorControlsDisabled && "opacity-45 pointer-events-none",
-								)}
-							>
-								<SliderControl
-									label={tSettings("effects.cursorClickBounce")}
-									value={cursorClickBounce}
-									defaultValue={DEFAULT_CURSOR_CLICK_BOUNCE}
-									min={0}
-									max={5}
-									step={0.05}
-									onChange={(v) => onCursorClickBounceChange?.(v)}
-									formatValue={(v) => (v <= 0 ? "Off" : `${v.toFixed(2)}×`)}
-									parseInput={(t) => parseFloat(t.replace(/×$/, ""))}
-									disabled={cursorControlsDisabled}
-								/>
-								<SliderControl
-									label="Bounce Speed"
-									value={cursorClickStyle.bounceDurationMs}
-									defaultValue={DEFAULT_CURSOR_CLICK_STYLE.bounceDurationMs}
-									min={50}
-									max={1000}
-									step={10}
-									onChange={(v) =>
-										onCursorClickStyleChange?.({ ...cursorClickStyle, bounceDurationMs: v })
-									}
-									formatValue={(v) => `${Math.round(v)}ms`}
-									parseInput={(t) => parseFloat(t.replace(/ms$/, ""))}
-									disabled={cursorControlsDisabled || cursorClickBounce <= 0}
-								/>
-							</div>
-
-							<button
-								type="button"
-								disabled={clickEffectControlsDisabled}
-								onClick={() => setShowAdvancedClickEffects((value) => !value)}
-								aria-expanded={showAdvancedClickEffects}
-								className="flex w-full items-center justify-between rounded-xl border border-white/5 bg-white/[0.04] px-3 py-2 text-left text-[11px] font-medium text-slate-300 disabled:opacity-45"
-							>
-								Advanced
-								<span className="text-[10px] text-slate-500">
-									{showAdvancedClickEffects ? "Hide" : "Show"}
-								</span>
-							</button>
-
-							{showAdvancedClickEffects && !clickEffectControlsDisabled && (
-								<div className={cn(CLICK_CARD, "space-y-3")}>
-									<div className="flex items-center justify-between">
-										<span className="text-[11px] font-medium text-slate-300">Effect Color</span>
-										<div className="flex items-center gap-2">
-											<label className="relative w-7 h-7 rounded-lg border border-white/[0.08] cursor-pointer overflow-hidden">
-												<span
-													className="absolute inset-[3px] rounded-[5px]"
-													style={{ backgroundColor: clickHighlightColor }}
-												/>
-												<input
-													type="color"
-													aria-label="Effect color"
-													value={clickHighlightColor}
-													onChange={(e) => onClickHighlightColorChange?.(e.target.value)}
-													className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-												/>
-											</label>
-											<button
-												type="button"
-												onClick={() => onClickHighlightColorChange?.(DEFAULT_CLICK_HIGHLIGHT_COLOR)}
-												className="text-[10px] text-slate-500 hover:text-[#F59E0B]"
-											>
-												Reset
-											</button>
-										</div>
-									</div>
-									<SliderControl
-										label="Effect Size"
-										value={clickHighlightSize}
-										defaultValue={DEFAULT_CLICK_HIGHLIGHT_SIZE}
-										min={0.1}
-										max={3}
-										step={0.1}
-										onChange={(v) => onClickHighlightSizeChange?.(v)}
-										formatValue={(v) => `${v.toFixed(1)}×`}
-										parseInput={(t) => parseFloat(t.replace(/×$/, ""))}
-									/>
-									<SliderControl
-										label="Effect Opacity"
-										value={clickHighlightOpacity}
-										defaultValue={DEFAULT_CLICK_HIGHLIGHT_OPACITY}
-										min={0.05}
-										max={1}
-										step={0.05}
-										onChange={(v) => onClickHighlightOpacityChange?.(v)}
-										formatValue={(v) => `${Math.round(v * 100)}%`}
-										parseInput={(t) => parseFloat(t.replace(/%$/, "")) / 100}
-									/>
-									<SliderControl
-										label="Effect Duration"
-										value={cursorClickStyle.effectDurationMs}
-										defaultValue={DEFAULT_CURSOR_CLICK_STYLE.effectDurationMs}
-										min={100}
-										max={2000}
-										step={50}
-										onChange={(v) =>
-											onCursorClickStyleChange?.({ ...cursorClickStyle, effectDurationMs: v })
-										}
-										formatValue={(v) => `${Math.round(v)}ms`}
-										parseInput={(t) => parseFloat(t.replace(/ms$/, ""))}
 									/>
 								</div>
 							)}

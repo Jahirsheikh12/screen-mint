@@ -495,6 +495,9 @@ function findLatestInteractionSample(
 }
 
 function findLatestStableCursorType(samples: CursorTelemetryPoint[], timeMs: number) {
+	if (samples.length === 0) {
+		return "arrow";
+	}
 	let lo = 0;
 	let hi = samples.length - 1;
 	while (lo < hi) {
