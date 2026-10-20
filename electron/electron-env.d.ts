@@ -453,6 +453,8 @@ declare global {
 			getPlatform: () => Promise<string>;
 			getAppVersion: () => Promise<string>;
 			getUpdaterState: () => Promise<UpdaterState>;
+			setExperimentalUpdates: (enabled: boolean) => Promise<UpdaterState>;
+			skipUpdateVersion: () => Promise<UpdaterState>;
 			checkForUpdates: () => Promise<UpdaterState>;
 			downloadUpdate: () => Promise<UpdaterState>;
 			installUpdateAndRestart: () => Promise<{ success: boolean; reason?: string }>;

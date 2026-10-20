@@ -172,6 +172,8 @@ export const IPC_CHANNELS = {
 		updateLaterForSession: "update-later-for-session",
 		dismissWhatsNew: "dismiss-whats-new",
 		setBusyState: "set-updater-busy-state",
+		setExperimentalUpdates: "set-experimental-updates",
+		skipVersion: "skip-update-version",
 	},
 	shortcuts: {
 		get: "get-shortcuts",

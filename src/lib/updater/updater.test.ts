@@ -167,6 +167,37 @@ describe("ScreenMintUpdater", () => {
 		expect(updater.getState().status).toBe("downloaded");
 	});
 
+	it("does not prompt again for a skipped version on automatic checks", async () => {
+		const backend = new FakeUpdaterBackend();
+		backend.checkForUpdates.mockImplementation(async () => {
+			backend.emit("checking-for-update");
+			backend.emit("update-available", { version: "1.1.0" });
+		});
+
+		const { updater } = createUpdater("win32", backend);
+		await updater.init();
+		await updater.checkForUpdates("manual");
+		await updater.skipVersion();
+		await updater.checkForUpdates("automatic");
+
+		expect(updater.getState().showUpdatePrompt).toBe(false);
+	});
+
+	it("persists the experimental channel and enables pre-releases", async () => {
+		const backend = new FakeUpdaterBackend();
+		const { updater } = createUpdater("win32", backend);
+		await updater.init();
+		await updater.setExperimentalUpdates(true);
+
+		expect(backend.allowPrerelease).toBe(true);
+		expect(updater.getState().experimentalUpdatesEnabled).toBe(true);
+
+		const reloadedBackend = new FakeUpdaterBackend();
+		const { updater: reloaded } = createUpdater("win32", reloadedBackend);
+		await reloaded.init();
+		expect(reloadedBackend.allowPrerelease).toBe(true);
+	});
+
 	it("defers the update prompt for the current session only", async () => {
 		const backend = new FakeUpdaterBackend();
 		backend.checkForUpdates.mockImplementation(async () => {

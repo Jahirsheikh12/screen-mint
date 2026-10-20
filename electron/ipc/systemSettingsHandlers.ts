@@ -67,6 +67,14 @@ export function registerSystemSettingsIpcHandlers() {
 		return await getScreenMintUpdater().updateLaterForSession();
 	});
 
+	ipcMain.handle(IPC_CHANNELS.updater.setExperimentalUpdates, async (_, enabled: unknown) => {
+		return await getScreenMintUpdater().setExperimentalUpdates(enabled === true);
+	});
+
+	ipcMain.handle(IPC_CHANNELS.updater.skipVersion, async () => {
+		return await getScreenMintUpdater().skipVersion();
+	});
+
 	ipcMain.handle(IPC_CHANNELS.updater.dismissWhatsNew, async () => {
 		return await getScreenMintUpdater().dismissWhatsNew();
 	});

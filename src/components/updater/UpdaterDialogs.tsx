@@ -238,6 +238,16 @@ export function UpdaterDialogs({ windowType }: UpdaterDialogsProps) {
 						<DialogFooter className="mt-6 flex gap-2 sm:justify-end">
 							<Button
 								type="button"
+								variant="ghost"
+								className="h-10 rounded-xl px-3 text-slate-500 hover:bg-white/[0.04] hover:text-slate-200 sm:mr-auto"
+								onClick={() => {
+									void window.electronAPI.skipUpdateVersion();
+								}}
+							>
+								Skip this version
+							</Button>
+							<Button
+								type="button"
 								variant="secondary"
 								className="h-10 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 text-slate-300 hover:bg-white/[0.06] hover:text-white"
 								onClick={() => {

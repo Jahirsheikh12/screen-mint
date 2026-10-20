@@ -2,6 +2,7 @@ import { Settings } from "lucide-react";
 import { useState } from "react";
 import { useScopedT } from "@/contexts/I18nContext";
 import type { HudSettings } from "@/hooks/useHudState";
+import { useUpdaterState } from "@/hooks/useUpdaterState";
 import {
 	DropdownMenu,
 	DropdownMenuCheckboxItem,
@@ -50,6 +51,7 @@ export function SettingsDropdown({
 	const supportsSpeakerNotes = platform !== null;
 	const settingsTooltip = useTooltip({ content: "Settings", side: "top" });
 	const [recordingsDir, setRecordingsDir] = useState<string | null>(null);
+	const updaterState = useUpdaterState();
 
 	const handleOpenChange = (open: boolean) => {
 		notifyHudDropdownToggle(open);
@@ -234,6 +236,16 @@ export function SettingsDropdown({
 						{t("settings.hideHudFromCapture")}
 					</DropdownMenuCheckboxItem>
 				)}
+
+				<DropdownMenuCheckboxItem
+					checked={updaterState.experimentalUpdatesEnabled}
+					onCheckedChange={(checked) =>
+						void window.electronAPI.setExperimentalUpdates(Boolean(checked))
+					}
+					className={`text-xs ${ITEM_HOVER}`}
+				>
+					Experimental updates
+				</DropdownMenuCheckboxItem>
 
 				<DropdownMenuSeparator className="bg-white/[0.08]" />
 				<DropdownMenuSub>

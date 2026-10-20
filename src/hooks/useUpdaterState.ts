@@ -28,6 +28,7 @@ const DEFAULT_UPDATER_STATE: UpdaterState = {
 	whatsNewReleaseName: null,
 	whatsNewReleaseNotes: null,
 	busy: DEFAULT_APP_BUSY_STATE,
+	experimentalUpdatesEnabled: false,
 };
 
 export function useUpdaterState() {

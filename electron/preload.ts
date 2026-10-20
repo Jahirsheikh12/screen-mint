@@ -460,6 +460,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	getAppVersion: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.system.getAppVersion);
 	},
+	setExperimentalUpdates: (enabled: boolean) => {
+		return ipcRenderer.invoke(IPC_CHANNELS.updater.setExperimentalUpdates, enabled);
+	},
+	skipUpdateVersion: () => {
+		return ipcRenderer.invoke(IPC_CHANNELS.updater.skipVersion);
+	},
 	getUpdaterState: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.updater.getState);
 	},

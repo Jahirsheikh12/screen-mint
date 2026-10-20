@@ -24,6 +24,10 @@ type UpdaterPreferences = {
 	pendingWhatsNewVersion: string | null;
 	pendingWhatsNewReleaseName: string | null;
 	pendingWhatsNewReleaseNotes: string | null;
+	/** Opt in to pre-release builds. */
+	experimentalUpdates: boolean;
+	/** Version the user chose to skip; automatic checks won't prompt for it. */
+	skippedVersion: string | null;
 };
 
 type AppAdapter = {
@@ -140,6 +144,8 @@ function createDefaultPreferences(): UpdaterPreferences {
 		pendingWhatsNewVersion: null,
 		pendingWhatsNewReleaseName: null,
 		pendingWhatsNewReleaseNotes: null,
+		experimentalUpdates: false,
+		skippedVersion: null,
 	};
 }
 
@@ -270,6 +276,7 @@ export class ScreenMintUpdater {
 			whatsNewReleaseName: null,
 			whatsNewReleaseNotes: null,
 			busy: cloneBusyState(this.busyState),
+			experimentalUpdatesEnabled: false,
 		};
 	}
 
@@ -316,7 +323,7 @@ export class ScreenMintUpdater {
 			return true;
 		}
 
-		return this.sessionDeferredVersion !== version;
+		return this.sessionDeferredVersion !== version && this.preferences.skippedVersion !== version;
 	}
 
 	private buildWhatsNewState(): Partial<UpdaterState> {
@@ -530,6 +537,8 @@ export class ScreenMintUpdater {
 					typeof parsed.pendingWhatsNewReleaseNotes === "string"
 						? parsed.pendingWhatsNewReleaseNotes
 						: null,
+				experimentalUpdates: parsed.experimentalUpdates === true,
+				skippedVersion: typeof parsed.skippedVersion === "string" ? parsed.skippedVersion : null,
 			};
 		} catch {
 			this.preferences = createDefaultPreferences();
@@ -585,7 +594,7 @@ export class ScreenMintUpdater {
 		this.updaterBackend.autoDownload = false;
 		this.updaterBackend.autoInstallOnAppQuit = supportsInAppInstall(process.platform, process.env);
 		if ("allowPrerelease" in this.updaterBackend) {
-			this.updaterBackend.allowPrerelease = false;
+			this.updaterBackend.allowPrerelease = this.preferences.experimentalUpdates;
 		}
 		if ("fullChangelog" in this.updaterBackend) {
 			this.updaterBackend.fullChangelog = false;
@@ -596,6 +605,7 @@ export class ScreenMintUpdater {
 			manualDownloadUrl: this.state.canCheck ? createReleaseUrl(null) : null,
 			message: this.state.canCheck ? null : "Updates are available in packaged builds only.",
 			installMode: this.computeInstallMode(),
+			experimentalUpdatesEnabled: this.preferences.experimentalUpdates,
 			...whatsNewState,
 		});
 		this.scheduleAutomaticChecks();
@@ -802,6 +812,21 @@ export class ScreenMintUpdater {
 				installMode: "none",
 			});
 		}
+	}
+
+	async setExperimentalUpdates(enabled: boolean): Promise<UpdaterState> {
+		this.preferences.experimentalUpdates = enabled;
+		if ("allowPrerelease" in this.updaterBackend) {
+			this.updaterBackend.allowPrerelease = enabled;
+		}
+		await this.savePreferences();
+		return this.setState({ experimentalUpdatesEnabled: enabled });
+	}
+
+	async skipVersion(): Promise<UpdaterState> {
+		this.preferences.skippedVersion = this.state.latestVersion;
+		await this.savePreferences();
+		return this.setState({ showUpdatePrompt: false });
 	}
 
 	async dismissUpdate(): Promise<UpdaterState> {
