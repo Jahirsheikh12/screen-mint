@@ -309,6 +309,13 @@ function setupApplicationMenu() {
 						void getScreenMintUpdater().checkForUpdates("manual");
 					},
 				},
+				{ type: "separator" },
+				{
+					label: "Report an Issue…",
+					click: () => {
+						void shell.openExternal("https://github.com/Jahirsheikh12/screen-mint/issues/new");
+					},
+				},
 			],
 		},
 	);
