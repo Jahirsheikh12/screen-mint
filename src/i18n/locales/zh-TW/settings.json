@@ -60,7 +60,7 @@
 		"cursorSway": "游標擺動",
 		"shadow": "陰影",
 		"advancedShadowSettings": "進階陰影設定",
-		"advancedShadowDescription": "調整畫框陰影，使其與預覽和輸出一致。",
+		"advancedShadowDescription": "調整畫框陰影，使其與預覽和匯出一致。",
 		"shadowSize": "大小",
 		"shadowOpacity": "不透明度",
 		"shadowBlur": "模糊",
@@ -76,7 +76,7 @@
 	"previewQuality": {
 		"title": "預覽品質",
 		"description": "在較慢的電腦上降低預覽品質，可讓編輯器反應更順暢。",
-		"helper": "這只會影響編輯器的播放流暢度，不影響輸出。",
+		"helper": "這只會影響編輯器的播放流暢度，不影響匯出。",
 		"switchFailed": "無法變更預覽品質，已還原先前的設定。",
 		"options": {
 			"low": "低",
@@ -170,7 +170,7 @@
 		"outputDimensions": "輸出：{{dimensions}}px",
 		"loadProject": "載入專案",
 		"saveProject": "儲存專案",
-		"exportVideo": "輸出 {{format}}",
+		"exportVideo": "匯出 {{format}}",
 		"reportBug": "回報錯誤",
 		"starOnGithub": "在 GitHub 加星號"
 	}

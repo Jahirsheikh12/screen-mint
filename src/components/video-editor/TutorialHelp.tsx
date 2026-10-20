@@ -8,10 +8,13 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import { useScopedT } from "@/contexts/I18nContext";
+import { useI18n, useScopedT } from "@/contexts/I18nContext";
 
 export function TutorialHelp() {
 	const t = useScopedT("editor");
+	const { locale } = useI18n();
+	// Chinese is written without spaces between words.
+	const wordGap = locale.startsWith("zh") ? "" : " ";
 	return (
 		<Dialog>
 			<DialogTrigger asChild>
@@ -38,7 +41,11 @@ export function TutorialHelp() {
 					<div className="bg-white/5 rounded-lg p-4 border border-white/5">
 						<p className="text-slate-300 leading-relaxed">
 							{t("tutorial.descriptionP1")}
-							<span className="text-[#ef4444] font-bold"> {t("tutorial.descriptionRemove")}</span>.{" "}
+							{wordGap}
+							<span className="text-[#ef4444] font-bold">{t("tutorial.descriptionRemove")}</span>
+							{wordGap}
+							{t("tutorial.descriptionP2")}
+							{wordGap}
 							{t("tutorial.descriptionP3")}
 						</p>
 					</div>

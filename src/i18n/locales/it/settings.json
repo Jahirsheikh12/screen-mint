@@ -54,7 +54,7 @@
 		"connectZooms": "Collega gli zoom",
 		"cursorSize": "Dimensione cursore",
 		"cursorSmoothing": "Fluidità cursore",
-		"off": "No",
+		"off": "Disattivato",
 		"cursorMotionBlur": "Sfocatura di movimento del cursore",
 		"cursorClickBounce": "Rimbalzo al clic",
 		"cursorSway": "Oscillazione cursore",
@@ -172,6 +172,6 @@
 		"saveProject": "Salva progetto",
 		"exportVideo": "Esporta {{format}}",
 		"reportBug": "Segnala un bug",
-		"starOnGithub": "Stella su GitHub"
+		"starOnGithub": "Metti una stella su GitHub"
 	}
 }

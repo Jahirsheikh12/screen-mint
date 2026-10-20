@@ -4,10 +4,10 @@
 		"compilingGifProgress": "正在產生 GIF... {{progress}}%",
 		"compilingGifWait": "正在產生 GIF... 可能需要一些時間",
 		"takeMoment": "可能需要一點時間...",
-		"exportFailed": "輸出失敗",
+		"exportFailed": "匯出失敗",
 		"compilingGifTitle": "正在產生 GIF",
-		"exportingFormat": "正在輸出 {{format}}",
-		"exportComplete": "輸出完成",
+		"exportingFormat": "正在匯出 {{format}}",
+		"exportComplete": "匯出完成",
 		"formatReady": "你的 {{format}} 已完成",
 		"showInFolder": "在資料夾中顯示",
 		"compiling": "產生中",
@@ -17,7 +17,7 @@
 		"format": "格式",
 		"compilingStatus": "產生中...",
 		"frames": "影格",
-		"cancelExport": "取消輸出",
+		"cancelExport": "取消匯出",
 		"savedSuccess": "{{format}} 已儲存！"
 	},
 	"addFont": {

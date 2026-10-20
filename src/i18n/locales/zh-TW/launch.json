@@ -106,9 +106,9 @@
 	"afterRecording": {
 		"afterRecording": "錄製完成後",
 		"createProject": "建立專案",
-		"exportClipboard": "輸出並複製到剪貼簿",
-		"exportShareLink": "輸出並建立分享連結",
-		"exportSaveFile": "輸出並儲存為檔案",
+		"exportClipboard": "匯出並複製到剪貼簿",
+		"exportShareLink": "匯出並建立分享連結",
+		"exportSaveFile": "匯出並儲存為檔案",
 		"autoCreateZooms": "自動建立縮放"
 	},
 	"sourceSelector": {

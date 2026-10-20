@@ -56,8 +56,8 @@
 		"cursorSmoothing": "Cursorglättung",
 		"off": "Aus",
 		"cursorMotionBlur": "Bewegungsunschärfe des Cursors",
-		"cursorClickBounce": "Klick-Federung",
-		"cursorSway": "Cursorneigung",
+		"cursorClickBounce": "Klick-Federeffekt",
+		"cursorSway": "Cursor-Schwingen",
 		"shadow": "Schatten",
 		"advancedShadowSettings": "Erweiterte Schatteneinstellungen",
 		"advancedShadowDescription": "Passen Sie den Rahmenschatten an Vorschau und Export an.",
@@ -172,6 +172,6 @@
 		"saveProject": "Projekt speichern",
 		"exportVideo": "{{format}} exportieren",
 		"reportBug": "Fehler melden",
-		"starOnGithub": "Auf GitHub markieren"
+		"starOnGithub": "Auf GitHub einen Stern geben"
 	}
 }
