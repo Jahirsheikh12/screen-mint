@@ -37,6 +37,7 @@ import type {
 	SelectedArea,
 	CursorTelemetrySample as SessionCursorTelemetrySample,
 } from "../../src/lib/recording/session";
+import { createExportTempPath } from "../exportTemp";
 import { RECORDINGS_DIR } from "../main";
 import { markRecordingStarted, markRecordingStopped } from "../recordingRecovery";
 import { getScreenMintUpdater } from "../updater";
@@ -1021,6 +1022,12 @@ async function resolveExportV2OutputPath(request: ExportV2StartRequest) {
 			path: path.join(app.getPath("temp"), `screenmint-export-v2-${Date.now()}.${extension}`),
 			canceled: false,
 		};
+	}
+
+	if (request.destination === "temp") {
+		const tempPath = createExportTempPath(app.getPath("temp"), extension);
+		await fs.mkdir(path.dirname(tempPath), { recursive: true });
+		return { path: tempPath, canceled: false };
 	}
 
 	if (request.destination === "file") {

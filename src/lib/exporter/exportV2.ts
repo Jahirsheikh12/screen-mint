@@ -42,7 +42,7 @@ export type ExportV2Engine =
 	| "composited-hardware"
 	| "legacy-renderer";
 export type ExportV2HardwareAcceleration = "hardware" | "software" | "unknown";
-export type ExportV2Destination = "file" | "clipboard" | "recordings";
+export type ExportV2Destination = "file" | "clipboard" | "recordings" | "temp";
 
 export interface ExportV2Capabilities {
 	enabled: boolean;

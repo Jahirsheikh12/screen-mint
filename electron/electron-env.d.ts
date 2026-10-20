@@ -253,7 +253,13 @@ declare global {
 				callback: (state: MobileCapturePairingState) => void,
 			) => () => void;
 			getAnnouncements: () => Promise<
-				Array<{ id: string; title: string; body: string; url?: string }>
+				Array<{
+					id: string;
+					title: string;
+					body: string;
+					url?: string;
+					presentation: "toast" | "export";
+				}>
 			>;
 			dismissAnnouncement: (id: string) => Promise<void>;
 			openExternalUrl: (url: string) => Promise<{ success: boolean; error?: string }>;
@@ -317,7 +323,20 @@ declare global {
 			writeExportedVideoToPath: (
 				videoData: ArrayBuffer,
 				filePath: string,
+				captionSidecar?: { srt?: string; vtt?: string },
 			) => Promise<{ success: boolean; path?: string; message?: string; error?: string }>;
+			finalizeExportedTemp: (payload: {
+				tempPath: string;
+				fileName: string;
+				captionSidecar?: { srt?: string; vtt?: string };
+			}) => Promise<{
+				success: boolean;
+				path?: string;
+				canceled?: boolean;
+				message?: string;
+				error?: string;
+			}>;
+			discardExportedTemp: (tempPath: string) => Promise<{ success: boolean }>;
 			saveExportedVideoToRecordings: (
 				videoData: ArrayBuffer,
 				fileName: string,

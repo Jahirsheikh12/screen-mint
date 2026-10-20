@@ -50,19 +50,6 @@
 		"modern": "現代",
 		"clean": "俐落"
 	},
-	"format": {
-		"mp4Video": "MP4 影片",
-		"mp4Description": "高畫質影片檔",
-		"gifAnimation": "GIF 動畫",
-		"gifDescription": "方便分享的動態圖片"
-	},
-	"gifOptions": {
-		"frameRate": "影格速率",
-		"outputSize": "輸出大小",
-		"outputDimensions": "輸出：{{width}} × {{height}}px",
-		"loopAnimation": "循環播放動畫",
-		"loopDescription": "GIF 會持續循環播放"
-	},
 	"tutorial": {
 		"howTrimmingWorks": "修剪的運作方式",
 		"title": "修剪的運作方式",

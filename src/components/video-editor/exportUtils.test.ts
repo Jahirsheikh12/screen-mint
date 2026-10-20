@@ -8,7 +8,6 @@ import {
 import {
 	buildSourceVideoMetadata,
 	GIF_EXPORT_QUALITY_OPTIONS,
-	getExportDialogPhaseState,
 	getSelectedGifQuality,
 	getSelectedVideoQuality,
 	mergeGifExportDetails,
@@ -124,42 +123,6 @@ describe("exportUtils", () => {
 		expect(details.benchmarkThroughputFps).toBe(128);
 		expect(details.fallbackSteps).toEqual(plan.fallbackSteps);
 		expect(details.warnings).toEqual(plan.warnings);
-	});
-
-	it("distinguishes MP4 finalizing from GIF compiling", () => {
-		expect(
-			getExportDialogPhaseState({
-				isExporting: true,
-				exportFormat: "mp4",
-				progress: {
-					currentFrame: 10,
-					totalFrames: 10,
-					percentage: 100,
-					estimatedTimeRemaining: 0,
-					phase: "finalizing",
-				},
-			}),
-		).toEqual({
-			isGifCompiling: false,
-			isVideoFinalizing: true,
-		});
-
-		expect(
-			getExportDialogPhaseState({
-				isExporting: true,
-				exportFormat: "gif",
-				progress: {
-					currentFrame: 10,
-					totalFrames: 10,
-					percentage: 100,
-					estimatedTimeRemaining: 0,
-					phase: "finalizing",
-				},
-			}),
-		).toEqual({
-			isGifCompiling: true,
-			isVideoFinalizing: false,
-		});
 	});
 
 	it("resets video preset controls when selecting a quality pill", () => {

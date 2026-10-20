@@ -13,6 +13,7 @@ import {
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { Switch } from "@/components/ui/switch";
+import { useScopedT } from "@/contexts/I18nContext";
 import type {
 	ExportDestination,
 	ExportFormat,
@@ -294,7 +295,19 @@ function SummaryStat({ label, value }: { label: string; value: string }) {
 	);
 }
 
+const WARNING_KEYS: Record<string, string> = {
+	"4K exports may be slower on some systems.": "warn4k",
+	"Web optimization prefers safer H.264 profiles while preserving your chosen size and frame rate.":
+		"warnWeb",
+	"Long GIF exports can be large and slow. MP4 may share better.": "warnLongGif",
+	"This GIF is likely to exceed 15 MB. Lower the resolution, FPS, or color count.": "warnGifSize",
+	"Source-resolution GIF exports above 1080p can be very slow and heavy.": "warnGifSource",
+};
+
 function Warnings({ warnings }: { warnings: string[] }) {
+	const t = useScopedT("settings");
+	const translateWarning = (warning: string) =>
+		WARNING_KEYS[warning] ? t(`exportAdvanced.${WARNING_KEYS[warning]}`, warning) : warning;
 	if (warnings.length === 0) {
 		return null;
 	}
@@ -304,7 +317,7 @@ function Warnings({ warnings }: { warnings: string[] }) {
 			{warnings.map((warning) => (
 				<div key={warning} className="flex gap-2 text-[11px] leading-4 text-amber-100/80">
 					<AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-300/80" />
-					<span>{warning}</span>
+					<span>{translateWarning(warning)}</span>
 				</div>
 			))}
 		</div>
@@ -326,6 +339,23 @@ export function ExportSettingsDialog({
 	resolvedGifPlan,
 	onExport,
 }: ExportSettingsDialogProps) {
+	const t = useScopedT("settings");
+	const qualityLabel = (quality: keyof typeof QUALITY_LABELS) =>
+		t(`exportAdvanced.quality.${quality}`, QUALITY_LABELS[quality].label);
+	const qualityHint = (quality: keyof typeof QUALITY_LABELS) =>
+		t(`exportAdvanced.quality.${quality}Hint`, QUALITY_LABELS[quality].description);
+	const localize = <T extends string | number>(
+		group: string,
+		options: Array<{ value: T; label: string; description?: string }>,
+	) =>
+		options.map((option) => ({
+			...option,
+			// Numeric labels (64, 720p…) read the same in every language and have no key.
+			label: t(`exportAdvanced.options.${group}.${option.value}`, option.label),
+			description: option.description
+				? t(`exportAdvanced.options.${group}.${option.value}Hint`, option.description)
+				: undefined,
+		}));
 	const [isVisible, setIsVisible] = useState(false);
 	const [isClosing, setIsClosing] = useState(false);
 	const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -366,10 +396,10 @@ export function ExportSettingsDialog({
 	const bppPercent = ((bppValue - 0.02) / (0.5 - 0.02)) * 100;
 	const exportLabel =
 		exportDestination === "clipboard"
-			? "Copy Export"
+			? t("exportAdvanced.copyExport", "Copy Export")
 			: exportDestination === "link"
-				? "Create Link"
-				: `Export ${isGif ? "GIF" : "MP4"}`;
+				? t("exportAdvanced.createLink", "Create Link")
+				: t("export.exportVideo", "Export {{format}}", { format: isGif ? "GIF" : "MP4" });
 
 	const setCustomVideoSettings = (patch: Partial<VideoExportSettings>) => {
 		onVideoExportSettingsChange({
@@ -447,14 +477,17 @@ export function ExportSettingsDialog({
 					<div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-4">
 						<div>
 							<h2 className="text-[17px] font-semibold tracking-tight text-white">
-								Export settings
+								{t("exportAdvanced.title", "Export settings")}
 							</h2>
 							<p className="mt-0.5 text-[12px] text-white/38">
-								Choose the format, destination, and output quality before rendering.
+								{t(
+									"exportAdvanced.subtitle",
+									"Choose the format, destination, and output quality before rendering.",
+								)}
 							</p>
 						</div>
 						<div className="rounded-lg border border-[#F59E0B]/20 bg-[#F59E0B]/10 px-3 py-1.5 text-[11px] font-semibold text-[#FBBF24]">
-							{isGif ? "GIF" : "MP4"} ready
+							{t("exportAdvanced.ready", "{{format}} ready", { format: isGif ? "GIF" : "MP4" })}
 						</div>
 					</div>
 
@@ -464,22 +497,28 @@ export function ExportSettingsDialog({
 								<section>
 									<SectionHeader
 										icon={<Film className="h-4 w-4" />}
-										title="Format"
-										description="MP4 is best for sharing and editing. GIF is best for short loops."
+										title={t("exportAdvanced.format", "Format")}
+										description={t(
+											"exportAdvanced.formatHint",
+											"MP4 is best for sharing and editing. GIF is best for short loops.",
+										)}
 									/>
 									<div className="grid grid-cols-2 gap-2">
 										<ChoiceButton
 											selected={exportFormat === "mp4"}
-											description="Audio, timeline edits, high quality"
-											selectionLabel="MP4 video"
+											description={t(
+												"exportAdvanced.mp4Hint",
+												"Audio, timeline edits, high quality",
+											)}
+											selectionLabel={t("exportAdvanced.mp4Label", "MP4 video")}
 											onClick={() => onExportFormatChange("mp4")}
 										>
 											MP4 video
 										</ChoiceButton>
 										<ChoiceButton
 											selected={exportFormat === "gif"}
-											description="Silent animated image"
-											selectionLabel="GIF animation"
+											description={t("exportAdvanced.gifHint", "Silent animated image")}
+											selectionLabel={t("exportAdvanced.gifLabel", "GIF animation")}
 											onClick={() => onExportFormatChange("gif")}
 										>
 											GIF animation
@@ -490,31 +529,34 @@ export function ExportSettingsDialog({
 								<section>
 									<SectionHeader
 										icon={<FileText className="h-4 w-4" />}
-										title="Destination"
-										description="Save a file or copy the rendered export as a temporary file."
+										title={t("exportAdvanced.destination", "Destination")}
+										description={t(
+											"exportAdvanced.destinationHint",
+											"Save a file or copy the rendered export as a temporary file.",
+										)}
 									/>
 									<div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
 										<DestinationButton
 											icon={<FileText className="h-4 w-4" />}
-											label="File"
-											description="Choose a folder"
+											label={t("exportAdvanced.destFile", "File")}
+											description={t("exportAdvanced.destFileHint", "Choose a folder")}
 											selected={exportDestination === "file"}
 											onClick={() => onExportDestinationChange("file")}
 										/>
 										<DestinationButton
 											icon={<Clipboard className="h-4 w-4" />}
-											label="Clipboard"
-											description="Copy file reference"
+											label={t("exportAdvanced.destClipboard", "Clipboard")}
+											description={t("exportAdvanced.destClipboardHint", "Copy file reference")}
 											selected={exportDestination === "clipboard"}
 											onClick={() => onExportDestinationChange("clipboard")}
 										/>
 										<DestinationButton
 											icon={<Link className="h-4 w-4" />}
-											label="Link"
-											description="Cloud share"
+											label={t("exportAdvanced.destLink", "Link")}
+											description={t("exportAdvanced.destLinkHint", "Cloud share")}
 											selected={exportDestination === "link"}
 											disabled
-											badge="Soon"
+											badge={t("exportAdvanced.soon", "Soon")}
 											onClick={() => undefined}
 										/>
 									</div>
@@ -523,8 +565,11 @@ export function ExportSettingsDialog({
 								<section>
 									<SectionHeader
 										icon={<Zap className="h-4 w-4" />}
-										title="Quality profile"
-										description="Profiles set sensible defaults. Any manual output change becomes Custom."
+										title={t("exportAdvanced.profile", "Quality profile")}
+										description={t(
+											"exportAdvanced.profileHint",
+											"Profiles set sensible defaults. Any manual output change becomes Custom.",
+										)}
 									/>
 									<div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
 										{isGif
@@ -532,34 +577,37 @@ export function ExportSettingsDialog({
 													<ChoiceButton
 														key={quality}
 														selected={currentGifQuality === quality}
-														description={QUALITY_LABELS[quality].description}
-														selectionLabel={QUALITY_LABELS[quality].label}
+														description={qualityHint(quality)}
+														selectionLabel={qualityLabel(quality)}
 														onClick={() =>
 															onGifExportSettingsChange(selectGifQualitySettings(quality))
 														}
 													>
-														{QUALITY_LABELS[quality].label}
+														{qualityLabel(quality)}
 													</ChoiceButton>
 												))
 											: VIDEO_EXPORT_QUALITY_OPTIONS.map((quality) => (
 													<ChoiceButton
 														key={quality}
 														selected={currentVideoQuality === quality}
-														description={QUALITY_LABELS[quality].description}
-														selectionLabel={QUALITY_LABELS[quality].label}
+														description={qualityHint(quality)}
+														selectionLabel={qualityLabel(quality)}
 														onClick={() =>
 															onVideoExportSettingsChange(
 																selectVideoQualitySettings(videoExportSettings, quality),
 															)
 														}
 													>
-														{QUALITY_LABELS[quality].label}
+														{qualityLabel(quality)}
 													</ChoiceButton>
 												))}
 									</div>
 									{(isGif ? currentGifQuality === null : currentVideoQuality === null) ? (
 										<div className="mt-2 rounded-lg border border-[#F59E0B]/18 bg-[#F59E0B]/8 px-3 py-2 text-[11px] text-[#FCD34D]/88">
-											Custom profile is active because one or more output controls were changed.
+											{t(
+												"exportAdvanced.customActive",
+												"Custom profile is active because one or more output controls were changed.",
+											)}
 										</div>
 									) : null}
 								</section>
@@ -567,21 +615,27 @@ export function ExportSettingsDialog({
 								<section>
 									<SectionHeader
 										icon={<Monitor className="h-4 w-4" />}
-										title="Output"
-										description="Resolution and frame rate are applied to the final rendered canvas."
+										title={t("exportAdvanced.output", "Output")}
+										description={t(
+											"exportAdvanced.outputHint",
+											"Resolution and frame rate are applied to the final rendered canvas.",
+										)}
 									/>
 									<div className="space-y-4">
 										<div>
-											<div className="mb-2 text-[11px] font-semibold text-white/45">Resolution</div>
+											<div className="mb-2 text-[11px] font-semibold text-white/45">
+												{t("exportAdvanced.resolution", "Resolution")}
+											</div>
 											<SegmentedGrid
 												value={
 													isGif
 														? gifExportSettings.resolutionMode
 														: videoExportSettings.resolutionMode
 												}
-												options={
-													isGif ? GIF_RESOLUTION_MODE_OPTIONS : VIDEO_RESOLUTION_MODE_OPTIONS
-												}
+												options={localize(
+													"resolution",
+													isGif ? GIF_RESOLUTION_MODE_OPTIONS : VIDEO_RESOLUTION_MODE_OPTIONS,
+												)}
 												columns={isGif ? "grid-cols-4" : "grid-cols-5"}
 												group={isGif ? "gif-resolution" : "video-resolution"}
 												onChange={(resolutionMode) => {
@@ -600,7 +654,9 @@ export function ExportSettingsDialog({
 										</div>
 
 										<div>
-											<div className="mb-2 text-[11px] font-semibold text-white/45">Frame rate</div>
+											<div className="mb-2 text-[11px] font-semibold text-white/45">
+												{t("exportAdvanced.frameRate", "Frame rate")}
+											</div>
 											<SegmentedGrid
 												value={
 													isGif ? gifExportSettings.frameRate : videoExportSettings.frameRateMode
@@ -640,12 +696,18 @@ export function ExportSettingsDialog({
 											<SlidersHorizontal className="h-4 w-4 text-white/45" />
 											<div>
 												<div className="text-[13px] font-semibold text-white/82">
-													Advanced controls
+													{t("exportAdvanced.advancedControls", "Advanced controls")}
 												</div>
 												<div className="mt-0.5 text-[11px] text-white/34">
 													{isGif
-														? "Looping, dedupe, colors, dithering, and motion sensitivity."
-														: "Bitrate, web optimization, and decoder fallback controls."}
+														? t(
+																"exportAdvanced.advancedGifHint",
+																"Looping, dedupe, colors, dithering, and motion sensitivity.",
+															)
+														: t(
+																"exportAdvanced.advancedVideoHint",
+																"Bitrate, web optimization, and decoder fallback controls.",
+															)}
 												</div>
 											</div>
 										</div>
@@ -662,21 +724,27 @@ export function ExportSettingsDialog({
 												<>
 													<div className="grid gap-2 sm:grid-cols-2">
 														<ToggleRow
-															label="Loop forever"
-															description="Repeat the GIF automatically."
+															label={t("exportAdvanced.loop", "Loop forever")}
+															description={t(
+																"exportAdvanced.loopHint",
+																"Repeat the GIF automatically.",
+															)}
 															checked={gifExportSettings.loop}
 															onChange={(loop) => setCustomGifSettings({ loop })}
 														/>
 														<ToggleRow
-															label="Dedupe frames"
-															description="Remove near-identical frames to reduce size."
+															label={t("exportAdvanced.dedupe", "Dedupe frames")}
+															description={t(
+																"exportAdvanced.dedupeHint",
+																"Remove near-identical frames to reduce size.",
+															)}
 															checked={gifExportSettings.dedupeFrames}
 															onChange={(dedupeFrames) => setCustomGifSettings({ dedupeFrames })}
 														/>
 													</div>
 													<SegmentedGrid
 														value={gifExportSettings.colorCount}
-														options={GIF_COLOR_COUNT_OPTIONS}
+														options={localize("colors", GIF_COLOR_COUNT_OPTIONS)}
 														columns="grid-cols-3"
 														onChange={(colorCount) =>
 															setCustomGifSettings({ colorCount: colorCount as GifColorCount })
@@ -684,7 +752,7 @@ export function ExportSettingsDialog({
 													/>
 													<SegmentedGrid
 														value={gifExportSettings.ditherMode}
-														options={GIF_DITHER_MODE_OPTIONS}
+														options={localize("dither", GIF_DITHER_MODE_OPTIONS)}
 														columns="grid-cols-3"
 														onChange={(ditherMode) =>
 															setCustomGifSettings({ ditherMode: ditherMode as GifDitherMode })
@@ -692,7 +760,7 @@ export function ExportSettingsDialog({
 													/>
 													<SegmentedGrid
 														value={gifExportSettings.motionSensitivity}
-														options={GIF_MOTION_SENSITIVITY_OPTIONS}
+														options={localize("motion", GIF_MOTION_SENSITIVITY_OPTIONS)}
 														columns="grid-cols-3"
 														onChange={(motionSensitivity) =>
 															setCustomGifSettings({
@@ -705,10 +773,13 @@ export function ExportSettingsDialog({
 												<>
 													<SegmentedGrid
 														value={videoExportSettings.bitrateMode}
-														options={VIDEO_BITRATE_OPTIONS.map((option) => ({
-															value: option.value,
-															label: option.label,
-														}))}
+														options={localize(
+															"bitrate",
+															VIDEO_BITRATE_OPTIONS.map((option) => ({
+																value: option.value,
+																label: option.label,
+															})),
+														)}
 														columns="grid-cols-3 sm:grid-cols-6"
 														onChange={(bitrateMode) =>
 															setCustomVideoSettings({
@@ -725,7 +796,7 @@ export function ExportSettingsDialog({
 														<div className="rounded-lg border border-white/[0.07] bg-white/[0.025] px-3 py-3">
 															<div className="mb-3 flex items-center justify-between">
 																<span className="text-[12px] font-semibold text-white/72">
-																	Bits per pixel
+																	{t("exportAdvanced.bpp", "Bits per pixel")}
 																</span>
 																<span className="font-mono text-[12px] font-semibold tabular-nums text-white/82">
 																	{bppValue.toFixed(2)}
@@ -752,8 +823,8 @@ export function ExportSettingsDialog({
 																/>
 															</div>
 															<div className="mt-2 flex justify-between text-[10px] text-white/30">
-																<span>Smaller</span>
-																<span>Sharper</span>
+																<span>{t("exportAdvanced.smaller", "Smaller")}</span>
+																<span>{t("exportAdvanced.sharper", "Sharper")}</span>
 															</div>
 														</div>
 													) : null}
@@ -761,7 +832,7 @@ export function ExportSettingsDialog({
 													{videoExportSettings.bitrateMode === "custom" ? (
 														<label className="block rounded-lg border border-white/[0.07] bg-white/[0.025] px-3 py-3">
 															<span className="text-[12px] font-semibold text-white/72">
-																Custom bitrate
+																{t("exportAdvanced.customBitrate", "Custom bitrate")}
 															</span>
 															<div className="mt-2 flex items-center gap-2">
 																<input
@@ -785,16 +856,22 @@ export function ExportSettingsDialog({
 
 													<div className="grid gap-2 sm:grid-cols-2">
 														<ToggleRow
-															label="Optimize for web"
-															description="Prefer broadly compatible H.264 profiles."
+															label={t("exportAdvanced.web", "Optimize for web")}
+															description={t(
+																"exportAdvanced.webHint",
+																"Prefer broadly compatible H.264 profiles.",
+															)}
 															checked={videoExportSettings.optimizeForWeb}
 															onChange={(optimizeForWeb) =>
 																setCustomVideoSettings({ optimizeForWeb })
 															}
 														/>
 														<ToggleRow
-															label="Force FFmpeg decoder"
-															description="Use the software decoder when hardware decode misbehaves."
+															label={t("exportAdvanced.ffmpegDecoder", "Force FFmpeg decoder")}
+															description={t(
+																"exportAdvanced.ffmpegDecoderHint",
+																"Use the software decoder when hardware decode misbehaves.",
+															)}
 															checked={videoExportSettings.forceFFmpegDecoder ?? false}
 															onChange={(forceFFmpegDecoder) =>
 																setCustomVideoSettings({ forceFFmpegDecoder })
@@ -813,27 +890,42 @@ export function ExportSettingsDialog({
 							<div className="sticky top-0">
 								<SectionHeader
 									icon={<Settings2 className="h-4 w-4" />}
-									title="Resolved export"
-									description="These are the exact output settings that will be sent to the renderer."
+									title={t("exportAdvanced.resolved", "Resolved export")}
+									description={t(
+										"exportAdvanced.resolvedHint",
+										"These are the exact output settings that will be sent to the renderer.",
+									)}
 								/>
 								<div className="grid grid-cols-2 gap-3 rounded-lg border border-white/[0.08] bg-black/20 p-3">
-									<SummaryStat label="Canvas" value={`${activePlan.width}x${activePlan.height}`} />
-									<SummaryStat label="FPS" value={`${activePlan.frameRate}`} />
+									<SummaryStat
+										label={t("exportAdvanced.canvas", "Canvas")}
+										value={`${activePlan.width}x${activePlan.height}`}
+									/>
+									<SummaryStat
+										label={t("exportAdvanced.fps", "FPS")}
+										value={`${activePlan.frameRate}`}
+									/>
 									{isGif ? (
 										<>
 											<SummaryStat
-												label="Estimate"
+												label={t("exportAdvanced.estimate", "Estimate")}
 												value={formatEstimatedSize(resolvedGifPlan.estimatedSizeBytes)}
 											/>
-											<SummaryStat label="Colors" value={`${resolvedGifPlan.colorCount}`} />
+											<SummaryStat
+												label={t("exportAdvanced.colors", "Colors")}
+												value={`${resolvedGifPlan.colorCount}`}
+											/>
 										</>
 									) : (
 										<>
 											<SummaryStat
-												label="Bitrate"
+												label={t("exportAdvanced.bitrate", "Bitrate")}
 												value={formatBitrate(resolvedVideoPlan.bitrate)}
 											/>
-											<SummaryStat label="Codec" value={resolvedVideoPlan.codecLabel} />
+											<SummaryStat
+												label={t("exportAdvanced.codec", "Codec")}
+												value={resolvedVideoPlan.codecLabel}
+											/>
 										</>
 									)}
 								</div>
@@ -842,29 +934,33 @@ export function ExportSettingsDialog({
 
 								<div className="mt-5 space-y-2 rounded-lg border border-white/[0.08] bg-black/20 p-3 text-[11px] leading-4 text-white/42">
 									<div className="flex justify-between gap-4">
-										<span>Profile</span>
+										<span>{t("exportAdvanced.summaryProfile", "Profile")}</span>
 										<span className="text-right text-white/72">
 											{isGif
-												? ((currentGifQuality && QUALITY_LABELS[currentGifQuality].label) ??
-													"Custom")
-												: ((currentVideoQuality && QUALITY_LABELS[currentVideoQuality].label) ??
-													"Custom")}
+												? currentGifQuality
+													? qualityLabel(currentGifQuality)
+													: t("exportAdvanced.custom", "Custom")
+												: currentVideoQuality
+													? qualityLabel(currentVideoQuality)
+													: t("exportAdvanced.custom", "Custom")}
 										</span>
 									</div>
 									<div className="flex justify-between gap-4">
-										<span>Destination</span>
+										<span>{t("exportAdvanced.destination", "Destination")}</span>
 										<span className="text-right text-white/72">
 											{exportDestination === "clipboard"
-												? "Clipboard"
+												? t("exportAdvanced.destClipboard", "Clipboard")
 												: exportDestination === "link"
-													? "Link"
-													: "File"}
+													? t("exportAdvanced.destLink", "Link")
+													: t("exportAdvanced.destFile", "File")}
 										</span>
 									</div>
 									<div className="flex justify-between gap-4">
-										<span>Mode</span>
+										<span>{t("exportAdvanced.summaryMode", "Mode")}</span>
 										<span className="text-right text-white/72">
-											{isGif ? resolvedGifPlan.mode : resolvedVideoPlan.mode}
+											{(isGif ? resolvedGifPlan.mode : resolvedVideoPlan.mode) === "custom"
+												? t("exportAdvanced.custom", "Custom")
+												: t("exportAdvanced.modePreset", "Preset")}
 										</span>
 									</div>
 								</div>
@@ -878,7 +974,7 @@ export function ExportSettingsDialog({
 							onClick={onClose}
 							className="h-10 rounded-lg px-4 text-[13px] font-semibold text-white/46 transition-colors hover:bg-white/[0.05] hover:text-white/72"
 						>
-							Back to editor
+							{t("exportAdvanced.back", "Back to editor")}
 						</button>
 						<button
 							type="button"

@@ -50,19 +50,6 @@
 		"modern": "现代",
 		"clean": "清爽"
 	},
-	"format": {
-		"mp4Video": "MP4 视频",
-		"mp4Description": "高质量视频文件",
-		"gifAnimation": "GIF 动画",
-		"gifDescription": "可分享的动态图片"
-	},
-	"gifOptions": {
-		"frameRate": "帧率",
-		"outputSize": "输出尺寸",
-		"outputDimensions": "输出：{{width}} × {{height}}px",
-		"loopAnimation": "循环动画",
-		"loopDescription": "GIF 将持续播放"
-	},
 	"tutorial": {
 		"howTrimmingWorks": "修剪的工作方式",
 		"title": "修剪的工作方式",

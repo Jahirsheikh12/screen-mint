@@ -13,6 +13,7 @@ export function AnnouncementToasts() {
 
 		void window.electronAPI.getAnnouncements().then((announcements) => {
 			for (const announcement of announcements) {
+				if (announcement.presentation === "export") continue;
 				const { id, title, body, url } = announcement;
 				toast(title, {
 					id: `announcement-${id}`,

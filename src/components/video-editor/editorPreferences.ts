@@ -1,5 +1,18 @@
-import type { ExportQuality, GifSizePreset } from "@/lib/exporter";
-import { mapLegacyExportQualityToVideoSettings, mapLegacyGifSizePreset } from "@/lib/exporter";
+import type {
+	ExportFormat,
+	ExportQuality,
+	GifSizePreset,
+	QuickGifSettings,
+	QuickVideoSettings,
+} from "@/lib/exporter";
+import {
+	DEFAULT_QUICK_GIF_SETTINGS,
+	DEFAULT_QUICK_VIDEO_SETTINGS,
+	mapLegacyExportQualityToVideoSettings,
+	mapLegacyGifSizePreset,
+	normalizeQuickGifSettings,
+	normalizeQuickVideoSettings,
+} from "@/lib/exporter";
 import { normalizeProjectEditor, type ProjectEditorState } from "./projectPersistence";
 import {
 	DEFAULT_PREVIEW_QUALITY,
@@ -87,8 +100,31 @@ export interface EditorPreset {
 	controls: PersistedEditorControls;
 }
 
+/** Last choices made in the Export menu; remembered across sessions like preview quality. */
+export interface QuickExportPreferences {
+	format: ExportFormat;
+	video: QuickVideoSettings;
+	gif: QuickGifSettings;
+}
+
+export const DEFAULT_QUICK_EXPORT_PREFERENCES: QuickExportPreferences = {
+	format: "mp4",
+	video: DEFAULT_QUICK_VIDEO_SETTINGS,
+	gif: DEFAULT_QUICK_GIF_SETTINGS,
+};
+
+export function normalizeQuickExportPreferences(raw: unknown): QuickExportPreferences {
+	const value = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+	return {
+		format: value.format === "gif" ? "gif" : "mp4",
+		video: normalizeQuickVideoSettings(value.video),
+		gif: normalizeQuickGifSettings(value.gif),
+	};
+}
+
 export interface EditorPreferences extends PersistedEditorControls {
 	previewQuality: PreviewQuality;
+	quickExport: QuickExportPreferences;
 	customAspectWidth: string;
 	customAspectHeight: string;
 	customWallpapers: string[];
@@ -175,6 +211,7 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	videoExportSettings: DEFAULT_EDITOR_CONTROLS.videoExportSettings,
 	gifExportSettings: DEFAULT_EDITOR_CONTROLS.gifExportSettings,
 	previewQuality: DEFAULT_PREVIEW_QUALITY,
+	quickExport: DEFAULT_QUICK_EXPORT_PREFERENCES,
 	customAspectWidth: "16",
 	customAspectHeight: "9",
 	customWallpapers: [],
@@ -445,6 +482,7 @@ export function normalizeEditorPreferences(
 	return {
 		...normalizeEditorControls(raw, fallback),
 		previewQuality: normalizePreviewQuality(raw.previewQuality, fallback.previewQuality),
+		quickExport: normalizeQuickExportPreferences(raw.quickExport ?? fallback.quickExport),
 		customAspectWidth: normalizePositiveIntegerString(
 			raw.customAspectWidth,
 			fallback.customAspectWidth,

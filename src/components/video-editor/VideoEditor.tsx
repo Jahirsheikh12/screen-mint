@@ -61,10 +61,18 @@ import {
 	GifExporter,
 	getGifExportSettingsForPreset,
 	getVideoExportSettingsForPreset,
+	QUICK_VIDEO_QUALITIES,
+	type QuickGifSettings,
+	type QuickVideoQuality,
+	type QuickVideoSettings,
 	resolveGifExportPlan,
+	resolveQuickBaseDimensions,
+	resolveQuickVideoDimensions,
 	resolveVideoExportPlan,
 	StreamingVideoDecoder,
 	selectExportV2Engine,
+	toGifExportSettings,
+	toVideoExportSettings,
 	type VideoExportSettings,
 } from "@/lib/exporter";
 import { VideoExporter } from "@/lib/exporter/videoExporter";
@@ -77,8 +85,8 @@ import { type AspectRatio, getAspectRatioValue } from "@/utils/aspectRatioUtils"
 import { type AudioMixSettings, DEFAULT_AUDIO_MIX_SETTINGS } from "./audioMix";
 import { loadAudioSelectionDurationMs } from "./audioRegionUtils";
 import { type AutoPolishContentType, buildAutoPolishResult } from "./autoPolish";
+import { buildCaptionSidecar } from "./captionSidecar";
 import { ConfirmActionDialog, PresetNameDialog } from "./EditorDialogs";
-import { ExportDialog } from "./ExportDialog";
 import { ExportSettingsDialog } from "./ExportSettingsDialog";
 import {
 	cloneEditorHistorySnapshot,
@@ -93,6 +101,7 @@ import {
 } from "./editorPreferences";
 import { editorPreferencesService } from "./editorPreferencesService";
 import { createInitialEditorSessionState, editorSessionReducer } from "./editorSession";
+import { ExportMenu } from "./export/ExportMenu";
 import { createExportProgressThrottler } from "./exportProgressThrottler";
 import {
 	buildSourceVideoMetadata,
@@ -261,6 +270,7 @@ const EXPANDED_TIMELINE_LAYOUT = [40, 60];
 export default function VideoEditor() {
 	const { t } = useI18n();
 	const tSettings = useScopedT("settings");
+	const tDialogs = useScopedT("dialogs");
 	// Editor control values (wallpaper, cursor, frame, export, etc.) always start
 	// from defaults for every new session. The only settings we restore from
 	// localStorage are genuine app-level prefs (preview quality, custom aspect inputs,
@@ -279,6 +289,8 @@ export default function VideoEditor() {
 			mirrorWebcam: recommendedWebcamDefaults.mirrorWebcam,
 			cameraSizeDuringZoom: recommendedWebcamDefaults.cameraSizeDuringZoom,
 			previewQuality: stored.previewQuality,
+			quickExport: stored.quickExport,
+			exportFormat: stored.quickExport.format,
 			webcamPreviewMode: stored.webcamPreviewMode,
 			workspaceLayout: DEFAULT_EDITOR_PREFERENCES.workspaceLayout,
 			customAspectWidth: stored.customAspectWidth,
@@ -551,6 +563,33 @@ export default function VideoEditor() {
 	const [gifExportSettings, setGifExportSettings] = useState<GifExportConfig>(
 		initialEditorPreferences.gifExportSettings,
 	);
+	const [quickVideoExport, setQuickVideoExport] = useState<QuickVideoSettings>(
+		initialEditorPreferences.quickExport.video,
+	);
+	const [quickGifExport, setQuickGifExport] = useState<QuickGifSettings>(
+		initialEditorPreferences.quickExport.gif,
+	);
+	const [includeCaptionSidecar, setIncludeCaptionSidecar] = useState(false);
+	const [exportAnnouncements, setExportAnnouncements] = useState<string[]>([]);
+	useEffect(() => {
+		let cancelled = false;
+		void window.electronAPI
+			?.getAnnouncements?.()
+			.then((announcements) => {
+				if (cancelled) return;
+				setExportAnnouncements(
+					announcements
+						.filter((announcement) => announcement.presentation === "export")
+						.map((announcement) =>
+							[announcement.title, announcement.body].filter(Boolean).join(" — ").slice(0, 220),
+						),
+				);
+			})
+			.catch(() => undefined);
+		return () => {
+			cancelled = true;
+		};
+	}, []);
 	const [scenePresetId, setScenePresetId] = useState<ScenePresetId | undefined>(undefined);
 	const [sourceFrameRate, setSourceFrameRate] = useState(60);
 	const [workspaceLayout, setWorkspaceLayout] = useState<EditorWorkspaceLayout>(
@@ -1481,8 +1520,16 @@ export default function VideoEditor() {
 			previewQuality,
 			webcamPreviewMode,
 			presets: customPresets,
+			quickExport: { format: exportFormat, video: quickVideoExport, gif: quickGifExport },
 		});
-	}, [previewQuality, webcamPreviewMode, customPresets]);
+	}, [
+		previewQuality,
+		webcamPreviewMode,
+		customPresets,
+		exportFormat,
+		quickVideoExport,
+		quickGifExport,
+	]);
 
 	useEffect(() => {
 		return () => {
@@ -3182,11 +3229,44 @@ export default function VideoEditor() {
 		[],
 	);
 
+	const handleExportMenuOpenChange = useCallback(
+		(open: boolean) => {
+			if (!open) {
+				// Outside click only hides the menu; a running export or pending save is kept.
+				dispatchSession({ type: "set-export-dialog-open", value: false });
+				return;
+			}
+			if (hasPendingExportSave) {
+				dispatchSession({ type: "set-export-status", status: "canceled" });
+				dispatchSession({
+					type: "set-export-error",
+					error: tDialogs(
+						"export.saveCanceled",
+						"Save canceled. Click Save Again to save without rendering again.",
+					),
+				});
+			} else if (
+				!isExporting &&
+				(exportStatus === "saved" || exportStatus === "failed" || exportStatus === "canceled")
+			) {
+				dispatchSession({ type: "set-export-status", status: "idle" });
+				dispatchSession({ type: "set-export-error", error: null });
+				dispatchSession({ type: "set-exported-file-path", path: undefined });
+			}
+			dispatchSession({ type: "set-export-dialog-open", value: true });
+		},
+		[exportStatus, hasPendingExportSave, isExporting, tDialogs],
+	);
+	const handleShortcutOpenExport = useCallback(() => {
+		if (videoPath) handleExportMenuOpenChange(true);
+	}, [handleExportMenuOpenChange, videoPath]);
+
 	useVideoEditorKeyboardShortcuts({
 		shortcuts,
 		isMac,
 		handleUndo,
 		handleRedo,
+		handleOpenExport: handleShortcutOpenExport,
 		videoPlaybackRef,
 	});
 
@@ -3233,12 +3313,14 @@ export default function VideoEditor() {
 		handleCancelExport,
 		handleExportDialogClose,
 		handleRetrySaveExport,
+		discardPendingSave,
 		openRecordingsFolder,
 	} = useVideoEditorExportActions({
 		exportV2JobIdRef,
 		exporterRef,
 		pendingExportSaveRef,
 		dispatchSession,
+		t: tDialogs,
 	});
 
 	const buildDefaultExportSettings = useDefaultExportSettings({
@@ -3258,16 +3340,17 @@ export default function VideoEditor() {
 			options: {
 				saveMode?: "dialog" | "recordings" | "clipboard";
 				onSaved?: (filePath: string) => Promise<void> | void;
+				captionSidecar?: { srt?: string; vtt?: string };
 			} = {},
 		) => {
 			if (!videoPath) {
-				toast.error("No video loaded");
+				toast.error(tDialogs("export.noVideo", "No video loaded"));
 				return;
 			}
 
 			const video = videoPlaybackRef.current?.video;
 			if (!video) {
-				toast.error("Video not ready");
+				toast.error(tDialogs("export.videoNotReady", "The video isn't ready yet"));
 				return;
 			}
 
@@ -3276,8 +3359,7 @@ export default function VideoEditor() {
 			dispatchSession({ type: "set-export-progress", progress: null });
 			dispatchSession({ type: "set-export-error", error: null });
 			dispatchSession({ type: "set-exported-file-path", path: undefined });
-			pendingExportSaveRef.current = null;
-			dispatchSession({ type: "set-pending-export-save", value: false });
+			discardPendingSave();
 
 			let keepExportDialogOpen = true;
 			const saveMode = options.saveMode ?? "dialog";
@@ -3289,19 +3371,22 @@ export default function VideoEditor() {
 				dispatchSession({ type: "set-export-progress", progress });
 			});
 
-			const setPendingSave = (blob: Blob, fileName: string) => {
-				pendingExportSaveRef.current = { blob, fileName };
+			const captionSidecar = options.captionSidecar;
+			const setPendingSave = (save: { blob?: Blob; tempPath?: string; fileName: string }) => {
+				pendingExportSaveRef.current = { ...save, captionSidecar };
 				dispatchSession({ type: "set-pending-export-save", value: true });
 			};
+			const saveCanceledMessage = tDialogs(
+				"export.saveCanceled",
+				"Save canceled. Click Save Again to save without rendering again.",
+			);
 
 			const saveExportedBlob = async ({
 				blob,
 				fileName,
-				formatName,
 			}: {
 				blob: Blob;
 				fileName: string;
-				formatName: "GIF" | "video";
 			}): Promise<boolean> => {
 				if (saveMode === "clipboard") {
 					dispatchSession({ type: "set-export-status", status: "saving" });
@@ -3311,7 +3396,7 @@ export default function VideoEditor() {
 						fileName,
 					);
 					if (copyResult.success) {
-						toast.success(`${formatName === "GIF" ? "GIF" : "Video"} copied to clipboard.`);
+						toast.success(tDialogs("export.copiedToClipboard", "Copied to clipboard."));
 						dispatchSession({
 							type: "set-exported-file-path",
 							path: copyResult.path ?? "",
@@ -3322,11 +3407,12 @@ export default function VideoEditor() {
 
 					dispatchSession({
 						type: "set-export-error",
-						error: copyResult.error || `Failed to copy ${formatName.toLowerCase()} to clipboard`,
+						error:
+							copyResult.error || tDialogs("export.copyFailed", "Could not copy to the clipboard"),
 					});
 					dispatchSession({ type: "set-export-status", status: "failed" });
 					toast.error(
-						copyResult.error || `Failed to copy ${formatName.toLowerCase()} to clipboard`,
+						copyResult.error || tDialogs("export.copyFailed", "Could not copy to the clipboard"),
 					);
 					return true;
 				}
@@ -3350,8 +3436,9 @@ export default function VideoEditor() {
 						return false;
 					}
 
-					const errorMessage = saveResult.message || `Failed to save ${formatName}`;
-					setPendingSave(blob, fileName);
+					const errorMessage =
+						saveResult.message || tDialogs("export.saveFailed", "Failed to save the export");
+					setPendingSave({ blob, fileName });
 					dispatchSession({ type: "set-export-error", error: errorMessage });
 					dispatchSession({ type: "set-export-status", status: "failed" });
 					toast.error(errorMessage);
@@ -3361,19 +3448,17 @@ export default function VideoEditor() {
 				dispatchSession({ type: "set-export-status", status: "awaiting-save-path" });
 				const savePathResult = await window.electronAPI.showExportSaveDialog(fileName);
 				if ("canceled" in savePathResult && savePathResult.canceled) {
-					setPendingSave(blob, fileName);
-					dispatchSession({
-						type: "set-export-error",
-						error: "Save dialog canceled. Click Save Again to save without re-rendering.",
-					});
+					setPendingSave({ blob, fileName });
+					dispatchSession({ type: "set-export-error", error: saveCanceledMessage });
 					dispatchSession({ type: "set-export-status", status: "canceled" });
-					toast.info("Save canceled. You can save again without re-exporting.");
 					return true;
 				}
 
 				if (!savePathResult.success || !savePathResult.path) {
-					const errorMessage = savePathResult.message || "Failed to open save dialog";
-					setPendingSave(blob, fileName);
+					const errorMessage =
+						savePathResult.message ||
+						tDialogs("export.openSaveDialogFailed", "Couldn't open the save dialog");
+					setPendingSave({ blob, fileName });
 					dispatchSession({ type: "set-export-error", error: errorMessage });
 					dispatchSession({ type: "set-export-status", status: "failed" });
 					toast.error(errorMessage);
@@ -3385,6 +3470,7 @@ export default function VideoEditor() {
 				const writeResult = await window.electronAPI.writeExportedVideoToPath(
 					arrayBuffer,
 					savePathResult.path,
+					captionSidecar,
 				);
 
 				if (writeResult.success && writeResult.path) {
@@ -3398,8 +3484,9 @@ export default function VideoEditor() {
 					return false;
 				}
 
-				const errorMessage = writeResult.message || `Failed to save ${formatName}`;
-				setPendingSave(blob, fileName);
+				const errorMessage =
+					writeResult.message || tDialogs("export.saveFailed", "Failed to save the export");
+				setPendingSave({ blob, fileName });
 				dispatchSession({ type: "set-export-error", error: errorMessage });
 				dispatchSession({ type: "set-export-status", status: "failed" });
 				toast.error(errorMessage);
@@ -3505,7 +3592,7 @@ export default function VideoEditor() {
 						? "recordings"
 						: saveMode === "clipboard"
 							? "clipboard"
-							: "file";
+							: "temp";
 				const compositionPayload = {
 					videoUrl: videoPath,
 					wallpaper,
@@ -3588,11 +3675,9 @@ export default function VideoEditor() {
 				const tryExportV2 = async ({
 					request,
 					onDetails,
-					formatName,
 				}: {
 					request: ExportV2StartRequest;
 					onDetails: (details: ExportDetails) => void;
-					formatName: "GIF" | "video";
 				}): Promise<{ handled: boolean; keepDialogOpen: boolean }> => {
 					const capabilities = await window.electronAPI.exportV2Probe();
 					const canUseGifPipeline =
@@ -3638,14 +3723,14 @@ export default function VideoEditor() {
 						if (result.canceled) {
 							dispatchSession({
 								type: "set-export-error",
-								error: "Save dialog canceled. Reopen export to choose another location.",
+								error: saveCanceledMessage,
 							});
 							dispatchSession({ type: "set-export-status", status: "canceled" });
 							return { handled: true, keepDialogOpen: true };
 						}
 
 						if (!result.success || !result.path || !result.details) {
-							const errorMessage = result.error || `${formatName} export failed`;
+							const errorMessage = result.error || tDialogs("export.failed", "Export failed");
 							dispatchSession({ type: "set-export-error", error: errorMessage });
 							dispatchSession({ type: "set-export-status", status: "failed" });
 							toast.error(errorMessage);
@@ -3653,13 +3738,38 @@ export default function VideoEditor() {
 						}
 
 						onDetails(result.details);
+						if (request.destination === "temp") {
+							// Rendered first; now ask where to save it. A cancel keeps the file for Save Again.
+							dispatchSession({ type: "set-export-status", status: "awaiting-save-path" });
+							const saveResult = await window.electronAPI.finalizeExportedTemp({
+								tempPath: result.path,
+								fileName: request.fileName,
+								captionSidecar,
+							});
+							if (!saveResult.success || !saveResult.path) {
+								setPendingSave({ tempPath: result.path, fileName: request.fileName });
+								dispatchSession({
+									type: "set-export-error",
+									error: saveResult.canceled
+										? saveCanceledMessage
+										: saveResult.message ||
+											tDialogs("export.saveFailed", "Failed to save the export"),
+								});
+								dispatchSession({
+									type: "set-export-status",
+									status: saveResult.canceled ? "canceled" : "failed",
+								});
+								return { handled: true, keepDialogOpen: true };
+							}
+							result.path = saveResult.path;
+						}
 						dispatchSession({
 							type: "set-exported-file-path",
 							path: result.path,
 						});
 						dispatchSession({ type: "set-export-status", status: "saved" });
 						if (result.copiedToClipboard) {
-							toast.success(`${formatName === "GIF" ? "GIF" : "Video"} copied to clipboard.`);
+							toast.success(tDialogs("export.copiedToClipboard", "Copied to clipboard."));
 						} else {
 							showExportSuccessToast(result.path);
 						}
@@ -3717,7 +3827,6 @@ export default function VideoEditor() {
 								details: mergeGifExportDetails(gifPlan, details, details.fileSizeBytes),
 							});
 						},
-						formatName: "GIF",
 					});
 
 					if (exportV2Result.handled) {
@@ -3820,15 +3929,14 @@ export default function VideoEditor() {
 							keepExportDialogOpen = await saveExportedBlob({
 								blob: result.blob,
 								fileName,
-								formatName: "GIF",
 							});
 						} else {
 							dispatchSession({
 								type: "set-export-error",
-								error: result.error || "GIF export failed",
+								error: result.error || tDialogs("export.failed", "Export failed"),
 							});
 							dispatchSession({ type: "set-export-status", status: "failed" });
-							toast.error(result.error || "GIF export failed");
+							toast.error(result.error || tDialogs("export.failed", "Export failed"));
 						}
 					}
 				} else {
@@ -3871,7 +3979,6 @@ export default function VideoEditor() {
 								details: mergeVideoExportDetails(videoPlan, details, details.fileSizeBytes),
 							});
 						},
-						formatName: "video",
 					});
 
 					if (exportV2Result.handled) {
@@ -3975,15 +4082,14 @@ export default function VideoEditor() {
 							keepExportDialogOpen = await saveExportedBlob({
 								blob: result.blob,
 								fileName,
-								formatName: "video",
 							});
 						} else {
 							dispatchSession({
 								type: "set-export-error",
-								error: result.error || "Export failed",
+								error: result.error || tDialogs("export.failed", "Export failed"),
 							});
 							dispatchSession({ type: "set-export-status", status: "failed" });
-							toast.error(result.error || "Export failed");
+							toast.error(result.error || tDialogs("export.failed", "Export failed"));
 						}
 					}
 				}
@@ -3994,7 +4100,11 @@ export default function VideoEditor() {
 				const errorMessage = error instanceof Error ? error.message : "Unknown error";
 				dispatchSession({ type: "set-export-error", error: errorMessage });
 				dispatchSession({ type: "set-export-status", status: "failed" });
-				toast.error(`Export failed: ${errorMessage}`);
+				toast.error(
+					tDialogs("export.failedWithReason", "Export failed: {{reason}}", {
+						reason: errorMessage,
+					}),
+				);
 			} finally {
 				progressThrottler.flush();
 				if (!previewRestored) {
@@ -4014,11 +4124,16 @@ export default function VideoEditor() {
 				}
 				dispatchSession({ type: "set-exporting", value: false });
 				exporterRef.current = null;
-				dispatchSession({ type: "set-export-dialog-open", value: keepExportDialogOpen });
+				// Keep the menu where the user left it on success; reopen it when something needs attention.
+				if (keepExportDialogOpen) {
+					dispatchSession({ type: "set-export-dialog-open", value: true });
+				}
 				dispatchSession({ type: "set-export-progress", progress: null });
 			}
 		},
 		[
+			tDialogs,
+			discardPendingSave,
 			videoPath,
 			videoName,
 			wallpaper,
@@ -4099,27 +4214,68 @@ export default function VideoEditor() {
 		],
 	);
 
+	const buildQuickExportSettings = useCallback((): ExportSettings | null => {
+		const advanced = buildDefaultExportSettings();
+		const video = videoPlaybackRef.current?.video;
+		if (!advanced || !video) {
+			return null;
+		}
+		const sourceWidth = video.videoWidth || 1920;
+		const sourceHeight = video.videoHeight || 1080;
+		const aspectRatioValue = getAspectRatioValue(aspectRatio, sourceWidth / sourceHeight);
+		const base = resolveQuickBaseDimensions(sourceWidth, sourceHeight, aspectRatioValue);
+		const gif = toGifExportSettings(
+			quickGifExport,
+			base.height,
+			getGifExportSettingsForPreset("balanced"),
+		);
+		const gifPlan = resolveGifExportPlan(
+			buildSourceVideoMetadata({
+				width: sourceWidth,
+				height: sourceHeight,
+				frameRate: sourceFrameRate,
+			}),
+			gif,
+			aspectRatioValue,
+			Math.round(duration * 1000),
+		);
+		return {
+			...advanced,
+			video: toVideoExportSettings(quickVideoExport, videoExportSettings),
+			gif: { ...gif, width: gifPlan.width, height: gifPlan.height },
+		};
+	}, [
+		aspectRatio,
+		buildDefaultExportSettings,
+		duration,
+		quickGifExport,
+		quickVideoExport,
+		sourceFrameRate,
+		videoExportSettings,
+	]);
+
 	const handleOpenExportDialog = useCallback(
-		(destination: ExportDestination = "file") => {
+		(destination: ExportDestination = "file", useAdvancedSettings = false) => {
 			if (!videoPath) {
-				toast.error("No video loaded");
+				toast.error(tDialogs("export.noVideo", "No video loaded"));
 				return;
 			}
 
 			if (hasPendingExportSave) {
-				dispatchSession({ type: "set-export-dialog-open", value: true });
-				dispatchSession({ type: "set-export-status", status: "canceled" });
-				dispatchSession({
-					type: "set-export-error",
-					error: "Save dialog canceled. Click Save Again to save without re-rendering.",
-				});
+				handleExportMenuOpenChange(true);
 				return;
 			}
 
-			const settings = buildDefaultExportSettings();
+			const settings = useAdvancedSettings
+				? buildDefaultExportSettings()
+				: buildQuickExportSettings();
 			if (!settings) {
 				return;
 			}
+			const captionSidecar =
+				settings.format === "mp4" && includeCaptionSidecar
+					? buildCaptionSidecar(captionTrack, trimRegions, speedRegions)
+					: undefined;
 
 			dispatchSession({ type: "set-export-dialog-open", value: true });
 			dispatchSession({ type: "set-export-status", status: "exporting" });
@@ -4128,14 +4284,26 @@ export default function VideoEditor() {
 			if (destination === "clipboard") {
 				handleExport(settings, { saveMode: "clipboard" });
 			} else {
-				handleExport(settings);
+				handleExport(settings, { captionSidecar });
 			}
 		},
-		[videoPath, hasPendingExportSave, buildDefaultExportSettings, handleExport],
+		[
+			videoPath,
+			hasPendingExportSave,
+			buildDefaultExportSettings,
+			buildQuickExportSettings,
+			captionTrack,
+			handleExport,
+			handleExportMenuOpenChange,
+			includeCaptionSidecar,
+			speedRegions,
+			tDialogs,
+			trimRegions,
+		],
 	);
 
 	const handleExportToClipboard = useCallback(async () => {
-		const settings = buildDefaultExportSettings();
+		const settings = buildQuickExportSettings();
 		if (!settings) {
 			return;
 		}
@@ -4155,7 +4323,7 @@ export default function VideoEditor() {
 				toast.error(copyResult.message || copyResult.error || "Failed to copy file path.");
 			},
 		});
-	}, [buildDefaultExportSettings, handleExport]);
+	}, [buildQuickExportSettings, handleExport]);
 
 	const {
 		handleQuickShareSave,
@@ -4192,6 +4360,28 @@ export default function VideoEditor() {
 		handleOpenExportDialog,
 		handleExportToClipboard,
 	});
+
+	// Read at render time: the menu re-renders on open, after the video's metadata is known.
+	const quickExportDimensions = (() => {
+		const video = videoPlaybackRef.current?.video;
+		const sourceWidth = video?.videoWidth || 1920;
+		const sourceHeight = video?.videoHeight || 1080;
+		const aspectValue = getAspectRatioValue(aspectRatio, sourceWidth / sourceHeight);
+		const base = resolveQuickBaseDimensions(sourceWidth, sourceHeight, aspectValue);
+		const videoDims = Object.fromEntries(
+			QUICK_VIDEO_QUALITIES.map((quality) => [quality, resolveQuickVideoDimensions(base, quality)]),
+		) as Record<QuickVideoQuality, { width: number; height: number }>;
+		const gifPlan = resolveGifExportPlan(
+			buildSourceVideoMetadata({
+				width: sourceWidth,
+				height: sourceHeight,
+				frameRate: sourceFrameRate,
+			}),
+			toGifExportSettings(quickGifExport, base.height, getGifExportSettingsForPreset("balanced")),
+			aspectValue,
+		);
+		return { video: videoDims, gif: { width: gifPlan.width, height: gifPlan.height } };
+	})();
 
 	if (error) {
 		return (
@@ -4482,21 +4672,54 @@ export default function VideoEditor() {
 
 							<div className="w-[1px] h-5 bg-white/10 mx-1" />
 
-							{/* Export button - amber */}
-							<Tooltip
-								content="Export Video or GIF"
-								shortcut={isMac ? "⌘ + E" : "Ctrl + E"}
-								side="bottom"
-							>
-								<button
-									type="button"
-									onClick={() => dispatchSession({ type: "set-export-settings-open", value: true })}
-									className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-white font-semibold text-xs transition bg-[#f59e0b] hover:bg-[#d97706] cursor-pointer shadow-lg shadow-amber-500/20"
-								>
-									<Download className="h-3.5 w-3.5" />
-									<span>Export</span>
-								</button>
-							</Tooltip>
+							<ExportMenu
+								open={showExportDialog}
+								onOpenChange={handleExportMenuOpenChange}
+								status={exportStatus}
+								progress={exportProgress}
+								error={exportError}
+								exportedFilePath={exportedFilePath}
+								details={exportDetails}
+								hasPendingSave={hasPendingExportSave}
+								format={exportFormat}
+								onFormatChange={setExportFormat}
+								video={quickVideoExport}
+								onVideoChange={(patch) =>
+									setQuickVideoExport((previous) => ({ ...previous, ...patch }))
+								}
+								gif={quickGifExport}
+								onGifChange={(patch) =>
+									setQuickGifExport((previous) => ({ ...previous, ...patch }))
+								}
+								videoDimensions={quickExportDimensions.video}
+								gifDimensions={quickExportDimensions.gif}
+								showCaptionSidecar={Boolean(captionTrack?.segments.length)}
+								includeCaptionSidecar={includeCaptionSidecar}
+								onIncludeCaptionSidecarChange={setIncludeCaptionSidecar}
+								extraMessages={exportAnnouncements}
+								onExport={() => handleOpenExportDialog("file")}
+								onCancel={handleCancelExport}
+								onRetrySave={() => void handleRetrySaveExport()}
+								onDismiss={handleExportDialogClose}
+								onReveal={() => {
+									if (exportedFilePath) void window.electronAPI.revealInFolder(exportedFilePath);
+								}}
+								onOpenAdvanced={() => {
+									dispatchSession({ type: "set-export-dialog-open", value: false });
+									dispatchSession({ type: "set-export-settings-open", value: true });
+								}}
+								trigger={
+									<button
+										type="button"
+										title={`${tSettings("export.buttonTooltip", "Export video or GIF")} (${isMac ? "⌘E" : "Ctrl+E"})`}
+										disabled={!videoPath}
+										className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-white font-semibold text-xs transition bg-[#f59e0b] hover:bg-[#d97706] cursor-pointer shadow-lg shadow-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+									>
+										<Download className="h-3.5 w-3.5" />
+										<span>{tSettings("export.button", "Export")}</span>
+									</button>
+								}
+							/>
 						</div>
 					</div>
 
@@ -5044,22 +5267,7 @@ export default function VideoEditor() {
 							),
 							Math.round(duration * 1000),
 						)}
-						onExport={handleOpenExportDialog}
-					/>
-
-					<ExportDialog
-						isOpen={showExportDialog}
-						onClose={handleExportDialogClose}
-						progress={exportProgress}
-						isExporting={isExporting}
-						exportStatus={exportStatus}
-						error={exportError}
-						onCancel={handleCancelExport}
-						onRetrySave={handleRetrySaveExport}
-						canRetrySave={hasPendingExportSave}
-						exportFormat={exportFormat}
-						details={exportDetails}
-						exportedFilePath={exportedFilePath}
+						onExport={(destination) => handleOpenExportDialog(destination, true)}
 					/>
 
 					<QuickShareDialog

@@ -3,6 +3,12 @@ import path from "node:path";
 import { app, clipboard, dialog, ipcMain, type SaveDialogOptions, shell } from "electron";
 import { IPC_CHANNELS } from "../../src/electron-ipc/contracts";
 import { ensureFileExtension } from "../../src/lib/fileNames";
+import {
+	type CaptionSidecarFiles,
+	isExportTempPath,
+	moveFile,
+	writeCaptionSidecars,
+} from "../exportTemp";
 
 interface ExportFileIpcHandlersContext {
 	getRecordingsDir: () => Promise<string>;
@@ -45,9 +51,10 @@ export function registerExportFileIpcHandlers({
 
 	ipcMain.handle(
 		IPC_CHANNELS.exportFiles.writeVideoToPath,
-		async (_, videoData: ArrayBuffer, filePath: string) => {
+		async (_, videoData: ArrayBuffer, filePath: string, captionSidecar?: CaptionSidecarFiles) => {
 			try {
 				await fs.writeFile(filePath, Buffer.from(videoData));
+				await writeCaptionSidecars(filePath, captionSidecar);
 
 				return {
 					success: true,
@@ -96,6 +103,44 @@ export function registerExportFileIpcHandlers({
 			}
 		},
 	);
+
+	ipcMain.handle(
+		IPC_CHANNELS.exportFiles.finalizeTemp,
+		async (
+			_,
+			payload: { tempPath: unknown; fileName: unknown; captionSidecar?: CaptionSidecarFiles },
+		) => {
+			const tempRoot = app.getPath("temp");
+			if (!isExportTempPath(tempRoot, payload?.tempPath) || typeof payload.fileName !== "string") {
+				return { success: false, message: "Invalid export to save" };
+			}
+			try {
+				await fs.access(payload.tempPath);
+			} catch {
+				return { success: false, message: "The rendered export is no longer available" };
+			}
+			try {
+				const result = await dialog.showSaveDialog(getExportSaveDialogOptions(payload.fileName));
+				if (result.canceled || !result.filePath) {
+					return { success: false, canceled: true, message: "Export canceled" };
+				}
+				await moveFile(payload.tempPath, result.filePath);
+				await writeCaptionSidecars(result.filePath, payload.captionSidecar);
+				return { success: true, path: result.filePath };
+			} catch (error) {
+				console.error("Failed to save rendered export:", error);
+				return { success: false, message: "Failed to save exported file", error: String(error) };
+			}
+		},
+	);
+
+	ipcMain.handle(IPC_CHANNELS.exportFiles.discardTemp, async (_, tempPath: unknown) => {
+		if (!isExportTempPath(app.getPath("temp"), tempPath)) {
+			return { success: false };
+		}
+		await fs.rm(tempPath, { force: true }).catch(() => undefined);
+		return { success: true };
+	});
 
 	ipcMain.handle(
 		IPC_CHANNELS.exportFiles.saveVideoToRecordings,

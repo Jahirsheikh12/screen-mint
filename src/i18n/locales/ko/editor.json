@@ -50,19 +50,6 @@
 		"modern": "모던",
 		"clean": "깔끔"
 	},
-	"format": {
-		"mp4Video": "MP4 동영상",
-		"mp4Description": "고화질 동영상 파일",
-		"gifAnimation": "GIF 애니메이션",
-		"gifDescription": "공유용 움직이는 이미지"
-	},
-	"gifOptions": {
-		"frameRate": "프레임 레이트",
-		"outputSize": "출력 크기",
-		"outputDimensions": "출력: {{width}} × {{height}}px",
-		"loopAnimation": "애니메이션 반복",
-		"loopDescription": "GIF가 계속 반복 재생됩니다"
-	},
 	"tutorial": {
 		"howTrimmingWorks": "자르기 사용법",
 		"title": "자르기 사용법",

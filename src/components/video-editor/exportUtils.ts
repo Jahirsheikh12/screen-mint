@@ -1,7 +1,5 @@
 import type {
 	ExportDetails,
-	ExportFormat,
-	ExportProgress,
 	GifExportConfig,
 	GifQualityLabel,
 	ResolvedGifExportPlan,
@@ -158,24 +156,5 @@ export function mergeVideoExportDetails(
 		nativeComposedFeatures: runtimeDetails?.nativeComposedFeatures,
 		benchmarkThroughputFps: runtimeDetails?.benchmarkThroughputFps,
 		warnings: uniqueStrings([...(plan.warnings ?? []), ...(runtimeDetails?.warnings ?? [])]),
-	};
-}
-
-export function getExportDialogPhaseState({
-	isExporting,
-	exportFormat,
-	progress,
-}: {
-	isExporting: boolean;
-	exportFormat: ExportFormat;
-	progress: ExportProgress | null;
-}) {
-	const isGifCompiling = isExporting && progress?.phase === "finalizing" && exportFormat === "gif";
-	const isVideoFinalizing =
-		isExporting && progress?.phase === "finalizing" && exportFormat !== "gif";
-
-	return {
-		isGifCompiling,
-		isVideoFinalizing,
 	};
 }

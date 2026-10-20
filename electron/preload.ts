@@ -301,8 +301,27 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	showExportSaveDialog: (fileName: string) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.exportFiles.showSaveDialog, fileName);
 	},
-	writeExportedVideoToPath: (videoData: ArrayBuffer, filePath: string) => {
-		return ipcRenderer.invoke(IPC_CHANNELS.exportFiles.writeVideoToPath, videoData, filePath);
+	writeExportedVideoToPath: (
+		videoData: ArrayBuffer,
+		filePath: string,
+		captionSidecar?: { srt?: string; vtt?: string },
+	) => {
+		return ipcRenderer.invoke(
+			IPC_CHANNELS.exportFiles.writeVideoToPath,
+			videoData,
+			filePath,
+			captionSidecar,
+		);
+	},
+	finalizeExportedTemp: (payload: {
+		tempPath: string;
+		fileName: string;
+		captionSidecar?: { srt?: string; vtt?: string };
+	}) => {
+		return ipcRenderer.invoke(IPC_CHANNELS.exportFiles.finalizeTemp, payload);
+	},
+	discardExportedTemp: (tempPath: string) => {
+		return ipcRenderer.invoke(IPC_CHANNELS.exportFiles.discardTemp, tempPath);
 	},
 	saveExportedVideoToRecordings: (videoData: ArrayBuffer, fileName: string) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.exportFiles.saveVideoToRecordings, videoData, fileName);

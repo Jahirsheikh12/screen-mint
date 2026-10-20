@@ -7,6 +7,7 @@ type UseVideoEditorKeyboardShortcutsOptions = {
 	isMac: boolean;
 	handleUndo: () => void;
 	handleRedo: () => void;
+	handleOpenExport: () => void;
 	videoPlaybackRef: RefObject<VideoPlaybackRef | null>;
 };
 
@@ -15,6 +16,7 @@ export function useVideoEditorKeyboardShortcuts({
 	isMac,
 	handleUndo,
 	handleRedo,
+	handleOpenExport,
 	videoPlaybackRef,
 }: UseVideoEditorKeyboardShortcutsOptions) {
 	useEffect(() => {
@@ -37,6 +39,12 @@ export function useVideoEditorKeyboardShortcuts({
 						handleUndo();
 					}
 				}
+				return;
+			}
+
+			if (usesPrimaryModifier && !e.altKey && !e.shiftKey && key === "e") {
+				e.preventDefault();
+				handleOpenExport();
 				return;
 			}
 
@@ -74,5 +82,5 @@ export function useVideoEditorKeyboardShortcuts({
 
 		window.addEventListener("keydown", handleKeyDown, { capture: true });
 		return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
-	}, [shortcuts, isMac, handleUndo, handleRedo, videoPlaybackRef]);
+	}, [shortcuts, isMac, handleUndo, handleRedo, handleOpenExport, videoPlaybackRef]);
 }

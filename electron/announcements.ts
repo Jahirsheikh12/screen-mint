@@ -1,7 +1,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-// Feed lives at the repo root: { "announcements": [{ id, title, body?, url? (https), expiresAt? (ISO) }] }.
+// Feed lives at the repo root:
+// { "announcements": [{ id, title, body?, url? (https), expiresAt? (ISO), presentation? }] }.
+// presentation "export" rotates the entry in the export progress panel instead of a toast.
 // Each id is shown once per install until dismissed, so never reuse an id.
 export const ANNOUNCEMENTS_URL =
 	"https://raw.githubusercontent.com/Jahirsheikh12/screen-mint/main/announcements.json";
@@ -16,6 +18,7 @@ export type Announcement = {
 	title: string;
 	body: string;
 	url?: string;
+	presentation: "toast" | "export";
 };
 
 function isHttpsUrl(value: unknown): value is string {
@@ -44,7 +47,7 @@ export function parseAnnouncementFeed(
 	const seen = new Set<string>();
 	for (const item of items) {
 		if (!item || typeof item !== "object") continue;
-		const { id, title, body, url, expiresAt } = item as Record<string, unknown>;
+		const { id, title, body, url, expiresAt, presentation } = item as Record<string, unknown>;
 		if (typeof id !== "string" || !id.trim() || seen.has(id) || dismissedIds.has(id)) continue;
 		if (typeof title !== "string" || !title.trim()) continue;
 		if (expiresAt !== undefined) {
@@ -57,6 +60,7 @@ export function parseAnnouncementFeed(
 			title: title.trim().slice(0, MAX_TITLE_LENGTH),
 			body: typeof body === "string" ? body.trim().slice(0, MAX_BODY_LENGTH) : "",
 			...(isHttpsUrl(url) ? { url } : {}),
+			presentation: presentation === "export" ? "export" : "toast",
 		});
 	}
 	return result;

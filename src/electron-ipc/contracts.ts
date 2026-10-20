@@ -109,6 +109,8 @@ export const IPC_CHANNELS = {
 		saveVideo: "save-exported-video",
 		writeVideoToPath: "write-exported-video-to-path",
 		saveVideoToRecordings: "save-exported-video-to-recordings",
+		finalizeTemp: "finalize-exported-temp",
+		discardTemp: "discard-exported-temp",
 	},
 	announcements: {
 		get: "announcements:get",

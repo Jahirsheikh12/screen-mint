@@ -50,19 +50,6 @@
 		"modern": "Modern",
 		"clean": "Clean"
 	},
-	"format": {
-		"mp4Video": "MP4 Video",
-		"mp4Description": "High quality video file",
-		"gifAnimation": "GIF Animation",
-		"gifDescription": "Animated image for sharing"
-	},
-	"gifOptions": {
-		"frameRate": "Frame Rate",
-		"outputSize": "Output Size",
-		"outputDimensions": "Output: {{width}} × {{height}}px",
-		"loopAnimation": "Loop Animation",
-		"loopDescription": "GIF will play continuously"
-	},
 	"tutorial": {
 		"howTrimmingWorks": "How trimming works",
 		"title": "How Trimming Works",

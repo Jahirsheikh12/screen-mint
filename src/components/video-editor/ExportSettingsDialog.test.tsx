@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { I18nProvider } from "@/contexts/I18nContext";
 import {
 	getDefaultGifExportSettings,
 	getDefaultVideoExportSettings,
@@ -26,21 +27,23 @@ function renderExportSettingsDialog({
 	format = "mp4" as const,
 }) {
 	return renderToStaticMarkup(
-		<ExportSettingsDialog
-			isOpen
-			onClose={() => undefined}
-			exportFormat={format}
-			onExportFormatChange={() => undefined}
-			exportDestination="file"
-			onExportDestinationChange={() => undefined}
-			videoExportSettings={videoSettings}
-			onVideoExportSettingsChange={() => undefined}
-			gifExportSettings={gifSettings}
-			onGifExportSettingsChange={() => undefined}
-			resolvedVideoPlan={resolveVideoExportPlan(source, videoSettings, 16 / 9)}
-			resolvedGifPlan={resolveGifExportPlan(source, gifSettings, 16 / 9, 10_000)}
-			onExport={() => undefined}
-		/>,
+		<I18nProvider>
+			<ExportSettingsDialog
+				isOpen
+				onClose={() => undefined}
+				exportFormat={format}
+				onExportFormatChange={() => undefined}
+				exportDestination="file"
+				onExportDestinationChange={() => undefined}
+				videoExportSettings={videoSettings}
+				onVideoExportSettingsChange={() => undefined}
+				gifExportSettings={gifSettings}
+				onGifExportSettingsChange={() => undefined}
+				resolvedVideoPlan={resolveVideoExportPlan(source, videoSettings, 16 / 9)}
+				resolvedGifPlan={resolveGifExportPlan(source, gifSettings, 16 / 9, 10_000)}
+				onExport={() => undefined}
+			/>
+		</I18nProvider>,
 	);
 }
 

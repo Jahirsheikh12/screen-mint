@@ -50,19 +50,6 @@
 		"modern": "Modern",
 		"clean": "Strak"
 	},
-	"format": {
-		"mp4Video": "MP4-video",
-		"mp4Description": "Videobestand van hoge kwaliteit",
-		"gifAnimation": "GIF-animatie",
-		"gifDescription": "Bewegende afbeelding om te delen"
-	},
-	"gifOptions": {
-		"frameRate": "Framesnelheid",
-		"outputSize": "Uitvoergrootte",
-		"outputDimensions": "Uitvoer: {{width}} × {{height}}px",
-		"loopAnimation": "Animatie herhalen",
-		"loopDescription": "De GIF speelt doorlopend af"
-	},
 	"tutorial": {
 		"howTrimmingWorks": "Zo werkt knippen",
 		"title": "Zo werkt knippen",

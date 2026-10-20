@@ -11,6 +11,7 @@ describe("parseAnnouncementFeed", () => {
 		const feed = {
 			announcements: [
 				{ id: "a", title: " Hello ", body: "World", url: "https://example.com" },
+				{ id: "x", title: "Export tip", presentation: "export" },
 				{ id: "b", title: "Expired", expiresAt: "2026-01-01T00:00:00Z" },
 				{ id: "c", title: "Dismissed" },
 				{ id: "a", title: "Duplicate" },
@@ -23,9 +24,10 @@ describe("parseAnnouncementFeed", () => {
 			],
 		};
 		expect(parseAnnouncementFeed(feed, new Set(["c"]), NOW)).toEqual([
-			{ id: "a", title: "Hello", body: "World", url: "https://example.com" },
-			{ id: "d", title: "Bad url", body: "" },
-			{ id: "f", title: "Future", body: "" },
+			{ id: "a", title: "Hello", body: "World", url: "https://example.com", presentation: "toast" },
+			{ id: "x", title: "Export tip", body: "", presentation: "export" },
+			{ id: "d", title: "Bad url", body: "", presentation: "toast" },
+			{ id: "f", title: "Future", body: "", presentation: "toast" },
 		]);
 	});
 

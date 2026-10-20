@@ -1,3 +1,4 @@
+import type { QuickVideoSettings } from "./quickExport";
 export interface ExportConfig {
 	width: number;
 	height: number;
@@ -106,6 +107,8 @@ export interface VideoExportSettings {
 	bitsPerPixel?: number;
 	forceFFmpegDecoder?: boolean;
 	optimizeForWeb: boolean;
+	/** Set by the Export menu; overrides resolution, frame rate and bitrate. */
+	quick?: QuickVideoSettings;
 }
 
 export type GifExportMode = "preset" | "custom";
