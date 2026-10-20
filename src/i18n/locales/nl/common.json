@@ -1,0 +1,53 @@
+{
+	"app": {
+		"name": "ScreenMint",
+		"editorTitle": "ScreenMint-editor",
+		"subtitle": "Schermopname en bewerking"
+	},
+	"actions": {
+		"cancel": "Annuleren",
+		"save": "Opslaan",
+		"delete": "Verwijderen",
+		"done": "Klaar"
+	},
+	"updates": {
+		"available": "Versie {{version}} is beschikbaar.",
+		"downloadAction": "Downloaden",
+		"downloadingSoon": "Update gevonden. Het downloaden begint zodra ScreenMint niet bezig is.",
+		"downloading": "Update downloaden… {{progress}}",
+		"downloaded": "Versie {{version}} is klaar om te installeren.",
+		"installAction": "Installatieprogramma openen",
+		"installDeferred": "Het installatieprogramma is beschikbaar zodra opnemen, exporteren of transcriberen klaar is.",
+		"restartAction": "Herstarten",
+		"restartDeferred": "Herstarten wacht tot opnemen, exporteren of transcriberen klaar is.",
+		"manualRequired": "Versie {{version}} kan handmatig worden gedownload.",
+		"openReleases": "Releases openen",
+		"upToDate": "ScreenMint {{version}} is up-to-date.",
+		"error": "Het updateverzoek kon niet worden voltooid.",
+		"popup": {
+			"title": "Update beschikbaar",
+			"downloadingTitle": "ScreenMint bijwerken",
+			"readyTitle": "Klaar om bij te werken",
+			"updateNow": "Nu bijwerken",
+			"updateLater": "Later",
+			"availableBody": "ScreenMint {{version}} staat klaar. Met 'Nu bijwerken' download je de nieuwste versie; daarna kies je zelf wanneer je installeert.",
+			"availableBodyExternal": "ScreenMint {{version}} staat klaar. Met 'Nu bijwerken' download je het installatieprogramma; ScreenMint opent het daarna zodat je de update kunt afronden.",
+			"downloadingBody": "ScreenMint {{version}} wordt gedownload. Laat dit venster open of kies 'Later' en kom terug wanneer je wilt.",
+			"downloadingProgressLabel": "{{progress}} gedownload",
+			"downloadedBodyInApp": "ScreenMint {{version}} staat klaar. Klik op 'Nu bijwerken' om te herstarten en de installatie af te ronden.",
+			"downloadedBodyExternal": "ScreenMint {{version}} staat klaar. Klik op 'Nu bijwerken' om het installatieprogramma te openen. ScreenMint sluit af zodat je de update kunt afronden.",
+			"manualBody": "ScreenMint {{version}} is beschikbaar, maar deze installatie kan zichzelf niet bijwerken. 'Nu bijwerken' opent de downloadpagina.",
+			"busyHint": "Rond opnemen, exporteren of transcriberen af voordat je verdergaat met de update."
+		},
+		"whatsNew": {
+			"title": "Nieuw in {{version}}",
+			"intro": "Dit is er veranderd in deze versie.",
+			"fallback": "ScreenMint is bijgewerkt. Je gebruikt nu de nieuwste versie."
+		}
+	},
+	"errors": {
+		"invalidFileType": "Ongeldig bestandstype",
+		"failedToUploadImage": "Afbeelding uploaden mislukt",
+		"fileReadError": "Er is een fout opgetreden bij het lezen van het bestand."
+	}
+}

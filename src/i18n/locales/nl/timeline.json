@@ -1,0 +1,38 @@
+{
+	"zoom": {
+		"cannotPlace": "Hier kan geen zoom worden geplaatst",
+		"existsOrNoSpace": "Er is hier al een zoom of er is niet genoeg ruimte.",
+		"suggestHandlerUnavailable": "Zoomsuggesties niet beschikbaar",
+		"noTelemetry": "Geen cursorgegevens beschikbaar",
+		"recordFirst": "Maak eerst een opname om suggesties op basis van de cursor te maken.",
+		"noUsableTelemetry": "Geen bruikbare cursorgegevens",
+		"notEnoughMovement": "De opname bevat niet genoeg cursorbeweging.",
+		"noInteractionMoments": "Geen duidelijke interactiemomenten gevonden",
+		"tryRecording": "Probeer een opname met pauzes of klikken rond belangrijke acties.",
+		"noAutoZoomSlots": "Geen ruimte voor automatische zooms",
+		"dwellPointsOverlap": "Gevonden rustpunten overlappen met bestaande zooms.",
+		"addedSuggestions": "{{count}} zoomsuggestie(s) toegevoegd",
+		"label": "Zoom {{index}}",
+		"addZoom": "Zoom toevoegen (Z)",
+		"suggestZooms": "Zooms voorstellen op basis van cursor"
+	},
+	"trim": {
+		"cannotPlace": "Hier kan geen knip worden geplaatst",
+		"existsOrNoSpace": "Er is hier al een knip of er is niet genoeg ruimte.",
+		"label": "Knip {{index}}",
+		"addTrim": "Knip toevoegen (T)"
+	},
+	"speed": {
+		"cannotPlace": "Hier kan geen snelheid worden geplaatst",
+		"existsOrNoSpace": "Er is hier al een snelheidsgebied of er is niet genoeg ruimte.",
+		"label": "Snelheid"
+	},
+	"annotation": {
+		"label": "Annotatie",
+		"image": "Afbeelding",
+		"addAnnotation": "Annotatie toevoegen (A)"
+	},
+	"addSpeed": "Snelheid toevoegen (S)",
+	"resizeLeft": "Links aanpassen",
+	"resizeRight": "Rechts aanpassen"
+}

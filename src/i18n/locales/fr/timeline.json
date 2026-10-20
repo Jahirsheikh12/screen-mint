@@ -1,0 +1,38 @@
+{
+	"zoom": {
+		"cannotPlace": "Impossible de placer un zoom ici",
+		"existsOrNoSpace": "Un zoom existe déjà à cet endroit ou l'espace est insuffisant.",
+		"suggestHandlerUnavailable": "Suggestion de zoom indisponible",
+		"noTelemetry": "Aucune donnée de curseur disponible",
+		"recordFirst": "Enregistrez d'abord une capture pour générer des suggestions basées sur le curseur.",
+		"noUsableTelemetry": "Aucune donnée de curseur exploitable",
+		"notEnoughMovement": "L'enregistrement ne contient pas assez de mouvements du curseur.",
+		"noInteractionMoments": "Aucun moment d'interaction net trouvé",
+		"tryRecording": "Essayez un enregistrement avec des pauses ou des clics autour des actions importantes.",
+		"noAutoZoomSlots": "Aucun emplacement de zoom automatique disponible",
+		"dwellPointsOverlap": "Les points d'arrêt détectés chevauchent des zooms existants.",
+		"addedSuggestions": "{{count}} suggestion(s) de zoom ajoutée(s)",
+		"label": "Zoom {{index}}",
+		"addZoom": "Ajouter un zoom (Z)",
+		"suggestZooms": "Suggérer des zooms depuis le curseur"
+	},
+	"trim": {
+		"cannotPlace": "Impossible de placer une coupe ici",
+		"existsOrNoSpace": "Une coupe existe déjà à cet endroit ou l'espace est insuffisant.",
+		"label": "Coupe {{index}}",
+		"addTrim": "Ajouter une coupe (T)"
+	},
+	"speed": {
+		"cannotPlace": "Impossible de placer une vitesse ici",
+		"existsOrNoSpace": "Une zone de vitesse existe déjà à cet endroit ou l'espace est insuffisant.",
+		"label": "Vitesse"
+	},
+	"annotation": {
+		"label": "Annotation",
+		"image": "Image",
+		"addAnnotation": "Ajouter une annotation (A)"
+	},
+	"addSpeed": "Ajouter une vitesse (S)",
+	"resizeLeft": "Redimensionner à gauche",
+	"resizeRight": "Redimensionner à droite"
+}

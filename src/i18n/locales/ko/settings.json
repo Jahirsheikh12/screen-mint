@@ -1,0 +1,177 @@
+{
+	"zoom": {
+		"level": "확대 수준",
+		"selectRegion": "조정할 확대 구간을 선택하세요",
+		"deleteZoom": "확대 삭제"
+	},
+	"trim": {
+		"deleteRegion": "자르기 구간 삭제"
+	},
+	"speed": {
+		"playbackSpeed": "재생 속도",
+		"selectRegion": "조정할 속도 구간을 선택하세요",
+		"deleteRegion": "속도 구간 삭제"
+	},
+	"audio": {
+		"title": "배경 오디오",
+		"subtitle": "목소리는 또렷하게 유지하고 은은한 음악을 깔아 완성도 있는 데모를 만드세요.",
+		"subtleMix": "은은한 믹스",
+		"upload": "오디오 업로드",
+		"replaceUpload": "파일로 바꾸기",
+		"replaceBuiltIn": "선택 항목 바꾸기",
+		"addAtPlayhead": "재생 헤드에 추가",
+		"builtIn": "기본 제공",
+		"uploaded": "업로드됨",
+		"previewUnavailable": "지금은 미리 듣기를 사용할 수 없습니다.",
+		"library": "기본 라이브러리",
+		"selectedRegion": "선택한 구간",
+		"selectRegion": "조정할 오디오 구간을 선택하세요.",
+		"missingTitle": "오디오 소스 없음",
+		"relink": "오디오 다시 연결",
+		"remove": "제거",
+		"volume": "볼륨",
+		"loop": "오디오 반복",
+		"loopRecommended": "반복 재생 권장",
+		"fadeIn": "페이드 인",
+		"fadeOut": "페이드 아웃",
+		"deleteRegion": "오디오 구간 삭제",
+		"empty": "기본 트랙을 고르거나 파일을 업로드한 뒤 재생 헤드에 추가하세요.",
+		"moods": {
+			"upbeat-tech": "경쾌한 테크",
+			"calm-ambient": "차분한 앰비언트",
+			"crisp-minimal": "깔끔한 미니멀",
+			"warm-corporate": "따뜻한 기업용",
+			"punchy-motion": "힘찬 모션",
+			"studio-focus": "스튜디오 집중"
+		}
+	},
+	"effects": {
+		"title": "동영상 효과",
+		"showCursor": "커서 표시",
+		"loopCursor": "커서 반복",
+		"backgroundBlur": "배경 흐림",
+		"zoomMotionBlur": "확대 모션 블러",
+		"connectZooms": "확대 연결",
+		"cursorSize": "커서 크기",
+		"cursorSmoothing": "커서 부드럽게",
+		"off": "끔",
+		"cursorMotionBlur": "커서 모션 블러",
+		"cursorClickBounce": "클릭 바운스",
+		"cursorSway": "커서 흔들림",
+		"shadow": "그림자",
+		"advancedShadowSettings": "고급 그림자 설정",
+		"advancedShadowDescription": "미리보기와 내보내기에 맞게 프레임 그림자를 조정합니다.",
+		"shadowSize": "크기",
+		"shadowOpacity": "불투명도",
+		"shadowBlur": "흐림",
+		"border": "테두리",
+		"borderDescription": "동영상을 줄이지 않고 바깥 테두리를 추가합니다.",
+		"borderWidth": "테두리 두께",
+		"borderColor": "테두리 색상",
+		"borderOpacity": "테두리 불투명도",
+		"roundness": "모서리 둥글기",
+		"padding": "여백",
+		"removeBackground": "배경 제거"
+	},
+	"previewQuality": {
+		"title": "미리보기 품질",
+		"description": "느린 컴퓨터에서는 미리보기 품질을 낮추면 편집기가 더 빠르게 반응합니다.",
+		"helper": "편집기 재생 반응성만 바뀌며 내보내기에는 영향을 주지 않습니다.",
+		"switchFailed": "미리보기 품질을 바꾸지 못해 이전 설정으로 되돌렸습니다.",
+		"options": {
+			"low": "낮음",
+			"medium": "보통",
+			"high": "높음"
+		}
+	},
+	"crop": {
+		"title": "동영상 자르기",
+		"instruction": "각 가장자리를 끌어 자를 영역을 조정하세요"
+	},
+	"background": {
+		"title": "배경",
+		"image": "이미지",
+		"color": "색상",
+		"gradient": "그라데이션",
+		"uploadCustom": "직접 업로드",
+		"uploadSuccess": "이미지를 업로드했습니다!",
+		"uploadError": "JPG, JPEG, PNG 또는 WEBP 이미지를 업로드하세요.",
+		"uploadErrorDescription": "지원 형식: JPG, JPEG, PNG, WEBP."
+	},
+	"cursor": {
+		"title": "커서",
+		"pack": "커서 팩"
+	},
+	"keyboard": {
+		"title": "키보드",
+		"showShortcuts": "키보드 단축키 표시",
+		"position": "위치",
+		"theme": "테마",
+		"scale": "크기",
+		"opacity": "불투명도",
+		"displayDuration": "표시 시간",
+		"maxVisible": "최대 표시 개수",
+		"positions": {
+			"top-left": "왼쪽 위",
+			"top-center": "가운데 위",
+			"top-right": "오른쪽 위",
+			"bottom-left": "왼쪽 아래",
+			"bottom-center": "가운데 아래",
+			"bottom-right": "오른쪽 아래"
+		},
+		"themes": {
+			"dark": "어둡게",
+			"light": "밝게",
+			"glass": "유리"
+		}
+	},
+	"webcam": {
+		"title": "웹캠",
+		"showWebcam": "웹캠 표시",
+		"recommendedDefaults": "권장 기본값",
+		"resetRecommended": "권장값으로 재설정",
+		"resetLayout": "레이아웃 재설정",
+		"layoutBadge": "레이아웃",
+		"cameraLayout": "카메라 레이아웃",
+		"defaultMode": "기본",
+		"fullscreenMode": "전체 화면",
+		"hiddenMode": "숨김",
+		"showAdvanced": "고급",
+		"hideAdvanced": "기본만",
+		"missingTitle": "웹캠 소스 없음",
+		"missingDescription": "이 프로젝트는 아직 웹캠 녹화를 참조하지만 파일을 더 이상 사용할 수 없습니다. 다시 연결하거나 프로젝트에서 제거하세요.",
+		"relink": "웹캠 다시 연결",
+		"remove": "웹캠 제거",
+		"mirrorCamera": "카메라 좌우 반전",
+		"cameraDuringZoom": "확대 중 카메라",
+		"cameraDuringZoomHint": "화면 확대가 시작되면 웹캠이 부드럽게 작아지고, 확대가 끝나면 다시 부드럽게 커집니다.",
+		"sameSize": "같은 크기",
+		"size": "크기",
+		"shape": "모양",
+		"opacity": "불투명도",
+		"borderWidth": "테두리 두께",
+		"roundness": "모서리 둥글기",
+		"position": "위치 프리셋",
+		"topLeft": "왼쪽 위",
+		"topRight": "오른쪽 위",
+		"bottomLeft": "왼쪽 아래",
+		"bottomRight": "오른쪽 아래"
+	},
+	"export": {
+		"mp4": "MP4",
+		"gif": "GIF",
+		"quality": {
+			"low": "낮음",
+			"medium": "보통",
+			"high": "높음",
+			"original": "원본"
+		},
+		"loop": "반복",
+		"outputDimensions": "출력: {{dimensions}}px",
+		"loadProject": "프로젝트 불러오기",
+		"saveProject": "프로젝트 저장",
+		"exportVideo": "{{format}} 내보내기",
+		"reportBug": "버그 신고",
+		"starOnGithub": "GitHub에서 별 주기"
+	}
+}

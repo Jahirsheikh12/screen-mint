@@ -1,0 +1,177 @@
+{
+	"zoom": {
+		"level": "Zoomstufe",
+		"selectRegion": "Zoombereich zum Anpassen wählen",
+		"deleteZoom": "Zoom löschen"
+	},
+	"trim": {
+		"deleteRegion": "Schnittbereich löschen"
+	},
+	"speed": {
+		"playbackSpeed": "Wiedergabegeschwindigkeit",
+		"selectRegion": "Geschwindigkeitsbereich zum Anpassen wählen",
+		"deleteRegion": "Geschwindigkeitsbereich löschen"
+	},
+	"audio": {
+		"title": "Hintergrundton",
+		"subtitle": "Halten Sie Ihre Stimme klar und legen Sie dezente Musik für gepflegte Demos darunter.",
+		"subtleMix": "Dezente Mischung",
+		"upload": "Audio hochladen",
+		"replaceUpload": "Durch Datei ersetzen",
+		"replaceBuiltIn": "Auswahl ersetzen",
+		"addAtPlayhead": "Am Abspielkopf einfügen",
+		"builtIn": "Integriert",
+		"uploaded": "Hochgeladen",
+		"previewUnavailable": "Vorschau gerade nicht verfügbar.",
+		"library": "Integrierte Bibliothek",
+		"selectedRegion": "Ausgewählter Bereich",
+		"selectRegion": "Audiobereich zum Anpassen wählen.",
+		"missingTitle": "Audioquelle fehlt",
+		"relink": "Audio neu verknüpfen",
+		"remove": "Entfernen",
+		"volume": "Lautstärke",
+		"loop": "Audio wiederholen",
+		"loopRecommended": "Wiederholen empfohlen",
+		"fadeIn": "Einblenden",
+		"fadeOut": "Ausblenden",
+		"deleteRegion": "Audiobereich löschen",
+		"empty": "Wählen Sie einen integrierten Titel oder laden Sie eine eigene Datei hoch und fügen Sie sie am Abspielkopf ein.",
+		"moods": {
+			"upbeat-tech": "Schwungvolle Tech",
+			"calm-ambient": "Ruhiges Ambient",
+			"crisp-minimal": "Klar & minimal",
+			"warm-corporate": "Warmes Corporate",
+			"punchy-motion": "Kraftvolle Motion",
+			"studio-focus": "Studio-Fokus"
+		}
+	},
+	"effects": {
+		"title": "Videoeffekte",
+		"showCursor": "Cursor anzeigen",
+		"loopCursor": "Cursor wiederholen",
+		"backgroundBlur": "Hintergrundunschärfe",
+		"zoomMotionBlur": "Bewegungsunschärfe beim Zoom",
+		"connectZooms": "Zooms verbinden",
+		"cursorSize": "Cursorgröße",
+		"cursorSmoothing": "Cursorglättung",
+		"off": "Aus",
+		"cursorMotionBlur": "Bewegungsunschärfe des Cursors",
+		"cursorClickBounce": "Klick-Federung",
+		"cursorSway": "Cursorneigung",
+		"shadow": "Schatten",
+		"advancedShadowSettings": "Erweiterte Schatteneinstellungen",
+		"advancedShadowDescription": "Passen Sie den Rahmenschatten an Vorschau und Export an.",
+		"shadowSize": "Größe",
+		"shadowOpacity": "Deckkraft",
+		"shadowBlur": "Unschärfe",
+		"border": "Rahmen",
+		"borderDescription": "Fügt einen äußeren Rahmen hinzu, ohne das Video zu verkleinern.",
+		"borderWidth": "Rahmenstärke",
+		"borderColor": "Rahmenfarbe",
+		"borderOpacity": "Rahmendeckkraft",
+		"roundness": "Rundung",
+		"padding": "Abstand",
+		"removeBackground": "Hintergrund entfernen"
+	},
+	"previewQuality": {
+		"title": "Vorschauqualität",
+		"description": "Eine niedrigere Vorschauqualität kann den Editor auf langsameren Rechnern flüssiger machen.",
+		"helper": "Das betrifft nur die Wiedergabe im Editor, nicht den Export.",
+		"switchFailed": "Vorschauqualität konnte nicht geändert werden. Die vorherige Einstellung wurde wiederhergestellt.",
+		"options": {
+			"low": "Niedrig",
+			"medium": "Mittel",
+			"high": "Hoch"
+		}
+	},
+	"crop": {
+		"title": "Video zuschneiden",
+		"instruction": "Ziehen Sie an den Seiten, um den Ausschnitt anzupassen"
+	},
+	"background": {
+		"title": "Hintergrund",
+		"image": "Bild",
+		"color": "Farbe",
+		"gradient": "Verlauf",
+		"uploadCustom": "Eigenes hochladen",
+		"uploadSuccess": "Eigenes Bild hochgeladen!",
+		"uploadError": "Bitte laden Sie ein JPG-, JPEG-, PNG- oder WEBP-Bild hoch.",
+		"uploadErrorDescription": "Unterstützte Formate: JPG, JPEG, PNG, WEBP."
+	},
+	"cursor": {
+		"title": "Cursor",
+		"pack": "Cursorpaket"
+	},
+	"keyboard": {
+		"title": "Tastatur",
+		"showShortcuts": "Tastaturkürzel anzeigen",
+		"position": "Position",
+		"theme": "Design",
+		"scale": "Größe",
+		"opacity": "Deckkraft",
+		"displayDuration": "Anzeigedauer",
+		"maxVisible": "Maximal sichtbar",
+		"positions": {
+			"top-left": "Oben links",
+			"top-center": "Oben Mitte",
+			"top-right": "Oben rechts",
+			"bottom-left": "Unten links",
+			"bottom-center": "Unten Mitte",
+			"bottom-right": "Unten rechts"
+		},
+		"themes": {
+			"dark": "Dunkel",
+			"light": "Hell",
+			"glass": "Glas"
+		}
+	},
+	"webcam": {
+		"title": "Webcam",
+		"showWebcam": "Webcam anzeigen",
+		"recommendedDefaults": "Empfohlene Standardwerte",
+		"resetRecommended": "Auf Empfehlung zurücksetzen",
+		"resetLayout": "Layout zurücksetzen",
+		"layoutBadge": "Layout",
+		"cameraLayout": "Kameralayout",
+		"defaultMode": "Standard",
+		"fullscreenMode": "Vollbild",
+		"hiddenMode": "Ausgeblendet",
+		"showAdvanced": "Erweitert",
+		"hideAdvanced": "Nur Grundlagen",
+		"missingTitle": "Webcam-Quelle fehlt",
+		"missingDescription": "Dieses Projekt verweist noch auf eine Webcam-Aufnahme, aber die Datei ist nicht mehr verfügbar. Verknüpfen Sie sie neu oder entfernen Sie sie aus dem Projekt.",
+		"relink": "Webcam neu verknüpfen",
+		"remove": "Webcam entfernen",
+		"mirrorCamera": "Kamera spiegeln",
+		"cameraDuringZoom": "Kamera beim Zoom",
+		"cameraDuringZoomHint": "Beim Bildschirmzoom wird die Webcam sanft kleiner und danach wieder sanft größer.",
+		"sameSize": "Gleiche Größe",
+		"size": "Größe",
+		"shape": "Form",
+		"opacity": "Deckkraft",
+		"borderWidth": "Rahmenstärke",
+		"roundness": "Rundung",
+		"position": "Positionsvorlagen",
+		"topLeft": "Oben links",
+		"topRight": "Oben rechts",
+		"bottomLeft": "Unten links",
+		"bottomRight": "Unten rechts"
+	},
+	"export": {
+		"mp4": "MP4",
+		"gif": "GIF",
+		"quality": {
+			"low": "Niedrig",
+			"medium": "Mittel",
+			"high": "Hoch",
+			"original": "Original"
+		},
+		"loop": "Wiederholen",
+		"outputDimensions": "Ausgabe: {{dimensions}}px",
+		"loadProject": "Projekt laden",
+		"saveProject": "Projekt speichern",
+		"exportVideo": "{{format}} exportieren",
+		"reportBug": "Fehler melden",
+		"starOnGithub": "Auf GitHub markieren"
+	}
+}

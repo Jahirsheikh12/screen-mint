@@ -1,0 +1,38 @@
+{
+	"zoom": {
+		"cannotPlace": "Não é possível colocar um zoom aqui",
+		"existsOrNoSpace": "Já existe um zoom neste ponto ou não há espaço suficiente.",
+		"suggestHandlerUnavailable": "Sugestões de zoom indisponíveis",
+		"noTelemetry": "Nenhum dado do cursor disponível",
+		"recordFirst": "Grave a tela primeiro para gerar sugestões baseadas no cursor.",
+		"noUsableTelemetry": "Nenhum dado do cursor utilizável",
+		"notEnoughMovement": "A gravação não tem movimento suficiente do cursor.",
+		"noInteractionMoments": "Nenhum momento de interação claro encontrado",
+		"tryRecording": "Tente gravar com pausas ou cliques perto das ações importantes.",
+		"noAutoZoomSlots": "Sem espaço para zooms automáticos",
+		"dwellPointsOverlap": "Os pontos de parada detectados se sobrepõem a zooms existentes.",
+		"addedSuggestions": "{{count}} sugestão(ões) de zoom adicionada(s)",
+		"label": "Zoom {{index}}",
+		"addZoom": "Adicionar zoom (Z)",
+		"suggestZooms": "Sugerir zooms pelo cursor"
+	},
+	"trim": {
+		"cannotPlace": "Não é possível colocar um corte aqui",
+		"existsOrNoSpace": "Já existe um corte neste ponto ou não há espaço suficiente.",
+		"label": "Corte {{index}}",
+		"addTrim": "Adicionar corte (T)"
+	},
+	"speed": {
+		"cannotPlace": "Não é possível colocar uma velocidade aqui",
+		"existsOrNoSpace": "Já existe uma região de velocidade neste ponto ou não há espaço suficiente.",
+		"label": "Velocidade"
+	},
+	"annotation": {
+		"label": "Anotação",
+		"image": "Imagem",
+		"addAnnotation": "Adicionar anotação (A)"
+	},
+	"addSpeed": "Adicionar velocidade (S)",
+	"resizeLeft": "Redimensionar à esquerda",
+	"resizeRight": "Redimensionar à direita"
+}

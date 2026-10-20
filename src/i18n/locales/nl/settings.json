@@ -1,0 +1,177 @@
+{
+	"zoom": {
+		"level": "Zoomniveau",
+		"selectRegion": "Selecteer een zoomgebied om aan te passen",
+		"deleteZoom": "Zoom verwijderen"
+	},
+	"trim": {
+		"deleteRegion": "Knipgebied verwijderen"
+	},
+	"speed": {
+		"playbackSpeed": "Afspeelsnelheid",
+		"selectRegion": "Selecteer een snelheidsgebied om aan te passen",
+		"deleteRegion": "Snelheidsgebied verwijderen"
+	},
+	"audio": {
+		"title": "Achtergrondgeluid",
+		"subtitle": "Houd je stem helder en voeg subtiele muziek toe voor verzorgde demo's.",
+		"subtleMix": "Subtiele mix",
+		"upload": "Geluid uploaden",
+		"replaceUpload": "Vervangen door bestand",
+		"replaceBuiltIn": "Selectie vervangen",
+		"addAtPlayhead": "Toevoegen bij afspeelkop",
+		"builtIn": "Ingebouwd",
+		"uploaded": "Geüpload",
+		"previewUnavailable": "Voorbeeld nu niet beschikbaar.",
+		"library": "Ingebouwde bibliotheek",
+		"selectedRegion": "Geselecteerd gebied",
+		"selectRegion": "Selecteer een geluidsgebied om aan te passen.",
+		"missingTitle": "Geluidsbron ontbreekt",
+		"relink": "Geluid opnieuw koppelen",
+		"remove": "Verwijderen",
+		"volume": "Volume",
+		"loop": "Geluid herhalen",
+		"loopRecommended": "Herhalen werkt het best",
+		"fadeIn": "Infaden",
+		"fadeOut": "Uitfaden",
+		"deleteRegion": "Geluidsgebied verwijderen",
+		"empty": "Kies een ingebouwd nummer of upload je eigen bestand en voeg het toe bij de afspeelkop.",
+		"moods": {
+			"upbeat-tech": "Vrolijke tech",
+			"calm-ambient": "Rustige ambient",
+			"crisp-minimal": "Strak minimaal",
+			"warm-corporate": "Warme zakelijk",
+			"punchy-motion": "Pittige motion",
+			"studio-focus": "Studiofocus"
+		}
+	},
+	"effects": {
+		"title": "Video-effecten",
+		"showCursor": "Cursor tonen",
+		"loopCursor": "Cursor herhalen",
+		"backgroundBlur": "Achtergrondvervaging",
+		"zoomMotionBlur": "Bewegingsonscherpte bij zoom",
+		"connectZooms": "Zooms verbinden",
+		"cursorSize": "Cursorgrootte",
+		"cursorSmoothing": "Cursorafvlakking",
+		"off": "Uit",
+		"cursorMotionBlur": "Bewegingsonscherpte van cursor",
+		"cursorClickBounce": "Klikvering",
+		"cursorSway": "Cursorzwaai",
+		"shadow": "Schaduw",
+		"advancedShadowSettings": "Geavanceerde schaduwinstellingen",
+		"advancedShadowDescription": "Stem de kaderschaduw af op het voorbeeld en de exports.",
+		"shadowSize": "Grootte",
+		"shadowOpacity": "Dekking",
+		"shadowBlur": "Vervaging",
+		"border": "Rand",
+		"borderDescription": "Voegt een buitenrand toe zonder de video te verkleinen.",
+		"borderWidth": "Randdikte",
+		"borderColor": "Randkleur",
+		"borderOpacity": "Randdekking",
+		"roundness": "Afronding",
+		"padding": "Marge",
+		"removeBackground": "Achtergrond verwijderen"
+	},
+	"previewQuality": {
+		"title": "Voorbeeldkwaliteit",
+		"description": "Een lagere voorbeeldkwaliteit kan de editor sneller maken op tragere computers.",
+		"helper": "Dit verandert alleen hoe soepel de editor afspeelt, niet de exports.",
+		"switchFailed": "Voorbeeldkwaliteit wijzigen mislukt. De vorige instelling is hersteld.",
+		"options": {
+			"low": "Laag",
+			"medium": "Gemiddeld",
+			"high": "Hoog"
+		}
+	},
+	"crop": {
+		"title": "Video bijsnijden",
+		"instruction": "Sleep aan elke kant om het uitsnijgebied aan te passen"
+	},
+	"background": {
+		"title": "Achtergrond",
+		"image": "Afbeelding",
+		"color": "Kleur",
+		"gradient": "Verloop",
+		"uploadCustom": "Eigen uploaden",
+		"uploadSuccess": "Eigen afbeelding geüpload!",
+		"uploadError": "Upload een JPG-, JPEG-, PNG- of WEBP-afbeelding.",
+		"uploadErrorDescription": "Ondersteunde formaten: JPG, JPEG, PNG, WEBP."
+	},
+	"cursor": {
+		"title": "Cursor",
+		"pack": "Cursorpakket"
+	},
+	"keyboard": {
+		"title": "Toetsenbord",
+		"showShortcuts": "Sneltoetsen tonen",
+		"position": "Positie",
+		"theme": "Thema",
+		"scale": "Schaal",
+		"opacity": "Dekking",
+		"displayDuration": "Weergaveduur",
+		"maxVisible": "Maximaal zichtbaar",
+		"positions": {
+			"top-left": "Linksboven",
+			"top-center": "Midden boven",
+			"top-right": "Rechtsboven",
+			"bottom-left": "Linksonder",
+			"bottom-center": "Midden onder",
+			"bottom-right": "Rechtsonder"
+		},
+		"themes": {
+			"dark": "Donker",
+			"light": "Licht",
+			"glass": "Glas"
+		}
+	},
+	"webcam": {
+		"title": "Webcam",
+		"showWebcam": "Webcam tonen",
+		"recommendedDefaults": "Aanbevolen standaardwaarden",
+		"resetRecommended": "Aanbevolen herstellen",
+		"resetLayout": "Indeling herstellen",
+		"layoutBadge": "Indeling",
+		"cameraLayout": "Camera-indeling",
+		"defaultMode": "Standaard",
+		"fullscreenMode": "Volledig scherm",
+		"hiddenMode": "Verborgen",
+		"showAdvanced": "Geavanceerd",
+		"hideAdvanced": "Alleen basis",
+		"missingTitle": "Webcambron ontbreekt",
+		"missingDescription": "Dit project verwijst nog naar een webcamopname, maar het bestand is niet meer beschikbaar. Koppel het opnieuw of verwijder het uit het project.",
+		"relink": "Webcam opnieuw koppelen",
+		"remove": "Webcam verwijderen",
+		"mirrorCamera": "Camera spiegelen",
+		"cameraDuringZoom": "Camera tijdens zoom",
+		"cameraDuringZoomHint": "Bij een schermzoom krimpt de webcam soepel; na de zoom wordt hij weer soepel groter.",
+		"sameSize": "Zelfde grootte",
+		"size": "Grootte",
+		"shape": "Vorm",
+		"opacity": "Dekking",
+		"borderWidth": "Randdikte",
+		"roundness": "Afronding",
+		"position": "Positievoorinstellingen",
+		"topLeft": "Linksboven",
+		"topRight": "Rechtsboven",
+		"bottomLeft": "Linksonder",
+		"bottomRight": "Rechtsonder"
+	},
+	"export": {
+		"mp4": "MP4",
+		"gif": "GIF",
+		"quality": {
+			"low": "Laag",
+			"medium": "Gemiddeld",
+			"high": "Hoog",
+			"original": "Origineel"
+		},
+		"loop": "Herhalen",
+		"outputDimensions": "Uitvoer: {{dimensions}}px",
+		"loadProject": "Project laden",
+		"saveProject": "Project opslaan",
+		"exportVideo": "{{format}} exporteren",
+		"reportBug": "Bug melden",
+		"starOnGithub": "Ster geven op GitHub"
+	}
+}

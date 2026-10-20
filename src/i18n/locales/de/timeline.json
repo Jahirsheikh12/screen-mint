@@ -1,0 +1,38 @@
+{
+	"zoom": {
+		"cannotPlace": "Zoom kann hier nicht platziert werden",
+		"existsOrNoSpace": "An dieser Stelle gibt es bereits einen Zoom oder es ist nicht genug Platz.",
+		"suggestHandlerUnavailable": "Zoom-Vorschläge nicht verfügbar",
+		"noTelemetry": "Keine Cursordaten verfügbar",
+		"recordFirst": "Nehmen Sie zuerst etwas auf, um Vorschläge anhand des Cursors zu erzeugen.",
+		"noUsableTelemetry": "Keine verwertbaren Cursordaten",
+		"notEnoughMovement": "Die Aufnahme enthält nicht genug Cursorbewegung.",
+		"noInteractionMoments": "Keine eindeutigen Interaktionsmomente gefunden",
+		"tryRecording": "Versuchen Sie eine Aufnahme mit Pausen oder Klicks bei wichtigen Aktionen.",
+		"noAutoZoomSlots": "Keine Plätze für automatische Zooms frei",
+		"dwellPointsOverlap": "Erkannte Verweilpunkte überschneiden sich mit vorhandenen Zooms.",
+		"addedSuggestions": "{{count}} Zoom-Vorschläge hinzugefügt",
+		"label": "Zoom {{index}}",
+		"addZoom": "Zoom hinzufügen (Z)",
+		"suggestZooms": "Zooms anhand des Cursors vorschlagen"
+	},
+	"trim": {
+		"cannotPlace": "Schnitt kann hier nicht platziert werden",
+		"existsOrNoSpace": "An dieser Stelle gibt es bereits einen Schnitt oder es ist nicht genug Platz.",
+		"label": "Schnitt {{index}}",
+		"addTrim": "Schnitt hinzufügen (T)"
+	},
+	"speed": {
+		"cannotPlace": "Geschwindigkeit kann hier nicht platziert werden",
+		"existsOrNoSpace": "An dieser Stelle gibt es bereits einen Geschwindigkeitsbereich oder es ist nicht genug Platz.",
+		"label": "Geschwindigkeit"
+	},
+	"annotation": {
+		"label": "Anmerkung",
+		"image": "Bild",
+		"addAnnotation": "Anmerkung hinzufügen (A)"
+	},
+	"addSpeed": "Geschwindigkeit hinzufügen (S)",
+	"resizeLeft": "Links ändern",
+	"resizeRight": "Rechts ändern"
+}

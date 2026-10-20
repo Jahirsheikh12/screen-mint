@@ -1,0 +1,177 @@
+{
+	"zoom": {
+		"level": "Niveau de zoom",
+		"selectRegion": "Sélectionnez un zoom à ajuster",
+		"deleteZoom": "Supprimer le zoom"
+	},
+	"trim": {
+		"deleteRegion": "Supprimer la coupe"
+	},
+	"speed": {
+		"playbackSpeed": "Vitesse de lecture",
+		"selectRegion": "Sélectionnez une zone de vitesse à ajuster",
+		"deleteRegion": "Supprimer la zone de vitesse"
+	},
+	"audio": {
+		"title": "Audio de fond",
+		"subtitle": "Gardez votre voix claire et ajoutez une musique discrète pour des démos soignées.",
+		"subtleMix": "Mix discret",
+		"upload": "Importer un audio",
+		"replaceUpload": "Remplacer par un fichier",
+		"replaceBuiltIn": "Remplacer la sélection",
+		"addAtPlayhead": "Ajouter à la tête de lecture",
+		"builtIn": "Intégré",
+		"uploaded": "Importé",
+		"previewUnavailable": "Aperçu indisponible pour le moment.",
+		"library": "Bibliothèque intégrée",
+		"selectedRegion": "Zone sélectionnée",
+		"selectRegion": "Sélectionnez une zone audio pour l'ajuster.",
+		"missingTitle": "Source audio introuvable",
+		"relink": "Relier l'audio",
+		"remove": "Retirer",
+		"volume": "Volume",
+		"loop": "Lire en boucle",
+		"loopRecommended": "La boucle fonctionne mieux",
+		"fadeIn": "Fondu d'entrée",
+		"fadeOut": "Fondu de sortie",
+		"deleteRegion": "Supprimer la zone audio",
+		"empty": "Choisissez une piste intégrée ou importez votre fichier, puis ajoutez-la à la tête de lecture.",
+		"moods": {
+			"upbeat-tech": "Tech entraînant",
+			"calm-ambient": "Ambiance calme",
+			"crisp-minimal": "Minimal net",
+			"warm-corporate": "Corporate chaleureux",
+			"punchy-motion": "Motion percutant",
+			"studio-focus": "Studio concentré"
+		}
+	},
+	"effects": {
+		"title": "Effets vidéo",
+		"showCursor": "Afficher le curseur",
+		"loopCursor": "Curseur en boucle",
+		"backgroundBlur": "Flou de l'arrière-plan",
+		"zoomMotionBlur": "Flou de mouvement du zoom",
+		"connectZooms": "Relier les zooms",
+		"cursorSize": "Taille du curseur",
+		"cursorSmoothing": "Lissage du curseur",
+		"off": "Désactivé",
+		"cursorMotionBlur": "Flou de mouvement du curseur",
+		"cursorClickBounce": "Rebond au clic",
+		"cursorSway": "Balancement du curseur",
+		"shadow": "Ombre",
+		"advancedShadowSettings": "Réglages avancés de l'ombre",
+		"advancedShadowDescription": "Ajustez l'ombre du cadre pour qu'elle corresponde à l'aperçu et aux exports.",
+		"shadowSize": "Taille",
+		"shadowOpacity": "Opacité",
+		"shadowBlur": "Flou",
+		"border": "Bordure",
+		"borderDescription": "Ajoute une bordure extérieure sans réduire la vidéo.",
+		"borderWidth": "Épaisseur de la bordure",
+		"borderColor": "Couleur de la bordure",
+		"borderOpacity": "Opacité de la bordure",
+		"roundness": "Arrondi",
+		"padding": "Marge",
+		"removeBackground": "Supprimer l'arrière-plan"
+	},
+	"previewQuality": {
+		"title": "Qualité de l'aperçu",
+		"description": "Une qualité d'aperçu plus faible peut rendre l'éditeur plus réactif sur les ordinateurs lents.",
+		"helper": "Cela ne change que la fluidité de lecture dans l'éditeur, pas les exports.",
+		"switchFailed": "Impossible de changer la qualité de l'aperçu. Le réglage précédent a été rétabli.",
+		"options": {
+			"low": "Basse",
+			"medium": "Moyenne",
+			"high": "Haute"
+		}
+	},
+	"crop": {
+		"title": "Recadrer la vidéo",
+		"instruction": "Faites glisser chaque côté pour ajuster le recadrage"
+	},
+	"background": {
+		"title": "Arrière-plan",
+		"image": "Image",
+		"color": "Couleur",
+		"gradient": "Dégradé",
+		"uploadCustom": "Importer",
+		"uploadSuccess": "Image importée !",
+		"uploadError": "Importez une image JPG, JPEG, PNG ou WEBP.",
+		"uploadErrorDescription": "Formats acceptés : JPG, JPEG, PNG, WEBP."
+	},
+	"cursor": {
+		"title": "Curseur",
+		"pack": "Jeu de curseurs"
+	},
+	"keyboard": {
+		"title": "Clavier",
+		"showShortcuts": "Afficher les raccourcis clavier",
+		"position": "Position",
+		"theme": "Thème",
+		"scale": "Échelle",
+		"opacity": "Opacité",
+		"displayDuration": "Durée d'affichage",
+		"maxVisible": "Maximum visible",
+		"positions": {
+			"top-left": "En haut à gauche",
+			"top-center": "En haut au centre",
+			"top-right": "En haut à droite",
+			"bottom-left": "En bas à gauche",
+			"bottom-center": "En bas au centre",
+			"bottom-right": "En bas à droite"
+		},
+		"themes": {
+			"dark": "Sombre",
+			"light": "Clair",
+			"glass": "Verre"
+		}
+	},
+	"webcam": {
+		"title": "Webcam",
+		"showWebcam": "Afficher la webcam",
+		"recommendedDefaults": "Réglages recommandés",
+		"resetRecommended": "Rétablir les réglages recommandés",
+		"resetLayout": "Réinitialiser la disposition",
+		"layoutBadge": "Disposition",
+		"cameraLayout": "Disposition de la caméra",
+		"defaultMode": "Par défaut",
+		"fullscreenMode": "Plein écran",
+		"hiddenMode": "Masquée",
+		"showAdvanced": "Avancé",
+		"hideAdvanced": "Basique",
+		"missingTitle": "Source webcam introuvable",
+		"missingDescription": "Ce projet fait toujours référence à un enregistrement webcam, mais le fichier n'est plus disponible. Reliez-le ou retirez-le du projet.",
+		"relink": "Relier la webcam",
+		"remove": "Retirer la webcam",
+		"mirrorCamera": "Inverser la caméra",
+		"cameraDuringZoom": "Caméra pendant le zoom",
+		"cameraDuringZoomHint": "Quand le zoom s'active, la webcam se réduit en douceur ; quand il se termine, elle reprend sa taille.",
+		"sameSize": "Même taille",
+		"size": "Taille",
+		"shape": "Forme",
+		"opacity": "Opacité",
+		"borderWidth": "Épaisseur de la bordure",
+		"roundness": "Arrondi",
+		"position": "Positions prédéfinies",
+		"topLeft": "En haut à gauche",
+		"topRight": "En haut à droite",
+		"bottomLeft": "En bas à gauche",
+		"bottomRight": "En bas à droite"
+	},
+	"export": {
+		"mp4": "MP4",
+		"gif": "GIF",
+		"quality": {
+			"low": "Basse",
+			"medium": "Moyenne",
+			"high": "Haute",
+			"original": "Originale"
+		},
+		"loop": "Boucle",
+		"outputDimensions": "Sortie : {{dimensions}}px",
+		"loadProject": "Ouvrir un projet",
+		"saveProject": "Enregistrer le projet",
+		"exportVideo": "Exporter en {{format}}",
+		"reportBug": "Signaler un bug",
+		"starOnGithub": "Étoile sur GitHub"
+	}
+}

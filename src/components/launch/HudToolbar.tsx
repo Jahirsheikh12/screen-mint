@@ -21,7 +21,7 @@ import { useI18n, useScopedT } from "@/contexts/I18nContext";
 import type { MobileCapturePairingState } from "@/electron-ipc/contracts";
 import type { CameraDeviceOption, HudMode, HudSettings } from "@/hooks/useHudState";
 import type { AppLocale } from "@/i18n/config";
-import { SUPPORTED_LOCALES } from "@/i18n/config";
+import { LOCALE_LABELS, SUPPORTED_LOCALES } from "@/i18n/config";
 import { AudioLevelMeter } from "../ui/audio-level-meter";
 import {
 	DropdownMenu,
@@ -113,8 +113,6 @@ const MODE_ICONS: Record<HudMode, React.ComponentType<{ size?: number; className
 const DROPDOWN_CLASSES =
 	"border-white/10 bg-[#1c1c1e] text-white/90 shadow-none data-[state=open]:!animate-none data-[state=closed]:!animate-none";
 const DEFAULT_CAMERA_VALUE = "__default_camera__";
-
-const LOCALE_LABELS: Record<string, string> = { en: "EN", es: "ES", "zh-CN": "\u4E2D\u6587" };
 
 const ND = styles.electronNoDrag;
 

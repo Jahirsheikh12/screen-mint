@@ -1,0 +1,16 @@
+{
+	"actions": {
+		"addZoom": "Zoom toevoegen",
+		"addTrim": "Knip toevoegen",
+		"addSpeed": "Snelheid toevoegen",
+		"addAnnotation": "Annotatie toevoegen",
+		"addKeyframe": "Keyframe toevoegen",
+		"deleteSelected": "Selectie verwijderen",
+		"playPause": "Afspelen / Pauzeren",
+		"cycleForward": "Volgende annotatie",
+		"cycleBackward": "Vorige annotatie",
+		"deleteSelectedAlt": "Selectie verwijderen (alt)",
+		"panTimeline": "Tijdlijn verschuiven",
+		"zoomTimeline": "Tijdlijn zoomen"
+	}
+}

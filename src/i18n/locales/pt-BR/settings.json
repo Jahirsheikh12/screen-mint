@@ -1,0 +1,177 @@
+{
+	"zoom": {
+		"level": "Nível de zoom",
+		"selectRegion": "Selecione um zoom para ajustar",
+		"deleteZoom": "Excluir zoom"
+	},
+	"trim": {
+		"deleteRegion": "Excluir corte"
+	},
+	"speed": {
+		"playbackSpeed": "Velocidade de reprodução",
+		"selectRegion": "Selecione uma região de velocidade para ajustar",
+		"deleteRegion": "Excluir região de velocidade"
+	},
+	"audio": {
+		"title": "Áudio de fundo",
+		"subtitle": "Mantenha sua voz clara e adicione uma trilha discreta para demos caprichadas.",
+		"subtleMix": "Mix discreto",
+		"upload": "Enviar áudio",
+		"replaceUpload": "Substituir por arquivo",
+		"replaceBuiltIn": "Substituir seleção",
+		"addAtPlayhead": "Adicionar no cursor",
+		"builtIn": "Integrado",
+		"uploaded": "Enviado",
+		"previewUnavailable": "Prévia indisponível no momento.",
+		"library": "Biblioteca integrada",
+		"selectedRegion": "Região selecionada",
+		"selectRegion": "Selecione uma região de áudio para ajustar.",
+		"missingTitle": "Fonte de áudio ausente",
+		"relink": "Vincular áudio novamente",
+		"remove": "Remover",
+		"volume": "Volume",
+		"loop": "Repetir áudio",
+		"loopRecommended": "Fica melhor em loop",
+		"fadeIn": "Entrada gradual",
+		"fadeOut": "Saída gradual",
+		"deleteRegion": "Excluir região de áudio",
+		"empty": "Escolha uma faixa integrada ou envie seu arquivo e adicione no cursor de reprodução.",
+		"moods": {
+			"upbeat-tech": "Tech animado",
+			"calm-ambient": "Ambiente calmo",
+			"crisp-minimal": "Minimalista limpo",
+			"warm-corporate": "Corporativo acolhedor",
+			"punchy-motion": "Motion vibrante",
+			"studio-focus": "Foco de estúdio"
+		}
+	},
+	"effects": {
+		"title": "Efeitos de vídeo",
+		"showCursor": "Mostrar cursor",
+		"loopCursor": "Repetir cursor",
+		"backgroundBlur": "Desfoque do fundo",
+		"zoomMotionBlur": "Desfoque de movimento do zoom",
+		"connectZooms": "Conectar zooms",
+		"cursorSize": "Tamanho do cursor",
+		"cursorSmoothing": "Suavização do cursor",
+		"off": "Desligado",
+		"cursorMotionBlur": "Desfoque de movimento do cursor",
+		"cursorClickBounce": "Pulo ao clicar",
+		"cursorSway": "Balanço do cursor",
+		"shadow": "Sombra",
+		"advancedShadowSettings": "Configurações avançadas de sombra",
+		"advancedShadowDescription": "Ajuste a sombra do quadro para combinar com a prévia e as exportações.",
+		"shadowSize": "Tamanho",
+		"shadowOpacity": "Opacidade",
+		"shadowBlur": "Desfoque",
+		"border": "Borda",
+		"borderDescription": "Adiciona uma borda externa sem diminuir o vídeo.",
+		"borderWidth": "Espessura da borda",
+		"borderColor": "Cor da borda",
+		"borderOpacity": "Opacidade da borda",
+		"roundness": "Arredondamento",
+		"padding": "Margem",
+		"removeBackground": "Remover fundo"
+	},
+	"previewQuality": {
+		"title": "Qualidade da prévia",
+		"description": "Uma prévia em qualidade menor pode deixar o editor mais ágil em computadores lentos.",
+		"helper": "Isso só muda a fluidez da reprodução no editor, não as exportações.",
+		"switchFailed": "Não foi possível mudar a qualidade da prévia. A configuração anterior foi restaurada.",
+		"options": {
+			"low": "Baixa",
+			"medium": "Média",
+			"high": "Alta"
+		}
+	},
+	"crop": {
+		"title": "Recortar vídeo",
+		"instruction": "Arraste cada lado para ajustar a área de recorte"
+	},
+	"background": {
+		"title": "Fundo",
+		"image": "Imagem",
+		"color": "Cor",
+		"gradient": "Gradiente",
+		"uploadCustom": "Enviar imagem",
+		"uploadSuccess": "Imagem enviada!",
+		"uploadError": "Envie uma imagem JPG, JPEG, PNG ou WEBP.",
+		"uploadErrorDescription": "Formatos aceitos: JPG, JPEG, PNG, WEBP."
+	},
+	"cursor": {
+		"title": "Cursor",
+		"pack": "Pacote de cursores"
+	},
+	"keyboard": {
+		"title": "Teclado",
+		"showShortcuts": "Mostrar atalhos de teclado",
+		"position": "Posição",
+		"theme": "Tema",
+		"scale": "Escala",
+		"opacity": "Opacidade",
+		"displayDuration": "Duração na tela",
+		"maxVisible": "Máximo visível",
+		"positions": {
+			"top-left": "Superior esquerdo",
+			"top-center": "Superior central",
+			"top-right": "Superior direito",
+			"bottom-left": "Inferior esquerdo",
+			"bottom-center": "Inferior central",
+			"bottom-right": "Inferior direito"
+		},
+		"themes": {
+			"dark": "Escuro",
+			"light": "Claro",
+			"glass": "Vidro"
+		}
+	},
+	"webcam": {
+		"title": "Webcam",
+		"showWebcam": "Mostrar webcam",
+		"recommendedDefaults": "Padrões recomendados",
+		"resetRecommended": "Restaurar recomendados",
+		"resetLayout": "Redefinir layout",
+		"layoutBadge": "Layout",
+		"cameraLayout": "Layout da câmera",
+		"defaultMode": "Padrão",
+		"fullscreenMode": "Tela cheia",
+		"hiddenMode": "Oculta",
+		"showAdvanced": "Avançado",
+		"hideAdvanced": "Só o básico",
+		"missingTitle": "Fonte da webcam ausente",
+		"missingDescription": "Este projeto ainda faz referência a uma gravação de webcam, mas o arquivo não está mais disponível. Vincule novamente ou remova do projeto.",
+		"relink": "Vincular webcam novamente",
+		"remove": "Remover webcam",
+		"mirrorCamera": "Espelhar câmera",
+		"cameraDuringZoom": "Câmera durante o zoom",
+		"cameraDuringZoomHint": "Quando o zoom de tela começa, a webcam encolhe suavemente; quando termina, volta ao tamanho normal.",
+		"sameSize": "Mesmo tamanho",
+		"size": "Tamanho",
+		"shape": "Forma",
+		"opacity": "Opacidade",
+		"borderWidth": "Espessura da borda",
+		"roundness": "Arredondamento",
+		"position": "Posições predefinidas",
+		"topLeft": "Superior esquerdo",
+		"topRight": "Superior direito",
+		"bottomLeft": "Inferior esquerdo",
+		"bottomRight": "Inferior direito"
+	},
+	"export": {
+		"mp4": "MP4",
+		"gif": "GIF",
+		"quality": {
+			"low": "Baixa",
+			"medium": "Média",
+			"high": "Alta",
+			"original": "Original"
+		},
+		"loop": "Repetir",
+		"outputDimensions": "Saída: {{dimensions}}px",
+		"loadProject": "Abrir projeto",
+		"saveProject": "Salvar projeto",
+		"exportVideo": "Exportar {{format}}",
+		"reportBug": "Relatar bug",
+		"starOnGithub": "Dar estrela no GitHub"
+	}
+}

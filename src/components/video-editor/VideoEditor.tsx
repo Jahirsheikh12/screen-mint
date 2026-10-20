@@ -47,7 +47,7 @@ import {
 import { Tooltip } from "@/components/ui/tooltip";
 import { useI18n, useScopedT } from "@/contexts/I18nContext";
 import { useShortcuts } from "@/contexts/ShortcutsContext";
-import { type AppLocale, SUPPORTED_LOCALES } from "@/i18n/config";
+import { type AppLocale, LOCALE_LABELS, SUPPORTED_LOCALES } from "@/i18n/config";
 import { getBackgroundMusicAssetById } from "@/lib/backgroundMusic";
 import {
 	buildLayeredExportComposition,
@@ -239,11 +239,6 @@ function LanguageSwitcher() {
 	const { locale, setLocale, t } = useI18n();
 	const idx = SUPPORTED_LOCALES.indexOf(locale as (typeof SUPPORTED_LOCALES)[number]);
 	const next = SUPPORTED_LOCALES[(idx + 1) % SUPPORTED_LOCALES.length] as AppLocale;
-	const labels: Record<string, string> = {
-		en: "EN",
-		es: "ES",
-		"zh-CN": "中文",
-	};
 	return (
 		<button
 			type="button"
@@ -253,7 +248,9 @@ function LanguageSwitcher() {
 			aria-label={t("common.app.language", "Language")}
 		>
 			<Languages className="h-4 w-4" />
-			<span className="text-xs font-medium">{labels[locale] ?? locale.toUpperCase()}</span>
+			<span className="text-xs font-medium">
+				{LOCALE_LABELS[locale as AppLocale] ?? locale.toUpperCase()}
+			</span>
 		</button>
 	);
 }

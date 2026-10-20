@@ -1,0 +1,53 @@
+{
+	"app": {
+		"name": "ScreenMint",
+		"editorTitle": "ScreenMint-Editor",
+		"subtitle": "Bildschirmaufnahme und Bearbeitung"
+	},
+	"actions": {
+		"cancel": "Abbrechen",
+		"save": "Speichern",
+		"delete": "Löschen",
+		"done": "Fertig"
+	},
+	"updates": {
+		"available": "Version {{version}} ist verfügbar.",
+		"downloadAction": "Herunterladen",
+		"downloadingSoon": "Update gefunden. Der Download startet, sobald ScreenMint nicht beschäftigt ist.",
+		"downloading": "Update wird heruntergeladen… {{progress}}",
+		"downloaded": "Version {{version}} ist bereit zur Installation.",
+		"installAction": "Installer öffnen",
+		"installDeferred": "Der Installer ist verfügbar, sobald Aufnahme, Export oder Transkription abgeschlossen sind.",
+		"restartAction": "Neu starten",
+		"restartDeferred": "Der Neustart wartet, bis Aufnahme, Export oder Transkription abgeschlossen sind.",
+		"manualRequired": "Version {{version}} kann manuell heruntergeladen werden.",
+		"openReleases": "Releases öffnen",
+		"upToDate": "ScreenMint {{version}} ist aktuell.",
+		"error": "Die Update-Anfrage konnte nicht abgeschlossen werden.",
+		"popup": {
+			"title": "Update verfügbar",
+			"downloadingTitle": "ScreenMint wird aktualisiert",
+			"readyTitle": "Bereit zum Aktualisieren",
+			"updateNow": "Jetzt aktualisieren",
+			"updateLater": "Später",
+			"availableBody": "ScreenMint {{version}} ist bereit. „Jetzt aktualisieren“ lädt die neueste Version herunter, danach entscheiden Sie, wann sie installiert wird.",
+			"availableBodyExternal": "ScreenMint {{version}} ist bereit. „Jetzt aktualisieren“ lädt den Installer herunter, danach öffnet ScreenMint ihn, damit Sie das Update abschließen können.",
+			"downloadingBody": "ScreenMint {{version}} wird heruntergeladen. Lassen Sie dieses Fenster geöffnet oder wählen Sie „Später“ und kommen Sie zurück, wenn es passt.",
+			"downloadingProgressLabel": "{{progress}} heruntergeladen",
+			"downloadedBodyInApp": "ScreenMint {{version}} ist bereit. Klicken Sie auf „Jetzt aktualisieren“, um neu zu starten und die Installation abzuschließen.",
+			"downloadedBodyExternal": "ScreenMint {{version}} ist bereit. Klicken Sie auf „Jetzt aktualisieren“, um den Installer zu öffnen. ScreenMint wird beendet, damit Sie das Update abschließen können.",
+			"manualBody": "ScreenMint {{version}} ist verfügbar, aber diese Installation kann sich nicht selbst aktualisieren. „Jetzt aktualisieren“ öffnet die Download-Seite.",
+			"busyHint": "Schließen Sie Aufnahme, Export oder Transkription ab, bevor Sie mit dem Update fortfahren."
+		},
+		"whatsNew": {
+			"title": "Neu in {{version}}",
+			"intro": "Das hat sich in dieser Version geändert.",
+			"fallback": "ScreenMint wurde erfolgreich aktualisiert. Sie verwenden jetzt die neueste Version."
+		}
+	},
+	"errors": {
+		"invalidFileType": "Ungültiger Dateityp",
+		"failedToUploadImage": "Bild konnte nicht hochgeladen werden",
+		"fileReadError": "Beim Lesen der Datei ist ein Fehler aufgetreten."
+	}
+}
