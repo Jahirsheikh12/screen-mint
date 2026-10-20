@@ -106,7 +106,16 @@ export class MediaRecorderChunkStore {
 		session.closed = true;
 		this.sessions.delete(id);
 		await session.pending.catch(() => undefined);
-		session.stream.destroy();
+		// The stream opens its file asynchronously; wait for it to fully close before deleting,
+		// otherwise a late open can recreate the file after it was removed.
+		await new Promise<void>((resolve) => {
+			if (session.stream.closed) {
+				resolve();
+				return;
+			}
+			session.stream.once("close", () => resolve());
+			session.stream.destroy();
+		});
 		await fs.rm(session.path, { force: true }).catch(() => undefined);
 	}
 

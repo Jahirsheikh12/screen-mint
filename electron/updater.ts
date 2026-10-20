@@ -545,12 +545,25 @@ export class ScreenMintUpdater {
 		}
 	}
 
-	private async savePreferences(): Promise<void> {
-		try {
-			await fs.writeFile(this.settingsPath, JSON.stringify(this.preferences, null, 2), "utf-8");
-		} catch (error) {
-			console.error("Failed to persist updater settings:", error);
-		}
+	private savePreferencesChain: Promise<void> = Promise.resolve();
+
+	/**
+	 * Saves are queued so an older snapshot can never land after a newer one, and each write goes
+	 * through a temp file + rename so a crash can't leave half-written settings.
+	 */
+	private savePreferences(): Promise<void> {
+		const snapshot = JSON.stringify(this.preferences, null, 2);
+		this.savePreferencesChain = this.savePreferencesChain.then(async () => {
+			const tempPath = `${this.settingsPath}.${process.pid}.tmp`;
+			try {
+				await fs.writeFile(tempPath, snapshot, "utf-8");
+				await fs.rename(tempPath, this.settingsPath);
+			} catch (error) {
+				await fs.rm(tempPath, { force: true }).catch(() => undefined);
+				console.error("Failed to persist updater settings:", error);
+			}
+		});
+		return this.savePreferencesChain;
 	}
 
 	private scheduleAutomaticChecks(): void {
@@ -656,7 +669,7 @@ export class ScreenMintUpdater {
 		}
 
 		this.preferences.lastCheckAt = new Date(this.now()).toISOString();
-		void this.savePreferences();
+		await this.savePreferences();
 		this.setState({
 			checkSource: source,
 			checkedAt: this.preferences.lastCheckAt,
