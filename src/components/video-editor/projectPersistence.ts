@@ -53,6 +53,8 @@ import {
 	type CaptionTrack,
 	type CaptionWord,
 	type CropRegion,
+	CURSOR_CLICK_BOUNCE_DURATION_MAX_MS,
+	CURSOR_CLICK_BOUNCE_DURATION_MIN_MS,
 	CURSOR_CLICK_EFFECT_STYLE_OPTIONS,
 	CURSOR_PACK_OPTIONS,
 	type CursorClickEffectStyle,
@@ -119,6 +121,7 @@ import {
 	type KeyboardShortcutPosition,
 	type KeyboardShortcutTheme,
 	LEGACY_CURSOR_CLICK_STYLE,
+	LEGACY_CURSOR_MOTION_BLUR_FACTOR,
 	LEGACY_ZOOM_TIMING,
 	PADDING_LINKED_MAX,
 	PADDING_UNLINKED_VERTICAL_MAX,
@@ -1034,8 +1037,16 @@ export function normalizeCursorClickStyle(candidate: unknown): CursorClickStyleS
 			? clamp(raw.effectDurationMs, 100, 3000)
 			: DEFAULT_CURSOR_CLICK_STYLE.effectDurationMs,
 		bounceDurationMs: isFiniteNumber(raw.bounceDurationMs)
-			? clamp(raw.bounceDurationMs, 50, 1500)
+			? clamp(
+					raw.bounceDurationMs,
+					CURSOR_CLICK_BOUNCE_DURATION_MIN_MS,
+					CURSOR_CLICK_BOUNCE_DURATION_MAX_MS,
+				)
 			: DEFAULT_CURSOR_CLICK_STYLE.bounceDurationMs,
+		delayEffectUntilBounce:
+			typeof raw.delayEffectUntilBounce === "boolean"
+				? raw.delayEffectUntilBounce
+				: DEFAULT_CURSOR_CLICK_STYLE.delayEffectUntilBounce,
 	};
 }
 
@@ -1053,6 +1064,9 @@ export function withLegacyZoomTiming(
 		zoomTiming: editor.zoomTiming ?? LEGACY_ZOOM_TIMING,
 		cursorClickStyle: editor.cursorClickStyle ?? LEGACY_CURSOR_CLICK_STYLE,
 		...(editor.clickEffectsEnabled ? {} : { cursorClickBounce: 0 }),
+		...(isFiniteNumber(editor.cursorMotionBlur)
+			? { cursorMotionBlur: editor.cursorMotionBlur * LEGACY_CURSOR_MOTION_BLUR_FACTOR }
+			: {}),
 	};
 }
 
@@ -1658,7 +1672,7 @@ export function normalizeProjectEditor(
 			? clamp(editor.cursorSmoothing, 0, 2)
 			: DEFAULT_CURSOR_SMOOTHING,
 		cursorMotionBlur: isFiniteNumber((editor as Partial<ProjectEditorState>).cursorMotionBlur)
-			? clamp((editor as Partial<ProjectEditorState>).cursorMotionBlur as number, 0, 2)
+			? clamp((editor as Partial<ProjectEditorState>).cursorMotionBlur as number, 0, 5)
 			: DEFAULT_CURSOR_MOTION_BLUR,
 		cursorClickBounce: isFiniteNumber((editor as Partial<ProjectEditorState>).cursorClickBounce)
 			? clamp((editor as Partial<ProjectEditorState>).cursorClickBounce as number, 0, 5)

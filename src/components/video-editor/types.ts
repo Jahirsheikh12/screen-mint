@@ -226,13 +226,13 @@ export const DEFAULT_CURSOR_FOLLOW_TRACKING: CursorFollowTracking = {
 
 export const DEFAULT_CURSOR_SIZE = 3.0;
 export const DEFAULT_CURSOR_SMOOTHING = 0.67;
-export const DEFAULT_CURSOR_MOTION_BLUR = 0.35;
-export const DEFAULT_CURSOR_CLICK_BOUNCE = 2.5;
-export const DEFAULT_CURSOR_SWAY = 0.25;
+export const DEFAULT_CURSOR_MOTION_BLUR = 0.6;
+export const DEFAULT_CURSOR_CLICK_BOUNCE = 2;
+export const DEFAULT_CURSOR_SWAY = 0.4;
 export const DEFAULT_CURSOR_STYLE: CursorStyle = "default";
 export const DEFAULT_CURSOR_PACK: CursorPack = "classic";
 export const DEFAULT_CURSOR_TYPE_MODE: CursorTypeMode = "auto";
-export const DEFAULT_CURSOR_TILT = 0.125;
+export const DEFAULT_CURSOR_TILT = 0;
 export const DEFAULT_HIDE_CURSOR_WHEN_IDLE = false;
 export const DEFAULT_CURSOR_IDLE_HIDE_DELAY_MS = 1500;
 export const DEFAULT_SMOOTH_CURSOR_MOVEMENT = true;
@@ -268,12 +268,18 @@ export interface CursorClickStyleSettings {
 	effect: CursorClickEffectStyle;
 	effectDurationMs: number;
 	bounceDurationMs: number;
+	/** Start the click graphic halfway through the bounce, so the press lands first. */
+	delayEffectUntilBounce: boolean;
 }
+
+export const CURSOR_CLICK_BOUNCE_DURATION_MIN_MS = 60;
+export const CURSOR_CLICK_BOUNCE_DURATION_MAX_MS = 500;
 
 export const DEFAULT_CURSOR_CLICK_STYLE: CursorClickStyleSettings = {
 	effect: "ripple",
 	effectDurationMs: 600,
 	bounceDurationMs: 350,
+	delayEffectUntilBounce: true,
 };
 
 /** Click timing before it became configurable (project v11 and older). */
@@ -281,7 +287,14 @@ export const LEGACY_CURSOR_CLICK_STYLE: CursorClickStyleSettings = {
 	effect: "ripple",
 	effectDurationMs: 600,
 	bounceDurationMs: 140,
+	delayEffectUntilBounce: false,
 };
+
+/**
+ * Cursor motion blur used to scale velocity by 0.08 per unit; it now uses (fps / 60) · 2, i.e.
+ * 2/60 per unit. Older projects' saved amounts are multiplied by this to keep the same look.
+ */
+export const LEGACY_CURSOR_MOTION_BLUR_FACTOR = 0.08 / (2 / 60);
 export const DEFAULT_CLICK_HIGHLIGHT_COLOR = "#f59e0b";
 export const DEFAULT_CLICK_HIGHLIGHT_SIZE = 1.0;
 export const DEFAULT_CLICK_HIGHLIGHT_OPACITY = 0.5;

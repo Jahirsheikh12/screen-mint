@@ -129,7 +129,11 @@ export const DEFAULT_CURSOR_CONFIG: CursorRenderConfig = {
 
 const REFERENCE_WIDTH = 1920;
 const MIN_CURSOR_VIEWPORT_SCALE = 0.55;
-const CURSOR_MOTION_BLUR_BASE_MULTIPLIER = 0.08;
+/** Blur strength per unit of motion-blur amount, relative to a 60 fps frame. */
+const CURSOR_MOTION_BLUR_STRENGTH = 2;
+const CURSOR_MOTION_BLUR_KERNEL_SIZE = 13;
+const CURSOR_MOTION_BLUR_OFFSET_DIVISOR = 32;
+const CURSOR_MOTION_BLUR_MIN_MAGNITUDE = 0.01;
 const CURSOR_TIME_DISCONTINUITY_MS = 100;
 const CURSOR_SWAY_SMOOTHING_MULTIPLIER = 0.7;
 const CURSOR_SWAY_SMOOTHING_OFFSET = 0.18;
@@ -564,11 +568,12 @@ export function getCursorVisualState(
 	previewClickSample?: ClickInteractionSample | null,
 	clickStyle: Pick<
 		CursorClickStyleSettings,
-		"effectDurationMs" | "bounceDurationMs"
+		"effectDurationMs" | "bounceDurationMs" | "delayEffectUntilBounce"
 	> = DEFAULT_CURSOR_CLICK_STYLE,
 ): CursorVisualState {
 	const bounceMs = Math.max(1, clickStyle.bounceDurationMs);
 	const effectMs = Math.max(1, clickStyle.effectDurationMs);
+	const effectDelayMs = clickStyle.delayEffectUntilBounce ? bounceMs * 0.5 : 0;
 	const latestClick = findLatestInteractionSample(samples, timeMs, previewClickSample);
 	const interactionType = latestClick?.interactionType;
 	const ageMs = latestClick ? Math.max(0, timeMs - latestClick.timeMs) : Number.POSITIVE_INFINITY;
@@ -579,7 +584,25 @@ export function getCursorVisualState(
 	return {
 		cursorType: findLatestStableCursorType(samples, timeMs),
 		clickBounceProgress,
-		clickProgress: latestClick && isClickEvent && ageMs <= effectMs ? 1 - ageMs / effectMs : 0,
+		clickProgress:
+			latestClick && isClickEvent && ageMs >= effectDelayMs && ageMs - effectDelayMs <= effectMs
+				? 1 - (ageMs - effectDelayMs) / effectMs
+				: 0,
+	};
+}
+
+/** Directional blur for one frame of cursor movement (dx, dy in px over deltaMs). */
+export function getCursorMotionBlur(dx: number, dy: number, deltaMs: number, amount: number) {
+	// Normalize to a 60 fps frame so the blur length doesn't depend on render rate.
+	const fpsScale = 1000 / Math.max(1000 / 240, deltaMs) / 60;
+	const scale = amount * fpsScale * CURSOR_MOTION_BLUR_STRENGTH;
+	const velocity = { x: dx * scale, y: dy * scale };
+	const magnitude = Math.hypot(velocity.x, velocity.y);
+	const active = magnitude >= CURSOR_MOTION_BLUR_MIN_MAGNITUDE;
+	return {
+		velocity: active ? velocity : { x: 0, y: 0 },
+		kernelSize: active ? CURSOR_MOTION_BLUR_KERNEL_SIZE : 5,
+		offset: active ? -magnitude / CURSOR_MOTION_BLUR_OFFSET_DIVISOR : 0,
 	};
 }
 
@@ -1278,17 +1301,10 @@ export class PixiCursorOverlay {
 		const deltaMs = Math.max(1, timeMs - this.lastRenderedTimeMs);
 		const dx = px - this.lastRenderedPoint.px;
 		const dy = py - this.lastRenderedPoint.py;
-		const velocityScale =
-			(1000 / deltaMs) * this.config.motionBlur * CURSOR_MOTION_BLUR_BASE_MULTIPLIER;
-		const velocity = {
-			x: dx * velocityScale,
-			y: dy * velocityScale,
-		};
-		const magnitude = Math.hypot(velocity.x, velocity.y);
-
-		this.cursorMotionBlurFilter.velocity = magnitude > 0.05 ? velocity : { x: 0, y: 0 };
-		this.cursorMotionBlurFilter.kernelSize = magnitude > 3 ? 9 : magnitude > 1 ? 7 : 5;
-		this.cursorMotionBlurFilter.offset = magnitude > 0.5 ? -0.25 : 0;
+		const blur = getCursorMotionBlur(dx, dy, deltaMs, this.config.motionBlur);
+		this.cursorMotionBlurFilter.velocity = blur.velocity;
+		this.cursorMotionBlurFilter.kernelSize = blur.kernelSize;
+		this.cursorMotionBlurFilter.offset = blur.offset;
 	}
 
 	reset(): void {

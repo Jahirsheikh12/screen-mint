@@ -49,14 +49,16 @@ describe("cursor click effects", () => {
 			{ timeMs: 1_000, cx: 0.4, cy: 0.5, interactionType: "click" as const },
 		];
 
-		expect(getCursorVisualState(samples, 1_060).clickProgress).toBeCloseTo(0.9, 5);
+		// The click graphic waits half the 350ms bounce (175ms) before starting.
+		expect(getCursorVisualState(samples, 1_060).clickProgress).toBe(0);
+		expect(getCursorVisualState(samples, 1_235).clickProgress).toBeCloseTo(0.9, 5);
 
-		const previewState = getCursorVisualState(samples, 2_040, {
+		const previewState = getCursorVisualState(samples, 2_215, {
 			timeMs: 2_000,
 			interactionType: "click",
 		});
 		expect(previewState.clickProgress).toBeCloseTo(1 - 40 / 600, 5);
-		expect(previewState.clickBounceProgress).toBeCloseTo(1 - 40 / 350, 5);
+		expect(previewState.clickBounceProgress).toBeCloseTo(1 - 215 / 350, 5);
 	});
 
 	it("lets click highlight settings control the rendered ring style", () => {

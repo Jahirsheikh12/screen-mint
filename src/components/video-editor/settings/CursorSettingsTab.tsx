@@ -20,6 +20,8 @@ import type {
 	MotionPresetId,
 } from "../types";
 import {
+	CURSOR_CLICK_BOUNCE_DURATION_MAX_MS,
+	CURSOR_CLICK_BOUNCE_DURATION_MIN_MS,
 	CURSOR_CLICK_EFFECT_STYLE_OPTIONS,
 	CURSOR_MOVEMENT_STYLE_OPTIONS,
 	CURSOR_PACK_OPTIONS,
@@ -651,8 +653,8 @@ export function CursorSettingsTab({
 							label="Bounce Speed"
 							value={cursorClickStyle.bounceDurationMs}
 							defaultValue={DEFAULT_CURSOR_CLICK_STYLE.bounceDurationMs}
-							min={50}
-							max={1000}
+							min={CURSOR_CLICK_BOUNCE_DURATION_MIN_MS}
+							max={CURSOR_CLICK_BOUNCE_DURATION_MAX_MS}
 							step={10}
 							onChange={(v) =>
 								onCursorClickStyleChange?.({ ...cursorClickStyle, bounceDurationMs: v })
@@ -932,7 +934,7 @@ export function CursorSettingsTab({
 									value={cursorMotionBlur}
 									defaultValue={DEFAULT_CURSOR_MOTION_BLUR}
 									min={0}
-									max={2}
+									max={5}
 									step={0.05}
 									onChange={(v) => onCursorMotionBlurChange?.(v)}
 									formatValue={(v) => `${v.toFixed(2)}×`}

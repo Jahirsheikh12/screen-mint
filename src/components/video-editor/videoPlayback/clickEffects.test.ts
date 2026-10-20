@@ -41,6 +41,20 @@ describe("click effects", () => {
 		expect(getCursorVisualState([click], 1250, null, timing).clickBounceProgress).toBe(0);
 	});
 
+	it("cursor motion blur is frame-rate independent and off when still", async () => {
+		const { getCursorMotionBlur } = await import("./cursorRenderer");
+		const at60 = getCursorMotionBlur(10, 0, 1000 / 60, 0.6);
+		const at30 = getCursorMotionBlur(20, 0, 1000 / 30, 0.6);
+		expect(at60.velocity.x).toBeCloseTo(12, 5);
+		expect(at30.velocity.x).toBeCloseTo(at60.velocity.x, 5);
+		expect(getCursorMotionBlur(0, 0, 16, 0.6).velocity).toEqual({ x: 0, y: 0 });
+	});
+
+	it("legacy projects keep their cursor blur look", () => {
+		const upgraded = withLegacyZoomTiming(11, { cursorMotionBlur: 0.35 });
+		expect(upgraded.cursorMotionBlur).toBeCloseTo(0.84, 5);
+	});
+
 	it("legacy projects keep fixed click timing and no bounce when effects were off", () => {
 		const upgraded = withLegacyZoomTiming(11, { clickEffectsEnabled: false, cursorClickBounce: 2 });
 		expect(upgraded.cursorClickStyle).toEqual(LEGACY_CURSOR_CLICK_STYLE);
