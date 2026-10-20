@@ -57,7 +57,8 @@
 		"addSuccess": "Fonte \"{{name}}\" adicionada",
 		"addFailed": "Falha ao adicionar a fonte",
 		"loadTimeout": "A fonte demorou demais para carregar. Verifique a URL e tente novamente.",
-		"loadFailed": "Não foi possível carregar a fonte. Verifique se a URL do Google Fonts está correta."
+		"loadFailed": "Não foi possível carregar a fonte. Verifique se a URL do Google Fonts está correta.",
+		"cancel": "Cancelar"
 	},
 	"shortcutsConfig": {
 		"title": "Atalhos de teclado",

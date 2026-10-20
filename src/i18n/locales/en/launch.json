@@ -144,7 +144,8 @@
 		"kbdLayer": "toggle layer",
 		"kbdShare": "share",
 		"kbdClose": "close",
-		"kbdSwitch": "switch tab"
+		"kbdSwitch": "switch tab",
+		"eyebrow": "Ready to record"
 	},
 	"permissions": {
 		"screenRecordingNeeded": "ScreenMint needs Screen Recording permission before you start. System Settings has been opened. After enabling it, quit and reopen ScreenMint.",

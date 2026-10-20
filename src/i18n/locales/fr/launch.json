@@ -144,7 +144,8 @@
 		"kbdLayer": "calque",
 		"kbdShare": "partager",
 		"kbdClose": "fermer",
-		"kbdSwitch": "changer d'onglet"
+		"kbdSwitch": "changer d'onglet",
+		"eyebrow": "Prêt à enregistrer"
 	},
 	"permissions": {
 		"screenRecordingNeeded": "ScreenMint a besoin de l'autorisation d'enregistrement d'écran avant de commencer. Les Réglages Système ont été ouverts. Après l'avoir activée, quittez et rouvrez ScreenMint.",

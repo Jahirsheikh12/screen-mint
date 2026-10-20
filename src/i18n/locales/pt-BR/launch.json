@@ -144,7 +144,8 @@
 		"kbdLayer": "alternar camada",
 		"kbdShare": "compartilhar",
 		"kbdClose": "fechar",
-		"kbdSwitch": "trocar aba"
+		"kbdSwitch": "trocar aba",
+		"eyebrow": "Pronto para gravar"
 	},
 	"permissions": {
 		"screenRecordingNeeded": "O ScreenMint precisa da permissão de gravação de tela antes de começar. Os Ajustes do Sistema foram abertos. Depois de ativar, feche e abra o ScreenMint novamente.",

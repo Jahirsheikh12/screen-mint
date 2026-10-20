@@ -144,7 +144,8 @@
 		"kbdLayer": "livello",
 		"kbdShare": "condividi",
 		"kbdClose": "chiudi",
-		"kbdSwitch": "cambia scheda"
+		"kbdSwitch": "cambia scheda",
+		"eyebrow": "Pronto a registrare"
 	},
 	"permissions": {
 		"screenRecordingNeeded": "ScreenMint ha bisogno del permesso di registrazione dello schermo. Le Impostazioni di Sistema sono state aperte. Dopo averlo attivato, chiudi e riapri ScreenMint.",

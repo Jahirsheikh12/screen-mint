@@ -144,7 +144,8 @@
 		"kbdLayer": "laag aan/uit",
 		"kbdShare": "delen",
 		"kbdClose": "sluiten",
-		"kbdSwitch": "tab wisselen"
+		"kbdSwitch": "tab wisselen",
+		"eyebrow": "Klaar om op te nemen"
 	},
 	"permissions": {
 		"screenRecordingNeeded": "ScreenMint heeft toestemming voor schermopname nodig. Systeeminstellingen is geopend. Zet het aan en start ScreenMint daarna opnieuw.",

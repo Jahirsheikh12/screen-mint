@@ -2,7 +2,8 @@
 	"app": {
 		"name": "ScreenMint",
 		"editorTitle": "ScreenMint 편집기",
-		"subtitle": "화면 녹화 및 편집"
+		"subtitle": "화면 녹화 및 편집",
+		"language": "언어"
 	},
 	"actions": {
 		"cancel": "취소",

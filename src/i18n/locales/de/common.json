@@ -2,7 +2,8 @@
 	"app": {
 		"name": "ScreenMint",
 		"editorTitle": "ScreenMint-Editor",
-		"subtitle": "Bildschirmaufnahme und Bearbeitung"
+		"subtitle": "Bildschirmaufnahme und Bearbeitung",
+		"language": "Sprache"
 	},
 	"actions": {
 		"cancel": "Abbrechen",

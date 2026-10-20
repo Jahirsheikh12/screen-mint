@@ -2,7 +2,8 @@
 	"app": {
 		"name": "ScreenMint",
 		"editorTitle": "ScreenMint-editor",
-		"subtitle": "Schermopname en bewerking"
+		"subtitle": "Schermopname en bewerking",
+		"language": "Taal"
 	},
 	"actions": {
 		"cancel": "Annuleren",

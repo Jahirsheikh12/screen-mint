@@ -2,7 +2,8 @@
 	"app": {
 		"name": "ScreenMint",
 		"editorTitle": "ScreenMint 编辑器",
-		"subtitle": "屏幕录制与编辑"
+		"subtitle": "屏幕录制与编辑",
+		"language": "语言"
 	},
 	"actions": {
 		"cancel": "取消",

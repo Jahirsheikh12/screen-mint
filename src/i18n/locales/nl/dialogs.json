@@ -57,7 +57,8 @@
 		"addSuccess": "Lettertype \"{{name}}\" toegevoegd",
 		"addFailed": "Lettertype toevoegen mislukt",
 		"loadTimeout": "Het lettertype laadt te lang. Controleer de URL en probeer het opnieuw.",
-		"loadFailed": "Het lettertype kon niet worden geladen. Controleer of de Google Fonts-URL klopt."
+		"loadFailed": "Het lettertype kon niet worden geladen. Controleer of de Google Fonts-URL klopt.",
+		"cancel": "Annuleren"
 	},
 	"shortcutsConfig": {
 		"title": "Sneltoetsen",

@@ -732,8 +732,8 @@ export default function SettingsPanel({
 		};
 
 		reader.onerror = () => {
-			toast.error(t("common.failedToUploadImage"), {
-				description: t("common.errorReadingFile"),
+			toast.error(t("common.errors.failedToUploadImage"), {
+				description: t("common.errors.fileReadError"),
 			});
 		};
 

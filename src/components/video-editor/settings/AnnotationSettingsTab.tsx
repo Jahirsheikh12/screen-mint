@@ -1,4 +1,5 @@
 import { MessageSquare } from "lucide-react";
+import { useScopedT } from "@/contexts/I18nContext";
 import { AnnotationSettingsPanel } from "../AnnotationSettingsPanel";
 import { TabContent, TabHeader } from "../settingsPanelLayout";
 import type { AnnotationRegion, AnnotationType, BlurData, FigureData } from "../types";
@@ -22,6 +23,7 @@ export function AnnotationSettingsTab({
 	onAnnotationBlurDataChange,
 	onAnnotationDelete,
 }: AnnotationSettingsTabProps) {
+	const tSettings = useScopedT("settings");
 	return (
 		<TabContent>
 			{selectedAnnotation &&
@@ -31,8 +33,11 @@ export function AnnotationSettingsTab({
 			onAnnotationDelete ? (
 				<>
 					<TabHeader
-						title="Annotation"
-						description="Edit the selected annotation's content and style"
+						title={tSettings("annotationTab.annotation", "Annotation")}
+						description={tSettings(
+							"annotationTab.editTheSelectedAnnotation",
+							"Edit the selected annotation's content and style",
+						)}
 					/>
 					<AnnotationSettingsPanel
 						annotation={selectedAnnotation}
@@ -58,9 +63,14 @@ export function AnnotationSettingsTab({
 					<div className="w-14 h-14 rounded-2xl bg-black/40 border border-white/5 shadow-inner flex items-center justify-center mb-4">
 						<MessageSquare className="w-7 h-7 text-slate-600" />
 					</div>
-					<p className="text-sm font-medium text-slate-400">No Annotation Selected</p>
+					<p className="text-sm font-medium text-slate-400">
+						{tSettings("annotationTab.noAnnotationSelected", "No Annotation Selected")}
+					</p>
 					<p className="text-[11px] text-slate-500 mt-1.5 max-w-[200px] leading-relaxed">
-						Select an annotation on the timeline to edit its settings
+						{tSettings(
+							"annotationTab.selectAnAnnotationOn",
+							"Select an annotation on the timeline to edit its settings",
+						)}
 					</p>
 				</div>
 			)}

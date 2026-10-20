@@ -144,7 +144,8 @@
 		"kbdLayer": "Ebene umschalten",
 		"kbdShare": "teilen",
 		"kbdClose": "schließen",
-		"kbdSwitch": "Tab wechseln"
+		"kbdSwitch": "Tab wechseln",
+		"eyebrow": "Bereit zur Aufnahme"
 	},
 	"permissions": {
 		"screenRecordingNeeded": "ScreenMint braucht die Berechtigung zur Bildschirmaufnahme. Die Systemeinstellungen wurden geöffnet. Aktivieren Sie sie und starten Sie ScreenMint danach neu.",

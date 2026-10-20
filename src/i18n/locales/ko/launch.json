@@ -144,7 +144,8 @@
 		"kbdLayer": "레이어 전환",
 		"kbdShare": "공유",
 		"kbdClose": "닫기",
-		"kbdSwitch": "탭 전환"
+		"kbdSwitch": "탭 전환",
+		"eyebrow": "녹화 준비 완료"
 	},
 	"permissions": {
 		"screenRecordingNeeded": "시작하려면 ScreenMint에 화면 녹화 권한이 필요합니다. 시스템 설정을 열었습니다. 권한을 켠 뒤 ScreenMint를 종료하고 다시 여세요.",

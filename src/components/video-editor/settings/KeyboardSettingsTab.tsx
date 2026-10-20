@@ -59,17 +59,26 @@ export function KeyboardSettingsTab({
 		<TabContent>
 			<TabHeader
 				title={tSettings("keyboard.title")}
-				description="Show keyboard shortcuts used during recording"
+				description={tSettings(
+					"keyboardTab.showKeyboardShortcutsUsed",
+					"Show keyboard shortcuts used during recording",
+				)}
 			/>
 
-			<SettingsSection title="Display" description="Toggle keyboard shortcut overlay visibility">
+			<SettingsSection
+				title={tSettings("keyboardTab.display", "Display")}
+				description={tSettings(
+					"keyboardTab.toggleKeyboardShortcutOverlay",
+					"Toggle keyboard shortcut overlay visibility",
+				)}
+			>
 				<div className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 					<div>
 						<div className="text-xs font-medium text-slate-300">
 							{tSettings("keyboard.showShortcuts")}
 						</div>
 						<div className="text-[10px] text-slate-500 mt-0.5">
-							Overlay shortcut keys in the video
+							{tSettings("keyboardTab.overlayShortcutKeysIn", "Overlay shortcut keys in the video")}
 						</div>
 					</div>
 					<Switch
@@ -81,7 +90,13 @@ export function KeyboardSettingsTab({
 			</SettingsSection>
 
 			<DisabledSettingsGroup disabled={!showKeyboardShortcuts}>
-				<SettingsSection title="Layout" description="Position and style of the shortcut display">
+				<SettingsSection
+					title={tSettings("keyboardTab.layout", "Layout")}
+					description={tSettings(
+						"keyboardTab.positionAndStyleOf",
+						"Position and style of the shortcut display",
+					)}
+				>
 					<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 						<div className="text-xs font-medium text-slate-300 mb-2">
 							{tSettings("keyboard.position")}
@@ -131,7 +146,13 @@ export function KeyboardSettingsTab({
 					</div>
 				</SettingsSection>
 
-				<SettingsSection title="Appearance" description="Fine-tune size, opacity, and timing">
+				<SettingsSection
+					title={tSettings("keyboardTab.appearance", "Appearance")}
+					description={tSettings(
+						"keyboardTab.fineTuneSizeOpacity",
+						"Fine-tune size, opacity, and timing",
+					)}
+				>
 					<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 						<SliderControl
 							label={tSettings("keyboard.scale")}

@@ -57,7 +57,8 @@
 		"addSuccess": "Schrift „{{name}}“ hinzugefügt",
 		"addFailed": "Schrift konnte nicht hinzugefügt werden",
 		"loadTimeout": "Die Schrift lädt zu lange. Prüfen Sie die URL und versuchen Sie es erneut.",
-		"loadFailed": "Die Schrift konnte nicht geladen werden. Prüfen Sie, ob die Google-Fonts-URL stimmt."
+		"loadFailed": "Die Schrift konnte nicht geladen werden. Prüfen Sie, ob die Google-Fonts-URL stimmt.",
+		"cancel": "Abbrechen"
 	},
 	"shortcutsConfig": {
 		"title": "Tastaturkürzel",

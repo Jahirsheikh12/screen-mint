@@ -144,7 +144,8 @@
 		"kbdLayer": "alternar capa",
 		"kbdShare": "compartir",
 		"kbdClose": "cerrar",
-		"kbdSwitch": "cambiar pestaña"
+		"kbdSwitch": "cambiar pestaña",
+		"eyebrow": "Listo para grabar"
 	},
 	"permissions": {
 		"screenRecordingNeeded": "ScreenMint necesita permiso de grabación de pantalla antes de comenzar. Se ha abierto Configuración del sistema. Después de habilitarlo, cierra y vuelve a abrir ScreenMint.",

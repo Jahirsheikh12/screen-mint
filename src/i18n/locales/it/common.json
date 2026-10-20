@@ -2,7 +2,8 @@
 	"app": {
 		"name": "ScreenMint",
 		"editorTitle": "Editor di ScreenMint",
-		"subtitle": "Registrazione e montaggio dello schermo"
+		"subtitle": "Registrazione e montaggio dello schermo",
+		"language": "Lingua"
 	},
 	"actions": {
 		"cancel": "Annulla",

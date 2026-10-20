@@ -38,7 +38,10 @@
 		"imageUploadError": "JPG, PNG, GIF 또는 WebP 이미지를 업로드하세요.",
 		"blur": "흐림",
 		"blurAmount": "흐림 정도",
-		"blurShape": "모양"
+		"blurShape": "모양",
+		"imageUploadErrorDescription": "지원 형식: JPG, PNG, GIF, WebP.",
+		"imageUploadFailed": "이미지 업로드 실패",
+		"imageUploadFailedDescription": "이미지를 읽지 못했습니다. 다른 파일을 사용해 보세요."
 	},
 	"fontStyles": {
 		"classic": "클래식",
@@ -132,6 +135,90 @@
 		"exported": "받아쓰기를 {{format}}(으)로 내보냈습니다",
 		"cancelled": "자막 생성을 취소했습니다",
 		"clearAll": "모두 지우기",
-		"captionPlaceholder": "자막 텍스트..."
+		"captionPlaceholder": "자막 텍스트...",
+		"import": {
+			"invalidFile": "이 파일에서 자막을 읽지 못했습니다.",
+			"confirmReplace": "기존 자막을 바꿀까요? 뒤에 추가하려면 취소를 누르세요.",
+			"success": "자막 {{count}}개를 가져왔습니다",
+			"button": "SRT / VTT 가져오기"
+		},
+		"tabDescription": "내보낼 영상의 자막을 만들고 꾸미고 움직임을 넣습니다",
+		"section": {
+			"presets": "프리셋",
+			"presetsDesc": "프리셋을 누르면 자막 스타일이 바로 바뀝니다",
+			"animation": "애니메이션",
+			"animationDesc": "재생할 때 자막이 나타나는 방식",
+			"position": "위치",
+			"positionDesc": "자막을 정해진 위치에 두거나 미리보기에서 자유롭게 끌어 옮깁니다",
+			"style": "스타일",
+			"styleDesc": "글꼴과 효과를 세밀하게 조정합니다",
+			"transcription": "받아쓰기",
+			"transcriptionDesc": "녹화 오디오로 자막을 만듭니다",
+			"importExport": "가져오기 / 내보내기",
+			"importExportDesc": "외부 자막을 가져오거나 직접 만든 자막을 저장합니다",
+			"list": "자막 목록",
+			"listDesc": "자막 구간을 하나씩 편집하거나 나누거나 순서를 바꿉니다"
+		},
+		"presets": {
+			"nameYourPreset": "프리셋 이름",
+			"save": "저장",
+			"saveAs": "현재 스타일을 프리셋으로 저장"
+		},
+		"positions": {
+			"free": "자유",
+			"reset": "프리셋 위치로 되돌리기",
+			"top": "위",
+			"center": "가운데",
+			"bottom": "아래"
+		},
+		"maxWidth": "최대 너비",
+		"list": {
+			"count": "개 구간"
+		},
+		"animation": {
+			"static": "정적",
+			"staticDesc": "애니메이션 없음",
+			"fade": "페이드",
+			"fadeDesc": "구간마다 나타났다 사라집니다",
+			"pop": "팝",
+			"popDesc": "통통 튀며 등장",
+			"rise": "떠오르기",
+			"riseDesc": "나타나면서 위로 올라옵니다",
+			"activeWord": "현재 단어",
+			"activeWordDesc": "지금 읽는 단어를 강조합니다",
+			"typewriter": "타자기",
+			"typewriterDesc": "단어를 하나씩 보여 줍니다",
+			"karaokeFill": "노래방",
+			"karaokeFillDesc": "색이 점점 채워집니다"
+		}
+	},
+	"captionsTab": {
+		"livePreview": "실시간 미리보기",
+		"aa": "Aa",
+		"font": "글꼴",
+		"size": "크기",
+		"italic": "기울임",
+		"spacing": "간격",
+		"line": "줄",
+		"color": "색상",
+		"text": "텍스트",
+		"highlight": "강조",
+		"background": "배경",
+		"opacity": "불투명도",
+		"radius": "둥글기",
+		"outlineShadow": "윤곽선 및 그림자",
+		"outline": "윤곽선",
+		"outlineColor": "윤곽선 색상",
+		"shadowBlur": "그림자 흐림",
+		"shadowY": "그림자 Y",
+		"shadowColor": "그림자 색상",
+		"layout": "레이아웃",
+		"wordsPerLine": "줄당 단어 수",
+		"regular": "보통",
+		"bold": "굵게",
+		"black": "아주 굵게",
+		"captionText": "자막 텍스트...",
+		"split": "나누기",
+		"mergeNext": "다음과 합치기"
 	}
 }

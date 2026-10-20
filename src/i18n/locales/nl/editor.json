@@ -38,7 +38,10 @@
 		"imageUploadError": "Upload een JPG-, PNG-, GIF- of WebP-afbeelding.",
 		"blur": "Vervaging",
 		"blurAmount": "Mate van vervaging",
-		"blurShape": "Vorm"
+		"blurShape": "Vorm",
+		"imageUploadErrorDescription": "Ondersteunde formaten: JPG, PNG, GIF en WebP.",
+		"imageUploadFailed": "Uploaden van afbeelding mislukt",
+		"imageUploadFailedDescription": "Kan de afbeelding niet lezen. Probeer een ander bestand."
 	},
 	"fontStyles": {
 		"classic": "Klassiek",
@@ -132,6 +135,90 @@
 		"exported": "Transcriptie geëxporteerd als {{format}}",
 		"cancelled": "Ondertitels maken geannuleerd",
 		"clearAll": "Alles wissen",
-		"captionPlaceholder": "Ondertiteltekst..."
+		"captionPlaceholder": "Ondertiteltekst...",
+		"import": {
+			"invalidFile": "Kan geen ondertitels uit dat bestand lezen.",
+			"confirmReplace": "Bestaande ondertitels vervangen? Klik op Annuleren om ze toe te voegen.",
+			"success": "{{count}} ondertitels geïmporteerd",
+			"button": "SRT / VTT importeren"
+		},
+		"tabDescription": "Maak, stijl en animeer ondertitels voor je export",
+		"section": {
+			"presets": "Stijlen",
+			"presetsDesc": "Tik op een stijl om je ondertitels meteen te restylen",
+			"animation": "Animatie",
+			"animationDesc": "Hoe ondertitels verschijnen tijdens het afspelen",
+			"position": "Positie",
+			"positionDesc": "Zet ondertitels vast op een positie of sleep ze vrij in het voorbeeld",
+			"style": "Stijl",
+			"styleDesc": "Stel typografie en effecten fijn af",
+			"transcription": "Transcriptie",
+			"transcriptionDesc": "Maak ondertitels van de audio van je opname",
+			"importExport": "Importeren / exporteren",
+			"importExportDesc": "Haal externe transcripties binnen of sla je eigen op",
+			"list": "Ondertitellijst",
+			"listDesc": "Bewerk, splits of herschik losse ondertitelsegmenten"
+		},
+		"presets": {
+			"nameYourPreset": "Naam van de stijl",
+			"save": "Opslaan",
+			"saveAs": "Huidige stijl opslaan"
+		},
+		"positions": {
+			"free": "Vrij",
+			"reset": "Terug naar positie",
+			"top": "Boven",
+			"center": "Midden",
+			"bottom": "Onder"
+		},
+		"maxWidth": "Max. breedte",
+		"list": {
+			"count": "segmenten"
+		},
+		"animation": {
+			"static": "Statisch",
+			"staticDesc": "Geen animatie",
+			"fade": "Vervagen",
+			"fadeDesc": "In- en uitfaden per segment",
+			"pop": "Pop",
+			"popDesc": "Inkomen met vering",
+			"rise": "Opkomen",
+			"riseDesc": "Schuift omhoog tijdens het verschijnen",
+			"activeWord": "Actief woord",
+			"activeWordDesc": "Markeert het huidige woord",
+			"typewriter": "Typemachine",
+			"typewriterDesc": "Toont woorden één voor één",
+			"karaokeFill": "Karaoke",
+			"karaokeFillDesc": "Geleidelijke kleurvulling"
+		}
+	},
+	"captionsTab": {
+		"livePreview": "Livevoorbeeld",
+		"aa": "Aa",
+		"font": "Lettertype",
+		"size": "Grootte",
+		"italic": "Cursief",
+		"spacing": "Afstand",
+		"line": "Regel",
+		"color": "Kleur",
+		"text": "Tekst",
+		"highlight": "Markering",
+		"background": "Achtergrond",
+		"opacity": "Dekking",
+		"radius": "Straal",
+		"outlineShadow": "Omlijning en schaduw",
+		"outline": "Omlijning",
+		"outlineColor": "Omlijningskleur",
+		"shadowBlur": "Schaduwvervaging",
+		"shadowY": "Schaduw Y",
+		"shadowColor": "Schaduwkleur",
+		"layout": "Indeling",
+		"wordsPerLine": "Woorden per regel",
+		"regular": "Normaal",
+		"bold": "Vet",
+		"black": "Black",
+		"captionText": "Ondertiteltekst...",
+		"split": "Splitsen",
+		"mergeNext": "Samenvoegen met volgende"
 	}
 }

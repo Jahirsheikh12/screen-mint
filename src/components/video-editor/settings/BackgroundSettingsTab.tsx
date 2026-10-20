@@ -94,7 +94,10 @@ export function BackgroundSettingsTab({
 		<TabContent>
 			<TabHeader
 				title={tSettings("background.title")}
-				description="Set the backdrop behind your recording canvas"
+				description={tSettings(
+					"backgroundTab.setTheBackdropBehind",
+					"Set the backdrop behind your recording canvas",
+				)}
 			/>
 			<DisabledSettingsGroup disabled={hideBackground}>
 				<Tabs
@@ -288,7 +291,9 @@ export function BackgroundSettingsTab({
 								<div className="border-t border-dashed border-white/[0.08] pt-3">
 									<div className="grid grid-cols-2 gap-3">
 										<div className="flex flex-col gap-1.5">
-											<span className="text-[11px] text-slate-300 font-medium">From</span>
+											<span className="text-[11px] text-slate-300 font-medium">
+												{tSettings("backgroundTab.from", "From")}
+											</span>
 											<div className="flex items-center gap-1.5 h-8 rounded-lg border border-white/10 bg-black/40 px-1.5 shadow-inner focus-within:border-amber-500/50 focus-within:ring-1 focus-within:ring-amber-500/20 transition-all">
 												<label className="relative w-6 h-6 rounded-md overflow-hidden shrink-0 cursor-pointer border border-white/10">
 													<div
@@ -334,7 +339,9 @@ export function BackgroundSettingsTab({
 											</div>
 										</div>
 										<div className="flex flex-col gap-1.5">
-											<span className="text-[11px] text-slate-300 font-medium">To</span>
+											<span className="text-[11px] text-slate-300 font-medium">
+												{tSettings("backgroundTab.to", "To")}
+											</span>
 											<div className="flex items-center gap-1.5 h-8 rounded-lg border border-white/10 bg-black/40 px-1.5 shadow-inner focus-within:border-amber-500/50 focus-within:ring-1 focus-within:ring-amber-500/20 transition-all">
 												<label className="relative w-6 h-6 rounded-md overflow-hidden shrink-0 cursor-pointer border border-white/10">
 													<div
@@ -384,7 +391,7 @@ export function BackgroundSettingsTab({
 
 								<div className="border-t border-dashed border-white/[0.08] pt-3">
 									<SliderControl
-										label="Angle"
+										label={tSettings("backgroundTab.angle", "Angle")}
 										value={gradientAngle}
 										defaultValue={135}
 										min={0}
@@ -407,7 +414,7 @@ export function BackgroundSettingsTab({
 
 								<div className="border-t border-dashed border-white/[0.08] pt-3">
 									<SliderControl
-										label="Noise"
+										label={tSettings("backgroundTab.noise", "Noise")}
 										value={gradientNoise}
 										defaultValue={0}
 										min={0}
@@ -437,7 +444,7 @@ export function BackgroundSettingsTab({
 												onWallpaperChange(presetToGradientCss(preset));
 											}}
 											className="aspect-square rounded-lg border-2 border-dashed border-white/20 flex items-center justify-center cursor-pointer transition-all duration-200 hover:border-[#F59E0B]/50 hover:bg-white/[0.04] text-slate-500 hover:text-[#F59E0B]"
-											title="Randomize gradient"
+											title={tSettings("backgroundTab.randomizeGradient", "Randomize gradient")}
 										>
 											<Shuffle className="w-3.5 h-3.5" />
 										</button>

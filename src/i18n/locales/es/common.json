@@ -2,7 +2,8 @@
 	"app": {
 		"name": "ScreenMint",
 		"editorTitle": "Editor de ScreenMint",
-		"subtitle": "Grabación de pantalla y edición"
+		"subtitle": "Grabación de pantalla y edición",
+		"language": "Idioma"
 	},
 	"actions": {
 		"cancel": "Cancelar",

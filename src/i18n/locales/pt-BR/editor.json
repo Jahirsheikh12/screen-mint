@@ -38,7 +38,10 @@
 		"imageUploadError": "Envie uma imagem JPG, PNG, GIF ou WebP.",
 		"blur": "Desfoque",
 		"blurAmount": "Intensidade do desfoque",
-		"blurShape": "Forma"
+		"blurShape": "Forma",
+		"imageUploadErrorDescription": "Formatos aceitos: JPG, PNG, GIF e WebP.",
+		"imageUploadFailed": "Falha ao enviar a imagem",
+		"imageUploadFailedDescription": "Não foi possível ler a imagem. Tente outro arquivo."
 	},
 	"fontStyles": {
 		"classic": "Clássico",
@@ -132,6 +135,90 @@
 		"exported": "Transcrição exportada como {{format}}",
 		"cancelled": "Geração de legendas cancelada",
 		"clearAll": "Limpar tudo",
-		"captionPlaceholder": "Texto da legenda..."
+		"captionPlaceholder": "Texto da legenda...",
+		"import": {
+			"invalidFile": "Não foi possível ler legendas desse arquivo.",
+			"confirmReplace": "Substituir as legendas atuais? Clique em Cancelar para adicionar ao final.",
+			"success": "{{count}} legendas importadas",
+			"button": "Importar SRT / VTT"
+		},
+		"tabDescription": "Gere, estilize e anime as legendas da sua exportação",
+		"section": {
+			"presets": "Estilos",
+			"presetsDesc": "Toque em um estilo para mudar o visual das legendas na hora",
+			"animation": "Animação",
+			"animationDesc": "Como as legendas aparecem durante a reprodução",
+			"position": "Posição",
+			"positionDesc": "Fixe as legendas em uma posição ou arraste-as livremente na prévia",
+			"style": "Estilo",
+			"styleDesc": "Ajuste a tipografia e os efeitos",
+			"transcription": "Transcrição",
+			"transcriptionDesc": "Gere legendas a partir do áudio da gravação",
+			"importExport": "Importar / exportar",
+			"importExportDesc": "Traga transcrições externas ou salve as suas",
+			"list": "Lista de legendas",
+			"listDesc": "Edite, divida ou reordene cada segmento de legenda"
+		},
+		"presets": {
+			"nameYourPreset": "Nome do estilo",
+			"save": "Salvar",
+			"saveAs": "Salvar o estilo atual"
+		},
+		"positions": {
+			"free": "Livre",
+			"reset": "Voltar à posição",
+			"top": "Topo",
+			"center": "Centro",
+			"bottom": "Base"
+		},
+		"maxWidth": "Largura máxima",
+		"list": {
+			"count": "segmentos"
+		},
+		"animation": {
+			"static": "Estático",
+			"staticDesc": "Sem animação",
+			"fade": "Esmaecer",
+			"fadeDesc": "Aparece e some em cada segmento",
+			"pop": "Pop",
+			"popDesc": "Entrada com quique",
+			"rise": "Subir",
+			"riseDesc": "Sobe enquanto aparece",
+			"activeWord": "Palavra ativa",
+			"activeWordDesc": "Destaca a palavra atual",
+			"typewriter": "Máquina de escrever",
+			"typewriterDesc": "Mostra as palavras uma a uma",
+			"karaokeFill": "Karaokê",
+			"karaokeFillDesc": "Preenchimento de cor progressivo"
+		}
+	},
+	"captionsTab": {
+		"livePreview": "Prévia ao vivo",
+		"aa": "Aa",
+		"font": "Fonte",
+		"size": "Tamanho",
+		"italic": "Itálico",
+		"spacing": "Espaçamento",
+		"line": "Entrelinha",
+		"color": "Cor",
+		"text": "Texto",
+		"highlight": "Destaque",
+		"background": "Fundo",
+		"opacity": "Opacidade",
+		"radius": "Raio",
+		"outlineShadow": "Contorno e sombra",
+		"outline": "Contorno",
+		"outlineColor": "Cor do contorno",
+		"shadowBlur": "Desfoque da sombra",
+		"shadowY": "Sombra Y",
+		"shadowColor": "Cor da sombra",
+		"layout": "Layout",
+		"wordsPerLine": "Palavras por linha",
+		"regular": "Normal",
+		"bold": "Negrito",
+		"black": "Black",
+		"captionText": "Texto da legenda...",
+		"split": "Dividir",
+		"mergeNext": "Juntar com a próxima"
 	}
 }

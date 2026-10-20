@@ -38,7 +38,10 @@
 		"imageUploadError": "请上传 JPG、PNG、GIF 或 WebP 图片文件。",
 		"blur": "模糊",
 		"blurAmount": "模糊程度",
-		"blurShape": "模糊形状"
+		"blurShape": "模糊形状",
+		"imageUploadErrorDescription": "支持的格式：JPG、PNG、GIF 和 WebP。",
+		"imageUploadFailed": "图片上传失败",
+		"imageUploadFailedDescription": "无法读取该图片。请换一个文件试试。"
 	},
 	"fontStyles": {
 		"classic": "经典",
@@ -132,6 +135,90 @@
 		"exported": "转录已导出为 {{format}}",
 		"cancelled": "字幕生成已取消",
 		"clearAll": "全部清除",
-		"captionPlaceholder": "字幕文本..."
+		"captionPlaceholder": "字幕文本...",
+		"import": {
+			"invalidFile": "无法从该文件读取字幕。",
+			"confirmReplace": "要替换现有字幕吗？点击“取消”可追加到末尾。",
+			"success": "已导入 {{count}} 条字幕",
+			"button": "导入 SRT / VTT"
+		},
+		"tabDescription": "为导出视频生成字幕，并设置样式和动画",
+		"section": {
+			"presets": "预设",
+			"presetsDesc": "点按一个预设即可立即更换字幕样式",
+			"animation": "动画",
+			"animationDesc": "字幕在播放时的出现方式",
+			"position": "位置",
+			"positionDesc": "将字幕固定在预设位置，或在预览中自由拖动",
+			"style": "样式",
+			"styleDesc": "微调字体和效果",
+			"transcription": "转录",
+			"transcriptionDesc": "根据录制音频生成字幕",
+			"importExport": "导入 / 导出",
+			"importExportDesc": "导入外部字幕，或保存你自己的字幕",
+			"list": "字幕列表",
+			"listDesc": "编辑、拆分或调整每段字幕的顺序"
+		},
+		"presets": {
+			"nameYourPreset": "预设名称",
+			"save": "保存",
+			"saveAs": "将当前样式保存为预设"
+		},
+		"positions": {
+			"free": "自由",
+			"reset": "恢复预设位置",
+			"top": "顶部",
+			"center": "居中",
+			"bottom": "底部"
+		},
+		"maxWidth": "最大宽度",
+		"list": {
+			"count": "段"
+		},
+		"animation": {
+			"static": "静态",
+			"staticDesc": "无动画",
+			"fade": "淡入淡出",
+			"fadeDesc": "每段字幕淡入淡出",
+			"pop": "弹出",
+			"popDesc": "带回弹的放大出现",
+			"rise": "上升",
+			"riseDesc": "淡入时向上滑动",
+			"activeWord": "当前词",
+			"activeWordDesc": "高亮正在播放的词",
+			"typewriter": "打字机",
+			"typewriterDesc": "逐个显示词语",
+			"karaokeFill": "卡拉 OK",
+			"karaokeFillDesc": "颜色逐渐填充"
+		}
+	},
+	"captionsTab": {
+		"livePreview": "实时预览",
+		"aa": "Aa",
+		"font": "字体",
+		"size": "大小",
+		"italic": "斜体",
+		"spacing": "字距",
+		"line": "行距",
+		"color": "颜色",
+		"text": "文字",
+		"highlight": "高亮",
+		"background": "背景",
+		"opacity": "不透明度",
+		"radius": "圆角",
+		"outlineShadow": "描边与阴影",
+		"outline": "描边",
+		"outlineColor": "描边颜色",
+		"shadowBlur": "阴影模糊",
+		"shadowY": "阴影 Y",
+		"shadowColor": "阴影颜色",
+		"layout": "布局",
+		"wordsPerLine": "每行字数",
+		"regular": "常规",
+		"bold": "粗体",
+		"black": "特粗",
+		"captionText": "字幕文字...",
+		"split": "拆分",
+		"mergeNext": "与下一段合并"
 	}
 }

@@ -118,7 +118,10 @@ export function EffectsSettingsTab({
 		<TabContent>
 			<TabHeader
 				title={tSettings("effects.title")}
-				description="Control visual effects, transitions, and frame properties"
+				description={tSettings(
+					"effectsTab.controlVisualEffectsTransitions",
+					"Control visual effects, transitions, and frame properties",
+				)}
 				trailing={<KeyboardShortcutsHelp />}
 			/>
 
@@ -157,8 +160,11 @@ export function EffectsSettingsTab({
 			</SettingsSection>
 
 			<SettingsSection
-				title="Transitions"
-				description="How zoom transitions connect and blend together"
+				title={tSettings("effectsTab.transitions", "Transitions")}
+				description={tSettings(
+					"effectsTab.howZoomTransitionsConnect",
+					"How zoom transitions connect and blend together",
+				)}
 			>
 				<div className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 					<div>
@@ -166,7 +172,10 @@ export function EffectsSettingsTab({
 							{tSettings("effects.connectZooms")}
 						</div>
 						<div className="text-[10px] text-slate-500 mt-0.5">
-							Smoothly link adjacent zoom regions
+							{tSettings(
+								"effectsTab.smoothlyLinkAdjacentZoom",
+								"Smoothly link adjacent zoom regions",
+							)}
 						</div>
 					</div>
 					<Switch
@@ -186,7 +195,10 @@ export function EffectsSettingsTab({
 							{tSettings("effects.removeBackground")}
 						</div>
 						<div className="text-[10px] text-slate-500 mt-0.5">
-							Hide wallpaper, color, and gradient backgrounds
+							{tSettings(
+								"effectsTab.hideWallpaperColorAnd",
+								"Hide wallpaper, color, and gradient backgrounds",
+							)}
 						</div>
 					</div>
 					<Switch
@@ -198,8 +210,11 @@ export function EffectsSettingsTab({
 			</SettingsSection>
 
 			<SettingsSection
-				title="Visual Effects"
-				description="Fine-tune blur, shadow, and motion effects"
+				title={tSettings("effectsTab.visualEffects", "Visual Effects")}
+				description={tSettings(
+					"effectsTab.fineTuneBlurShadow",
+					"Fine-tune blur, shadow, and motion effects",
+				)}
 			>
 				<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 					<SliderControl
@@ -231,9 +246,14 @@ export function EffectsSettingsTab({
 				<div className="space-y-3 p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner">
 					<div className="flex items-center justify-between">
 						<div>
-							<div className="text-xs font-medium text-slate-300">Temporal Zoom Blur</div>
+							<div className="text-xs font-medium text-slate-300">
+								{tSettings("effectsTab.temporalZoomBlur", "Temporal Zoom Blur")}
+							</div>
 							<div className="text-[10px] text-slate-500 mt-0.5">
-								Blend sub-frame samples during zoom motion. Applied on export.
+								{tSettings(
+									"effectsTab.blendSubFrameSamples",
+									"Blend sub-frame samples during zoom motion. Applied on export.",
+								)}
 							</div>
 						</div>
 						<Switch
@@ -247,7 +267,7 @@ export function EffectsSettingsTab({
 					{zoomTemporalBlur.enabled && (
 						<>
 							<SliderControl
-								label="Blur Samples"
+								label={tSettings("effectsTab.blurSamples", "Blur Samples")}
 								value={zoomTemporalBlur.sampleCount ?? 8}
 								defaultValue={8}
 								min={2}
@@ -260,7 +280,7 @@ export function EffectsSettingsTab({
 								parseInput={(text) => parseInt(text, 10)}
 							/>
 							<SliderControl
-								label="Shutter"
+								label={tSettings("effectsTab.shutter", "Shutter")}
 								value={zoomTemporalBlur.shutterFraction ?? 0.5}
 								defaultValue={0.5}
 								min={0}
@@ -341,7 +361,13 @@ export function EffectsSettingsTab({
 				</div>
 			</SettingsSection>
 
-			<SettingsSection title="Frame" description="Adjust the recording frame shape and spacing">
+			<SettingsSection
+				title={tSettings("effectsTab.frame", "Frame")}
+				description={tSettings(
+					"effectsTab.adjustTheRecordingFrame",
+					"Adjust the recording frame shape and spacing",
+				)}
+			>
 				<div className="rounded-xl border border-white/5 bg-white/[0.04] px-3 py-2.5 transition-colors duration-200 hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]">
 					<div className="flex items-center justify-between gap-3">
 						<div>
@@ -448,7 +474,9 @@ export function EffectsSettingsTab({
 											isActive ? "bg-[#F59E0B] text-white" : "text-slate-400 hover:text-slate-200",
 										)}
 									>
-										{mode === "linked" ? "Linked" : "Per side"}
+										{mode === "linked"
+											? tSettings("effectsTab.linked", "Linked")
+											: tSettings("effectsTab.perSide", "Per side")}
 									</button>
 								);
 							})}
@@ -456,7 +484,7 @@ export function EffectsSettingsTab({
 					</div>
 					{paddingSides === null ? (
 						<SliderControl
-							label="All sides"
+							label={tSettings("effectsTab.allSides", "All sides")}
 							value={padding}
 							defaultValue={DEFAULT_VIDEO_PREVIEW_PADDING}
 							min={0}

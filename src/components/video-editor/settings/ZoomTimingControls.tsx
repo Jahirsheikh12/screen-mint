@@ -5,6 +5,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { useScopedT } from "@/contexts/I18nContext";
 import { SliderControl } from "../SliderControl";
 import {
 	DEFAULT_ZOOM_TIMING,
@@ -30,6 +31,7 @@ export function ZoomTimingControls({
 	connectZooms,
 	onZoomTimingChange,
 }: ZoomTimingControlsProps) {
+	const tSettings = useScopedT("settings");
 	const update = (patch: Partial<ZoomTimingSettings>) =>
 		onZoomTimingChange?.({ ...zoomTiming, ...patch });
 
@@ -44,7 +46,7 @@ export function ZoomTimingControls({
 		max: number,
 	) => (
 		<SliderControl
-			label={label}
+			label={tSettings(`zoomTiming.${key}`, label)}
 			value={zoomTiming[key]}
 			defaultValue={DEFAULT_ZOOM_TIMING[key]}
 			min={0}
@@ -61,7 +63,9 @@ export function ZoomTimingControls({
 		label: string,
 	) => (
 		<div className="flex items-center justify-between gap-3">
-			<span className="text-xs font-medium text-slate-300">{label}</span>
+			<span className="text-xs font-medium text-slate-300">
+				{tSettings(`zoomTiming.${key}`, label)}
+			</span>
 			<Select
 				value={zoomTiming[key]}
 				onValueChange={(value) => update({ [key]: value as ZoomTransitionEasing })}
@@ -72,7 +76,7 @@ export function ZoomTimingControls({
 				<SelectContent className="bg-[#1a1a1f] border-white/10 z-[100]">
 					{ZOOM_TRANSITION_EASING_OPTIONS.map((option) => (
 						<SelectItem key={option.value} value={option.value} className="text-xs">
-							{option.label}
+							{tSettings(`zoomTiming.easing.${option.value}`, option.label)}
 						</SelectItem>
 					))}
 				</SelectContent>

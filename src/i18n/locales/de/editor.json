@@ -38,7 +38,10 @@
 		"imageUploadError": "Bitte laden Sie ein JPG-, PNG-, GIF- oder WebP-Bild hoch.",
 		"blur": "Unschärfe",
 		"blurAmount": "Unschärfestärke",
-		"blurShape": "Form"
+		"blurShape": "Form",
+		"imageUploadErrorDescription": "Unterstützte Formate: JPG, PNG, GIF und WebP.",
+		"imageUploadFailed": "Bild-Upload fehlgeschlagen",
+		"imageUploadFailedDescription": "Das Bild konnte nicht gelesen werden. Versuche eine andere Datei."
 	},
 	"fontStyles": {
 		"classic": "Klassisch",
@@ -132,6 +135,90 @@
 		"exported": "Transkript als {{format}} exportiert",
 		"cancelled": "Untertitelerstellung abgebrochen",
 		"clearAll": "Alle löschen",
-		"captionPlaceholder": "Untertiteltext..."
+		"captionPlaceholder": "Untertiteltext...",
+		"import": {
+			"invalidFile": "In dieser Datei wurden keine Untertitel gefunden.",
+			"confirmReplace": "Vorhandene Untertitel ersetzen? Klicke auf „Abbrechen“, um sie anzuhängen.",
+			"success": "{{count}} Untertitel importiert",
+			"button": "SRT / VTT importieren"
+		},
+		"tabDescription": "Untertitel für deinen Export erzeugen, gestalten und animieren",
+		"section": {
+			"presets": "Vorlagen",
+			"presetsDesc": "Tippe auf eine Vorlage, um die Untertitel sofort umzugestalten",
+			"animation": "Animation",
+			"animationDesc": "Wie Untertitel beim Abspielen erscheinen",
+			"position": "Position",
+			"positionDesc": "Untertitel an einer Position fixieren oder in der Vorschau frei verschieben",
+			"style": "Stil",
+			"styleDesc": "Typografie und Effekte feinjustieren",
+			"transcription": "Transkription",
+			"transcriptionDesc": "Untertitel aus dem Ton deiner Aufnahme erzeugen",
+			"importExport": "Import / Export",
+			"importExportDesc": "Externe Transkripte holen oder eigene speichern",
+			"list": "Untertitelliste",
+			"listDesc": "Einzelne Untertitelabschnitte bearbeiten, teilen oder umsortieren"
+		},
+		"presets": {
+			"nameYourPreset": "Name der Vorlage",
+			"save": "Speichern",
+			"saveAs": "Aktuellen Stil als Vorlage speichern"
+		},
+		"positions": {
+			"free": "Frei",
+			"reset": "Auf Vorlage zurücksetzen",
+			"top": "Oben",
+			"center": "Mitte",
+			"bottom": "Unten"
+		},
+		"maxWidth": "Max. Breite",
+		"list": {
+			"count": "Abschnitte"
+		},
+		"animation": {
+			"static": "Statisch",
+			"staticDesc": "Keine Animation",
+			"fade": "Überblenden",
+			"fadeDesc": "Ein- und Ausblenden je Abschnitt",
+			"pop": "Pop",
+			"popDesc": "Einblenden mit Federn",
+			"rise": "Aufsteigen",
+			"riseDesc": "Steigt beim Einblenden auf",
+			"activeWord": "Aktives Wort",
+			"activeWordDesc": "Hebt das aktuelle Wort hervor",
+			"typewriter": "Schreibmaschine",
+			"typewriterDesc": "Zeigt die Wörter nacheinander",
+			"karaokeFill": "Karaoke",
+			"karaokeFillDesc": "Fortschreitende Farbfüllung"
+		}
+	},
+	"captionsTab": {
+		"livePreview": "Live-Vorschau",
+		"aa": "Aa",
+		"font": "Schrift",
+		"size": "Größe",
+		"italic": "Kursiv",
+		"spacing": "Abstand",
+		"line": "Zeile",
+		"color": "Farbe",
+		"text": "Text",
+		"highlight": "Hervorhebung",
+		"background": "Hintergrund",
+		"opacity": "Deckkraft",
+		"radius": "Radius",
+		"outlineShadow": "Kontur und Schatten",
+		"outline": "Kontur",
+		"outlineColor": "Konturfarbe",
+		"shadowBlur": "Schattenunschärfe",
+		"shadowY": "Schatten Y",
+		"shadowColor": "Schattenfarbe",
+		"layout": "Layout",
+		"wordsPerLine": "Wörter pro Zeile",
+		"regular": "Normal",
+		"bold": "Fett",
+		"black": "Black",
+		"captionText": "Untertiteltext...",
+		"split": "Teilen",
+		"mergeNext": "Mit nächstem zusammenführen"
 	}
 }

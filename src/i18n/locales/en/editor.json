@@ -38,7 +38,10 @@
 		"imageUploadError": "Please upload a JPG, PNG, GIF, or WebP image file.",
 		"blur": "Blur",
 		"blurAmount": "Blur Amount",
-		"blurShape": "Shape"
+		"blurShape": "Shape",
+		"imageUploadErrorDescription": "Supported formats: JPG, PNG, GIF and WebP.",
+		"imageUploadFailed": "Image upload failed",
+		"imageUploadFailedDescription": "The image couldn't be read. Try another file."
 	},
 	"fontStyles": {
 		"classic": "Classic",
@@ -132,6 +135,90 @@
 		"exported": "Transcript exported as {{format}}",
 		"cancelled": "Caption generation cancelled",
 		"clearAll": "Clear All",
-		"captionPlaceholder": "Caption text..."
+		"captionPlaceholder": "Caption text...",
+		"import": {
+			"invalidFile": "Couldn't read any cues from that file.",
+			"confirmReplace": "Replace existing captions? Click Cancel to append instead.",
+			"success": "Imported {{count}} cues",
+			"button": "Import SRT / VTT"
+		},
+		"tabDescription": "Generate, style, and animate captions for your export",
+		"section": {
+			"presets": "Presets",
+			"presetsDesc": "Tap a preset to instantly restyle your captions",
+			"animation": "Animation",
+			"animationDesc": "How captions appear as they play",
+			"position": "Position",
+			"positionDesc": "Pin captions to a preset position or drag freely on the preview",
+			"style": "Style",
+			"styleDesc": "Fine-tune typography and effects",
+			"transcription": "Transcription",
+			"transcriptionDesc": "Generate captions from your recording audio",
+			"importExport": "Import / Export",
+			"importExportDesc": "Bring in external transcripts or save your own",
+			"list": "Caption list",
+			"listDesc": "Edit, split, or reorder individual caption segments"
+		},
+		"presets": {
+			"nameYourPreset": "Preset name",
+			"save": "Save",
+			"saveAs": "Save current style as preset"
+		},
+		"positions": {
+			"free": "Free",
+			"reset": "Reset to preset",
+			"top": "Top",
+			"center": "Center",
+			"bottom": "Bottom"
+		},
+		"maxWidth": "Max Width",
+		"list": {
+			"count": "segments"
+		},
+		"animation": {
+			"static": "Static",
+			"staticDesc": "No animation",
+			"fade": "Fade",
+			"fadeDesc": "Fade in/out per segment",
+			"pop": "Pop",
+			"popDesc": "Scale-in bounce",
+			"rise": "Rise",
+			"riseDesc": "Slide up while fading in",
+			"activeWord": "Active word",
+			"activeWordDesc": "Highlight current word",
+			"typewriter": "Typewriter",
+			"typewriterDesc": "Reveal words one at a time",
+			"karaokeFill": "Karaoke fill",
+			"karaokeFillDesc": "Progressive color fill"
+		}
+	},
+	"captionsTab": {
+		"livePreview": "Live preview",
+		"aa": "Aa",
+		"font": "Font",
+		"size": "Size",
+		"italic": "Italic",
+		"spacing": "Spacing",
+		"line": "Line",
+		"color": "Color",
+		"text": "Text",
+		"highlight": "Highlight",
+		"background": "Background",
+		"opacity": "Opacity",
+		"radius": "Radius",
+		"outlineShadow": "Outline & Shadow",
+		"outline": "Outline",
+		"outlineColor": "Outline color",
+		"shadowBlur": "Shadow blur",
+		"shadowY": "Shadow Y",
+		"shadowColor": "Shadow color",
+		"layout": "Layout",
+		"wordsPerLine": "Words per line",
+		"regular": "Regular",
+		"bold": "Bold",
+		"black": "Black",
+		"captionText": "Caption text...",
+		"split": "Split",
+		"mergeNext": "Merge next"
 	}
 }

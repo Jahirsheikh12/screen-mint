@@ -38,7 +38,10 @@
 		"imageUploadError": "請上傳 JPG、PNG、GIF 或 WebP 圖片。",
 		"blur": "模糊",
 		"blurAmount": "模糊程度",
-		"blurShape": "形狀"
+		"blurShape": "形狀",
+		"imageUploadErrorDescription": "支援格式：JPG、PNG、GIF 和 WebP。",
+		"imageUploadFailed": "圖片上傳失敗",
+		"imageUploadFailedDescription": "無法讀取這張圖片。請換一個檔案試試。"
 	},
 	"fontStyles": {
 		"classic": "經典",
@@ -132,6 +135,90 @@
 		"exported": "已將逐字稿匯出為 {{format}}",
 		"cancelled": "已取消產生字幕",
 		"clearAll": "全部清除",
-		"captionPlaceholder": "字幕文字..."
+		"captionPlaceholder": "字幕文字...",
+		"import": {
+			"invalidFile": "無法從這個檔案讀取字幕。",
+			"confirmReplace": "要取代現有字幕嗎？按「取消」可附加到最後。",
+			"success": "已匯入 {{count}} 則字幕",
+			"button": "匯入 SRT / VTT"
+		},
+		"tabDescription": "為匯出影片產生字幕，並設定樣式與動畫",
+		"section": {
+			"presets": "預設",
+			"presetsDesc": "點一下預設即可立即更換字幕樣式",
+			"animation": "動畫",
+			"animationDesc": "字幕在播放時的出現方式",
+			"position": "位置",
+			"positionDesc": "將字幕固定在預設位置，或在預覽中自由拖曳",
+			"style": "樣式",
+			"styleDesc": "微調字型與效果",
+			"transcription": "轉錄",
+			"transcriptionDesc": "根據錄影音訊產生字幕",
+			"importExport": "匯入 / 匯出",
+			"importExportDesc": "匯入外部字幕，或儲存你自己的字幕",
+			"list": "字幕列表",
+			"listDesc": "編輯、分割或調整每段字幕的順序"
+		},
+		"presets": {
+			"nameYourPreset": "預設名稱",
+			"save": "儲存",
+			"saveAs": "將目前樣式儲存為預設"
+		},
+		"positions": {
+			"free": "自由",
+			"reset": "恢復預設位置",
+			"top": "頂部",
+			"center": "置中",
+			"bottom": "底部"
+		},
+		"maxWidth": "最大寬度",
+		"list": {
+			"count": "段"
+		},
+		"animation": {
+			"static": "靜態",
+			"staticDesc": "無動畫",
+			"fade": "淡入淡出",
+			"fadeDesc": "每段字幕淡入淡出",
+			"pop": "彈出",
+			"popDesc": "帶回彈的放大出現",
+			"rise": "上升",
+			"riseDesc": "淡入時向上滑動",
+			"activeWord": "目前字詞",
+			"activeWordDesc": "醒目標示正在播放的字詞",
+			"typewriter": "打字機",
+			"typewriterDesc": "逐一顯示字詞",
+			"karaokeFill": "卡拉 OK",
+			"karaokeFillDesc": "顏色逐漸填滿"
+		}
+	},
+	"captionsTab": {
+		"livePreview": "即時預覽",
+		"aa": "Aa",
+		"font": "字型",
+		"size": "大小",
+		"italic": "斜體",
+		"spacing": "字距",
+		"line": "行距",
+		"color": "顏色",
+		"text": "文字",
+		"highlight": "醒目標示",
+		"background": "背景",
+		"opacity": "不透明度",
+		"radius": "圓角",
+		"outlineShadow": "外框與陰影",
+		"outline": "外框",
+		"outlineColor": "外框顏色",
+		"shadowBlur": "陰影模糊",
+		"shadowY": "陰影 Y",
+		"shadowColor": "陰影顏色",
+		"layout": "版面",
+		"wordsPerLine": "每行字數",
+		"regular": "一般",
+		"bold": "粗體",
+		"black": "特粗",
+		"captionText": "字幕文字...",
+		"split": "分割",
+		"mergeNext": "與下一段合併"
 	}
 }

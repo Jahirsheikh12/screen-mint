@@ -68,13 +68,19 @@ export function AudioSettingsTab({
 		<TabContent>
 			<TabHeader
 				title={tSettings("audio.title", "Background Audio")}
-				description="Add background music to polish your recording"
+				description={tSettings(
+					"audioTab.addBackgroundMusicTo",
+					"Add background music to polish your recording",
+				)}
 				badge={tSettings("audio.subtleMix", "Subtle Mix")}
 			/>
 
 			<SettingsSection
-				title="Audio Source"
-				description="Upload your own track or browse the built-in library"
+				title={tSettings("audioTab.audioSource", "Audio Source")}
+				description={tSettings(
+					"audioTab.uploadYourOwnTrack",
+					"Upload your own track or browse the built-in library",
+				)}
 			>
 				<div className="p-3 rounded-xl bg-black/40 border border-white/5 shadow-inner">
 					<p className="text-[11px] text-slate-400 leading-relaxed">
@@ -96,7 +102,13 @@ export function AudioSettingsTab({
 				</div>
 			</SettingsSection>
 
-			<SettingsSection title="Built-in Library" description="Curated tracks organized by mood">
+			<SettingsSection
+				title={tSettings("audioTab.builtInLibrary", "Built-in Library")}
+				description={tSettings(
+					"audioTab.curatedTracksOrganizedBy",
+					"Curated tracks organized by mood",
+				)}
+			>
 				<div className="rounded-xl bg-black/40 border border-white/5 shadow-inner overflow-hidden">
 					{Object.entries(builtInTracksByMood).map(([mood, tracks], moodIndex) => (
 						<div
@@ -136,7 +148,9 @@ export function AudioSettingsTab({
 																: "border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-slate-100",
 														)}
 														aria-label={
-															playingBuiltInTrackId === track.id ? "Pause preview" : "Play preview"
+															playingBuiltInTrackId === track.id
+																? tSettings("audioTab.pausePreview", "Pause preview")
+																: tSettings("audioTab.playPreview", "Play preview")
 														}
 													>
 														{playingBuiltInTrackId === track.id ? (
@@ -170,8 +184,11 @@ export function AudioSettingsTab({
 			</SettingsSection>
 
 			<SettingsSection
-				title="Selected Region"
-				description="Adjust properties for the selected audio region"
+				title={tSettings("audioTab.selectedRegion", "Selected Region")}
+				description={tSettings(
+					"audioTab.adjustPropertiesForThe",
+					"Adjust properties for the selected audio region",
+				)}
 				accentColor="amber"
 			>
 				{selectedAudio ? (
@@ -237,7 +254,9 @@ export function AudioSettingsTab({
 								<div className="text-xs font-medium text-slate-300">
 									{tSettings("audio.loop", "Loop audio")}
 								</div>
-								<div className="text-[10px] text-slate-500 mt-0.5">Repeat audio when it ends</div>
+								<div className="text-[10px] text-slate-500 mt-0.5">
+									{tSettings("audioTab.repeatAudioWhenIt", "Repeat audio when it ends")}
+								</div>
 							</div>
 							<Switch
 								checked={selectedAudio.loop}
@@ -248,9 +267,14 @@ export function AudioSettingsTab({
 
 						<div className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 							<div>
-								<div className="text-xs font-medium text-slate-300">Normalize</div>
+								<div className="text-xs font-medium text-slate-300">
+									{tSettings("audioTab.normalize", "Normalize")}
+								</div>
 								<div className="text-[10px] text-slate-500 mt-0.5">
-									Even out loudness so the clip peaks just below full volume
+									{tSettings(
+										"audioTab.evenOutLoudnessSo",
+										"Even out loudness so the clip peaks just below full volume",
+									)}
 								</div>
 							</div>
 							<Switch

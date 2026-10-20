@@ -57,7 +57,8 @@
 		"addSuccess": "Font \"{{name}}\" aggiunto",
 		"addFailed": "Impossibile aggiungere il font",
 		"loadTimeout": "Il font ha impiegato troppo a caricarsi. Controlla l'URL e riprova.",
-		"loadFailed": "Impossibile caricare il font. Verifica che l'URL di Google Fonts sia corretto."
+		"loadFailed": "Impossibile caricare il font. Verifica che l'URL di Google Fonts sia corretto.",
+		"cancel": "Annulla"
 	},
 	"shortcutsConfig": {
 		"title": "Scorciatoie da tastiera",

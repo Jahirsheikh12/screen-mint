@@ -38,7 +38,10 @@
 		"imageUploadError": "Carica un'immagine JPG, PNG, GIF o WebP.",
 		"blur": "Sfocatura",
 		"blurAmount": "Intensità sfocatura",
-		"blurShape": "Forma"
+		"blurShape": "Forma",
+		"imageUploadErrorDescription": "Formati supportati: JPG, PNG, GIF e WebP.",
+		"imageUploadFailed": "Caricamento dell’immagine non riuscito",
+		"imageUploadFailedDescription": "Impossibile leggere l’immagine. Prova con un altro file."
 	},
 	"fontStyles": {
 		"classic": "Classico",
@@ -132,6 +135,90 @@
 		"exported": "Trascrizione esportata in {{format}}",
 		"cancelled": "Generazione dei sottotitoli annullata",
 		"clearAll": "Cancella tutto",
-		"captionPlaceholder": "Testo del sottotitolo..."
+		"captionPlaceholder": "Testo del sottotitolo...",
+		"import": {
+			"invalidFile": "Impossibile leggere sottotitoli da quel file.",
+			"confirmReplace": "Sostituire i sottotitoli esistenti? Fai clic su Annulla per aggiungerli in coda.",
+			"success": "{{count}} sottotitoli importati",
+			"button": "Importa SRT / VTT"
+		},
+		"tabDescription": "Genera, stilizza e anima i sottotitoli dell’esportazione",
+		"section": {
+			"presets": "Stili",
+			"presetsDesc": "Tocca uno stile per cambiare subito l’aspetto dei sottotitoli",
+			"animation": "Animazione",
+			"animationDesc": "Come appaiono i sottotitoli durante la riproduzione",
+			"position": "Posizione",
+			"positionDesc": "Fissa i sottotitoli in una posizione o trascinali liberamente nell’anteprima",
+			"style": "Stile",
+			"styleDesc": "Regola tipografia ed effetti",
+			"transcription": "Trascrizione",
+			"transcriptionDesc": "Genera sottotitoli dall’audio della registrazione",
+			"importExport": "Importa / esporta",
+			"importExportDesc": "Importa trascrizioni esterne o salva le tue",
+			"list": "Elenco sottotitoli",
+			"listDesc": "Modifica, dividi o riordina i singoli segmenti"
+		},
+		"presets": {
+			"nameYourPreset": "Nome dello stile",
+			"save": "Salva",
+			"saveAs": "Salva lo stile attuale"
+		},
+		"positions": {
+			"free": "Libera",
+			"reset": "Torna alla posizione",
+			"top": "In alto",
+			"center": "Al centro",
+			"bottom": "In basso"
+		},
+		"maxWidth": "Larghezza max",
+		"list": {
+			"count": "segmenti"
+		},
+		"animation": {
+			"static": "Statico",
+			"staticDesc": "Nessuna animazione",
+			"fade": "Dissolvenza",
+			"fadeDesc": "Entra ed esce a ogni segmento",
+			"pop": "Pop",
+			"popDesc": "Entrata con rimbalzo",
+			"rise": "Salita",
+			"riseDesc": "Sale mentre appare",
+			"activeWord": "Parola attiva",
+			"activeWordDesc": "Evidenzia la parola corrente",
+			"typewriter": "Macchina da scrivere",
+			"typewriterDesc": "Mostra le parole una alla volta",
+			"karaokeFill": "Karaoke",
+			"karaokeFillDesc": "Riempimento progressivo del colore"
+		}
+	},
+	"captionsTab": {
+		"livePreview": "Anteprima dal vivo",
+		"aa": "Aa",
+		"font": "Carattere",
+		"size": "Dimensione",
+		"italic": "Corsivo",
+		"spacing": "Spaziatura",
+		"line": "Interlinea",
+		"color": "Colore",
+		"text": "Testo",
+		"highlight": "Evidenziazione",
+		"background": "Sfondo",
+		"opacity": "Opacità",
+		"radius": "Raggio",
+		"outlineShadow": "Contorno e ombra",
+		"outline": "Contorno",
+		"outlineColor": "Colore del contorno",
+		"shadowBlur": "Sfocatura dell’ombra",
+		"shadowY": "Ombra Y",
+		"shadowColor": "Colore dell’ombra",
+		"layout": "Layout",
+		"wordsPerLine": "Parole per riga",
+		"regular": "Normale",
+		"bold": "Grassetto",
+		"black": "Black",
+		"captionText": "Testo del sottotitolo...",
+		"split": "Dividi",
+		"mergeNext": "Unisci al successivo"
 	}
 }

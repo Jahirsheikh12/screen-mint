@@ -144,7 +144,8 @@
 		"kbdLayer": "切換圖層",
 		"kbdShare": "分享",
 		"kbdClose": "關閉",
-		"kbdSwitch": "切換分頁"
+		"kbdSwitch": "切換分頁",
+		"eyebrow": "準備錄製"
 	},
 	"permissions": {
 		"screenRecordingNeeded": "開始前 ScreenMint 需要螢幕錄製權限。已開啟「系統設定」。開啟權限後，請結束並重新開啟 ScreenMint。",

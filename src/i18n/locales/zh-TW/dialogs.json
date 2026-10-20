@@ -57,7 +57,8 @@
 		"addSuccess": "已新增字型「{{name}}」",
 		"addFailed": "無法新增字型",
 		"loadTimeout": "字型載入時間過長。請檢查網址後再試一次。",
-		"loadFailed": "無法載入字型。請確認 Google Fonts 網址正確。"
+		"loadFailed": "無法載入字型。請確認 Google Fonts 網址正確。",
+		"cancel": "取消"
 	},
 	"shortcutsConfig": {
 		"title": "鍵盤快速鍵",

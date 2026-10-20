@@ -57,7 +57,8 @@
 		"addSuccess": "Police « {{name}} » ajoutée",
 		"addFailed": "Impossible d'ajouter la police",
 		"loadTimeout": "Le chargement de la police a pris trop de temps. Vérifiez l'URL et réessayez.",
-		"loadFailed": "La police n'a pas pu être chargée. Vérifiez que l'URL Google Fonts est correcte."
+		"loadFailed": "La police n'a pas pu être chargée. Vérifiez que l'URL Google Fonts est correcte.",
+		"cancel": "Annuler"
 	},
 	"shortcutsConfig": {
 		"title": "Raccourcis clavier",
