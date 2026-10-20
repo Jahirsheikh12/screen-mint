@@ -58,7 +58,8 @@
 		"addFailed": "無法新增字型",
 		"loadTimeout": "字型載入時間過長。請檢查網址後再試一次。",
 		"loadFailed": "無法載入字型。請確認 Google Fonts 網址正確。",
-		"cancel": "取消"
+		"cancel": "取消",
+		"failedToLoadFont": "無法載入字型"
 	},
 	"shortcutsConfig": {
 		"title": "鍵盤快速鍵",
@@ -76,5 +77,31 @@
 		"resetToDefaults": "還原預設值",
 		"cancel": "取消",
 		"save": "儲存"
+	},
+	"projectBrowser": {
+		"projects": "專案",
+		"recentProjectsAndProjects": "最近的專案和儲存在錄影資料夾中的專案。",
+		"loadingProjects": "正在載入專案…",
+		"noSavedProjectsYet": "還沒有已儲存的專案"
+	},
+	"editor": {
+		"savePreset": "儲存預設",
+		"giveThisPresetA": "為這個預設取一個清楚的名稱，方便之後再次使用。",
+		"presetName": "預設名稱",
+		"myPreset": "我的預設",
+		"cancel": "取消",
+		"savePreset2": "儲存預設",
+		"confirmAction": "確認動作",
+		"continue": "繼續"
+	},
+	"quickShare": {
+		"quickShare": "快速分享",
+		"chooseWhatToDo": "選擇接下來要如何處理這段錄影。",
+		"save": "儲存",
+		"exportAndSaveTo": "匯出並儲存為檔案。",
+		"copy": "複製",
+		"exportLocallyAndCopy": "在本機匯出並複製已儲存檔案的路徑。",
+		"edit": "編輯",
+		"openTheRecordingIn": "在編輯器中開啟這段錄影。"
 	}
 }

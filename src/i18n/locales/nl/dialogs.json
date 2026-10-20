@@ -58,7 +58,8 @@
 		"addFailed": "Lettertype toevoegen mislukt",
 		"loadTimeout": "Het lettertype laadt te lang. Controleer de URL en probeer het opnieuw.",
 		"loadFailed": "Het lettertype kon niet worden geladen. Controleer of de Google Fonts-URL klopt.",
-		"cancel": "Annuleren"
+		"cancel": "Annuleren",
+		"failedToLoadFont": "Kan het lettertype niet laden"
 	},
 	"shortcutsConfig": {
 		"title": "Sneltoetsen",
@@ -76,5 +77,31 @@
 		"resetToDefaults": "Standaard herstellen",
 		"cancel": "Annuleren",
 		"save": "Opslaan"
+	},
+	"projectBrowser": {
+		"projects": "Projecten",
+		"recentProjectsAndProjects": "Recente projecten en projecten in je opnamemap.",
+		"loadingProjects": "Projecten laden…",
+		"noSavedProjectsYet": "Nog geen opgeslagen projecten"
+	},
+	"editor": {
+		"savePreset": "Preset opslaan",
+		"giveThisPresetA": "Geef deze preset een duidelijke naam zodat je hem later makkelijk terugvindt.",
+		"presetName": "Naam van de preset",
+		"myPreset": "Mijn preset",
+		"cancel": "Annuleren",
+		"savePreset2": "Preset opslaan",
+		"confirmAction": "Actie bevestigen",
+		"continue": "Doorgaan"
+	},
+	"quickShare": {
+		"quickShare": "Snel delen",
+		"chooseWhatToDo": "Kies wat je nu met deze opname wilt doen.",
+		"save": "Opslaan",
+		"exportAndSaveTo": "Exporteren en als bestand opslaan.",
+		"copy": "Kopiëren",
+		"exportLocallyAndCopy": "Lokaal exporteren en het bestandspad kopiëren.",
+		"edit": "Bewerken",
+		"openTheRecordingIn": "De opname in de editor openen."
 	}
 }

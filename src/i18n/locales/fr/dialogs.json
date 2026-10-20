@@ -58,7 +58,8 @@
 		"addFailed": "Impossible d'ajouter la police",
 		"loadTimeout": "Le chargement de la police a pris trop de temps. Vérifiez l'URL et réessayez.",
 		"loadFailed": "La police n'a pas pu être chargée. Vérifiez que l'URL Google Fonts est correcte.",
-		"cancel": "Annuler"
+		"cancel": "Annuler",
+		"failedToLoadFont": "Impossible de charger la police"
 	},
 	"shortcutsConfig": {
 		"title": "Raccourcis clavier",
@@ -76,5 +77,31 @@
 		"resetToDefaults": "Rétablir les valeurs par défaut",
 		"cancel": "Annuler",
 		"save": "Enregistrer"
+	},
+	"projectBrowser": {
+		"projects": "Projets",
+		"recentProjectsAndProjects": "Projets récents et projets enregistrés dans votre dossier d’enregistrements.",
+		"loadingProjects": "Chargement des projets…",
+		"noSavedProjectsYet": "Aucun projet enregistré pour l’instant"
+	},
+	"editor": {
+		"savePreset": "Enregistrer le style",
+		"giveThisPresetA": "Donnez un nom clair à ce style pour le réutiliser facilement.",
+		"presetName": "Nom du style",
+		"myPreset": "Mon style",
+		"cancel": "Annuler",
+		"savePreset2": "Enregistrer le style",
+		"confirmAction": "Confirmer l’action",
+		"continue": "Continuer"
+	},
+	"quickShare": {
+		"quickShare": "Partage rapide",
+		"chooseWhatToDo": "Choisissez la suite pour cet enregistrement.",
+		"save": "Enregistrer",
+		"exportAndSaveTo": "Exporter et enregistrer dans un fichier.",
+		"copy": "Copier",
+		"exportLocallyAndCopy": "Exporter en local et copier le chemin du fichier.",
+		"edit": "Modifier",
+		"openTheRecordingIn": "Ouvrir l’enregistrement dans l’éditeur."
 	}
 }

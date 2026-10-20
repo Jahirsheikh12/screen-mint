@@ -8,6 +8,7 @@ import { formatShortcut } from "@/utils/platformUtils";
 export function KeyboardShortcutsHelp() {
 	const { shortcuts, isMac, openConfig } = useShortcuts();
 	const t = useScopedT("editor");
+	const tShortcuts = useScopedT("shortcuts");
 
 	const [scrollLabels, setScrollLabels] = useState({
 		pan: "Shift + Ctrl + Scroll",
@@ -44,7 +45,9 @@ export function KeyboardShortcutsHelp() {
 				<div className="space-y-1.5 text-[10px]">
 					{SHORTCUT_ACTIONS.map((action) => (
 						<div key={action} className="flex items-center justify-between">
-							<span className="text-slate-400">{SHORTCUT_LABELS[action]}</span>
+							<span className="text-slate-400">
+								{tShortcuts(`actions.${action}`, SHORTCUT_LABELS[action])}
+							</span>
 							<kbd className="px-1 py-0.5 bg-white/5 border border-white/10 rounded text-[#F59E0B] font-mono">
 								{formatBinding(shortcuts[action], isMac)}
 							</kbd>

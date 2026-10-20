@@ -58,7 +58,8 @@
 		"addFailed": "添加字体失败",
 		"loadTimeout": "字体加载超时。请检查 URL 后重试。",
 		"loadFailed": "无法加载字体。请确认 Google Fonts URL 是否正确。",
-		"cancel": "取消"
+		"cancel": "取消",
+		"failedToLoadFont": "无法载入字体"
 	},
 	"shortcutsConfig": {
 		"title": "键盘快捷键",
@@ -76,5 +77,31 @@
 		"resetToDefaults": "重置为默认",
 		"cancel": "取消",
 		"save": "保存"
+	},
+	"projectBrowser": {
+		"projects": "项目",
+		"recentProjectsAndProjects": "最近的项目和保存在录制文件夹中的项目。",
+		"loadingProjects": "正在载入项目…",
+		"noSavedProjectsYet": "还没有已保存的项目"
+	},
+	"editor": {
+		"savePreset": "保存预设",
+		"giveThisPresetA": "为此预设起一个清楚的名称，方便以后再次使用。",
+		"presetName": "预设名称",
+		"myPreset": "我的预设",
+		"cancel": "取消",
+		"savePreset2": "保存预设",
+		"confirmAction": "确认操作",
+		"continue": "继续"
+	},
+	"quickShare": {
+		"quickShare": "快速分享",
+		"chooseWhatToDo": "选择接下来如何处理这段录制。",
+		"save": "保存",
+		"exportAndSaveTo": "导出并保存为文件。",
+		"copy": "复制",
+		"exportLocallyAndCopy": "在本地导出并复制已保存文件的路径。",
+		"edit": "编辑",
+		"openTheRecordingIn": "在编辑器中打开这段录制。"
 	}
 }

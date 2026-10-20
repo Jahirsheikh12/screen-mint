@@ -118,8 +118,8 @@ export function StudioSettingsTab({
 				<div className="relative p-3">
 					<div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(245,158,11,0.18),transparent_42%),linear-gradient(135deg,rgba(45,212,191,0.1),transparent_38%)]" />
 					<div className="relative">
-						<div className="mb-3 flex items-start justify-between gap-3">
-							<div className="flex items-center gap-2">
+						<div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+							<div className="flex min-w-0 items-center gap-2">
 								<span className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-300/12 text-amber-200 ring-1 ring-amber-200/15">
 									<WandSparkles className="h-4 w-4" />
 								</span>
@@ -134,7 +134,7 @@ export function StudioSettingsTab({
 							</div>
 							<span
 								className={cn(
-									"shrink-0 whitespace-nowrap rounded-full border px-2 py-1 text-[9px] font-semibold uppercase tracking-wide shadow-sm",
+									"max-w-full rounded-full border px-2 py-1 text-center text-[9px] font-semibold uppercase leading-tight tracking-wide shadow-sm",
 									zoomState.tone,
 								)}
 							>

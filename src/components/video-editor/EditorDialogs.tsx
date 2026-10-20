@@ -8,6 +8,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useI18n } from "@/contexts/I18nContext";
 import type { ConfirmDialogState } from "./editorSession";
 
 interface PresetNameDialogProps {
@@ -25,18 +26,22 @@ export function PresetNameDialog({
 	onCancel,
 	onConfirm,
 }: PresetNameDialogProps) {
+	const { t } = useI18n();
 	return (
 		<Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
 			<DialogContent className="border-white/10 bg-[#0A0F0D] text-white sm:max-w-md">
 				<DialogHeader>
-					<DialogTitle>Save Preset</DialogTitle>
+					<DialogTitle>{t("dialogs.editor.savePreset", "Save Preset")}</DialogTitle>
 					<DialogDescription className="text-slate-400">
-						Give this preset a clear name so it is easy to reuse later.
+						{t(
+							"dialogs.editor.giveThisPresetA",
+							"Give this preset a clear name so it is easy to reuse later.",
+						)}
 					</DialogDescription>
 				</DialogHeader>
 				<div className="space-y-2">
 					<label htmlFor="preset-name" className="text-sm font-medium text-slate-200">
-						Preset name
+						{t("dialogs.editor.presetName", "Preset name")}
 					</label>
 					<Input
 						id="preset-name"
@@ -48,20 +53,20 @@ export function PresetNameDialog({
 							}
 						}}
 						autoFocus
-						placeholder="My preset"
+						placeholder={t("dialogs.editor.myPreset", "My preset")}
 						className="border-white/10 bg-white/[0.04] text-white"
 					/>
 				</div>
 				<DialogFooter>
 					<Button variant="secondary" onClick={onCancel}>
-						Cancel
+						{t("dialogs.editor.cancel", "Cancel")}
 					</Button>
 					<Button
 						onClick={onConfirm}
 						disabled={name.trim().length === 0}
 						className="bg-[#F59E0B] text-black hover:bg-[#d97706]"
 					>
-						Save preset
+						{t("dialogs.editor.savePreset2", "Save preset")}
 					</Button>
 				</DialogFooter>
 			</DialogContent>
@@ -76,18 +81,21 @@ interface ConfirmActionDialogProps {
 }
 
 export function ConfirmActionDialog({ dialog, onCancel, onConfirm }: ConfirmActionDialogProps) {
+	const { t } = useI18n();
 	return (
 		<Dialog open={Boolean(dialog)} onOpenChange={(open) => !open && onCancel()}>
 			<DialogContent className="border-white/10 bg-[#0A0F0D] text-white sm:max-w-md">
 				<DialogHeader>
-					<DialogTitle>{dialog?.title ?? "Confirm action"}</DialogTitle>
+					<DialogTitle>
+						{dialog?.title ?? t("dialogs.editor.confirmAction", "Confirm action")}
+					</DialogTitle>
 					<DialogDescription className="whitespace-pre-line text-slate-400">
 						{dialog?.description ?? ""}
 					</DialogDescription>
 				</DialogHeader>
 				<DialogFooter>
 					<Button variant="secondary" onClick={onCancel}>
-						Cancel
+						{t("dialogs.editor.cancel", "Cancel")}
 					</Button>
 					<Button
 						onClick={onConfirm}
@@ -97,7 +105,7 @@ export function ConfirmActionDialog({ dialog, onCancel, onConfirm }: ConfirmActi
 								: "bg-[#F59E0B] text-black hover:bg-[#d97706]"
 						}
 					>
-						{dialog?.confirmLabel ?? "Continue"}
+						{dialog?.confirmLabel ?? t("dialogs.editor.continue", "Continue")}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

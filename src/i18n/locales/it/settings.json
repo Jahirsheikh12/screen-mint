@@ -391,7 +391,10 @@
 		"warnWeb": "L’ottimizzazione web usa profili H.264 più sicuri mantenendo dimensioni e frequenza scelte.",
 		"warnLongGif": "I GIF lunghi possono essere pesanti e lenti. L’MP4 spesso si condivide meglio.",
 		"warnGifSize": "Questo GIF probabilmente supererà i 15 MB. Riduci risoluzione, FPS o numero di colori.",
-		"warnGifSource": "I GIF alla risoluzione della sorgente oltre 1080p possono essere molto lenti e pesanti."
+		"warnGifSource": "I GIF alla risoluzione della sorgente oltre 1080p possono essere molto lenti e pesanti.",
+		"mp4Video": "Video MP4",
+		"gifAnimation": "Animazione GIF",
+		"mbps": "Mbps"
 	},
 	"webcamTab": {
 		"configureYourWebcamOverlay": "Configura come appare la webcam",

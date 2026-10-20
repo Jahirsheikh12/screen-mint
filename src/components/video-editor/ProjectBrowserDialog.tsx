@@ -7,6 +7,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { useI18n } from "@/contexts/I18nContext";
 
 type ProjectEntry = {
 	path: string;
@@ -26,6 +27,7 @@ export function ProjectBrowserDialog({
 	onOpenChange,
 	onOpenProject,
 }: ProjectBrowserDialogProps) {
+	const { t } = useI18n();
 	const [projects, setProjects] = useState<ProjectEntry[] | null>(null);
 
 	useEffect(() => {
@@ -44,16 +46,23 @@ export function ProjectBrowserDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-3xl bg-[#141416] border-white/10 text-slate-200">
 				<DialogHeader>
-					<DialogTitle>Projects</DialogTitle>
+					<DialogTitle>{t("dialogs.projectBrowser.projects", "Projects")}</DialogTitle>
 					<DialogDescription className="text-slate-500">
-						Recent projects and projects saved in your recordings folder.
+						{t(
+							"dialogs.projectBrowser.recentProjectsAndProjects",
+							"Recent projects and projects saved in your recordings folder.",
+						)}
 					</DialogDescription>
 				</DialogHeader>
 
 				{projects === null ? (
-					<p className="py-10 text-center text-xs text-slate-500">Loading projects…</p>
+					<p className="py-10 text-center text-xs text-slate-500">
+						{t("dialogs.projectBrowser.loadingProjects", "Loading projects\u2026")}
+					</p>
 				) : projects.length === 0 ? (
-					<p className="py-10 text-center text-xs text-slate-500">No saved projects yet</p>
+					<p className="py-10 text-center text-xs text-slate-500">
+						{t("dialogs.projectBrowser.noSavedProjectsYet", "No saved projects yet")}
+					</p>
 				) : (
 					<ul className="grid max-h-[60vh] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3">
 						{projects.map((project) => (

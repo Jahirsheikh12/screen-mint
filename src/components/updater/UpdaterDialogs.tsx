@@ -160,7 +160,7 @@ export function UpdaterDialogs({ windowType }: UpdaterDialogsProps) {
 					}
 				}}
 			>
-				<DialogContent className="max-w-[440px] overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0A0F0D] p-0 text-white shadow-2xl shadow-black/60 [&>button]:text-slate-400 [&>button:hover]:bg-white/[0.06] [&>button:hover]:text-white">
+				<DialogContent className="max-w-[440px] overflow-y-auto rounded-2xl border border-white/[0.08] bg-[#0A0F0D] p-0 text-white shadow-2xl shadow-black/60 [&>button]:text-slate-400 [&>button:hover]:bg-white/[0.06] [&>button:hover]:text-white">
 					<div className="h-[2px] bg-gradient-to-r from-transparent via-[#F59E0B] to-transparent" />
 					<div className="p-6">
 						<div className="mb-5 flex items-start gap-3">
@@ -279,7 +279,7 @@ export function UpdaterDialogs({ windowType }: UpdaterDialogsProps) {
 					}
 				}}
 			>
-				<DialogContent className="max-w-2xl overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0A0F0D] p-0 text-white shadow-2xl shadow-black/60 [&>button]:text-slate-400 [&>button:hover]:bg-white/[0.06] [&>button:hover]:text-white">
+				<DialogContent className="max-w-2xl overflow-y-auto rounded-2xl border border-white/[0.08] bg-[#0A0F0D] p-0 text-white shadow-2xl shadow-black/60 [&>button]:text-slate-400 [&>button:hover]:bg-white/[0.06] [&>button:hover]:text-white">
 					<div className="h-[2px] bg-gradient-to-r from-transparent via-[#F59E0B] to-transparent" />
 					<div className="p-6">
 						<div className="mb-5 flex items-start gap-3">

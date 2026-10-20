@@ -1,5 +1,6 @@
 import { ArrowDown, ArrowUp, Eye, EyeOff, Lock, LockOpen, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useI18n } from "@/contexts/I18nContext";
 import { cn } from "@/lib/utils";
 import type { EditorLayer, EditorLayerTransform } from "./layerModel";
 import {
@@ -55,6 +56,7 @@ function transformWithCrop(
 }
 
 export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPanelProps) {
+	const { t } = useI18n();
 	const ordered = useMemo(() => [...layers].sort((a, b) => b.zIndex - a.zIndex), [layers]);
 	const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
 	const selectedLayer = layers.find((layer) => layer.id === selectedLayerId) ?? ordered[0] ?? null;
@@ -78,14 +80,17 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 		>
 			<div className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar p-4 relative pb-20">
 				<SettingsSection
-					title="Layers"
-					description={`${layers.length > 0 ? `${layers.length} editable layer${layers.length === 1 ? "" : "s"}` : "No video layer loaded"}`}
+					title={t("editor.layerPanel.layers", "Layers")}
+					description={`${layers.length > 0 ? `${layers.length} editable layer${layers.length === 1 ? "" : "s"}` : t("editor.layerPanel.noVideoLayerLoaded", "No video layer loaded")}`}
 					accentColor="amber"
 				>
 					<div className="flex flex-col gap-1 pr-1 -mr-1">
 						{ordered.length === 0 ? (
 							<div className="rounded-lg border border-dashed border-white/10 px-3 py-4 text-xs text-slate-400 text-center bg-white/[0.02]">
-								Load or record a video to create the primary editable layer.
+								{t(
+									"editor.layerPanel.loadOrRecordA",
+									"Load or record a video to create the primary editable layer.",
+								)}
 							</div>
 						) : (
 							ordered.map((layer) => {
@@ -134,7 +139,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 											>
 												{usable
 													? `z ${layer.zIndex} · ${Math.round(layer.opacity * 100)}%`
-													: "Pending captured media"}
+													: t("editor.layerPanel.pendingCapturedMedia", "Pending captured media")}
 											</div>
 										</div>
 										<div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
@@ -172,8 +177,11 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 
 				{selectedLayer && (
 					<SettingsSection
-						title="Layer Settings"
-						description="Transform and visibility controls"
+						title={t("editor.layerPanel.layerSettings", "Layer Settings")}
+						description={t(
+							"editor.layerPanel.transformAndVisibilityControls",
+							"Transform and visibility controls",
+						)}
 						accentColor="amber"
 					>
 						<div className="flex items-center justify-between gap-2 p-1 bg-white/[0.03] border border-white/[0.05] rounded-xl pl-2">
@@ -183,7 +191,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 									onLayersChange(renameEditorLayer(layers, selectedLayer.id, event.target.value))
 								}
 								className="min-w-0 flex-1 bg-transparent border-none text-[11px] font-bold text-amber-100 outline-none placeholder:text-slate-600 focus:ring-0 px-1"
-								aria-label="Layer name"
+								aria-label={t("editor.layerPanel.layerName", "Layer name")}
 							/>
 							<div className="flex gap-1 shrink-0">
 								<button
@@ -194,7 +202,11 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 											setEditorLayerVisibility(layers, selectedLayer.id, !selectedLayer.visible),
 										)
 									}
-									aria-label={selectedLayer.visible ? "Hide layer" : "Show layer"}
+									aria-label={
+										selectedLayer.visible
+											? t("editor.layerPanel.hideLayer", "Hide layer")
+											: t("editor.layerPanel.showLayer", "Show layer")
+									}
 								>
 									{selectedLayer.visible ? (
 										<Eye className="h-4 w-4" />
@@ -210,7 +222,11 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 											setEditorLayerLocked(layers, selectedLayer.id, !selectedLayer.locked),
 										)
 									}
-									aria-label={selectedLayer.locked ? "Unlock layer" : "Lock layer"}
+									aria-label={
+										selectedLayer.locked
+											? t("editor.layerPanel.unlockLayer", "Unlock layer")
+											: t("editor.layerPanel.lockLayer", "Lock layer")
+									}
 								>
 									{selectedLayer.locked ? (
 										<Lock className="h-4 w-4" />
@@ -223,17 +239,23 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 
 						{!hasUsableMedia(selectedLayer) && (
 							<div className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-[10px] font-medium text-amber-200/80 mt-1">
-								This layer is planned but does not have captured media yet.
+								{t(
+									"editor.layerPanel.thisLayerIsPlanned",
+									"This layer is planned but does not have captured media yet.",
+								)}
 							</div>
 						)}
 
 						<div className="mt-3">
 							<div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-								<div className="w-2 h-2 rounded-full bg-amber-500/50" /> Transform
+								<div className="w-2 h-2 rounded-full bg-amber-500/50" />{" "}
+								{t("editor.layerPanel.transform", "Transform")}
 							</div>
 							<div className="grid grid-cols-3 gap-2">
 								<label className="space-y-1.5">
-									<span className="text-[10px] font-medium text-slate-500 pl-0.5">X Position</span>
+									<span className="text-[10px] font-medium text-slate-500 pl-0.5">
+										{t("editor.layerPanel.xPosition", "X Position")}
+									</span>
 									<input
 										type="number"
 										value={selectedLayer.transform.x}
@@ -247,7 +269,9 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 									/>
 								</label>
 								<label className="space-y-1.5">
-									<span className="text-[10px] font-medium text-slate-500 pl-0.5">Y Position</span>
+									<span className="text-[10px] font-medium text-slate-500 pl-0.5">
+										{t("editor.layerPanel.yPosition", "Y Position")}
+									</span>
 									<input
 										type="number"
 										value={selectedLayer.transform.y}
@@ -261,7 +285,9 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 									/>
 								</label>
 								<label className="space-y-1.5">
-									<span className="text-[10px] font-medium text-slate-500 pl-0.5">Scale</span>
+									<span className="text-[10px] font-medium text-slate-500 pl-0.5">
+										{t("editor.layerPanel.scale", "Scale")}
+									</span>
 									<input
 										type="number"
 										step="0.05"
@@ -279,7 +305,9 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 							</div>
 							<div className="grid grid-cols-3 gap-2 mt-2">
 								<label className="space-y-1.5">
-									<span className="text-[10px] font-medium text-slate-500 pl-0.5">Opacity</span>
+									<span className="text-[10px] font-medium text-slate-500 pl-0.5">
+										{t("editor.layerPanel.opacity", "Opacity")}
+									</span>
 									<input
 										type="number"
 										step="0.05"
@@ -300,7 +328,9 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 									/>
 								</label>
 								<label className="space-y-1.5">
-									<span className="text-[10px] font-medium text-slate-500 pl-0.5">Start ms</span>
+									<span className="text-[10px] font-medium text-slate-500 pl-0.5">
+										{t("editor.layerPanel.startMs", "Start ms")}
+									</span>
 									<input
 										type="number"
 										min="0"
@@ -318,7 +348,9 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 									/>
 								</label>
 								<label className="space-y-1.5">
-									<span className="text-[10px] font-medium text-slate-500 pl-0.5">End ms</span>
+									<span className="text-[10px] font-medium text-slate-500 pl-0.5">
+										{t("editor.layerPanel.endMs", "End ms")}
+									</span>
 									<input
 										type="number"
 										min="0"
@@ -343,7 +375,8 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 
 						<div className="mt-4">
 							<div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-								<div className="w-2 h-2 rounded-full bg-blue-500/50" /> Crop
+								<div className="w-2 h-2 rounded-full bg-blue-500/50" />{" "}
+								{t("editor.layerPanel.crop", "Crop")}
 							</div>
 							<div className="grid grid-cols-4 gap-2">
 								{(["x", "y", "width", "height"] as const).map((key) => (
@@ -387,7 +420,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 										onLayersChange(moveEditorLayerZ(layers, selectedLayer.id, "forward"))
 									}
 									disabled={!editable}
-									aria-label="Move layer forward"
+									aria-label={t("editor.layerPanel.moveLayerForward", "Move layer forward")}
 								>
 									<ArrowUp className="h-4 w-4" />
 								</button>
@@ -399,7 +432,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 										onLayersChange(moveEditorLayerZ(layers, selectedLayer.id, "backward"))
 									}
 									disabled={!editable}
-									aria-label="Move layer backward"
+									aria-label={t("editor.layerPanel.moveLayerBackward", "Move layer backward")}
 								>
 									<ArrowDown className="h-4 w-4" />
 								</button>

@@ -348,13 +348,13 @@ export function CaptionsTab(props: CaptionsTabProps) {
 							onClick={() => onCaptionSettingsChange({ animationMode: mode.value })}
 							title={t(`${mode.i18nKey}Desc`, mode.description)}
 							className={cn(
-								"h-11 rounded-xl border text-[10px] font-semibold transition-colors duration-150 flex flex-col items-center justify-center gap-0.5",
+								"min-h-11 min-w-0 rounded-xl border px-1 py-1 text-center text-[10px] font-semibold leading-tight transition-colors duration-150 flex flex-col items-center justify-center gap-0.5 break-words [hyphens:auto]",
 								captionSettings.animationMode === mode.value
 									? "border-[#F59E0B] bg-gradient-to-b from-[#F59E0B]/15 to-[#F59E0B]/5 text-white"
 									: "border-white/5 bg-black/30 text-slate-400 hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]",
 							)}
 						>
-							<span>{t(mode.i18nKey, mode.fallback)}</span>
+							<span className="max-w-full">{t(mode.i18nKey, mode.fallback)}</span>
 						</button>
 					))}
 				</div>
@@ -381,7 +381,7 @@ export function CaptionsTab(props: CaptionsTabProps) {
 										onToggleCaptionPositionEditing(false);
 									}}
 									className={cn(
-										"h-8 rounded-lg border text-[10px] font-semibold capitalize transition-colors",
+										"min-h-8 min-w-0 px-1 py-1 leading-tight break-words rounded-lg border text-[10px] font-semibold capitalize transition-colors",
 										isActive
 											? "border-[#F59E0B] bg-[#F59E0B] text-white"
 											: "border-white/5 bg-black/40 text-slate-300 hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]",
@@ -395,7 +395,7 @@ export function CaptionsTab(props: CaptionsTabProps) {
 							type="button"
 							onClick={() => onToggleCaptionPositionEditing(!isEditingCaptionPosition)}
 							className={cn(
-								"h-8 rounded-lg border text-[10px] font-semibold transition-colors flex items-center justify-center gap-1",
+								"min-h-8 min-w-0 px-1 py-1 leading-tight break-words rounded-lg border text-[10px] font-semibold transition-colors flex items-center justify-center gap-1",
 								isEditingCaptionPosition
 									? "border-[#F59E0B] bg-[#F59E0B] text-white"
 									: "border-white/5 bg-black/40 text-slate-300 hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]",

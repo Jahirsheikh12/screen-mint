@@ -257,7 +257,7 @@ export function AnnotationSettingsPanel({
 											{customFonts.length > 0 && (
 												<>
 													<div className="px-2 py-1.5 text-[10px] font-medium text-slate-400 uppercase tracking-wider">
-														Custom Fonts
+														{t("annotationPanel.customFonts", "Custom Fonts")}
 													</div>
 													{customFonts.map((font) => (
 														<SelectItem
@@ -494,7 +494,7 @@ export function AnnotationSettingsPanel({
 							<div className="rounded-lg border border-white/10 overflow-hidden bg-white/5 p-2">
 								<img
 									src={annotation.content}
-									alt="Uploaded annotation"
+									alt={t("annotationPanel.uploadedAnnotation", "Uploaded annotation")}
 									className="w-full h-auto rounded-md"
 								/>
 							</div>
@@ -618,8 +618,8 @@ export function AnnotationSettingsPanel({
 						<div className="grid grid-cols-2 gap-2">
 							{(
 								[
-									{ value: "blur", label: "Blur" },
-									{ value: "solid", label: "Solid color" },
+									{ value: "blur", label: t("annotationPanel.blur", "Blur") },
+									{ value: "solid", label: t("annotationPanel.solidColor", "Solid color") },
 								] as const
 							).map((option) => {
 								const isActive = (annotation.blurData?.mode ?? "blur") === option.value;
@@ -650,7 +650,7 @@ export function AnnotationSettingsPanel({
 						{annotation.blurData?.mode === "solid" && (
 							<div className="flex items-center justify-between">
 								<label htmlFor="blur-solid-color" className="text-xs font-medium text-slate-200">
-									Cover color
+									{t("annotationPanel.coverColor", "Cover color")}
 								</label>
 								<input
 									id="blur-solid-color"
@@ -670,7 +670,7 @@ export function AnnotationSettingsPanel({
 						{annotation.blurData?.shape !== "circle" && (
 							<div>
 								<label className="text-xs font-medium text-slate-200 mb-2 block">
-									Corner radius
+									{t("annotationPanel.cornerRadius", "Corner radius")}
 								</label>
 								<Slider
 									value={[annotation.blurData?.borderRadius ?? 8]}

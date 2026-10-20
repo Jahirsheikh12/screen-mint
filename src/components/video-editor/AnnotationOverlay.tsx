@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { Rnd } from "react-rnd";
+import { useI18n } from "@/contexts/I18nContext";
 import { cn } from "@/lib/utils";
 import { getArrowComponent } from "./arrowComponent";
 import { type AnnotationRegion, DEFAULT_BLUR_DATA } from "./types";
@@ -27,6 +28,7 @@ export function AnnotationOverlay({
 	zIndex,
 	isSelectedBoost,
 }: AnnotationOverlayProps) {
+	const { t } = useI18n();
 	const x = (annotation.position.x / 100) * containerWidth;
 	const y = (annotation.position.y / 100) * containerHeight;
 	const width = (annotation.size.width / 100) * containerWidth;
@@ -88,7 +90,7 @@ export function AnnotationOverlay({
 					return (
 						<img
 							src={annotation.content}
-							alt="Annotation"
+							alt={t("editor.annotationOverlay.annotation", "Annotation")}
 							className="w-full h-full object-contain"
 							draggable={false}
 						/>
@@ -96,7 +98,7 @@ export function AnnotationOverlay({
 				}
 				return (
 					<div className="w-full h-full flex items-center justify-center text-slate-400 text-sm">
-						No image
+						{t("editor.annotationOverlay.noImage", "No image")}
 					</div>
 				);
 
@@ -104,7 +106,7 @@ export function AnnotationOverlay({
 				if (!annotation.figureData) {
 					return (
 						<div className="w-full h-full flex items-center justify-center text-slate-400 text-sm">
-							No arrow data
+							{t("editor.annotationOverlay.noArrowData", "No arrow data")}
 						</div>
 					);
 				}

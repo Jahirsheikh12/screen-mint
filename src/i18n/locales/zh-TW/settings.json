@@ -391,7 +391,10 @@
 		"warnWeb": "網頁最佳化會使用較穩妥的 H.264 設定檔，同時保留你選擇的尺寸與影格速率。",
 		"warnLongGif": "較長的 GIF 可能很大且匯出較慢，分享時 MP4 可能更合適。",
 		"warnGifSize": "這個 GIF 可能超過 15 MB。請降低解析度、FPS 或色彩數。",
-		"warnGifSource": "超過 1080p 的原始解析度 GIF 可能非常慢且檔案很大。"
+		"warnGifSource": "超過 1080p 的原始解析度 GIF 可能非常慢且檔案很大。",
+		"mp4Video": "MP4 影片",
+		"gifAnimation": "GIF 動畫",
+		"mbps": "Mbps"
 	},
 	"webcamTab": {
 		"configureYourWebcamOverlay": "設定網路攝影機畫面的顯示方式",

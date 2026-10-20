@@ -1,4 +1,5 @@
 import { Copy, Download, Edit3, X } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
 
 type QuickShareDialogProps = {
 	isOpen: boolean;
@@ -15,6 +16,7 @@ export function QuickShareDialog({
 	onCopy,
 	onEdit,
 }: QuickShareDialogProps) {
+	const { t } = useI18n();
 	if (!isOpen) {
 		return null;
 	}
@@ -22,12 +24,21 @@ export function QuickShareDialog({
 	return (
 		<>
 			<div className="fixed inset-0 z-[9998] bg-black/60 backdrop-blur-sm" onClick={onClose} />
-			<div className="fixed left-1/2 top-1/2 z-[9999] w-[92vw] max-w-[440px] -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-white/10 bg-[#0a0f0d] p-6 text-white shadow-2xl">
+			<div
+				role="dialog"
+				aria-modal="true"
+				className="fixed left-1/2 top-1/2 z-[9999] max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl border border-white/10 bg-[#0a0f0d] p-6 text-white shadow-2xl"
+			>
 				<div className="mb-5 flex items-center justify-between">
 					<div>
-						<div className="text-lg font-semibold text-white">Quick Share</div>
+						<div className="text-lg font-semibold text-white">
+							{t("dialogs.quickShare.quickShare", "Quick Share")}
+						</div>
 						<div className="mt-1 text-sm text-slate-400">
-							Choose what to do with this recording next.
+							{t(
+								"dialogs.quickShare.chooseWhatToDo",
+								"Choose what to do with this recording next.",
+							)}
 						</div>
 					</div>
 					<button
@@ -46,8 +57,12 @@ export function QuickShareDialog({
 						className="rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition hover:bg-white/10"
 					>
 						<Download className="mb-3 h-5 w-5 text-amber-400" />
-						<div className="text-sm font-semibold text-white">Save</div>
-						<div className="mt-1 text-xs text-slate-400">Export and save to a file.</div>
+						<div className="text-sm font-semibold text-white">
+							{t("dialogs.quickShare.save", "Save")}
+						</div>
+						<div className="mt-1 text-xs text-slate-400">
+							{t("dialogs.quickShare.exportAndSaveTo", "Export and save to a file.")}
+						</div>
 					</button>
 					<button
 						type="button"
@@ -55,9 +70,14 @@ export function QuickShareDialog({
 						className="rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition hover:bg-white/10"
 					>
 						<Copy className="mb-3 h-5 w-5 text-sky-400" />
-						<div className="text-sm font-semibold text-white">Copy</div>
+						<div className="text-sm font-semibold text-white">
+							{t("dialogs.quickShare.copy", "Copy")}
+						</div>
 						<div className="mt-1 text-xs text-slate-400">
-							Export locally and copy the saved file path.
+							{t(
+								"dialogs.quickShare.exportLocallyAndCopy",
+								"Export locally and copy the saved file path.",
+							)}
 						</div>
 					</button>
 					<button
@@ -66,8 +86,12 @@ export function QuickShareDialog({
 						className="rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition hover:bg-white/10"
 					>
 						<Edit3 className="mb-3 h-5 w-5 text-amber-400" />
-						<div className="text-sm font-semibold text-white">Edit</div>
-						<div className="mt-1 text-xs text-slate-400">Open the recording in the editor.</div>
+						<div className="text-sm font-semibold text-white">
+							{t("dialogs.quickShare.edit", "Edit")}
+						</div>
+						<div className="mt-1 text-xs text-slate-400">
+							{t("dialogs.quickShare.openTheRecordingIn", "Open the recording in the editor.")}
+						</div>
 					</button>
 				</div>
 			</div>

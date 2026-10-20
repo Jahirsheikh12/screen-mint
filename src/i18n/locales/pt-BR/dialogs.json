@@ -58,7 +58,8 @@
 		"addFailed": "Falha ao adicionar a fonte",
 		"loadTimeout": "A fonte demorou demais para carregar. Verifique a URL e tente novamente.",
 		"loadFailed": "Não foi possível carregar a fonte. Verifique se a URL do Google Fonts está correta.",
-		"cancel": "Cancelar"
+		"cancel": "Cancelar",
+		"failedToLoadFont": "Não foi possível carregar a fonte"
 	},
 	"shortcutsConfig": {
 		"title": "Atalhos de teclado",
@@ -76,5 +77,31 @@
 		"resetToDefaults": "Restaurar padrões",
 		"cancel": "Cancelar",
 		"save": "Salvar"
+	},
+	"projectBrowser": {
+		"projects": "Projetos",
+		"recentProjectsAndProjects": "Projetos recentes e projetos salvos na sua pasta de gravações.",
+		"loadingProjects": "Carregando projetos…",
+		"noSavedProjectsYet": "Nenhum projeto salvo ainda"
+	},
+	"editor": {
+		"savePreset": "Salvar estilo",
+		"giveThisPresetA": "Dê um nome claro a este estilo para reutilizá-lo depois.",
+		"presetName": "Nome do estilo",
+		"myPreset": "Meu estilo",
+		"cancel": "Cancelar",
+		"savePreset2": "Salvar estilo",
+		"confirmAction": "Confirmar ação",
+		"continue": "Continuar"
+	},
+	"quickShare": {
+		"quickShare": "Compartilhamento rápido",
+		"chooseWhatToDo": "Escolha o que fazer agora com esta gravação.",
+		"save": "Salvar",
+		"exportAndSaveTo": "Exportar e salvar em um arquivo.",
+		"copy": "Copiar",
+		"exportLocallyAndCopy": "Exportar localmente e copiar o caminho do arquivo salvo.",
+		"edit": "Editar",
+		"openTheRecordingIn": "Abrir a gravação no editor."
 	}
 }

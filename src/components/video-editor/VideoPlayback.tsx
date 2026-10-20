@@ -18,6 +18,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { useI18n } from "@/contexts/I18nContext";
 import { getAspectRatioValue } from "@/utils/aspectRatioUtils";
 import { createWebcamZoomMotionState } from "./cameraLayouts";
 import { applyOpacityToHex, buildFrameShadowFilter, hasVisibleFrameShadow } from "./frameEffects";
@@ -290,6 +291,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		},
 		ref,
 	) => {
+		const { t } = useI18n();
 		const videoRef = useRef<HTMLVideoElement | null>(null);
 		const containerRef = useRef<HTMLDivElement | null>(null);
 		const appRef = useRef<Application | null>(null);
@@ -1001,7 +1003,11 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			(error: unknown, expectedQuality: PreviewQuality) => {
 				const pendingSwitch = pendingPreviewQualitySwitchRef.current;
 				if (!pendingSwitch || pendingSwitch.targetQuality !== expectedQuality) {
-					onError(error instanceof Error ? error.message : "Failed to initialize preview renderer");
+					onError(
+						error instanceof Error
+							? error.message
+							: t("editor.preview.initFailed", "Failed to initialize preview renderer"),
+					);
 					return;
 				}
 
@@ -1016,7 +1022,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					onPreviewQualitySwitchFailed?.(fallbackQuality);
 				}
 			},
-			[beginPreviewQualitySwitch, onError, onPreviewQualitySwitchFailed],
+			[beginPreviewQualitySwitch, onError, onPreviewQualitySwitchFailed, t],
 		);
 
 		useImperativeHandle(ref, () => ({
@@ -1553,7 +1559,11 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					handlePreviewQualitySwitchFailure(error, rendererPreviewQuality);
 					return;
 				}
-				onError(error instanceof Error ? error.message : "Failed to initialize preview renderer");
+				onError(
+					error instanceof Error
+						? error.message
+						: t("editor.preview.initFailed", "Failed to initialize preview renderer"),
+				);
 			});
 
 			return () => {
@@ -1584,6 +1594,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			previewRendererEpoch,
 			previewResolution,
 			rendererPreviewQuality,
+			t,
 		]);
 
 		useEffect(() => {

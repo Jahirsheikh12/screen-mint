@@ -391,7 +391,10 @@
 		"warnWeb": "Die Web-Optimierung nutzt sicherere H.264-Profile und behält Größe und Bildrate bei.",
 		"warnLongGif": "Lange GIFs können groß und langsam sein. MP4 lässt sich oft besser teilen.",
 		"warnGifSize": "Dieses GIF wird wahrscheinlich größer als 15 MB. Verringere Auflösung, FPS oder Farbanzahl.",
-		"warnGifSource": "GIFs in Quellauflösung über 1080p können sehr langsam und groß werden."
+		"warnGifSource": "GIFs in Quellauflösung über 1080p können sehr langsam und groß werden.",
+		"mp4Video": "MP4-Video",
+		"gifAnimation": "GIF-Animation",
+		"mbps": "Mbit/s"
 	},
 	"webcamTab": {
 		"configureYourWebcamOverlay": "Lege fest, wie deine Webcam eingeblendet wird",

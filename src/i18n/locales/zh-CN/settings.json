@@ -391,7 +391,10 @@
 		"warnWeb": "网页优化会使用更稳妥的 H.264 配置，同时保留你选择的尺寸和帧率。",
 		"warnLongGif": "较长的 GIF 可能很大且导出较慢，分享时 MP4 可能更合适。",
 		"warnGifSize": "这个 GIF 可能超过 15 MB。请降低分辨率、FPS 或颜色数。",
-		"warnGifSource": "超过 1080p 的原始分辨率 GIF 可能非常慢且体积很大。"
+		"warnGifSource": "超过 1080p 的原始分辨率 GIF 可能非常慢且体积很大。",
+		"mp4Video": "MP4 视频",
+		"gifAnimation": "GIF 动画",
+		"mbps": "Mbps"
 	},
 	"webcamTab": {
 		"configureYourWebcamOverlay": "设置摄像头画面的显示方式",

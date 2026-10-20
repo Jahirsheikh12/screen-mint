@@ -3,6 +3,7 @@ import { useRow, useTimelineContext } from "dnd-timeline";
 import type { LucideIcon } from "lucide-react";
 import { Plus } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface RowProps extends RowDefinition {
 	children: React.ReactNode;
@@ -28,6 +29,7 @@ export default function Row({
 	variant = "default",
 	icon: Icon,
 }: RowProps) {
+	const { t } = useI18n();
 	const { setNodeRef, rowWrapperStyle, rowStyle } = useRow({ id });
 	const { sidebarWidth, range, pixelsToValue } = useTimelineContext();
 	const iconPadding = sidebarWidth;
@@ -130,7 +132,9 @@ export default function Row({
 						className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/10 backdrop-blur-sm border border-white/15 text-white/70 hover:text-white hover:bg-white/20 hover:border-white/25 transition-all shadow-lg cursor-pointer"
 					>
 						<Plus className="w-3 h-3" />
-						<span className="text-[10px] font-medium">{addLabel || "Add"}</span>
+						<span className="text-[10px] font-medium">
+							{addLabel || t("timeline.items.add", "Add")}
+						</span>
 					</button>
 				</div>
 			)}

@@ -58,7 +58,8 @@
 		"addFailed": "글꼴을 추가하지 못했습니다",
 		"loadTimeout": "글꼴을 불러오는 데 너무 오래 걸립니다. URL을 확인하고 다시 시도하세요.",
 		"loadFailed": "글꼴을 불러오지 못했습니다. Google Fonts URL이 맞는지 확인하세요.",
-		"cancel": "취소"
+		"cancel": "취소",
+		"failedToLoadFont": "글꼴을 불러오지 못했습니다"
 	},
 	"shortcutsConfig": {
 		"title": "키보드 단축키",
@@ -76,5 +77,31 @@
 		"resetToDefaults": "기본값으로 재설정",
 		"cancel": "취소",
 		"save": "저장"
+	},
+	"projectBrowser": {
+		"projects": "프로젝트",
+		"recentProjectsAndProjects": "최근 프로젝트와 녹화 폴더에 저장된 프로젝트입니다.",
+		"loadingProjects": "프로젝트를 불러오는 중…",
+		"noSavedProjectsYet": "아직 저장된 프로젝트가 없습니다"
+	},
+	"editor": {
+		"savePreset": "프리셋 저장",
+		"giveThisPresetA": "나중에 쉽게 다시 쓸 수 있도록 알아보기 쉬운 이름을 붙이세요.",
+		"presetName": "프리셋 이름",
+		"myPreset": "내 프리셋",
+		"cancel": "취소",
+		"savePreset2": "프리셋 저장",
+		"confirmAction": "작업 확인",
+		"continue": "계속"
+	},
+	"quickShare": {
+		"quickShare": "빠른 공유",
+		"chooseWhatToDo": "이 녹화로 다음에 할 일을 고르세요.",
+		"save": "저장",
+		"exportAndSaveTo": "내보내서 파일로 저장합니다.",
+		"copy": "복사",
+		"exportLocallyAndCopy": "로컬로 내보내고 저장된 파일 경로를 복사합니다.",
+		"edit": "편집",
+		"openTheRecordingIn": "편집기에서 녹화를 엽니다."
 	}
 }

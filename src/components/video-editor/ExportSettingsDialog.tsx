@@ -467,6 +467,8 @@ export function ExportSettingsDialog({
 
 			<div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 pointer-events-none">
 				<div
+					role="dialog"
+					aria-modal="true"
 					className={cn(
 						"pointer-events-auto flex max-h-[90vh] w-[min(960px,94vw)] flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-[#090b0d] shadow-2xl shadow-black/70 transition-all",
 						isClosing
@@ -491,8 +493,8 @@ export function ExportSettingsDialog({
 						</div>
 					</div>
 
-					<div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[1fr_300px]">
-						<div className="overflow-y-auto px-5 py-5 [scrollbar-width:thin]">
+					<div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto [scrollbar-width:thin] lg:grid-cols-[1fr_300px] lg:overflow-hidden">
+						<div className="px-5 py-5 [scrollbar-width:thin] lg:overflow-y-auto">
 							<div className="space-y-6">
 								<section>
 									<SectionHeader
@@ -513,7 +515,7 @@ export function ExportSettingsDialog({
 											selectionLabel={t("exportAdvanced.mp4Label", "MP4 video")}
 											onClick={() => onExportFormatChange("mp4")}
 										>
-											MP4 video
+											{t("exportAdvanced.mp4Video", "MP4 video")}
 										</ChoiceButton>
 										<ChoiceButton
 											selected={exportFormat === "gif"}
@@ -521,7 +523,7 @@ export function ExportSettingsDialog({
 											selectionLabel={t("exportAdvanced.gifLabel", "GIF animation")}
 											onClick={() => onExportFormatChange("gif")}
 										>
-											GIF animation
+											{t("exportAdvanced.gifAnimation", "GIF animation")}
 										</ChoiceButton>
 									</div>
 								</section>
@@ -849,7 +851,9 @@ export function ExportSettingsDialog({
 																	}
 																	className="h-9 w-24 rounded-md border border-white/[0.1] bg-black/30 px-2 text-[13px] text-white outline-none focus:border-[#F59E0B]/60"
 																/>
-																<span className="text-[11px] text-white/38">Mbps</span>
+																<span className="text-[11px] text-white/38">
+																	{t("exportAdvanced.mbps", "Mbps")}
+																</span>
 															</div>
 														</label>
 													) : null}
@@ -887,7 +891,7 @@ export function ExportSettingsDialog({
 						</div>
 
 						<aside className="border-t border-white/[0.07] bg-white/[0.025] p-5 lg:border-l lg:border-t-0">
-							<div className="sticky top-0">
+							<div className="lg:sticky lg:top-0">
 								<SectionHeader
 									icon={<Settings2 className="h-4 w-4" />}
 									title={t("exportAdvanced.resolved", "Resolved export")}

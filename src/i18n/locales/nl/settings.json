@@ -391,7 +391,10 @@
 		"warnWeb": "Weboptimalisatie kiest veiligere H.264-profielen en houdt je gekozen formaat en framerate.",
 		"warnLongGif": "Lange GIF’s kunnen groot en traag zijn. MP4 deelt vaak beter.",
 		"warnGifSize": "Deze GIF wordt waarschijnlijk groter dan 15 MB. Verlaag de resolutie, FPS of het aantal kleuren.",
-		"warnGifSource": "GIF’s op bronresolutie boven 1080p kunnen erg traag en zwaar zijn."
+		"warnGifSource": "GIF’s op bronresolutie boven 1080p kunnen erg traag en zwaar zijn.",
+		"mp4Video": "MP4-video",
+		"gifAnimation": "GIF-animatie",
+		"mbps": "Mbps"
 	},
 	"webcamTab": {
 		"configureYourWebcamOverlay": "Stel in hoe je webcam wordt weergegeven",

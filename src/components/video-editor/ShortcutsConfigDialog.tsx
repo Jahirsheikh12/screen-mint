@@ -28,6 +28,7 @@ const MODIFIER_KEYS = new Set(["Control", "Shift", "Alt", "Meta"]);
 
 export function ShortcutsConfigDialog() {
 	const t = useScopedT("dialogs");
+	const tShortcuts = useScopedT("shortcuts");
 	const { shortcuts, isMac, isConfigOpen, closeConfig, setShortcuts, persistShortcuts } =
 		useShortcuts();
 
@@ -126,7 +127,7 @@ export function ShortcutsConfigDialog() {
 				if (!open) handleClose();
 			}}
 		>
-			<DialogContent className="bg-[#0A0F0D] border-white/10 text-white max-w-[420px]">
+			<DialogContent className="bg-[#0A0F0D] border-white/10 text-white max-w-[480px]">
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2 text-sm">
 						<Keyboard className="w-4 h-4 text-[#F59E0B]" />
@@ -143,8 +144,10 @@ export function ShortcutsConfigDialog() {
 						const hasConflict = conflict?.forAction === action;
 						return (
 							<div key={action}>
-								<div className="flex items-center justify-between py-1.5 px-1 border-b border-white/5">
-									<span className="text-sm text-slate-300">{SHORTCUT_LABELS[action]}</span>
+								<div className="flex items-center justify-between gap-3 py-1.5 px-1 border-b border-white/5">
+									<span className="min-w-0 break-words text-sm text-slate-300">
+										{tShortcuts(`actions.${action}`, SHORTCUT_LABELS[action])}
+									</span>
 									<button
 										type="button"
 										onClick={() => {
@@ -157,7 +160,7 @@ export function ShortcutsConfigDialog() {
 												: t("shortcutsConfig.clickToChange")
 										}
 										className={[
-											"px-2 py-1 rounded text-xs font-mono border transition-all min-w-[90px] text-center select-none",
+											"shrink-0 px-2 py-1 rounded text-xs font-mono border transition-all min-w-[90px] text-center select-none",
 											isCapturing
 												? "bg-[#F59E0B]/20 border-[#F59E0B] text-[#F59E0B] animate-pulse"
 												: hasConflict
@@ -204,13 +207,15 @@ export function ShortcutsConfigDialog() {
 					<p className="text-[10px] text-slate-500 mb-2 uppercase tracking-wide font-semibold">
 						{t("shortcutsConfig.fixed")}
 					</p>
-					{FIXED_SHORTCUTS.map(({ label, display }) => (
+					{FIXED_SHORTCUTS.map(({ label, display, key }) => (
 						<div
 							key={label}
-							className="flex items-center justify-between py-1.5 px-1 border-b border-white/5 last:border-0"
+							className="flex items-center justify-between gap-3 py-1.5 px-1 border-b border-white/5 last:border-0"
 						>
-							<span className="text-sm text-slate-400">{label}</span>
-							<kbd className="px-2 py-1 bg-white/5 border border-white/10 rounded text-xs font-mono text-slate-400 min-w-[90px] text-center">
+							<span className="min-w-0 break-words text-sm text-slate-400">
+								{tShortcuts(`actions.${key}`, label)}
+							</span>
+							<kbd className="shrink-0 px-2 py-1 bg-white/5 border border-white/10 rounded text-xs font-mono text-slate-400 min-w-[90px] text-center">
 								{display}
 							</kbd>
 						</div>
@@ -219,7 +224,7 @@ export function ShortcutsConfigDialog() {
 
 				<p className="text-[10px] text-slate-500 mt-1">{t("shortcutsConfig.instructions")}</p>
 
-				<DialogFooter className="flex gap-2 sm:justify-between mt-2">
+				<DialogFooter className="flex flex-wrap gap-2 sm:justify-between mt-2">
 					<Button
 						variant="ghost"
 						size="sm"

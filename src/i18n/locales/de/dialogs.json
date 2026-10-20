@@ -58,7 +58,8 @@
 		"addFailed": "Schrift konnte nicht hinzugefügt werden",
 		"loadTimeout": "Die Schrift lädt zu lange. Prüfen Sie die URL und versuchen Sie es erneut.",
 		"loadFailed": "Die Schrift konnte nicht geladen werden. Prüfen Sie, ob die Google-Fonts-URL stimmt.",
-		"cancel": "Abbrechen"
+		"cancel": "Abbrechen",
+		"failedToLoadFont": "Schrift konnte nicht geladen werden"
 	},
 	"shortcutsConfig": {
 		"title": "Tastaturkürzel",
@@ -76,5 +77,31 @@
 		"resetToDefaults": "Auf Standard zurücksetzen",
 		"cancel": "Abbrechen",
 		"save": "Speichern"
+	},
+	"projectBrowser": {
+		"projects": "Projekte",
+		"recentProjectsAndProjects": "Zuletzt verwendete und im Aufnahmeordner gespeicherte Projekte.",
+		"loadingProjects": "Projekte werden geladen…",
+		"noSavedProjectsYet": "Noch keine gespeicherten Projekte"
+	},
+	"editor": {
+		"savePreset": "Vorgabe speichern",
+		"giveThisPresetA": "Gib dieser Vorgabe einen klaren Namen, damit du sie später leicht wiederfindest.",
+		"presetName": "Name der Vorgabe",
+		"myPreset": "Meine Vorgabe",
+		"cancel": "Abbrechen",
+		"savePreset2": "Vorgabe speichern",
+		"confirmAction": "Aktion bestätigen",
+		"continue": "Weiter"
+	},
+	"quickShare": {
+		"quickShare": "Schnell teilen",
+		"chooseWhatToDo": "Wähle, was als Nächstes mit dieser Aufnahme passieren soll.",
+		"save": "Speichern",
+		"exportAndSaveTo": "Exportieren und als Datei speichern.",
+		"copy": "Kopieren",
+		"exportLocallyAndCopy": "Lokal exportieren und den Dateipfad kopieren.",
+		"edit": "Bearbeiten",
+		"openTheRecordingIn": "Die Aufnahme im Editor öffnen."
 	}
 }

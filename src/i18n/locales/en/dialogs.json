@@ -58,7 +58,8 @@
 		"addFailed": "Failed to add font",
 		"loadTimeout": "Font took too long to load. Please check the URL and try again.",
 		"loadFailed": "The font could not be loaded. Please verify the Google Fonts URL is correct.",
-		"cancel": "Cancel"
+		"cancel": "Cancel",
+		"failedToLoadFont": "Failed to load font"
 	},
 	"shortcutsConfig": {
 		"title": "Keyboard Shortcuts",
@@ -76,5 +77,31 @@
 		"resetToDefaults": "Reset to defaults",
 		"cancel": "Cancel",
 		"save": "Save"
+	},
+	"projectBrowser": {
+		"projects": "Projects",
+		"recentProjectsAndProjects": "Recent projects and projects saved in your recordings folder.",
+		"loadingProjects": "Loading projects…",
+		"noSavedProjectsYet": "No saved projects yet"
+	},
+	"editor": {
+		"savePreset": "Save Preset",
+		"giveThisPresetA": "Give this preset a clear name so it is easy to reuse later.",
+		"presetName": "Preset name",
+		"myPreset": "My preset",
+		"cancel": "Cancel",
+		"savePreset2": "Save preset",
+		"confirmAction": "Confirm action",
+		"continue": "Continue"
+	},
+	"quickShare": {
+		"quickShare": "Quick Share",
+		"chooseWhatToDo": "Choose what to do with this recording next.",
+		"save": "Save",
+		"exportAndSaveTo": "Export and save to a file.",
+		"copy": "Copy",
+		"exportLocallyAndCopy": "Export locally and copy the saved file path.",
+		"edit": "Edit",
+		"openTheRecordingIn": "Open the recording in the editor."
 	}
 }

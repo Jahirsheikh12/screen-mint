@@ -2,7 +2,7 @@ import { Download, Film, Image as ImageIcon } from "lucide-react";
 import { LayoutGroup, motion } from "motion/react";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { useScopedT } from "@/contexts/I18nContext";
 import {
@@ -28,10 +28,9 @@ const PILL_SPRING = { type: "spring", stiffness: 420, damping: 34 } as const;
 
 type Size = { width: number; height: number };
 
-export interface ExportMenuProps {
+export interface ExportDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	trigger: ReactNode;
 	status: ExportStatus;
 	progress: ExportProgress | null;
 	error: string | null;
@@ -92,7 +91,7 @@ function Segmented<T extends string | number>({
 							role="radio"
 							aria-checked={active}
 							onClick={() => onChange(option)}
-							className="relative rounded-lg px-1 py-1.5 text-[11px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60"
+							className="relative min-w-0 rounded-lg px-1 py-1.5 text-[11px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60"
 						>
 							{active ? (
 								<motion.span
@@ -103,7 +102,7 @@ function Segmented<T extends string | number>({
 							) : null}
 							<span
 								className={cn(
-									"relative z-10 flex flex-col items-center leading-tight transition-colors",
+									"relative z-10 flex flex-col items-center break-words text-center leading-tight transition-colors [hyphens:auto]",
 									active ? "text-black" : "text-white/55 hover:text-white",
 								)}
 							>
@@ -126,24 +125,18 @@ function SectionLabel({ children }: { children: ReactNode }) {
 }
 
 function Panel({ children, className }: { children: ReactNode; className?: string }) {
-	return (
-		<div
-			className={cn(
-				"rounded-2xl border border-white/[0.08] bg-[#111114] p-4 text-white shadow-2xl",
-				className,
-			)}
-		>
-			{children}
-		</div>
-	);
+	return <div className={cn("min-w-0 text-white", className)}>{children}</div>;
 }
+
+/** Buttons whose labels may wrap in long languages instead of spilling out. */
+const WRAP_BUTTON = "h-auto min-h-9 min-w-[8rem] flex-1 whitespace-normal px-3 py-2 leading-tight";
 
 function formatBytes(bytes: number): string {
 	if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 	return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
-export function ExportMenu(props: ExportMenuProps) {
+export function ExportDialog(props: ExportDialogProps) {
 	const t = useScopedT("settings");
 	const tDialogs = useScopedT("dialogs");
 	const tCommon = useScopedT("common");
@@ -175,9 +168,12 @@ export function ExportMenu(props: ExportMenuProps) {
 
 	const settingsView = (
 		<Panel>
-			<div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">
+			<DialogTitle className="mb-1 text-base font-semibold tracking-tight text-white">
 				{t("export.title", "Export")}
-			</div>
+			</DialogTitle>
+			<DialogDescription className="mb-4 text-xs text-white/45">
+				{t("export.buttonTooltip", "Export video or GIF")}
+			</DialogDescription>
 
 			<Segmented
 				id="export-format"
@@ -258,10 +254,10 @@ export function ExportMenu(props: ExportMenuProps) {
 				</>
 			) : (
 				<div className="mb-3 space-y-2">
-					<div className="flex items-center gap-2">
+					<div className="flex flex-wrap items-center gap-2">
 						<Segmented
 							id="export-gif-fps"
-							className="flex-1"
+							className="min-w-[11rem] flex-1"
 							options={QUICK_GIF_FRAME_RATES}
 							value={props.gif.frameRate}
 							onChange={(frameRate) => props.onGifChange({ frameRate })}
@@ -269,14 +265,14 @@ export function ExportMenu(props: ExportMenuProps) {
 						/>
 						<Segmented
 							id="export-gif-size"
-							className="flex-1"
+							className="min-w-[11rem] flex-1"
 							options={QUICK_GIF_SIZES}
 							value={props.gif.size}
 							onChange={(size) => props.onGifChange({ size })}
 							render={(option) => t(`export.gifSize.${option}`)}
 						/>
 					</div>
-					<div className="flex items-center justify-between px-1">
+					<div className="flex flex-wrap items-center justify-between gap-2 px-1">
 						<span className="text-[10px] tabular-nums text-white/45">
 							{t("export.outputDimensions", undefined, {
 								dimensions: `${props.gifDimensions.width} × ${props.gifDimensions.height}`,
@@ -297,7 +293,7 @@ export function ExportMenu(props: ExportMenuProps) {
 			<Button
 				type="button"
 				onClick={props.onExport}
-				className="h-11 w-full gap-2 rounded-lg bg-[#f59e0b] text-sm font-semibold text-white hover:bg-[#d97706]"
+				className="h-auto min-h-11 w-full gap-2 whitespace-normal rounded-lg bg-[#f59e0b] py-2 text-sm font-semibold text-white hover:bg-[#d97706]"
 			>
 				<Download className="h-4 w-4" />
 				{t("export.exportVideo", undefined, { format: formatName })}
@@ -314,22 +310,13 @@ export function ExportMenu(props: ExportMenuProps) {
 
 	const progressView = (
 		<Panel>
-			<div className="mb-3 flex items-start justify-between gap-3">
-				<div className="min-w-0">
-					<p className="text-sm font-semibold">{tDialogs("export.exporting", "Exporting")}</p>
-					<p className="text-xs text-white/50">
-						{tDialogs("export.renderingFile", "Rendering your file.")}
-					</p>
-				</div>
-				<Button
-					type="button"
-					variant="outline"
-					onClick={props.onCancel}
-					disabled={props.status !== "exporting"}
-					className="h-8 shrink-0 border-red-500/20 bg-red-500/10 px-3 text-xs text-red-300 hover:bg-red-500/20"
-				>
-					{tCommon("actions.cancel", "Cancel")}
-				</Button>
+			<div className="mb-4 min-w-0 pr-8">
+				<DialogTitle className="text-base font-semibold text-white">
+					{tDialogs("export.exporting", "Exporting")}
+				</DialogTitle>
+				<DialogDescription className="mt-0.5 text-xs text-white/50">
+					{tDialogs("export.renderingFile", "Rendering your file.")}
+				</DialogDescription>
 			</div>
 			<div
 				role="progressbar"
@@ -360,21 +347,35 @@ export function ExportMenu(props: ExportMenuProps) {
 					{messages[messageIndex % messages.length]}
 				</p>
 			) : null}
+			<Button
+				type="button"
+				variant="outline"
+				onClick={props.onCancel}
+				disabled={props.status !== "exporting"}
+				className="mt-4 h-auto min-h-9 w-full whitespace-normal border-red-500/20 bg-red-500/10 py-2 text-xs text-red-300 hover:bg-red-500/20"
+			>
+				{tCommon("actions.cancel", "Cancel")}
+			</Button>
 		</Panel>
 	);
 
 	const errorView = (
 		<Panel>
-			<p className="text-sm font-semibold">{tDialogs("export.issue", "Export issue")}</p>
-			<p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-white/55">
+			<DialogTitle className="pr-8 text-base font-semibold text-white">
+				{tDialogs("export.issue", "Export issue")}
+			</DialogTitle>
+			<DialogDescription className="mt-1 whitespace-pre-line break-words text-xs leading-relaxed text-white/55">
 				{props.error}
-			</p>
-			<div className="mt-4 flex gap-2">
+			</DialogDescription>
+			<div className="mt-4 flex flex-wrap gap-2">
 				{props.hasPendingSave ? (
 					<Button
 						type="button"
 						onClick={props.onRetrySave}
-						className="h-8 flex-1 rounded-md bg-[#f59e0b] text-xs font-semibold text-white hover:bg-[#d97706]"
+						className={cn(
+							WRAP_BUTTON,
+							"rounded-md bg-[#f59e0b] text-xs font-semibold text-white hover:bg-[#d97706]",
+						)}
 					>
 						{tDialogs("export.saveAgain", "Save Again")}
 					</Button>
@@ -383,7 +384,10 @@ export function ExportMenu(props: ExportMenuProps) {
 					type="button"
 					variant="outline"
 					onClick={props.onDismiss}
-					className="h-8 flex-1 border-white/10 bg-white/[0.05] text-xs text-white/60 hover:bg-white/10"
+					className={cn(
+						WRAP_BUTTON,
+						"border-white/10 bg-white/[0.05] text-xs text-white/60 hover:bg-white/10",
+					)}
 				>
 					{tDialogs("export.close", "Close")}
 				</Button>
@@ -400,10 +404,12 @@ export function ExportMenu(props: ExportMenuProps) {
 		: [];
 	const completeView = (
 		<Panel>
-			<p className="text-sm font-semibold">{tDialogs("export.complete", "Export complete")}</p>
-			<p className="mt-1 text-xs text-white/50">
+			<DialogTitle className="pr-8 text-base font-semibold text-white">
+				{tDialogs("export.complete", "Export complete")}
+			</DialogTitle>
+			<DialogDescription className="mt-1 text-xs text-white/50">
 				{tDialogs("export.savedSuccessfully", "Your file was saved.")}
-			</p>
+			</DialogDescription>
 			{props.exportedFilePath ? (
 				<p className="mt-3 truncate text-xs text-white/45" title={props.exportedFilePath}>
 					{props.exportedFilePath.split(/[\\/]/).pop()}
@@ -412,12 +418,15 @@ export function ExportMenu(props: ExportMenuProps) {
 			{detailParts.length > 0 ? (
 				<p className="mt-1 text-[11px] tabular-nums text-white/35">{detailParts.join(" • ")}</p>
 			) : null}
-			<div className="mt-4 flex gap-2">
+			<div className="mt-4 flex flex-wrap gap-2">
 				{props.exportedFilePath ? (
 					<Button
 						type="button"
 						onClick={props.onReveal}
-						className="h-8 flex-1 rounded-md bg-[#f59e0b] text-xs font-semibold text-white hover:bg-[#d97706]"
+						className={cn(
+							WRAP_BUTTON,
+							"rounded-md bg-[#f59e0b] text-xs font-semibold text-white hover:bg-[#d97706]",
+						)}
 					>
 						{tDialogs("export.showInFolder", "Show in Folder")}
 					</Button>
@@ -426,7 +435,10 @@ export function ExportMenu(props: ExportMenuProps) {
 					type="button"
 					variant="outline"
 					onClick={props.onDismiss}
-					className="h-8 flex-1 border-white/10 bg-white/[0.05] text-xs text-white/60 hover:bg-white/10"
+					className={cn(
+						WRAP_BUTTON,
+						"border-white/10 bg-white/[0.05] text-xs text-white/60 hover:bg-white/10",
+					)}
 				>
 					{tDialogs("export.done", "Done")}
 				</Button>
@@ -442,17 +454,14 @@ export function ExportMenu(props: ExportMenuProps) {
 	} as const;
 
 	return (
-		<Popover open={props.open} onOpenChange={props.onOpenChange} modal={false}>
-			<PopoverTrigger asChild>{props.trigger}</PopoverTrigger>
-			<PopoverContent
-				align="end"
-				sideOffset={10}
-				className="w-[360px] border-none bg-transparent p-0 shadow-none"
+		<Dialog open={props.open} onOpenChange={props.onOpenChange}>
+			<DialogContent
+				className="w-[calc(100vw-2rem)] max-w-[420px] gap-0 rounded-2xl border-white/[0.08] bg-[#111114] p-5 text-white shadow-2xl [&>button]:text-white/50 [&>button:hover]:text-white"
 				onOpenAutoFocus={(event) => event.preventDefault()}
 			>
 				<style>{`@keyframes export-indeterminate{0%{left:-35%}100%{left:100%}}.export-indeterminate{animation:export-indeterminate 1.2s ease-in-out infinite}@media (prefers-reduced-motion: reduce){.export-indeterminate{animation:none;left:0;width:100%;opacity:.5}}`}</style>
 				{views[status.view]}
-			</PopoverContent>
-		</Popover>
+			</DialogContent>
+		</Dialog>
 	);
 }

@@ -58,7 +58,8 @@
 		"addFailed": "Impossibile aggiungere il font",
 		"loadTimeout": "Il font ha impiegato troppo a caricarsi. Controlla l'URL e riprova.",
 		"loadFailed": "Impossibile caricare il font. Verifica che l'URL di Google Fonts sia corretto.",
-		"cancel": "Annulla"
+		"cancel": "Annulla",
+		"failedToLoadFont": "Impossibile caricare il carattere"
 	},
 	"shortcutsConfig": {
 		"title": "Scorciatoie da tastiera",
@@ -76,5 +77,31 @@
 		"resetToDefaults": "Ripristina predefinite",
 		"cancel": "Annulla",
 		"save": "Salva"
+	},
+	"projectBrowser": {
+		"projects": "Progetti",
+		"recentProjectsAndProjects": "Progetti recenti e progetti salvati nella cartella delle registrazioni.",
+		"loadingProjects": "Caricamento dei progetti…",
+		"noSavedProjectsYet": "Ancora nessun progetto salvato"
+	},
+	"editor": {
+		"savePreset": "Salva preset",
+		"giveThisPresetA": "Dai a questo preset un nome chiaro per riutilizzarlo facilmente.",
+		"presetName": "Nome del preset",
+		"myPreset": "Il mio preset",
+		"cancel": "Annulla",
+		"savePreset2": "Salva preset",
+		"confirmAction": "Conferma azione",
+		"continue": "Continua"
+	},
+	"quickShare": {
+		"quickShare": "Condivisione rapida",
+		"chooseWhatToDo": "Scegli cosa fare ora con questa registrazione.",
+		"save": "Salva",
+		"exportAndSaveTo": "Esporta e salva in un file.",
+		"copy": "Copia",
+		"exportLocallyAndCopy": "Esporta in locale e copia il percorso del file.",
+		"edit": "Modifica",
+		"openTheRecordingIn": "Apri la registrazione nell’editor."
 	}
 }

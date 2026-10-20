@@ -391,7 +391,10 @@
 		"warnWeb": "Web optimization prefers safer H.264 profiles while preserving your chosen size and frame rate.",
 		"warnLongGif": "Long GIF exports can be large and slow. MP4 may share better.",
 		"warnGifSize": "This GIF is likely to exceed 15 MB. Lower the resolution, FPS, or color count.",
-		"warnGifSource": "Source-resolution GIF exports above 1080p can be very slow and heavy."
+		"warnGifSource": "Source-resolution GIF exports above 1080p can be very slow and heavy.",
+		"mp4Video": "MP4 video",
+		"gifAnimation": "GIF animation",
+		"mbps": "Mbps"
 	},
 	"webcamTab": {
 		"configureYourWebcamOverlay": "Configure your webcam overlay display",

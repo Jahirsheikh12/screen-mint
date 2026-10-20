@@ -14,6 +14,7 @@ import {
 	ZoomIn,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { BUILT_IN_BACKGROUND_MUSIC } from "@/lib/backgroundMusic";
@@ -910,25 +911,44 @@ export default function SettingsPanel({
 
 	const sidebarTabs = [
 		{ id: "effects" as const, icon: Sparkles, label: tSettings("effects.title") },
-		{ id: "cursor" as const, icon: MousePointer2, label: "Cursor" },
+		{
+			id: "cursor" as const,
+			icon: MousePointer2,
+			label: t("editor.settingsPanel.cursor", "Cursor"),
+		},
 		{ id: "keyboard" as const, icon: Keyboard, label: tSettings("keyboard.title") },
 		{ id: "background" as const, icon: Palette, label: tSettings("background.title") },
 		{ id: "zoom" as const, icon: ZoomIn, label: tSettings("zoom.level") },
 		{ id: "speed" as const, icon: Gauge, label: tSettings("speed.playbackSpeed") },
 		{ id: "audio" as const, icon: Music, label: tSettings("audio.title", "Audio") },
-		{ id: "annotation" as const, icon: MessageSquare, label: "Annotation" },
-		{ id: "captions" as const, icon: Captions, label: "Captions" },
+		{
+			id: "annotation" as const,
+			icon: MessageSquare,
+			label: t("editor.settingsPanel.annotation", "Annotation"),
+		},
+		{
+			id: "captions" as const,
+			icon: Captions,
+			label: t("editor.settingsPanel.captions", "Captions"),
+		},
 		...(webcamPath
 			? [{ id: "webcam" as const, icon: Camera, label: tSettings("webcam.title") }]
 			: []),
-		{ id: "studio" as const, icon: Clapperboard, label: "Studio" },
+		{
+			id: "studio" as const,
+			icon: Clapperboard,
+			label: t("editor.settingsPanel.studio", "Studio"),
+		},
 	];
 
 	const tabGroups = [
-		{ ids: ["effects", "cursor", "keyboard"], label: "Capture" },
-		{ ids: ["background", "zoom", "speed"], label: "Canvas" },
-		{ ids: ["audio", "annotation", "captions", "webcam"], label: "Overlay" },
-		{ ids: ["studio"], label: "Studio" },
+		{ ids: ["effects", "cursor", "keyboard"], label: t("editor.settingsPanel.capture", "Capture") },
+		{ ids: ["background", "zoom", "speed"], label: t("editor.settingsPanel.canvas", "Canvas") },
+		{
+			ids: ["audio", "annotation", "captions", "webcam"],
+			label: t("editor.settingsPanel.overlay", "Overlay"),
+		},
+		{ ids: ["studio"], label: t("editor.settingsPanel.studio", "Studio") },
 	];
 
 	return (
@@ -1251,78 +1271,86 @@ export default function SettingsPanel({
 				)}
 			</div>
 
-			{showCropModal && cropRegion && onCropChange && (
-				<>
-					{/* Backdrop */}
-					<div
-						className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 opacity-100 duration-300 ease-out animate-in fade-in"
-						onClick={handleCropCancel}
-					/>
+			{showCropModal &&
+				cropRegion &&
+				onCropChange &&
+				createPortal(
+					<>
+						{/* Backdrop */}
+						<div
+							className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 opacity-100 duration-300 ease-out animate-in fade-in"
+							onClick={handleCropCancel}
+						/>
 
-					{/* Dialog */}
-					<div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none">
-						<div className="pointer-events-auto w-[90vw] max-w-5xl max-h-[90vh] bg-[#0A0F0D] rounded-2xl shadow-2xl shadow-black/60 border border-white/[0.08] overflow-hidden opacity-100 scale-100 translate-y-0 duration-300 ease-out animate-in fade-in zoom-in-95 slide-in-from-bottom-3">
-							{/* Top accent line */}
-							<div className="h-[2px] bg-gradient-to-r from-transparent via-[#F59E0B] to-transparent" />
+						{/* Dialog */}
+						<div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none">
+							<div
+								role="dialog"
+								aria-modal="true"
+								className="pointer-events-auto w-[90vw] max-w-5xl max-h-[90vh] bg-[#0A0F0D] rounded-2xl shadow-2xl shadow-black/60 border border-white/[0.08] overflow-hidden opacity-100 scale-100 translate-y-0 duration-300 ease-out animate-in fade-in zoom-in-95 slide-in-from-bottom-3"
+							>
+								{/* Top accent line */}
+								<div className="h-[2px] bg-gradient-to-r from-transparent via-[#F59E0B] to-transparent" />
 
-							<div className="p-8 overflow-auto max-h-[calc(90vh-2px)]">
-								{/* Header */}
-								<div className="flex items-center justify-between mb-6">
-									<div className="flex items-center gap-3">
-										<div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#F59E0B]/20 to-[#d97706]/10 border border-[#F59E0B]/20 flex items-center justify-center">
-											<Crop className="w-5 h-5 text-[#F59E0B]" />
+								<div className="flex max-h-[calc(90vh-2px)] flex-col p-5 sm:p-8">
+									{/* Header */}
+									<div className="mb-4 flex shrink-0 items-center justify-between gap-3 sm:mb-6">
+										<div className="flex min-w-0 items-center gap-3">
+											<div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-[#F59E0B]/20 to-[#d97706]/10 border border-[#F59E0B]/20 flex items-center justify-center">
+												<Crop className="w-5 h-5 text-[#F59E0B]" />
+											</div>
+											<div>
+												<h2 className="text-[15px] font-semibold text-white tracking-tight">
+													{tSettings("crop.title")}
+												</h2>
+												<p className="text-[11px] text-slate-500 mt-0.5">
+													{tSettings("crop.instruction")}
+												</p>
+											</div>
 										</div>
-										<div>
-											<h2 className="text-[15px] font-semibold text-white tracking-tight">
-												{tSettings("crop.title")}
-											</h2>
-											<p className="text-[11px] text-slate-500 mt-0.5">
-												{tSettings("crop.instruction")}
-											</p>
-										</div>
+										<button
+											type="button"
+											onClick={handleCropCancel}
+											className="rounded-xl p-2 text-white/40 hover:text-white hover:bg-white/[0.06] transition-all duration-200 active:scale-95"
+										>
+											<X className="w-4 h-4" />
+										</button>
 									</div>
-									<button
-										type="button"
-										onClick={handleCropCancel}
-										className="rounded-xl p-2 text-white/40 hover:text-white hover:bg-white/[0.06] transition-all duration-200 active:scale-95"
-									>
-										<X className="w-4 h-4" />
-									</button>
-								</div>
 
-								{/* Crop area */}
-								<div className="rounded-xl border border-white/[0.06] overflow-hidden bg-black/20">
-									<CropControl
-										videoElement={videoElement || null}
-										cropRegion={cropRegion}
-										baseCropRegion={baseCropRegion}
-										onCropChange={onCropChange}
-										aspectRatio={aspectRatio}
-									/>
-								</div>
+									{/* Crop area: the only part that scrolls, so the buttons stay visible */}
+									<div className="custom-scrollbar min-h-0 flex-1 overflow-auto rounded-xl border border-white/[0.06] bg-black/20">
+										<CropControl
+											videoElement={videoElement || null}
+											cropRegion={cropRegion}
+											baseCropRegion={baseCropRegion}
+											onCropChange={onCropChange}
+											aspectRatio={aspectRatio}
+										/>
+									</div>
 
-								{/* Footer */}
-								<div className="h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent mt-6 mb-5" />
-								<div className="flex items-center justify-between">
-									<Button
-										variant="outline"
-										onClick={handleCropCancel}
-										className="h-10 px-5 text-xs font-medium bg-white/[0.03] border-white/[0.08] text-slate-400 hover:bg-white/[0.06] hover:text-slate-200 hover:border-white/[0.12] rounded-xl transition-all duration-200"
-									>
-										Cancel
-									</Button>
-									<Button
-										onClick={() => setShowCropModal(false)}
-										className="h-10 px-6 text-xs font-semibold bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-white rounded-xl shadow-lg shadow-[#F59E0B]/20 hover:shadow-[#F59E0B]/30 hover:scale-[1.01] active:scale-[0.98] transition-all duration-200 border border-[#F59E0B]/30"
-									>
-										{t("common.actions.done")}
-									</Button>
+									{/* Footer */}
+									<div className="h-px shrink-0 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent mt-4 mb-4 sm:mt-6 sm:mb-5" />
+									<div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
+										<Button
+											variant="outline"
+											onClick={handleCropCancel}
+											className="h-10 px-5 text-xs font-medium bg-white/[0.03] border-white/[0.08] text-slate-400 hover:bg-white/[0.06] hover:text-slate-200 hover:border-white/[0.12] rounded-xl transition-all duration-200"
+										>
+											{t("editor.settingsPanel.cancel", "Cancel")}
+										</Button>
+										<Button
+											onClick={() => setShowCropModal(false)}
+											className="h-10 px-6 text-xs font-semibold bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-white rounded-xl shadow-lg shadow-[#F59E0B]/20 hover:shadow-[#F59E0B]/30 hover:scale-[1.01] active:scale-[0.98] transition-all duration-200 border border-[#F59E0B]/30"
+										>
+											{t("common.actions.done")}
+										</Button>
+									</div>
 								</div>
 							</div>
 						</div>
-					</div>
-				</>
-			)}
+					</>,
+					document.body,
+				)}
 		</div>
 	);
 }
