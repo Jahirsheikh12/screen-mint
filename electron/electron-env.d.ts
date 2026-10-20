@@ -252,6 +252,10 @@ declare global {
 			onMobileCapturePairingStateChanged: (
 				callback: (state: MobileCapturePairingState) => void,
 			) => () => void;
+			getAnnouncements: () => Promise<
+				Array<{ id: string; title: string; body: string; url?: string }>
+			>;
+			dismissAnnouncement: (id: string) => Promise<void>;
 			openExternalUrl: (url: string) => Promise<{ success: boolean; error?: string }>;
 			getAccessibilityPermissionStatus: () => Promise<{
 				success: boolean;

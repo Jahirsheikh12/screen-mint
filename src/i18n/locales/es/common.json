@@ -49,5 +49,8 @@
 		"invalidFileType": "Tipo de archivo inválido",
 		"failedToUploadImage": "Error al subir la imagen",
 		"fileReadError": "Hubo un error al leer el archivo."
+	},
+	"announcements": {
+		"learnMore": "Más información"
 	}
 }

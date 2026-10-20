@@ -49,5 +49,8 @@
 		"invalidFileType": "檔案類型無效",
 		"failedToUploadImage": "無法上傳圖片",
 		"fileReadError": "讀取檔案時發生錯誤。"
+	},
+	"announcements": {
+		"learnMore": "了解更多"
 	}
 }

@@ -110,6 +110,10 @@ export const IPC_CHANNELS = {
 		writeVideoToPath: "write-exported-video-to-path",
 		saveVideoToRecordings: "save-exported-video-to-recordings",
 	},
+	announcements: {
+		get: "announcements:get",
+		dismiss: "announcements:dismiss",
+	},
 	files: {
 		openExternalUrl: "open-external-url",
 		openVideoPicker: "open-video-file-picker",

@@ -259,6 +259,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		ipcRenderer.on("mobile-capture-state-changed", listener);
 		return () => ipcRenderer.removeListener("mobile-capture-state-changed", listener);
 	},
+	getAnnouncements: () => {
+		return ipcRenderer.invoke(IPC_CHANNELS.announcements.get);
+	},
+	dismissAnnouncement: (id: string) => {
+		return ipcRenderer.invoke(IPC_CHANNELS.announcements.dismiss, id);
+	},
 	openExternalUrl: (url: string) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.files.openExternalUrl, url);
 	},

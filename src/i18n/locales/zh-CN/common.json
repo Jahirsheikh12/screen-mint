@@ -49,5 +49,8 @@
 		"invalidFileType": "无效的文件类型",
 		"failedToUploadImage": "上传图片失败",
 		"fileReadError": "读取文件时出错。"
+	},
+	"announcements": {
+		"learnMore": "了解更多"
 	}
 }

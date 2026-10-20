@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from "react";
+import { AnnouncementToasts } from "@/components/announcements/AnnouncementToasts";
 import { Toaster } from "@/components/ui/sonner";
 import { UpdaterDialogs } from "@/components/updater/UpdaterDialogs";
 import { CountdownOverlay } from "./components/countdown/CountdownOverlay";
@@ -121,6 +122,7 @@ export default function App() {
 					<Suspense fallback={<EditorLoadingSurface />}>
 						<VideoEditor />
 						<ShortcutsConfigDialog />
+						<AnnouncementToasts />
 					</Suspense>
 				</ShortcutsProvider>
 			);

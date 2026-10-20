@@ -49,5 +49,8 @@
 		"invalidFileType": "잘못된 파일 형식",
 		"failedToUploadImage": "이미지를 업로드하지 못했습니다",
 		"fileReadError": "파일을 읽는 중 오류가 발생했습니다."
+	},
+	"announcements": {
+		"learnMore": "자세히 알아보기"
 	}
 }

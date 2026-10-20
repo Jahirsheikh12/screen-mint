@@ -49,5 +49,8 @@
 		"invalidFileType": "Type de fichier non valide",
 		"failedToUploadImage": "Échec de l'importation de l'image",
 		"fileReadError": "Une erreur s'est produite lors de la lecture du fichier."
+	},
+	"announcements": {
+		"learnMore": "En savoir plus"
 	}
 }
