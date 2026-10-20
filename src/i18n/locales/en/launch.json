@@ -80,7 +80,12 @@
 		"any": "Any",
 		"presets": "Presets",
 		"custom": "Custom",
-		"position": "Position"
+		"position": "Position",
+		"adjustArea": "Adjust area",
+		"clearArea": "Clear area",
+		"widthShort": "W",
+		"heightShort": "H",
+		"selectedAreaTitle": "Selected recording area"
 	},
 	"device": {
 		"noIosDevices": "No USB connected iOS devices",

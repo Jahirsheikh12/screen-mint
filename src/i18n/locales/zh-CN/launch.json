@@ -80,7 +80,12 @@
 		"any": "任意",
 		"presets": "预设",
 		"custom": "自定义",
-		"position": "位置"
+		"position": "位置",
+		"adjustArea": "调整区域",
+		"clearArea": "清除区域",
+		"widthShort": "宽",
+		"heightShort": "高",
+		"selectedAreaTitle": "已选择的录制区域"
 	},
 	"device": {
 		"noIosDevices": "没有通过 USB 连接的 iOS 设备",

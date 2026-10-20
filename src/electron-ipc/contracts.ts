@@ -30,6 +30,9 @@ export const IPC_CHANNELS = {
 		setSelectedArea: "set-selected-area",
 		getSelectedArea: "get-selected-area",
 		clearSelectedArea: "clear-selected-area",
+		prepareAreaCapture: "prepare-area-capture",
+		beginAreaEdit: "begin-area-edit",
+		cancelAreaEdit: "cancel-area-edit",
 		autoSelectCursorDisplay: "auto-select-cursor-display",
 	},
 	screenshot: {

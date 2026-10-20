@@ -71,6 +71,13 @@ declare global {
 			) => Promise<{ success: boolean; area?: SelectedArea | null }>;
 			getSelectedArea: () => Promise<{ success: boolean; area?: SelectedArea | null }>;
 			clearSelectedArea: () => Promise<{ success: boolean }>;
+			prepareAreaCapture: () => Promise<{
+				success: boolean;
+				displayId: number;
+				area: SelectedArea | null;
+			}>;
+			beginAreaEdit: (preview?: SelectedArea | null) => Promise<{ success: boolean }>;
+			cancelAreaEdit: () => Promise<{ success: boolean; area: SelectedArea | null }>;
 			onSelectedAreaChanged: (
 				callback: (state: { area: SelectedArea | null }) => void,
 			) => () => void;
@@ -557,7 +564,10 @@ declare global {
 			/** Countdown timer before recording */
 			getCountdownDelay: () => Promise<{ success: boolean; delay: number }>;
 			setCountdownDelay: (delay: number) => Promise<{ success: boolean; error?: string }>;
-			startCountdown: (seconds: number) => Promise<{ success: boolean; cancelled?: boolean }>;
+			startCountdown: (
+				seconds: number,
+				displayId?: number,
+			) => Promise<{ success: boolean; cancelled?: boolean }>;
 			cancelCountdown: () => Promise<{ success: boolean }>;
 			onCountdownTick: (callback: (seconds: number) => void) => () => void;
 			/** HUD settings */

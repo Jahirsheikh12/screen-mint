@@ -80,7 +80,12 @@
 		"any": "Libre",
 		"presets": "Préréglages",
 		"custom": "Personnalisé",
-		"position": "Position"
+		"position": "Position",
+		"adjustArea": "Ajuster la zone",
+		"clearArea": "Effacer la zone",
+		"widthShort": "L",
+		"heightShort": "H",
+		"selectedAreaTitle": "Zone d’enregistrement sélectionnée"
 	},
 	"device": {
 		"noIosDevices": "Aucun appareil iOS connecté en USB",

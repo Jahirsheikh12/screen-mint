@@ -37,6 +37,7 @@ import type {
 	SelectedArea,
 	CursorTelemetrySample as SessionCursorTelemetrySample,
 } from "../../src/lib/recording/session";
+import { buildAreaCropFilter, toDisplaySourceRect } from "../areaCapture";
 import { createExportTempPath } from "../exportTemp";
 import { RECORDINGS_DIR } from "../main";
 import { markRecordingStarted, markRecordingStopped } from "../recordingRecovery";
@@ -2769,10 +2770,16 @@ async function prepareCompatibleWebcamSegments(params: {
 	};
 }
 
-async function cropVideoToArea(videoPath: string, area: SelectedArea, outputPath: string) {
+/** Recordings whose native recorder already captured only the selected area. */
+const areaCroppedAtCapture = new Set<string>();
+
+async function cropVideoToArea(
+	videoPath: string,
+	area: SelectedArea,
+	outputPath: string,
+	durationMs: number,
+) {
 	const ffmpegPath = getFfmpegBinaryPath();
-	const { x, y, width, height } = area.normalizedBounds;
-	const cropFilter = `crop=iw*${width}:ih*${height}:iw*${x}:ih*${y}`;
 
 	await execFileAsync(
 		ffmpegPath,
@@ -2781,13 +2788,13 @@ async function cropVideoToArea(videoPath: string, area: SelectedArea, outputPath
 			"-i",
 			videoPath,
 			"-vf",
-			cropFilter,
+			buildAreaCropFilter(area.normalizedBounds),
 			"-c:v",
 			"libx264",
 			"-preset",
-			"ultrafast",
-			"-tune",
-			"zerolatency",
+			"veryfast",
+			"-crf",
+			"18",
 			"-pix_fmt",
 			"yuv420p",
 			"-c:a",
@@ -2796,7 +2803,8 @@ async function cropVideoToArea(videoPath: string, area: SelectedArea, outputPath
 			"+faststart",
 			outputPath,
 		],
-		{ timeout: 120000, maxBuffer: 10 * 1024 * 1024 },
+		// Re-encoding scales with length; allow ~2x realtime plus headroom instead of a fixed cap.
+		{ timeout: Math.max(120_000, durationMs * 2 + 60_000), maxBuffer: 10 * 1024 * 1024 },
 	);
 
 	return outputPath;
@@ -2896,12 +2904,20 @@ async function finalizeRecordingSession(payload: {
 		]);
 
 	let finalVideoPath = mergedVideoPath;
-	if (payload.selectedArea) {
+	const croppedAtCapture = videoSegmentPaths.every((segmentPath) =>
+		areaCroppedAtCapture.has(segmentPath),
+	);
+	for (const segmentPath of videoSegmentPaths) areaCroppedAtCapture.delete(segmentPath);
+	if (payload.selectedArea && !croppedAtCapture) {
 		const croppedOutputPath = path.join(recordingsDir, `recording-${Date.now()}-area.mp4`);
 		finalVideoPath = await cropVideoToArea(
 			mergedVideoPath,
 			payload.selectedArea,
 			croppedOutputPath,
+			normalizedVideoSegments.reduce(
+				(total, segment) => total + Math.max(0, segment.durationMs),
+				0,
+			),
 		);
 		if (mergedVideoPath !== videoSegmentPaths[0]) {
 			await fs.rm(mergedVideoPath, { force: true }).catch(() => undefined);
@@ -4544,11 +4560,14 @@ export function registerIpcHandlers(
 						outputPath,
 						fps: Math.max(30, options?.recordingFps ?? 30),
 					};
+					// WGC records the whole display and the area is cropped afterwards, so the size
+					// limit is widened to apply to the cropped area rather than the full display.
+					const areaFraction = options?.selectedArea?.normalizedBounds;
 					if (options?.recordingWidth) {
-						config.width = options.recordingWidth;
+						config.width = Math.round(options.recordingWidth / (areaFraction?.width ?? 1));
 					}
 					if (options?.recordingHeight) {
-						config.height = options.recordingHeight;
+						config.height = Math.round(options.recordingHeight / (areaFraction?.height ?? 1));
 					}
 					if (options?.videoBitsPerSecond) {
 						config.bitrate = options.videoBitsPerSecond;
@@ -4556,10 +4575,6 @@ export function registerIpcHandlers(
 					if (typeof options?.hardwareAcceleration === "boolean") {
 						config.hardwareAcceleration = options.hardwareAcceleration;
 					}
-					if (options?.selectedArea) {
-						config.area = options.selectedArea;
-					}
-
 					if (options?.capturesSystemAudio) {
 						const audioPath = path.join(recordingsDir, `recording-${timestamp}.system.wav`);
 						config.captureSystemAudio = true;
@@ -4690,10 +4705,6 @@ export function registerIpcHandlers(
 				if (typeof options?.hardwareAcceleration === "boolean") {
 					config.hardwareAcceleration = options.hardwareAcceleration;
 				}
-				if (options?.selectedArea) {
-					config.area = options.selectedArea;
-				}
-
 				if (options?.microphoneDeviceId) {
 					config.microphoneDeviceId = options.microphoneDeviceId;
 				}
@@ -4711,6 +4722,13 @@ export function registerIpcHandlers(
 					config.displayId = screenId;
 				} else {
 					config.displayId = Number(getScreen().getPrimaryDisplay().id);
+				}
+				const sourceRect =
+					config.displayId !== undefined && options?.selectedArea
+						? toDisplaySourceRect(options.selectedArea, Number(config.displayId))
+						: null;
+				if (sourceRect) {
+					config.sourceRect = sourceRect;
 				}
 
 				nativeCaptureOutputBuffer = "";
@@ -4731,6 +4749,9 @@ export function registerIpcHandlers(
 				});
 
 				await waitForNativeCaptureStart(nativeCaptureProcess);
+				if (sourceRect && nativeCaptureOutputBuffer.includes("Source rect applied")) {
+					areaCroppedAtCapture.add(outputPath);
+				}
 				nativeScreenRecordingActive = true;
 				return { success: true };
 			} catch (error) {

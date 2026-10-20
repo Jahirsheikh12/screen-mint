@@ -633,9 +633,14 @@ export function closeSpeakerNotesWindow(): void {
 	}
 }
 
-export function createCountdownWindow(): BrowserWindow {
-	const cursor = getScreen().getCursorScreenPoint();
-	const targetDisplay = getScreen().getDisplayNearestPoint(cursor);
+export function createCountdownWindow(displayId?: number): BrowserWindow {
+	const targetDisplay =
+		(displayId === undefined
+			? undefined
+			: getScreen()
+					.getAllDisplays()
+					.find((display) => display.id === displayId)) ??
+		getScreen().getDisplayNearestPoint(getScreen().getCursorScreenPoint());
 	const { width, height, x: workX, y: workY } = targetDisplay.workArea;
 
 	const windowSize = Math.max(240, Math.min(420, Math.round(Math.min(width, height) * 0.2)));
@@ -777,6 +782,8 @@ export function createAreaOverlayWindow(displayId?: number): BrowserWindow {
 		hasShadow: false,
 		focusable: true,
 		show: false,
+		// Lets the window cover the menu bar on macOS instead of being pushed below it.
+		enableLargerThanScreen: true,
 		webPreferences: {
 			preload: path.join(__dirname, "preload.mjs"),
 			nodeIntegration: false,
@@ -786,7 +793,7 @@ export function createAreaOverlayWindow(displayId?: number): BrowserWindow {
 
 	areaOverlayWindow = win;
 	pinOverlayWindow(win);
-	// Exclude the area overlay from screen capture so the amber border is visible
+	// Exclude the area overlay from screen capture so the outline is visible
 	// on-screen but never baked into the recorded video.
 	if (isHudOverlayCaptureProtectionSupported()) {
 		win.setContentProtection(true);
@@ -795,6 +802,9 @@ export function createAreaOverlayWindow(displayId?: number): BrowserWindow {
 	win.webContents.on("did-finish-load", () => {
 		if (!win.isDestroyed()) {
 			win.show();
+			// macOS may push a new window below the menu bar; cover the whole display so the
+			// overlay's coordinates match the display's.
+			win.setBounds(bounds);
 		}
 	});
 
@@ -805,10 +815,10 @@ export function createAreaOverlayWindow(displayId?: number): BrowserWindow {
 	});
 
 	if (VITE_DEV_SERVER_URL) {
-		win.loadURL(VITE_DEV_SERVER_URL + "?windowType=area-overlay");
+		win.loadURL(`${VITE_DEV_SERVER_URL}?windowType=area-overlay&displayId=${targetDisplay.id}`);
 	} else {
 		win.loadFile(path.join(RENDERER_DIST, "index.html"), {
-			query: { windowType: "area-overlay" },
+			query: { windowType: "area-overlay", displayId: String(targetDisplay.id) },
 		});
 	}
 

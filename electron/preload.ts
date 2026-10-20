@@ -66,6 +66,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	clearSelectedArea: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.capture.clearSelectedArea);
 	},
+	prepareAreaCapture: () => {
+		return ipcRenderer.invoke(IPC_CHANNELS.capture.prepareAreaCapture);
+	},
+	beginAreaEdit: (preview?: SelectedArea | null) => {
+		return ipcRenderer.invoke(IPC_CHANNELS.capture.beginAreaEdit, preview ?? null);
+	},
+	cancelAreaEdit: () => {
+		return ipcRenderer.invoke(IPC_CHANNELS.capture.cancelAreaEdit);
+	},
 	captureScreenshot: (request?: unknown) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.screenshot.capture, request);
 	},
@@ -578,7 +587,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	hideOsCursor: () => ipcRenderer.invoke(IPC_CHANNELS.system.hideCursor),
 	getCountdownDelay: () => ipcRenderer.invoke(IPC_CHANNELS.countdown.getDelay),
 	setCountdownDelay: (delay: number) => ipcRenderer.invoke(IPC_CHANNELS.countdown.setDelay, delay),
-	startCountdown: (seconds: number) => ipcRenderer.invoke(IPC_CHANNELS.countdown.start, seconds),
+	startCountdown: (seconds: number, displayId?: number) =>
+		ipcRenderer.invoke(IPC_CHANNELS.countdown.start, seconds, displayId),
 	cancelCountdown: () => ipcRenderer.invoke(IPC_CHANNELS.countdown.cancel),
 	onCountdownTick: (callback: (seconds: number) => void) => {
 		const listener = (_event: Electron.IpcRendererEvent, seconds: number) => callback(seconds);

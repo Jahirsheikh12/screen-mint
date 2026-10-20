@@ -80,7 +80,12 @@
 		"any": "Vrij",
 		"presets": "Voorinstellingen",
 		"custom": "Aangepast",
-		"position": "Positie"
+		"position": "Positie",
+		"adjustArea": "Gebied aanpassen",
+		"clearArea": "Gebied wissen",
+		"widthShort": "B",
+		"heightShort": "H",
+		"selectedAreaTitle": "Geselecteerd opnamegebied"
 	},
 	"device": {
 		"noIosDevices": "Geen iOS-apparaten via USB verbonden",

@@ -44,6 +44,8 @@ type HudToolbarProps = {
 	contentPanelVisible: boolean;
 	onTabClick: (mode: HudMode) => void;
 	recording: boolean;
+	/** What the active tab will record, shown as the tab's tooltip. */
+	sourceLabel?: string;
 	paused: boolean;
 	elapsed: number;
 	onToggleRecording: () => void;
@@ -121,6 +123,7 @@ export function HudToolbar({
 	contentPanelVisible,
 	onTabClick,
 	recording,
+	sourceLabel,
 	paused,
 	elapsed,
 	onToggleRecording,
@@ -200,6 +203,21 @@ export function HudToolbar({
 	// otherwise flash the idle toolbar for a frame. Stay compact until the
 	// finalize work (`actionBusy`) clears.
 	const [showCompact, setShowCompact] = useState(recording);
+
+	// Space pauses or resumes while the HUD has focus, as its tooltip says.
+	useEffect(() => {
+		if (!recording) return;
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.code !== "Space" || event.repeat) return;
+			const target = event.target as HTMLElement | null;
+			// Focused controls keep their own Space behaviour.
+			if (target?.closest("button, input, textarea, select, [contenteditable=true]")) return;
+			event.preventDefault();
+			onTogglePause();
+		};
+		window.addEventListener("keydown", onKeyDown);
+		return () => window.removeEventListener("keydown", onKeyDown);
+	}, [recording, onTogglePause]);
 	useEffect(() => {
 		if (recording) {
 			setShowCompact(true);
@@ -382,6 +400,7 @@ export function HudToolbar({
 							type="button"
 							onClick={() => onTabClick(tab)}
 							disabled={recording}
+							title={mode === tab ? sourceLabel : undefined}
 							className={`flex shrink-0 items-center gap-1.5 rounded-[7px] px-2.5 py-[6px] text-[11px] font-medium transition-all ${
 								isActive ? "bg-white/[0.1] text-white/90" : "text-white/65 hover:text-white/95"
 							} cursor-pointer`}

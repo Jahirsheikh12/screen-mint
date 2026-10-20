@@ -80,7 +80,12 @@
 		"any": "不限",
 		"presets": "預設",
 		"custom": "自訂",
-		"position": "位置"
+		"position": "位置",
+		"adjustArea": "調整區域",
+		"clearArea": "清除區域",
+		"widthShort": "寬",
+		"heightShort": "高",
+		"selectedAreaTitle": "已選取的錄製區域"
 	},
 	"device": {
 		"noIosDevices": "沒有以 USB 連接的 iOS 裝置",

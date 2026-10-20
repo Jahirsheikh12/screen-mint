@@ -80,7 +80,12 @@
 		"any": "Libere",
 		"presets": "Predefiniti",
 		"custom": "Personalizzato",
-		"position": "Posizione"
+		"position": "Posizione",
+		"adjustArea": "Regola l’area",
+		"clearArea": "Rimuovi l’area",
+		"widthShort": "L",
+		"heightShort": "A",
+		"selectedAreaTitle": "Area di registrazione selezionata"
 	},
 	"device": {
 		"noIosDevices": "Nessun dispositivo iOS collegato via USB",

@@ -80,7 +80,12 @@
 		"any": "자유",
 		"presets": "프리셋",
 		"custom": "사용자 지정",
-		"position": "위치"
+		"position": "위치",
+		"adjustArea": "영역 조정",
+		"clearArea": "영역 지우기",
+		"widthShort": "W",
+		"heightShort": "H",
+		"selectedAreaTitle": "선택한 녹화 영역"
 	},
 	"device": {
 		"noIosDevices": "USB로 연결된 iOS 기기가 없습니다",

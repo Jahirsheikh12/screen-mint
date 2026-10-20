@@ -7,12 +7,14 @@ import { normalizeSelectedArea } from "@/lib/recording/session";
 
 type AreaTabProps = {
 	disabled: boolean;
+	/** Whether an area is currently selected (kept in sync by the HUD). */
+	hasArea: boolean;
 	onPermissionDenied?: () => void;
 };
 
-export function AreaTab({ disabled, onPermissionDenied }: AreaTabProps) {
+export function AreaTab({ disabled, hasArea, onPermissionDenied }: AreaTabProps) {
 	const t = useScopedT("launch");
-	const [hasArea, setHasArea] = useState(false);
+	const [displayId, setDisplayId] = useState<number | null>(null);
 	const sourceOptions = useMemo<Electron.SourcesOptions>(() => ({ types: ["screen"] }), []);
 	const { sources, loading, loadError, refresh, accessState } =
 		useCaptureSourceAccess(sourceOptions);
@@ -22,19 +24,21 @@ export function AreaTab({ disabled, onPermissionDenied }: AreaTabProps) {
 		{ label: "800 x 600", width: 800, height: 600 },
 	];
 
-	// Auto-select the primary display as source when Area tab is active
+	// Target the display under the cursor and bring back the last area used on it.
 	useEffect(() => {
-		if (disabled) return;
-		void (async () => {
-			try {
-				if (sources.length > 0) {
-					await window.electronAPI.selectSource(sources[0]);
-				}
-			} catch {
-				// ignore
-			}
-		})();
-	}, [disabled, sources]);
+		if (disabled || sources.length === 0) return;
+		let cancelled = false;
+		void window.electronAPI
+			.prepareAreaCapture()
+			.then((result) => {
+				if (cancelled || !result.success) return;
+				setDisplayId(result.displayId);
+			})
+			.catch(() => undefined);
+		return () => {
+			cancelled = true;
+		};
+	}, [disabled, sources.length]);
 
 	// Auto-dismiss the overlay when permission is denied — the OS permission prompt
 	// is already visible, so our custom notice is redundant and blocks the view.
@@ -76,8 +80,15 @@ export function AreaTab({ disabled, onPermissionDenied }: AreaTabProps) {
 	const openAreaSelector = () => {
 		if (disabled) return;
 		void (async () => {
-			await window.electronAPI.createAreaOverlay();
-			setHasArea(true);
+			await window.electronAPI.beginAreaEdit(null);
+			await window.electronAPI.createAreaOverlay(displayId ?? undefined);
+		})();
+	};
+
+	const clearArea = () => {
+		void (async () => {
+			await window.electronAPI.closeAreaOverlay();
+			await window.electronAPI.clearSelectedArea();
 		})();
 	};
 
@@ -85,13 +96,9 @@ export function AreaTab({ disabled, onPermissionDenied }: AreaTabProps) {
 		if (disabled) return;
 
 		void (async () => {
-			const [source, displayInfo] = await Promise.all([
-				window.electronAPI.getSelectedSource(),
-				window.electronAPI.getDisplayInfo(),
-			]);
-			const displayId = Number(source?.display_id);
+			const displayInfo = await window.electronAPI.getDisplayInfo();
 			const display =
-				displayInfo.success && Number.isFinite(displayId)
+				displayInfo.success && displayId !== null
 					? (displayInfo.displays.find((candidate) => candidate.id === displayId) ?? null)
 					: null;
 
@@ -114,8 +121,8 @@ export function AreaTab({ disabled, onPermissionDenied }: AreaTabProps) {
 				display,
 				display.id,
 			);
-			await window.electronAPI.setSelectedArea(area);
-			setHasArea(true);
+			// Shown in the overlay for positioning; only kept if the user confirms it.
+			await window.electronAPI.beginAreaEdit(area);
 			await window.electronAPI.createAreaOverlay(display.id);
 		})();
 	};
@@ -133,8 +140,18 @@ export function AreaTab({ disabled, onPermissionDenied }: AreaTabProps) {
 				}`}
 			>
 				<MdCropFree size={18} />
-				{hasArea ? t("area.adjustArea", "Adjust Area") : t("area.selectArea")}
+				{hasArea ? t("area.adjustArea", "Adjust area") : t("area.selectArea")}
 			</button>
+			{hasArea ? (
+				<button
+					type="button"
+					onClick={clearArea}
+					disabled={disabled}
+					className="-mt-2 text-[11px] text-white/40 transition-colors hover:text-white/75 disabled:cursor-not-allowed"
+				>
+					{t("area.clearArea", "Clear area")}
+				</button>
+			) : null}
 
 			{/* Preset sizes */}
 			<div className="flex items-center gap-2">

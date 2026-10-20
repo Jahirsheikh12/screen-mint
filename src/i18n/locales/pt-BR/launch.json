@@ -80,7 +80,12 @@
 		"any": "Livre",
 		"presets": "Predefinições",
 		"custom": "Personalizado",
-		"position": "Posição"
+		"position": "Posição",
+		"adjustArea": "Ajustar área",
+		"clearArea": "Limpar área",
+		"widthShort": "L",
+		"heightShort": "A",
+		"selectedAreaTitle": "Área de gravação selecionada"
 	},
 	"device": {
 		"noIosDevices": "Nenhum dispositivo iOS conectado por USB",

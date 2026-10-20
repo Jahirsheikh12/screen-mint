@@ -80,7 +80,12 @@
 		"any": "Cualquiera",
 		"presets": "Preajustes",
 		"custom": "Personalizado",
-		"position": "Posición"
+		"position": "Posición",
+		"adjustArea": "Ajustar área",
+		"clearArea": "Quitar área",
+		"widthShort": "An",
+		"heightShort": "Al",
+		"selectedAreaTitle": "Área de grabación seleccionada"
 	},
 	"device": {
 		"noIosDevices": "No hay dispositivos iOS conectados por USB",

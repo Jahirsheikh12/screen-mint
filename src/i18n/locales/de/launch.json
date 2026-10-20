@@ -80,7 +80,12 @@
 		"any": "Frei",
 		"presets": "Vorlagen",
 		"custom": "Eigene",
-		"position": "Position"
+		"position": "Position",
+		"adjustArea": "Bereich anpassen",
+		"clearArea": "Bereich entfernen",
+		"widthShort": "B",
+		"heightShort": "H",
+		"selectedAreaTitle": "Ausgewählter Aufnahmebereich"
 	},
 	"device": {
 		"noIosDevices": "Keine per USB verbundenen iOS-Geräte",

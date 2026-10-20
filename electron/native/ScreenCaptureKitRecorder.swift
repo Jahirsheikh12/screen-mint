@@ -3,6 +3,14 @@ import ScreenCaptureKit
 import AVFoundation
 import CoreGraphics
 
+/// Part of the display to record, in the display's own point coordinates.
+struct CaptureRect: Codable {
+	let x: Double
+	let y: Double
+	let width: Double
+	let height: Double
+}
+
 struct CaptureConfig: Codable {
 	let fps: Int?
 	let width: Int?
@@ -16,6 +24,7 @@ struct CaptureConfig: Codable {
 	let capturesMicrophone: Bool?
 	let microphoneDeviceId: String?
 	let microphoneOutputPath: String?
+	let sourceRect: CaptureRect?
 }
 
 let defaultCaptureFPS = 30
@@ -136,8 +145,19 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 			filter = SCContentFilter(display: display, excludingApplications: [], exceptingWindows: [])
 			let displayBounds = CGDisplayBounds(display.displayID)
 			let scaleFactor = ScreenCaptureRecorder.scaleFactor(for: display.displayID)
-			let nativeWidth = max(2, Int(displayBounds.width) * scaleFactor)
-			let nativeHeight = max(2, Int(displayBounds.height) * scaleFactor)
+			var captureSize = displayBounds.size
+			if let rect = config.sourceRect {
+				let requested = CGRect(x: rect.x, y: rect.y, width: rect.width, height: rect.height)
+				let clipped = requested.intersection(CGRect(origin: .zero, size: displayBounds.size))
+				if !clipped.isNull && clipped.width >= 2 && clipped.height >= 2 {
+					// Record only the selected area, at the display's native pixel density.
+					streamConfig.sourceRect = clipped
+					captureSize = clipped.size
+					print("Source rect applied")
+				}
+			}
+			let nativeWidth = max(2, Int(captureSize.width) * scaleFactor)
+			let nativeHeight = max(2, Int(captureSize.height) * scaleFactor)
 			let fittedSize = Self.fitCaptureSize(
 				sourceWidth: nativeWidth,
 				sourceHeight: nativeHeight,
