@@ -50,7 +50,21 @@
 		"systemAudio": "Systeemgeluid",
 		"microphone": "Microfoon",
 		"language": "Taal",
-		"finalizing": "Afronden…"
+		"finalizing": "Afronden…",
+		"defaultCamera": "Standaardcamera",
+		"previewSize": "Voorbeeldgrootte",
+		"previewSmall": "Klein",
+		"previewMedium": "Middel",
+		"previewLarge": "Groot",
+		"previewCorner": "Voorbeeldhoek",
+		"cornerTopLeft": "Linksboven",
+		"cornerTopRight": "Rechtsboven",
+		"cornerBottomLeft": "Linksonder",
+		"cornerBottomRight": "Rechtsonder",
+		"previewShape": "Voorbeeldvorm",
+		"shapeRoundedRect": "Afgeronde rechthoek",
+		"shapeCircle": "Cirkel",
+		"showScreenshot": "Tonen"
 	},
 	"tabs": {
 		"display": "Scherm",
@@ -106,7 +120,12 @@
 		"qualityHigh": "Hoog",
 		"qualityMedium": "Gemiddeld",
 		"fps": "Framesnelheid",
-		"hardwareAcceleration": "Hardwareversnelling"
+		"hardwareAcceleration": "Hardwareversnelling",
+		"title": "Instellingen",
+		"experimentalUpdates": "Experimentele updates",
+		"recordingsFolder": "Opnamemap",
+		"chooseFolder": "Map kiezen…",
+		"openFolder": "Map openen"
 	},
 	"afterRecording": {
 		"afterRecording": "Na de opname",
@@ -145,7 +164,8 @@
 		"kbdShare": "delen",
 		"kbdClose": "sluiten",
 		"kbdSwitch": "tab wisselen",
-		"eyebrow": "Klaar om op te nemen"
+		"eyebrow": "Klaar om op te nemen",
+		"clearSearch": "Zoekopdracht wissen"
 	},
 	"permissions": {
 		"screenRecordingNeeded": "ScreenMint heeft toestemming voor schermopname nodig. Systeeminstellingen is geopend. Zet het aan en start ScreenMint daarna opnieuw.",
@@ -168,6 +188,12 @@
 		"systemAudioUnavailable": "Systeemgeluid is niet beschikbaar voor deze bron. De opname gaat verder zonder systeemgeluid.",
 		"microphoneDenied": "Toegang tot de microfoon is geweigerd. De opname gaat verder zonder microfoongeluid.",
 		"failedToStart": "Opname starten mislukt: {{error}}",
-		"failedToStartGeneric": "Opname starten mislukt"
+		"failedToStartGeneric": "Opname starten mislukt",
+		"diagnostics": "Diagnose"
+	},
+	"speakerNotes": {
+		"title": "Sprekersnotities",
+		"close": "Sluiten",
+		"placeholder": "Schrijf hier je kernpunten, geheugensteuntjes of een script…"
 	}
 }

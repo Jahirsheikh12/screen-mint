@@ -235,7 +235,7 @@ export function UpdaterDialogs({ windowType }: UpdaterDialogsProps) {
 							) : null}
 						</div>
 
-						<DialogFooter className="mt-6 flex gap-2 sm:justify-end">
+						<DialogFooter className="mt-6 flex flex-wrap gap-2 sm:justify-end sm:space-x-0">
 							<Button
 								type="button"
 								variant="ghost"
@@ -244,7 +244,7 @@ export function UpdaterDialogs({ windowType }: UpdaterDialogsProps) {
 									void window.electronAPI.skipUpdateVersion();
 								}}
 							>
-								Skip this version
+								{t("updates.popup.skipVersion")}
 							</Button>
 							<Button
 								type="button"
@@ -310,7 +310,7 @@ export function UpdaterDialogs({ windowType }: UpdaterDialogsProps) {
 							</div>
 						</div>
 
-						<DialogFooter className="mt-6 flex gap-2 sm:justify-end">
+						<DialogFooter className="mt-6 flex flex-wrap gap-2 sm:justify-end sm:space-x-0">
 							<Button
 								type="button"
 								className="h-10 rounded-xl bg-[#F59E0B] px-4 text-white hover:bg-[#b45309]"

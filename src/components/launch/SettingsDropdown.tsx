@@ -49,7 +49,7 @@ export function SettingsDropdown({
 	const isMac = platform === "darwin";
 	const supportsHudCaptureProtection = platform !== "linux";
 	const supportsSpeakerNotes = platform !== null;
-	const settingsTooltip = useTooltip({ content: "Settings", side: "top" });
+	const settingsTooltip = useTooltip({ content: t("settings.title"), side: "top" });
 	const [recordingsDir, setRecordingsDir] = useState<string | null>(null);
 	const updaterState = useUpdaterState();
 
@@ -70,7 +70,7 @@ export function SettingsDropdown({
 					onMouseEnter={settingsTooltip.onMouseEnter}
 					onMouseLeave={settingsTooltip.onMouseLeave}
 					type="button"
-					aria-label="Settings"
+					aria-label={t("settings.title")}
 					className={`flex items-center justify-center rounded-lg w-8 h-8 text-white/55 hover:text-white/95 hover:bg-white/[0.08] transition-colors cursor-pointer ${styles.electronNoDrag}`}
 				>
 					<Settings size={14} strokeWidth={2.5} />
@@ -79,7 +79,7 @@ export function SettingsDropdown({
 			<DropdownMenuContent
 				side="top"
 				align="end"
-				className={`min-w-[280px] ${DROPDOWN_CLASSES} ${styles.hudScrollArea}`}
+				className={`w-[280px] ${DROPDOWN_CLASSES} ${styles.hudScrollArea}`}
 			>
 				<DropdownMenuCheckboxItem
 					checked={hudSettings.hideDesktopIcons}
@@ -244,15 +244,17 @@ export function SettingsDropdown({
 					}
 					className={`text-xs ${ITEM_HOVER}`}
 				>
-					Experimental updates
+					{t("settings.experimentalUpdates")}
 				</DropdownMenuCheckboxItem>
 
 				<DropdownMenuSeparator className="bg-white/[0.08]" />
 				<DropdownMenuSub>
 					<DropdownMenuSubTrigger className={`text-xs ${ITEM_HOVER}`}>
-						Recordings folder
+						{t("settings.recordingsFolder")}
 					</DropdownMenuSubTrigger>
-					<DropdownMenuSubContent className="max-w-[260px]">
+					<DropdownMenuSubContent
+						className={`max-w-[220px] ${DROPDOWN_CLASSES} ${styles.hudScrollArea}`}
+					>
 						{recordingsDir && (
 							<div className="px-2 py-1.5 text-[10px] text-white/50 break-all">{recordingsDir}</div>
 						)}
@@ -265,13 +267,13 @@ export function SettingsDropdown({
 							}}
 							className={`text-xs ${ITEM_HOVER}`}
 						>
-							Choose folder…
+							{t("settings.chooseFolder")}
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							onSelect={() => void window.electronAPI.openRecordingsFolder()}
 							className={`text-xs ${ITEM_HOVER}`}
 						>
-							Open folder
+							{t("settings.openFolder")}
 						</DropdownMenuItem>
 					</DropdownMenuSubContent>
 				</DropdownMenuSub>

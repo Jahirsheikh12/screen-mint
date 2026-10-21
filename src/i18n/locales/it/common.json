@@ -38,7 +38,8 @@
 			"downloadedBodyInApp": "ScreenMint {{version}} è pronto. Fai clic su «Aggiorna ora» per riavviare e completare l'installazione.",
 			"downloadedBodyExternal": "ScreenMint {{version}} è pronto. Fai clic su «Aggiorna ora» per aprire il programma di installazione. ScreenMint si chiuderà per completare l'aggiornamento.",
 			"manualBody": "ScreenMint {{version}} è disponibile, ma questa installazione non può aggiornarsi da sola. «Aggiorna ora» apre la pagina di download.",
-			"busyHint": "Termina registrazione, esportazione o trascrizione prima di continuare con l'aggiornamento."
+			"busyHint": "Termina registrazione, esportazione o trascrizione prima di continuare con l'aggiornamento.",
+			"skipVersion": "Salta questa versione"
 		},
 		"whatsNew": {
 			"title": "Novità della versione {{version}}",

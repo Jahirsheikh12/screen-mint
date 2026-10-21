@@ -50,7 +50,21 @@
 		"systemAudio": "Áudio do sistema",
 		"microphone": "Microfone",
 		"language": "Idioma",
-		"finalizing": "Finalizando…"
+		"finalizing": "Finalizando…",
+		"defaultCamera": "Câmera padrão",
+		"previewSize": "Tamanho da prévia",
+		"previewSmall": "Pequena",
+		"previewMedium": "Média",
+		"previewLarge": "Grande",
+		"previewCorner": "Canto da prévia",
+		"cornerTopLeft": "Superior esquerdo",
+		"cornerTopRight": "Superior direito",
+		"cornerBottomLeft": "Inferior esquerdo",
+		"cornerBottomRight": "Inferior direito",
+		"previewShape": "Formato da prévia",
+		"shapeRoundedRect": "Retângulo arredondado",
+		"shapeCircle": "Círculo",
+		"showScreenshot": "Mostrar"
 	},
 	"tabs": {
 		"display": "Tela",
@@ -106,7 +120,12 @@
 		"qualityHigh": "Alta",
 		"qualityMedium": "Média",
 		"fps": "Taxa de quadros",
-		"hardwareAcceleration": "Aceleração de hardware"
+		"hardwareAcceleration": "Aceleração de hardware",
+		"title": "Ajustes",
+		"experimentalUpdates": "Atualizações experimentais",
+		"recordingsFolder": "Pasta de gravações",
+		"chooseFolder": "Escolher pasta…",
+		"openFolder": "Abrir pasta"
 	},
 	"afterRecording": {
 		"afterRecording": "Após a gravação",
@@ -145,7 +164,8 @@
 		"kbdShare": "compartilhar",
 		"kbdClose": "fechar",
 		"kbdSwitch": "trocar aba",
-		"eyebrow": "Pronto para gravar"
+		"eyebrow": "Pronto para gravar",
+		"clearSearch": "Limpar busca"
 	},
 	"permissions": {
 		"screenRecordingNeeded": "O ScreenMint precisa da permissão de gravação de tela antes de começar. Os Ajustes do Sistema foram abertos. Depois de ativar, feche e abra o ScreenMint novamente.",
@@ -168,6 +188,12 @@
 		"systemAudioUnavailable": "O áudio do sistema não está disponível para esta fonte. A gravação continuará sem áudio do sistema.",
 		"microphoneDenied": "O acesso ao microfone foi negado. A gravação continuará sem o áudio do microfone.",
 		"failedToStart": "Falha ao iniciar a gravação: {{error}}",
-		"failedToStartGeneric": "Falha ao iniciar a gravação"
+		"failedToStartGeneric": "Falha ao iniciar a gravação",
+		"diagnostics": "Diagnóstico"
+	},
+	"speakerNotes": {
+		"title": "Notas do apresentador",
+		"close": "Fechar",
+		"placeholder": "Escreva aqui tópicos, lembretes ou um roteiro…"
 	}
 }

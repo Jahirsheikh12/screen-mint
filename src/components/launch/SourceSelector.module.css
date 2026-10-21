@@ -241,6 +241,31 @@
 	display: none; /* Too cluttered */
 }
 
+.emptyState {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	padding: 48px 24px;
+	text-align: center;
+}
+
+.emptyIcon {
+	color: rgba(255, 255, 255, 0.25);
+}
+
+.emptyTitle {
+	font-size: 13px;
+	font-weight: 600;
+	color: rgba(255, 255, 255, 0.85);
+}
+
+.emptyHint {
+	max-width: 320px;
+	font-size: 12px;
+	color: rgba(255, 255, 255, 0.45);
+}
+
 /* ===== Common Grid Overrides (applied to both tabs via class replacement) ===== */
 .displayGrid,
 .windowGrid {
@@ -261,6 +286,7 @@
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
+	gap: 12px;
 	padding: 12px 16px;
 	border-top: 1px solid rgba(255, 255, 255, 0.08);
 	background: rgba(0, 0, 0, 0.1);
@@ -269,8 +295,10 @@
 
 .kbdHint {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
-	gap: 12px;
+	gap: 4px 12px;
+	min-width: 0;
 	font-size: 11px;
 	color: rgba(255, 255, 255, 0.4);
 }
@@ -279,6 +307,7 @@
 	display: inline-flex;
 	align-items: center;
 	gap: 4px;
+	white-space: nowrap;
 }
 
 .kbd {
@@ -299,6 +328,7 @@
 
 .actions {
 	display: flex;
+	flex-shrink: 0;
 	align-items: center;
 	gap: 8px;
 }

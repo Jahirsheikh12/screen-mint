@@ -50,7 +50,21 @@
 		"systemAudio": "시스템 오디오",
 		"microphone": "마이크",
 		"language": "언어",
-		"finalizing": "마무리 중…"
+		"finalizing": "마무리 중…",
+		"defaultCamera": "기본 카메라",
+		"previewSize": "미리보기 크기",
+		"previewSmall": "작게",
+		"previewMedium": "보통",
+		"previewLarge": "크게",
+		"previewCorner": "미리보기 위치",
+		"cornerTopLeft": "왼쪽 위",
+		"cornerTopRight": "오른쪽 위",
+		"cornerBottomLeft": "왼쪽 아래",
+		"cornerBottomRight": "오른쪽 아래",
+		"previewShape": "미리보기 모양",
+		"shapeRoundedRect": "둥근 사각형",
+		"shapeCircle": "원형",
+		"showScreenshot": "보기"
 	},
 	"tabs": {
 		"display": "디스플레이",
@@ -106,7 +120,12 @@
 		"qualityHigh": "높음",
 		"qualityMedium": "보통",
 		"fps": "프레임 레이트",
-		"hardwareAcceleration": "하드웨어 가속"
+		"hardwareAcceleration": "하드웨어 가속",
+		"title": "설정",
+		"experimentalUpdates": "실험적 업데이트",
+		"recordingsFolder": "녹화 폴더",
+		"chooseFolder": "폴더 선택…",
+		"openFolder": "폴더 열기"
 	},
 	"afterRecording": {
 		"afterRecording": "녹화 후",
@@ -145,7 +164,8 @@
 		"kbdShare": "공유",
 		"kbdClose": "닫기",
 		"kbdSwitch": "탭 전환",
-		"eyebrow": "녹화 준비 완료"
+		"eyebrow": "녹화 준비 완료",
+		"clearSearch": "검색어 지우기"
 	},
 	"permissions": {
 		"screenRecordingNeeded": "시작하려면 ScreenMint에 화면 녹화 권한이 필요합니다. 시스템 설정을 열었습니다. 권한을 켠 뒤 ScreenMint를 종료하고 다시 여세요.",
@@ -168,6 +188,12 @@
 		"systemAudioUnavailable": "이 소스에서는 시스템 오디오를 사용할 수 없습니다. 시스템 오디오 없이 녹화를 계속합니다.",
 		"microphoneDenied": "마이크 접근이 거부되었습니다. 마이크 오디오 없이 녹화를 계속합니다.",
 		"failedToStart": "녹화를 시작하지 못했습니다: {{error}}",
-		"failedToStartGeneric": "녹화를 시작하지 못했습니다"
+		"failedToStartGeneric": "녹화를 시작하지 못했습니다",
+		"diagnostics": "진단 정보"
+	},
+	"speakerNotes": {
+		"title": "발표자 노트",
+		"close": "닫기",
+		"placeholder": "요점, 메모 또는 대본을 여기에 적어 두세요…"
 	}
 }

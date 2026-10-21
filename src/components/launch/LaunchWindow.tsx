@@ -354,7 +354,7 @@ export function LaunchWindow() {
 				description: result.screenshot.path,
 				action: result.screenshot.path
 					? {
-							label: "Show",
+							label: t("recording.showScreenshot"),
 							onClick: () => {
 								void window.electronAPI.revealInFolder(result.screenshot?.path ?? "");
 							},
