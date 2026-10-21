@@ -728,7 +728,7 @@ export function CaptionsTab(props: CaptionsTabProps) {
 							type="button"
 							onClick={() => onCaptionExport?.("srt")}
 							disabled={captionRegions.length === 0}
-							className="h-8 rounded-lg border border-line bg-fill-subtle text-micro text-fg-muted hover:border-line-strong disabled:opacity-40"
+							className="min-h-8 h-auto whitespace-normal rounded-lg border border-line bg-fill-subtle px-1 py-1 text-micro leading-tight text-fg-muted hover:border-line-strong disabled:opacity-40"
 						>
 							{t("editor.captions.exportSrt", "Export SRT")}
 						</Button>
@@ -737,7 +737,7 @@ export function CaptionsTab(props: CaptionsTabProps) {
 							type="button"
 							onClick={() => onCaptionExport?.("vtt")}
 							disabled={captionRegions.length === 0}
-							className="h-8 rounded-lg border border-line bg-fill-subtle text-micro text-fg-muted hover:border-line-strong disabled:opacity-40"
+							className="min-h-8 h-auto whitespace-normal rounded-lg border border-line bg-fill-subtle px-1 py-1 text-micro leading-tight text-fg-muted hover:border-line-strong disabled:opacity-40"
 						>
 							{t("editor.captions.exportVtt", "Export VTT")}
 						</Button>
@@ -746,7 +746,7 @@ export function CaptionsTab(props: CaptionsTabProps) {
 							type="button"
 							onClick={() => onCaptionExport?.("txt")}
 							disabled={captionRegions.length === 0}
-							className="h-8 rounded-lg border border-line bg-fill-subtle text-micro text-fg-muted hover:border-line-strong disabled:opacity-40"
+							className="min-h-8 h-auto whitespace-normal rounded-lg border border-line bg-fill-subtle px-1 py-1 text-micro leading-tight text-fg-muted hover:border-line-strong disabled:opacity-40"
 						>
 							{t("editor.captions.exportTxt", "Export TXT")}
 						</Button>
@@ -1084,7 +1084,7 @@ function StyleControls({
 					formatValue={(v) => `${v}px`}
 					parseInput={(val) => parseFloat(val.replace(/px$/, ""))}
 				/>
-				<div className="grid grid-cols-2 gap-1.5 mt-2">
+				<div className="grid grid-cols-1 gap-1.5 mt-2">
 					<WeightPicker
 						value={style.fontWeight}
 						onChange={(v) => onStyleChange({ fontWeight: v })}

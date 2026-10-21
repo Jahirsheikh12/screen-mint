@@ -1,5 +1,6 @@
 import { Copy, Download, Edit3, X } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 type QuickShareDialogProps = {
 	isOpen: boolean;
@@ -17,6 +18,7 @@ export function QuickShareDialog({
 	onEdit,
 }: QuickShareDialogProps) {
 	const { t } = useI18n();
+	useEscapeKey(isOpen, onClose);
 	if (!isOpen) {
 		return null;
 	}

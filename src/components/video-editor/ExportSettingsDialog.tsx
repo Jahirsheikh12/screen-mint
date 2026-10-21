@@ -14,6 +14,7 @@ import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { useScopedT } from "@/contexts/I18nContext";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import type {
 	ExportDestination,
 	ExportFormat,
@@ -359,6 +360,7 @@ export function ExportSettingsDialog({
 	const [isClosing, setIsClosing] = useState(false);
 	const [advancedOpen, setAdvancedOpen] = useState(false);
 	const prevIsOpenRef = useRef(isOpen);
+	useEscapeKey(isOpen, onClose);
 
 	useEffect(() => {
 		if (isOpen && !prevIsOpenRef.current) {

@@ -56,13 +56,6 @@ export function useVideoEditorKeyboardShortcuts({
 				return;
 			}
 
-			if (e.key === "Tab") {
-				if (isEditableTarget) {
-					return;
-				}
-				e.preventDefault();
-			}
-
 			if (matchesShortcut(e, shortcuts.playPause, isMac)) {
 				if (isEditableTarget) {
 					return;

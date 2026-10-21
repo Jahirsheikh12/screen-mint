@@ -17,6 +17,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { BUILT_IN_BACKGROUND_MUSIC } from "@/lib/backgroundMusic";
 import { WALLPAPER_PATHS } from "@/lib/wallpapers";
 import { type AspectRatio } from "@/utils/aspectRatioUtils";
@@ -687,6 +688,8 @@ export default function SettingsPanel({
 			onTrimDelete(selectedTrimId);
 		}
 	};
+
+	useEscapeKey(showCropModal, () => handleCropCancel());
 
 	const handleCropToggle = () => {
 		if (!showCropModal && cropRegion) {

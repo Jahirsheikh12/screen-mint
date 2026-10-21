@@ -249,7 +249,7 @@ export function CursorSettingsTab({
 								title={tSettings(`cursor.presets.${option.value}Hint`, option.description)}
 								onClick={() => onApplyMotionPreset?.(option.value)}
 								className={cn(
-									"h-9 rounded-lg border text-label font-semibold transition-all duration-200",
+									"h-9 rounded-lg border px-2 text-label font-semibold transition-all duration-200",
 									isActive
 										? "border-accent/50 bg-accent/12 text-accent-fg"
 										: "border-line bg-fill-subtle text-fg-muted hover:bg-fill-hover hover:text-fg",
@@ -628,7 +628,7 @@ export function CursorSettingsTab({
 					title={tSettings("cursor.clickEffects", "Click Effects")}
 					description={tSettings("cursor.clickEffectsHint", "Visual feedback when clicking")}
 				>
-					<div className="grid grid-cols-4 gap-1.5">
+					<div className="grid grid-cols-[repeat(auto-fit,minmax(5.5rem,1fr))] gap-1.5">
 						{([{ value: "off", label: "Off" }, ...CURSOR_CLICK_EFFECT_STYLE_OPTIONS] as const).map(
 							(option) => {
 								const isActive =
