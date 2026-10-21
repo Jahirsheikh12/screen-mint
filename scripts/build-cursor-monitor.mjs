@@ -1,6 +1,7 @@
 import { execSync } from "node:child_process";
 import { existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
+import { configureVisualStudio, findCmake } from "./windows-cmake.mjs";
 
 const projectRoot = process.cwd();
 const sourceDir = path.join(projectRoot, "electron", "native", "cursor-monitor");
@@ -16,41 +17,6 @@ if (!existsSync(path.join(sourceDir, "CMakeLists.txt"))) {
 	process.exit(1);
 }
 
-function findCmake() {
-	// Check PATH first
-	try {
-		execSync("cmake --version", { stdio: "pipe" });
-		return "cmake";
-	} catch {
-		// not on PATH
-	}
-
-	// VS 2022 bundled CMake
-	const vsEditions = ["Community", "Professional", "Enterprise", "BuildTools"];
-	for (const edition of vsEditions) {
-		const cmakePath = path.join(
-			"C:",
-			"Program Files",
-			"Microsoft Visual Studio",
-			"2022",
-			edition,
-			"Common7",
-			"IDE",
-			"CommonExtensions",
-			"Microsoft",
-			"CMake",
-			"CMake",
-			"bin",
-			"cmake.exe",
-		);
-		if (existsSync(cmakePath)) {
-			return `"${cmakePath}"`;
-		}
-	}
-
-	return null;
-}
-
 const cmake = findCmake();
 if (!cmake) {
 	console.error(
@@ -61,25 +27,11 @@ if (!cmake) {
 
 mkdirSync(buildDir, { recursive: true });
 
-console.log("[build-cursor-monitor] Configuring CMake...");
-try {
-	execSync(`${cmake} .. -G "Visual Studio 17 2022" -A x64`, {
-		cwd: buildDir,
-		stdio: "inherit",
-		timeout: 120000,
-	});
-} catch {
-	console.log("[build-cursor-monitor] VS 2022 generator not found, trying VS 2019...");
-	try {
-		execSync(`${cmake} .. -G "Visual Studio 16 2019" -A x64`, {
-			cwd: buildDir,
-			stdio: "inherit",
-			timeout: 120000,
-		});
-	} catch (innerError) {
-		console.error("[build-cursor-monitor] CMake configure failed:", innerError.message);
-		process.exit(1);
-	}
+if (!configureVisualStudio(cmake, buildDir, "build-cursor-monitor")) {
+	console.error(
+		"[build-cursor-monitor] CMake configure failed: no usable Visual Studio generator.",
+	);
+	process.exit(1);
 }
 
 console.log("[build-cursor-monitor] Building...");
