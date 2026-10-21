@@ -31,6 +31,11 @@
     "electron/native",
     "!dist/wallpapers{,/**}",
     "!node_modules/three{,/**}",
+    // Renderer-only libraries: Vite bundles them into dist, and nothing loads them from node_modules.
+    "!node_modules/react-icons{,/**}",
+    "!node_modules/pixi.js{,/**}",
+    "!node_modules/lucide-react{,/**}",
+    "!node_modules/@mediapipe/tasks-vision{,/**}",
     "!**/node_modules/ffmpeg-static/{LICENSE,README.md,example.js,ffmpeg.LICENSE,ffmpeg.README,install.js,types{,/**}}",
     "!*.png",
     "!preview*.png",

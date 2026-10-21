@@ -128,7 +128,7 @@
 		"transcribeSpeechPermissionNeeded": "Permite el reconocimiento de voz para ScreenMint en los ajustes de macOS y vuelve a intentarlo.",
 		"transcribeAppleSpeechUnavailable": "Apple Speech no está disponible para este idioma en esta Mac. Cambia a Whisper o elige otro idioma.",
 		"transcribeModelDownloadFailed": "ScreenMint no pudo descargar el modelo local de voz. Revisa tu conexión a internet y vuelve a intentarlo.",
-		"transcribeRuntimeSetupFailed": "ScreenMint no pudo preparar el motor local de subtítulos en este dispositivo. Instala las herramientas necesarias e inténtalo de nuevo.",
+		"transcribeRuntimeSetupFailed": "ScreenMint no pudo preparar el motor local de subtítulos en este dispositivo. Instala las herramientas necesarias o elige un programa whisper-cli en Programa de Whisper e inténtalo de nuevo.",
 		"transcribeLowMemory": "Tu dispositivo se quedó sin memoria durante la transcripción. Prueba el modelo Pequeño para esta grabación.",
 		"noTranscriptToExport": "No hay transcripción para exportar.",
 		"exportFailed": "No se pudo exportar la transcripción.",

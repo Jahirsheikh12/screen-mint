@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 project(wgc-capture LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+# C++/WinRT needs C++20 coroutines: MSVC 14.5x (VS 2026) removed the old <experimental/coroutine>.
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(wgc-capture
