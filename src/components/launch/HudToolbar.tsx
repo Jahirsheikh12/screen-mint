@@ -113,7 +113,7 @@ const MODE_ICONS: Record<HudMode, React.ComponentType<{ size?: number; className
 };
 
 const DROPDOWN_CLASSES =
-	"border-line-strong bg-raised text-fg shadow-none data-[state=open]:!animate-none data-[state=closed]:!animate-none";
+	"border border-line-strong bg-raised text-fg shadow-none data-[state=open]:!animate-none data-[state=closed]:!animate-none";
 const DEFAULT_CAMERA_VALUE = "__default_camera__";
 
 const ND = styles.electronNoDrag;

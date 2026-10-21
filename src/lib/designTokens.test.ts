@@ -77,7 +77,6 @@ const ALLOWED = new Set([
 	// Preset mood swatches.
 	"video-editor/settings/StudioSettingsTab.tsx",
 	"video-editor/videoPlayback/PlaybackOverlays.tsx",
-	"launch/AreaSelectionOverlay.tsx",
 	// macOS window-control dots in the window picker.
 	"launch/tabs/WindowTab.tsx",
 ]);

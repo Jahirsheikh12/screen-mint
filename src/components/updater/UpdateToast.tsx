@@ -100,7 +100,7 @@ export function UpdateToast() {
 				role="alertdialog"
 				aria-labelledby="update-toast-title"
 				aria-describedby="update-toast-body"
-				className="relative flex w-full flex-col gap-3 overflow-hidden rounded-2xl border border-line-strong bg-canvas/95 p-4 text-fg shadow-2xl shadow-black/60 backdrop-blur-xl"
+				className="relative flex w-full flex-col gap-3 overflow-hidden rounded-xl bg-raised/95 p-4 text-fg shadow-popover backdrop-blur-xl"
 			>
 				<div className="flex min-w-0 items-start gap-3">
 					<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-accent/20 bg-accent/10">

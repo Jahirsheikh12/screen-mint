@@ -50,7 +50,7 @@ export function SpeakerNotesWindow() {
 	};
 
 	return (
-		<div className="h-screen w-full rounded-2xl border border-line-strong bg-[rgba(14,14,16,0.88)] p-3 text-fg shadow-2xl backdrop-blur-2xl">
+		<div className="h-screen w-full rounded-xl bg-surface/90 p-3 text-fg shadow-dialog backdrop-blur-2xl">
 			<div className="mb-2 flex items-center justify-between">
 				<div className="text-caption font-semibold uppercase tracking-[0.18em] text-fg-subtle">
 					{t("speakerNotes.title")}

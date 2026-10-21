@@ -27,7 +27,7 @@ import { DisplayTab } from "./tabs/DisplayTab";
 import { WindowTab } from "./tabs/WindowTab";
 
 const DROPDOWN_CLASSES =
-	"border-line-strong bg-raised text-fg shadow-none data-[state=open]:!animate-none data-[state=closed]:!animate-none";
+	"border border-line-strong bg-raised text-fg shadow-none data-[state=open]:!animate-none data-[state=closed]:!animate-none";
 const HUD_INTERACTIVE_SELECTOR = "[data-hud-interactive]";
 const HUD_DRAG_BLOCK_SELECTOR =
 	"button, a, input, select, textarea, [role='button'], [role='menuitem'], [data-hud-no-drag]";
@@ -499,9 +499,9 @@ export function LaunchWindow() {
 						className={`rounded-2xl border w-full mx-8 ${overlayExiting ? styles.overlayExit : styles.overlayEnter} ${styles.electronNoDrag}`}
 						style={{
 							maxWidth: hud.mode === "window" ? "800px" : "680px",
-							background:
-								"linear-gradient(180deg, rgba(30,30,32,0.94) 0%, rgba(22,22,24,0.96) 100%)",
-							borderColor: "rgba(255,255,255,0.07)",
+							background: "rgb(var(--surface) / 0.94)",
+							borderColor: "var(--line)",
+							boxShadow: "var(--shadow-dialog)",
 							backdropFilter: "blur(40px) saturate(160%)",
 							WebkitBackdropFilter: "blur(40px) saturate(160%)",
 						}}
@@ -635,8 +635,9 @@ export function LaunchWindow() {
 								order: hudWebcamPreviewLayout.order,
 								alignSelf: hudWebcamPreviewLayout.selfAlign,
 								borderRadius: 16,
-								border: "1px solid rgba(255,255,255,0.1)",
-								background: "#161618",
+								border: "1px solid var(--line-strong)",
+								background: "rgb(var(--surface))",
+								boxShadow: "var(--shadow-popover)",
 								padding: 6,
 							}}
 						>
@@ -673,10 +674,11 @@ export function LaunchWindow() {
 						onPointerCancel={handleHudDragPointerUp}
 						style={{
 							borderRadius: 14,
-							background: hud.recording ? "#1d1416" : "#1d1d20",
+							background: "rgb(var(--raised))",
 							border: hud.recording
-								? "1px solid rgba(239,68,68,0.22)"
-								: "1px solid rgba(255,255,255,0.14)",
+								? "1px solid rgb(var(--danger) / 0.4)"
+								: "1px solid var(--line-strong)",
+							boxShadow: "var(--shadow-popover)",
 						}}
 					>
 						<HudToolbar

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useScopedT } from "@/contexts/I18nContext";
 import type { HudSettings } from "@/hooks/useHudState";
 import { useUpdaterState } from "@/hooks/useUpdaterState";
+import { normalizeThemePreference, THEME_PREFERENCES, useThemePreference } from "@/lib/theme";
 import {
 	DropdownMenu,
 	DropdownMenuCheckboxItem,
@@ -30,12 +31,7 @@ type SettingsDropdownProps = {
 };
 
 const DROPDOWN_CLASSES =
-	"border-line-strong bg-raised text-fg shadow-none data-[state=open]:!animate-none data-[state=closed]:!animate-none";
-
-// Override the global Radix `accent` (which resolves to a near-white in light mode)
-// with a dark-friendly hover so menu text stays readable on the HUD's dark popover.
-const ITEM_HOVER =
-	"focus:!bg-fill-hover focus:!text-fg data-[state=open]:!bg-fill-hover data-[state=open]:!text-fg";
+	"border border-line-strong bg-raised text-fg shadow-none data-[state=open]:!animate-none data-[state=closed]:!animate-none";
 
 export function SettingsDropdown({
 	hudSettings,
@@ -46,6 +42,8 @@ export function SettingsDropdown({
 	onUpdateSettings,
 }: SettingsDropdownProps) {
 	const t = useScopedT("launch");
+	const tEditor = useScopedT("editor");
+	const [themePreference, setThemePreference] = useThemePreference();
 	const isMac = platform === "darwin";
 	const supportsHudCaptureProtection = platform !== "linux";
 	const supportsSpeakerNotes = platform !== null;
@@ -85,7 +83,7 @@ export function SettingsDropdown({
 					checked={hudSettings.hideDesktopIcons}
 					onCheckedChange={(checked) => onUpdateSettings({ hideDesktopIcons: Boolean(checked) })}
 					disabled={!isMac}
-					className={`text-label ${ITEM_HOVER}`}
+					className="text-label"
 				>
 					{t("settings.hideDesktopIcons")}
 				</DropdownMenuCheckboxItem>
@@ -94,7 +92,7 @@ export function SettingsDropdown({
 					checked={hudSettings.hideDockIcon}
 					onCheckedChange={(checked) => onUpdateSettings({ hideDockIcon: Boolean(checked) })}
 					disabled={!isMac}
-					className={`text-label ${ITEM_HOVER}`}
+					className="text-label"
 				>
 					{t("settings.hideDockIcon")}
 				</DropdownMenuCheckboxItem>
@@ -102,7 +100,7 @@ export function SettingsDropdown({
 				<DropdownMenuCheckboxItem
 					checked={hudSettings.highlightArea}
 					onCheckedChange={(checked) => onUpdateSettings({ highlightArea: Boolean(checked) })}
-					className={`text-label ${ITEM_HOVER}`}
+					className="text-label"
 				>
 					{t("settings.highlightArea")}
 				</DropdownMenuCheckboxItem>
@@ -110,7 +108,7 @@ export function SettingsDropdown({
 				<DropdownMenuCheckboxItem
 					checked={hudSettings.openQuickShare}
 					onCheckedChange={(checked) => onUpdateSettings({ openQuickShare: Boolean(checked) })}
-					className={`text-label ${ITEM_HOVER}`}
+					className="text-label"
 				>
 					{t("settings.openQuickShare")}
 				</DropdownMenuCheckboxItem>
@@ -121,14 +119,32 @@ export function SettingsDropdown({
 					checked={hudSettings.speakerNotesEnabled}
 					onCheckedChange={(checked) => onUpdateSettings({ speakerNotesEnabled: Boolean(checked) })}
 					disabled={!supportsSpeakerNotes}
-					className={`text-label ${ITEM_HOVER}`}
+					className="text-label"
 				>
 					{t("settings.speakerNotes")}
 				</DropdownMenuCheckboxItem>
 
+				<DropdownMenuSub>
+					<DropdownMenuSubTrigger className="text-label">
+						{tEditor("theme.appearance", "Appearance")}
+					</DropdownMenuSubTrigger>
+					<DropdownMenuSubContent className={`${DROPDOWN_CLASSES} ${styles.hudScrollArea}`}>
+						<DropdownMenuRadioGroup
+							value={themePreference}
+							onValueChange={(value) => setThemePreference(normalizeThemePreference(value))}
+						>
+							{THEME_PREFERENCES.map((option) => (
+								<DropdownMenuRadioItem key={option} value={option} className="text-label">
+									{tEditor(`theme.${option}`)}
+								</DropdownMenuRadioItem>
+							))}
+						</DropdownMenuRadioGroup>
+					</DropdownMenuSubContent>
+				</DropdownMenuSub>
+
 				{/* Recording countdown */}
 				<DropdownMenuSub>
-					<DropdownMenuSubTrigger disabled={recording} className={`text-label ${ITEM_HOVER}`}>
+					<DropdownMenuSubTrigger disabled={recording} className="text-label">
 						{t("settings.recordingCountdown")}
 					</DropdownMenuSubTrigger>
 					<DropdownMenuSubContent className={`${DROPDOWN_CLASSES} ${styles.hudScrollArea}`}>
@@ -136,16 +152,16 @@ export function SettingsDropdown({
 							value={String(countdownDelay)}
 							onValueChange={(value) => setCountdownDelay(Number(value))}
 						>
-							<DropdownMenuRadioItem value="0" className={`text-label ${ITEM_HOVER}`}>
+							<DropdownMenuRadioItem value="0" className="text-label">
 								{t("recording.noDelay")}
 							</DropdownMenuRadioItem>
-							<DropdownMenuRadioItem value="3" className={`text-label ${ITEM_HOVER}`}>
+							<DropdownMenuRadioItem value="3" className="text-label">
 								3s
 							</DropdownMenuRadioItem>
-							<DropdownMenuRadioItem value="5" className={`text-label ${ITEM_HOVER}`}>
+							<DropdownMenuRadioItem value="5" className="text-label">
 								5s
 							</DropdownMenuRadioItem>
-							<DropdownMenuRadioItem value="10" className={`text-label ${ITEM_HOVER}`}>
+							<DropdownMenuRadioItem value="10" className="text-label">
 								10s
 							</DropdownMenuRadioItem>
 						</DropdownMenuRadioGroup>
@@ -154,12 +170,12 @@ export function SettingsDropdown({
 
 				{/* Advanced */}
 				<DropdownMenuSub>
-					<DropdownMenuSubTrigger className={`text-label ${ITEM_HOVER}`}>
+					<DropdownMenuSubTrigger className="text-label">
 						{t("settings.advanced")}
 					</DropdownMenuSubTrigger>
 					<DropdownMenuSubContent className={`${DROPDOWN_CLASSES} ${styles.hudScrollArea}`}>
 						<DropdownMenuSub>
-							<DropdownMenuSubTrigger className={`text-label ${ITEM_HOVER}`}>
+							<DropdownMenuSubTrigger className="text-label">
 								{t("settings.recordingQuality")}
 							</DropdownMenuSubTrigger>
 							<DropdownMenuSubContent className={`${DROPDOWN_CLASSES} ${styles.hudScrollArea}`}>
@@ -171,13 +187,13 @@ export function SettingsDropdown({
 										})
 									}
 								>
-									<DropdownMenuRadioItem value="auto" className={`text-label ${ITEM_HOVER}`}>
+									<DropdownMenuRadioItem value="auto" className="text-label">
 										{t("settings.qualityAuto")}
 									</DropdownMenuRadioItem>
-									<DropdownMenuRadioItem value="high" className={`text-label ${ITEM_HOVER}`}>
+									<DropdownMenuRadioItem value="high" className="text-label">
 										{t("settings.qualityHigh")}
 									</DropdownMenuRadioItem>
-									<DropdownMenuRadioItem value="medium" className={`text-label ${ITEM_HOVER}`}>
+									<DropdownMenuRadioItem value="medium" className="text-label">
 										{t("settings.qualityMedium")}
 									</DropdownMenuRadioItem>
 								</DropdownMenuRadioGroup>
@@ -185,7 +201,7 @@ export function SettingsDropdown({
 						</DropdownMenuSub>
 
 						<DropdownMenuSub>
-							<DropdownMenuSubTrigger className={`text-label ${ITEM_HOVER}`}>
+							<DropdownMenuSubTrigger className="text-label">
 								{t("settings.fps")}
 							</DropdownMenuSubTrigger>
 							<DropdownMenuSubContent className={`${DROPDOWN_CLASSES} ${styles.hudScrollArea}`}>
@@ -197,10 +213,10 @@ export function SettingsDropdown({
 										})
 									}
 								>
-									<DropdownMenuRadioItem value="30" className={`text-label ${ITEM_HOVER}`}>
+									<DropdownMenuRadioItem value="30" className="text-label">
 										30 FPS
 									</DropdownMenuRadioItem>
-									<DropdownMenuRadioItem value="60" className={`text-label ${ITEM_HOVER}`}>
+									<DropdownMenuRadioItem value="60" className="text-label">
 										60 FPS
 									</DropdownMenuRadioItem>
 								</DropdownMenuRadioGroup>
@@ -214,7 +230,7 @@ export function SettingsDropdown({
 							onCheckedChange={(checked) =>
 								onUpdateSettings({ hardwareAcceleration: Boolean(checked) })
 							}
-							className={`text-label ${ITEM_HOVER}`}
+							className="text-label"
 						>
 							{t("settings.hardwareAcceleration")}
 						</DropdownMenuCheckboxItem>
@@ -231,7 +247,7 @@ export function SettingsDropdown({
 							onUpdateSettings({ hiddenFromCapture: enabled });
 							void window.electronAPI.setHudOverlayCaptureProtection(enabled);
 						}}
-						className={`text-label ${ITEM_HOVER}`}
+						className="text-label"
 					>
 						{t("settings.hideHudFromCapture")}
 					</DropdownMenuCheckboxItem>
@@ -242,14 +258,14 @@ export function SettingsDropdown({
 					onCheckedChange={(checked) =>
 						void window.electronAPI.setExperimentalUpdates(Boolean(checked))
 					}
-					className={`text-label ${ITEM_HOVER}`}
+					className="text-label"
 				>
 					{t("settings.experimentalUpdates")}
 				</DropdownMenuCheckboxItem>
 
 				<DropdownMenuSeparator className="bg-fill-hover" />
 				<DropdownMenuSub>
-					<DropdownMenuSubTrigger className={`text-label ${ITEM_HOVER}`}>
+					<DropdownMenuSubTrigger className="text-label">
 						{t("settings.recordingsFolder")}
 					</DropdownMenuSubTrigger>
 					<DropdownMenuSubContent
@@ -265,13 +281,13 @@ export function SettingsDropdown({
 									if (result.success && result.path) setRecordingsDir(result.path);
 								});
 							}}
-							className={`text-label ${ITEM_HOVER}`}
+							className="text-label"
 						>
 							{t("settings.chooseFolder")}
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							onSelect={() => void window.electronAPI.openRecordingsFolder()}
-							className={`text-label ${ITEM_HOVER}`}
+							className="text-label"
 						>
 							{t("settings.openFolder")}
 						</DropdownMenuItem>
