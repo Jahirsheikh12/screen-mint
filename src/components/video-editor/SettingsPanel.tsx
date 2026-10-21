@@ -1279,7 +1279,7 @@ export default function SettingsPanel({
 					<>
 						{/* Backdrop */}
 						<div
-							className="fixed inset-0 bg-scrim/80 backdrop-blur-md z-50 opacity-100 duration-300 ease-out animate-in fade-in"
+							className="fixed inset-0 bg-scrim/50 backdrop-blur-[2px] z-50 opacity-100 duration-300 ease-out animate-in fade-in"
 							onClick={handleCropCancel}
 						/>
 
@@ -1288,10 +1288,9 @@ export default function SettingsPanel({
 							<div
 								role="dialog"
 								aria-modal="true"
-								className="pointer-events-auto w-[90vw] max-w-5xl max-h-[90vh] bg-canvas rounded-2xl shadow-2xl shadow-black/60 border border-line overflow-hidden opacity-100 scale-100 translate-y-0 duration-300 ease-out animate-in fade-in zoom-in-95 slide-in-from-bottom-3"
+								className="pointer-events-auto w-[90vw] max-w-5xl max-h-[90vh] bg-raised rounded-xl shadow-dialog overflow-hidden opacity-100 scale-100 translate-y-0 duration-300 ease-out animate-in fade-in zoom-in-95 slide-in-from-bottom-3"
 							>
 								{/* Top accent line */}
-								<div className="h-[2px] bg-gradient-to-r from-transparent via-accent to-transparent" />
 
 								<div className="flex max-h-[calc(90vh-2px)] flex-col p-5 sm:p-8">
 									{/* Header */}

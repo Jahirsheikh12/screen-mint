@@ -50,7 +50,7 @@ export function FeedbackDialog() {
 				</button>
 			</Tooltip>
 			<Dialog open={open} onOpenChange={setOpen}>
-				<DialogContent className="max-w-[400px] gap-4 border-line-strong bg-canvas text-fg">
+				<DialogContent className="max-w-[400px] gap-4">
 					<DialogHeader className="text-left">
 						<DialogTitle>{t("feedback.title", "Feedback & contact")}</DialogTitle>
 						<DialogDescription className="text-fg-muted">

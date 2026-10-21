@@ -582,7 +582,7 @@ export function WebcamSettingsTab({
 						"Match the webcam look and treatment to the rest of your edit",
 					)}
 				>
-					<div className="rounded-2xl border border-line bg-fill-subtle p-3">
+					<div className="rounded-lg border border-line bg-fill-subtle p-3">
 						<div className="mb-2 flex items-center justify-between">
 							<div>
 								<div className="text-caption font-semibold text-fg">
@@ -618,7 +618,7 @@ export function WebcamSettingsTab({
 						</div>
 					</div>
 
-					<div className="rounded-2xl border border-line bg-fill-subtle p-3">
+					<div className="rounded-lg border border-line bg-fill-subtle p-3">
 						<div className="mb-3 flex items-center justify-between">
 							<div>
 								<div className="text-caption font-semibold text-fg">
@@ -871,7 +871,7 @@ export function WebcamSettingsTab({
 						) : null}
 					</div>
 
-					<div className="rounded-2xl border border-line bg-fill-subtle p-3">
+					<div className="rounded-lg border border-line bg-fill-subtle p-3">
 						<div className="mb-2 text-caption font-semibold text-fg">
 							{tSettings("webcamTab.frameStyling", "Frame styling")}
 						</div>
@@ -929,7 +929,7 @@ export function WebcamSettingsTab({
 					</div>
 
 					{/*
-					<div className="rounded-2xl border border-line bg-fill-subtle p-3">
+					<div className="rounded-lg border border-line bg-fill-subtle p-3">
 						<div className="mb-2 flex items-center justify-between">
 							<div>
 								<div className="text-label font-medium text-fg-muted">{tSettings("webcamTab.webcamHealth", "Webcam health")}</div>

@@ -102,7 +102,6 @@ export function UpdateToast() {
 				aria-describedby="update-toast-body"
 				className="relative flex w-full flex-col gap-3 overflow-hidden rounded-2xl border border-line-strong bg-canvas/95 p-4 text-fg shadow-2xl shadow-black/60 backdrop-blur-xl"
 			>
-				<div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-accent to-transparent" />
 				<div className="flex min-w-0 items-start gap-3">
 					<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-accent/20 bg-accent/10">
 						<Download className="h-4 w-4 text-accent-fg" />

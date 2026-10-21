@@ -26,7 +26,7 @@ export function KeyboardShortcutsHelp() {
 		<div className="relative group">
 			<HelpCircle className="w-4 h-4 text-fg-subtle hover:text-accent-fg transition-colors cursor-help" />
 
-			<div className="absolute right-0 top-full mt-2 w-64 bg-canvas border border-line-strong rounded-lg p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 shadow-xl z-50">
+			<div className="absolute right-0 top-full mt-2 w-64 bg-raised shadow-popover rounded-lg p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 shadow-xl z-50">
 				<div className="flex items-center justify-between mb-2">
 					<span className="text-label font-semibold text-fg">{t("keyboardShortcuts.title")}</span>
 					<button

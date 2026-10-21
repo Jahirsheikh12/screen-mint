@@ -89,7 +89,7 @@ export function SceneAudioPolishPanel({
 	return (
 		<div
 			className={cn(
-				"w-full h-full shrink-0 min-w-0 bg-canvas/90 backdrop-blur-2xl border border-line rounded-2xl flex flex-col shadow-panel overflow-hidden",
+				"w-full h-full shrink-0 min-w-0 bg-surface rounded-xl flex flex-col shadow-panel overflow-hidden",
 				embedded ? "" : "w-[400px]",
 			)}
 		>

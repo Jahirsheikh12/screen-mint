@@ -169,7 +169,7 @@ function ChoiceButton({
 				"relative min-h-[42px] rounded-lg border px-3 py-2 text-left transition-all duration-150",
 				"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/45",
 				selected
-					? "border-accent/55 bg-accent/12 text-on-accent"
+					? "border-accent/55 bg-accent/12 text-fg"
 					: "border-line bg-fill-subtle text-fg-subtle hover:border-line-strong hover:bg-fill-subtle hover:text-fg-muted",
 				disabled && "cursor-not-allowed opacity-35 hover:border-line hover:bg-fill-subtle",
 				className,
@@ -458,7 +458,7 @@ export function ExportSettingsDialog({
 		<>
 			<div
 				className={cn(
-					"fixed inset-0 z-[9999] bg-scrim/72 backdrop-blur-md transition-all",
+					"fixed inset-0 z-[9999] bg-scrim/50 backdrop-blur-[2px] transition-all",
 					isClosing ? "opacity-0 duration-200 ease-in" : "opacity-100 duration-300 ease-out",
 				)}
 				onClick={onClose}
@@ -469,7 +469,7 @@ export function ExportSettingsDialog({
 					role="dialog"
 					aria-modal="true"
 					className={cn(
-						"pointer-events-auto flex max-h-[90vh] w-[min(960px,94vw)] flex-col overflow-hidden rounded-xl border border-line bg-canvas shadow-2xl shadow-black/70 transition-all",
+						"pointer-events-auto flex max-h-[90vh] w-[min(960px,94vw)] flex-col overflow-hidden rounded-xl bg-raised shadow-dialog transition-all",
 						isClosing
 							? "opacity-0 scale-95 translate-y-2 duration-200 ease-in"
 							: "opacity-100 scale-100 translate-y-0 duration-300 ease-out animate-in fade-in zoom-in-95 slide-in-from-bottom-3",

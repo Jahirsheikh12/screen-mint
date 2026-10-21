@@ -72,15 +72,16 @@ export function UpdaterDialogs({ windowType }: UpdaterDialogsProps) {
 					}
 				}}
 			>
-				<DialogContent className="max-w-2xl overflow-y-auto rounded-2xl border border-line bg-canvas p-0 text-fg shadow-2xl shadow-black/60 [&>button]:text-fg-muted [&>button:hover]:bg-fill-hover [&>button:hover]:text-fg">
-					<div className="h-[2px] bg-gradient-to-r from-transparent via-accent to-transparent" />
+				<DialogContent className="max-w-2xl overflow-y-auto p-0">
 					<div className="p-6">
 						<div className="mb-5 flex items-start gap-3">
 							<div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-accent/20 bg-accent/10">
 								<Sparkles className="h-5 w-5 text-accent-fg" />
 							</div>
 							<DialogHeader className="space-y-1 text-left">
-								<DialogTitle className="text-lg font-semibold text-fg">{whatsNewTitle}</DialogTitle>
+								<DialogTitle className="text-heading font-semibold text-fg">
+									{whatsNewTitle}
+								</DialogTitle>
 								<DialogDescription className="text-body leading-6 text-fg-muted">
 									{state.whatsNewReleaseName || t("updates.whatsNew.intro")}
 								</DialogDescription>

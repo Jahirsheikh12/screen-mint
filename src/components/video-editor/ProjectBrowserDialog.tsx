@@ -44,7 +44,7 @@ export function ProjectBrowserDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-w-3xl bg-surface border-line-strong text-fg">
+			<DialogContent className="max-w-3xl">
 				<DialogHeader>
 					<DialogTitle>{t("dialogs.projectBrowser.projects", "Projects")}</DialogTitle>
 					<DialogDescription className="text-fg-subtle">

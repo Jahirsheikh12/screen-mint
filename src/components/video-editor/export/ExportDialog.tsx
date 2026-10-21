@@ -165,7 +165,7 @@ export function ExportDialog(props: ExportDialogProps) {
 
 	const settingsView = (
 		<Panel>
-			<DialogTitle className="mb-1 text-base font-semibold tracking-tight text-fg">
+			<DialogTitle className="mb-1 text-heading font-semibold tracking-tight text-fg">
 				{t("export.title", "Export")}
 			</DialogTitle>
 			<DialogDescription className="mb-4 text-label text-fg-subtle">
@@ -308,7 +308,7 @@ export function ExportDialog(props: ExportDialogProps) {
 	const progressView = (
 		<Panel>
 			<div className="mb-4 min-w-0 pr-8">
-				<DialogTitle className="text-base font-semibold text-fg">
+				<DialogTitle className="text-heading font-semibold text-fg">
 					{tDialogs("export.exporting", "Exporting")}
 				</DialogTitle>
 				<DialogDescription className="mt-0.5 text-label text-fg-subtle">
@@ -358,7 +358,7 @@ export function ExportDialog(props: ExportDialogProps) {
 
 	const errorView = (
 		<Panel>
-			<DialogTitle className="pr-8 text-base font-semibold text-fg">
+			<DialogTitle className="pr-8 text-heading font-semibold text-fg">
 				{tDialogs("export.issue", "Export issue")}
 			</DialogTitle>
 			<DialogDescription className="mt-1 whitespace-pre-line break-words text-label leading-relaxed text-fg-subtle">
@@ -401,7 +401,7 @@ export function ExportDialog(props: ExportDialogProps) {
 		: [];
 	const completeView = (
 		<Panel>
-			<DialogTitle className="pr-8 text-base font-semibold text-fg">
+			<DialogTitle className="pr-8 text-heading font-semibold text-fg">
 				{tDialogs("export.complete", "Export complete")}
 			</DialogTitle>
 			<DialogDescription className="mt-1 text-label text-fg-subtle">
@@ -453,7 +453,7 @@ export function ExportDialog(props: ExportDialogProps) {
 	return (
 		<Dialog open={props.open} onOpenChange={props.onOpenChange}>
 			<DialogContent
-				className="w-[calc(100vw-2rem)] max-w-[420px] gap-0 rounded-2xl border-line bg-surface p-5 text-fg shadow-2xl [&>button]:text-fg-subtle [&>button:hover]:text-fg"
+				className="w-[calc(100vw-2rem)] max-w-[420px] gap-0 border-line p-5 [&>button]:text-fg-subtle"
 				onOpenAutoFocus={(event) => event.preventDefault()}
 			>
 				<style>{`@keyframes export-indeterminate{0%{left:-35%}100%{left:100%}}.export-indeterminate{animation:export-indeterminate 1.2s ease-in-out infinite}@media (prefers-reduced-motion: reduce){.export-indeterminate{animation:none;left:0;width:100%;opacity:.5}}`}</style>

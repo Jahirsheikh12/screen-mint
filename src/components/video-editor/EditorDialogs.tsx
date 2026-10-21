@@ -29,7 +29,7 @@ export function PresetNameDialog({
 	const { t } = useI18n();
 	return (
 		<Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
-			<DialogContent className="border-line-strong bg-canvas text-fg sm:max-w-md">
+			<DialogContent className="sm:max-w-md">
 				<DialogHeader>
 					<DialogTitle>{t("dialogs.editor.savePreset", "Save Preset")}</DialogTitle>
 					<DialogDescription className="text-fg-muted">
@@ -84,7 +84,7 @@ export function ConfirmActionDialog({ dialog, onCancel, onConfirm }: ConfirmActi
 	const { t } = useI18n();
 	return (
 		<Dialog open={Boolean(dialog)} onOpenChange={(open) => !open && onCancel()}>
-			<DialogContent className="border-line-strong bg-canvas text-fg sm:max-w-md">
+			<DialogContent className="sm:max-w-md">
 				<DialogHeader>
 					<DialogTitle>
 						{dialog?.title ?? t("dialogs.editor.confirmAction", "Confirm action")}
@@ -124,7 +124,7 @@ export function MissingCursorDataDialog({ open, isMac, onClose }: MissingCursorD
 	const { t } = useI18n();
 	return (
 		<Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-			<DialogContent className="border-line-strong bg-canvas text-fg sm:max-w-md">
+			<DialogContent className="sm:max-w-md">
 				<DialogHeader>
 					<DialogTitle>
 						{t("dialogs.missingCursorData.title", "No cursor data for this recording")}

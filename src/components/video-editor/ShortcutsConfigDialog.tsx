@@ -127,9 +127,9 @@ export function ShortcutsConfigDialog() {
 				if (!open) handleClose();
 			}}
 		>
-			<DialogContent className="bg-canvas border-line-strong text-fg max-w-[480px]">
+			<DialogContent className="max-w-[480px]">
 				<DialogHeader>
-					<DialogTitle className="flex items-center gap-2 text-body">
+					<DialogTitle className="flex items-center gap-2">
 						<Keyboard className="w-4 h-4 text-accent-fg" />
 						{t("shortcutsConfig.title")}
 					</DialogTitle>

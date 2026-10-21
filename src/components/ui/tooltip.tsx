@@ -297,12 +297,27 @@ export function Tooltip({
 	const triggerRef = useRef<HTMLDivElement>(null);
 	const { show, hide } = useTooltipHandlers({ content, shortcut, side, delayMs, triggerRef });
 
+	// Icon-only controls get their accessible name from the tooltip text.
+	useEffect(() => {
+		const control = triggerRef.current?.querySelector("button, a, input, [role='button']");
+		if (
+			control &&
+			typeof content === "string" &&
+			!control.hasAttribute("aria-label") &&
+			!control.textContent?.trim()
+		) {
+			control.setAttribute("aria-label", content);
+		}
+	}, [content]);
+
 	return (
 		<div
 			ref={triggerRef}
 			className={cn("inline-flex", className)}
 			onMouseEnter={show}
 			onMouseLeave={hide}
+			onFocus={show}
+			onBlur={hide}
 		>
 			{children}
 		</div>

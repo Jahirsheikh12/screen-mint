@@ -27,9 +27,9 @@ export function TutorialHelp() {
 					<span className="font-medium">{t("tutorial.howTrimmingWorks")}</span>
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="max-w-2xl bg-canvas border-line-strong [&>button]:text-fg-muted [&>button:hover]:text-fg">
+			<DialogContent className="max-w-2xl">
 				<DialogHeader>
-					<DialogTitle className="text-xl font-semibold text-fg flex items-center gap-2">
+					<DialogTitle className="text-heading font-semibold text-fg flex items-center gap-2">
 						<Scissors className="w-5 h-5 text-danger-fg" /> {t("tutorial.title")}
 					</DialogTitle>
 					<DialogDescription className="text-fg-muted">

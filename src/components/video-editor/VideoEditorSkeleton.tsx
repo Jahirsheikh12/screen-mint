@@ -47,7 +47,7 @@ export function VideoEditorSkeleton() {
 					</div>
 
 					{/* Settings sidebar */}
-					<div className="w-[400px] shrink-0 min-w-0 bg-canvas border border-line rounded-2xl flex flex-row shadow-2xl shadow-black/40 h-full overflow-hidden">
+					<div className="w-[400px] shrink-0 min-w-0 bg-surface rounded-xl flex flex-row shadow-panel h-full overflow-hidden">
 						{/* Icon nav column */}
 						<div className="flex flex-col gap-0.5 p-1.5 border-r border-line bg-gradient-to-b from-fill-subtle to-transparent">
 							{/* Group 1: Capture */}
@@ -143,7 +143,7 @@ export function VideoEditorSkeleton() {
 				</div>
 
 				{/* Timeline panel (~35%) */}
-				<div className="flex-1 min-h-0 mx-4 mb-4 rounded-2xl border border-line bg-canvas overflow-hidden flex flex-col">
+				<div className="flex-1 min-h-0 mx-4 mb-4 rounded-xl bg-surface shadow-panel overflow-hidden flex flex-col">
 					{/* Transport bar */}
 					<div className="flex items-center px-3 py-1.5 border-b border-line bg-surface gap-2">
 						{/* Left: layers dropdown */}

@@ -149,7 +149,7 @@ export function AnnotationSettingsPanel({
 			className={cn(
 				inline
 					? "flex flex-col"
-					: "flex-[2] min-w-0 bg-canvas border border-line rounded-2xl p-4 flex flex-col shadow-xl h-full overflow-y-auto custom-scrollbar",
+					: "flex-[2] min-w-0 bg-surface rounded-xl p-4 flex flex-col shadow-panel h-full overflow-y-auto custom-scrollbar",
 			)}
 		>
 			<div className={inline ? "" : "mb-6"}>
@@ -407,7 +407,7 @@ export function AnnotationSettingsPanel({
 												<ChevronDown className="h-3 w-3 text-fg-disabled" />
 											</Button>
 										</PopoverTrigger>
-										<PopoverContent className="w-[280px] p-3.5 bg-surface border border-line rounded-lg shadow-2xl shadow-black/60">
+										<PopoverContent className="w-[280px] p-3.5">
 											<ColorPicker
 												color={annotation.style.color}
 												colors={colorPalette}
@@ -443,7 +443,7 @@ export function AnnotationSettingsPanel({
 												<ChevronDown className="h-3 w-3 text-fg-disabled" />
 											</Button>
 										</PopoverTrigger>
-										<PopoverContent className="w-[280px] p-3.5 bg-surface border border-line rounded-lg shadow-2xl shadow-black/60">
+										<PopoverContent className="w-[280px] p-3.5">
 											<ColorPicker
 												color={
 													annotation.style.backgroundColor === "transparent"
@@ -597,7 +597,7 @@ export function AnnotationSettingsPanel({
 										<ChevronDown className="h-3 w-3 text-fg-disabled" />
 									</Button>
 								</PopoverTrigger>
-								<PopoverContent className="w-[280px] p-3.5 bg-surface border border-line rounded-lg shadow-2xl shadow-black/60">
+								<PopoverContent className="w-[280px] p-3.5">
 									<ColorPicker
 										color={annotation.figureData?.color || "#F59E0B"}
 										colors={colorPalette}

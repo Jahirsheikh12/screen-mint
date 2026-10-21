@@ -23,15 +23,15 @@ export function QuickShareDialog({
 
 	return (
 		<>
-			<div className="fixed inset-0 z-[9998] bg-scrim/60 backdrop-blur-sm" onClick={onClose} />
+			<div className="fixed inset-0 z-[9998] bg-scrim/50 backdrop-blur-[2px]" onClick={onClose} />
 			<div
 				role="dialog"
 				aria-modal="true"
-				className="fixed left-1/2 top-1/2 z-[9999] max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl border border-line-strong bg-canvas p-6 text-fg shadow-2xl"
+				className="fixed left-1/2 top-1/2 z-[9999] max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl bg-raised p-6 text-fg shadow-dialog"
 			>
 				<div className="mb-5 flex items-center justify-between">
 					<div>
-						<div className="text-lg font-semibold text-fg">
+						<div className="text-heading font-semibold text-fg">
 							{t("dialogs.quickShare.quickShare", "Quick Share")}
 						</div>
 						<div className="mt-1 text-body text-fg-muted">
@@ -54,7 +54,7 @@ export function QuickShareDialog({
 					<button
 						type="button"
 						onClick={onSave}
-						className="rounded-2xl border border-line-strong bg-fill-subtle p-4 text-left transition hover:bg-fill-hover"
+						className="rounded-lg border border-line bg-fill-subtle p-4 text-left transition hover:bg-fill-hover"
 					>
 						<Download className="mb-3 h-5 w-5 text-accent-fg" />
 						<div className="text-body font-semibold text-fg">
@@ -67,7 +67,7 @@ export function QuickShareDialog({
 					<button
 						type="button"
 						onClick={onCopy}
-						className="rounded-2xl border border-line-strong bg-fill-subtle p-4 text-left transition hover:bg-fill-hover"
+						className="rounded-lg border border-line bg-fill-subtle p-4 text-left transition hover:bg-fill-hover"
 					>
 						<Copy className="mb-3 h-5 w-5 text-info-fg" />
 						<div className="text-body font-semibold text-fg">
@@ -83,7 +83,7 @@ export function QuickShareDialog({
 					<button
 						type="button"
 						onClick={onEdit}
-						className="rounded-2xl border border-line-strong bg-fill-subtle p-4 text-left transition hover:bg-fill-hover"
+						className="rounded-lg border border-line bg-fill-subtle p-4 text-left transition hover:bg-fill-hover"
 					>
 						<Edit3 className="mb-3 h-5 w-5 text-accent-fg" />
 						<div className="text-body font-semibold text-fg">

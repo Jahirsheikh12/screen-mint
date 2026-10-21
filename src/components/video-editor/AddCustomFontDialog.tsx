@@ -122,7 +122,7 @@ export function AddCustomFontDialog({ onFontAdded }: AddCustomFontDialogProps) {
 					{t("addFont.title")}
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="bg-raised border-line-strong text-fg">
+			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>{t("addFont.heading")}</DialogTitle>
 					<DialogDescription className="text-fg-muted">
