@@ -528,26 +528,63 @@ export function useVideoEditorCaptions({
 		toast.info(t("editor.captions.cancelled", "Caption generation cancelled"));
 	}, [t, dispatchSession, setCaptionGenerationProgress]);
 
+	const refreshCaptionModelStatus = useCallback(async () => {
+		if (!videoPath) return;
+		const status = await window.electronAPI.getCaptionModelStatus(videoPath);
+		if (status.success && status.status) {
+			setCaptionModelStatus(status.status);
+		}
+	}, [videoPath, setCaptionModelStatus]);
+
 	const handleDeleteCaptionModel = useCallback(
 		async (model: CaptionModel) => {
 			const result = await window.electronAPI.deleteCaptionModel(model);
 			if (!result.success) {
-				toast.error(result.message ?? "Failed to delete caption model");
+				toast.error(t("editor.captions.deleteModelFailed", "Couldn't delete the speech model."));
 				return;
 			}
-			if (videoPath) {
-				const status = await window.electronAPI.getCaptionModelStatus(videoPath);
-				if (status.success && status.status) {
-					setCaptionModelStatus(status.status);
-				}
-			}
-			toast.success(`Deleted the ${model} speech model`);
+			await refreshCaptionModelStatus();
+			toast.success(
+				t("editor.captions.deletedModel", "Deleted the {{model}} speech model", { model }),
+			);
 		},
-		[videoPath, setCaptionModelStatus],
+		[refreshCaptionModelStatus, t],
+	);
+
+	/** Chooses (or clears) a user-supplied whisper.cpp model file or program. */
+	const handleCustomWhisperFile = useCallback(
+		async (kind: "model" | "executable", action: "choose" | "clear") => {
+			if (action === "clear") {
+				await window.electronAPI.clearCustomWhisperFile(kind);
+				await refreshCaptionModelStatus();
+				return;
+			}
+			const result = await window.electronAPI.chooseCustomWhisperFile(kind);
+			if (result.canceled) return;
+			if (!result.success) {
+				toast.error(
+					result.error === "not-ggml-model"
+						? t(
+								"editor.captions.customModelInvalid",
+								"That file isn't a whisper.cpp model. Choose a ggml .bin model.",
+							)
+						: result.error === "not-executable"
+							? t(
+									"editor.captions.customProgramInvalid",
+									"That file can't be run. Choose the whisper-cli program.",
+								)
+							: t("editor.captions.customFileFailed", "Couldn't use that file."),
+				);
+				return;
+			}
+			await refreshCaptionModelStatus();
+		},
+		[refreshCaptionModelStatus, t],
 	);
 
 	return {
 		handleDeleteCaptionModel,
+		handleCustomWhisperFile,
 		handleCaptionAdded,
 		handleCaptionSpanChange,
 		handleCaptionTextChange,

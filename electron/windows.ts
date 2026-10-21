@@ -1063,3 +1063,74 @@ export function closeUpdateToastWindow(): void {
 	}
 	updateToastWindow = null;
 }
+
+const SOURCE_HIGHLIGHT_MS = 900;
+const SOURCE_HIGHLIGHT_OUTSET = 6;
+let sourceHighlightWindow: BrowserWindow | null = null;
+
+/**
+ * Briefly outlines a just-picked screen or window in amber. The outline sits just outside
+ * the target (clamped to its display) and the window is click-through and hidden from capture.
+ */
+export function flashSourceHighlight(target: Electron.Rectangle): void {
+	if (sourceHighlightWindow && !sourceHighlightWindow.isDestroyed()) {
+		sourceHighlightWindow.close();
+	}
+	if (target.width <= 0 || target.height <= 0) return;
+
+	const display = getScreen().getDisplayMatching(target).bounds;
+	const left = Math.max(display.x, target.x - SOURCE_HIGHLIGHT_OUTSET);
+	const top = Math.max(display.y, target.y - SOURCE_HIGHLIGHT_OUTSET);
+	const right = Math.min(
+		display.x + display.width,
+		target.x + target.width + SOURCE_HIGHLIGHT_OUTSET,
+	);
+	const bottom = Math.min(
+		display.y + display.height,
+		target.y + target.height + SOURCE_HIGHLIGHT_OUTSET,
+	);
+	if (right - left < 8 || bottom - top < 8) return;
+
+	const win = new BrowserWindow({
+		x: Math.round(left),
+		y: Math.round(top),
+		width: Math.round(right - left),
+		height: Math.round(bottom - top),
+		frame: false,
+		transparent: true,
+		resizable: false,
+		movable: false,
+		focusable: false,
+		skipTaskbar: true,
+		hasShadow: false,
+		enableLargerThanScreen: true,
+		show: false,
+		webPreferences: { contextIsolation: true, nodeIntegration: false, javascript: false },
+	});
+	win.setIgnoreMouseEvents(true);
+	win.setAlwaysOnTop(true, "screen-saver");
+	win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+	if (isHudOverlayCaptureProtectionSupported()) {
+		win.setContentProtection(true);
+	}
+
+	sourceHighlightWindow = win;
+	win.on("closed", () => {
+		if (sourceHighlightWindow === win) sourceHighlightWindow = null;
+	});
+
+	const html = `<!doctype html><html><head><meta charset="utf-8"><style>
+html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+div{box-sizing:border-box;height:100%;border:4px solid #F59E0B;border-radius:12px;
+box-shadow:0 0 0 1px rgba(0,0,0,.35),0 0 24px rgba(245,158,11,.55),inset 0 0 18px rgba(245,158,11,.25);
+animation:flash ${SOURCE_HIGHLIGHT_MS}ms ease-out forwards}
+@keyframes flash{0%{opacity:0}15%{opacity:1}65%{opacity:1}100%{opacity:0}}
+</style></head><body><div></div></body></html>`;
+	win.webContents.once("did-finish-load", () => {
+		if (!win.isDestroyed()) win.showInactive();
+	});
+	void win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+	setTimeout(() => {
+		if (!win.isDestroyed()) win.close();
+	}, SOURCE_HIGHLIGHT_MS + 150);
+}

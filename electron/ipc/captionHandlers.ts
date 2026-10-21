@@ -3,6 +3,7 @@ import path from "node:path";
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import type { CaptionTrack } from "../../src/components/video-editor/types";
 import { IPC_CHANNELS } from "../../src/electron-ipc/contracts";
+import { setCustomWhisperPath } from "../captions/customWhisper";
 import {
 	cancelCaptionGeneration,
 	exportCaptionTranscript,
@@ -48,6 +49,40 @@ export function registerCaptionIpcHandlers({
 			console.error("Failed to delete caption model:", error);
 			return { success: false, message: "Failed to delete caption model", error: String(error) };
 		}
+	});
+
+	ipcMain.handle(IPC_CHANNELS.captions.chooseCustomWhisper, async (_, kind: unknown) => {
+		if (kind !== "model" && kind !== "executable") {
+			return { success: false, error: "invalid-kind" };
+		}
+		try {
+			const result = await dialog.showOpenDialog({
+				title: kind === "model" ? "Select Whisper Model" : "Select Whisper Program",
+				filters:
+					kind === "model"
+						? [{ name: "Whisper models (ggml)", extensions: ["bin"] }]
+						: process.platform === "win32"
+							? [{ name: "Programs", extensions: ["exe", "cmd", "bat"] }]
+							: [],
+				properties: ["openFile"],
+			});
+			if (result.canceled || result.filePaths.length === 0) {
+				return { success: false, canceled: true };
+			}
+			const { error } = await setCustomWhisperPath(kind, result.filePaths[0]);
+			return error ? { success: false, error } : { success: true, path: result.filePaths[0] };
+		} catch (error) {
+			console.error("Failed to choose custom Whisper file:", error);
+			return { success: false, error: String(error) };
+		}
+	});
+
+	ipcMain.handle(IPC_CHANNELS.captions.clearCustomWhisper, async (_, kind: unknown) => {
+		if (kind !== "model" && kind !== "executable") {
+			return { success: false, error: "invalid-kind" };
+		}
+		await setCustomWhisperPath(kind, null);
+		return { success: true };
 	});
 
 	ipcMain.handle(IPC_CHANNELS.captions.getModelStatus, async (_, videoPath?: string) => {

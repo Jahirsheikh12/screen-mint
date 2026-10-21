@@ -439,6 +439,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	deleteCaptionModel: (model: "base" | "small" | "medium") => {
 		return ipcRenderer.invoke(IPC_CHANNELS.captions.deleteModel, model);
 	},
+	chooseCustomWhisperFile: (kind: "model" | "executable") => {
+		return ipcRenderer.invoke(IPC_CHANNELS.captions.chooseCustomWhisper, kind);
+	},
+	clearCustomWhisperFile: (kind: "model" | "executable") => {
+		return ipcRenderer.invoke(IPC_CHANNELS.captions.clearCustomWhisper, kind);
+	},
 	exportCaptionsTranscript: (payload: {
 		videoPath?: string;
 		format: "srt" | "vtt" | "txt";

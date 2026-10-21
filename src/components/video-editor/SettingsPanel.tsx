@@ -305,6 +305,7 @@ interface SettingsPanelProps {
 	captionGenerationProgress?: CaptionGenerationProgress | null;
 	captionModelStatus?: CaptionModelStatus | null;
 	onDeleteCaptionModel?: (model: CaptionModel) => void;
+	onCustomWhisperFile?: (kind: "model" | "executable", action: "choose" | "clear") => void;
 	captionSettings?: CaptionSettings;
 	selectedCaptionId?: string | null;
 	onSelectCaption?: (id: string | null) => void;
@@ -515,6 +516,7 @@ export default function SettingsPanel({
 	captionGenerationProgress,
 	captionModelStatus,
 	onDeleteCaptionModel,
+	onCustomWhisperFile,
 	captionSettings,
 	selectedCaptionId,
 	onSelectCaption,
@@ -1213,6 +1215,7 @@ export default function SettingsPanel({
 						captionGenerationProgress={captionGenerationProgress}
 						captionModelStatus={captionModelStatus}
 						onDeleteCaptionModel={onDeleteCaptionModel}
+						onCustomWhisperFile={onCustomWhisperFile}
 						isTranscribing={isTranscribing}
 						selectedCaptionId={selectedCaptionId}
 						isEditingCaptionPosition={isEditingCaptionPosition}

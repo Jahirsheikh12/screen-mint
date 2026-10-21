@@ -191,7 +191,20 @@
 			"karaokeFill": "Karaoke",
 			"karaokeFillDesc": "Geleidelijke kleurvulling"
 		},
-		"rows": "Regels"
+		"rows": "Regels",
+		"deleteModel": "{{model}}-model verwijderen",
+		"deletedModel": "Spraakmodel {{model}} verwijderd",
+		"deleteModelFailed": "Kan het spraakmodel niet verwijderen.",
+		"customModelInvalid": "Dit bestand is geen whisper.cpp-model. Kies een ggml-.bin-model.",
+		"customProgramInvalid": "Dit bestand kan niet worden uitgevoerd. Kies het programma whisper-cli.",
+		"customFileFailed": "Kan dit bestand niet gebruiken.",
+		"customModelInUse": "Je eigen model wordt gebruikt",
+		"customModel": "Eigen modelbestand",
+		"customProgram": "Whisper-programma",
+		"customModelNone": "Niet ingesteld – gebruikt de grootte hierboven",
+		"customProgramNone": "Niet ingesteld – wordt automatisch ingericht",
+		"customChoose": "Kiezen…",
+		"customRemove": "Verwijderen"
 	},
 	"captionsTab": {
 		"livePreview": "Livevoorbeeld",

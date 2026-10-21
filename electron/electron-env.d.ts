@@ -425,6 +425,14 @@ declare global {
 			deleteCaptionModel: (
 				model: "base" | "small" | "medium",
 			) => Promise<{ success: boolean; message?: string; error?: string }>;
+			/** Picks a whisper.cpp model (.bin) or program; `error` is a validation code. */
+			chooseCustomWhisperFile: (kind: "model" | "executable") => Promise<{
+				success: boolean;
+				canceled?: boolean;
+				path?: string;
+				error?: string;
+			}>;
+			clearCustomWhisperFile: (kind: "model" | "executable") => Promise<{ success: boolean }>;
 			exportCaptionsTranscript: (payload: {
 				videoPath?: string;
 				format: "srt" | "vtt" | "txt";

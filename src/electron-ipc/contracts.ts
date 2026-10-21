@@ -162,6 +162,8 @@ export const IPC_CHANNELS = {
 		cancelGeneration: "cancel-caption-generation",
 		exportTranscript: "export-captions-transcript",
 		deleteModel: "delete-caption-model",
+		chooseCustomWhisper: "choose-custom-whisper-file",
+		clearCustomWhisper: "clear-custom-whisper-file",
 	},
 	system: {
 		getPlatform: "get-platform",

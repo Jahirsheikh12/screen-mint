@@ -104,6 +104,7 @@ export interface CaptionsTabProps {
 	captionGenerationProgress?: CaptionGenerationProgress | null;
 	captionModelStatus?: CaptionModelStatus | null;
 	onDeleteCaptionModel?: (model: CaptionModel) => void;
+	onCustomWhisperFile?: (kind: "model" | "executable", action: "choose" | "clear") => void;
 	isTranscribing?: boolean;
 	selectedCaptionId?: string | null;
 	isEditingCaptionPosition: boolean;
@@ -136,6 +137,7 @@ export function CaptionsTab(props: CaptionsTabProps) {
 		captionGenerationProgress,
 		captionModelStatus,
 		onDeleteCaptionModel,
+		onCustomWhisperFile,
 		isTranscribing = false,
 		selectedCaptionId,
 		isEditingCaptionPosition,
@@ -505,10 +507,14 @@ export function CaptionsTab(props: CaptionsTabProps) {
 									key={model}
 									type="button"
 									onClick={() => onDeleteCaptionModel(model)}
-									aria-label={`Delete ${model} model`}
 									className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] text-slate-300 hover:border-red-500/30 hover:text-red-300"
 								>
-									Delete {model} model
+									{t("editor.captions.deleteModel", "Delete {{model}} model", {
+										model: t(
+											`editor.captions.model${model[0].toUpperCase()}${model.slice(1)}`,
+											model,
+										),
+									})}
 								</button>
 							))}
 						</div>
@@ -534,7 +540,12 @@ export function CaptionsTab(props: CaptionsTabProps) {
 						</select>
 						<select
 							value={captionGenerationOptions?.model ?? DEFAULT_CAPTION_GENERATION_OPTIONS.model}
-							disabled={isAppleSpeechSelected}
+							disabled={isAppleSpeechSelected || Boolean(captionModelStatus?.customModelPath)}
+							title={
+								captionModelStatus?.customModelPath
+									? t("editor.captions.customModelInUse", "Using your custom model")
+									: undefined
+							}
 							onChange={(event) =>
 								onCaptionGenerationOptionsChange?.({
 									model: event.target.value as "base" | "small" | "medium",
@@ -569,6 +580,60 @@ export function CaptionsTab(props: CaptionsTabProps) {
 							<option value="mixed">{t("editor.captions.sourceMixed", "Mixed Audio")}</option>
 						</select>
 					</div>
+
+					{onCustomWhisperFile && !isAppleSpeechSelected ? (
+						<div className="space-y-1.5 rounded-lg border border-white/5 bg-white/[0.03] p-2">
+							{(
+								[
+									["model", captionModelStatus?.customModelPath ?? null],
+									["executable", captionModelStatus?.customExecutablePath ?? null],
+								] as const
+							).map(([kind, filePath]) => (
+								<div key={kind} className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+									<span className="min-w-0 flex-1 basis-32">
+										<span className="block break-words text-[11px] font-medium text-slate-300">
+											{kind === "model"
+												? t("editor.captions.customModel", "Custom model file")
+												: t("editor.captions.customProgram", "Whisper program")}
+										</span>
+										<span
+											className="block truncate text-[10px] text-slate-500"
+											title={filePath ?? undefined}
+										>
+											{filePath
+												? filePath.split(/[\\/]/).pop()
+												: kind === "model"
+													? t("editor.captions.customModelNone", "Not set — uses the size above")
+													: t(
+															"editor.captions.customProgramNone",
+															"Not set — set up automatically",
+														)}
+										</span>
+									</span>
+									<span className="flex shrink-0 items-center gap-1">
+										<button
+											type="button"
+											disabled={isTranscribing}
+											onClick={() => onCustomWhisperFile(kind, "choose")}
+											className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] text-slate-300 transition hover:border-[#F59E0B]/40 hover:text-[#F59E0B] disabled:opacity-50"
+										>
+											{t("editor.captions.customChoose", "Choose…")}
+										</button>
+										{filePath ? (
+											<button
+												type="button"
+												disabled={isTranscribing}
+												onClick={() => onCustomWhisperFile(kind, "clear")}
+												className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] text-slate-300 transition hover:border-red-500/30 hover:text-red-300 disabled:opacity-50"
+											>
+												{t("editor.captions.customRemove", "Remove")}
+											</button>
+										) : null}
+									</span>
+								</div>
+							))}
+						</div>
+					) : null}
 
 					<input
 						type="text"

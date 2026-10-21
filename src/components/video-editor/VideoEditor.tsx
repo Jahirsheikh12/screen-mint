@@ -3246,6 +3246,7 @@ export default function VideoEditor() {
 		handleTranscriptExport,
 		handleCancelCaptionGeneration,
 		handleDeleteCaptionModel,
+		handleCustomWhisperFile,
 	} = useVideoEditorCaptions({
 		t,
 		videoPath,
@@ -5203,6 +5204,7 @@ export default function VideoEditor() {
 												captionGenerationProgress={captionGenerationProgress}
 												captionModelStatus={captionModelStatus}
 												onDeleteCaptionModel={handleDeleteCaptionModel}
+												onCustomWhisperFile={handleCustomWhisperFile}
 												captionSettings={captionSettings}
 												selectedCaptionId={selectedCaptionId}
 												onSelectCaption={setSelectedCaptionId}

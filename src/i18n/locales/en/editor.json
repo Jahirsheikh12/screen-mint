@@ -191,7 +191,20 @@
 			"karaokeFill": "Karaoke fill",
 			"karaokeFillDesc": "Progressive color fill"
 		},
-		"rows": "Rows"
+		"rows": "Rows",
+		"deleteModel": "Delete {{model}} model",
+		"deletedModel": "Deleted the {{model}} speech model",
+		"deleteModelFailed": "Couldn't delete the speech model.",
+		"customModelInvalid": "That file isn't a whisper.cpp model. Choose a ggml .bin model.",
+		"customProgramInvalid": "That file can't be run. Choose the whisper-cli program.",
+		"customFileFailed": "Couldn't use that file.",
+		"customModelInUse": "Using your custom model",
+		"customModel": "Custom model file",
+		"customProgram": "Whisper program",
+		"customModelNone": "Not set — uses the size above",
+		"customProgramNone": "Not set — set up automatically",
+		"customChoose": "Choose…",
+		"customRemove": "Remove"
 	},
 	"captionsTab": {
 		"livePreview": "Live preview",

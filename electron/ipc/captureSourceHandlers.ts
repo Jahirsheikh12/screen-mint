@@ -40,6 +40,8 @@ type CaptureSourceHandlerOptions = {
 	stopWindowBoundsCapture: () => void;
 	getSourceSelectorWindow: () => BrowserWindow | null;
 	getNativeMacWindowSources: () => Promise<NativeMacWindowSource[]>;
+	/** Briefly outlines the picked screen or window on screen. */
+	flashSourceHighlight: (source: SelectedSource) => void;
 };
 
 function normalizeDesktopSourceName(value: string) {
@@ -270,6 +272,7 @@ export function registerCaptureSourceIpcHandlers(options: CaptureSourceHandlerOp
 		if (sourceSelectorWin) {
 			sourceSelectorWin.close();
 		}
+		options.flashSourceHighlight(source);
 		return options.getSelectedSource();
 	});
 

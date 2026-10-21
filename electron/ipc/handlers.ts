@@ -42,7 +42,7 @@ import { createExportTempPath } from "../exportTemp";
 import { RECORDINGS_DIR } from "../main";
 import { markRecordingStarted, markRecordingStopped } from "../recordingRecovery";
 import { getScreenMintUpdater } from "../updater";
-import { createExportWorkerWindow } from "../windows";
+import { createExportWorkerWindow, flashSourceHighlight } from "../windows";
 import { registerAppShellIpcHandlers } from "./appShellHandlers";
 import { registerAssetIpcHandlers } from "./assetHandlers";
 import { registerCaptionIpcHandlers } from "./captionHandlers";
@@ -3481,6 +3481,32 @@ async function resolveMacWindowBounds(source: SelectedSource): Promise<WindowBou
 	}
 }
 
+async function flashSelectedSourceHighlight(source: SelectedSource) {
+	try {
+		if (source.id?.startsWith("screen:")) {
+			const display = getScreen()
+				.getAllDisplays()
+				.find((candidate) => String(candidate.id) === String(source.display_id));
+			if (display) flashSourceHighlight(display.bounds);
+			return;
+		}
+		if (!source.id?.startsWith("window:")) return;
+		let bounds: WindowBounds | null = null;
+		if (process.platform === "darwin") {
+			bounds = await resolveMacWindowBounds(source);
+		} else if (process.platform === "win32") {
+			const physical = await resolveWindowsWindowBounds(source);
+			// Win32 reports physical pixels; Electron windows are placed in DIPs.
+			bounds = physical ? getScreen().screenToDipRect(null, physical) : null;
+		} else if (process.platform === "linux") {
+			bounds = await resolveLinuxWindowBounds(source);
+		}
+		if (bounds) flashSourceHighlight(bounds);
+	} catch (error) {
+		console.warn("Could not highlight the selected source:", error);
+	}
+}
+
 async function refreshSelectedWindowBounds() {
 	if (!selectedSource?.id?.startsWith("window:")) {
 		selectedWindowBounds = null;
@@ -4413,6 +4439,9 @@ export function registerIpcHandlers(
 		stopWindowBoundsCapture,
 		getSourceSelectorWindow,
 		getNativeMacWindowSources,
+		flashSourceHighlight: (source) => {
+			void flashSelectedSourceHighlight(source);
+		},
 	});
 	registerScreenshotIpcHandlers({
 		getRecordingsDir,

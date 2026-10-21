@@ -191,7 +191,20 @@
 			"karaokeFill": "卡拉 OK",
 			"karaokeFillDesc": "顏色逐漸填滿"
 		},
-		"rows": "行數"
+		"rows": "行數",
+		"deleteModel": "刪除 {{model}} 模型",
+		"deletedModel": "已刪除 {{model}} 語音模型",
+		"deleteModelFailed": "無法刪除語音模型。",
+		"customModelInvalid": "此檔案不是 whisper.cpp 模型，請選擇 ggml .bin 模型。",
+		"customProgramInvalid": "此檔案無法執行，請選擇 whisper-cli 程式。",
+		"customFileFailed": "無法使用此檔案。",
+		"customModelInUse": "正在使用自訂模型",
+		"customModel": "自訂模型檔案",
+		"customProgram": "Whisper 程式",
+		"customModelNone": "未設定 — 使用上方的大小",
+		"customProgramNone": "未設定 — 自動設定",
+		"customChoose": "選擇…",
+		"customRemove": "移除"
 	},
 	"captionsTab": {
 		"livePreview": "即時預覽",

@@ -191,7 +191,20 @@
 			"karaokeFill": "Karaoke",
 			"karaokeFillDesc": "Riempimento progressivo del colore"
 		},
-		"rows": "Righe"
+		"rows": "Righe",
+		"deleteModel": "Elimina modello {{model}}",
+		"deletedModel": "Modello vocale {{model}} eliminato",
+		"deleteModelFailed": "Impossibile eliminare il modello vocale.",
+		"customModelInvalid": "Questo file non è un modello whisper.cpp. Scegli un modello ggml .bin.",
+		"customProgramInvalid": "Questo file non può essere eseguito. Scegli il programma whisper-cli.",
+		"customFileFailed": "Impossibile usare questo file.",
+		"customModelInUse": "In uso il tuo modello personalizzato",
+		"customModel": "File modello personalizzato",
+		"customProgram": "Programma Whisper",
+		"customModelNone": "Non impostato: usa la dimensione sopra",
+		"customProgramNone": "Non impostato: configurato automaticamente",
+		"customChoose": "Scegli…",
+		"customRemove": "Rimuovi"
 	},
 	"captionsTab": {
 		"livePreview": "Anteprima dal vivo",

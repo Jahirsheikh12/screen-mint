@@ -1129,6 +1129,9 @@ export interface CaptionModelStatus {
 	availableBackends: CaptionBackend[];
 	recommendedBackend: CaptionBackend;
 	backendMessages: Partial<Record<CaptionBackend, string>>;
+	/** User-chosen whisper.cpp model / program that replace the downloaded ones. */
+	customModelPath?: string | null;
+	customExecutablePath?: string | null;
 }
 
 export interface CaptionGenerationResult {
