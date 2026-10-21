@@ -309,7 +309,7 @@ export function useVideoEditorCaptions({
 			) {
 				return t(
 					"editor.captions.transcribeRuntimeSetupFailed",
-					"ScreenMint couldn't prepare the local caption engine on this device. Install the required build tools and try again.",
+					"ScreenMint couldn't prepare the local caption engine on this device. Install the required build tools, or choose a whisper-cli program under Whisper program, then try again.",
 				);
 			}
 

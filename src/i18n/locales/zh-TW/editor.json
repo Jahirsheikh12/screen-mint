@@ -128,7 +128,7 @@
 		"transcribeSpeechPermissionNeeded": "請在 macOS 設定中允許 ScreenMint 使用語音辨識，然後再試一次。",
 		"transcribeAppleSpeechUnavailable": "這台 Mac 的 Apple Speech 不支援此語言。請改用 Whisper 或選擇其他語言。",
 		"transcribeModelDownloadFailed": "ScreenMint 無法下載本機語音模型。請檢查網路連線後再試一次。",
-		"transcribeRuntimeSetupFailed": "ScreenMint 無法在此裝置上準備本機字幕引擎。請安裝必要的建置工具後再試一次。",
+		"transcribeRuntimeSetupFailed": "ScreenMint 無法在此裝置上準備本機字幕引擎。請安裝必要的建置工具，或在「Whisper 程式」中選擇 whisper-cli 程式，然後再試一次。",
 		"transcribeLowMemory": "轉錄時裝置記憶體不足。此錄影請改用小型模型。",
 		"noTranscriptToExport": "沒有可匯出的逐字稿。",
 		"exportFailed": "無法匯出逐字稿。",
