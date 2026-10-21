@@ -18,6 +18,8 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { useI18n } from "@/contexts/I18nContext";
+import { isVideoWallpaper } from "@/lib/wallpapers";
 import { getAspectRatioValue } from "@/utils/aspectRatioUtils";
 import { createWebcamZoomMotionState } from "./cameraLayouts";
 import { applyOpacityToHex, buildFrameShadowFilter, hasVisibleFrameShadow } from "./frameEffects";
@@ -29,6 +31,7 @@ import {
 	DEFAULT_CLICK_HIGHLIGHT_OPACITY,
 	DEFAULT_CLICK_HIGHLIGHT_SIZE,
 	DEFAULT_CURSOR_CLICK_BOUNCE,
+	DEFAULT_CURSOR_CLICK_STYLE,
 	DEFAULT_CURSOR_COLOR,
 	DEFAULT_CURSOR_IDLE_HIDE_DELAY_MS,
 	DEFAULT_CURSOR_MOTION_BLUR,
@@ -60,6 +63,7 @@ import {
 	type ZoomFocus,
 	type ZoomRegion,
 } from "./types";
+import { BackgroundVideoLayer } from "./videoPlayback/BackgroundVideoLayer";
 import {
 	createPlaybackCameraState,
 	evaluatePlaybackCameraFrame,
@@ -217,6 +221,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			hideBackground = false,
 			zoomMotionBlur = 0,
 			connectZooms = true,
+			zoomTiming,
 			frameBorderEnabled = false,
 			frameBorderWidth = 0,
 			frameBorderColor = "#000000",
@@ -255,6 +260,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			clickHighlightColor = DEFAULT_CLICK_HIGHLIGHT_COLOR,
 			clickHighlightSize = DEFAULT_CLICK_HIGHLIGHT_SIZE,
 			clickHighlightOpacity = DEFAULT_CLICK_HIGHLIGHT_OPACITY,
+			cursorClickStyle = DEFAULT_CURSOR_CLICK_STYLE,
 			cursorTrailLength = DEFAULT_CURSOR_TRAIL_LENGTH,
 			cursorTrailOpacity = DEFAULT_CURSOR_TRAIL_OPACITY,
 			cursorTypeMode = DEFAULT_CURSOR_TYPE_MODE,
@@ -287,6 +293,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		},
 		ref,
 	) => {
+		const { t } = useI18n();
 		const videoRef = useRef<HTMLVideoElement | null>(null);
 		const containerRef = useRef<HTMLDivElement | null>(null);
 		const appRef = useRef<Application | null>(null);
@@ -344,6 +351,8 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const speedRegionsRef = useRef<SpeedRegion[]>([]);
 		const zoomMotionBlurRef = useRef(zoomMotionBlur);
 		const connectZoomsRef = useRef(connectZooms);
+		const zoomTimingRef = useRef(zoomTiming);
+		zoomTimingRef.current = zoomTiming;
 		const videoReadyRafRef = useRef<number | null>(null);
 		const cursorOverlayRef = useRef<PixiCursorOverlay | null>(null);
 		const cursorTelemetryRef = useRef<CursorTelemetryPoint[]>([]);
@@ -362,6 +371,8 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const clickHighlightColorRef = useRef(clickHighlightColor);
 		const clickHighlightSizeRef = useRef(clickHighlightSize);
 		const clickHighlightOpacityRef = useRef(clickHighlightOpacity);
+		const cursorClickStyleRef = useRef(cursorClickStyle);
+		cursorClickStyleRef.current = cursorClickStyle;
 		const previewClickPulseRef = useRef<PreviewClickPulse | null>(null);
 		const previousClickEffectsRef = useRef({
 			cursorClickBounce,
@@ -369,6 +380,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			clickHighlightColor,
 			clickHighlightSize,
 			clickHighlightOpacity,
+			cursorClickStyle,
 		});
 		const cursorTrailLengthRef = useRef(cursorTrailLength);
 		const cursorTrailOpacityRef = useRef(cursorTrailOpacity);
@@ -422,6 +434,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			zoomRegions,
 			cursorTelemetry,
 			connectZooms,
+			zoomTiming,
 			cameraSizeDuringZoom,
 			webcamEffects,
 			webcamPreviewMode,
@@ -992,7 +1005,11 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			(error: unknown, expectedQuality: PreviewQuality) => {
 				const pendingSwitch = pendingPreviewQualitySwitchRef.current;
 				if (!pendingSwitch || pendingSwitch.targetQuality !== expectedQuality) {
-					onError(error instanceof Error ? error.message : "Failed to initialize preview renderer");
+					onError(
+						error instanceof Error
+							? error.message
+							: t("editor.preview.initFailed", "Failed to initialize preview renderer"),
+					);
 					return;
 				}
 
@@ -1007,7 +1024,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					onPreviewQualitySwitchFailed?.(fallbackQuality);
 				}
 			},
-			[beginPreviewQualitySwitch, onError, onPreviewQualitySwitchFailed],
+			[beginPreviewQualitySwitch, onError, onPreviewQualitySwitchFailed, t],
 		);
 
 		useImperativeHandle(ref, () => ({
@@ -1271,7 +1288,8 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				previous.clickEffectsEnabled !== clickEffectsEnabled ||
 				previous.clickHighlightColor !== clickHighlightColor ||
 				previous.clickHighlightSize !== clickHighlightSize ||
-				previous.clickHighlightOpacity !== clickHighlightOpacity;
+				previous.clickHighlightOpacity !== clickHighlightOpacity ||
+				previous.cursorClickStyle !== cursorClickStyle;
 
 			previousClickEffectsRef.current = {
 				cursorClickBounce,
@@ -1279,6 +1297,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				clickHighlightColor,
 				clickHighlightSize,
 				clickHighlightOpacity,
+				cursorClickStyle,
 			};
 
 			if (
@@ -1306,6 +1325,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			clickHighlightColor,
 			clickHighlightSize,
 			clickHighlightOpacity,
+			cursorClickStyle,
 			showCursor,
 			currentTime,
 			hasRecordedClickNear,
@@ -1515,6 +1535,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 						clickHighlightColor: clickHighlightColorRef.current,
 						clickHighlightSize: clickHighlightSizeRef.current,
 						clickHighlightOpacity: clickHighlightOpacityRef.current,
+						clickStyle: cursorClickStyleRef.current,
 						trailLength: cursorTrailLengthRef.current,
 						trailOpacity: cursorTrailOpacityRef.current,
 						springConfig: resolvedCursorConfig.springConfig,
@@ -1540,7 +1561,11 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					handlePreviewQualitySwitchFailure(error, rendererPreviewQuality);
 					return;
 				}
-				onError(error instanceof Error ? error.message : "Failed to initialize preview renderer");
+				onError(
+					error instanceof Error
+						? error.message
+						: t("editor.preview.initFailed", "Failed to initialize preview renderer"),
+				);
 			});
 
 			return () => {
@@ -1571,6 +1596,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			previewRendererEpoch,
 			previewResolution,
 			rendererPreviewQuality,
+			t,
 		]);
 
 		useEffect(() => {
@@ -1852,6 +1878,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					cursorSimulationPath: cursorSimulationPathRef.current,
 					zoomRegions: shouldShowUnzoomedView ? [] : zoomRegionsRef.current,
 					connectZooms: connectZoomsRef.current,
+					zoomTiming: zoomTimingRef.current,
 					geometry: {
 						stageSize: stageSizeRef.current,
 						baseMask: baseMaskRef.current,
@@ -1922,6 +1949,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			overlay.setClickHighlightColor(clickHighlightColor);
 			overlay.setClickHighlightSize(clickHighlightSize);
 			overlay.setClickHighlightOpacity(clickHighlightOpacity);
+			overlay.setClickStyle(cursorClickStyle);
 			overlay.setTrailLength(cursorTrailLength);
 			overlay.setTrailOpacity(cursorTrailOpacity);
 			overlay.setSpringConfig(resolvedCursorConfig.springConfig);
@@ -1945,6 +1973,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			clickHighlightColor,
 			clickHighlightSize,
 			clickHighlightOpacity,
+			cursorClickStyle,
 			cursorTrailLength,
 			cursorTrailOpacity,
 			cursorTypeMode,
@@ -2013,6 +2042,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					clickHighlightColor: clickHighlightColorRef.current,
 					clickHighlightSize: clickHighlightSizeRef.current,
 					clickHighlightOpacity: clickHighlightOpacityRef.current,
+					clickStyle: cursorClickStyleRef.current,
 					trailLength: cursorTrailLengthRef.current,
 					trailOpacity: cursorTrailOpacityRef.current,
 					springConfig: resolvedCursorConfig.springConfig,
@@ -2075,16 +2105,20 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			};
 		}, []);
 
+		const isVideoBackground = isVideoWallpaper(resolvedWallpaper);
 		const isImageUrl = Boolean(
-			resolvedWallpaper &&
+			!isVideoBackground &&
+				resolvedWallpaper &&
 				(resolvedWallpaper.startsWith("file://") ||
 					resolvedWallpaper.startsWith("http") ||
 					resolvedWallpaper.startsWith("/") ||
 					resolvedWallpaper.startsWith("data:")),
 		);
-		const backgroundStyle = isImageUrl
-			? { backgroundImage: `url(${resolvedWallpaper || ""})` }
-			: { background: resolvedWallpaper || "" };
+		const backgroundStyle = isVideoBackground
+			? {}
+			: isImageUrl
+				? { backgroundImage: `url(${resolvedWallpaper || ""})` }
+				: { background: resolvedWallpaper || "" };
 		const ratioVideoWidth =
 			lockedVideoDimensionsRef.current?.width ?? videoRef.current?.videoWidth ?? 16;
 		const ratioVideoHeight =
@@ -2137,7 +2171,15 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 								inset: `-${backgroundBlurInset}px`,
 								filter: backgroundBlur > 0 ? `blur(${backgroundBlur}px)` : "none",
 							}}
-						/>
+						>
+							{isVideoBackground && resolvedWallpaper ? (
+								<BackgroundVideoLayer
+									src={resolvedWallpaper}
+									currentTime={currentTime}
+									isPlaying={isPlaying}
+								/>
+							) : null}
+						</div>
 					</div>
 				)}
 				<div

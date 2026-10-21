@@ -1,0 +1,59 @@
+{
+	"app": {
+		"name": "ScreenMint",
+		"editorTitle": "ScreenMint 編輯器",
+		"subtitle": "螢幕錄製與剪輯",
+		"language": "語言"
+	},
+	"actions": {
+		"cancel": "取消",
+		"save": "儲存",
+		"delete": "刪除",
+		"done": "完成"
+	},
+	"updates": {
+		"available": "已有版本 {{version}} 可用。",
+		"downloadAction": "下載",
+		"downloadingSoon": "找到更新。ScreenMint 閒置時會開始下載。",
+		"downloading": "正在下載更新… {{progress}}",
+		"downloaded": "版本 {{version}} 已可安裝。",
+		"installAction": "開啟安裝程式",
+		"installDeferred": "錄製、匯出或轉錄完成後即可使用安裝程式。",
+		"restartAction": "重新啟動",
+		"restartDeferred": "正在等待錄製、匯出或轉錄完成後再重新啟動。",
+		"manualRequired": "版本 {{version}} 可手動下載。",
+		"openReleases": "開啟版本頁面",
+		"upToDate": "ScreenMint {{version}} 已是最新版本。",
+		"error": "無法完成更新要求。",
+		"popup": {
+			"title": "有可用的更新",
+			"downloadingTitle": "正在更新 ScreenMint",
+			"readyTitle": "可以更新了",
+			"updateNow": "立即更新",
+			"updateLater": "稍後",
+			"availableBody": "ScreenMint {{version}} 已準備好。「立即更新」會下載最新版本，之後由你決定何時安裝。",
+			"availableBodyExternal": "ScreenMint {{version}} 已準備好。「立即更新」會下載安裝程式，接著 ScreenMint 會開啟它讓你完成更新。",
+			"downloadingBody": "正在下載 ScreenMint {{version}}。請保持此視窗開啟，或選擇「稍後」並在方便時回來。",
+			"downloadingProgressLabel": "已下載 {{progress}}",
+			"downloadedBodyInApp": "ScreenMint {{version}} 已準備好。按一下「立即更新」以重新啟動並完成安裝。",
+			"downloadedBodyExternal": "ScreenMint {{version}} 已準備好。按一下「立即更新」開啟安裝程式。ScreenMint 會結束以便你完成更新。",
+			"manualBody": "ScreenMint {{version}} 已推出，但此安裝無法自行更新。「立即更新」會開啟下載頁面。",
+			"busyHint": "請先完成錄製、匯出或轉錄，再繼續更新。",
+			"skipVersion": "略過此版本",
+			"experimentalBadge": "實驗性"
+		},
+		"whatsNew": {
+			"title": "{{version}} 新功能",
+			"intro": "以下是此版本的變更內容。",
+			"fallback": "ScreenMint 已成功更新。你現在使用的是最新版本。"
+		}
+	},
+	"errors": {
+		"invalidFileType": "檔案類型無效",
+		"failedToUploadImage": "無法上傳圖片",
+		"fileReadError": "讀取檔案時發生錯誤。"
+	},
+	"announcements": {
+		"learnMore": "了解更多"
+	}
+}

@@ -43,7 +43,10 @@ export function ZoomSettingsTab({
 		<TabContent>
 			<TabHeader
 				title={tSettings("zoom.level")}
-				description="Choose magnification level for zoom regions"
+				description={tSettings(
+					"regionsTab.chooseMagnificationLevelFor",
+					"Choose magnification level for zoom regions",
+				)}
 				badge={
 					zoomEnabled && selectedZoomDepth
 						? ZOOM_DEPTH_OPTIONS.find((option) => option.depth === selectedZoomDepth)?.label
@@ -51,12 +54,18 @@ export function ZoomSettingsTab({
 				}
 			/>
 
-			<SettingsSection title="Zoom Depth" description="Select how much to magnify the zoomed area">
+			<SettingsSection
+				title={tSettings("regionsTab.zoomDepth", "Zoom Depth")}
+				description={tSettings(
+					"regionsTab.selectHowMuchTo",
+					"Select how much to magnify the zoomed area",
+				)}
+			>
 				<div className="grid grid-cols-2 gap-1.5">
 					{(
 						[
-							{ value: "static", label: "Static" },
-							{ value: "cursor-follow", label: "Cursor Follow" },
+							{ value: "cursor-follow", label: tSettings("regionsTab.auto", "Auto") },
+							{ value: "static", label: tSettings("regionsTab.manual", "Manual") },
 						] as const
 					).map((option) => {
 						const isActive = selectedZoomMode === option.value;
@@ -80,6 +89,16 @@ export function ZoomSettingsTab({
 						);
 					})}
 				</div>
+				{zoomEnabled && selectedZoomMode && (
+					<p className="text-[10px] leading-relaxed text-slate-500">
+						{selectedZoomMode === "cursor-follow"
+							? tSettings(
+									"regionsTab.autoHint",
+									"Camera recenters when the cursor nears the edge of the zoomed view",
+								)
+							: tSettings("regionsTab.manualHint", "Set a fixed focus point for this zoom")}
+					</p>
+				)}
 				<div className="grid grid-cols-3 gap-1.5">
 					{ZOOM_DEPTH_OPTIONS.map((option) => {
 						const isActive = selectedZoomDepth === option.depth;
@@ -125,8 +144,11 @@ export function ZoomSettingsTab({
 
 			{trimEnabled && (
 				<SettingsSection
-					title="Trim Region"
-					description="Remove the selected trim region from the timeline"
+					title={tSettings("regionsTab.trimRegion", "Trim Region")}
+					description={tSettings(
+						"regionsTab.removeTheSelectedTrim",
+						"Remove the selected trim region from the timeline",
+					)}
 					accentColor="red"
 				>
 					<Button
@@ -163,7 +185,10 @@ export function SpeedSettingsTab({
 		<TabContent>
 			<TabHeader
 				title={tSettings("speed.playbackSpeed")}
-				description="Adjust playback speed for selected timeline regions"
+				description={tSettings(
+					"regionsTab.adjustPlaybackSpeedFor",
+					"Adjust playback speed for selected timeline regions",
+				)}
 				badge={
 					selectedSpeedId && selectedSpeedValue
 						? (SPEED_OPTIONS.find((option) => option.speed === selectedSpeedValue)?.label ??
@@ -174,8 +199,11 @@ export function SpeedSettingsTab({
 			/>
 
 			<SettingsSection
-				title="Speed Presets"
-				description="Choose a speed multiplier for the selected region"
+				title={tSettings("regionsTab.speedPresets", "Speed Presets")}
+				description={tSettings(
+					"regionsTab.chooseASpeedMultiplier",
+					"Choose a speed multiplier for the selected region",
+				)}
 				accentColor="amber"
 			>
 				<div className="grid grid-cols-3 gap-1.5">

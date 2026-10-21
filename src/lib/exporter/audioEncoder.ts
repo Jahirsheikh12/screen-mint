@@ -1,4 +1,5 @@
 import { WebDemuxer } from "web-demuxer";
+import { getNormalizeGain } from "@/components/video-editor/audioNormalize";
 import {
 	getAudioPlaybackOffsetSeconds,
 	getAudioRegionFadeMultiplier,
@@ -53,8 +54,9 @@ export class AudioProcessor {
 		speedRegions?: SpeedRegion[],
 		readEndSec?: number,
 		audioRegions?: AudioRegion[],
-		options?: { independentDemuxer?: boolean },
+		options?: { independentDemuxer?: boolean; sourceVolume?: number },
 	): Promise<PreparedAudioTrack | null> {
+		const sourceVolume = Math.max(0, Math.min(1, options?.sourceVolume ?? 1));
 		const sortedTrims = trimRegions ? [...trimRegions].sort((a, b) => a.startMs - b.startMs) : [];
 		const sortedSpeedRegions = speedRegions
 			? [...speedRegions]
@@ -66,12 +68,14 @@ export class AudioProcessor {
 			: [];
 
 		// When audio regions or speed edits are present, use AudioContext mixing path.
-		if (sortedSpeedRegions.length > 0 || sortedAudioRegions.length > 0) {
+		// A source volume change also needs the mixing path (it applies the gain).
+		if (sortedSpeedRegions.length > 0 || sortedAudioRegions.length > 0 || sourceVolume !== 1) {
 			const renderedAudioBlob = await this.renderMixedTimelineAudio(
 				videoUrl,
 				sortedTrims,
 				sortedSpeedRegions,
 				sortedAudioRegions,
+				sourceVolume,
 			);
 			if (!this.cancelled) {
 				return await this.prepareRenderedAudioBlob(renderedAudioBlob);
@@ -221,6 +225,7 @@ export class AudioProcessor {
 		trimRegions: TrimRegion[],
 		speedRegions: SpeedRegion[],
 		audioRegions: AudioRegion[],
+		sourceVolume = 1,
 	): Promise<Blob> {
 		const media = document.createElement("audio");
 		media.src = videoUrl;
@@ -245,7 +250,10 @@ export class AudioProcessor {
 
 		// Connect original video audio
 		const sourceNode = audioContext.createMediaElementSource(media);
-		sourceNode.connect(destinationNode);
+		const sourceGain = audioContext.createGain();
+		sourceGain.gain.value = sourceVolume;
+		sourceNode.connect(sourceGain);
+		sourceGain.connect(destinationNode);
 
 		// Prepare external audio region elements
 		const audioRegionElements: {
@@ -253,6 +261,7 @@ export class AudioProcessor {
 			sourceNode: MediaElementAudioSourceNode;
 			gainNode: GainNode;
 			region: AudioRegion;
+			normalizeGain: number;
 		}[] = [];
 
 		for (const region of audioRegions) {
@@ -274,11 +283,18 @@ export class AudioProcessor {
 
 			const regionSource = audioContext.createMediaElementSource(audioEl);
 			const gainNode = audioContext.createGain();
-			gainNode.gain.value = Math.max(0, Math.min(1, region.volume));
+			const normalizeGain = region.normalize ? await getNormalizeGain(sourceUrl) : 1;
+			gainNode.gain.value = Math.max(0, Math.min(1, region.volume)) * normalizeGain;
 			regionSource.connect(gainNode);
 			gainNode.connect(destinationNode);
 
-			audioRegionElements.push({ media: audioEl, sourceNode: regionSource, gainNode, region });
+			audioRegionElements.push({
+				media: audioEl,
+				sourceNode: regionSource,
+				gainNode,
+				region,
+				normalizeGain,
+			});
 		}
 
 		const { recorder, recordedBlobPromise } = this.startAudioRecording(destinationNode.stream);
@@ -343,10 +359,11 @@ export class AudioProcessor {
 					for (const entry of audioRegionElements) {
 						const { media: audioEl, region } = entry;
 						const isInRegion = currentTimeMs >= region.startMs && currentTimeMs < region.endMs;
-						entry.gainNode.gain.value = Math.max(
-							0,
-							Math.min(1, region.volume * getAudioRegionFadeMultiplier(region, currentTimeMs)),
-						);
+						entry.gainNode.gain.value =
+							Math.max(
+								0,
+								Math.min(1, region.volume * getAudioRegionFadeMultiplier(region, currentTimeMs)),
+							) * entry.normalizeGain;
 
 						if (isInRegion) {
 							const audioOffset = getAudioPlaybackOffsetSeconds(

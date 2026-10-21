@@ -1,6 +1,7 @@
 import { Application, Graphics, Sprite } from "pixi.js";
+import { resolvePaddedArea } from "@/lib/exporter/paddedArea";
 import { type AspectRatio, getAspectRatioValue } from "@/utils/aspectRatioUtils";
-import type { CropRegion, CursorTelemetryPoint } from "../types";
+import type { CropRegion, CursorTelemetryPoint, PaddingValue } from "../types";
 
 interface LayoutParams {
 	container: HTMLDivElement;
@@ -11,7 +12,7 @@ interface LayoutParams {
 	cropRegion?: CropRegion;
 	lockedVideoDimensions?: { width: number; height: number } | null;
 	borderRadius?: number;
-	padding?: number;
+	padding?: PaddingValue;
 	aspectRatio?: AspectRatio;
 }
 
@@ -31,7 +32,7 @@ interface VideoLayoutGeometryParams {
 	videoWidth: number;
 	videoHeight: number;
 	cropRegion?: CropRegion;
-	padding?: number;
+	padding?: PaddingValue;
 	aspectRatio?: AspectRatio;
 }
 
@@ -219,12 +220,12 @@ export function calculateVideoLayoutGeometry(
 	const cropEndY = cropStartY + croppedVideoHeight;
 
 	const croppedVideoAspectRatio = croppedVideoWidth / croppedVideoHeight;
-	const paddingScale = 1.0 - (padding / 100) * 0.4;
-	const availableWidth = containerWidth * paddingScale;
-	const availableHeight = containerHeight * paddingScale;
+	const area = resolvePaddedArea(containerWidth, containerHeight, padding);
 	const targetFrameAspectRatio = getAspectRatioValue(aspectRatio, croppedVideoAspectRatio);
-	const frameSize = fitRectWithin(availableWidth, availableHeight, targetFrameAspectRatio);
-	const frameRect = centerRect(containerWidth, containerHeight, frameSize.width, frameSize.height);
+	const frameSize = fitRectWithin(area.width, area.height, targetFrameAspectRatio);
+	const frameRect = centerRect(area.width, area.height, frameSize.width, frameSize.height);
+	frameRect.x += area.x;
+	frameRect.y += area.y;
 	const contentSize = fitRectWithin(frameRect.width, frameRect.height, croppedVideoAspectRatio);
 	const maskRect = centerRect(
 		frameRect.width,

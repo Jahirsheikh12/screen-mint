@@ -14,6 +14,7 @@ import type {
 	WebcamPreviewMode,
 	WebcamRegion,
 	ZoomRegion,
+	ZoomTimingSettings,
 } from "./types";
 import { DEFAULT_WEBCAM_EFFECTS, DEFAULT_WEBCAM_REGION } from "./types";
 import { resolveWebcamRenderPlan, type WebcamRenderPlan } from "./webcamRenderPlan";
@@ -34,6 +35,7 @@ export interface WebcamFrameEvaluationInput {
 	zoomRegions?: ZoomRegion[];
 	cursorTelemetry?: CursorTelemetryPoint[];
 	connectZooms?: boolean;
+	zoomTiming?: Partial<ZoomTimingSettings>;
 	cameraSizeDuringZoom?: number;
 	enableCursorAvoidance?: boolean;
 	compositionRect: PixelRect;
@@ -98,6 +100,7 @@ export function evaluateWebcamFrame(
 		zoomRegions: input.zoomRegions ?? [],
 		cursorTelemetry: input.cursorTelemetry ?? [],
 		connectZooms: input.connectZooms,
+		zoomTiming: input.zoomTiming,
 		cameraSizeDuringZoom: input.cameraSizeDuringZoom,
 		enableCursorAvoidance: input.enableCursorAvoidance,
 		compositionRect: input.compositionRect,
@@ -117,6 +120,7 @@ export function evaluateWebcamFrame(
 		zoomRegions: input.zoomRegions ?? [],
 		cursorTelemetry: input.cursorTelemetry ?? [],
 		connectZooms: input.connectZooms,
+		zoomTiming: input.zoomTiming,
 		cameraSizeDuringZoom: input.cameraSizeDuringZoom,
 		enableCursorAvoidance: input.enableCursorAvoidance,
 		compositionRect: input.compositionRect,
@@ -132,6 +136,7 @@ export function evaluateWebcamFrame(
 		zoomRegions: input.zoomRegions,
 		cursorTelemetry: input.cursorTelemetry,
 		connectZooms: input.connectZooms,
+		zoomTiming: input.zoomTiming,
 		cameraSizeDuringZoom: input.cameraSizeDuringZoom,
 		enableCursorAvoidance: input.enableCursorAvoidance,
 		containerWidth: input.containerWidth,
@@ -152,6 +157,7 @@ export function evaluateWebcamFrame(
 		zoomRegions: input.zoomRegions,
 		cursorTelemetry: input.cursorTelemetry,
 		connectZooms: input.connectZooms,
+		zoomTiming: input.zoomTiming,
 		cameraSizeDuringZoom: input.cameraSizeDuringZoom,
 		enableCursorAvoidance: input.enableCursorAvoidance,
 		containerWidth: input.containerWidth,

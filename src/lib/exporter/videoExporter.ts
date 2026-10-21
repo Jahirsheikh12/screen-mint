@@ -5,6 +5,7 @@ import type {
 	CaptionRegion,
 	CaptionSettings,
 	CropRegion,
+	CursorClickStyleSettings,
 	CursorMovementStyle,
 	CursorPack,
 	CursorSpringSettings,
@@ -15,11 +16,14 @@ import type {
 	KeyboardShortcutCallout,
 	KeyboardShortcutPosition,
 	KeyboardShortcutTheme,
+	PaddingValue,
 	SpeedRegion,
 	TrimRegion,
 	WebcamEffects,
 	WebcamRegion,
 	ZoomRegion,
+	ZoomTemporalBlurSettings,
+	ZoomTimingSettings,
 } from "@/components/video-editor/types";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import { AudioProcessor, type PreparedAudioTrack } from "./audioEncoder";
@@ -52,14 +56,16 @@ interface VideoExporterConfig extends ExportConfig {
 	backgroundBlur: number;
 	hideBackground?: boolean;
 	zoomMotionBlur?: number;
+	zoomTemporalBlur?: ZoomTemporalBlurSettings;
 	connectZooms?: boolean;
+	zoomTiming?: Partial<ZoomTimingSettings>;
 	deviceMockup?: DeviceMockup;
 	frameBorderEnabled?: boolean;
 	frameBorderWidth?: number;
 	frameBorderColor?: string;
 	frameBorderOpacity?: number;
 	borderRadius?: number;
-	padding?: number;
+	padding?: PaddingValue;
 	videoPadding?: number;
 	cropRegion: CropRegion;
 	aspectRatio?: AspectRatio;
@@ -86,6 +92,7 @@ interface VideoExporterConfig extends ExportConfig {
 	clickHighlightColor?: string;
 	clickHighlightSize?: number;
 	clickHighlightOpacity?: number;
+	cursorClickStyle?: CursorClickStyleSettings;
 	cursorTrailLength?: number;
 	cursorTrailOpacity?: number;
 	cursorTypeMode?: CursorTypeMode;
@@ -98,6 +105,8 @@ interface VideoExporterConfig extends ExportConfig {
 	highQualitySvgCursors?: boolean;
 	cameraSpring?: import("@/components/video-editor/types").CameraSpringSettings;
 	audioRegions?: AudioRegion[];
+	/** Recording audio gain (0 = muted). */
+	sourceAudioVolume?: number;
 	previewWidth?: number;
 	previewHeight?: number;
 	webcamPath?: string | null;
@@ -217,7 +226,9 @@ export class VideoExporter {
 				backgroundBlur: this.config.backgroundBlur,
 				hideBackground: this.config.hideBackground,
 				zoomMotionBlur: this.config.zoomMotionBlur,
+				zoomTemporalBlur: this.config.zoomTemporalBlur,
 				connectZooms: this.config.connectZooms,
+				zoomTiming: this.config.zoomTiming,
 				deviceMockup: this.config.deviceMockup,
 				frameBorderEnabled: this.config.frameBorderEnabled,
 				frameBorderWidth: this.config.frameBorderWidth,
@@ -255,6 +266,7 @@ export class VideoExporter {
 				clickHighlightColor: this.config.clickHighlightColor,
 				clickHighlightSize: this.config.clickHighlightSize,
 				clickHighlightOpacity: this.config.clickHighlightOpacity,
+				cursorClickStyle: this.config.cursorClickStyle,
 				cursorTrailLength: this.config.cursorTrailLength,
 				cursorTrailOpacity: this.config.cursorTrailOpacity,
 				cursorTypeMode: this.config.cursorTypeMode,
@@ -622,7 +634,7 @@ export class VideoExporter {
 				this.config.speedRegions,
 				undefined,
 				this.config.audioRegions,
-				{ independentDemuxer: true },
+				{ independentDemuxer: true, sourceVolume: this.config.sourceAudioVolume },
 			),
 		)
 			.then((audioTrack) => ({ audioTrack }))
@@ -653,7 +665,10 @@ export class VideoExporter {
 			this.encodeQueue++;
 			const keyFrameInterval = Math.max(
 				1,
-				Math.round((this.activeConfig?.frameRate ?? this.config.frameRate) * 2),
+				Math.round(
+					(this.activeConfig?.frameRate ?? this.config.frameRate) *
+						(this.config.keyframeIntervalSeconds ?? 2),
+				),
 			);
 			this.encoder.encode(exportFrame, { keyFrame: frameIndex % keyFrameInterval === 0 });
 		} else {

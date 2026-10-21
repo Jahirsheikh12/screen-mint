@@ -52,7 +52,7 @@ describe("native composed compiler", () => {
 		expect(result.featureReport).toEqual(expect.arrayContaining(["crop", "native-filtergraph"]));
 	});
 
-	it("supports one static zoom region without trim", () => {
+	it("falls back to the renderer for zoom regions so transitions match preview", () => {
 		const result = compileNativeComposedExport(
 			makeRequest({
 				compositionPayload: {
@@ -73,8 +73,7 @@ describe("native composed compiler", () => {
 			encoder,
 		);
 
-		expect(result.supported).toBe(true);
-		expect(result.ffmpegArgs?.join(" ")).toContain("between(t");
+		expect(result.supported).toBe(false);
 	});
 
 	it("falls back for effects that cannot be represented without fidelity loss", () => {

@@ -4,6 +4,8 @@ import type {
 	CursorSpringSettings,
 	CursorType,
 	CursorTypeMode,
+	MotionPresetId,
+	MotionPresetValues,
 } from "../types";
 import {
 	DEFAULT_CURSOR_IDLE_HIDE_DELAY_MS,
@@ -15,6 +17,7 @@ import {
 	DEFAULT_HIDE_CURSOR_WHEN_IDLE,
 	DEFAULT_HIGH_QUALITY_SVG_CURSORS,
 	DEFAULT_SMOOTH_CURSOR_MOVEMENT,
+	MOTION_PRESETS,
 } from "../types";
 import type { CursorMotionSnapshot } from "./cursorSimulation";
 import type { SpringConfig } from "./motionSmoothing";
@@ -254,4 +257,52 @@ export function getCursorTiltRotation(
 	);
 	const speedFactor = clamp(speed / 0.9, 0, 1);
 	return directionalBias * speedFactor * (Math.PI / 10) * cursorTilt;
+}
+
+/** Stiffness boost applied on top of the smoothing-derived spring when a motion preset is used. */
+const MOTION_PRESET_STIFFNESS_BOOST = 1.12;
+
+/** Absolute cursor spring a motion preset produces for its smoothing and multipliers. */
+export function motionPresetToCursorSpring(preset: MotionPresetValues): CursorSpringSettings {
+	const base = getCursorSpringConfig(preset.cursorSmoothing);
+	return {
+		tension:
+			base.stiffness * MOTION_PRESET_STIFFNESS_BOOST * preset.cursorSpringStiffnessMultiplier,
+		friction: base.damping * preset.cursorSpringDampingMultiplier,
+		mass: base.mass * preset.cursorSpringMassMultiplier,
+	};
+}
+
+export interface MotionPresetComparable {
+	zoomInDurationMs: number;
+	zoomOutDurationMs: number;
+	cursorSize: number;
+	cursorSmoothing: number;
+	cursorClickBounce: number;
+	cursorClickBounceDurationMs: number;
+	cursorSpring: CursorSpringSettings;
+}
+
+const near = (a: number, b: number) => Math.abs(a - b) <= Math.max(1e-6, Math.abs(b) * 1e-4);
+
+/** The preset whose values the editor currently matches, or null for "Custom". */
+export function detectMotionPreset(current: MotionPresetComparable): MotionPresetId | null {
+	for (const id of Object.keys(MOTION_PRESETS) as MotionPresetId[]) {
+		const preset = MOTION_PRESETS[id];
+		const spring = motionPresetToCursorSpring(preset);
+		if (
+			near(current.zoomInDurationMs, preset.zoomInDurationMs) &&
+			near(current.zoomOutDurationMs, preset.zoomOutDurationMs) &&
+			near(current.cursorSize, preset.cursorSize) &&
+			near(current.cursorSmoothing, preset.cursorSmoothing) &&
+			near(current.cursorClickBounce, preset.cursorClickBounce) &&
+			near(current.cursorClickBounceDurationMs, preset.cursorClickBounceDurationMs) &&
+			near(current.cursorSpring.tension, spring.tension) &&
+			near(current.cursorSpring.friction, spring.friction) &&
+			near(current.cursorSpring.mass, spring.mass)
+		) {
+			return id;
+		}
+	}
+	return null;
 }

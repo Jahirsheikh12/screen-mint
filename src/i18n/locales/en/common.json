@@ -2,7 +2,8 @@
 	"app": {
 		"name": "ScreenMint",
 		"editorTitle": "ScreenMint Editor",
-		"subtitle": "Screen recording and editing"
+		"subtitle": "Screen recording and editing",
+		"language": "Language"
 	},
 	"actions": {
 		"cancel": "Cancel",
@@ -37,7 +38,9 @@
 			"downloadedBodyInApp": "ScreenMint {{version}} is ready. Click Update now to restart and finish installing it.",
 			"downloadedBodyExternal": "ScreenMint {{version}} is ready. Click Update now to open the installer. ScreenMint will quit so you can finish updating.",
 			"manualBody": "ScreenMint {{version}} is available, but this installation cannot update itself. Update now will open the latest download page.",
-			"busyHint": "Finish recording, export, or transcription before continuing with the update."
+			"busyHint": "Finish recording, export, or transcription before continuing with the update.",
+			"skipVersion": "Skip this version",
+			"experimentalBadge": "Experimental"
 		},
 		"whatsNew": {
 			"title": "What's new in {{version}}",
@@ -49,5 +52,8 @@
 		"invalidFileType": "Invalid file type",
 		"failedToUploadImage": "Failed to upload image",
 		"fileReadError": "There was an error reading the file."
+	},
+	"announcements": {
+		"learnMore": "Learn more"
 	}
 }

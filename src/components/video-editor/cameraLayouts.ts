@@ -4,7 +4,9 @@ import type {
 	CursorTelemetryPoint,
 	WebcamMotionPreset,
 	WebcamRegion,
+	WebcamSourceCrop,
 	ZoomRegion,
+	ZoomTimingSettings,
 } from "./types";
 import { CAMERA_ZOOM_SCALE_DISABLED } from "./types";
 import { easeOutScreenStudio } from "./videoPlayback/mathUtils";
@@ -83,8 +85,20 @@ export interface ResolvedWebcamRenderModel extends ResolvedCameraLayoutState {
 export function resolveWebcamSourceCrop(
 	sourceSize: WebcamSourceSize | null | undefined,
 	displayRect: PixelRect,
+	trim?: WebcamSourceCrop | null,
 ): PixelRect | null {
-	return getCoverCropRect(sourceSize, displayRect);
+	if (!sourceSize || !trim || (!trim.top && !trim.right && !trim.bottom && !trim.left)) {
+		return getCoverCropRect(sourceSize, displayRect);
+	}
+	// Cover-fit inside the trimmed frame, then shift back into source pixels.
+	const x = sourceSize.width * trim.left;
+	const y = sourceSize.height * trim.top;
+	const trimmedSize = {
+		width: Math.max(1, sourceSize.width * (1 - trim.left - trim.right)),
+		height: Math.max(1, sourceSize.height * (1 - trim.top - trim.bottom)),
+	};
+	const crop = getCoverCropRect(trimmedSize, displayRect);
+	return crop ? { ...crop, x: crop.x + x, y: crop.y + y } : null;
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -650,6 +664,7 @@ function resolveDefaultModeRegion(params: {
 	cursorTelemetry?: CursorTelemetryPoint[];
 	timeMs: number;
 	connectZooms: boolean;
+	zoomTiming?: Partial<ZoomTimingSettings>;
 	cameraSizeDuringZoom: number;
 	enableCursorAvoidance?: boolean;
 	compositionRect: PixelRect;
@@ -661,12 +676,13 @@ function resolveDefaultModeRegion(params: {
 		cursorTelemetry,
 		timeMs,
 		connectZooms,
+		zoomTiming,
 		cameraSizeDuringZoom,
 		enableCursorAvoidance = false,
 		compositionRect,
 		contentRect,
 	} = params;
-	const dominantRegion = findDominantRegion(zoomRegions, timeMs, { connectZooms });
+	const dominantRegion = findDominantRegion(zoomRegions, timeMs, { connectZooms, zoomTiming });
 
 	if (!dominantRegion.region || dominantRegion.strength <= 0) {
 		if (enableCursorAvoidance) {
@@ -742,6 +758,7 @@ function resolveWebcamMotionKey(params: {
 	cameraSizeDuringZoom: number;
 	enableCursorAvoidance: boolean;
 	connectZooms: boolean;
+	zoomTiming?: Partial<ZoomTimingSettings>;
 }) {
 	const {
 		baseRegion,
@@ -750,6 +767,7 @@ function resolveWebcamMotionKey(params: {
 		cameraSizeDuringZoom,
 		enableCursorAvoidance,
 		connectZooms,
+		zoomTiming,
 	} = params;
 
 	return [
@@ -765,6 +783,7 @@ function resolveWebcamMotionKey(params: {
 		cameraSizeDuringZoom.toFixed(4),
 		enableCursorAvoidance ? "avoid" : "steady",
 		connectZooms ? "connected" : "split",
+		zoomTiming ? JSON.stringify(zoomTiming) : "default-timing",
 	].join(":");
 }
 
@@ -964,6 +983,7 @@ export function evaluateWebcamZoomMotionFrame(params: {
 	zoomRegions: ZoomRegion[];
 	cursorTelemetry?: CursorTelemetryPoint[];
 	connectZooms?: boolean;
+	zoomTiming?: Partial<ZoomTimingSettings>;
 	cameraSizeDuringZoom?: number;
 	enableCursorAvoidance?: boolean;
 	compositionRect: PixelRect;
@@ -977,6 +997,7 @@ export function evaluateWebcamZoomMotionFrame(params: {
 		zoomRegions,
 		cursorTelemetry = [],
 		connectZooms = true,
+		zoomTiming,
 		cameraSizeDuringZoom = CAMERA_ZOOM_SCALE_DISABLED,
 		enableCursorAvoidance = false,
 		compositionRect,
@@ -989,6 +1010,7 @@ export function evaluateWebcamZoomMotionFrame(params: {
 		cursorTelemetry,
 		timeMs: playbackTimeMs,
 		connectZooms,
+		zoomTiming,
 		cameraSizeDuringZoom,
 		enableCursorAvoidance,
 		compositionRect,
@@ -1001,6 +1023,7 @@ export function evaluateWebcamZoomMotionFrame(params: {
 		cameraSizeDuringZoom,
 		enableCursorAvoidance,
 		connectZooms,
+		zoomTiming,
 	});
 	const hasMatchingContext = state.motionKey === motionKey;
 	const playbackDeltaMs =
@@ -1053,6 +1076,7 @@ export function evaluateWebcamZoomMotionFrame(params: {
 				cursorTelemetry,
 				timeMs: stepPlaybackTimeMs,
 				connectZooms,
+				zoomTiming,
 				cameraSizeDuringZoom,
 				enableCursorAvoidance,
 				compositionRect,
@@ -1125,6 +1149,7 @@ export function resolveCameraLayoutState(params: {
 	zoomRegions?: ZoomRegion[];
 	cursorTelemetry?: CursorTelemetryPoint[];
 	connectZooms?: boolean;
+	zoomTiming?: Partial<ZoomTimingSettings>;
 	cameraSizeDuringZoom?: number;
 	enableCursorAvoidance?: boolean;
 	containerWidth?: number;
@@ -1143,6 +1168,7 @@ export function resolveCameraLayoutState(params: {
 		zoomRegions = [],
 		cursorTelemetry = [],
 		connectZooms = true,
+		zoomTiming,
 		cameraSizeDuringZoom = CAMERA_ZOOM_SCALE_DISABLED,
 		enableCursorAvoidance = false,
 		containerWidth = 1920,
@@ -1169,6 +1195,7 @@ export function resolveCameraLayoutState(params: {
 			cursorTelemetry,
 			timeMs,
 			connectZooms,
+			zoomTiming,
 			cameraSizeDuringZoom,
 			enableCursorAvoidance,
 			compositionRect,
@@ -1185,6 +1212,7 @@ export function resolveCameraLayoutState(params: {
 			cursorTelemetry,
 			timeMs,
 			connectZooms,
+			zoomTiming,
 			cameraSizeDuringZoom,
 			enableCursorAvoidance,
 			compositionRect,
@@ -1236,6 +1264,7 @@ export function resolveWebcamRenderModel(params: {
 	zoomRegions?: ZoomRegion[];
 	cursorTelemetry?: CursorTelemetryPoint[];
 	connectZooms?: boolean;
+	zoomTiming?: Partial<ZoomTimingSettings>;
 	cameraSizeDuringZoom?: number;
 	enableCursorAvoidance?: boolean;
 	containerWidth: number;

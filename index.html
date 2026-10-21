@@ -14,14 +14,21 @@
       (function() {
         var wt = new URLSearchParams(window.location.search).get('windowType') || '';
         var root = document.getElementById('root');
-        if (['hud-overlay','source-selector','countdown','area-overlay','speaker-notes'].indexOf(wt) !== -1) {
+        if (['hud-overlay','source-selector','countdown','area-overlay','speaker-notes','update-toast'].indexOf(wt) !== -1) {
           document.documentElement.setAttribute('data-overlay', '');
           document.documentElement.style.background = 'transparent';
           document.body.style.background = 'transparent';
         } else if (wt === 'editor') {
-          document.documentElement.style.background = '#0c0c0f';
-          document.body.style.background = '#0c0c0f';
-          if (root) root.style.background = '#0c0c0f';
+          // Mirrors applyTheme() in src/lib/theme.ts.
+          var pref = 'dark';
+          try { pref = localStorage.getItem('screenmint.theme') || 'dark'; } catch (e) {}
+          var light = pref === 'light' ||
+            (pref === 'system' && window.matchMedia && !window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var bg = light ? '#f4f4f2' : '#0c0c0f';
+          document.documentElement.setAttribute('data-theme', light ? 'light' : 'dark');
+          document.documentElement.style.background = bg;
+          document.body.style.background = bg;
+          if (root) root.style.background = bg;
         }
       })();
     </script>

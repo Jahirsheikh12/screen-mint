@@ -1,9 +1,12 @@
+import type { QuickVideoSettings } from "./quickExport";
 export interface ExportConfig {
 	width: number;
 	height: number;
 	frameRate: number;
 	bitrate: number;
 	codec?: string;
+	/** Seconds between forced keyframes; defaults to 2. */
+	keyframeIntervalSeconds?: number;
 }
 
 export type ExportPhase =
@@ -106,6 +109,8 @@ export interface VideoExportSettings {
 	bitsPerPixel?: number;
 	forceFFmpegDecoder?: boolean;
 	optimizeForWeb: boolean;
+	/** Set by the Export menu; overrides resolution, frame rate and bitrate. */
+	quick?: QuickVideoSettings;
 }
 
 export type GifExportMode = "preset" | "custom";

@@ -17,6 +17,7 @@ import {
 	type WebcamRegion,
 	type WebcamRenderQualityTier,
 	type WebcamSegmentationProviderStatus,
+	type ZoomTimingSettings,
 } from "./types";
 import {
 	type ResolvedWebcamCompositionModel,
@@ -216,6 +217,7 @@ export function resolveWebcamRenderSpec(params: {
 	zoomRegions?: import("./types").ZoomRegion[];
 	cursorTelemetry?: CursorTelemetryPoint[];
 	connectZooms?: boolean;
+	zoomTiming?: Partial<ZoomTimingSettings>;
 	cameraSizeDuringZoom?: number;
 	enableCursorAvoidance?: boolean;
 	containerWidth: number;
@@ -254,6 +256,7 @@ export function resolveWebcamRenderSpec(params: {
 			zoomRegions: params.zoomRegions,
 			cursorTelemetry: params.cursorTelemetry,
 			connectZooms: params.connectZooms,
+			zoomTiming: params.zoomTiming,
 			cameraSizeDuringZoom: params.cameraSizeDuringZoom,
 			enableCursorAvoidance: params.enableCursorAvoidance,
 			containerWidth: params.containerWidth,
@@ -262,16 +265,19 @@ export function resolveWebcamRenderSpec(params: {
 			compositionRect: params.compositionRect,
 			contentRect: params.contentRect,
 		});
+	const trim = effectiveEffects.sourceCrop;
+	const hasTrim = Boolean(trim && (trim.top || trim.right || trim.bottom || trim.left));
 	const hydratedRenderModel =
 		params.sourceSize &&
 		params.sourceSize.width > 0 &&
 		params.sourceSize.height > 0 &&
-		(renderModel.sourceCrop == null ||
+		(hasTrim ||
+			renderModel.sourceCrop == null ||
 			renderModel.sourceCrop.width <= 0 ||
 			renderModel.sourceCrop.height <= 0)
 			? {
 					...renderModel,
-					sourceCrop: resolveWebcamSourceCrop(params.sourceSize, renderModel.displayRect),
+					sourceCrop: resolveWebcamSourceCrop(params.sourceSize, renderModel.displayRect, trim),
 				}
 			: renderModel;
 

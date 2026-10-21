@@ -2,7 +2,8 @@
 	"app": {
 		"name": "ScreenMint",
 		"editorTitle": "ScreenMint 编辑器",
-		"subtitle": "屏幕录制与编辑"
+		"subtitle": "屏幕录制与编辑",
+		"language": "语言"
 	},
 	"actions": {
 		"cancel": "取消",
@@ -37,7 +38,9 @@
 			"downloadedBodyInApp": "ScreenMint {{version}} 已准备好。点击“立即更新”即可重新启动并完成安装。",
 			"downloadedBodyExternal": "ScreenMint {{version}} 已准备好。点击“立即更新”会打开安装器，ScreenMint 会退出，以便你完成更新。",
 			"manualBody": "ScreenMint {{version}} 已可用，但当前安装方式无法自更新。点击“立即更新”会打开最新下载页面。",
-			"busyHint": "请先完成录制、导出或转录，再继续更新。"
+			"busyHint": "请先完成录制、导出或转录，再继续更新。",
+			"skipVersion": "跳过此版本",
+			"experimentalBadge": "实验性"
 		},
 		"whatsNew": {
 			"title": "{{version}} 的新内容",
@@ -49,5 +52,8 @@
 		"invalidFileType": "无效的文件类型",
 		"failedToUploadImage": "上传图片失败",
 		"fileReadError": "读取文件时出错。"
+	},
+	"announcements": {
+		"learnMore": "了解更多"
 	}
 }

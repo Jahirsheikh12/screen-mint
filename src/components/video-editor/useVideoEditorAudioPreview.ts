@@ -1,4 +1,12 @@
-import { type Dispatch, type RefObject, type SetStateAction, useEffect, useRef } from "react";
+import {
+	type Dispatch,
+	type RefObject,
+	type SetStateAction,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
+import { getNormalizeGain } from "./audioNormalize";
 import {
 	getAudioPlaybackOffsetSeconds,
 	getAudioRegionFadeMultiplier,
@@ -29,6 +37,25 @@ export function useVideoEditorAudioPreview({
 	videoPlaybackRef,
 }: UseVideoEditorAudioPreviewOptions) {
 	const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
+	const [normalizeGains, setNormalizeGains] = useState<Record<string, number>>({});
+
+	useEffect(() => {
+		let cancelled = false;
+		void (async () => {
+			const entries = await Promise.all(
+				audioRegions
+					.filter((region) => region.normalize && resolvedAudioSourceUrls[region.id])
+					.map(
+						async (region) =>
+							[region.id, await getNormalizeGain(resolvedAudioSourceUrls[region.id])] as const,
+					),
+			);
+			if (!cancelled) setNormalizeGains(Object.fromEntries(entries));
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [audioRegions, resolvedAudioSourceUrls]);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -103,9 +130,15 @@ export function useVideoEditorAudioPreview({
 
 			const currentTimeMs = currentTime * 1000;
 			const isInRegion = currentTimeMs >= region.startMs && currentTimeMs < region.endMs;
+			// <audio> volume cannot exceed 1, so preview caps any normalize boost there.
 			audio.volume = Math.max(
 				0,
-				Math.min(1, region.volume * getAudioRegionFadeMultiplier(region, currentTimeMs)),
+				Math.min(
+					1,
+					region.volume *
+						(normalizeGains[region.id] ?? 1) *
+						getAudioRegionFadeMultiplier(region, currentTimeMs),
+				),
 			);
 
 			if (isPlaying && isInRegion && !missingAudioPathsById[region.id] && audio.src) {
@@ -121,7 +154,7 @@ export function useVideoEditorAudioPreview({
 				audio.pause();
 			}
 		}
-	}, [currentTime, audioRegions, isPlaying, missingAudioPathsById]);
+	}, [currentTime, audioRegions, isPlaying, missingAudioPathsById, normalizeGains]);
 
 	useEffect(() => {
 		const video = videoPlaybackRef.current?.video;

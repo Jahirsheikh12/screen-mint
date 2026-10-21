@@ -1,10 +1,11 @@
-import { Shuffle, Upload, X } from "lucide-react";
+import { Film, Shuffle, Upload, X } from "lucide-react";
 import type React from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { BUILT_IN_WALLPAPERS, WALLPAPER_PATHS } from "@/lib/wallpapers";
+import { BUILT_IN_WALLPAPERS, isVideoWallpaper, WALLPAPER_PATHS } from "@/lib/wallpapers";
 import { ColorPicker } from "../ColorPicker";
+import { fromFileUrl, toFileUrl } from "../projectPersistence";
 import { SliderControl } from "../SliderControl";
 import {
 	type BackgroundTab,
@@ -90,11 +91,21 @@ export function BackgroundSettingsTab({
 	onGradientNoiseChange,
 	initialGradientState,
 }: BackgroundSettingsTabProps) {
+	const handleChooseVideo = async () => {
+		const result = await window.electronAPI.openBackgroundVideoPicker();
+		if (result.success && result.path) {
+			onWallpaperChange(toFileUrl(result.path));
+		}
+	};
+
 	return (
 		<TabContent>
 			<TabHeader
 				title={tSettings("background.title")}
-				description="Set the backdrop behind your recording canvas"
+				description={tSettings(
+					"backgroundTab.setTheBackdropBehind",
+					"Set the backdrop behind your recording canvas",
+				)}
 			/>
 			<DisabledSettingsGroup disabled={hideBackground}>
 				<Tabs
@@ -102,13 +113,20 @@ export function BackgroundSettingsTab({
 					onValueChange={(value) => onBackgroundTabChange(value as BackgroundTab)}
 					className="w-full"
 				>
-					<TabsList className="mb-3 bg-black/40 border border-white/5 shadow-inner p-1 w-full grid grid-cols-3 h-9 rounded-xl">
+					<TabsList className="mb-3 bg-black/40 border border-white/5 shadow-inner p-1 w-full grid grid-cols-4 h-9 rounded-xl">
 						<TabsTrigger
 							value="image"
 							disabled={hideBackground}
 							className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#F59E0B] data-[state=active]:to-[#d97706] data-[state=active]:text-white data-[state=active]:shadow-sm text-slate-400 text-[11px] font-medium py-1 rounded-lg transition-all duration-300 ease-out"
 						>
 							{tSettings("background.image")}
+						</TabsTrigger>
+						<TabsTrigger
+							value="video"
+							disabled={hideBackground}
+							className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#F59E0B] data-[state=active]:to-[#d97706] data-[state=active]:text-white data-[state=active]:shadow-sm text-slate-400 text-[11px] font-medium py-1 rounded-lg transition-all duration-300 ease-out"
+						>
+							{tSettings("background.video", "Video")}
 						</TabsTrigger>
 						<TabsTrigger
 							value="color"
@@ -243,6 +261,44 @@ export function BackgroundSettingsTab({
 							</div>
 						</TabsContent>
 
+						<TabsContent value="video" className="mt-0 space-y-2">
+							<Button
+								onClick={() => void handleChooseVideo()}
+								disabled={hideBackground}
+								variant="outline"
+								className="w-full gap-2 bg-white/[0.04] text-slate-200 border-white/[0.08] hover:bg-[#F59E0B]/15 hover:text-[#F59E0B] hover:border-[#F59E0B]/30 transition-all duration-200 h-8 text-[10px] rounded-xl"
+							>
+								<Upload className="w-3 h-3" />
+								{tSettings("background.uploadVideo", "Choose video")}
+							</Button>
+							{isVideoWallpaper(selected) ? (
+								<div className="flex min-w-0 items-center gap-2.5 rounded-xl border border-[#F59E0B]/30 bg-[#F59E0B]/10 p-2">
+									<video
+										src={selected}
+										muted
+										loop
+										autoPlay
+										playsInline
+										className="h-10 w-16 shrink-0 rounded-md object-cover bg-black/40"
+									/>
+									<span
+										className="min-w-0 flex-1 truncate text-[11px] text-slate-200"
+										title={fromFileUrl(selected)}
+									>
+										{fromFileUrl(selected).split(/[\\/]/).pop()}
+									</span>
+								</div>
+							) : (
+								<p className="flex items-start gap-2 text-[10px] leading-relaxed text-slate-500">
+									<Film className="mt-0.5 h-3 w-3 shrink-0" />
+									{tSettings(
+										"background.videoHint",
+										"Loops silently behind your recording. MP4, MOV or WebM.",
+									)}
+								</p>
+							)}
+						</TabsContent>
+
 						<TabsContent value="color" className="mt-0 p-2.5">
 							<ColorPicker
 								color={selectedColor}
@@ -288,7 +344,9 @@ export function BackgroundSettingsTab({
 								<div className="border-t border-dashed border-white/[0.08] pt-3">
 									<div className="grid grid-cols-2 gap-3">
 										<div className="flex flex-col gap-1.5">
-											<span className="text-[11px] text-slate-300 font-medium">From</span>
+											<span className="text-[11px] text-slate-300 font-medium">
+												{tSettings("backgroundTab.from", "From")}
+											</span>
 											<div className="flex items-center gap-1.5 h-8 rounded-lg border border-white/10 bg-black/40 px-1.5 shadow-inner focus-within:border-amber-500/50 focus-within:ring-1 focus-within:ring-amber-500/20 transition-all">
 												<label className="relative w-6 h-6 rounded-md overflow-hidden shrink-0 cursor-pointer border border-white/10">
 													<div
@@ -334,7 +392,9 @@ export function BackgroundSettingsTab({
 											</div>
 										</div>
 										<div className="flex flex-col gap-1.5">
-											<span className="text-[11px] text-slate-300 font-medium">To</span>
+											<span className="text-[11px] text-slate-300 font-medium">
+												{tSettings("backgroundTab.to", "To")}
+											</span>
 											<div className="flex items-center gap-1.5 h-8 rounded-lg border border-white/10 bg-black/40 px-1.5 shadow-inner focus-within:border-amber-500/50 focus-within:ring-1 focus-within:ring-amber-500/20 transition-all">
 												<label className="relative w-6 h-6 rounded-md overflow-hidden shrink-0 cursor-pointer border border-white/10">
 													<div
@@ -384,7 +444,7 @@ export function BackgroundSettingsTab({
 
 								<div className="border-t border-dashed border-white/[0.08] pt-3">
 									<SliderControl
-										label="Angle"
+										label={tSettings("backgroundTab.angle", "Angle")}
 										value={gradientAngle}
 										defaultValue={135}
 										min={0}
@@ -407,7 +467,7 @@ export function BackgroundSettingsTab({
 
 								<div className="border-t border-dashed border-white/[0.08] pt-3">
 									<SliderControl
-										label="Noise"
+										label={tSettings("backgroundTab.noise", "Noise")}
 										value={gradientNoise}
 										defaultValue={0}
 										min={0}
@@ -437,7 +497,7 @@ export function BackgroundSettingsTab({
 												onWallpaperChange(presetToGradientCss(preset));
 											}}
 											className="aspect-square rounded-lg border-2 border-dashed border-white/20 flex items-center justify-center cursor-pointer transition-all duration-200 hover:border-[#F59E0B]/50 hover:bg-white/[0.04] text-slate-500 hover:text-[#F59E0B]"
-											title="Randomize gradient"
+											title={tSettings("backgroundTab.randomizeGradient", "Randomize gradient")}
 										>
 											<Shuffle className="w-3.5 h-3.5" />
 										</button>

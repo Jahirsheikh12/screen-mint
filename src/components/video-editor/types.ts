@@ -155,7 +155,15 @@ export interface CameraSpringSettings {
 	mass: number;
 }
 
-export type CursorPack = "classic" | "custom" | "macos";
+export type CursorPack =
+	| "classic"
+	| "custom"
+	| "macos"
+	| "inverted"
+	| "amber"
+	| "mint"
+	| "rose"
+	| "mono";
 
 export interface CursorVisualSettings {
 	size: number;
@@ -192,6 +200,11 @@ export const CURSOR_PACK_OPTIONS: { value: CursorPack; label: string }[] = [
 	{ value: "classic", label: "Classic" },
 	{ value: "custom", label: "Custom" },
 	{ value: "macos", label: "macOS" },
+	{ value: "inverted", label: "Inverted" },
+	{ value: "amber", label: "Amber" },
+	{ value: "mint", label: "Mint" },
+	{ value: "rose", label: "Rose" },
+	{ value: "mono", label: "Mono" },
 ];
 export const CURSOR_TYPE_VALUES: CursorType[] = [
 	"arrow",
@@ -225,13 +238,13 @@ export const DEFAULT_CURSOR_FOLLOW_TRACKING: CursorFollowTracking = {
 
 export const DEFAULT_CURSOR_SIZE = 3.0;
 export const DEFAULT_CURSOR_SMOOTHING = 0.67;
-export const DEFAULT_CURSOR_MOTION_BLUR = 0.35;
-export const DEFAULT_CURSOR_CLICK_BOUNCE = 2.5;
-export const DEFAULT_CURSOR_SWAY = 0.25;
+export const DEFAULT_CURSOR_MOTION_BLUR = 0.6;
+export const DEFAULT_CURSOR_CLICK_BOUNCE = 2;
+export const DEFAULT_CURSOR_SWAY = 0.4;
 export const DEFAULT_CURSOR_STYLE: CursorStyle = "default";
 export const DEFAULT_CURSOR_PACK: CursorPack = "classic";
 export const DEFAULT_CURSOR_TYPE_MODE: CursorTypeMode = "auto";
-export const DEFAULT_CURSOR_TILT = 0.125;
+export const DEFAULT_CURSOR_TILT = 0;
 export const DEFAULT_HIDE_CURSOR_WHEN_IDLE = false;
 export const DEFAULT_CURSOR_IDLE_HIDE_DELAY_MS = 1500;
 export const DEFAULT_SMOOTH_CURSOR_MOVEMENT = true;
@@ -250,6 +263,50 @@ export const DEFAULT_HIGH_QUALITY_SVG_CURSORS = true;
 export const DEFAULT_CURSOR_COLOR = "#FFFFFF";
 export const DEFAULT_CURSOR_OPACITY = 1.0;
 export const DEFAULT_CLICK_EFFECTS_ENABLED = false;
+
+export type CursorClickEffectStyle = "ripple" | "spotlight" | "echo";
+
+export const CURSOR_CLICK_EFFECT_STYLE_OPTIONS: Array<{
+	value: CursorClickEffectStyle;
+	label: string;
+	description: string;
+}> = [
+	{ value: "ripple", label: "Ripple", description: "Rings expand outward from each click." },
+	{ value: "spotlight", label: "Spotlight", description: "A soft glow blooms around the click." },
+	{ value: "echo", label: "Echo", description: "Two thin rings pulse out together." },
+];
+
+export interface CursorClickStyleSettings {
+	effect: CursorClickEffectStyle;
+	effectDurationMs: number;
+	bounceDurationMs: number;
+	/** Start the click graphic halfway through the bounce, so the press lands first. */
+	delayEffectUntilBounce: boolean;
+}
+
+export const CURSOR_CLICK_BOUNCE_DURATION_MIN_MS = 60;
+export const CURSOR_CLICK_BOUNCE_DURATION_MAX_MS = 500;
+
+export const DEFAULT_CURSOR_CLICK_STYLE: CursorClickStyleSettings = {
+	effect: "ripple",
+	effectDurationMs: 600,
+	bounceDurationMs: 350,
+	delayEffectUntilBounce: true,
+};
+
+/** Click timing before it became configurable (project v11 and older). */
+export const LEGACY_CURSOR_CLICK_STYLE: CursorClickStyleSettings = {
+	effect: "ripple",
+	effectDurationMs: 600,
+	bounceDurationMs: 140,
+	delayEffectUntilBounce: false,
+};
+
+/**
+ * Cursor motion blur used to scale velocity by 0.08 per unit; it now uses (fps / 60) · 2, i.e.
+ * 2/60 per unit. Older projects' saved amounts are multiplied by this to keep the same look.
+ */
+export const LEGACY_CURSOR_MOTION_BLUR_FACTOR = 0.08 / (2 / 60);
 export const DEFAULT_CLICK_HIGHLIGHT_COLOR = "#f59e0b";
 export const DEFAULT_CLICK_HIGHLIGHT_SIZE = 1.0;
 export const DEFAULT_CLICK_HIGHLIGHT_OPACITY = 0.5;
@@ -281,6 +338,20 @@ export const DEVICE_MOCKUP_OPTIONS: { value: DeviceMockup; label: string }[] = [
 ];
 
 export const DEFAULT_ZOOM_MOTION_BLUR = 0.35;
+
+export interface ZoomTemporalBlurSettings {
+	enabled: boolean;
+	/** Sub-frame samples per output frame; null = auto. */
+	sampleCount: number | null;
+	/** Portion of the frame interval the shutter is open (0–1); null = auto. */
+	shutterFraction: number | null;
+}
+
+export const DEFAULT_ZOOM_TEMPORAL_BLUR: ZoomTemporalBlurSettings = {
+	enabled: false,
+	sampleCount: null,
+	shutterFraction: null,
+};
 export const DEFAULT_PREVIEW_QUALITY: PreviewQuality = "medium";
 export const PREVIEW_QUALITY_OPTIONS: Array<{ value: PreviewQuality; label: string }> = [
 	{ value: "low", label: "Low" },
@@ -333,6 +404,20 @@ export const KEYBOARD_SHORTCUT_THEME_OPTIONS: Array<{
 	{ value: "glass", label: "Glass" },
 ];
 
+export interface PaddingSides {
+	top: number;
+	bottom: number;
+	left: number;
+	right: number;
+}
+
+/** Uniform padding (0–100) or per-side padding. */
+export type PaddingValue = number | PaddingSides;
+
+/** Linked padding max is 100; unlinked top/bottom may go to 250 for tall layouts. */
+export const PADDING_LINKED_MAX = 100;
+export const PADDING_UNLINKED_VERTICAL_MAX = 250;
+
 export interface TrimRegion {
 	id: string;
 	startMs: number;
@@ -354,11 +439,19 @@ export type ArrowDirection =
 export interface BlurData {
 	blurAmount: number;
 	shape: "rectangle" | "circle";
+	/** "solid" covers the area with an opaque color (censorship) instead of blurring. */
+	mode?: "blur" | "solid";
+	solidColor?: string;
+	/** Corner radius in px for rectangles. */
+	borderRadius?: number;
 }
 
 export const DEFAULT_BLUR_DATA: BlurData = {
 	blurAmount: 10,
 	shape: "rectangle",
+	mode: "blur",
+	solidColor: "#000000",
+	borderRadius: 8,
 };
 
 export interface FigureData {
@@ -502,7 +595,25 @@ export interface WebcamEffects {
 	noiseReduction: number;
 	faceAwareFraming: boolean;
 	subtleAvoidance: boolean;
+	/** Trim from each edge of the camera frame, as a fraction of its width/height. */
+	sourceCrop: WebcamSourceCrop;
 }
+
+export interface WebcamSourceCrop {
+	top: number;
+	right: number;
+	bottom: number;
+	left: number;
+}
+
+export const DEFAULT_WEBCAM_SOURCE_CROP: WebcamSourceCrop = {
+	top: 0,
+	right: 0,
+	bottom: 0,
+	left: 0,
+};
+/** Each side may trim at most this much so a usable frame always remains. */
+export const MAX_WEBCAM_SOURCE_CROP = 0.45;
 
 export interface WebcamHealthMetrics {
 	targetFps: number;
@@ -557,6 +668,7 @@ export const DEFAULT_WEBCAM_EFFECTS: WebcamEffects = {
 	noiseReduction: 0,
 	faceAwareFraming: false,
 	subtleAvoidance: true,
+	sourceCrop: DEFAULT_WEBCAM_SOURCE_CROP,
 };
 
 export const DEFAULT_WEBCAM_HEALTH_METRICS: WebcamHealthMetrics = {
@@ -762,6 +874,8 @@ export interface AudioRegion extends AudioRegionSource {
 	fadeInMs: number;
 	fadeOutMs: number;
 	loop: boolean;
+	/** Scale the clip so its peak sits just under full scale. */
+	normalize?: boolean;
 }
 
 export const DEFAULT_AUDIO_REGION_VOLUME = 0.18;
@@ -800,6 +914,90 @@ export const ZOOM_DEPTH_SCALES: Record<ZoomDepth, number> = {
 
 export const DEFAULT_ZOOM_DEPTH: ZoomDepth = 3;
 
+export type ZoomTransitionEasing = "signature" | "glide" | "smooth" | "snappy" | "linear";
+
+export const ZOOM_TRANSITION_EASING_OPTIONS: Array<{ value: ZoomTransitionEasing; label: string }> =
+	[
+		{ value: "signature", label: "Signature" },
+		{ value: "glide", label: "Glide" },
+		{ value: "smooth", label: "Smooth" },
+		{ value: "snappy", label: "Snappy" },
+		{ value: "linear", label: "Linear" },
+	];
+
+export interface ZoomTimingSettings {
+	zoomInDurationMs: number;
+	zoomInOverlapMs: number;
+	zoomOutDurationMs: number;
+	connectedZoomGapMs: number;
+	connectedZoomDurationMs: number;
+	zoomInEasing: ZoomTransitionEasing;
+	zoomOutEasing: ZoomTransitionEasing;
+	connectedZoomEasing: ZoomTransitionEasing;
+}
+
+export const DEFAULT_ZOOM_TIMING: ZoomTimingSettings = {
+	zoomInDurationMs: 1522.575,
+	zoomInOverlapMs: 500,
+	zoomOutDurationMs: 1015.05,
+	connectedZoomGapMs: 1500,
+	connectedZoomDurationMs: 1000,
+	zoomInEasing: "signature",
+	zoomOutEasing: "signature",
+	connectedZoomEasing: "glide",
+};
+
+/** Timing used before zoom timing became configurable (project v11 and older). */
+export const LEGACY_ZOOM_TIMING: ZoomTimingSettings = {
+	zoomInDurationMs: 700,
+	zoomInOverlapMs: 350,
+	zoomOutDurationMs: 1100,
+	connectedZoomGapMs: 1500,
+	connectedZoomDurationMs: 1000,
+	zoomInEasing: "smooth",
+	zoomOutEasing: "signature",
+	connectedZoomEasing: "glide",
+};
+
+export type MotionPresetId = "focused" | "smooth";
+
+export interface MotionPresetValues {
+	zoomInDurationMs: number;
+	zoomOutDurationMs: number;
+	cursorSize: number;
+	cursorSmoothing: number;
+	cursorClickBounce: number;
+	cursorClickBounceDurationMs: number;
+	cursorSpringStiffnessMultiplier: number;
+	cursorSpringDampingMultiplier: number;
+	cursorSpringMassMultiplier: number;
+}
+
+const SHARED_MOTION_PRESET_VALUES = {
+	cursorSize: 2.5,
+	cursorSmoothing: 0.67,
+	cursorClickBounce: 2,
+	cursorClickBounceDurationMs: 350,
+	cursorSpringMassMultiplier: 1.29,
+};
+
+export const MOTION_PRESETS: Record<MotionPresetId, MotionPresetValues> = {
+	focused: {
+		...SHARED_MOTION_PRESET_VALUES,
+		zoomInDurationMs: 200,
+		zoomOutDurationMs: 200,
+		cursorSpringStiffnessMultiplier: 1.35,
+		cursorSpringDampingMultiplier: 0.79,
+	},
+	smooth: {
+		...SHARED_MOTION_PRESET_VALUES,
+		zoomInDurationMs: DEFAULT_ZOOM_TIMING.zoomInDurationMs,
+		zoomOutDurationMs: DEFAULT_ZOOM_TIMING.zoomOutDurationMs,
+		cursorSpringStiffnessMultiplier: 0.92,
+		cursorSpringDampingMultiplier: 1.36,
+	},
+};
+
 // ── Captions ──
 
 export type CaptionStylePreset = "classic" | "boxed" | "karaoke" | "outline" | "neon" | "minimal";
@@ -808,6 +1006,7 @@ export type CaptionAnimationMode =
 	| "active-word"
 	| "fade"
 	| "pop"
+	| "rise"
 	| "typewriter"
 	| "karaoke-fill";
 export type CaptionBackend = "whisper.cpp" | "apple-speech";
@@ -821,6 +1020,7 @@ export const CAPTION_ANIMATION_MODES: CaptionAnimationMode[] = [
 	"active-word",
 	"fade",
 	"pop",
+	"rise",
 	"typewriter",
 	"karaoke-fill",
 ];
@@ -881,6 +1081,8 @@ export interface CaptionSettings {
 	maxLines: number;
 	maxWordsPerLine: number;
 	safeAreaInset: number;
+	/** Widest a caption block may get, as % of the frame width (40–95). */
+	maxWidthPercent: number;
 	showTranscriptPanel: boolean;
 }
 
@@ -927,6 +1129,9 @@ export interface CaptionModelStatus {
 	availableBackends: CaptionBackend[];
 	recommendedBackend: CaptionBackend;
 	backendMessages: Partial<Record<CaptionBackend, string>>;
+	/** User-chosen whisper.cpp model / program that replace the downloaded ones. */
+	customModelPath?: string | null;
+	customExecutablePath?: string | null;
 }
 
 export interface CaptionGenerationResult {
@@ -1049,6 +1254,7 @@ export const DEFAULT_CAPTION_SETTINGS: CaptionSettings = {
 	maxLines: 2,
 	maxWordsPerLine: 6,
 	safeAreaInset: 8,
+	maxWidthPercent: 85,
 	showTranscriptPanel: true,
 };
 

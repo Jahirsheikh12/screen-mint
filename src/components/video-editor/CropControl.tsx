@@ -272,17 +272,19 @@ export function CropControl({
 	const cropPixelHeight = displayCropRegion.height * 100;
 	const isVideoPortrait = videoAspectRatio < 1;
 	const maxContainerWidth = isVideoPortrait ? "40vw" : "75vw";
-	const maxContainerHeight = "75vh";
+	// Height left inside the crop dialog after its header, footer and padding; the frame is sized
+	// so its height fits, keeping the video's aspect ratio (a height cap alone would stretch it).
+	const fitWidth = `min(100%, calc((90vh - 300px) * ${videoAspectRatio}))`;
 
 	return (
-		<div className="w-full p-8">
+		<div className="w-full p-4 sm:p-8">
 			<div
 				ref={containerRef}
-				className="relative w-full bg-black rounded-lg overflow-visible cursor-default select-none shadow-2xl"
+				className="relative bg-black rounded-lg overflow-visible cursor-default select-none shadow-2xl"
 				style={{
 					aspectRatio: videoAspectRatio,
+					width: fitWidth,
 					maxWidth: maxContainerWidth,
-					maxHeight: maxContainerHeight,
 					margin: "0 auto",
 				}}
 				onPointerMove={handlePointerMove}

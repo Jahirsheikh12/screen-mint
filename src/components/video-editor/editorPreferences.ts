@@ -1,5 +1,18 @@
-import type { ExportQuality, GifSizePreset } from "@/lib/exporter";
-import { mapLegacyExportQualityToVideoSettings, mapLegacyGifSizePreset } from "@/lib/exporter";
+import type {
+	ExportFormat,
+	ExportQuality,
+	GifSizePreset,
+	QuickGifSettings,
+	QuickVideoSettings,
+} from "@/lib/exporter";
+import {
+	DEFAULT_QUICK_GIF_SETTINGS,
+	DEFAULT_QUICK_VIDEO_SETTINGS,
+	mapLegacyExportQualityToVideoSettings,
+	mapLegacyGifSizePreset,
+	normalizeQuickGifSettings,
+	normalizeQuickVideoSettings,
+} from "@/lib/exporter";
 import { normalizeProjectEditor, type ProjectEditorState } from "./projectPersistence";
 import {
 	DEFAULT_PREVIEW_QUALITY,
@@ -18,7 +31,9 @@ type PersistedEditorControls = Pick<
 	| "frameShadowBlur"
 	| "backgroundBlur"
 	| "zoomMotionBlur"
+	| "zoomTemporalBlur"
 	| "connectZooms"
+	| "zoomTiming"
 	| "showCursor"
 	| "loopCursor"
 	| "cursorSize"
@@ -43,6 +58,7 @@ type PersistedEditorControls = Pick<
 	| "clickHighlightColor"
 	| "clickHighlightSize"
 	| "clickHighlightOpacity"
+	| "cursorClickStyle"
 	| "cursorTrailLength"
 	| "cursorTrailOpacity"
 	| "showKeyboardShortcuts"
@@ -59,6 +75,7 @@ type PersistedEditorControls = Pick<
 	| "frameBorderOpacity"
 	| "borderRadius"
 	| "padding"
+	| "paddingSides"
 	| "cropRegion"
 	| "aspectRatio"
 	| "webcamRegion"
@@ -83,8 +100,31 @@ export interface EditorPreset {
 	controls: PersistedEditorControls;
 }
 
+/** Last choices made in the Export menu; remembered across sessions like preview quality. */
+export interface QuickExportPreferences {
+	format: ExportFormat;
+	video: QuickVideoSettings;
+	gif: QuickGifSettings;
+}
+
+export const DEFAULT_QUICK_EXPORT_PREFERENCES: QuickExportPreferences = {
+	format: "mp4",
+	video: DEFAULT_QUICK_VIDEO_SETTINGS,
+	gif: DEFAULT_QUICK_GIF_SETTINGS,
+};
+
+export function normalizeQuickExportPreferences(raw: unknown): QuickExportPreferences {
+	const value = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+	return {
+		format: value.format === "gif" ? "gif" : "mp4",
+		video: normalizeQuickVideoSettings(value.video),
+		gif: normalizeQuickGifSettings(value.gif),
+	};
+}
+
 export interface EditorPreferences extends PersistedEditorControls {
 	previewQuality: PreviewQuality;
+	quickExport: QuickExportPreferences;
 	customAspectWidth: string;
 	customAspectHeight: string;
 	customWallpapers: string[];
@@ -113,7 +153,9 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	frameShadowBlur: DEFAULT_EDITOR_CONTROLS.frameShadowBlur,
 	backgroundBlur: DEFAULT_EDITOR_CONTROLS.backgroundBlur,
 	zoomMotionBlur: DEFAULT_EDITOR_CONTROLS.zoomMotionBlur,
+	zoomTemporalBlur: DEFAULT_EDITOR_CONTROLS.zoomTemporalBlur,
 	connectZooms: DEFAULT_EDITOR_CONTROLS.connectZooms,
+	zoomTiming: DEFAULT_EDITOR_CONTROLS.zoomTiming,
 	showCursor: DEFAULT_EDITOR_CONTROLS.showCursor,
 	loopCursor: DEFAULT_EDITOR_CONTROLS.loopCursor,
 	cursorSize: DEFAULT_EDITOR_CONTROLS.cursorSize,
@@ -138,6 +180,7 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	clickHighlightColor: DEFAULT_EDITOR_CONTROLS.clickHighlightColor,
 	clickHighlightSize: DEFAULT_EDITOR_CONTROLS.clickHighlightSize,
 	clickHighlightOpacity: DEFAULT_EDITOR_CONTROLS.clickHighlightOpacity,
+	cursorClickStyle: DEFAULT_EDITOR_CONTROLS.cursorClickStyle,
 	cursorTrailLength: DEFAULT_EDITOR_CONTROLS.cursorTrailLength,
 	cursorTrailOpacity: DEFAULT_EDITOR_CONTROLS.cursorTrailOpacity,
 	showKeyboardShortcuts: DEFAULT_EDITOR_CONTROLS.showKeyboardShortcuts,
@@ -154,6 +197,7 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	frameBorderOpacity: DEFAULT_EDITOR_CONTROLS.frameBorderOpacity,
 	borderRadius: DEFAULT_EDITOR_CONTROLS.borderRadius,
 	padding: DEFAULT_EDITOR_CONTROLS.padding,
+	paddingSides: DEFAULT_EDITOR_CONTROLS.paddingSides,
 	cropRegion: DEFAULT_EDITOR_CONTROLS.cropRegion,
 	aspectRatio: DEFAULT_EDITOR_CONTROLS.aspectRatio,
 	webcamRegion: DEFAULT_EDITOR_CONTROLS.webcamRegion,
@@ -167,6 +211,7 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	videoExportSettings: DEFAULT_EDITOR_CONTROLS.videoExportSettings,
 	gifExportSettings: DEFAULT_EDITOR_CONTROLS.gifExportSettings,
 	previewQuality: DEFAULT_PREVIEW_QUALITY,
+	quickExport: DEFAULT_QUICK_EXPORT_PREFERENCES,
 	customAspectWidth: "16",
 	customAspectHeight: "9",
 	customWallpapers: [],
@@ -278,7 +323,9 @@ function normalizeEditorControls(
 		frameShadowBlur: raw.frameShadowBlur ?? fallback.frameShadowBlur,
 		backgroundBlur: raw.backgroundBlur ?? fallback.backgroundBlur,
 		zoomMotionBlur: raw.zoomMotionBlur ?? fallback.zoomMotionBlur,
+		zoomTemporalBlur: raw.zoomTemporalBlur ?? fallback.zoomTemporalBlur,
 		connectZooms: raw.connectZooms ?? fallback.connectZooms,
+		zoomTiming: raw.zoomTiming ?? fallback.zoomTiming,
 		showCursor: raw.showCursor ?? fallback.showCursor,
 		loopCursor: raw.loopCursor ?? fallback.loopCursor,
 		cursorSize: raw.cursorSize ?? fallback.cursorSize,
@@ -303,6 +350,7 @@ function normalizeEditorControls(
 		clickHighlightColor: raw.clickHighlightColor ?? fallback.clickHighlightColor,
 		clickHighlightSize: raw.clickHighlightSize ?? fallback.clickHighlightSize,
 		clickHighlightOpacity: raw.clickHighlightOpacity ?? fallback.clickHighlightOpacity,
+		cursorClickStyle: raw.cursorClickStyle ?? fallback.cursorClickStyle,
 		cursorTrailLength: raw.cursorTrailLength ?? fallback.cursorTrailLength,
 		cursorTrailOpacity: raw.cursorTrailOpacity ?? fallback.cursorTrailOpacity,
 		showKeyboardShortcuts: raw.showKeyboardShortcuts ?? fallback.showKeyboardShortcuts,
@@ -320,6 +368,7 @@ function normalizeEditorControls(
 		frameBorderOpacity: raw.frameBorderOpacity ?? fallback.frameBorderOpacity,
 		borderRadius: raw.borderRadius ?? fallback.borderRadius,
 		padding: candidatePadding,
+		paddingSides: raw.paddingSides ?? fallback.paddingSides,
 		cropRegion: normalizeCropRegion(raw.cropRegion, fallback.cropRegion),
 		aspectRatio: candidateAspectRatio,
 		webcamRegion: raw.webcamRegion ?? fallback.webcamRegion,
@@ -360,7 +409,9 @@ function normalizeEditorControls(
 		frameShadowBlur: normalized.frameShadowBlur,
 		backgroundBlur: normalized.backgroundBlur,
 		zoomMotionBlur: normalized.zoomMotionBlur,
+		zoomTemporalBlur: normalized.zoomTemporalBlur,
 		connectZooms: normalized.connectZooms,
+		zoomTiming: normalized.zoomTiming,
 		showCursor: normalized.showCursor,
 		loopCursor: normalized.loopCursor,
 		cursorSize: normalized.cursorSize,
@@ -385,6 +436,7 @@ function normalizeEditorControls(
 		clickHighlightColor: normalized.clickHighlightColor,
 		clickHighlightSize: normalized.clickHighlightSize,
 		clickHighlightOpacity: normalized.clickHighlightOpacity,
+		cursorClickStyle: normalized.cursorClickStyle,
 		cursorTrailLength: normalized.cursorTrailLength,
 		cursorTrailOpacity: normalized.cursorTrailOpacity,
 		showKeyboardShortcuts: normalized.showKeyboardShortcuts,
@@ -401,6 +453,7 @@ function normalizeEditorControls(
 		frameBorderOpacity: normalized.frameBorderOpacity,
 		borderRadius: normalized.borderRadius,
 		padding: normalized.padding,
+		paddingSides: normalized.paddingSides,
 		cropRegion: normalized.cropRegion,
 		aspectRatio: normalized.aspectRatio,
 		webcamRegion: normalized.webcamRegion,
@@ -429,6 +482,7 @@ export function normalizeEditorPreferences(
 	return {
 		...normalizeEditorControls(raw, fallback),
 		previewQuality: normalizePreviewQuality(raw.previewQuality, fallback.previewQuality),
+		quickExport: normalizeQuickExportPreferences(raw.quickExport ?? fallback.quickExport),
 		customAspectWidth: normalizePositiveIntegerString(
 			raw.customAspectWidth,
 			fallback.customAspectWidth,

@@ -3,6 +3,40 @@
 @tailwind utilities;
 
 @layer base {
+	/* UI ink and greys used through Tailwind's `white`, `black` and `slate` (tailwind.config.cjs).
+	   Dark values equal Tailwind's defaults; light mode swaps them below. */
+	:root {
+		--sm-white: 255 255 255;
+		--sm-black: 0 0 0;
+		--sm-slate-50: 248 250 252;
+		--sm-slate-100: 241 245 249;
+		--sm-slate-200: 226 232 240;
+		--sm-slate-300: 203 213 225;
+		--sm-slate-400: 148 163 184;
+		--sm-slate-500: 100 116 139;
+		--sm-slate-600: 71 85 105;
+		--sm-slate-700: 51 65 85;
+		--sm-slate-800: 30 41 59;
+		--sm-slate-900: 15 23 42;
+		--sm-slate-950: 2 6 23;
+	}
+	[data-theme="light"] {
+		--sm-white: 24 24 27;
+		/* Dark wells, overlays and shadows become soft slate tints on light surfaces. */
+		--sm-black: 148 163 184;
+		--sm-slate-50: 2 6 23;
+		--sm-slate-100: 15 23 42;
+		--sm-slate-200: 30 41 59;
+		--sm-slate-300: 51 65 85;
+		--sm-slate-400: 71 85 105;
+		--sm-slate-500: 100 116 139;
+		--sm-slate-600: 148 163 184;
+		--sm-slate-700: 203 213 225;
+		--sm-slate-800: 226 232 240;
+		--sm-slate-900: 241 245 249;
+		--sm-slate-950: 248 250 252;
+	}
+
 	:root {
 		--brand-accent: #f59e0b;
 		--brand-accent-rgb: 245, 158, 11;
@@ -200,4 +234,47 @@
 	input[type="range"]::-moz-range-thumb:active {
 		transform: scale(1.25);
 	}
+}
+
+/* Light theme: fixed dark surfaces written as arbitrary hex classes keep their exact dark look
+   and are remapped here. New UI should prefer `white`/`slate` utilities, which swap on their own. */
+[data-theme="light"]
+	:is(.bg-\[\#090b0d\], .bg-\[\#0a0a0b\], .bg-\[\#0a0f0d\], .bg-\[\#0A0F0D\], .bg-\[\#0c0c0f\]) {
+	background-color: #f4f4f2;
+}
+[data-theme="light"] :is(.bg-\[\#0A0F0D\]\/90, .bg-\[\#0B0F0D\]\/90) {
+	background-color: rgb(244 244 242 / 0.9);
+}
+[data-theme="light"] .bg-\[\#0A0F0D\]\/80 {
+	background-color: rgb(244 244 242 / 0.8);
+}
+[data-theme="light"]
+	:is(
+		.bg-\[\#111114\],
+		.bg-\[\#111316\],
+		.bg-\[\#111715\],
+		.bg-\[\#121214\],
+		.bg-\[\#141416\],
+		.bg-\[\#1a1a1a\],
+		.bg-\[\#1a1a1c\],
+		.bg-\[\#1a1a1f\],
+		.bg-\[\#1c1c1e\],
+		.bg-\[\#23232a\]
+	) {
+	background-color: #ffffff;
+}
+[data-theme="light"] :is(.bg-\[\#161618\]\/80, .bg-\[\#161622\]\/80, .bg-\[\#1a1815\]\/80) {
+	background-color: rgb(255 255 255 / 0.8);
+}
+[data-theme="light"] :is(.border-\[\#090b0d\], .border-\[\#27272a\]\/80) {
+	border-color: rgb(0 0 0 / 0.1);
+}
+/* Pale amber text reads on dark only; use the deep amber on light surfaces. */
+[data-theme="light"]
+	:is(.text-\[\#fde68a\], .text-\[\#FCD34D\]\/88, .text-\[\#fbbf24\], .text-\[\#FBBF24\]) {
+	color: #b45309;
+}
+[data-theme="light"] input[type="range"]::-webkit-slider-thumb {
+	border-color: rgb(0 0 0 / 0.25);
+	box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
 }

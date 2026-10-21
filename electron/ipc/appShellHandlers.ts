@@ -1,5 +1,6 @@
-import { type BrowserWindow, ipcMain, shell } from "electron";
+import { app, type BrowserWindow, ipcMain, shell } from "electron";
 import { IPC_CHANNELS } from "../../src/electron-ipc/contracts";
+import { createAnnouncementService } from "../announcements";
 
 type RegisterAppShellIpcHandlersOptions = {
 	createEditorWindow: () => void;
@@ -30,6 +31,12 @@ export function registerAppShellIpcHandlers({
 	ipcMain.handle(IPC_CHANNELS.windows.switchToHud, () => {
 		createHudOverlay();
 	});
+
+	const announcements = createAnnouncementService(app.getPath("userData"));
+	ipcMain.handle(IPC_CHANNELS.announcements.get, () => announcements.getAnnouncements());
+	ipcMain.handle(IPC_CHANNELS.announcements.dismiss, (_, id: unknown) =>
+		typeof id === "string" && id ? announcements.dismiss(id) : undefined,
+	);
 
 	ipcMain.handle(IPC_CHANNELS.files.openExternalUrl, async (_, url: string) => {
 		try {

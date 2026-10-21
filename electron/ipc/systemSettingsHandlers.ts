@@ -25,6 +25,35 @@ const nodeRequire = createRequire(import.meta.url);
 const SHORTCUTS_FILE = path.join(app.getPath("userData"), "shortcuts.json");
 const COUNTDOWN_SETTINGS_FILE = path.join(app.getPath("userData"), "countdown-settings.json");
 const HUD_SETTINGS_FILE = path.join(app.getPath("userData"), "hud-overlay-settings-full.json");
+// Present only while the app has hidden the desktop icons, so a crash mid-recording
+// still restores them on the next launch, and icons the user hid themselves are left alone.
+const DESKTOP_ICONS_MARKER_FILE = path.join(app.getPath("userData"), "desktop-icons-hidden");
+let dockHiddenByApp = false;
+
+async function setFinderDesktopVisible(visible: boolean) {
+	await execFileAsync("defaults", [
+		"write",
+		"com.apple.finder",
+		"CreateDesktop",
+		"-bool",
+		visible ? "true" : "false",
+	]);
+	await execFileAsync("killall", ["Finder"]);
+}
+
+async function isFinderDesktopVisible(): Promise<boolean> {
+	try {
+		const { stdout } = await execFileAsync("defaults", [
+			"read",
+			"com.apple.finder",
+			"CreateDesktop",
+		]);
+		return !/^(0|false|no)$/i.test(stdout.trim());
+	} catch {
+		// Key not set: Finder shows desktop icons by default.
+		return true;
+	}
+}
 
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
 let countdownCancelled = false;
@@ -65,6 +94,14 @@ export function registerSystemSettingsIpcHandlers() {
 
 	ipcMain.handle(IPC_CHANNELS.updater.updateLaterForSession, async () => {
 		return await getScreenMintUpdater().updateLaterForSession();
+	});
+
+	ipcMain.handle(IPC_CHANNELS.updater.setExperimentalUpdates, async (_, enabled: unknown) => {
+		return await getScreenMintUpdater().setExperimentalUpdates(enabled === true);
+	});
+
+	ipcMain.handle(IPC_CHANNELS.updater.skipVersion, async () => {
+		return await getScreenMintUpdater().skipVersion();
 	});
 
 	ipcMain.handle(IPC_CHANNELS.updater.dismissWhatsNew, async () => {
@@ -122,7 +159,7 @@ export function registerSystemSettingsIpcHandlers() {
 		}
 	});
 
-	ipcMain.handle(IPC_CHANNELS.countdown.start, async (_, seconds: number) => {
+	ipcMain.handle(IPC_CHANNELS.countdown.start, async (_, seconds: number, displayId?: number) => {
 		if (countdownInProgress) {
 			return { success: false, error: "Countdown already in progress" };
 		}
@@ -130,7 +167,9 @@ export function registerSystemSettingsIpcHandlers() {
 		countdownInProgress = true;
 		countdownCancelled = false;
 
-		const countdownWin = createCountdownWindow();
+		const countdownWin = createCountdownWindow(
+			typeof displayId === "number" && Number.isFinite(displayId) ? displayId : undefined,
+		);
 
 		await new Promise<void>((resolve) => {
 			countdownWin.webContents.once("did-finish-load", () => resolve());
@@ -261,14 +300,11 @@ export function registerSystemSettingsIpcHandlers() {
 			return { success: false, error: "Only supported on macOS" };
 		}
 		try {
-			await execFileAsync("defaults", [
-				"write",
-				"com.apple.finder",
-				"CreateDesktop",
-				"-bool",
-				"false",
-			]);
-			await execFileAsync("killall", ["Finder"]);
+			if (!(await isFinderDesktopVisible())) {
+				return { success: true };
+			}
+			await fs.writeFile(DESKTOP_ICONS_MARKER_FILE, "1");
+			await setFinderDesktopVisible(false);
 			return { success: true };
 		} catch (error) {
 			return { success: false, error: String(error) };
@@ -280,14 +316,16 @@ export function registerSystemSettingsIpcHandlers() {
 			return { success: false, error: "Only supported on macOS" };
 		}
 		try {
-			await execFileAsync("defaults", [
-				"write",
-				"com.apple.finder",
-				"CreateDesktop",
-				"-bool",
-				"true",
-			]);
-			await execFileAsync("killall", ["Finder"]);
+			// Only undo what this app did; never restart Finder otherwise.
+			const hiddenByApp = await fs
+				.access(DESKTOP_ICONS_MARKER_FILE)
+				.then(() => true)
+				.catch(() => false);
+			if (!hiddenByApp) {
+				return { success: true };
+			}
+			await setFinderDesktopVisible(true);
+			await fs.rm(DESKTOP_ICONS_MARKER_FILE, { force: true });
 			return { success: true };
 		} catch (error) {
 			return { success: false, error: String(error) };
@@ -295,15 +333,17 @@ export function registerSystemSettingsIpcHandlers() {
 	});
 
 	ipcMain.handle(IPC_CHANNELS.system.hideDockIcon, () => {
-		if (process.platform === "darwin") {
-			app.dock?.hide?.();
+		if (process.platform === "darwin" && app.dock?.isVisible?.()) {
+			app.dock.hide();
+			dockHiddenByApp = true;
 		}
 		return { success: true };
 	});
 
 	ipcMain.handle(IPC_CHANNELS.system.showDockIcon, () => {
-		if (process.platform === "darwin") {
+		if (process.platform === "darwin" && dockHiddenByApp) {
 			void app.dock?.show?.();
+			dockHiddenByApp = false;
 		}
 		return { success: true };
 	});

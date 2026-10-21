@@ -6,6 +6,7 @@ import {
 	mergeWebcamRegion,
 	resolveCameraLayoutState,
 	resolveWebcamRenderModel,
+	resolveWebcamSourceCrop,
 	scaleWebcamRegion,
 } from "./cameraLayouts";
 import {
@@ -972,5 +973,33 @@ describe("cameraLayouts", () => {
 		expect(delayedFirstZoomFrame.motion.smoothedZoomProgress).toBeLessThan(
 			delayedFirstZoomFrame.motion.targetZoomProgress,
 		);
+	});
+});
+
+describe("resolveWebcamSourceCrop", () => {
+	const source = { width: 1920, height: 1080 };
+	const square = { x: 0, y: 0, width: 200, height: 200 };
+
+	it("cover-fits the whole frame when nothing is trimmed", () => {
+		expect(resolveWebcamSourceCrop(source, square)).toEqual({
+			x: 420,
+			y: 0,
+			width: 1080,
+			height: 1080,
+		});
+		expect(
+			resolveWebcamSourceCrop(source, square, { top: 0, right: 0, bottom: 0, left: 0 }),
+		).toEqual(resolveWebcamSourceCrop(source, square));
+	});
+
+	it("cover-fits inside the trimmed frame", () => {
+		const crop = resolveWebcamSourceCrop(source, square, {
+			top: 0.1,
+			right: 0.5,
+			bottom: 0.1,
+			left: 0,
+		});
+		// Trimmed frame is 960x864 at (0,108); the square takes its full width-limited centre.
+		expect(crop).toEqual({ x: 48, y: 108, width: 864, height: 864 });
 	});
 });

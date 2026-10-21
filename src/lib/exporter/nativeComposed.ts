@@ -2,10 +2,11 @@ import type {
 	AnnotationRegion,
 	CaptionRegion,
 	CaptionSettings,
-	ZoomDepth,
+	PaddingValue,
 } from "@/components/video-editor/types";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import type { ExportV2EncoderCandidate, ExportV2StartRequest } from "./exportV2";
+import { resolvePaddedArea } from "./paddedArea";
 
 export interface NativeComposedCompileResult {
 	supported: boolean;
@@ -13,15 +14,6 @@ export interface NativeComposedCompileResult {
 	fallbackReason?: string;
 	featureReport: string[];
 }
-
-const ZOOM_DEPTH_SCALES: Record<ZoomDepth, number> = {
-	1: 1.25,
-	2: 1.5,
-	3: 1.8,
-	4: 2.2,
-	5: 3.5,
-	6: 5,
-};
 
 const DEFAULT_CROP = { x: 0, y: 0, width: 1, height: 1 };
 
@@ -98,10 +90,7 @@ export function compileNativeComposedExport(
 		return unsupported(background.reason, featureReport);
 	}
 
-	const zoom = resolveZoomExpression(
-		composition.zoomRegions ?? [],
-		Boolean(request.trimRegions?.length),
-	);
+	const zoom = resolveZoomExpression(composition.zoomRegions ?? []);
 	if (!zoom.supported) {
 		return unsupported(zoom.reason, featureReport);
 	}
@@ -221,7 +210,7 @@ function buildEncoderArgs(request: ExportV2StartRequest, encoder: ExportV2Encode
 
 	args.push(
 		"-g",
-		String(Math.max(1, Math.round(request.frameRate * 2))),
+		String(Math.max(1, Math.round(request.frameRate * (request.keyframeIntervalSeconds ?? 2)))),
 		"-pix_fmt",
 		"yuv420p",
 		"-colorspace",
@@ -275,36 +264,15 @@ function resolveZoomExpression(
 	zoomRegions: ExportV2StartRequest["compositionPayload"] extends infer _T
 		? NonNullable<NonNullable<ExportV2StartRequest["compositionPayload"]>["zoomRegions"]>
 		: never,
-	hasTrim: boolean,
 ) {
-	if (zoomRegions.length === 0) {
-		return { supported: true as const, expression: "1", focusX: 0.5, focusY: 0.5 };
-	}
-	if (hasTrim) {
+	if (zoomRegions.length > 0) {
+		// The filtergraph can only step between scales; eased zoom-in/out needs the renderer.
 		return {
 			supported: false as const,
-			reason: "Zoom with trimmed timelines requires the renderer path.",
+			reason: "Animated zoom transitions require the renderer path.",
 		};
 	}
-	if (zoomRegions.length > 1) {
-		return {
-			supported: false as const,
-			reason: "Multiple or connected zoom regions require the renderer path.",
-		};
-	}
-	const zoom = zoomRegions[0];
-	if (zoom.mode && zoom.mode !== "static") {
-		return { supported: false as const, reason: "Cursor-follow zoom requires the renderer path." };
-	}
-	const scale = ZOOM_DEPTH_SCALES[zoom.depth] ?? 1.8;
-	const startSec = Math.max(0, zoom.startMs / 1000);
-	const endSec = Math.max(startSec, zoom.endMs / 1000);
-	return {
-		supported: true as const,
-		expression: `if(between(t\\,${startSec.toFixed(3)}\\,${endSec.toFixed(3)})\\,${scale}\\,1)`,
-		focusX: clamp01(zoom.focus.cx),
-		focusY: clamp01(zoom.focus.cy),
-	};
+	return { supported: true as const, expression: "1", focusX: 0.5, focusY: 0.5 };
 }
 
 function compileCaptionFilters(
@@ -422,7 +390,7 @@ function resolveNativeLayout(params: {
 	sourceWidth: number;
 	sourceHeight: number;
 	cropRegion?: { x: number; y: number; width: number; height: number };
-	padding?: number;
+	padding?: PaddingValue;
 	aspectRatio?: AspectRatio;
 }) {
 	const crop = normalizeCrop(params.cropRegion);
@@ -430,17 +398,12 @@ function resolveNativeLayout(params: {
 	const cropHeight = params.sourceHeight * crop.height;
 	if (cropWidth <= 0 || cropHeight <= 0) return null;
 	const croppedAspect = cropWidth / cropHeight;
-	const paddingScale = 1 - ((params.padding ?? 0) / 100) * 0.4;
-	const availableWidth = params.outputWidth * paddingScale;
-	const availableHeight = params.outputHeight * paddingScale;
+	const area = resolvePaddedArea(params.outputWidth, params.outputHeight, params.padding);
 	const targetAspect = getAspectRatioValue(params.aspectRatio, croppedAspect);
-	const frameSize = fitRectWithin(availableWidth, availableHeight, targetAspect);
-	const frameRect = centerRect(
-		params.outputWidth,
-		params.outputHeight,
-		frameSize.width,
-		frameSize.height,
-	);
+	const frameSize = fitRectWithin(area.width, area.height, targetAspect);
+	const frameRect = centerRect(area.width, area.height, frameSize.width, frameSize.height);
+	frameRect.x += area.x;
+	frameRect.y += area.y;
 	const contentSize = fitRectWithin(frameRect.width, frameRect.height, croppedAspect);
 	const maskRect = centerRect(
 		frameRect.width,

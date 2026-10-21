@@ -43,6 +43,7 @@ export interface UpdaterState {
 	whatsNewReleaseName: string | null;
 	whatsNewReleaseNotes: string | null;
 	busy: AppBusyState;
+	experimentalUpdatesEnabled: boolean;
 }
 
 export interface UpdaterBusyStateUpdate extends Partial<AppBusyState> {}

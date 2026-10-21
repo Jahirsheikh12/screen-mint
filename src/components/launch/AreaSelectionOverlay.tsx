@@ -12,6 +12,9 @@ const BRACKET_LEN = 16;
 const BRACKET_W = 2.5;
 const EDGE_BAR_LEN = 24;
 const DEAD_ZONE = 5;
+// The outline is drawn just outside the area, so it never shows up in the recording
+// (needed where the overlay can't be hidden from capture, e.g. Linux).
+const OUTLINE_GAP = 3;
 
 function clamp(v: number, lo: number, hi: number) {
 	return Math.min(hi, Math.max(lo, v));
@@ -53,6 +56,20 @@ const ASPECT_PRESETS: { id: string; label: string; ratio: number | null }[] = [
 
 type Phase = "selecting" | "locked";
 
+/** The display this overlay window was opened on (set by the main process). */
+function getOverlayDisplayId(fallback: unknown): number {
+	const fromUrl = Number(new URLSearchParams(window.location.search).get("displayId"));
+	return Number.isFinite(fromUrl) && fromUrl > 0 ? fromUrl : Number(fallback);
+}
+
+/**
+ * Screen position of the overlay's top-left. Normally the display origin, but read from the
+ * window itself so the outline always matches what gets recorded.
+ */
+function getOverlayOrigin() {
+	return { x: window.screenX, y: window.screenY };
+}
+
 export function AreaSelectionOverlay() {
 	const t = useScopedT("launch");
 	const [rect, setRect] = useState<Rect>({ x: 120, y: 120, width: 800, height: 450 });
@@ -67,6 +84,27 @@ export function AreaSelectionOverlay() {
 			setPhase(nextPhase);
 			if (nextPhase === "selecting") {
 				setDrag(IDLE);
+				// The window is reused; pick up an area chosen in the HUD meanwhile (e.g. a preset).
+				void window.electronAPI.getSelectedArea().then((result) => {
+					const area = result.success ? result.area : null;
+					if (!area) return;
+					setDisplay((current) => {
+						if (current && area.displayId === current.id) {
+							setRect(
+								clampRect(
+									{
+										x: area.bounds.x - getOverlayOrigin().x,
+										y: area.bounds.y - getOverlayOrigin().y,
+										width: area.bounds.width,
+										height: area.bounds.height,
+									},
+									current,
+								),
+							);
+						}
+						return current;
+					});
+				});
 			}
 		});
 		return () => {
@@ -75,6 +113,8 @@ export function AreaSelectionOverlay() {
 	}, []);
 	const widthRef = useRef<HTMLInputElement>(null);
 	const heightRef = useRef<HTMLInputElement>(null);
+	const xRef = useRef<HTMLInputElement>(null);
+	const yRef = useRef<HTMLInputElement>(null);
 
 	// ── Initialise display info and restore existing area ─────────────────
 	useEffect(() => {
@@ -84,7 +124,7 @@ export function AreaSelectionOverlay() {
 			if (cancelled) return;
 			const source = await window.electronAPI.getSelectedSource();
 			if (cancelled) return;
-			const displayId = Number(source?.display_id);
+			const displayId = getOverlayDisplayId(source?.display_id);
 			const found =
 				info.success && Number.isFinite(displayId)
 					? (info.displays.find((d) => d.id === displayId) ?? null)
@@ -119,7 +159,7 @@ export function AreaSelectionOverlay() {
 			]);
 			if (cancelled) return;
 
-			const displayId = Number(source?.display_id);
+			const displayId = getOverlayDisplayId(source?.display_id);
 			const found =
 				info.success && Number.isFinite(displayId)
 					? (info.displays.find((d) => d.id === displayId) ?? null)
@@ -138,8 +178,8 @@ export function AreaSelectionOverlay() {
 				setRect(
 					clampRect(
 						{
-							x: existing.bounds.x - disp.x,
-							y: existing.bounds.y - disp.y,
+							x: existing.bounds.x - getOverlayOrigin().x,
+							y: existing.bounds.y - getOverlayOrigin().y,
 							width: existing.bounds.width,
 							height: existing.bounds.height,
 						},
@@ -228,13 +268,21 @@ export function AreaSelectionOverlay() {
 			}
 
 			if (drag.kind === "draw") {
+				let width = Math.abs(dx);
+				let height = Math.abs(dy);
+				const lockedRatio = aspectLock?.ratio ?? (shiftKey ? 16 / 9 : null);
+				if (lockedRatio) {
+					// Follow whichever direction the pointer moved further.
+					if (width / Math.max(1, height) > lockedRatio) height = Math.round(width / lockedRatio);
+					else width = Math.round(height * lockedRatio);
+				}
 				setRect(
 					clampRect(
 						{
-							x: Math.min(drag.ox, e.clientX),
-							y: Math.min(drag.oy, e.clientY),
-							width: Math.abs(dx),
-							height: Math.abs(dy),
+							x: dx < 0 ? drag.ox - width : drag.ox,
+							y: dy < 0 ? drag.oy - height : drag.oy,
+							width,
+							height,
 						},
 						display,
 					),
@@ -285,7 +333,11 @@ export function AreaSelectionOverlay() {
 
 	// ── Close / confirm ───────────────────────────────────────────────────
 	const closeOverlay = useCallback(() => {
-		void window.electronAPI.closeAreaOverlay();
+		void (async () => {
+			// Cancelling discards edits, including a size preset that was only being previewed.
+			await window.electronAPI.cancelAreaEdit();
+			await window.electronAPI.closeAreaOverlay();
+		})();
 	}, []);
 
 	const confirmSelection = useCallback(() => {
@@ -293,8 +345,8 @@ export function AreaSelectionOverlay() {
 		void (async () => {
 			const area = normalizeSelectedArea(
 				{
-					x: display.x + rect.x,
-					y: display.y + rect.y,
+					x: getOverlayOrigin().x + rect.x,
+					y: getOverlayOrigin().y + rect.y,
 					width: rect.width,
 					height: rect.height,
 				},
@@ -319,6 +371,7 @@ export function AreaSelectionOverlay() {
 				return;
 			}
 			if (!display || !e.key.startsWith("Arrow")) return;
+			if (e.target instanceof HTMLInputElement) return;
 
 			e.preventDefault();
 			const step = e.shiftKey ? 10 : 1;
@@ -329,7 +382,12 @@ export function AreaSelectionOverlay() {
 				ArrowDown: { dx: 0, dy: step },
 			};
 			const delta = deltas[e.key];
-			if (delta) {
+			if (delta && e.altKey) {
+				// Alt + arrows resize from the bottom-right corner.
+				setRect((r) =>
+					clampRect({ ...r, width: r.width + delta.dx, height: r.height + delta.dy }, display),
+				);
+			} else if (delta) {
 				setRect((r) => clampRect({ ...r, x: r.x + delta.dx, y: r.y + delta.dy }, display));
 			}
 		};
@@ -345,7 +403,15 @@ export function AreaSelectionOverlay() {
 		if (heightRef.current && document.activeElement !== heightRef.current) {
 			heightRef.current.value = String(Math.round(rect.height));
 		}
-	}, [rect.width, rect.height]);
+		// X/Y are shown relative to the display, even if the window sits below the menu bar.
+		const origin = getOverlayOrigin();
+		if (xRef.current && document.activeElement !== xRef.current) {
+			xRef.current.value = String(Math.round(rect.x + origin.x - (display?.x ?? origin.x)));
+		}
+		if (yRef.current && document.activeElement !== yRef.current) {
+			yRef.current.value = String(Math.round(rect.y + origin.y - (display?.y ?? origin.y)));
+		}
+	}, [rect.width, rect.height, rect.x, rect.y, display]);
 
 	// ── Apply manual size from inputs ─────────────────────────────────────
 	const applySize = useCallback(
@@ -353,18 +419,26 @@ export function AreaSelectionOverlay() {
 			if (!display) return;
 			const nw = clamp(Math.round(w), MIN_SIZE, display.width);
 			const nh = clamp(Math.round(h), MIN_SIZE, display.height);
+			// Resize around the current centre so the area stays where the user put it.
 			setRect((r) =>
 				clampRect(
 					{
-						...r,
 						width: nw,
 						height: nh,
-						x: Math.round((display.width - nw) / 2),
-						y: Math.round((display.height - nh) / 2),
+						x: Math.round(r.x + r.width / 2 - nw / 2),
+						y: Math.round(r.y + r.height / 2 - nh / 2),
 					},
 					display,
 				),
 			);
+		},
+		[display],
+	);
+
+	const applyPosition = useCallback(
+		(x: number, y: number) => {
+			if (!display) return;
+			setRect((r) => clampRect({ ...r, x: Math.round(x), y: Math.round(y) }, display));
 		},
 		[display],
 	);
@@ -401,16 +475,29 @@ export function AreaSelectionOverlay() {
 	);
 
 	const commitInput = useCallback(
-		(axis: "w" | "h") => {
-			const ref = axis === "w" ? widthRef : heightRef;
+		(axis: "w" | "h" | "x" | "y") => {
+			const ref = { w: widthRef, h: heightRef, x: xRef, y: yRef }[axis];
+			const origin = getOverlayOrigin();
+			const offsetX = origin.x - (display?.x ?? origin.x);
+			const offsetY = origin.y - (display?.y ?? origin.y);
+			const current = { w: rect.width, h: rect.height, x: rect.x + offsetX, y: rect.y + offsetY }[
+				axis
+			];
 			const val = Number.parseInt(ref.current?.value ?? "", 10);
-			if (Number.isFinite(val) && val > 0) {
-				applySize(axis === "w" ? val : rect.width, axis === "h" ? val : rect.height);
-			} else if (ref.current) {
-				ref.current.value = String(Math.round(axis === "w" ? rect.width : rect.height));
+			const valid = Number.isFinite(val) && (axis === "x" || axis === "y" ? val >= 0 : val > 0);
+			if (!valid) {
+				if (ref.current) ref.current.value = String(Math.round(current));
+				return;
 			}
+			if (axis === "x" || axis === "y") {
+				applyPosition(axis === "x" ? val - offsetX : rect.x, axis === "y" ? val - offsetY : rect.y);
+				return;
+			}
+			const ratio = aspectLock?.ratio;
+			if (axis === "w") applySize(val, ratio ? val / ratio : rect.height);
+			else applySize(ratio ? val * ratio : rect.width, val);
 		},
-		[applySize, rect.width, rect.height],
+		[applyPosition, applySize, aspectLock, display, rect.width, rect.height, rect.x, rect.y],
 	);
 
 	// ── Pointer-down handlers ─────────────────────────────────────────────
@@ -526,8 +613,18 @@ export function AreaSelectionOverlay() {
 	}, [rect.x, rect.y, rect.width, rect.height]);
 
 	// ── SVG corner bracket paths ──────────────────────────────────────────
+	const outline = useMemo(
+		() => ({
+			x: rect.x - OUTLINE_GAP,
+			y: rect.y - OUTLINE_GAP,
+			width: rect.width + OUTLINE_GAP * 2,
+			height: rect.height + OUTLINE_GAP * 2,
+		}),
+		[rect],
+	);
+
 	const bracketPaths = useMemo(() => {
-		const { x, y, width: w, height: h } = rect;
+		const { x, y, width: w, height: h } = outline;
 		const L = BRACKET_LEN;
 		return [
 			`M${x},${y + L} L${x},${y} L${x + L},${y}`,
@@ -535,11 +632,11 @@ export function AreaSelectionOverlay() {
 			`M${x},${y + h - L} L${x},${y + h} L${x + L},${y + h}`,
 			`M${x + w - L},${y + h} L${x + w},${y + h} L${x + w},${y + h - L}`,
 		];
-	}, [rect]);
+	}, [outline]);
 
 	// ── SVG edge midpoint bars ────────────────────────────────────────────
 	const edgeBars = useMemo(() => {
-		const { x, y, width: w, height: h } = rect;
+		const { x, y, width: w, height: h } = outline;
 		const hl = EDGE_BAR_LEN / 2;
 		return [
 			{ x1: x + w / 2 - hl, y1: y, x2: x + w / 2 + hl, y2: y },
@@ -547,15 +644,16 @@ export function AreaSelectionOverlay() {
 			{ x1: x, y1: y + h / 2 - hl, x2: x, y2: y + h / 2 + hl },
 			{ x1: x + w, y1: y + h / 2 - hl, x2: x + w, y2: y + h / 2 + hl },
 		];
-	}, [rect]);
+	}, [outline]);
 
 	// ── Control panel position (clamped to viewport) ──────────────────────
 	const panelPos = useMemo(() => {
 		const vw = display?.width ?? window.innerWidth;
 		const vh = display?.height ?? window.innerHeight;
-		const pw = 720;
-		const ph = 60;
 		const gap = 16;
+		// The bar wraps onto a second row when the display is narrower than its natural width.
+		const pw = Math.min(820, vw - gap * 2);
+		const ph = pw < 820 ? 100 : 60;
 
 		const left = clamp(rect.x + rect.width / 2, pw / 2 + gap, vw - pw / 2 - gap);
 		const above = rect.y - ph - gap;
@@ -570,7 +668,7 @@ export function AreaSelectionOverlay() {
 		return (
 			<div className="fixed inset-0" style={{ pointerEvents: "none", background: "transparent" }}>
 				<svg className="absolute inset-0 h-full w-full">
-					<title>Selected recording area</title>
+					<title>{t("area.selectedAreaTitle", "Selected recording area")}</title>
 					<defs>
 						<mask id="area-mask-locked">
 							<rect width="100%" height="100%" fill="white" />
@@ -581,16 +679,16 @@ export function AreaSelectionOverlay() {
 					<rect width="100%" height="100%" fill="rgba(0,0,0,0.5)" mask="url(#area-mask-locked)" />
 					{/* Selection border */}
 					<rect
-						x={rect.x}
-						y={rect.y}
-						width={rect.width}
-						height={rect.height}
+						x={outline.x}
+						y={outline.y}
+						width={outline.width}
+						height={outline.height}
 						fill="none"
-						stroke="#0A84FF"
+						stroke="#F59E0B"
 						strokeWidth={2}
 					/>
 					{/* Corner brackets */}
-					<g fill="none" stroke="#0A84FF" strokeWidth={BRACKET_W} strokeLinecap="square">
+					<g fill="none" stroke="#F59E0B" strokeWidth={BRACKET_W} strokeLinecap="square">
 						{bracketPaths.map((d) => (
 							<path key={d} d={d} />
 						))}
@@ -648,12 +746,12 @@ export function AreaSelectionOverlay() {
 
 				{/* Selection border */}
 				<rect
-					x={rect.x}
-					y={rect.y}
-					width={rect.width}
-					height={rect.height}
+					x={outline.x}
+					y={outline.y}
+					width={outline.width}
+					height={outline.height}
 					fill="none"
-					stroke="#0A84FF"
+					stroke="#F59E0B"
 					strokeWidth={2}
 				/>
 
@@ -686,14 +784,14 @@ export function AreaSelectionOverlay() {
 				</g>
 
 				{/* Corner brackets */}
-				<g fill="none" stroke="#0A84FF" strokeWidth={BRACKET_W} strokeLinecap="square">
+				<g fill="none" stroke="#F59E0B" strokeWidth={BRACKET_W} strokeLinecap="square">
 					{bracketPaths.map((d) => (
 						<path key={d} d={d} />
 					))}
 				</g>
 
 				{/* Edge midpoint bars */}
-				<g stroke="#0A84FF" strokeWidth={3} strokeLinecap="square">
+				<g stroke="#F59E0B" strokeWidth={3} strokeLinecap="square">
 					{edgeBars.map((l) => (
 						<line key={`${l.x1}-${l.y1}-${l.x2}-${l.y2}`} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} />
 					))}
@@ -770,15 +868,16 @@ export function AreaSelectionOverlay() {
 						left: panelPos.left,
 						top: panelPos.top,
 						transform: "translateX(-50%)",
+						maxWidth: "calc(100vw - 32px)",
 					}}
-					className="flex items-center gap-2 whitespace-nowrap rounded-xl border border-white/10 bg-[rgba(28,28,30,0.85)] px-3 py-2 text-xs text-white shadow-[0_12px_32px_rgba(0,0,0,0.4)] backdrop-blur-3xl"
+					className="flex flex-wrap items-center justify-center gap-2 rounded-xl border border-white/10 bg-[rgba(28,28,30,0.85)] px-3 py-2 text-xs text-white shadow-[0_12px_32px_rgba(0,0,0,0.4)] backdrop-blur-3xl"
 					onPointerDown={(e) => e.stopPropagation()}
 				>
 					{/* Dimension inputs (W × H) */}
 					{display && (
 						<div className="flex items-center gap-1">
-							<label className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[11px] hover:bg-white/10 transition-colors focus-within:bg-white/10 focus-within:ring-1 focus-within:ring-[#0A84FF]">
-								<span className="font-medium text-white/50">W</span>
+							<label className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[11px] hover:bg-white/10 transition-colors focus-within:bg-white/10 focus-within:ring-1 focus-within:ring-[#F59E0B]">
+								<span className="font-medium text-white/50">{t("area.widthShort", "W")}</span>
 								<input
 									ref={widthRef}
 									type="number"
@@ -794,8 +893,8 @@ export function AreaSelectionOverlay() {
 								/>
 							</label>
 							<span className="text-white/30 text-[10px] select-none font-medium">&times;</span>
-							<label className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[11px] hover:bg-white/10 transition-colors focus-within:bg-white/10 focus-within:ring-1 focus-within:ring-[#0A84FF]">
-								<span className="font-medium text-white/50">H</span>
+							<label className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[11px] hover:bg-white/10 transition-colors focus-within:bg-white/10 focus-within:ring-1 focus-within:ring-[#F59E0B]">
+								<span className="font-medium text-white/50">{t("area.heightShort", "H")}</span>
 								<input
 									ref={heightRef}
 									type="number"
@@ -813,13 +912,32 @@ export function AreaSelectionOverlay() {
 						</div>
 					)}
 
-					{/* Position chip */}
-					<div className="flex items-center gap-1.5 px-2 py-1">
-						<span className="text-[11px] font-medium text-white/50">Pos</span>
-						<span className="font-medium tabular-nums text-white/90">
-							{Math.round(rect.x)}, {Math.round(rect.y)}
-						</span>
-					</div>
+					{/* Position inputs (X, Y from the display's top-left) */}
+					{display && (
+						<div className="flex items-center gap-1" title={t("area.position", "Position")}>
+							{(["x", "y"] as const).map((axis) => (
+								<label
+									key={axis}
+									className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[11px] hover:bg-white/10 transition-colors focus-within:bg-white/10 focus-within:ring-1 focus-within:ring-[#F59E0B]"
+								>
+									<span className="font-medium text-white/50">{axis.toUpperCase()}</span>
+									<input
+										ref={axis === "x" ? xRef : yRef}
+										type="number"
+										min={0}
+										aria-label={`${t("area.position", "Position")} ${axis.toUpperCase()}`}
+										defaultValue={Math.round(axis === "x" ? rect.x : rect.y)}
+										onBlur={() => commitInput(axis)}
+										onKeyDown={(e) => {
+											if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+											if (e.key.startsWith("Arrow")) e.stopPropagation();
+										}}
+										className="w-10 bg-transparent text-right font-medium tabular-nums text-white outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+									/>
+								</label>
+							))}
+						</div>
+					)}
 
 					<div className="h-4 w-px bg-white/10 mx-1" />
 
@@ -839,7 +957,7 @@ export function AreaSelectionOverlay() {
 											: "text-white/50 hover:bg-white/10 hover:text-white/90"
 									}`}
 								>
-									{preset.label}
+									{preset.ratio == null ? t("area.any", "Free") : preset.label}
 								</button>
 							);
 						})}
@@ -859,7 +977,7 @@ export function AreaSelectionOverlay() {
 						<button
 							type="button"
 							onClick={confirmSelection}
-							className="flex items-center gap-1.5 rounded-md border border-transparent bg-[#0A84FF] px-3.5 py-1 font-medium text-white shadow-sm transition-colors hover:bg-[#007AFF]"
+							className="flex items-center gap-1.5 rounded-md border border-transparent bg-[#F59E0B] px-3.5 py-1 font-semibold text-black shadow-sm transition-colors hover:bg-[#FBBF24]"
 						>
 							<FiCheck size={13} />
 							<span>{t("area.confirmSelection")}</span>

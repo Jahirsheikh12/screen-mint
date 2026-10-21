@@ -1,3 +1,4 @@
+import path from "node:path";
 import { app, BrowserWindow, desktopCapturer, ipcMain } from "electron";
 import {
 	type CaptureSourceRequest,
@@ -5,6 +6,7 @@ import {
 	type IpcSelectedSource,
 } from "../../src/electron-ipc/contracts";
 import type { SelectedArea } from "../../src/lib/recording/session";
+import { createAreaSelectionStore } from "../areaSelectionStore";
 
 export type SelectedSource = IpcSelectedSource;
 
@@ -38,6 +40,8 @@ type CaptureSourceHandlerOptions = {
 	stopWindowBoundsCapture: () => void;
 	getSourceSelectorWindow: () => BrowserWindow | null;
 	getNativeMacWindowSources: () => Promise<NativeMacWindowSource[]>;
+	/** Briefly outlines the picked screen or window on screen. */
+	flashSourceHighlight: (source: SelectedSource) => void;
 };
 
 function normalizeDesktopSourceName(value: string) {
@@ -268,6 +272,7 @@ export function registerCaptureSourceIpcHandlers(options: CaptureSourceHandlerOp
 		if (sourceSelectorWin) {
 			sourceSelectorWin.close();
 		}
+		options.flashSourceHighlight(source);
 		return options.getSelectedSource();
 	});
 
@@ -305,9 +310,72 @@ export function registerCaptureSourceIpcHandlers(options: CaptureSourceHandlerOp
 		return options.getSelectedSource();
 	});
 
+	const areaStore = createAreaSelectionStore(
+		path.join(app.getPath("userData"), "area-selection.json"),
+	);
+	// Area in place before the overlay opened, restored when the user cancels it.
+	let areaBeforeEdit: { area: SelectedArea | null } | null = null;
+
 	ipcMain.handle(IPC_CHANNELS.capture.setSelectedArea, (_, area: SelectedArea | null) => {
 		options.setSelectedArea(area);
+		areaBeforeEdit = null;
+		if (area) void areaStore.remember(area);
 		options.notifySelectedAreaChanged();
+		return { success: true, area: options.getSelectedArea() };
+	});
+
+	// Entering area mode: target the display under the cursor (or the one already chosen),
+	// select it as the source, and bring back the last area used on it.
+	ipcMain.handle(IPC_CHANNELS.capture.prepareAreaCapture, async () => {
+		const screen = options.getScreen();
+		const current = options.getSelectedSource();
+		const currentDisplayId = current?.id?.startsWith("screen:") ? Number(current.display_id) : NaN;
+		const display =
+			screen.getAllDisplays().find((candidate) => candidate.id === currentDisplayId) ??
+			screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+		if (!(current?.id?.startsWith("screen:") && currentDisplayId === display.id)) {
+			// Listing sources fails without screen-recording permission; keep the current source then.
+			const sources = await desktopCapturer
+				.getSources({
+					types: ["screen"],
+					thumbnailSize: { width: 1, height: 1 },
+					fetchWindowIcons: false,
+				})
+				.catch(() => []);
+			const match = sources.find((source) => Number(source.display_id) === display.id);
+			if (match) {
+				options.setSelectedSource({
+					id: match.id,
+					name: match.name,
+					display_id: String(display.id),
+				});
+			}
+		}
+		const existing = options.getSelectedArea();
+		const area =
+			existing && existing.displayId === display.id
+				? existing
+				: await areaStore.get(display.id, display.bounds);
+		options.setSelectedArea(area);
+		options.notifySelectedAreaChanged();
+		return { success: true, displayId: display.id, area };
+	});
+
+	ipcMain.handle(IPC_CHANNELS.capture.beginAreaEdit, (_, preview?: SelectedArea | null) => {
+		areaBeforeEdit = { area: options.getSelectedArea() };
+		if (preview) {
+			options.setSelectedArea(preview);
+			options.notifySelectedAreaChanged();
+		}
+		return { success: true };
+	});
+
+	ipcMain.handle(IPC_CHANNELS.capture.cancelAreaEdit, () => {
+		if (areaBeforeEdit) {
+			options.setSelectedArea(areaBeforeEdit.area);
+			areaBeforeEdit = null;
+			options.notifySelectedAreaChanged();
+		}
 		return { success: true, area: options.getSelectedArea() };
 	});
 

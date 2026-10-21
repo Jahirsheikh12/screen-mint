@@ -20,6 +20,7 @@ import {
 	type CaptionAnimationMode,
 	type CaptionGenerationOptions,
 	type CaptionGenerationProgress,
+	type CaptionModel,
 	type CaptionModelStatus,
 	type CaptionPosition,
 	type CaptionRegion,
@@ -56,6 +57,12 @@ const ANIMATION_MODES: {
 		description: "Scale-in bounce",
 	},
 	{
+		value: "rise",
+		i18nKey: "editor.captions.animation.rise",
+		fallback: "Rise",
+		description: "Slide up while fading in",
+	},
+	{
 		value: "active-word",
 		i18nKey: "editor.captions.animation.activeWord",
 		fallback: "Active word",
@@ -76,6 +83,11 @@ const ANIMATION_MODES: {
 ];
 
 const POSITION_OPTIONS: CaptionPosition[] = ["top", "center", "bottom"];
+const POSITION_LABELS: Record<CaptionPosition, string> = {
+	top: "Top",
+	center: "Center",
+	bottom: "Bottom",
+};
 const FONT_FAMILIES: { label: string; value: string }[] = [
 	{ label: "System", value: '"SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif' },
 	{ label: "Inter", value: "Inter, system-ui, sans-serif" },
@@ -91,6 +103,8 @@ export interface CaptionsTabProps {
 	captionGenerationOptions?: CaptionGenerationOptions;
 	captionGenerationProgress?: CaptionGenerationProgress | null;
 	captionModelStatus?: CaptionModelStatus | null;
+	onDeleteCaptionModel?: (model: CaptionModel) => void;
+	onCustomWhisperFile?: (kind: "model" | "executable", action: "choose" | "clear") => void;
 	isTranscribing?: boolean;
 	selectedCaptionId?: string | null;
 	isEditingCaptionPosition: boolean;
@@ -122,6 +136,8 @@ export function CaptionsTab(props: CaptionsTabProps) {
 		captionGenerationOptions,
 		captionGenerationProgress,
 		captionModelStatus,
+		onDeleteCaptionModel,
+		onCustomWhisperFile,
 		isTranscribing = false,
 		selectedCaptionId,
 		isEditingCaptionPosition,
@@ -332,15 +348,15 @@ export function CaptionsTab(props: CaptionsTabProps) {
 							key={mode.value}
 							type="button"
 							onClick={() => onCaptionSettingsChange({ animationMode: mode.value })}
-							title={mode.description}
+							title={t(`${mode.i18nKey}Desc`, mode.description)}
 							className={cn(
-								"h-11 rounded-xl border text-[10px] font-semibold transition-colors duration-150 flex flex-col items-center justify-center gap-0.5",
+								"min-h-11 min-w-0 rounded-xl border px-1 py-1 text-center text-[10px] font-semibold leading-tight transition-colors duration-150 flex flex-col items-center justify-center gap-0.5 break-words [hyphens:auto]",
 								captionSettings.animationMode === mode.value
 									? "border-[#F59E0B] bg-gradient-to-b from-[#F59E0B]/15 to-[#F59E0B]/5 text-white"
 									: "border-white/5 bg-black/30 text-slate-400 hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]",
 							)}
 						>
-							<span>{t(mode.i18nKey, mode.fallback)}</span>
+							<span className="max-w-full">{t(mode.i18nKey, mode.fallback)}</span>
 						</button>
 					))}
 				</div>
@@ -367,13 +383,13 @@ export function CaptionsTab(props: CaptionsTabProps) {
 										onToggleCaptionPositionEditing(false);
 									}}
 									className={cn(
-										"h-8 rounded-lg border text-[10px] font-semibold capitalize transition-colors",
+										"min-h-8 min-w-0 px-1 py-1 leading-tight break-words rounded-lg border text-[10px] font-semibold capitalize transition-colors",
 										isActive
 											? "border-[#F59E0B] bg-[#F59E0B] text-white"
 											: "border-white/5 bg-black/40 text-slate-300 hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]",
 									)}
 								>
-									{t(`editor.captions.position.${pos}`, pos)}
+									{t(`editor.captions.positions.${pos}`, POSITION_LABELS[pos])}
 								</Button>
 							);
 						})}
@@ -381,14 +397,14 @@ export function CaptionsTab(props: CaptionsTabProps) {
 							type="button"
 							onClick={() => onToggleCaptionPositionEditing(!isEditingCaptionPosition)}
 							className={cn(
-								"h-8 rounded-lg border text-[10px] font-semibold transition-colors flex items-center justify-center gap-1",
+								"min-h-8 min-w-0 px-1 py-1 leading-tight break-words rounded-lg border text-[10px] font-semibold transition-colors flex items-center justify-center gap-1",
 								isEditingCaptionPosition
 									? "border-[#F59E0B] bg-[#F59E0B] text-white"
 									: "border-white/5 bg-black/40 text-slate-300 hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]",
 							)}
 						>
 							<MoveDiagonal className="w-3 h-3" />
-							{t("editor.captions.position.free", "Free")}
+							{t("editor.captions.positions.free", "Free")}
 						</Button>
 					</div>
 					{captionSettings.positionOverride && (
@@ -398,7 +414,7 @@ export function CaptionsTab(props: CaptionsTabProps) {
 							className="w-full h-8 rounded-lg border border-white/5 bg-black/40 text-[10px] font-semibold text-slate-300 hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] flex items-center justify-center gap-1"
 						>
 							<RotateCcw className="w-3 h-3" />
-							{t("editor.captions.position.reset", "Reset to preset")}
+							{t("editor.captions.positions.reset", "Reset to preset")}
 						</Button>
 					)}
 					<SliderControl
@@ -411,6 +427,28 @@ export function CaptionsTab(props: CaptionsTabProps) {
 						onChange={(v) => onCaptionSettingsChange({ safeAreaInset: v })}
 						formatValue={(v) => `${v}%`}
 						parseInput={(val) => parseFloat(val.replace(/%$/, ""))}
+					/>
+					<SliderControl
+						label={t("editor.captions.maxWidth", "Max Width")}
+						value={captionSettings.maxWidthPercent}
+						defaultValue={85}
+						min={40}
+						max={95}
+						step={1}
+						onChange={(v) => onCaptionSettingsChange({ maxWidthPercent: v })}
+						formatValue={(v) => `${v}%`}
+						parseInput={(val) => parseFloat(val.replace(/%$/, ""))}
+					/>
+					<SliderControl
+						label={t("editor.captions.rows", "Rows")}
+						value={captionSettings.maxLines}
+						defaultValue={2}
+						min={1}
+						max={4}
+						step={1}
+						onChange={(v) => onCaptionSettingsChange({ maxLines: Math.round(v) })}
+						formatValue={(v) => `${Math.round(v)}`}
+						parseInput={(val) => Number.parseInt(val, 10)}
 					/>
 				</div>
 			</Section>
@@ -460,6 +498,27 @@ export function CaptionsTab(props: CaptionsTabProps) {
 							</div>
 						)}
 					</div>
+					{onDeleteCaptionModel &&
+					!isTranscribing &&
+					captionModelStatus?.downloadedModels.length ? (
+						<div className="flex flex-wrap gap-1.5">
+							{captionModelStatus.downloadedModels.map((model) => (
+								<button
+									key={model}
+									type="button"
+									onClick={() => onDeleteCaptionModel(model)}
+									className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] text-slate-300 hover:border-red-500/30 hover:text-red-300"
+								>
+									{t("editor.captions.deleteModel", "Delete {{model}} model", {
+										model: t(
+											`editor.captions.model${model[0].toUpperCase()}${model.slice(1)}`,
+											model,
+										),
+									})}
+								</button>
+							))}
+						</div>
+					) : null}
 
 					<div className="grid grid-cols-3 gap-2">
 						<select
@@ -481,7 +540,12 @@ export function CaptionsTab(props: CaptionsTabProps) {
 						</select>
 						<select
 							value={captionGenerationOptions?.model ?? DEFAULT_CAPTION_GENERATION_OPTIONS.model}
-							disabled={isAppleSpeechSelected}
+							disabled={isAppleSpeechSelected || Boolean(captionModelStatus?.customModelPath)}
+							title={
+								captionModelStatus?.customModelPath
+									? t("editor.captions.customModelInUse", "Using your custom model")
+									: undefined
+							}
 							onChange={(event) =>
 								onCaptionGenerationOptionsChange?.({
 									model: event.target.value as "base" | "small" | "medium",
@@ -516,6 +580,60 @@ export function CaptionsTab(props: CaptionsTabProps) {
 							<option value="mixed">{t("editor.captions.sourceMixed", "Mixed Audio")}</option>
 						</select>
 					</div>
+
+					{onCustomWhisperFile && !isAppleSpeechSelected ? (
+						<div className="space-y-1.5 rounded-lg border border-white/5 bg-white/[0.03] p-2">
+							{(
+								[
+									["model", captionModelStatus?.customModelPath ?? null],
+									["executable", captionModelStatus?.customExecutablePath ?? null],
+								] as const
+							).map(([kind, filePath]) => (
+								<div key={kind} className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+									<span className="min-w-0 flex-1 basis-32">
+										<span className="block break-words text-[11px] font-medium text-slate-300">
+											{kind === "model"
+												? t("editor.captions.customModel", "Custom model file")
+												: t("editor.captions.customProgram", "Whisper program")}
+										</span>
+										<span
+											className="block truncate text-[10px] text-slate-500"
+											title={filePath ?? undefined}
+										>
+											{filePath
+												? filePath.split(/[\\/]/).pop()
+												: kind === "model"
+													? t("editor.captions.customModelNone", "Not set — uses the size above")
+													: t(
+															"editor.captions.customProgramNone",
+															"Not set — set up automatically",
+														)}
+										</span>
+									</span>
+									<span className="flex shrink-0 items-center gap-1">
+										<button
+											type="button"
+											disabled={isTranscribing}
+											onClick={() => onCustomWhisperFile(kind, "choose")}
+											className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] text-slate-300 transition hover:border-[#F59E0B]/40 hover:text-[#F59E0B] disabled:opacity-50"
+										>
+											{t("editor.captions.customChoose", "Choose…")}
+										</button>
+										{filePath ? (
+											<button
+												type="button"
+												disabled={isTranscribing}
+												onClick={() => onCustomWhisperFile(kind, "clear")}
+												className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] text-slate-300 transition hover:border-red-500/30 hover:text-red-300 disabled:opacity-50"
+											>
+												{t("editor.captions.customRemove", "Remove")}
+											</button>
+										) : null}
+									</span>
+								</div>
+							))}
+						</div>
+					) : null}
 
 					<input
 						type="text"
@@ -735,6 +853,7 @@ function CaptionPreviewCard({
 	style: CaptionStyle;
 	animationMode: CaptionAnimationMode;
 }) {
+	const { t } = useI18n();
 	// Simulate playback of a sample sentence so users see animation live.
 	const words = useMemo(() => ["Quick", "brown", "fox", "jumps", "over", "lazy", "dog"], []);
 	const [elapsed, setElapsed] = useState(0);
@@ -845,7 +964,7 @@ function CaptionPreviewCard({
 					})}
 				</div>
 				<div className="absolute bottom-2 left-2 text-[9px] uppercase tracking-wider text-white/30">
-					Live preview
+					{t("editor.captionsTab.livePreview", "Live preview")}
 				</div>
 			</div>
 		</div>
@@ -865,6 +984,7 @@ function PresetCard({
 	onClick: () => void;
 	onDelete: () => void;
 }) {
+	const { t } = useI18n();
 	const { style } = preset;
 	const bgColor =
 		style.backgroundOpacity > 0 && style.backgroundColor !== "transparent"
@@ -894,7 +1014,7 @@ function PresetCard({
 					textTransform: style.textTransform,
 				}}
 			>
-				Aa
+				{t("editor.captionsTab.aa", "Aa")}
 			</div>
 			<div className="text-[9px] text-slate-500 truncate max-w-full px-2">{preset.name}</div>
 			{isCustom && (
@@ -926,13 +1046,14 @@ function StyleControls({
 	onStyleChange: (partial: Partial<CaptionStyle>) => void;
 	onSettingsChange: (partial: Partial<CaptionSettings>) => void;
 }) {
+	const { t } = useI18n();
 	const highlightColorRelevant =
 		animationMode === "active-word" ||
 		animationMode === "karaoke-fill" ||
 		animationMode === "typewriter";
 	return (
 		<div className="space-y-1.5">
-			<StyleCard title="Font">
+			<StyleCard title={t("editor.captionsTab.font", "Font")}>
 				<div className="grid grid-cols-2 gap-1.5 mb-2">
 					<select
 						value={style.fontFamily}
@@ -947,7 +1068,7 @@ function StyleControls({
 					</select>
 				</div>
 				<SliderControl
-					label="Size"
+					label={t("editor.captionsTab.size", "Size")}
 					value={style.fontSize}
 					defaultValue={28}
 					min={14}
@@ -974,12 +1095,12 @@ function StyleControls({
 								: "border-white/5 bg-black/40 text-slate-400 hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]",
 						)}
 					>
-						Italic
+						{t("editor.captionsTab.italic", "Italic")}
 					</button>
 				</div>
 				<div className="mt-2 grid grid-cols-2 gap-1.5">
 					<SliderControl
-						label="Spacing"
+						label={t("editor.captionsTab.spacing", "Spacing")}
 						value={style.letterSpacing}
 						defaultValue={0}
 						min={-2}
@@ -990,7 +1111,7 @@ function StyleControls({
 						parseInput={(val) => parseFloat(val)}
 					/>
 					<SliderControl
-						label="Line"
+						label={t("editor.captionsTab.line", "Line")}
 						value={style.lineHeight}
 						defaultValue={1.3}
 						min={1}
@@ -1019,8 +1140,10 @@ function StyleControls({
 				</button>
 			</StyleCard>
 
-			<StyleCard title="Color">
-				<label className="text-[10px] text-slate-400 block mb-1">Text</label>
+			<StyleCard title={t("editor.captionsTab.color", "Color")}>
+				<label className="text-[10px] text-slate-400 block mb-1">
+					{t("editor.captionsTab.text", "Text")}
+				</label>
 				<ColorPicker
 					color={style.color}
 					onChange={(color) => onStyleChange({ color: color.hex })}
@@ -1037,7 +1160,9 @@ function StyleControls({
 				/>
 				{highlightColorRelevant && (
 					<>
-						<label className="text-[10px] text-slate-400 block mt-2 mb-1">Highlight</label>
+						<label className="text-[10px] text-slate-400 block mt-2 mb-1">
+							{t("editor.captionsTab.highlight", "Highlight")}
+						</label>
 						<ColorPicker
 							color={style.highlightColor}
 							onChange={(color) => onStyleChange({ highlightColor: color.hex })}
@@ -1054,7 +1179,9 @@ function StyleControls({
 						/>
 					</>
 				)}
-				<label className="text-[10px] text-slate-400 block mt-2 mb-1">Background</label>
+				<label className="text-[10px] text-slate-400 block mt-2 mb-1">
+					{t("editor.captionsTab.background", "Background")}
+				</label>
 				<ColorPicker
 					color={style.backgroundColor === "transparent" ? "#000000" : style.backgroundColor}
 					onChange={(color) => onStyleChange({ backgroundColor: color.hex })}
@@ -1071,7 +1198,7 @@ function StyleControls({
 				/>
 				<div className="mt-2 grid grid-cols-2 gap-1.5">
 					<SliderControl
-						label="Opacity"
+						label={t("editor.captionsTab.opacity", "Opacity")}
 						value={style.backgroundOpacity}
 						defaultValue={0.7}
 						min={0}
@@ -1082,7 +1209,7 @@ function StyleControls({
 						parseInput={(val) => parseFloat(val.replace(/%$/, "")) / 100}
 					/>
 					<SliderControl
-						label="Radius"
+						label={t("editor.captionsTab.radius", "Radius")}
 						value={style.borderRadius}
 						defaultValue={6}
 						min={0}
@@ -1095,9 +1222,9 @@ function StyleControls({
 				</div>
 			</StyleCard>
 
-			<StyleCard title="Outline & Shadow">
+			<StyleCard title={t("editor.captionsTab.outlineShadow", "Outline & Shadow")}>
 				<SliderControl
-					label="Outline"
+					label={t("editor.captionsTab.outline", "Outline")}
 					value={style.outlineWidth}
 					defaultValue={0}
 					min={0}
@@ -1109,7 +1236,9 @@ function StyleControls({
 				/>
 				{style.outlineWidth > 0 && (
 					<div className="mt-1">
-						<label className="text-[10px] text-slate-400 block mb-1">Outline color</label>
+						<label className="text-[10px] text-slate-400 block mb-1">
+							{t("editor.captionsTab.outlineColor", "Outline color")}
+						</label>
 						<ColorPicker
 							color={style.outlineColor}
 							onChange={(color) => onStyleChange({ outlineColor: color.hex })}
@@ -1119,7 +1248,7 @@ function StyleControls({
 				)}
 				<div className="mt-2 grid grid-cols-2 gap-1.5">
 					<SliderControl
-						label="Shadow blur"
+						label={t("editor.captionsTab.shadowBlur", "Shadow blur")}
 						value={style.shadowBlur}
 						defaultValue={0}
 						min={0}
@@ -1130,7 +1259,7 @@ function StyleControls({
 						parseInput={(val) => parseFloat(val.replace(/px$/, ""))}
 					/>
 					<SliderControl
-						label="Shadow Y"
+						label={t("editor.captionsTab.shadowY", "Shadow Y")}
 						value={style.shadowOffsetY}
 						defaultValue={0}
 						min={-10}
@@ -1143,7 +1272,9 @@ function StyleControls({
 				</div>
 				{style.shadowBlur > 0 && (
 					<div className="mt-1">
-						<label className="text-[10px] text-slate-400 block mb-1">Shadow color</label>
+						<label className="text-[10px] text-slate-400 block mb-1">
+							{t("editor.captionsTab.shadowColor", "Shadow color")}
+						</label>
 						<ColorPicker
 							color={style.shadowColor}
 							onChange={(color) => onStyleChange({ shadowColor: color.hex })}
@@ -1153,9 +1284,9 @@ function StyleControls({
 				)}
 			</StyleCard>
 
-			<StyleCard title="Layout">
+			<StyleCard title={t("editor.captionsTab.layout", "Layout")}>
 				<SliderControl
-					label="Words per line"
+					label={t("editor.captionsTab.wordsPerLine", "Words per line")}
 					value={maxWordsPerLine}
 					defaultValue={6}
 					min={1}
@@ -1186,10 +1317,11 @@ function WeightPicker({
 	value: CaptionStyle["fontWeight"];
 	onChange: (v: CaptionStyle["fontWeight"]) => void;
 }) {
+	const { t } = useI18n();
 	const options: { value: CaptionStyle["fontWeight"]; label: string }[] = [
-		{ value: "normal", label: "Regular" },
-		{ value: "bold", label: "Bold" },
-		{ value: "800", label: "Black" },
+		{ value: "normal", label: t("editor.captionsTab.regular", "Regular") },
+		{ value: "bold", label: t("editor.captionsTab.bold", "Bold") },
+		{ value: "800", label: t("editor.captionsTab.black", "Black") },
 	];
 	return (
 		<div className="grid grid-cols-3 gap-0.5 h-8 rounded-lg bg-white/[0.02] p-0.5 border border-white/5">
@@ -1227,6 +1359,7 @@ function CaptionList({
 	onCaptionSplit?: (id: string) => void;
 	onCaptionMergeNext?: (id: string) => void;
 }) {
+	const { t } = useI18n();
 	return (
 		<div className="flex flex-col gap-0.5 max-h-72 overflow-y-auto custom-scrollbar p-1.5">
 			{captions.map((caption) => {
@@ -1259,7 +1392,7 @@ function CaptionList({
 									}
 								}}
 								className="w-full min-h-[48px] text-[13px] leading-snug text-slate-100 bg-transparent border-none outline-none resize-none"
-								placeholder="Caption text..."
+								placeholder={t("editor.captionsTab.captionText", "Caption text...")}
 							/>
 							<div className="flex gap-1.5 mt-1">
 								<Button
@@ -1270,7 +1403,7 @@ function CaptionList({
 									}}
 									className="h-6 px-2 rounded-lg border border-white/5 bg-black/40 text-[10px] text-slate-300 hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]"
 								>
-									Split
+									{t("editor.captionsTab.split", "Split")}
 								</Button>
 								<Button
 									type="button"
@@ -1280,7 +1413,7 @@ function CaptionList({
 									}}
 									className="h-6 px-2 rounded-lg border border-white/5 bg-black/40 text-[10px] text-slate-300 hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]"
 								>
-									Merge next
+									{t("editor.captionsTab.mergeNext", "Merge next")}
 								</Button>
 							</div>
 						</div>

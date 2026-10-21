@@ -66,6 +66,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	clearSelectedArea: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.capture.clearSelectedArea);
 	},
+	prepareAreaCapture: () => {
+		return ipcRenderer.invoke(IPC_CHANNELS.capture.prepareAreaCapture);
+	},
+	beginAreaEdit: (preview?: SelectedArea | null) => {
+		return ipcRenderer.invoke(IPC_CHANNELS.capture.beginAreaEdit, preview ?? null);
+	},
+	cancelAreaEdit: () => {
+		return ipcRenderer.invoke(IPC_CHANNELS.capture.cancelAreaEdit);
+	},
 	captureScreenshot: (request?: unknown) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.screenshot.capture, request);
 	},
@@ -259,6 +268,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		ipcRenderer.on("mobile-capture-state-changed", listener);
 		return () => ipcRenderer.removeListener("mobile-capture-state-changed", listener);
 	},
+	getAnnouncements: () => {
+		return ipcRenderer.invoke(IPC_CHANNELS.announcements.get);
+	},
+	dismissAnnouncement: (id: string) => {
+		return ipcRenderer.invoke(IPC_CHANNELS.announcements.dismiss, id);
+	},
 	openExternalUrl: (url: string) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.files.openExternalUrl, url);
 	},
@@ -295,8 +310,27 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	showExportSaveDialog: (fileName: string) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.exportFiles.showSaveDialog, fileName);
 	},
-	writeExportedVideoToPath: (videoData: ArrayBuffer, filePath: string) => {
-		return ipcRenderer.invoke(IPC_CHANNELS.exportFiles.writeVideoToPath, videoData, filePath);
+	writeExportedVideoToPath: (
+		videoData: ArrayBuffer,
+		filePath: string,
+		captionSidecar?: { srt?: string; vtt?: string },
+	) => {
+		return ipcRenderer.invoke(
+			IPC_CHANNELS.exportFiles.writeVideoToPath,
+			videoData,
+			filePath,
+			captionSidecar,
+		);
+	},
+	finalizeExportedTemp: (payload: {
+		tempPath: string;
+		fileName: string;
+		captionSidecar?: { srt?: string; vtt?: string };
+	}) => {
+		return ipcRenderer.invoke(IPC_CHANNELS.exportFiles.finalizeTemp, payload);
+	},
+	discardExportedTemp: (tempPath: string) => {
+		return ipcRenderer.invoke(IPC_CHANNELS.exportFiles.discardTemp, tempPath);
 	},
 	saveExportedVideoToRecordings: (videoData: ArrayBuffer, fileName: string) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.exportFiles.saveVideoToRecordings, videoData, fileName);
@@ -362,6 +396,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	openImageFilePicker: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.files.openImagePicker);
 	},
+	openBackgroundVideoPicker: () => {
+		return ipcRenderer.invoke(IPC_CHANNELS.files.openBackgroundVideoPicker);
+	},
 	setCurrentVideoPath: (path: string) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.currentMedia.setVideoPath, path);
 	},
@@ -399,6 +436,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	cancelCaptionGeneration: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.captions.cancelGeneration);
 	},
+	deleteCaptionModel: (model: "base" | "small" | "medium") => {
+		return ipcRenderer.invoke(IPC_CHANNELS.captions.deleteModel, model);
+	},
+	chooseCustomWhisperFile: (kind: "model" | "executable") => {
+		return ipcRenderer.invoke(IPC_CHANNELS.captions.chooseCustomWhisper, kind);
+	},
+	clearCustomWhisperFile: (kind: "model" | "executable") => {
+		return ipcRenderer.invoke(IPC_CHANNELS.captions.clearCustomWhisper, kind);
+	},
 	exportCaptionsTranscript: (payload: {
 		videoPath?: string;
 		format: "srt" | "vtt" | "txt";
@@ -427,6 +473,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	loadProjectFile: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.projects.loadFile);
 	},
+	listProjectFiles: () => {
+		return ipcRenderer.invoke(IPC_CHANNELS.projects.list);
+	},
+	openProjectFileAtPath: (filePath: string) => {
+		return ipcRenderer.invoke(IPC_CHANNELS.projects.openPath, filePath);
+	},
 	loadCurrentProjectFile: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.projects.loadCurrentFile);
 	},
@@ -450,6 +502,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	},
 	getAppVersion: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.system.getAppVersion);
+	},
+	setExperimentalUpdates: (enabled: boolean) => {
+		return ipcRenderer.invoke(IPC_CHANNELS.updater.setExperimentalUpdates, enabled);
+	},
+	skipUpdateVersion: () => {
+		return ipcRenderer.invoke(IPC_CHANNELS.updater.skipVersion);
+	},
+	resizeUpdateToast: (height: number) => {
+		ipcRenderer.send(IPC_CHANNELS.updater.resizeToast, height);
 	},
 	getUpdaterState: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.updater.getState);
@@ -538,7 +599,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	hideOsCursor: () => ipcRenderer.invoke(IPC_CHANNELS.system.hideCursor),
 	getCountdownDelay: () => ipcRenderer.invoke(IPC_CHANNELS.countdown.getDelay),
 	setCountdownDelay: (delay: number) => ipcRenderer.invoke(IPC_CHANNELS.countdown.setDelay, delay),
-	startCountdown: (seconds: number) => ipcRenderer.invoke(IPC_CHANNELS.countdown.start, seconds),
+	startCountdown: (seconds: number, displayId?: number) =>
+		ipcRenderer.invoke(IPC_CHANNELS.countdown.start, seconds, displayId),
 	cancelCountdown: () => ipcRenderer.invoke(IPC_CHANNELS.countdown.cancel),
 	onCountdownTick: (callback: (seconds: number) => void) => {
 		const listener = (_event: Electron.IpcRendererEvent, seconds: number) => callback(seconds);

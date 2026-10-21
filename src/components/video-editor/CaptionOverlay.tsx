@@ -138,7 +138,7 @@ export function CaptionOverlay({
 			style={{
 				left: `${placement.cx}px`,
 				top: `${placement.cy}px`,
-				transform: `translate(-50%, -50%) scale(${renderBlock.blockScale})`,
+				transform: `translate(-50%, calc(-50% + ${renderBlock.blockOffsetY * 100}%)) scale(${renderBlock.blockScale})`,
 				transformOrigin: "center center",
 				zIndex: 800,
 				maxWidth: `${placement.maxWidth}px`,

@@ -1,4 +1,5 @@
-import { AudioLines, Box, ChevronDown, Sparkles } from "lucide-react";
+import { AudioLines, ChevronDown } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
 import { cn } from "@/lib/utils";
 import type { AudioMixSettings, AudioMixTrack } from "./audioMix";
 import { normalizeAudioMixSettings } from "./audioMix";
@@ -70,6 +71,7 @@ export function SceneAudioPolishPanel({
 	onAutoPolish,
 	embedded = false,
 }: SceneAudioPolishPanelProps) {
+	const { t } = useI18n();
 	const updateScene = (patch: Partial<Scene3DSettings>) => {
 		onScene3DChange(normalizeScene3DSettings({ ...scene3D, ...patch }));
 	};
@@ -94,12 +96,15 @@ export function SceneAudioPolishPanel({
 			<div className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar p-4 pb-20 relative">
 				<SettingsSection
 					title="3D Scene"
-					description="Environment, lens, and lighting configuration"
+					description={t(
+						"editor.polishPanel.environmentLensAndLighting",
+						"Environment, lens, and lighting configuration",
+					)}
 					accentColor="amber"
 				>
 					<label className="mb-2 flex items-center justify-between gap-3 text-[11px] text-slate-400 p-3 rounded-lg bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.05] transition-colors cursor-pointer group">
 						<span className="font-medium group-hover:text-slate-300 transition-colors">
-							Enable 3D Rendering
+							{t("editor.polishPanel.enable3dRendering", "Enable 3D Rendering")}
 						</span>
 						<div className="relative flex items-center">
 							<input
@@ -115,7 +120,7 @@ export function SceneAudioPolishPanel({
 					<div className="grid grid-cols-2 gap-3 mt-1">
 						<div className="space-y-1.5">
 							<label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider pl-0.5">
-								Preset
+								{t("editor.polishPanel.preset", "Preset")}
 							</label>
 							<SelectWrapper>
 								<select
@@ -135,7 +140,7 @@ export function SceneAudioPolishPanel({
 						</div>
 						<div className="space-y-1.5">
 							<label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider pl-0.5">
-								Device
+								{t("editor.polishPanel.device", "Device")}
 							</label>
 							<SelectWrapper>
 								<select
@@ -155,7 +160,7 @@ export function SceneAudioPolishPanel({
 						</div>
 						<div className="space-y-1.5">
 							<label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider pl-0.5">
-								Environment
+								{t("editor.polishPanel.environment", "Environment")}
 							</label>
 							<SelectWrapper>
 								<select
@@ -175,7 +180,7 @@ export function SceneAudioPolishPanel({
 						</div>
 						<div className="space-y-1.5">
 							<label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider pl-0.5">
-								Fallback
+								{t("editor.polishPanel.fallback", "Fallback")}
 							</label>
 							<SelectWrapper>
 								<select
@@ -197,7 +202,8 @@ export function SceneAudioPolishPanel({
 
 					<div className="mt-4">
 						<div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-							<div className="w-2 h-2 rounded-full bg-blue-500/50" /> Lens
+							<div className="w-2 h-2 rounded-full bg-blue-500/50" />{" "}
+							{t("editor.polishPanel.lens", "Lens")}
 						</div>
 						<div className="grid grid-cols-3 gap-2">
 							{[
@@ -232,7 +238,8 @@ export function SceneAudioPolishPanel({
 
 					<div className="mt-4">
 						<div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-							<div className="w-2 h-2 rounded-full bg-amber-500/50" /> Lighting
+							<div className="w-2 h-2 rounded-full bg-amber-500/50" />{" "}
+							{t("editor.polishPanel.lighting", "Lighting")}
 						</div>
 						<div className="grid grid-cols-3 gap-2">
 							{[
@@ -266,13 +273,17 @@ export function SceneAudioPolishPanel({
 				</SettingsSection>
 
 				<SettingsSection
-					title="Audio Mix"
-					description="Track volume and ducking rules"
+					title={t("editor.polishPanel.audioMix", "Audio Mix")}
+					description={t(
+						"editor.polishPanel.trackVolumeAndDucking",
+						"Track volume and ducking rules",
+					)}
 					accentColor="amber"
 				>
 					<label className="flex items-center justify-between gap-3 text-[11px] text-slate-400 p-3 rounded-lg bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.05] transition-colors cursor-pointer group">
 						<span className="font-medium group-hover:text-slate-300 transition-colors flex items-center gap-2">
-							<AudioLines className="w-3.5 h-3.5 text-amber-500" /> Master Volume
+							<AudioLines className="w-3.5 h-3.5 text-amber-500" />{" "}
+							{t("editor.polishPanel.masterVolume", "Master Volume")}
 						</span>
 						<input
 							type="number"
@@ -320,7 +331,7 @@ export function SceneAudioPolishPanel({
 												<div className="absolute left-[2px] top-[2px] w-2.5 h-2.5 bg-slate-400 rounded-full pointer-events-none peer-checked:translate-x-2.5 peer-checked:bg-white transition-transform" />
 											</div>
 											<span className="text-[10px] font-medium text-slate-500 group-hover:text-slate-300">
-												Mute
+												{t("editor.polishPanel.mute", "Mute")}
 											</span>
 										</label>
 										<label className="flex items-center gap-1.5 cursor-pointer group">
@@ -341,7 +352,7 @@ export function SceneAudioPolishPanel({
 												<div className="absolute left-[2px] top-[2px] w-2.5 h-2.5 bg-slate-400 rounded-full pointer-events-none peer-checked:translate-x-2.5 peer-checked:bg-white transition-transform" />
 											</div>
 											<span className="text-[10px] font-medium text-slate-500 group-hover:text-slate-300">
-												Solo
+												{t("editor.polishPanel.solo", "Solo")}
 											</span>
 										</label>
 									</div>
@@ -366,13 +377,13 @@ export function SceneAudioPolishPanel({
 												<div className="absolute left-[2px] top-[2px] w-2.5 h-2.5 bg-slate-400 rounded-full pointer-events-none peer-checked:translate-x-2.5 peer-checked:bg-white transition-transform" />
 											</div>
 											<span className="text-[10px] font-medium text-slate-500 group-hover:text-slate-300">
-												Duck
+												{t("editor.polishPanel.duck", "Duck")}
 											</span>
 										</div>
 									</label>
 									<label className="space-y-1.5 col-span-1 pl-1">
 										<span className="text-[9px] font-semibold text-slate-500 uppercase pl-0.5">
-											Vol
+											{t("editor.polishPanel.vol", "Vol")}
 										</span>
 										<input
 											type="number"
@@ -391,7 +402,7 @@ export function SceneAudioPolishPanel({
 									</label>
 									<label className="space-y-1.5 col-span-1">
 										<span className="text-[9px] font-semibold text-slate-500 uppercase pl-0.5">
-											Fade In
+											{t("editor.polishPanel.fadeIn", "Fade In")}
 										</span>
 										<input
 											type="number"
@@ -409,7 +420,7 @@ export function SceneAudioPolishPanel({
 									</label>
 									<label className="space-y-1.5 col-span-1">
 										<span className="text-[9px] font-semibold text-slate-500 uppercase pl-0.5">
-											Fade Out
+											{t("editor.polishPanel.fadeOut", "Fade Out")}
 										</span>
 										<input
 											type="number"
@@ -432,8 +443,11 @@ export function SceneAudioPolishPanel({
 				</SettingsSection>
 
 				<SettingsSection
-					title="Auto Polish"
-					description="One-click studio templates"
+					title={t("editor.polishPanel.autoPolish", "Auto Polish")}
+					description={t(
+						"editor.polishPanel.oneClickStudioTemplates",
+						"One-click studio templates",
+					)}
 					accentColor="amber"
 				>
 					<div className="grid grid-cols-[1fr_auto] gap-2 items-center p-3 rounded-xl border border-white/5 bg-black/20">

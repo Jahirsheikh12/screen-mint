@@ -12,6 +12,7 @@ import {
 	type WebcamPreviewMode,
 	type WebcamRegion,
 	type ZoomRegion,
+	type ZoomTimingSettings,
 } from "../types";
 import { evaluateWebcamFrame } from "../webcamFrameEvaluation";
 import type { WebcamPreviewRects } from "./playbackTypes";
@@ -29,6 +30,7 @@ interface UsePlaybackWebcamFrameParams {
 	zoomRegions: ZoomRegion[];
 	cursorTelemetry: CursorTelemetryPoint[];
 	connectZooms: boolean;
+	zoomTiming?: Partial<ZoomTimingSettings>;
 	cameraSizeDuringZoom: number;
 	webcamEffects: WebcamEffects;
 	webcamPreviewMode: WebcamPreviewMode;
@@ -52,6 +54,7 @@ export function usePlaybackWebcamFrame({
 	zoomRegions,
 	cursorTelemetry,
 	connectZooms,
+	zoomTiming,
 	cameraSizeDuringZoom,
 	webcamEffects,
 	webcamPreviewMode,
@@ -130,6 +133,7 @@ export function usePlaybackWebcamFrame({
 			zoomRegions,
 			cursorTelemetry,
 			connectZooms,
+			zoomTiming,
 			cameraSizeDuringZoom,
 			enableCursorAvoidance: webcamEffects.subtleAvoidance,
 			compositionRect,
@@ -147,6 +151,7 @@ export function usePlaybackWebcamFrame({
 		cameraSizeDuringZoom,
 		compositionRect,
 		connectZooms,
+		zoomTiming,
 		contentRect,
 		cursorTelemetry,
 		currentTime,

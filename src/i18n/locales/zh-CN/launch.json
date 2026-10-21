@@ -50,7 +50,21 @@
 		"systemAudio": "系统音频",
 		"microphone": "麦克风",
 		"language": "语言",
-		"finalizing": "正在完成…"
+		"finalizing": "正在完成…",
+		"defaultCamera": "默认摄像头",
+		"previewSize": "预览大小",
+		"previewSmall": "小",
+		"previewMedium": "中",
+		"previewLarge": "大",
+		"previewCorner": "预览位置",
+		"cornerTopLeft": "左上角",
+		"cornerTopRight": "右上角",
+		"cornerBottomLeft": "左下角",
+		"cornerBottomRight": "右下角",
+		"previewShape": "预览形状",
+		"shapeRoundedRect": "圆角矩形",
+		"shapeCircle": "圆形",
+		"showScreenshot": "查看"
 	},
 	"tabs": {
 		"display": "显示器",
@@ -80,7 +94,12 @@
 		"any": "任意",
 		"presets": "预设",
 		"custom": "自定义",
-		"position": "位置"
+		"position": "位置",
+		"adjustArea": "调整区域",
+		"clearArea": "清除区域",
+		"widthShort": "宽",
+		"heightShort": "高",
+		"selectedAreaTitle": "已选择的录制区域"
 	},
 	"device": {
 		"noIosDevices": "没有通过 USB 连接的 iOS 设备",
@@ -101,7 +120,12 @@
 		"qualityHigh": "高",
 		"qualityMedium": "中",
 		"fps": "帧率",
-		"hardwareAcceleration": "硬件加速"
+		"hardwareAcceleration": "硬件加速",
+		"title": "设置",
+		"experimentalUpdates": "实验性更新",
+		"recordingsFolder": "录制文件夹",
+		"chooseFolder": "选择文件夹…",
+		"openFolder": "打开文件夹"
 	},
 	"afterRecording": {
 		"afterRecording": "录制后",
@@ -139,7 +163,9 @@
 		"kbdLayer": "切换图层",
 		"kbdShare": "共享",
 		"kbdClose": "关闭",
-		"kbdSwitch": "切换标签"
+		"kbdSwitch": "切换标签",
+		"eyebrow": "准备录制",
+		"clearSearch": "清除搜索"
 	},
 	"permissions": {
 		"screenRecordingNeeded": "ScreenMint 需要屏幕录制权限才能开始。系统设置已打开。启用后请退出并重新打开 ScreenMint。",
@@ -162,6 +188,12 @@
 		"systemAudioUnavailable": "此源不支持系统音频。将继续录制但不包含系统音频。",
 		"microphoneDenied": "麦克风访问被拒绝。将继续录制但不包含麦克风音频。",
 		"failedToStart": "录制启动失败：{{error}}",
-		"failedToStartGeneric": "录制启动失败"
+		"failedToStartGeneric": "录制启动失败",
+		"diagnostics": "诊断信息"
+	},
+	"speakerNotes": {
+		"title": "演讲者备注",
+		"close": "关闭",
+		"placeholder": "在这里写下要点、提醒或讲稿…"
 	}
 }

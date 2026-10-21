@@ -71,6 +71,13 @@ declare global {
 			) => Promise<{ success: boolean; area?: SelectedArea | null }>;
 			getSelectedArea: () => Promise<{ success: boolean; area?: SelectedArea | null }>;
 			clearSelectedArea: () => Promise<{ success: boolean }>;
+			prepareAreaCapture: () => Promise<{
+				success: boolean;
+				displayId: number;
+				area: SelectedArea | null;
+			}>;
+			beginAreaEdit: (preview?: SelectedArea | null) => Promise<{ success: boolean }>;
+			cancelAreaEdit: () => Promise<{ success: boolean; area: SelectedArea | null }>;
 			onSelectedAreaChanged: (
 				callback: (state: { area: SelectedArea | null }) => void,
 			) => () => void;
@@ -252,6 +259,16 @@ declare global {
 			onMobileCapturePairingStateChanged: (
 				callback: (state: MobileCapturePairingState) => void,
 			) => () => void;
+			getAnnouncements: () => Promise<
+				Array<{
+					id: string;
+					title: string;
+					body: string;
+					url?: string;
+					presentation: "toast" | "export";
+				}>
+			>;
+			dismissAnnouncement: (id: string) => Promise<void>;
 			openExternalUrl: (url: string) => Promise<{ success: boolean; error?: string }>;
 			getAccessibilityPermissionStatus: () => Promise<{
 				success: boolean;
@@ -313,7 +330,20 @@ declare global {
 			writeExportedVideoToPath: (
 				videoData: ArrayBuffer,
 				filePath: string,
+				captionSidecar?: { srt?: string; vtt?: string },
 			) => Promise<{ success: boolean; path?: string; message?: string; error?: string }>;
+			finalizeExportedTemp: (payload: {
+				tempPath: string;
+				fileName: string;
+				captionSidecar?: { srt?: string; vtt?: string };
+			}) => Promise<{
+				success: boolean;
+				path?: string;
+				canceled?: boolean;
+				message?: string;
+				error?: string;
+			}>;
+			discardExportedTemp: (tempPath: string) => Promise<{ success: boolean }>;
 			saveExportedVideoToRecordings: (
 				videoData: ArrayBuffer,
 				fileName: string,
@@ -356,6 +386,12 @@ declare global {
 			openVideoFilePicker: () => Promise<{ success: boolean; path?: string; canceled?: boolean }>;
 			openAudioFilePicker: () => Promise<{ success: boolean; path?: string; canceled?: boolean }>;
 			openImageFilePicker: () => Promise<{ success: boolean; path?: string; canceled?: boolean }>;
+			/** Picks a video for the canvas background; unlike openVideoFilePicker it keeps the open project. */
+			openBackgroundVideoPicker: () => Promise<{
+				success: boolean;
+				path?: string;
+				canceled?: boolean;
+			}>;
 			setCurrentVideoPath: (path: string) => Promise<{ success: boolean }>;
 			getCurrentVideoPath: () => Promise<{ success: boolean; path?: string }>;
 			clearCurrentVideoPath: () => Promise<{ success: boolean }>;
@@ -386,6 +422,17 @@ declare global {
 				error?: string;
 			}>;
 			cancelCaptionGeneration: () => Promise<{ success: boolean }>;
+			deleteCaptionModel: (
+				model: "base" | "small" | "medium",
+			) => Promise<{ success: boolean; message?: string; error?: string }>;
+			/** Picks a whisper.cpp model (.bin) or program; `error` is a validation code. */
+			chooseCustomWhisperFile: (kind: "model" | "executable") => Promise<{
+				success: boolean;
+				canceled?: boolean;
+				path?: string;
+				error?: string;
+			}>;
+			clearCustomWhisperFile: (kind: "model" | "executable") => Promise<{ success: boolean }>;
 			exportCaptionsTranscript: (payload: {
 				videoPath?: string;
 				format: "srt" | "vtt" | "txt";
@@ -419,6 +466,23 @@ declare global {
 				canceled?: boolean;
 				error?: string;
 			}>;
+			listProjectFiles: () => Promise<{
+				success: boolean;
+				projects: Array<{
+					path: string;
+					name: string;
+					modifiedAt: number;
+					thumbnail: string | null;
+				}>;
+				error?: string;
+			}>;
+			openProjectFileAtPath: (filePath: string) => Promise<{
+				success: boolean;
+				path?: string;
+				project?: unknown;
+				message?: string;
+				error?: string;
+			}>;
 			loadCurrentProjectFile: () => Promise<{
 				success: boolean;
 				path?: string;
@@ -433,6 +497,10 @@ declare global {
 			getPlatform: () => Promise<string>;
 			getAppVersion: () => Promise<string>;
 			getUpdaterState: () => Promise<UpdaterState>;
+			setExperimentalUpdates: (enabled: boolean) => Promise<UpdaterState>;
+			skipUpdateVersion: () => Promise<UpdaterState>;
+			/** Fits the update toast window to its card (bottom edge stays put). */
+			resizeUpdateToast: (height: number) => void;
 			checkForUpdates: () => Promise<UpdaterState>;
 			downloadUpdate: () => Promise<UpdaterState>;
 			installUpdateAndRestart: () => Promise<{ success: boolean; reason?: string }>;
@@ -512,7 +580,10 @@ declare global {
 			/** Countdown timer before recording */
 			getCountdownDelay: () => Promise<{ success: boolean; delay: number }>;
 			setCountdownDelay: (delay: number) => Promise<{ success: boolean; error?: string }>;
-			startCountdown: (seconds: number) => Promise<{ success: boolean; cancelled?: boolean }>;
+			startCountdown: (
+				seconds: number,
+				displayId?: number,
+			) => Promise<{ success: boolean; cancelled?: boolean }>;
 			cancelCountdown: () => Promise<{ success: boolean }>;
 			onCountdownTick: (callback: (seconds: number) => void) => () => void;
 			/** HUD settings */

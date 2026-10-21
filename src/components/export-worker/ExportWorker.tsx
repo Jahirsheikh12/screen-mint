@@ -59,6 +59,7 @@ async function runWorkerExport(request: ExportV2StartRequest) {
 						height: request.height,
 						frameRate: request.frameRate,
 						bitrate: request.bitrate ?? 12_000_000,
+						keyframeIntervalSeconds: request.keyframeIntervalSeconds,
 						codec: "avc1.640033",
 						outputPath: request.outputPath,
 						schedulerMode: "worker",

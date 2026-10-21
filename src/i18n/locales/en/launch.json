@@ -50,7 +50,21 @@
 		"systemAudio": "System audio",
 		"microphone": "Microphone",
 		"language": "Language",
-		"finalizing": "Finalising…"
+		"finalizing": "Finalising…",
+		"defaultCamera": "Default camera",
+		"previewSize": "Preview size",
+		"previewSmall": "Small",
+		"previewMedium": "Medium",
+		"previewLarge": "Large",
+		"previewCorner": "Preview corner",
+		"cornerTopLeft": "Top left",
+		"cornerTopRight": "Top right",
+		"cornerBottomLeft": "Bottom left",
+		"cornerBottomRight": "Bottom right",
+		"previewShape": "Preview shape",
+		"shapeRoundedRect": "Rounded rectangle",
+		"shapeCircle": "Circle",
+		"showScreenshot": "Show"
 	},
 	"tabs": {
 		"display": "Display",
@@ -80,7 +94,12 @@
 		"any": "Any",
 		"presets": "Presets",
 		"custom": "Custom",
-		"position": "Position"
+		"position": "Position",
+		"adjustArea": "Adjust area",
+		"clearArea": "Clear area",
+		"widthShort": "W",
+		"heightShort": "H",
+		"selectedAreaTitle": "Selected recording area"
 	},
 	"device": {
 		"noIosDevices": "No USB connected iOS devices",
@@ -101,7 +120,12 @@
 		"qualityHigh": "High",
 		"qualityMedium": "Medium",
 		"fps": "Frame rate",
-		"hardwareAcceleration": "Hardware acceleration"
+		"hardwareAcceleration": "Hardware acceleration",
+		"title": "Settings",
+		"experimentalUpdates": "Experimental updates",
+		"recordingsFolder": "Recordings folder",
+		"chooseFolder": "Choose folder…",
+		"openFolder": "Open folder"
 	},
 	"afterRecording": {
 		"afterRecording": "After recording",
@@ -139,7 +163,9 @@
 		"kbdLayer": "toggle layer",
 		"kbdShare": "share",
 		"kbdClose": "close",
-		"kbdSwitch": "switch tab"
+		"kbdSwitch": "switch tab",
+		"eyebrow": "Ready to record",
+		"clearSearch": "Clear search"
 	},
 	"permissions": {
 		"screenRecordingNeeded": "ScreenMint needs Screen Recording permission before you start. System Settings has been opened. After enabling it, quit and reopen ScreenMint.",
@@ -162,6 +188,12 @@
 		"systemAudioUnavailable": "System audio is not available for this source. Recording will continue without system audio.",
 		"microphoneDenied": "Microphone access was denied. Recording will continue without microphone audio.",
 		"failedToStart": "Failed to start recording: {{error}}",
-		"failedToStartGeneric": "Failed to start recording"
+		"failedToStartGeneric": "Failed to start recording",
+		"diagnostics": "Diagnostics"
+	},
+	"speakerNotes": {
+		"title": "Speaker notes",
+		"close": "Close",
+		"placeholder": "Write talking points, reminders, or a script here…"
 	}
 }

@@ -1,6 +1,10 @@
 import { getDisplayAssetUrl, getDisplayAssetUrlSync } from "@/lib/assetPath";
 import { type BackgroundMusicMood, BUILT_IN_BACKGROUND_MUSIC } from "@/lib/backgroundMusic";
-import { WALLPAPER_PATHS, WALLPAPER_THUMB_RELATIVE_PATHS } from "@/lib/wallpapers";
+import {
+	isVideoWallpaper,
+	WALLPAPER_PATHS,
+	WALLPAPER_THUMB_RELATIVE_PATHS,
+} from "@/lib/wallpapers";
 
 export interface GradientPreset {
 	from: string;
@@ -59,7 +63,7 @@ export function parseGradientString(
 
 export const GRADIENTS = GRADIENT_PRESETS.map(presetToGradientCss);
 
-export type BackgroundTab = "image" | "color" | "gradient";
+export type BackgroundTab = "image" | "video" | "color" | "gradient";
 
 export function isHexWallpaper(value: string): boolean {
 	return /^#(?:[0-9a-f]{3}){1,2}$/i.test(value);
@@ -77,6 +81,10 @@ export function formatAudioDuration(durationMs?: number) {
 }
 
 export function getBackgroundTabForWallpaper(value: string): BackgroundTab {
+	if (isVideoWallpaper(value)) {
+		return "video";
+	}
+
 	if (
 		GRADIENTS.includes(value) ||
 		value.startsWith("linear-gradient") ||

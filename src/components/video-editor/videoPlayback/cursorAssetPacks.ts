@@ -17,6 +17,22 @@ import resizeNeswCustomUrl from "../../../assets/cursors/custom/resize-nesw.svg"
 import screenshotSelectionCustomUrl from "../../../assets/cursors/custom/screenshot-selection.svg";
 import zoomInCustomUrl from "../../../assets/cursors/custom/zoom-in.svg";
 import zoomOutCustomUrl from "../../../assets/cursors/custom/zoom-out.svg";
+import arrowInvertedUrl from "../../../assets/cursors/inverted/arrow.svg";
+import closedHandInvertedUrl from "../../../assets/cursors/inverted/closed-hand.svg";
+import copyInvertedUrl from "../../../assets/cursors/inverted/copy.svg";
+import crosshairInvertedUrl from "../../../assets/cursors/inverted/crosshair.svg";
+import helpInvertedUrl from "../../../assets/cursors/inverted/help.svg";
+import moveInvertedUrl from "../../../assets/cursors/inverted/move.svg";
+import notAllowedInvertedUrl from "../../../assets/cursors/inverted/not-allowed.svg";
+import openHandInvertedUrl from "../../../assets/cursors/inverted/open-hand.svg";
+import pointerInvertedUrl from "../../../assets/cursors/inverted/pointer.svg";
+import resizeEwInvertedUrl from "../../../assets/cursors/inverted/resize-ew.svg";
+import resizeNeswInvertedUrl from "../../../assets/cursors/inverted/resize-nesw.svg";
+import resizeNsInvertedUrl from "../../../assets/cursors/inverted/resize-ns.svg";
+import screenshotSelectionInvertedUrl from "../../../assets/cursors/inverted/screenshot-selection.svg";
+import textInvertedUrl from "../../../assets/cursors/inverted/text.svg";
+import zoomInInvertedUrl from "../../../assets/cursors/inverted/zoom-in.svg";
+import zoomOutInvertedUrl from "../../../assets/cursors/inverted/zoom-out.svg";
 import arrowMacosUrl from "../../../assets/cursors/macos/arrow.svg";
 import closedHandMacosUrl from "../../../assets/cursors/macos/closed-hand.svg";
 import copyMacosUrl from "../../../assets/cursors/macos/copy.svg";
@@ -70,10 +86,10 @@ export const SUPPORTED_CURSOR_KEYS: CursorType[] = [
 	"screenshot-selection",
 ];
 
-export const cursorAssetPacks: Record<
-	CursorPack,
-	Partial<Record<CursorType, CursorAssetDefinition>>
-> = {
+type CursorPackDefinitions = Partial<Record<CursorType, CursorAssetDefinition>>;
+type RecoloredCursorPack = "amber" | "mint" | "rose" | "mono";
+
+const baseCursorPacks: Record<Exclude<CursorPack, RecoloredCursorPack>, CursorPackDefinitions> = {
 	classic: {
 		arrow: {
 			url: arrowClassicUrl,
@@ -228,10 +244,107 @@ export const cursorAssetPacks: Record<
 			fallbackAnchor: { x: 0.5, y: 0.5 },
 		},
 	},
+	inverted: {
+		arrow: {
+			url: arrowInvertedUrl,
+			fallbackAnchor: { x: 0.18, y: 0.1 },
+		},
+		text: {
+			url: textInvertedUrl,
+			fallbackAnchor: { x: 0.5, y: 0.5 },
+		},
+		pointer: {
+			url: pointerInvertedUrl,
+			fallbackAnchor: { x: 0.36, y: 0.08 },
+		},
+		crosshair: {
+			url: crosshairInvertedUrl,
+			fallbackAnchor: { x: 0.5, y: 0.5 },
+		},
+		"open-hand": {
+			url: openHandInvertedUrl,
+			fallbackAnchor: { x: 0.5, y: 0.28 },
+		},
+		"closed-hand": {
+			url: closedHandInvertedUrl,
+			fallbackAnchor: { x: 0.5, y: 0.28 },
+		},
+		"resize-ew": {
+			url: resizeEwInvertedUrl,
+			fallbackAnchor: { x: 0.5, y: 0.5 },
+		},
+		"resize-ns": {
+			url: resizeNsInvertedUrl,
+			fallbackAnchor: { x: 0.5, y: 0.5 },
+		},
+		"resize-nesw": {
+			url: resizeNeswInvertedUrl,
+			fallbackAnchor: { x: 0.5, y: 0.5 },
+		},
+		"not-allowed": {
+			url: notAllowedInvertedUrl,
+			fallbackAnchor: { x: 0.18, y: 0.1 },
+		},
+		copy: {
+			url: copyInvertedUrl,
+			fallbackAnchor: { x: 0.18, y: 0.1 },
+		},
+		help: {
+			url: helpInvertedUrl,
+			fallbackAnchor: { x: 0.5, y: 0.5 },
+		},
+		move: {
+			url: moveInvertedUrl,
+			fallbackAnchor: { x: 0.5, y: 0.5 },
+		},
+		"zoom-in": {
+			url: zoomInInvertedUrl,
+			fallbackAnchor: { x: 0.4, y: 0.35 },
+		},
+		"zoom-out": {
+			url: zoomOutInvertedUrl,
+			fallbackAnchor: { x: 0.4, y: 0.35 },
+		},
+		"screenshot-selection": {
+			url: screenshotSelectionInvertedUrl,
+			fallbackAnchor: { x: 0.5, y: 0.5 },
+		},
+	},
+};
+
+/** Colour variants of the macOS-style art (same geometry, so same anchors). */
+const RECOLORED_PACK_URLS = import.meta.glob<string>(
+	"../../../assets/cursors/{amber,mint,rose,mono}/*.svg",
+	{ eager: true, query: "?url", import: "default" },
+);
+
+function buildRecoloredPack(pack: RecoloredCursorPack): CursorPackDefinitions {
+	const definitions: CursorPackDefinitions = {};
+	for (const [key, base] of Object.entries(baseCursorPacks.macos) as [
+		CursorType,
+		CursorAssetDefinition,
+	][]) {
+		const url = RECOLORED_PACK_URLS[`../../../assets/cursors/${pack}/${key}.svg`];
+		if (url) definitions[key] = { ...base, url };
+	}
+	return definitions;
+}
+
+export const cursorAssetPacks: Record<CursorPack, CursorPackDefinitions> = {
+	...baseCursorPacks,
+	amber: buildRecoloredPack("amber"),
+	mint: buildRecoloredPack("mint"),
+	rose: buildRecoloredPack("rose"),
+	mono: buildRecoloredPack("mono"),
 };
 
 export const cursorPackPreviewUrls: Record<CursorPack, string> = {
 	classic: arrowClassicUrl,
 	custom: pointerCustomUrl,
 	macos: arrowMacosUrl,
+	inverted: arrowInvertedUrl,
+	amber: cursorAssetPacks.amber.arrow?.url ?? arrowMacosUrl,
+	mint: cursorAssetPacks.mint.arrow?.url ?? arrowMacosUrl,
+	rose: cursorAssetPacks.rose.arrow?.url ?? arrowMacosUrl,
+	mono: cursorAssetPacks.mono.arrow?.url ?? arrowMacosUrl,
 };

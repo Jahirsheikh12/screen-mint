@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
 import { I18nProvider } from "./contexts/I18nContext.tsx";
 import "./index.css";
+import { applyTheme, readThemePreference } from "./lib/theme.ts";
 
 document.documentElement.dataset.platform = /mac/i.test(navigator.platform) ? "macos" : "other";
 
@@ -15,6 +16,7 @@ document.documentElement.dataset.platform = /mac/i.test(navigator.platform) ? "m
 		"countdown",
 		"area-overlay",
 		"speaker-notes",
+		"update-toast",
 	];
 	const wt = new URLSearchParams(window.location.search).get("windowType") || "";
 	if (overlayTypes.includes(wt)) {
@@ -23,10 +25,7 @@ document.documentElement.dataset.platform = /mac/i.test(navigator.platform) ? "m
 		const root = document.getElementById("root");
 		if (root) root.style.background = "transparent";
 	} else if (wt === "editor") {
-		document.documentElement.style.background = "#0c0c0f";
-		document.body.style.background = "#0c0c0f";
-		const root = document.getElementById("root");
-		if (root) root.style.background = "#0c0c0f";
+		applyTheme(readThemePreference());
 	}
 	if (wt === "hud-overlay") {
 		document.documentElement.style.overflow = "hidden";

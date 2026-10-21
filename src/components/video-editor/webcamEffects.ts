@@ -1,10 +1,12 @@
 import {
 	DEFAULT_CAMERA_LAYOUT_MOTION_PRESET,
 	DEFAULT_WEBCAM_EFFECTS,
+	MAX_WEBCAM_SOURCE_CROP,
 	type WebcamEffectFallbackState,
 	type WebcamEffects,
 	type WebcamHealthMetrics,
 	type WebcamRegion,
+	type WebcamSourceCrop,
 } from "./types";
 import type { WebcamSegmentationFrame } from "./webcamSegmentation";
 
@@ -168,6 +170,23 @@ function mixColorWithWarmth(color: string, warmth: number) {
 		.padStart(2, "0")}${nextBlue.toString(16).padStart(2, "0")}`;
 }
 
+export function normalizeWebcamSourceCrop(candidate: unknown): WebcamSourceCrop {
+	const crop = (candidate && typeof candidate === "object" ? candidate : {}) as Record<
+		string,
+		unknown
+	>;
+	const side = (value: unknown) =>
+		typeof value === "number" && Number.isFinite(value)
+			? clamp(value, 0, MAX_WEBCAM_SOURCE_CROP)
+			: 0;
+	return {
+		top: side(crop.top),
+		right: side(crop.right),
+		bottom: side(crop.bottom),
+		left: side(crop.left),
+	};
+}
+
 export function normalizeWebcamEffects(
 	candidate: Partial<WebcamEffects> | null | undefined,
 ): WebcamEffects {
@@ -275,6 +294,7 @@ export function normalizeWebcamEffects(
 			typeof effects.subtleAvoidance === "boolean"
 				? effects.subtleAvoidance
 				: DEFAULT_WEBCAM_EFFECTS.subtleAvoidance,
+		sourceCrop: normalizeWebcamSourceCrop(effects.sourceCrop),
 	};
 }
 

@@ -53,7 +53,12 @@ import {
 	type CaptionTrack,
 	type CaptionWord,
 	type CropRegion,
+	CURSOR_CLICK_BOUNCE_DURATION_MAX_MS,
+	CURSOR_CLICK_BOUNCE_DURATION_MIN_MS,
+	CURSOR_CLICK_EFFECT_STYLE_OPTIONS,
 	CURSOR_PACK_OPTIONS,
+	type CursorClickEffectStyle,
+	type CursorClickStyleSettings,
 	type CursorMovementStyle,
 	type CursorPack,
 	type CursorSpringSettings,
@@ -80,6 +85,7 @@ import {
 	DEFAULT_CLICK_HIGHLIGHT_SIZE,
 	DEFAULT_CROP_REGION,
 	DEFAULT_CURSOR_CLICK_BOUNCE,
+	DEFAULT_CURSOR_CLICK_STYLE,
 	DEFAULT_CURSOR_COLOR,
 	DEFAULT_CURSOR_FOLLOW_TRACKING,
 	DEFAULT_CURSOR_MOTION_BLUR,
@@ -108,10 +114,18 @@ import {
 	DEFAULT_ZOOM_DEPTH,
 	DEFAULT_ZOOM_MODE,
 	DEFAULT_ZOOM_MOTION_BLUR,
+	DEFAULT_ZOOM_TEMPORAL_BLUR,
+	DEFAULT_ZOOM_TIMING,
 	DEVICE_MOCKUP_OPTIONS,
 	type DeviceMockup,
 	type KeyboardShortcutPosition,
 	type KeyboardShortcutTheme,
+	LEGACY_CURSOR_CLICK_STYLE,
+	LEGACY_CURSOR_MOTION_BLUR_FACTOR,
+	LEGACY_ZOOM_TIMING,
+	PADDING_LINKED_MAX,
+	PADDING_UNLINKED_VERTICAL_MAX,
+	type PaddingSides,
 	SCENE_PRESET_IDS,
 	type ScenePresetId,
 	type SpeedRegion,
@@ -122,11 +136,15 @@ import {
 	type WebcamPreviewMode,
 	type WebcamRegion,
 	type WebcamSessionMetadata,
+	ZOOM_TRANSITION_EASING_OPTIONS,
 	type ZoomMode,
 	type ZoomRegion,
+	type ZoomTemporalBlurSettings,
+	type ZoomTimingSettings,
+	type ZoomTransitionEasing,
 } from "./types";
 import { normalizeCursorSpring, resolveCursorV2Fields } from "./videoPlayback/cursorV2";
-import { normalizeWebcamEffects } from "./webcamEffects";
+import { normalizeWebcamEffects, normalizeWebcamSourceCrop } from "./webcamEffects";
 import { normalizeWebcamRegion } from "./webcamRegionUtils";
 
 function normalizeCameraSpring(
@@ -144,7 +162,7 @@ function normalizeCameraSpring(
 	};
 }
 
-export const PROJECT_VERSION = 11;
+export const PROJECT_VERSION = 12;
 export const DEFAULT_VIDEO_PREVIEW_PADDING = 40;
 
 export interface ProjectEditorState {
@@ -156,7 +174,9 @@ export interface ProjectEditorState {
 	frameShadowBlur: number;
 	backgroundBlur: number;
 	zoomMotionBlur: number;
+	zoomTemporalBlur: ZoomTemporalBlurSettings;
 	connectZooms: boolean;
+	zoomTiming: ZoomTimingSettings;
 	showCursor: boolean;
 	loopCursor: boolean;
 	cursorSize: number;
@@ -181,6 +201,7 @@ export interface ProjectEditorState {
 	clickHighlightColor: string;
 	clickHighlightSize: number;
 	clickHighlightOpacity: number;
+	cursorClickStyle: CursorClickStyleSettings;
 	cursorTrailLength: number;
 	cursorTrailOpacity: number;
 	showKeyboardShortcuts: boolean;
@@ -197,6 +218,8 @@ export interface ProjectEditorState {
 	frameBorderOpacity: number;
 	borderRadius: number;
 	padding: number;
+	/** Per-side padding; null = linked (uses `padding`). */
+	paddingSides: PaddingSides | null;
 	cropRegion: CropRegion;
 	zoomRegions: ZoomRegion[];
 	trimRegions: TrimRegion[];
@@ -425,6 +448,10 @@ function normalizePartialWebcamEffects(candidate: unknown): Partial<WebcamEffect
 
 	if (typeof partial.faceAwareFraming === "boolean") {
 		normalized.faceAwareFraming = partial.faceAwareFraming;
+	}
+
+	if (partial.sourceCrop && typeof partial.sourceCrop === "object") {
+		normalized.sourceCrop = normalizeWebcamSourceCrop(partial.sourceCrop);
 	}
 
 	if (typeof partial.subtleAvoidance === "boolean") {
@@ -753,6 +780,7 @@ const VALID_CAPTION_ANIMATION_MODES: CaptionSettings["animationMode"][] = [
 	"active-word",
 	"fade",
 	"pop",
+	"rise",
 	"typewriter",
 	"karaoke-fill",
 ];
@@ -846,6 +874,9 @@ function normalizeCaptionSettings(candidate: unknown): CaptionSettings {
 		safeAreaInset: isFiniteNumber(settings.safeAreaInset)
 			? clamp(settings.safeAreaInset, 2, 20)
 			: DEFAULT_CAPTION_SETTINGS.safeAreaInset,
+		maxWidthPercent: isFiniteNumber(settings.maxWidthPercent)
+			? clamp(settings.maxWidthPercent, 40, 95)
+			: DEFAULT_CAPTION_SETTINGS.maxWidthPercent,
 		showTranscriptPanel:
 			typeof settings.showTranscriptPanel === "boolean"
 				? settings.showTranscriptPanel
@@ -943,6 +974,104 @@ function normalizeCaptionGenerationOptions(candidate: unknown): CaptionGeneratio
 
 function normalizeZoomMode(value: unknown): ZoomMode {
 	return value === "cursor-follow" || value === "static" ? value : DEFAULT_ZOOM_MODE;
+}
+
+function normalizeZoomEasing(value: unknown, fallback: ZoomTransitionEasing): ZoomTransitionEasing {
+	return ZOOM_TRANSITION_EASING_OPTIONS.some((option) => option.value === value)
+		? (value as ZoomTransitionEasing)
+		: fallback;
+}
+
+export function normalizeZoomTiming(candidate: unknown): ZoomTimingSettings {
+	const raw =
+		candidate && typeof candidate === "object" ? (candidate as Partial<ZoomTimingSettings>) : {};
+	const ms = (value: unknown, fallback: number, max: number) =>
+		isFiniteNumber(value) ? clamp(value, 0, max) : fallback;
+	return {
+		zoomInDurationMs: ms(raw.zoomInDurationMs, DEFAULT_ZOOM_TIMING.zoomInDurationMs, 5000),
+		zoomInOverlapMs: ms(raw.zoomInOverlapMs, DEFAULT_ZOOM_TIMING.zoomInOverlapMs, 5000),
+		zoomOutDurationMs: ms(raw.zoomOutDurationMs, DEFAULT_ZOOM_TIMING.zoomOutDurationMs, 5000),
+		connectedZoomGapMs: ms(raw.connectedZoomGapMs, DEFAULT_ZOOM_TIMING.connectedZoomGapMs, 10000),
+		connectedZoomDurationMs: ms(
+			raw.connectedZoomDurationMs,
+			DEFAULT_ZOOM_TIMING.connectedZoomDurationMs,
+			5000,
+		),
+		zoomInEasing: normalizeZoomEasing(raw.zoomInEasing, DEFAULT_ZOOM_TIMING.zoomInEasing),
+		zoomOutEasing: normalizeZoomEasing(raw.zoomOutEasing, DEFAULT_ZOOM_TIMING.zoomOutEasing),
+		connectedZoomEasing: normalizeZoomEasing(
+			raw.connectedZoomEasing,
+			DEFAULT_ZOOM_TIMING.connectedZoomEasing,
+		),
+	};
+}
+
+export function normalizeZoomTemporalBlur(candidate: unknown): ZoomTemporalBlurSettings {
+	if (!candidate || typeof candidate !== "object") return { ...DEFAULT_ZOOM_TEMPORAL_BLUR };
+	const raw = candidate as Partial<ZoomTemporalBlurSettings>;
+	return {
+		enabled: raw.enabled === true,
+		sampleCount: isFiniteNumber(raw.sampleCount) ? clamp(Math.round(raw.sampleCount), 2, 32) : null,
+		shutterFraction: isFiniteNumber(raw.shutterFraction) ? clamp(raw.shutterFraction, 0, 1) : null,
+	};
+}
+
+export function normalizePaddingSides(candidate: unknown): PaddingSides | null {
+	if (!candidate || typeof candidate !== "object") return null;
+	const raw = candidate as Partial<PaddingSides>;
+	const side = (value: unknown, max: number) => (isFiniteNumber(value) ? clamp(value, 0, max) : 0);
+	return {
+		top: side(raw.top, PADDING_UNLINKED_VERTICAL_MAX),
+		bottom: side(raw.bottom, PADDING_UNLINKED_VERTICAL_MAX),
+		left: side(raw.left, PADDING_LINKED_MAX),
+		right: side(raw.right, PADDING_LINKED_MAX),
+	};
+}
+
+export function normalizeCursorClickStyle(candidate: unknown): CursorClickStyleSettings {
+	const raw =
+		candidate && typeof candidate === "object"
+			? (candidate as Partial<CursorClickStyleSettings>)
+			: {};
+	return {
+		effect: CURSOR_CLICK_EFFECT_STYLE_OPTIONS.some((option) => option.value === raw.effect)
+			? (raw.effect as CursorClickEffectStyle)
+			: DEFAULT_CURSOR_CLICK_STYLE.effect,
+		effectDurationMs: isFiniteNumber(raw.effectDurationMs)
+			? clamp(raw.effectDurationMs, 100, 3000)
+			: DEFAULT_CURSOR_CLICK_STYLE.effectDurationMs,
+		bounceDurationMs: isFiniteNumber(raw.bounceDurationMs)
+			? clamp(
+					raw.bounceDurationMs,
+					CURSOR_CLICK_BOUNCE_DURATION_MIN_MS,
+					CURSOR_CLICK_BOUNCE_DURATION_MAX_MS,
+				)
+			: DEFAULT_CURSOR_CLICK_STYLE.bounceDurationMs,
+		delayEffectUntilBounce:
+			typeof raw.delayEffectUntilBounce === "boolean"
+				? raw.delayEffectUntilBounce
+				: DEFAULT_CURSOR_CLICK_STYLE.delayEffectUntilBounce,
+	};
+}
+
+/**
+ * Projects saved before v12 had fixed zoom/click timing and only bounced the cursor when click
+ * effects were on; keep their look unchanged on load.
+ */
+export function withLegacyZoomTiming(
+	version: number,
+	editor: Partial<ProjectEditorState>,
+): Partial<ProjectEditorState> {
+	if (version >= 12) return editor;
+	return {
+		...editor,
+		zoomTiming: editor.zoomTiming ?? LEGACY_ZOOM_TIMING,
+		cursorClickStyle: editor.cursorClickStyle ?? LEGACY_CURSOR_CLICK_STYLE,
+		...(editor.clickEffectsEnabled ? {} : { cursorClickBounce: 0 }),
+		...(isFiniteNumber(editor.cursorMotionBlur)
+			? { cursorMotionBlur: editor.cursorMotionBlur * LEGACY_CURSOR_MOTION_BLUR_FACTOR }
+			: {}),
+	};
 }
 
 function normalizeCursorFollowTracking(candidate: unknown) {
@@ -1336,6 +1465,7 @@ export function normalizeProjectEditor(
 							: DEFAULT_AUDIO_FADE_OUT_MS,
 						loop:
 							typeof region.loop === "boolean" ? region.loop : normalizedSourceType === "built-in",
+						...(region.normalize === true ? { normalize: true } : {}),
 					};
 				})
 		: [];
@@ -1534,7 +1664,9 @@ export function normalizeProjectEditor(
 		frameShadowBlur: normalizedFrameShadow.blur,
 		backgroundBlur: normalizedBackgroundBlur,
 		zoomMotionBlur: normalizedZoomMotionBlur,
+		zoomTemporalBlur: normalizeZoomTemporalBlur(editor.zoomTemporalBlur),
 		connectZooms: typeof editor.connectZooms === "boolean" ? editor.connectZooms : true,
+		zoomTiming: normalizeZoomTiming(editor.zoomTiming),
 		showCursor: typeof editor.showCursor === "boolean" ? editor.showCursor : true,
 		loopCursor: typeof editor.loopCursor === "boolean" ? editor.loopCursor : false,
 		cursorSize: isFiniteNumber(editor.cursorSize)
@@ -1544,7 +1676,7 @@ export function normalizeProjectEditor(
 			? clamp(editor.cursorSmoothing, 0, 2)
 			: DEFAULT_CURSOR_SMOOTHING,
 		cursorMotionBlur: isFiniteNumber((editor as Partial<ProjectEditorState>).cursorMotionBlur)
-			? clamp((editor as Partial<ProjectEditorState>).cursorMotionBlur as number, 0, 2)
+			? clamp((editor as Partial<ProjectEditorState>).cursorMotionBlur as number, 0, 5)
 			: DEFAULT_CURSOR_MOTION_BLUR,
 		cursorClickBounce: isFiniteNumber((editor as Partial<ProjectEditorState>).cursorClickBounce)
 			? clamp((editor as Partial<ProjectEditorState>).cursorClickBounce as number, 0, 5)
@@ -1589,6 +1721,7 @@ export function normalizeProjectEditor(
 		clickHighlightOpacity: isFiniteNumber(editor.clickHighlightOpacity)
 			? clamp(editor.clickHighlightOpacity, 0, 1)
 			: DEFAULT_CLICK_HIGHLIGHT_OPACITY,
+		cursorClickStyle: normalizeCursorClickStyle(editor.cursorClickStyle),
 		cursorTrailLength: isFiniteNumber(editor.cursorTrailLength)
 			? clamp(editor.cursorTrailLength, 0, 20)
 			: DEFAULT_CURSOR_TRAIL_LENGTH,
@@ -1637,6 +1770,7 @@ export function normalizeProjectEditor(
 		frameBorderOpacity: normalizedFrameBorder.opacity,
 		borderRadius: typeof editor.borderRadius === "number" ? editor.borderRadius : 12.5,
 		padding: normalizedPadding,
+		paddingSides: normalizePaddingSides(editor.paddingSides),
 		cropRegion: {
 			x: cropX,
 			y: cropY,

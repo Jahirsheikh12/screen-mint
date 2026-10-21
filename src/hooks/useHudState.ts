@@ -39,7 +39,8 @@ export const DEFAULT_HUD_SETTINGS: HudSettings = {
 	speakerNotesEnabled: false,
 	speakerNotesText: "",
 	afterRecordingAction: "create-project",
-	countdownDelay: 0,
+	// Matches the recorder's saved default so the menu shows the delay that will actually run.
+	countdownDelay: 3,
 	autoCreateZooms: true,
 	recordingQuality: DEFAULT_RECORDING_RUNTIME_SETTINGS.recordingQuality,
 	recordingFps: DEFAULT_RECORDING_RUNTIME_SETTINGS.recordingFps,
@@ -354,6 +355,14 @@ export function useHudState() {
 		await window.electronAPI.clearSelectedArea();
 		setSelectedAreaState(null);
 	}, []);
+
+	// An area only applies in Area mode; leaving it records the full display or window.
+	// The area itself is remembered per display and comes back when Area mode is reopened.
+	useEffect(() => {
+		if (mode === "area" || screenRecorder.recording || selectedArea == null) return;
+		void window.electronAPI.closeAreaOverlay();
+		void window.electronAPI.clearSelectedArea();
+	}, [mode, screenRecorder.recording, selectedArea]);
 
 	// Toggle overlay: expands/shrinks the HUD window via IPC
 	const resizeHudWindow = useCallback((contentVisible: boolean) => {

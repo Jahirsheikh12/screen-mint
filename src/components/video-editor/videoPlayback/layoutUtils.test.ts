@@ -110,3 +110,40 @@ describe("layoutVideoContent", () => {
 		expect(invertedCrop.height).toBeCloseTo(userCrop.height, 10);
 	});
 });
+
+describe("per-side padding", () => {
+	it("uniform sides produce the same layout as the linked value", async () => {
+		const { calculateVideoLayoutGeometry } = await import("./layoutUtils");
+		const base = {
+			containerWidth: 1920,
+			containerHeight: 1080,
+			videoWidth: 1920,
+			videoHeight: 1080,
+		};
+		const linked = calculateVideoLayoutGeometry({ ...base, padding: 30 });
+		const sides = calculateVideoLayoutGeometry({
+			...base,
+			padding: { top: 30, bottom: 30, left: 30, right: 30 },
+		});
+		expect(sides?.maskRect).toEqual(linked?.maskRect);
+	});
+
+	it("extra top padding pushes the frame down", async () => {
+		const { calculateVideoLayoutGeometry } = await import("./layoutUtils");
+		const base = {
+			containerWidth: 1920,
+			containerHeight: 1080,
+			videoWidth: 1920,
+			videoHeight: 1080,
+		};
+		const even = calculateVideoLayoutGeometry({
+			...base,
+			padding: { top: 20, bottom: 20, left: 20, right: 20 },
+		});
+		const topHeavy = calculateVideoLayoutGeometry({
+			...base,
+			padding: { top: 120, bottom: 20, left: 20, right: 20 },
+		});
+		expect(topHeavy && even && topHeavy.maskRect.y > even.maskRect.y).toBe(true);
+	});
+});

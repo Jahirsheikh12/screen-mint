@@ -3,6 +3,7 @@ import {
 	ZOOM_DEPTH_SCALES,
 	type ZoomFocus,
 	type ZoomRegion,
+	type ZoomTimingSettings,
 } from "../types";
 import { DEFAULT_FOCUS } from "./constants";
 import type { CursorMotionSnapshot, CursorSimulationPath } from "./cursorSimulation";
@@ -98,6 +99,7 @@ function resolveCameraTargets(args: {
 	cursorSimulationPath: CursorSimulationPath | null;
 	zoomRegions: ZoomRegion[];
 	connectZooms?: boolean;
+	zoomTiming?: Partial<ZoomTimingSettings>;
 	geometry: CameraEvaluationGeometry;
 	currentFocus: ZoomFocus;
 	deltaSeconds: number;
@@ -108,6 +110,7 @@ function resolveCameraTargets(args: {
 		cursorSimulationPath,
 		zoomRegions,
 		connectZooms,
+		zoomTiming,
 		geometry,
 		currentFocus,
 		deltaSeconds,
@@ -123,6 +126,7 @@ function resolveCameraTargets(args: {
 		playbackTimeMs,
 		{
 			connectZooms,
+			zoomTiming,
 		},
 	);
 
@@ -232,6 +236,7 @@ export function evaluatePlaybackCameraFrame(args: {
 	cursorSimulationPath: CursorSimulationPath | null;
 	zoomRegions: ZoomRegion[];
 	connectZooms?: boolean;
+	zoomTiming?: Partial<ZoomTimingSettings>;
 	geometry: CameraEvaluationGeometry;
 	shouldSmooth: boolean;
 	cameraSpring?: CameraSpringSettings;
@@ -243,6 +248,7 @@ export function evaluatePlaybackCameraFrame(args: {
 		cursorSimulationPath,
 		zoomRegions,
 		connectZooms,
+		zoomTiming,
 		geometry,
 		shouldSmooth,
 		cameraSpring,
@@ -272,6 +278,7 @@ export function evaluatePlaybackCameraFrame(args: {
 		cursorSimulationPath,
 		zoomRegions,
 		connectZooms,
+		zoomTiming,
 		geometry,
 		currentFocus: { cx: state.focusX, cy: state.focusY },
 		deltaSeconds: 0,
@@ -321,6 +328,7 @@ export function evaluatePlaybackCameraFrame(args: {
 				cursorSimulationPath,
 				zoomRegions,
 				connectZooms,
+				zoomTiming,
 				geometry,
 				currentFocus: { cx: nextState.springX.value, cy: nextState.springY.value },
 				deltaSeconds: 0,
@@ -357,6 +365,7 @@ export function evaluatePlaybackCameraFrame(args: {
 					cursorSimulationPath,
 					zoomRegions,
 					connectZooms,
+					zoomTiming,
 					geometry,
 					currentFocus: { cx: nextState.springX.value, cy: nextState.springY.value },
 					deltaSeconds: stepDeltaSeconds,

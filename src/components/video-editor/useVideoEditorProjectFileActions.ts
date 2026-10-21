@@ -89,6 +89,23 @@ export function useVideoEditorProjectFileActions({
 		toast.success(`Project loaded from ${result.path}`);
 	}, [applyLoadedProject]);
 
+	const handleOpenProjectAtPath = useCallback(
+		async (filePath: string) => {
+			const result = await window.electronAPI.openProjectFileAtPath(filePath);
+			if (!result.success) {
+				toast.error(result.message || "Failed to open project");
+				return false;
+			}
+			const restored = await applyLoadedProject(result.project, result.path ?? null);
+			if (!restored) {
+				toast.error("Invalid project file format");
+				return false;
+			}
+			return true;
+		},
+		[applyLoadedProject],
+	);
+
 	useEffect(() => {
 		const removeLoadListener = window.electronAPI.onMenuLoadProject(handleLoadProject);
 		const removeSaveListener = window.electronAPI.onMenuSaveProject(handleSaveProject);
@@ -105,5 +122,6 @@ export function useVideoEditorProjectFileActions({
 		handleSaveProject,
 		handleSaveProjectAs,
 		handleLoadProject,
+		handleOpenProjectAtPath,
 	};
 }

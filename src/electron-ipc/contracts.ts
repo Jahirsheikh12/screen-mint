@@ -30,6 +30,9 @@ export const IPC_CHANNELS = {
 		setSelectedArea: "set-selected-area",
 		getSelectedArea: "get-selected-area",
 		clearSelectedArea: "clear-selected-area",
+		prepareAreaCapture: "prepare-area-capture",
+		beginAreaEdit: "begin-area-edit",
+		cancelAreaEdit: "cancel-area-edit",
 		autoSelectCursorDisplay: "auto-select-cursor-display",
 	},
 	screenshot: {
@@ -109,12 +112,19 @@ export const IPC_CHANNELS = {
 		saveVideo: "save-exported-video",
 		writeVideoToPath: "write-exported-video-to-path",
 		saveVideoToRecordings: "save-exported-video-to-recordings",
+		finalizeTemp: "finalize-exported-temp",
+		discardTemp: "discard-exported-temp",
+	},
+	announcements: {
+		get: "announcements:get",
+		dismiss: "announcements:dismiss",
 	},
 	files: {
 		openExternalUrl: "open-external-url",
 		openVideoPicker: "open-video-file-picker",
 		openAudioPicker: "open-audio-file-picker",
 		openImagePicker: "open-image-file-picker",
+		openBackgroundVideoPicker: "open-background-video-picker",
 		revealInFolder: "reveal-in-folder",
 		openRecordingsFolder: "open-recordings-folder",
 		copyTextToClipboard: "copy-text-to-clipboard",
@@ -126,6 +136,8 @@ export const IPC_CHANNELS = {
 		loadFile: "load-project-file",
 		loadCurrentFile: "load-current-project-file",
 		deleteAndMedia: "delete-project-and-media",
+		list: "list-project-files",
+		openPath: "open-project-file-at-path",
 	},
 	currentMedia: {
 		setVideoPath: "set-current-video-path",
@@ -149,6 +161,9 @@ export const IPC_CHANNELS = {
 		generate: "generate-captions",
 		cancelGeneration: "cancel-caption-generation",
 		exportTranscript: "export-captions-transcript",
+		deleteModel: "delete-caption-model",
+		chooseCustomWhisper: "choose-custom-whisper-file",
+		clearCustomWhisper: "clear-custom-whisper-file",
 	},
 	system: {
 		getPlatform: "get-platform",
@@ -169,6 +184,9 @@ export const IPC_CHANNELS = {
 		updateLaterForSession: "update-later-for-session",
 		dismissWhatsNew: "dismiss-whats-new",
 		setBusyState: "set-updater-busy-state",
+		setExperimentalUpdates: "set-experimental-updates",
+		skipVersion: "skip-update-version",
+		resizeToast: "resize-update-toast",
 	},
 	shortcuts: {
 		get: "get-shortcuts",

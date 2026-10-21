@@ -1,3 +1,10 @@
+import {
+	getQuickKeyframeIntervalSeconds,
+	type QuickVideoSettings,
+	resolveQuickBaseDimensions,
+	resolveQuickVideoBitrate,
+	resolveQuickVideoDimensions,
+} from "./quickExport";
 import type {
 	ExportQuality,
 	GifColorCount,
@@ -89,6 +96,8 @@ export interface ResolvedVideoExportPlan {
 	fallbackReason?: string;
 	fallbackSteps: string[];
 	encoderCandidates: ResolvedVideoEncoderCandidate[];
+	/** Set only by the Export menu's encoding mode; encoders default to 2 s. */
+	keyframeIntervalSeconds?: number;
 }
 
 export interface ResolvedGifExportPlan {
@@ -397,6 +406,10 @@ export function resolveVideoExportPlan(
 	settings: VideoExportSettings,
 	aspectRatioValue: number,
 ): ResolvedVideoExportPlan {
+	if (settings.quick) {
+		return resolveQuickVideoPlan(source, settings, settings.quick, aspectRatioValue);
+	}
+
 	const warnings: string[] = [];
 	const fallbackSteps: string[] = [];
 
@@ -489,6 +502,43 @@ export function resolveVideoExportPlan(
 		fallbackReason: fallbackSteps[0],
 		fallbackSteps,
 		encoderCandidates,
+	};
+}
+
+function resolveQuickVideoPlan(
+	source: SourceVideoMetadata,
+	settings: VideoExportSettings,
+	quick: QuickVideoSettings,
+	aspectRatioValue: number,
+): ResolvedVideoExportPlan {
+	const base = resolveQuickBaseDimensions(source.width, source.height, aspectRatioValue);
+	const { width, height } = resolveQuickVideoDimensions(base, quick.quality);
+	const bitrate = resolveQuickVideoBitrate(width, height, quick);
+	const codecCandidates = getCodecCandidates(true);
+	const warnings = height >= 2160 ? ["4K exports may be slower on some systems."] : [];
+
+	return {
+		width,
+		height,
+		frameRate: quick.frameRate,
+		bitrate,
+		codec: codecCandidates[0],
+		codecCandidates,
+		codecLabel: getCodecLabel(codecCandidates[0]),
+		preset: settings.preset,
+		mode: settings.mode,
+		resolutionMode: "source",
+		frameRateMode: quick.frameRate === 60 ? "60" : "30",
+		bitrateMode: "auto",
+		optimizeForWeb: true,
+		forceFFmpegDecoder: settings.forceFFmpegDecoder ?? false,
+		warnings,
+		fallbackApplied: false,
+		fallbackSteps: [],
+		encoderCandidates: [
+			{ width, height, frameRate: quick.frameRate, bitrate, codecCandidates, fallbackSteps: [] },
+		],
+		keyframeIntervalSeconds: getQuickKeyframeIntervalSeconds(quick.encoding),
 	};
 }
 

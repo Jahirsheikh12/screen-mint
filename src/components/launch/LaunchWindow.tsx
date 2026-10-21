@@ -354,7 +354,7 @@ export function LaunchWindow() {
 				description: result.screenshot.path,
 				action: result.screenshot.path
 					? {
-							label: "Show",
+							label: t("recording.showScreenshot"),
 							onClick: () => {
 								void window.electronAPI.revealInFolder(result.screenshot?.path ?? "");
 							},
@@ -527,18 +527,22 @@ export function LaunchWindow() {
 							/>
 						)}
 						{hud.mode === "area" && (
-							<AreaTab disabled={hud.recording} onPermissionDenied={handlePermissionDenied} />
+							<AreaTab
+								disabled={hud.recording}
+								hasArea={hud.hasSelectedArea}
+								onPermissionDenied={handlePermissionDenied}
+							/>
 						)}
 						{hud.mode === "device" && <DeviceTab />}
 
 						{/* Divider */}
-						{hud.mode !== "device" && hud.mode !== "area" && (
+						{hud.mode !== "device" && (hud.mode !== "area" || hud.hasSelectedArea) && (
 							<div className="mx-6 h-px bg-white/[0.05]" />
 						)}
 
-						{/* Record button — unified pill with inline dropdown trigger.
-						    Area mode uses the dedicated Quick Record button in HudToolbar. */}
-						{hud.mode !== "area" && (
+						{/* Record button — unified pill with inline dropdown trigger. In area mode it
+						    appears once an area is chosen, alongside the toolbar's quick record. */}
+						{(hud.mode !== "area" || hud.hasSelectedArea) && (
 							<div className="flex justify-center py-5 px-6">
 								<DropdownMenu>
 									<DropdownMenuTrigger asChild>
@@ -680,6 +684,16 @@ export function LaunchWindow() {
 							contentPanelVisible={hud.contentPanelVisible}
 							onTabClick={handleTabClick}
 							recording={hud.recording}
+							sourceLabel={
+								hud.mode === "area" && hud.selectedArea
+									? t("area.areaSize", undefined, {
+											width: Math.round(hud.selectedArea.bounds.width),
+											height: Math.round(hud.selectedArea.bounds.height),
+										})
+									: hud.hasSelectedSource
+										? hud.selectedSource
+										: undefined
+							}
 							paused={hud.paused}
 							elapsed={elapsed}
 							onToggleRecording={hud.toggleRecording}

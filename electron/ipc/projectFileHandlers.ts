@@ -1,7 +1,7 @@
 import { constants as fsConstants } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { dialog, ipcMain } from "electron";
+import { app, dialog, ipcMain } from "electron";
 import { IPC_CHANNELS } from "../../src/electron-ipc/contracts";
 import { ensureFileExtension, sanitizeFileNameBase } from "../../src/lib/fileNames";
 
@@ -26,6 +26,49 @@ interface ProjectFileIpcHandlersContext {
 	getTelemetryPathForVideo: (videoPath: string) => string;
 	getKeyboardTelemetryPathForVideo: (videoPath: string) => string;
 	isTrustedProjectPath: (projectPath?: string | null) => boolean;
+}
+
+const RECENT_PROJECTS_LIMIT = 30;
+const PROJECT_LIST_LIMIT = 60;
+
+export interface ProjectListEntry {
+	path: string;
+	name: string;
+	modifiedAt: number;
+	thumbnail: string | null;
+}
+
+/** Writes via a temp file + rename so a crash mid-save never leaves a half-written project. */
+export async function writeProjectFileAtomic(filePath: string, data: unknown) {
+	const tempPath = `${filePath}.${process.pid}.tmp`;
+	await fs.writeFile(tempPath, JSON.stringify(data, null, 2), "utf-8");
+	try {
+		await fs.rename(tempPath, filePath);
+	} catch (error) {
+		await fs.rm(tempPath, { force: true }).catch(() => undefined);
+		throw error;
+	}
+}
+
+function getRecentProjectsPath() {
+	return path.join(app.getPath("userData"), "recent-projects.json");
+}
+
+async function readRecentProjects(): Promise<string[]> {
+	try {
+		const parsed = JSON.parse(await fs.readFile(getRecentProjectsPath(), "utf-8"));
+		return Array.isArray(parsed) ? parsed.filter((entry) => typeof entry === "string") : [];
+	} catch {
+		return [];
+	}
+}
+
+async function rememberRecentProject(filePath: string) {
+	const recent = (await readRecentProjects()).filter((entry) => entry !== filePath);
+	recent.unshift(filePath);
+	await fs
+		.writeFile(getRecentProjectsPath(), JSON.stringify(recent.slice(0, RECENT_PROJECTS_LIMIT)))
+		.catch(() => undefined);
 }
 
 export function registerProjectFileIpcHandlers({
@@ -191,12 +234,9 @@ export function registerProjectFileIpcHandlers({
 					: null;
 
 				if (trustedExistingProjectPath) {
-					await fs.writeFile(
-						trustedExistingProjectPath,
-						JSON.stringify(projectData, null, 2),
-						"utf-8",
-					);
+					await writeProjectFileAtomic(trustedExistingProjectPath, projectData);
 					setCurrentProjectPath(trustedExistingProjectPath);
+					void rememberRecentProject(trustedExistingProjectPath);
 					return {
 						success: true,
 						path: trustedExistingProjectPath,
@@ -225,8 +265,9 @@ export function registerProjectFileIpcHandlers({
 					};
 				}
 
-				await fs.writeFile(result.filePath, JSON.stringify(projectData, null, 2), "utf-8");
+				await writeProjectFileAtomic(result.filePath, projectData);
 				setCurrentProjectPath(result.filePath);
+				void rememberRecentProject(result.filePath);
 
 				return {
 					success: true,
@@ -266,6 +307,7 @@ export function registerProjectFileIpcHandlers({
 			const content = await fs.readFile(filePath, "utf-8");
 			const project = JSON.parse(content);
 			setCurrentProjectPath(filePath);
+			void rememberRecentProject(filePath);
 			setCurrentMicrophoneAudioPath(null);
 			if (project && typeof project === "object" && typeof project.videoPath === "string") {
 				setCurrentVideoPath(normalizeVideoSourcePath(project.videoPath) ?? project.videoPath);
@@ -283,6 +325,76 @@ export function registerProjectFileIpcHandlers({
 				message: "Failed to load project file",
 				error: String(error),
 			};
+		}
+	});
+
+	/** Recent projects plus project files in the recordings folder, newest first. */
+	async function collectProjectEntries(): Promise<ProjectListEntry[]> {
+		const recordingsDir = await getRecordingsDir();
+		const names = await fs.readdir(recordingsDir).catch(() => [] as string[]);
+		const inRecordings = names
+			.filter((name) => projectFileExtensions.includes(path.extname(name).slice(1).toLowerCase()))
+			.map((name) => path.join(recordingsDir, name));
+		const candidates = [...new Set([...(await readRecentProjects()), ...inRecordings])];
+		const entries = await Promise.all(
+			candidates.map(async (filePath): Promise<ProjectListEntry | null> => {
+				try {
+					const stat = await fs.stat(filePath);
+					if (!stat.isFile()) return null;
+					const project = JSON.parse(await fs.readFile(filePath, "utf-8"));
+					if (!project || typeof project !== "object" || typeof project.videoPath !== "string") {
+						return null;
+					}
+					return {
+						path: filePath,
+						name:
+							typeof project.videoName === "string" && project.videoName.trim()
+								? project.videoName
+								: path.basename(filePath, path.extname(filePath)),
+						modifiedAt: stat.mtimeMs,
+						thumbnail:
+							typeof project.thumbnail === "string" && project.thumbnail.startsWith("data:image/")
+								? project.thumbnail
+								: null,
+					};
+				} catch {
+					return null;
+				}
+			}),
+		);
+		return entries
+			.filter((entry): entry is ProjectListEntry => entry !== null)
+			.sort((a, b) => b.modifiedAt - a.modifiedAt)
+			.slice(0, PROJECT_LIST_LIMIT);
+	}
+
+	ipcMain.handle(IPC_CHANNELS.projects.list, async () => {
+		try {
+			return { success: true, projects: await collectProjectEntries() };
+		} catch (error) {
+			console.error("Failed to list projects:", error);
+			return { success: false, projects: [], error: String(error) };
+		}
+	});
+
+	ipcMain.handle(IPC_CHANNELS.projects.openPath, async (_, filePath: unknown) => {
+		try {
+			// Only open paths the browser listed; never arbitrary renderer-supplied paths.
+			const allowed = (await collectProjectEntries()).some((entry) => entry.path === filePath);
+			if (typeof filePath !== "string" || !allowed) {
+				return { success: false, message: "Project is not in the project list" };
+			}
+			const project = JSON.parse(await fs.readFile(filePath, "utf-8"));
+			setCurrentProjectPath(filePath);
+			setCurrentMicrophoneAudioPath(null);
+			if (project && typeof project === "object" && typeof project.videoPath === "string") {
+				setCurrentVideoPath(normalizeVideoSourcePath(project.videoPath) ?? project.videoPath);
+			}
+			void rememberRecentProject(filePath);
+			return { success: true, path: filePath, project };
+		} catch (error) {
+			console.error("Failed to open project:", error);
+			return { success: false, message: "Failed to open project", error: String(error) };
 		}
 	});
 

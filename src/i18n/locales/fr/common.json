@@ -1,0 +1,59 @@
+{
+	"app": {
+		"name": "ScreenMint",
+		"editorTitle": "Éditeur ScreenMint",
+		"subtitle": "Enregistrement et montage d'écran",
+		"language": "Langue"
+	},
+	"actions": {
+		"cancel": "Annuler",
+		"save": "Enregistrer",
+		"delete": "Supprimer",
+		"done": "Terminé"
+	},
+	"updates": {
+		"available": "La version {{version}} est disponible.",
+		"downloadAction": "Télécharger",
+		"downloadingSoon": "Mise à jour trouvée. Le téléchargement commencera quand ScreenMint sera inactif.",
+		"downloading": "Téléchargement de la mise à jour… {{progress}}",
+		"downloaded": "La version {{version}} est prête à être installée.",
+		"installAction": "Ouvrir l'installateur",
+		"installDeferred": "L'installateur sera disponible une fois l'enregistrement, l'export ou la transcription terminé.",
+		"restartAction": "Redémarrer",
+		"restartDeferred": "Le redémarrage attend la fin de l'enregistrement, de l'export ou de la transcription.",
+		"manualRequired": "La version {{version}} peut être téléchargée manuellement.",
+		"openReleases": "Ouvrir les versions",
+		"upToDate": "ScreenMint {{version}} est à jour.",
+		"error": "Impossible de terminer la demande de mise à jour.",
+		"popup": {
+			"title": "Mise à jour disponible",
+			"downloadingTitle": "Mise à jour de ScreenMint",
+			"readyTitle": "Prêt pour la mise à jour",
+			"updateNow": "Mettre à jour",
+			"updateLater": "Plus tard",
+			"availableBody": "ScreenMint {{version}} est prêt. « Mettre à jour » télécharge la dernière version, puis vous choisissez quand l'installer.",
+			"availableBodyExternal": "ScreenMint {{version}} est prêt. « Mettre à jour » télécharge l'installateur, puis ScreenMint l'ouvre pour que vous terminiez la mise à jour.",
+			"downloadingBody": "Téléchargement de ScreenMint {{version}} en cours. Gardez cette fenêtre ouverte ou choisissez « Plus tard » et revenez quand vous voulez.",
+			"downloadingProgressLabel": "{{progress}} téléchargé",
+			"downloadedBodyInApp": "ScreenMint {{version}} est prêt. Cliquez sur « Mettre à jour » pour redémarrer et terminer l'installation.",
+			"downloadedBodyExternal": "ScreenMint {{version}} est prêt. Cliquez sur « Mettre à jour » pour ouvrir l'installateur. ScreenMint se fermera pour terminer la mise à jour.",
+			"manualBody": "ScreenMint {{version}} est disponible, mais cette installation ne peut pas se mettre à jour seule. « Mettre à jour » ouvre la page de téléchargement.",
+			"busyHint": "Terminez l'enregistrement, l'export ou la transcription avant de poursuivre la mise à jour.",
+			"skipVersion": "Ignorer cette version",
+			"experimentalBadge": "Expérimental"
+		},
+		"whatsNew": {
+			"title": "Nouveautés de la version {{version}}",
+			"intro": "Voici ce qui a changé dans cette version.",
+			"fallback": "ScreenMint a bien été mis à jour. Vous utilisez maintenant la dernière version."
+		}
+	},
+	"errors": {
+		"invalidFileType": "Type de fichier non valide",
+		"failedToUploadImage": "Échec de l'importation de l'image",
+		"fileReadError": "Une erreur s'est produite lors de la lecture du fichier."
+	},
+	"announcements": {
+		"learnMore": "En savoir plus"
+	}
+}

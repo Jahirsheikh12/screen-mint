@@ -47,7 +47,7 @@ import {
 import { Tooltip } from "@/components/ui/tooltip";
 import { useI18n, useScopedT } from "@/contexts/I18nContext";
 import { useShortcuts } from "@/contexts/ShortcutsContext";
-import { type AppLocale, SUPPORTED_LOCALES } from "@/i18n/config";
+import { type AppLocale, LOCALE_LABELS, SUPPORTED_LOCALES } from "@/i18n/config";
 import { getBackgroundMusicAssetById } from "@/lib/backgroundMusic";
 import {
 	buildLayeredExportComposition,
@@ -61,10 +61,18 @@ import {
 	GifExporter,
 	getGifExportSettingsForPreset,
 	getVideoExportSettingsForPreset,
+	QUICK_VIDEO_QUALITIES,
+	type QuickGifSettings,
+	type QuickVideoQuality,
+	type QuickVideoSettings,
 	resolveGifExportPlan,
+	resolveQuickBaseDimensions,
+	resolveQuickVideoDimensions,
 	resolveVideoExportPlan,
 	StreamingVideoDecoder,
 	selectExportV2Engine,
+	toGifExportSettings,
+	toVideoExportSettings,
 	type VideoExportSettings,
 } from "@/lib/exporter";
 import { VideoExporter } from "@/lib/exporter/videoExporter";
@@ -74,11 +82,12 @@ import {
 	normalizeVideoDisplayName,
 } from "@/lib/fileNames";
 import { type AspectRatio, getAspectRatioValue } from "@/utils/aspectRatioUtils";
+import { AppearanceSwitcher } from "./AppearanceSwitcher";
 import { type AudioMixSettings, DEFAULT_AUDIO_MIX_SETTINGS } from "./audioMix";
 import { loadAudioSelectionDurationMs } from "./audioRegionUtils";
 import { type AutoPolishContentType, buildAutoPolishResult } from "./autoPolish";
-import { ConfirmActionDialog, PresetNameDialog } from "./EditorDialogs";
-import { ExportDialog } from "./ExportDialog";
+import { buildCaptionSidecar } from "./captionSidecar";
+import { ConfirmActionDialog, MissingCursorDataDialog, PresetNameDialog } from "./EditorDialogs";
 import { ExportSettingsDialog } from "./ExportSettingsDialog";
 import {
 	cloneEditorHistorySnapshot,
@@ -93,6 +102,7 @@ import {
 } from "./editorPreferences";
 import { editorPreferencesService } from "./editorPreferencesService";
 import { createInitialEditorSessionState, editorSessionReducer } from "./editorSession";
+import { ExportDialog } from "./export/ExportDialog";
 import { createExportProgressThrottler } from "./exportProgressThrottler";
 import {
 	buildSourceVideoMetadata,
@@ -100,10 +110,12 @@ import {
 	mergeVideoExportDetails,
 	resolveSourceFrameRate,
 } from "./exportUtils";
+import { FeedbackDialog } from "./FeedbackDialog";
 import { getLegacyShadowIntensityFromFrameShadow } from "./frameEffects";
 import { deriveKeyboardShortcutCallouts } from "./keyboardShortcuts";
 import { LayerPanel } from "./LayerPanel";
 import { type EditorLayer, ensurePrimaryVideoLayer } from "./layerModel";
+import { ProjectBrowserDialog } from "./ProjectBrowserDialog";
 import {
 	type PostRecordingAutoZoomBootstrapState,
 	resolvePostRecordingAutoZoomDecision,
@@ -116,7 +128,9 @@ import {
 	normalizeWebcamSessionMetadata,
 	toFileUrl,
 	validateProjectData,
+	withLegacyZoomTiming,
 } from "./projectPersistence";
+import { captureProjectThumbnail } from "./projectThumbnail";
 import { QuickShareDialog } from "./QuickShareDialog";
 import { SceneAudioPolishPanel } from "./SceneAudioPolishPanel";
 import SettingsPanel from "./SettingsPanel";
@@ -169,6 +183,10 @@ import {
 	getRecommendedWebcamDefaults,
 	type KeyboardPlatform,
 	type KeyboardTelemetrySample,
+	MOTION_PRESETS,
+	type MotionPresetId,
+	type PaddingSides,
+	type PaddingValue,
 	type PlaybackSpeed,
 	type PreviewQuality,
 	type ScenePresetId,
@@ -206,6 +224,7 @@ import {
 	buildCursorSimulationPath,
 	evaluateCursorMotionSnapshot,
 } from "./videoPlayback/cursorSimulation";
+import { detectMotionPreset, motionPresetToCursorSpring } from "./videoPlayback/cursorV2";
 import { composeCropRegions, deriveLegacyCaptureCorrectionCrop } from "./videoPlayback/layoutUtils";
 import type { VideoPlaybackRef } from "./videoPlayback/playbackTypes";
 import { resolveZoomRegionFocus } from "./videoPlayback/smartZoomController";
@@ -231,11 +250,6 @@ function LanguageSwitcher() {
 	const { locale, setLocale, t } = useI18n();
 	const idx = SUPPORTED_LOCALES.indexOf(locale as (typeof SUPPORTED_LOCALES)[number]);
 	const next = SUPPORTED_LOCALES[(idx + 1) % SUPPORTED_LOCALES.length] as AppLocale;
-	const labels: Record<string, string> = {
-		en: "EN",
-		es: "ES",
-		"zh-CN": "中文",
-	};
 	return (
 		<button
 			type="button"
@@ -245,14 +259,20 @@ function LanguageSwitcher() {
 			aria-label={t("common.app.language", "Language")}
 		>
 			<Languages className="h-4 w-4" />
-			<span className="text-xs font-medium">{labels[locale] ?? locale.toUpperCase()}</span>
+			<span className="text-xs font-medium">
+				{LOCALE_LABELS[locale as AppLocale] ?? locale.toUpperCase()}
+			</span>
 		</button>
 	);
 }
 
+/** Preview / timeline split when the timeline is expanded. */
+const EXPANDED_TIMELINE_LAYOUT = [40, 60];
+
 export default function VideoEditor() {
 	const { t } = useI18n();
 	const tSettings = useScopedT("settings");
+	const tDialogs = useScopedT("dialogs");
 	// Editor control values (wallpaper, cursor, frame, export, etc.) always start
 	// from defaults for every new session. The only settings we restore from
 	// localStorage are genuine app-level prefs (preview quality, custom aspect inputs,
@@ -271,6 +291,8 @@ export default function VideoEditor() {
 			mirrorWebcam: recommendedWebcamDefaults.mirrorWebcam,
 			cameraSizeDuringZoom: recommendedWebcamDefaults.cameraSizeDuringZoom,
 			previewQuality: stored.previewQuality,
+			quickExport: stored.quickExport,
+			exportFormat: stored.quickExport.format,
 			webcamPreviewMode: stored.webcamPreviewMode,
 			workspaceLayout: DEFAULT_EDITOR_PREFERENCES.workspaceLayout,
 			customAspectWidth: stored.customAspectWidth,
@@ -307,7 +329,23 @@ export default function VideoEditor() {
 		handleVideoNameInputKeyDown,
 	} = useVideoNameEditing("Untitled");
 	const [videoHasAudio, setVideoHasAudio] = useState(false);
-	const [clipVolume, setClipVolume] = useState(1);
+	// Clip volume/mute lives on the saved recording-audio track so it persists and exports.
+	const primaryAudioTrack = audioMix.tracks.find((track) => track.kind === "primary");
+	const clipVolume = primaryAudioTrack
+		? primaryAudioTrack.muted
+			? 0
+			: primaryAudioTrack.volume
+		: 1;
+	const setClipVolume = useCallback((volume: number) => {
+		setAudioMix((mix) => ({
+			...mix,
+			tracks: mix.tracks.map((track) =>
+				track.kind === "primary"
+					? { ...track, muted: volume <= 0, volume: volume > 0 ? volume : track.volume }
+					: track,
+			),
+		}));
+	}, []);
 	const [loading, setLoading] = useState(true);
 	const [skeletonVisible, setSkeletonVisible] = useState(true);
 	const [editorReady, setEditorReady] = useState(false);
@@ -324,7 +362,11 @@ export default function VideoEditor() {
 	const [frameShadowBlur, setFrameShadowBlur] = useState(initialEditorPreferences.frameShadowBlur);
 	const [backgroundBlur, setBackgroundBlur] = useState(initialEditorPreferences.backgroundBlur);
 	const [zoomMotionBlur, setZoomMotionBlur] = useState(initialEditorPreferences.zoomMotionBlur);
+	const [zoomTemporalBlur, setZoomTemporalBlur] = useState(
+		initialEditorPreferences.zoomTemporalBlur,
+	);
 	const [connectZooms, setConnectZooms] = useState(initialEditorPreferences.connectZooms);
+	const [zoomTiming, setZoomTiming] = useState(initialEditorPreferences.zoomTiming);
 	const [showCursor, setShowCursor] = useState(initialEditorPreferences.showCursor);
 	const [previewQuality, setPreviewQuality] = useState<PreviewQuality>(
 		initialEditorPreferences.previewQuality,
@@ -375,6 +417,40 @@ export default function VideoEditor() {
 	const [clickHighlightOpacity, setClickHighlightOpacity] = useState(
 		initialEditorPreferences.clickHighlightOpacity,
 	);
+	const [cursorClickStyle, setCursorClickStyle] = useState(
+		initialEditorPreferences.cursorClickStyle,
+	);
+	const motionPreset = useMemo(
+		() =>
+			detectMotionPreset({
+				zoomInDurationMs: zoomTiming.zoomInDurationMs,
+				zoomOutDurationMs: zoomTiming.zoomOutDurationMs,
+				cursorSize,
+				cursorSmoothing,
+				cursorClickBounce,
+				cursorClickBounceDurationMs: cursorClickStyle.bounceDurationMs,
+				cursorSpring,
+			}),
+		[zoomTiming, cursorSize, cursorSmoothing, cursorClickBounce, cursorClickStyle, cursorSpring],
+	);
+	const applyMotionPreset = useCallback((presetId: MotionPresetId) => {
+		const preset = MOTION_PRESETS[presetId];
+		setZoomTiming((timing) => ({
+			...timing,
+			zoomInDurationMs: preset.zoomInDurationMs,
+			zoomOutDurationMs: preset.zoomOutDurationMs,
+		}));
+		setCursorSize(preset.cursorSize);
+		setCursorSmoothing(preset.cursorSmoothing);
+		setCursorClickBounce(preset.cursorClickBounce);
+		setCursorClickStyle((style) => ({
+			...style,
+			bounceDurationMs: preset.cursorClickBounceDurationMs,
+		}));
+		setSmoothMovementEnabled(true);
+		setCursorMovementStyle("custom");
+		setCursorSpring(motionPresetToCursorSpring(preset));
+	}, []);
 	const [cursorTrailLength, setCursorTrailLength] = useState(
 		initialEditorPreferences.cursorTrailLength,
 	);
@@ -417,6 +493,10 @@ export default function VideoEditor() {
 	);
 	const [borderRadius, setBorderRadius] = useState(initialEditorPreferences.borderRadius);
 	const [padding, setPadding] = useState(initialEditorPreferences.padding);
+	const [paddingSides, setPaddingSides] = useState<PaddingSides | null>(
+		initialEditorPreferences.paddingSides,
+	);
+	const effectivePadding: PaddingValue = paddingSides ?? padding;
 	const [cropRegion, setCropRegion] = useState<CropRegion>(initialEditorPreferences.cropRegion);
 	const [zoomRegions, setZoomRegions] = useState<ZoomRegion[]>([]);
 	const [cursorTelemetry, setCursorTelemetry] = useState<CursorTelemetryPoint[]>([]);
@@ -485,6 +565,33 @@ export default function VideoEditor() {
 	const [gifExportSettings, setGifExportSettings] = useState<GifExportConfig>(
 		initialEditorPreferences.gifExportSettings,
 	);
+	const [quickVideoExport, setQuickVideoExport] = useState<QuickVideoSettings>(
+		initialEditorPreferences.quickExport.video,
+	);
+	const [quickGifExport, setQuickGifExport] = useState<QuickGifSettings>(
+		initialEditorPreferences.quickExport.gif,
+	);
+	const [includeCaptionSidecar, setIncludeCaptionSidecar] = useState(false);
+	const [exportAnnouncements, setExportAnnouncements] = useState<string[]>([]);
+	useEffect(() => {
+		let cancelled = false;
+		void window.electronAPI
+			?.getAnnouncements?.()
+			.then((announcements) => {
+				if (cancelled) return;
+				setExportAnnouncements(
+					announcements
+						.filter((announcement) => announcement.presentation === "export")
+						.map((announcement) =>
+							[announcement.title, announcement.body].filter(Boolean).join(" — ").slice(0, 220),
+						),
+				);
+			})
+			.catch(() => undefined);
+		return () => {
+			cancelled = true;
+		};
+	}, []);
 	const [scenePresetId, setScenePresetId] = useState<ScenePresetId | undefined>(undefined);
 	const [sourceFrameRate, setSourceFrameRate] = useState(60);
 	const [workspaceLayout, setWorkspaceLayout] = useState<EditorWorkspaceLayout>(
@@ -504,6 +611,14 @@ export default function VideoEditor() {
 
 	const videoPlaybackRef = useRef<VideoPlaybackRef>(null);
 	const panelGroupRef = useRef<ImperativePanelGroupHandle | null>(null);
+	// Panels are sized in percent; keep the settings sidebar usable on narrow windows.
+	const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
+	useEffect(() => {
+		const onResize = () => setViewportWidth(window.innerWidth);
+		window.addEventListener("resize", onResize);
+		return () => window.removeEventListener("resize", onResize);
+	}, []);
+	const sidebarMinSize = Math.min(55, Math.max(20, (360 / Math.max(1, viewportWidth - 24)) * 100));
 	const nextZoomIdRef = useRef(1);
 	const nextTrimIdRef = useRef(1);
 	const nextSpeedIdRef = useRef(1);
@@ -575,12 +690,12 @@ export default function VideoEditor() {
 		() => [
 			{
 				id: "preset-balanced",
-				name: "Balanced",
+				name: t("editor.shell.balanced", "Balanced"),
 				controls: normalizeProjectEditor({}),
 			},
 			{
 				id: "preset-cinematic",
-				name: "Cinematic",
+				name: t("editor.shell.cinematic", "Cinematic"),
 				controls: normalizeProjectEditor({
 					shadowIntensity: 0.9,
 					backgroundBlur: 0.2,
@@ -592,7 +707,7 @@ export default function VideoEditor() {
 			},
 			{
 				id: "preset-social",
-				name: "Social",
+				name: t("editor.shell.social", "Social"),
 				controls: normalizeProjectEditor({
 					aspectRatio: "9:16",
 					padding: 28,
@@ -603,7 +718,7 @@ export default function VideoEditor() {
 				}),
 			},
 		],
-		[],
+		[t],
 	);
 
 	const allPresets = useMemo(
@@ -622,7 +737,9 @@ export default function VideoEditor() {
 				frameShadowBlur,
 				backgroundBlur,
 				zoomMotionBlur,
+				zoomTemporalBlur,
 				connectZooms,
+				zoomTiming,
 				showCursor,
 				loopCursor,
 				cursorSize,
@@ -647,6 +764,7 @@ export default function VideoEditor() {
 				clickHighlightColor,
 				clickHighlightSize,
 				clickHighlightOpacity,
+				cursorClickStyle,
 				cursorTrailLength,
 				cursorTrailOpacity,
 				showKeyboardShortcuts,
@@ -663,6 +781,7 @@ export default function VideoEditor() {
 				frameBorderColor,
 				frameBorderOpacity,
 				padding,
+				paddingSides,
 				cropRegion,
 				zoomRegions,
 				trimRegions,
@@ -699,7 +818,9 @@ export default function VideoEditor() {
 			frameShadowBlur,
 			backgroundBlur,
 			zoomMotionBlur,
+			zoomTemporalBlur,
 			connectZooms,
+			zoomTiming,
 			showCursor,
 			loopCursor,
 			cursorSize,
@@ -724,6 +845,7 @@ export default function VideoEditor() {
 			clickHighlightColor,
 			clickHighlightSize,
 			clickHighlightOpacity,
+			cursorClickStyle,
 			cursorTrailLength,
 			cursorTrailOpacity,
 			showKeyboardShortcuts,
@@ -740,6 +862,7 @@ export default function VideoEditor() {
 			frameBorderColor,
 			frameBorderOpacity,
 			padding,
+			paddingSides,
 			cropRegion,
 			zoomRegions,
 			trimRegions,
@@ -781,7 +904,9 @@ export default function VideoEditor() {
 			setFrameShadowBlur(controls.frameShadowBlur);
 			setBackgroundBlur(controls.backgroundBlur);
 			setZoomMotionBlur(controls.zoomMotionBlur);
+			setZoomTemporalBlur(controls.zoomTemporalBlur);
 			setConnectZooms(controls.connectZooms);
+			setZoomTiming(controls.zoomTiming);
 			setShowCursor(controls.showCursor);
 			setLoopCursor(controls.loopCursor);
 			setCursorSize(controls.cursorSize);
@@ -806,6 +931,7 @@ export default function VideoEditor() {
 			setClickHighlightColor(controls.clickHighlightColor);
 			setClickHighlightSize(controls.clickHighlightSize);
 			setClickHighlightOpacity(controls.clickHighlightOpacity);
+			setCursorClickStyle(controls.cursorClickStyle);
 			setCursorTrailLength(controls.cursorTrailLength);
 			setCursorTrailOpacity(controls.cursorTrailOpacity);
 			setShowKeyboardShortcuts(controls.showKeyboardShortcuts);
@@ -822,6 +948,7 @@ export default function VideoEditor() {
 			setFrameBorderOpacity(controls.frameBorderOpacity);
 			setBorderRadius(controls.borderRadius);
 			setPadding(controls.padding);
+			setPaddingSides(controls.paddingSides);
 			setCropRegion(controls.cropRegion);
 			setAspectRatio(controls.aspectRatio);
 			setShowWebcam(controls.showWebcam);
@@ -946,9 +1073,10 @@ export default function VideoEditor() {
 			const loadedVideoName = normalizeVideoDisplayName(
 				project.videoName ?? deriveVideoNameFromPath(path ?? sourcePath),
 			);
-			const normalizedEditor = normalizeProjectEditor(project.editor, {
-				fallbackVideoPath: sourcePath,
-			});
+			const normalizedEditor = normalizeProjectEditor(
+				withLegacyZoomTiming(project.version, project.editor),
+				{ fallbackVideoPath: sourcePath },
+			);
 			const normalizedWebcamSessionMetadata =
 				normalizeWebcamSessionMetadata(project.webcamSessionMetadata) ?? null;
 
@@ -1053,7 +1181,9 @@ export default function VideoEditor() {
 				frameShadowBlur,
 				backgroundBlur,
 				zoomMotionBlur,
+				zoomTemporalBlur,
 				connectZooms,
+				zoomTiming,
 				showCursor,
 				loopCursor,
 				cursorSize,
@@ -1078,6 +1208,7 @@ export default function VideoEditor() {
 				clickHighlightColor,
 				clickHighlightSize,
 				clickHighlightOpacity,
+				cursorClickStyle,
 				cursorTrailLength,
 				cursorTrailOpacity,
 				showKeyboardShortcuts,
@@ -1094,6 +1225,7 @@ export default function VideoEditor() {
 				frameBorderOpacity,
 				borderRadius,
 				padding,
+				paddingSides,
 				cropRegion,
 				zoomRegions,
 				trimRegions,
@@ -1133,7 +1265,9 @@ export default function VideoEditor() {
 		frameShadowBlur,
 		backgroundBlur,
 		zoomMotionBlur,
+		zoomTemporalBlur,
 		connectZooms,
+		zoomTiming,
 		showCursor,
 		loopCursor,
 		cursorSize,
@@ -1158,6 +1292,7 @@ export default function VideoEditor() {
 		clickHighlightColor,
 		clickHighlightSize,
 		clickHighlightOpacity,
+		cursorClickStyle,
 		cursorTrailLength,
 		cursorTrailOpacity,
 		showKeyboardShortcuts,
@@ -1174,6 +1309,7 @@ export default function VideoEditor() {
 		frameBorderOpacity,
 		borderRadius,
 		padding,
+		paddingSides,
 		cropRegion,
 		zoomRegions,
 		trimRegions,
@@ -1394,8 +1530,16 @@ export default function VideoEditor() {
 			previewQuality,
 			webcamPreviewMode,
 			presets: customPresets,
+			quickExport: { format: exportFormat, video: quickVideoExport, gif: quickGifExport },
 		});
-	}, [previewQuality, webcamPreviewMode, customPresets]);
+	}, [
+		previewQuality,
+		webcamPreviewMode,
+		customPresets,
+		exportFormat,
+		quickVideoExport,
+		quickGifExport,
+	]);
 
 	useEffect(() => {
 		return () => {
@@ -1406,13 +1550,15 @@ export default function VideoEditor() {
 	const saveProject = useCallback(
 		async (forceSaveAs: boolean) => {
 			if (!videoPath) {
-				toast.error("No video loaded");
+				toast.error(t("editor.shell.noVideoLoaded", "No video loaded"));
 				return;
 			}
 
 			const sourcePath = videoSourcePath ?? fromFileUrl(videoPath);
 			if (!sourcePath) {
-				toast.error("Unable to determine source video path");
+				toast.error(
+					t("editor.shell.unableToDetermineSource", "Unable to determine source video path"),
+				);
 				return;
 			}
 
@@ -1428,7 +1574,9 @@ export default function VideoEditor() {
 					frameShadowBlur,
 					backgroundBlur,
 					zoomMotionBlur,
+					zoomTemporalBlur,
 					connectZooms,
+					zoomTiming,
 					showCursor,
 					loopCursor,
 					cursorSize,
@@ -1453,6 +1601,7 @@ export default function VideoEditor() {
 					clickHighlightColor,
 					clickHighlightSize,
 					clickHighlightOpacity,
+					cursorClickStyle,
 					cursorTrailLength,
 					cursorTrailOpacity,
 					showKeyboardShortcuts,
@@ -1469,6 +1618,7 @@ export default function VideoEditor() {
 					frameBorderOpacity,
 					borderRadius,
 					padding,
+					paddingSides,
 					cropRegion,
 					zoomRegions,
 					trimRegions,
@@ -1498,19 +1648,22 @@ export default function VideoEditor() {
 				},
 				webcamSessionMetadata: webcamSessionMetadata ?? undefined,
 			});
+			const thumbnail = captureProjectThumbnail(videoPlaybackRef.current?.app ?? null);
 			const result = await window.electronAPI.saveProjectFile(
-				projectArtifacts.projectData,
+				thumbnail ? { ...projectArtifacts.projectData, thumbnail } : projectArtifacts.projectData,
 				projectArtifacts.fileNameBase,
 				forceSaveAs ? undefined : (currentProjectPath ?? undefined),
 			);
 
 			if (result.canceled) {
-				toast.info("Project save canceled");
+				toast.info(t("editor.shell.projectSaveCanceled", "Project save canceled"));
 				return;
 			}
 
 			if (!result.success) {
-				toast.error(result.message || "Failed to save project");
+				toast.error(
+					result.message || t("editor.shell.failedToSaveProject", "Failed to save project"),
+				);
 				return;
 			}
 
@@ -1537,7 +1690,9 @@ export default function VideoEditor() {
 			frameShadowBlur,
 			backgroundBlur,
 			zoomMotionBlur,
+			zoomTemporalBlur,
 			connectZooms,
+			zoomTiming,
 			showCursor,
 			loopCursor,
 			cursorSize,
@@ -1562,6 +1717,7 @@ export default function VideoEditor() {
 			clickHighlightColor,
 			clickHighlightSize,
 			clickHighlightOpacity,
+			cursorClickStyle,
 			cursorTrailLength,
 			cursorTrailOpacity,
 			showKeyboardShortcuts,
@@ -1578,6 +1734,7 @@ export default function VideoEditor() {
 			deviceMockup,
 			borderRadius,
 			padding,
+			paddingSides,
 			cropRegion,
 			zoomRegions,
 			trimRegions,
@@ -1605,17 +1762,21 @@ export default function VideoEditor() {
 			scene3D,
 			audioMix,
 			webcamSessionMetadata,
+			t,
 		],
 	);
 
-	const { handleSaveProject, handleLoadProject } = useVideoEditorProjectFileActions({
-		hasUnsavedChanges,
-		isExporting,
-		isTranscribing,
-		saveProject,
-		applyLoadedProject,
-	});
+	const [projectBrowserOpen, setProjectBrowserOpen] = useState(false);
+	const { handleSaveProject, handleLoadProject, handleOpenProjectAtPath } =
+		useVideoEditorProjectFileActions({
+			hasUnsavedChanges,
+			isExporting,
+			isTranscribing,
+			saveProject,
+			applyLoadedProject,
+		});
 
+	const cursorTelemetryLoadedForRef = useRef<string | null>(null);
 	useEffect(() => {
 		let mounted = true;
 
@@ -1644,6 +1805,7 @@ export default function VideoEditor() {
 				}
 			} finally {
 				if (mounted) {
+					cursorTelemetryLoadedForRef.current = videoPath;
 					setCursorTelemetryLoadSettled(true);
 				}
 			}
@@ -1655,6 +1817,19 @@ export default function VideoEditor() {
 			mounted = false;
 		};
 	}, [videoPath]);
+
+	// A fresh recording with no cursor samples means tracking failed; say so once per recording.
+	const [missingCursorDataOpen, setMissingCursorDataOpen] = useState(false);
+	const missingCursorDataShownForRef = useRef<string | null>(null);
+	useEffect(() => {
+		if (!cursorTelemetryLoadSettled || !videoPath || cursorTelemetry.length > 0) return;
+		if (cursorTelemetryLoadedForRef.current !== videoPath) return;
+		const recordingPath = postRecordingContext?.recordingPath;
+		if (!recordingPath || toFileUrl(recordingPath) !== videoPath) return;
+		if (missingCursorDataShownForRef.current === videoPath) return;
+		missingCursorDataShownForRef.current = videoPath;
+		setMissingCursorDataOpen(true);
+	}, [cursorTelemetryLoadSettled, cursorTelemetry.length, postRecordingContext, videoPath]);
 
 	useEffect(() => {
 		if (!postRecordingContext?.recordingPath || !videoPath) {
@@ -1836,6 +2011,7 @@ export default function VideoEditor() {
 
 		const dominantAtStart = findDominantRegion(zoomRegions, displayedTimelineWindow.startMs, {
 			connectZooms,
+			zoomTiming,
 		}).region;
 		if (!dominantAtStart) {
 			return zoomRegions;
@@ -1857,7 +2033,7 @@ export default function VideoEditor() {
 		};
 
 		return [...zoomRegions.filter((region) => region.id !== loopEndRegion.id), loopEndRegion];
-	}, [loopCursor, zoomRegions, displayedTimelineWindow, connectZooms]);
+	}, [loopCursor, zoomRegions, displayedTimelineWindow, connectZooms, zoomTiming]);
 
 	const buildBeautifyContext = useCallback((): BeautifyContext => {
 		const video = videoPlaybackRef.current?.video;
@@ -1905,9 +2081,9 @@ export default function VideoEditor() {
 			const currentEditor = buildCurrentPresetControls();
 			const updates = applyScenePreset(currentEditor, buildBeautifyContext(), presetId);
 			applyPresetUpdates(updates);
-			toast.success("Scene preset applied");
+			toast.success(t("editor.shell.scenePresetApplied", "Scene preset applied"));
 		},
-		[applyPresetUpdates, buildBeautifyContext, buildCurrentPresetControls],
+		[applyPresetUpdates, buildBeautifyContext, buildCurrentPresetControls, t],
 	);
 
 	const handleAutoBeautify = useCallback(
@@ -1924,9 +2100,11 @@ export default function VideoEditor() {
 					: result.zoomStatus === "preserved"
 						? " Existing zooms were preserved."
 						: " No smart zooms were available.";
-			toast.success("Auto Beautify applied", { description: zoomMessage });
+			toast.success(t("editor.shell.autoBeautifyApplied", "Auto Beautify applied"), {
+				description: zoomMessage,
+			});
 		},
-		[applyPresetUpdates, buildBeautifyContext, buildCurrentPresetControls],
+		[applyPresetUpdates, buildBeautifyContext, buildCurrentPresetControls, t],
 	);
 
 	const handleAutoPolish = useCallback(
@@ -1958,18 +2136,18 @@ export default function VideoEditor() {
 							: result.exportPreset,
 				),
 			);
-			toast.success("Auto Polish applied", {
+			toast.success(t("editor.shell.autoPolishApplied", "Auto Polish applied"), {
 				description: `${contentType.split("-").join(" ")} preset with ${result.zoomRegions.length} zoom${result.zoomRegions.length === 1 ? "" : "s"}.`,
 			});
 		},
-		[aspectRatio, captionTrack, duration, effectiveCursorTelemetry],
+		[aspectRatio, captionTrack, duration, effectiveCursorTelemetry, t],
 	);
 
 	const handleRegenerateSmartZooms = useCallback(() => {
 		const context = buildBeautifyContext();
 		const nextZoomRegions = buildAutoZoomRegionsFromTelemetry(context, 1);
 		if (nextZoomRegions.length === 0) {
-			toast.info("No smart zooms found for this recording.");
+			toast.info(t("editor.shell.noSmartZoomsFound", "No smart zooms found for this recording."));
 			return;
 		}
 		setZoomRegions(nextZoomRegions);
@@ -1979,12 +2157,12 @@ export default function VideoEditor() {
 			"zoom",
 			nextZoomRegions.map((region) => region.id),
 		);
-		toast.success("Smart zooms regenerated", {
+		toast.success(t("editor.shell.smartZoomsRegenerated", "Smart zooms regenerated"), {
 			description: `Created ${nextZoomRegions.length} zoom region${
 				nextZoomRegions.length === 1 ? "" : "s"
 			}.`,
 		});
-	}, [buildBeautifyContext]);
+	}, [buildBeautifyContext, t]);
 
 	useEffect(() => {
 		const decision = resolvePostRecordingAutoZoomDecision({
@@ -2424,8 +2602,11 @@ export default function VideoEditor() {
 					? selection.durationMs
 					: await loadAudioSelectionDurationMs(selection);
 			if (resolvedDurationMs <= 0) {
-				toast.error("Could not read audio file", {
-					description: "The selected audio could not be loaded.",
+				toast.error(t("editor.shell.couldNotReadAudio", "Could not read audio file"), {
+					description: t(
+						"editor.shell.theSelectedAudioCould",
+						"The selected audio could not be loaded.",
+					),
 				});
 				return;
 			}
@@ -2445,9 +2626,11 @@ export default function VideoEditor() {
 			);
 
 			if (isOverlapping || gapToNext <= 0) {
-				toast.error("Cannot place audio here", {
-					description:
+				toast.error(t("editor.shell.cannotPlaceAudioHere", "Cannot place audio here"), {
+					description: t(
+						"editor.shell.audioRegionAlreadyExists",
 						"Audio region already exists at this location or not enough space available.",
+					),
 				});
 				return;
 			}
@@ -2457,8 +2640,11 @@ export default function VideoEditor() {
 				? Math.min(gapToNext, totalMs - startPos)
 				: Math.min(resolvedDurationMs, gapToNext, totalMs - startPos);
 			if (actualDuration <= 0) {
-				toast.error("Cannot place audio here", {
-					description: "There is no room left at the current playhead position.",
+				toast.error(t("editor.shell.cannotPlaceAudioHere", "Cannot place audio here"), {
+					description: t(
+						"editor.shell.thereIsNoRoom",
+						"There is no room left at the current playhead position.",
+					),
 				});
 				return;
 			}
@@ -2489,8 +2675,39 @@ export default function VideoEditor() {
 			setSelectedCameraLayoutId(null);
 			setWebcamSelected(false);
 		},
-		[audioRegions, currentTime, duration],
+		[audioRegions, currentTime, duration, t],
 	);
+
+	const [timelineExpanded, setTimelineExpanded] = useState(false);
+	const handleToggleTimelineExpanded = useCallback(() => {
+		const next = !timelineExpanded;
+		panelGroupRef.current?.setLayout(next ? EXPANDED_TIMELINE_LAYOUT : workspaceLayoutSizes);
+		setTimelineExpanded(next);
+	}, [timelineExpanded, workspaceLayoutSizes]);
+
+	const handleSeparateClipAudio = useCallback(() => {
+		const sourcePath = videoSourcePath ?? (videoPath ? fromFileUrl(videoPath) : null);
+		const totalMs = Math.round(duration * 1000);
+		if (!sourcePath || totalMs <= 0) return;
+		const id = `audio-${nextAudioIdRef.current++}`;
+		setAudioRegions((prev) => [
+			...prev,
+			{
+				id,
+				startMs: 0,
+				endMs: totalMs,
+				sourceType: "file",
+				audioPath: sourcePath,
+				volume: clipVolume > 0 ? clipVolume : 1,
+				fadeInMs: 0,
+				fadeOutMs: 0,
+				loop: false,
+			},
+		]);
+		setClipVolume(0);
+		setSelectedAudioId(id);
+		toast.success(t("editor.shell.clipAudioMovedTo", "Clip audio moved to its own track"));
+	}, [videoSourcePath, videoPath, duration, clipVolume, setClipVolume, t]);
 
 	const handleReplaceSelectedAudioSource = useCallback(
 		async (selection: AudioTrackSelection) => {
@@ -2504,8 +2721,11 @@ export default function VideoEditor() {
 					? selection.durationMs
 					: await loadAudioSelectionDurationMs(selection);
 			if (resolvedDurationMs <= 0) {
-				toast.error("Could not read audio file", {
-					description: "The selected audio could not be loaded.",
+				toast.error(t("editor.shell.couldNotReadAudio", "Could not read audio file"), {
+					description: t(
+						"editor.shell.theSelectedAudioCould",
+						"The selected audio could not be loaded.",
+					),
 				});
 				return;
 			}
@@ -2530,7 +2750,7 @@ export default function VideoEditor() {
 				}),
 			);
 		},
-		[handleAudioAdded, selectedAudioRegion],
+		[handleAudioAdded, selectedAudioRegion, t],
 	);
 
 	const handleAudioVolumeChange = useCallback((id: string, volume: number) => {
@@ -2567,6 +2787,12 @@ export default function VideoEditor() {
 	const handleAudioLoopChange = useCallback((id: string, loop: boolean) => {
 		setAudioRegions((prev) =>
 			prev.map((region) => (region.id === id ? { ...region, loop } : region)),
+		);
+	}, []);
+
+	const handleAudioNormalizeChange = useCallback((id: string, normalize: boolean) => {
+		setAudioRegions((prev) =>
+			prev.map((region) => (region.id === id ? { ...region, normalize } : region)),
 		);
 	}, []);
 
@@ -2609,7 +2835,7 @@ export default function VideoEditor() {
 			audioPath: result.path,
 		});
 		if (resolvedDurationMs <= 0) {
-			toast.error("Selected audio file is not accessible.");
+			toast.error(t("editor.shell.selectedAudioFileIs", "Selected audio file is not accessible."));
 			return;
 		}
 
@@ -2624,8 +2850,8 @@ export default function VideoEditor() {
 					: region,
 			),
 		);
-		toast.success("Audio source relinked.");
-	}, [selectedAudioRegion]);
+		toast.success(t("editor.shell.audioSourceRelinked", "Audio source relinked."));
+	}, [selectedAudioRegion, t]);
 
 	const handleRemoveMissingAudio = useCallback(() => {
 		if (!selectedAudioRegion) {
@@ -2633,8 +2859,8 @@ export default function VideoEditor() {
 		}
 
 		setAudioRegions((prev) => prev.filter((region) => region.id !== selectedAudioRegion.id));
-		toast.success("Audio removed from this project.");
-	}, [selectedAudioRegion]);
+		toast.success(t("editor.shell.audioRemovedFromThis", "Audio removed from this project."));
+	}, [selectedAudioRegion, t]);
 
 	const handleSpeedChange = useCallback(
 		(speed: PlaybackSpeed) => {
@@ -2701,28 +2927,31 @@ export default function VideoEditor() {
 		[],
 	);
 
-	const handleAnnotationAdded = useCallback((span: Span) => {
-		const id = `annotation-${nextAnnotationIdRef.current++}`;
-		const zIndex = nextAnnotationZIndexRef.current++; // Assign z-index based on creation order
-		const newRegion: AnnotationRegion = {
-			id,
-			startMs: Math.round(span.start),
-			endMs: Math.round(span.end),
-			type: "text",
-			content: "Enter text...",
-			position: { ...DEFAULT_ANNOTATION_POSITION },
-			size: { ...DEFAULT_ANNOTATION_SIZE },
-			style: { ...DEFAULT_ANNOTATION_STYLE },
-			zIndex,
-		};
-		setAnnotationRegions((prev) => [...prev, newRegion]);
-		setSelectedAnnotationId(id);
-		setSelectedZoomId(null);
-		setSelectedTrimId(null);
-		setSelectedSpeedId(null);
-		setSelectedCameraLayoutId(null);
-		setWebcamSelected(false);
-	}, []);
+	const handleAnnotationAdded = useCallback(
+		(span: Span) => {
+			const id = `annotation-${nextAnnotationIdRef.current++}`;
+			const zIndex = nextAnnotationZIndexRef.current++; // Assign z-index based on creation order
+			const newRegion: AnnotationRegion = {
+				id,
+				startMs: Math.round(span.start),
+				endMs: Math.round(span.end),
+				type: "text",
+				content: t("editor.shell.enterText", "Enter text..."),
+				position: { ...DEFAULT_ANNOTATION_POSITION },
+				size: { ...DEFAULT_ANNOTATION_SIZE },
+				style: { ...DEFAULT_ANNOTATION_STYLE },
+				zIndex,
+			};
+			setAnnotationRegions((prev) => [...prev, newRegion]);
+			setSelectedAnnotationId(id);
+			setSelectedZoomId(null);
+			setSelectedTrimId(null);
+			setSelectedSpeedId(null);
+			setSelectedCameraLayoutId(null);
+			setWebcamSelected(false);
+		},
+		[t],
+	);
 
 	const handleAnnotationSpanChange = useCallback((id: string, span: Span) => {
 		setAnnotationRegions((prev) =>
@@ -2766,35 +2995,39 @@ export default function VideoEditor() {
 		});
 	}, []);
 
-	const handleAnnotationTypeChange = useCallback((id: string, type: AnnotationRegion["type"]) => {
-		setAnnotationRegions((prev) => {
-			const updated = prev.map((region) => {
-				if (region.id !== id) return region;
+	const handleAnnotationTypeChange = useCallback(
+		(id: string, type: AnnotationRegion["type"]) => {
+			setAnnotationRegions((prev) => {
+				const updated = prev.map((region) => {
+					if (region.id !== id) return region;
 
-				const updatedRegion = { ...region, type };
+					const updatedRegion = { ...region, type };
 
-				// Restore content from type-specific storage
-				if (type === "text") {
-					updatedRegion.content = region.textContent || "Enter text...";
-				} else if (type === "image") {
-					updatedRegion.content = region.imageContent || "";
-				} else if (type === "figure") {
-					updatedRegion.content = "";
-					if (!region.figureData) {
-						updatedRegion.figureData = { ...DEFAULT_FIGURE_DATA };
+					// Restore content from type-specific storage
+					if (type === "text") {
+						updatedRegion.content =
+							region.textContent || t("editor.shell.enterText", "Enter text...");
+					} else if (type === "image") {
+						updatedRegion.content = region.imageContent || "";
+					} else if (type === "figure") {
+						updatedRegion.content = "";
+						if (!region.figureData) {
+							updatedRegion.figureData = { ...DEFAULT_FIGURE_DATA };
+						}
+					} else if (type === "blur") {
+						updatedRegion.content = "";
+						if (!region.blurData) {
+							updatedRegion.blurData = { ...DEFAULT_BLUR_DATA };
+						}
 					}
-				} else if (type === "blur") {
-					updatedRegion.content = "";
-					if (!region.blurData) {
-						updatedRegion.blurData = { ...DEFAULT_BLUR_DATA };
-					}
-				}
 
-				return updatedRegion;
+					return updatedRegion;
+				});
+				return updated;
 			});
-			return updated;
-		});
-	}, []);
+		},
+		[t],
+	);
 
 	const handleAnnotationStyleChange = useCallback(
 		(id: string, style: Partial<AnnotationRegion["style"]>) => {
@@ -2971,19 +3204,21 @@ export default function VideoEditor() {
 		await window.electronAPI.setCurrentWebcamPath(result.path);
 		const exists = await syncWebcamAvailability(result.path, { quiet: false });
 		if (!exists) {
-			toast.error("Selected webcam file is not accessible.");
+			toast.error(
+				t("editor.shell.selectedWebcamFileIs", "Selected webcam file is not accessible."),
+			);
 			return;
 		}
 
 		setShowWebcam(true);
-		toast.success("Webcam source relinked.");
-	}, [syncWebcamAvailability]);
+		toast.success(t("editor.shell.webcamSourceRelinked", "Webcam source relinked."));
+	}, [syncWebcamAvailability, t]);
 
 	const handleRemoveWebcamFromProject = useCallback(async () => {
 		clearWebcamState();
 		await window.electronAPI.clearCurrentWebcamPath();
-		toast.success("Webcam removed from this project.");
-	}, [clearWebcamState]);
+		toast.success(t("editor.shell.webcamRemovedFromThis", "Webcam removed from this project."));
+	}, [clearWebcamState, t]);
 
 	const handleAnnotationBlurDataChange = useCallback((id: string, blurData: BlurData) => {
 		setAnnotationRegions((prev) =>
@@ -3010,6 +3245,8 @@ export default function VideoEditor() {
 		handleCaptionMergeNext,
 		handleTranscriptExport,
 		handleCancelCaptionGeneration,
+		handleDeleteCaptionModel,
+		handleCustomWhisperFile,
 	} = useVideoEditorCaptions({
 		t,
 		videoPath,
@@ -3045,11 +3282,44 @@ export default function VideoEditor() {
 		[],
 	);
 
+	const handleExportMenuOpenChange = useCallback(
+		(open: boolean) => {
+			if (!open) {
+				// Outside click only hides the menu; a running export or pending save is kept.
+				dispatchSession({ type: "set-export-dialog-open", value: false });
+				return;
+			}
+			if (hasPendingExportSave) {
+				dispatchSession({ type: "set-export-status", status: "canceled" });
+				dispatchSession({
+					type: "set-export-error",
+					error: tDialogs(
+						"export.saveCanceled",
+						"Save canceled. Click Save Again to save without rendering again.",
+					),
+				});
+			} else if (
+				!isExporting &&
+				(exportStatus === "saved" || exportStatus === "failed" || exportStatus === "canceled")
+			) {
+				dispatchSession({ type: "set-export-status", status: "idle" });
+				dispatchSession({ type: "set-export-error", error: null });
+				dispatchSession({ type: "set-exported-file-path", path: undefined });
+			}
+			dispatchSession({ type: "set-export-dialog-open", value: true });
+		},
+		[exportStatus, hasPendingExportSave, isExporting, tDialogs],
+	);
+	const handleShortcutOpenExport = useCallback(() => {
+		if (videoPath) handleExportMenuOpenChange(true);
+	}, [handleExportMenuOpenChange, videoPath]);
+
 	useVideoEditorKeyboardShortcuts({
 		shortcuts,
 		isMac,
 		handleUndo,
 		handleRedo,
+		handleOpenExport: handleShortcutOpenExport,
 		videoPlaybackRef,
 	});
 
@@ -3096,12 +3366,14 @@ export default function VideoEditor() {
 		handleCancelExport,
 		handleExportDialogClose,
 		handleRetrySaveExport,
+		discardPendingSave,
 		openRecordingsFolder,
 	} = useVideoEditorExportActions({
 		exportV2JobIdRef,
 		exporterRef,
 		pendingExportSaveRef,
 		dispatchSession,
+		t: tDialogs,
 	});
 
 	const buildDefaultExportSettings = useDefaultExportSettings({
@@ -3121,16 +3393,17 @@ export default function VideoEditor() {
 			options: {
 				saveMode?: "dialog" | "recordings" | "clipboard";
 				onSaved?: (filePath: string) => Promise<void> | void;
+				captionSidecar?: { srt?: string; vtt?: string };
 			} = {},
 		) => {
 			if (!videoPath) {
-				toast.error("No video loaded");
+				toast.error(tDialogs("export.noVideo", "No video loaded"));
 				return;
 			}
 
 			const video = videoPlaybackRef.current?.video;
 			if (!video) {
-				toast.error("Video not ready");
+				toast.error(tDialogs("export.videoNotReady", "The video isn't ready yet"));
 				return;
 			}
 
@@ -3139,8 +3412,7 @@ export default function VideoEditor() {
 			dispatchSession({ type: "set-export-progress", progress: null });
 			dispatchSession({ type: "set-export-error", error: null });
 			dispatchSession({ type: "set-exported-file-path", path: undefined });
-			pendingExportSaveRef.current = null;
-			dispatchSession({ type: "set-pending-export-save", value: false });
+			discardPendingSave();
 
 			let keepExportDialogOpen = true;
 			const saveMode = options.saveMode ?? "dialog";
@@ -3152,19 +3424,22 @@ export default function VideoEditor() {
 				dispatchSession({ type: "set-export-progress", progress });
 			});
 
-			const setPendingSave = (blob: Blob, fileName: string) => {
-				pendingExportSaveRef.current = { blob, fileName };
+			const captionSidecar = options.captionSidecar;
+			const setPendingSave = (save: { blob?: Blob; tempPath?: string; fileName: string }) => {
+				pendingExportSaveRef.current = { ...save, captionSidecar };
 				dispatchSession({ type: "set-pending-export-save", value: true });
 			};
+			const saveCanceledMessage = tDialogs(
+				"export.saveCanceled",
+				"Save canceled. Click Save Again to save without rendering again.",
+			);
 
 			const saveExportedBlob = async ({
 				blob,
 				fileName,
-				formatName,
 			}: {
 				blob: Blob;
 				fileName: string;
-				formatName: "GIF" | "video";
 			}): Promise<boolean> => {
 				if (saveMode === "clipboard") {
 					dispatchSession({ type: "set-export-status", status: "saving" });
@@ -3174,7 +3449,7 @@ export default function VideoEditor() {
 						fileName,
 					);
 					if (copyResult.success) {
-						toast.success(`${formatName === "GIF" ? "GIF" : "Video"} copied to clipboard.`);
+						toast.success(tDialogs("export.copiedToClipboard", "Copied to clipboard."));
 						dispatchSession({
 							type: "set-exported-file-path",
 							path: copyResult.path ?? "",
@@ -3185,11 +3460,12 @@ export default function VideoEditor() {
 
 					dispatchSession({
 						type: "set-export-error",
-						error: copyResult.error || `Failed to copy ${formatName.toLowerCase()} to clipboard`,
+						error:
+							copyResult.error || tDialogs("export.copyFailed", "Could not copy to the clipboard"),
 					});
 					dispatchSession({ type: "set-export-status", status: "failed" });
 					toast.error(
-						copyResult.error || `Failed to copy ${formatName.toLowerCase()} to clipboard`,
+						copyResult.error || tDialogs("export.copyFailed", "Could not copy to the clipboard"),
 					);
 					return true;
 				}
@@ -3213,8 +3489,9 @@ export default function VideoEditor() {
 						return false;
 					}
 
-					const errorMessage = saveResult.message || `Failed to save ${formatName}`;
-					setPendingSave(blob, fileName);
+					const errorMessage =
+						saveResult.message || tDialogs("export.saveFailed", "Failed to save the export");
+					setPendingSave({ blob, fileName });
 					dispatchSession({ type: "set-export-error", error: errorMessage });
 					dispatchSession({ type: "set-export-status", status: "failed" });
 					toast.error(errorMessage);
@@ -3224,19 +3501,17 @@ export default function VideoEditor() {
 				dispatchSession({ type: "set-export-status", status: "awaiting-save-path" });
 				const savePathResult = await window.electronAPI.showExportSaveDialog(fileName);
 				if ("canceled" in savePathResult && savePathResult.canceled) {
-					setPendingSave(blob, fileName);
-					dispatchSession({
-						type: "set-export-error",
-						error: "Save dialog canceled. Click Save Again to save without re-rendering.",
-					});
+					setPendingSave({ blob, fileName });
+					dispatchSession({ type: "set-export-error", error: saveCanceledMessage });
 					dispatchSession({ type: "set-export-status", status: "canceled" });
-					toast.info("Save canceled. You can save again without re-exporting.");
 					return true;
 				}
 
 				if (!savePathResult.success || !savePathResult.path) {
-					const errorMessage = savePathResult.message || "Failed to open save dialog";
-					setPendingSave(blob, fileName);
+					const errorMessage =
+						savePathResult.message ||
+						tDialogs("export.openSaveDialogFailed", "Couldn't open the save dialog");
+					setPendingSave({ blob, fileName });
 					dispatchSession({ type: "set-export-error", error: errorMessage });
 					dispatchSession({ type: "set-export-status", status: "failed" });
 					toast.error(errorMessage);
@@ -3248,6 +3523,7 @@ export default function VideoEditor() {
 				const writeResult = await window.electronAPI.writeExportedVideoToPath(
 					arrayBuffer,
 					savePathResult.path,
+					captionSidecar,
 				);
 
 				if (writeResult.success && writeResult.path) {
@@ -3261,8 +3537,9 @@ export default function VideoEditor() {
 					return false;
 				}
 
-				const errorMessage = writeResult.message || `Failed to save ${formatName}`;
-				setPendingSave(blob, fileName);
+				const errorMessage =
+					writeResult.message || tDialogs("export.saveFailed", "Failed to save the export");
+				setPendingSave({ blob, fileName });
 				dispatchSession({ type: "set-export-error", error: errorMessage });
 				dispatchSession({ type: "set-export-status", status: "failed" });
 				toast.error(errorMessage);
@@ -3343,6 +3620,7 @@ export default function VideoEditor() {
 					effectiveZoomRegions.length > 0 ||
 					!isDefaultCropRegion ||
 					aspectRatio !== "native" ||
+					paddingSides !== null ||
 					padding !== 0 ||
 					borderRadius !== 0 ||
 					frameBorderEnabled ||
@@ -3353,7 +3631,7 @@ export default function VideoEditor() {
 				const exportV2Selection = selectExportV2Engine({
 					format: settings.format,
 					hasVisualComposition,
-					hasExternalAudio: audioRegions.length > 0,
+					hasExternalAudio: audioRegions.length > 0 || clipVolume !== 1,
 					hasWebcam: hasWebcamExport,
 					hasCaptions: hasCaptionExport,
 					hasAnnotations: annotationRegions.length > 0,
@@ -3367,7 +3645,7 @@ export default function VideoEditor() {
 						? "recordings"
 						: saveMode === "clipboard"
 							? "clipboard"
-							: "file";
+							: "temp";
 				const compositionPayload = {
 					videoUrl: videoPath,
 					wallpaper,
@@ -3381,14 +3659,16 @@ export default function VideoEditor() {
 					backgroundBlur,
 					hideBackground,
 					zoomMotionBlur,
+					zoomTemporalBlur,
 					connectZooms,
+					zoomTiming,
 					deviceMockup,
 					frameBorderEnabled,
 					frameBorderWidth,
 					frameBorderColor,
 					frameBorderOpacity,
 					borderRadius,
-					padding,
+					padding: effectivePadding,
 					videoPadding: padding,
 					cropRegion: effectiveLayerCropRegion,
 					aspectRatio,
@@ -3411,6 +3691,7 @@ export default function VideoEditor() {
 					clickHighlightColor,
 					clickHighlightSize,
 					clickHighlightOpacity,
+					cursorClickStyle,
 					cursorTrailLength,
 					cursorTrailOpacity,
 					cursorTypeMode,
@@ -3428,6 +3709,7 @@ export default function VideoEditor() {
 					keyboardShortcutOpacity,
 					keyboardShortcutMaxVisible,
 					audioRegions,
+					sourceAudioVolume: clipVolume,
 					previewWidth,
 					previewHeight,
 					webcamPath: resolvedWebcamPath,
@@ -3446,11 +3728,9 @@ export default function VideoEditor() {
 				const tryExportV2 = async ({
 					request,
 					onDetails,
-					formatName,
 				}: {
 					request: ExportV2StartRequest;
 					onDetails: (details: ExportDetails) => void;
-					formatName: "GIF" | "video";
 				}): Promise<{ handled: boolean; keepDialogOpen: boolean }> => {
 					const capabilities = await window.electronAPI.exportV2Probe();
 					const canUseGifPipeline =
@@ -3496,14 +3776,14 @@ export default function VideoEditor() {
 						if (result.canceled) {
 							dispatchSession({
 								type: "set-export-error",
-								error: "Save dialog canceled. Reopen export to choose another location.",
+								error: saveCanceledMessage,
 							});
 							dispatchSession({ type: "set-export-status", status: "canceled" });
 							return { handled: true, keepDialogOpen: true };
 						}
 
 						if (!result.success || !result.path || !result.details) {
-							const errorMessage = result.error || `${formatName} export failed`;
+							const errorMessage = result.error || tDialogs("export.failed", "Export failed");
 							dispatchSession({ type: "set-export-error", error: errorMessage });
 							dispatchSession({ type: "set-export-status", status: "failed" });
 							toast.error(errorMessage);
@@ -3511,13 +3791,38 @@ export default function VideoEditor() {
 						}
 
 						onDetails(result.details);
+						if (request.destination === "temp") {
+							// Rendered first; now ask where to save it. A cancel keeps the file for Save Again.
+							dispatchSession({ type: "set-export-status", status: "awaiting-save-path" });
+							const saveResult = await window.electronAPI.finalizeExportedTemp({
+								tempPath: result.path,
+								fileName: request.fileName,
+								captionSidecar,
+							});
+							if (!saveResult.success || !saveResult.path) {
+								setPendingSave({ tempPath: result.path, fileName: request.fileName });
+								dispatchSession({
+									type: "set-export-error",
+									error: saveResult.canceled
+										? saveCanceledMessage
+										: saveResult.message ||
+											tDialogs("export.saveFailed", "Failed to save the export"),
+								});
+								dispatchSession({
+									type: "set-export-status",
+									status: saveResult.canceled ? "canceled" : "failed",
+								});
+								return { handled: true, keepDialogOpen: true };
+							}
+							result.path = saveResult.path;
+						}
 						dispatchSession({
 							type: "set-exported-file-path",
 							path: result.path,
 						});
 						dispatchSession({ type: "set-export-status", status: "saved" });
 						if (result.copiedToClipboard) {
-							toast.success(`${formatName === "GIF" ? "GIF" : "Video"} copied to clipboard.`);
+							toast.success(tDialogs("export.copiedToClipboard", "Copied to clipboard."));
 						} else {
 							showExportSuccessToast(result.path);
 						}
@@ -3575,7 +3880,6 @@ export default function VideoEditor() {
 								details: mergeGifExportDetails(gifPlan, details, details.fileSizeBytes),
 							});
 						},
-						formatName: "GIF",
 					});
 
 					if (exportV2Result.handled) {
@@ -3603,14 +3907,16 @@ export default function VideoEditor() {
 							backgroundBlur,
 							hideBackground,
 							zoomMotionBlur,
+							zoomTemporalBlur,
 							connectZooms,
+							zoomTiming,
 							deviceMockup,
 							frameBorderEnabled,
 							frameBorderWidth,
 							frameBorderColor,
 							frameBorderOpacity,
 							borderRadius,
-							padding,
+							padding: effectivePadding,
 							videoPadding: padding,
 							cropRegion: effectiveLayerCropRegion,
 							aspectRatio,
@@ -3633,6 +3939,7 @@ export default function VideoEditor() {
 							clickHighlightColor,
 							clickHighlightSize,
 							clickHighlightOpacity,
+							cursorClickStyle,
 							cursorTrailLength,
 							cursorTrailOpacity,
 							cursorTypeMode,
@@ -3675,15 +3982,14 @@ export default function VideoEditor() {
 							keepExportDialogOpen = await saveExportedBlob({
 								blob: result.blob,
 								fileName,
-								formatName: "GIF",
 							});
 						} else {
 							dispatchSession({
 								type: "set-export-error",
-								error: result.error || "GIF export failed",
+								error: result.error || tDialogs("export.failed", "Export failed"),
 							});
 							dispatchSession({ type: "set-export-status", status: "failed" });
-							toast.error(result.error || "GIF export failed");
+							toast.error(result.error || tDialogs("export.failed", "Export failed"));
 						}
 					}
 				} else {
@@ -3705,6 +4011,7 @@ export default function VideoEditor() {
 							frameRate: videoPlan.frameRate,
 							bitrate: videoPlan.bitrate,
 							bitrateMode: videoPlan.bitrateMode,
+							keyframeIntervalSeconds: videoPlan.keyframeIntervalSeconds,
 							durationMs: Math.round(duration * 1000),
 							trimRegions,
 							speedRegions,
@@ -3726,7 +4033,6 @@ export default function VideoEditor() {
 								details: mergeVideoExportDetails(videoPlan, details, details.fileSizeBytes),
 							});
 						},
-						formatName: "video",
 					});
 
 					if (exportV2Result.handled) {
@@ -3738,6 +4044,7 @@ export default function VideoEditor() {
 							height: videoPlan.height,
 							frameRate: videoPlan.frameRate,
 							bitrate: videoPlan.bitrate,
+							keyframeIntervalSeconds: videoPlan.keyframeIntervalSeconds,
 							codec: videoPlan.codec,
 							codecCandidates: videoPlan.codecCandidates,
 							encoderCandidates: videoPlan.encoderCandidates,
@@ -3753,14 +4060,16 @@ export default function VideoEditor() {
 							backgroundBlur,
 							hideBackground,
 							zoomMotionBlur,
+							zoomTemporalBlur,
 							connectZooms,
+							zoomTiming,
 							deviceMockup,
 							frameBorderEnabled,
 							frameBorderWidth,
 							frameBorderColor,
 							frameBorderOpacity,
 							borderRadius,
-							padding,
+							padding: effectivePadding,
 							cropRegion: effectiveLayerCropRegion,
 							aspectRatio,
 							annotationRegions,
@@ -3782,6 +4091,7 @@ export default function VideoEditor() {
 							clickHighlightColor,
 							clickHighlightSize,
 							clickHighlightOpacity,
+							cursorClickStyle,
 							cursorTrailLength,
 							cursorTrailOpacity,
 							cursorTypeMode,
@@ -3799,6 +4109,7 @@ export default function VideoEditor() {
 							keyboardShortcutOpacity,
 							keyboardShortcutMaxVisible,
 							audioRegions,
+							sourceAudioVolume: clipVolume,
 							previewWidth,
 							previewHeight,
 							webcamPath: resolvedWebcamPath,
@@ -3826,15 +4137,14 @@ export default function VideoEditor() {
 							keepExportDialogOpen = await saveExportedBlob({
 								blob: result.blob,
 								fileName,
-								formatName: "video",
 							});
 						} else {
 							dispatchSession({
 								type: "set-export-error",
-								error: result.error || "Export failed",
+								error: result.error || tDialogs("export.failed", "Export failed"),
 							});
 							dispatchSession({ type: "set-export-status", status: "failed" });
-							toast.error(result.error || "Export failed");
+							toast.error(result.error || tDialogs("export.failed", "Export failed"));
 						}
 					}
 				}
@@ -3842,10 +4152,15 @@ export default function VideoEditor() {
 				await restorePreviewAfterExport(false);
 			} catch (error) {
 				console.error("Export error:", error);
-				const errorMessage = error instanceof Error ? error.message : "Unknown error";
+				const errorMessage =
+					error instanceof Error ? error.message : t("editor.shell.unknownError", "Unknown error");
 				dispatchSession({ type: "set-export-error", error: errorMessage });
 				dispatchSession({ type: "set-export-status", status: "failed" });
-				toast.error(`Export failed: ${errorMessage}`);
+				toast.error(
+					tDialogs("export.failedWithReason", "Export failed: {{reason}}", {
+						reason: errorMessage,
+					}),
+				);
 			} finally {
 				progressThrottler.flush();
 				if (!previewRestored) {
@@ -3865,11 +4180,16 @@ export default function VideoEditor() {
 				}
 				dispatchSession({ type: "set-exporting", value: false });
 				exporterRef.current = null;
-				dispatchSession({ type: "set-export-dialog-open", value: keepExportDialogOpen });
+				// Keep the menu where the user left it on success; reopen it when something needs attention.
+				if (keepExportDialogOpen) {
+					dispatchSession({ type: "set-export-dialog-open", value: true });
+				}
 				dispatchSession({ type: "set-export-progress", progress: null });
 			}
 		},
 		[
+			tDialogs,
+			discardPendingSave,
 			videoPath,
 			videoName,
 			wallpaper,
@@ -3882,7 +4202,9 @@ export default function VideoEditor() {
 			backgroundBlur,
 			hideBackground,
 			zoomMotionBlur,
+			zoomTemporalBlur,
 			connectZooms,
+			zoomTiming,
 			showCursor,
 			showKeyboardShortcuts,
 			effectiveCursorTelemetry,
@@ -3900,6 +4222,7 @@ export default function VideoEditor() {
 			clickHighlightColor,
 			clickHighlightSize,
 			clickHighlightOpacity,
+			cursorClickStyle,
 			cursorTrailLength,
 			cursorTrailOpacity,
 			cursorTypeMode,
@@ -3924,6 +4247,9 @@ export default function VideoEditor() {
 			deviceMockup,
 			borderRadius,
 			padding,
+			effectivePadding,
+			clipVolume,
+			paddingSides,
 			effectiveLayerCropRegion,
 			annotationRegions,
 			isPlaying,
@@ -3941,30 +4267,72 @@ export default function VideoEditor() {
 			captionSettings,
 			duration,
 			sourceFrameRate,
+			t,
 		],
 	);
 
+	const buildQuickExportSettings = useCallback((): ExportSettings | null => {
+		const advanced = buildDefaultExportSettings();
+		const video = videoPlaybackRef.current?.video;
+		if (!advanced || !video) {
+			return null;
+		}
+		const sourceWidth = video.videoWidth || 1920;
+		const sourceHeight = video.videoHeight || 1080;
+		const aspectRatioValue = getAspectRatioValue(aspectRatio, sourceWidth / sourceHeight);
+		const base = resolveQuickBaseDimensions(sourceWidth, sourceHeight, aspectRatioValue);
+		const gif = toGifExportSettings(
+			quickGifExport,
+			base.height,
+			getGifExportSettingsForPreset("balanced"),
+		);
+		const gifPlan = resolveGifExportPlan(
+			buildSourceVideoMetadata({
+				width: sourceWidth,
+				height: sourceHeight,
+				frameRate: sourceFrameRate,
+			}),
+			gif,
+			aspectRatioValue,
+			Math.round(duration * 1000),
+		);
+		return {
+			...advanced,
+			video: toVideoExportSettings(quickVideoExport, videoExportSettings),
+			gif: { ...gif, width: gifPlan.width, height: gifPlan.height },
+		};
+	}, [
+		aspectRatio,
+		buildDefaultExportSettings,
+		duration,
+		quickGifExport,
+		quickVideoExport,
+		sourceFrameRate,
+		videoExportSettings,
+	]);
+
 	const handleOpenExportDialog = useCallback(
-		(destination: ExportDestination = "file") => {
+		(destination: ExportDestination = "file", useAdvancedSettings = false) => {
 			if (!videoPath) {
-				toast.error("No video loaded");
+				toast.error(tDialogs("export.noVideo", "No video loaded"));
 				return;
 			}
 
 			if (hasPendingExportSave) {
-				dispatchSession({ type: "set-export-dialog-open", value: true });
-				dispatchSession({ type: "set-export-status", status: "canceled" });
-				dispatchSession({
-					type: "set-export-error",
-					error: "Save dialog canceled. Click Save Again to save without re-rendering.",
-				});
+				handleExportMenuOpenChange(true);
 				return;
 			}
 
-			const settings = buildDefaultExportSettings();
+			const settings = useAdvancedSettings
+				? buildDefaultExportSettings()
+				: buildQuickExportSettings();
 			if (!settings) {
 				return;
 			}
+			const captionSidecar =
+				settings.format === "mp4" && includeCaptionSidecar
+					? buildCaptionSidecar(captionTrack, trimRegions, speedRegions)
+					: undefined;
 
 			dispatchSession({ type: "set-export-dialog-open", value: true });
 			dispatchSession({ type: "set-export-status", status: "exporting" });
@@ -3973,14 +4341,26 @@ export default function VideoEditor() {
 			if (destination === "clipboard") {
 				handleExport(settings, { saveMode: "clipboard" });
 			} else {
-				handleExport(settings);
+				handleExport(settings, { captionSidecar });
 			}
 		},
-		[videoPath, hasPendingExportSave, buildDefaultExportSettings, handleExport],
+		[
+			videoPath,
+			hasPendingExportSave,
+			buildDefaultExportSettings,
+			buildQuickExportSettings,
+			captionTrack,
+			handleExport,
+			handleExportMenuOpenChange,
+			includeCaptionSidecar,
+			speedRegions,
+			tDialogs,
+			trimRegions,
+		],
 	);
 
 	const handleExportToClipboard = useCallback(async () => {
-		const settings = buildDefaultExportSettings();
+		const settings = buildQuickExportSettings();
 		if (!settings) {
 			return;
 		}
@@ -3994,13 +4374,22 @@ export default function VideoEditor() {
 			onSaved: async (filePath) => {
 				const copyResult = await window.electronAPI.copyTextToClipboard(filePath);
 				if (copyResult.success) {
-					toast.success("Saved locally and copied the file path to your clipboard.");
+					toast.success(
+						t(
+							"editor.shell.savedLocallyAndCopied",
+							"Saved locally and copied the file path to your clipboard.",
+						),
+					);
 					return;
 				}
-				toast.error(copyResult.message || copyResult.error || "Failed to copy file path.");
+				toast.error(
+					copyResult.message ||
+						copyResult.error ||
+						t("editor.shell.failedToCopyFile", "Failed to copy file path."),
+				);
 			},
 		});
-	}, [buildDefaultExportSettings, handleExport]);
+	}, [buildQuickExportSettings, handleExport, t]);
 
 	const {
 		handleQuickShareSave,
@@ -4038,6 +4427,28 @@ export default function VideoEditor() {
 		handleExportToClipboard,
 	});
 
+	// Read at render time: the menu re-renders on open, after the video's metadata is known.
+	const quickExportDimensions = (() => {
+		const video = videoPlaybackRef.current?.video;
+		const sourceWidth = video?.videoWidth || 1920;
+		const sourceHeight = video?.videoHeight || 1080;
+		const aspectValue = getAspectRatioValue(aspectRatio, sourceWidth / sourceHeight);
+		const base = resolveQuickBaseDimensions(sourceWidth, sourceHeight, aspectValue);
+		const videoDims = Object.fromEntries(
+			QUICK_VIDEO_QUALITIES.map((quality) => [quality, resolveQuickVideoDimensions(base, quality)]),
+		) as Record<QuickVideoQuality, { width: number; height: number }>;
+		const gifPlan = resolveGifExportPlan(
+			buildSourceVideoMetadata({
+				width: sourceWidth,
+				height: sourceHeight,
+				frameRate: sourceFrameRate,
+			}),
+			toGifExportSettings(quickGifExport, base.height, getGifExportSettingsForPreset("balanced")),
+			aspectValue,
+		);
+		return { video: videoDims, gif: { width: gifPlan.width, height: gifPlan.height } };
+	})();
+
 	if (error) {
 		return (
 			<div className="flex items-center justify-center h-screen bg-[#0a0a0b]">
@@ -4053,7 +4464,7 @@ export default function VideoEditor() {
 						onClick={handleLoadProject}
 						className="px-4 py-2 rounded-lg bg-white/[0.08] text-white/70 text-[13px] font-medium hover:bg-white/[0.12] hover:text-white/90 transition-all border border-white/[0.06]"
 					>
-						Load Project File
+						{t("editor.shell.loadProjectFile", "Load Project File")}
 					</button>
 				</div>
 				<style>
@@ -4091,15 +4502,19 @@ export default function VideoEditor() {
 				>
 					{/* Header Bar - matches Screen Studio reference */}
 					<div
-						className="relative h-11 flex-shrink-0 bg-[#111114] border-b border-white/5 flex items-center px-4 z-50"
+						className="relative h-11 flex-shrink-0 bg-[#111114] border-b border-white/5 flex items-center gap-2 px-4 z-50"
 						style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
 					>
 						{/* Left: macOS traffic lights spacer + action icons */}
 						<div
-							className="flex items-center gap-0.5 ml-[72px]"
+							className="flex shrink-0 items-center gap-0.5 ml-[72px]"
 							style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
 						>
-							<Tooltip content="Save Project" shortcut={isMac ? "⌘ + S" : "Ctrl + S"} side="bottom">
+							<Tooltip
+								content={t("editor.shell.saveProject", "Save Project")}
+								shortcut={isMac ? "⌘ + S" : "Ctrl + S"}
+								side="bottom"
+							>
 								<button
 									type="button"
 									onClick={() => void handleSaveProject()}
@@ -4108,7 +4523,10 @@ export default function VideoEditor() {
 									<Save className="h-4 w-4" />
 								</button>
 							</Tooltip>
-							<Tooltip content="Open Recordings Folder" side="bottom">
+							<Tooltip
+								content={t("editor.shell.openRecordingsFolder", "Open Recordings Folder")}
+								side="bottom"
+							>
 								<button
 									type="button"
 									onClick={() => void openRecordingsFolder()}
@@ -4117,7 +4535,10 @@ export default function VideoEditor() {
 									<FolderOpen className="h-4 w-4" />
 								</button>
 							</Tooltip>
-							<Tooltip content="Keyboard Shortcuts" side="bottom">
+							<Tooltip
+								content={t("editor.shell.keyboardShortcuts", "Keyboard Shortcuts")}
+								side="bottom"
+							>
 								<button
 									type="button"
 									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
@@ -4126,7 +4547,7 @@ export default function VideoEditor() {
 									<Keyboard className="h-4 w-4" />
 								</button>
 							</Tooltip>
-							<Tooltip content="Delete Project" side="bottom">
+							<Tooltip content={t("editor.shell.deleteProject", "Delete Project")} side="bottom">
 								<button
 									type="button"
 									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-red-400/80 hover:text-white cursor-pointer"
@@ -4139,7 +4560,7 @@ export default function VideoEditor() {
 
 						{/* Center: editable video name */}
 						<div
-							className="absolute left-1/2 -translate-x-1/2 flex h-8 max-w-[460px] items-center gap-1"
+							className="flex h-8 min-w-0 flex-1 items-center justify-center gap-1"
 							style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
 						>
 							{isEditingVideoName ? (
@@ -4151,27 +4572,27 @@ export default function VideoEditor() {
 										onChange={(event) => setDraftVideoName(event.target.value)}
 										onBlur={handleVideoNameInputBlur}
 										onKeyDown={handleVideoNameInputKeyDown}
-										aria-label="Video name"
-										className="h-7 w-[320px] rounded-md border border-white/10 bg-white/[0.07] px-2.5 text-center text-[13px] font-medium text-white/85 outline-none transition placeholder:text-white/25 focus:border-amber-300/45 focus:bg-white/[0.09] focus:ring-2 focus:ring-amber-300/15"
+										aria-label={t("editor.shell.videoName", "Video name")}
+										className="h-7 w-full max-w-[320px] min-w-0 rounded-md border border-white/10 bg-white/[0.07] px-2.5 text-center text-[13px] font-medium text-white/85 outline-none transition placeholder:text-white/25 focus:border-amber-300/45 focus:bg-white/[0.09] focus:ring-2 focus:ring-amber-300/15"
 									/>
-									<Tooltip content="Save Name" side="bottom">
+									<Tooltip content={t("editor.shell.saveName", "Save Name")} side="bottom">
 										<button
 											type="button"
 											onMouseDown={(event) => event.preventDefault()}
 											onClick={commitVideoNameEdit}
 											className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
-											aria-label="Save video name"
+											aria-label={t("editor.shell.saveVideoName", "Save video name")}
 										>
 											<Check className="h-3.5 w-3.5" />
 										</button>
 									</Tooltip>
-									<Tooltip content="Cancel" side="bottom">
+									<Tooltip content={t("editor.shell.cancel", "Cancel")} side="bottom">
 										<button
 											type="button"
 											onMouseDown={(event) => event.preventDefault()}
 											onClick={cancelVideoNameEdit}
 											className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/8 hover:text-white cursor-pointer"
-											aria-label="Cancel video name edit"
+											aria-label={t("editor.shell.cancelVideoNameEdit", "Cancel video name edit")}
 										>
 											<X className="h-3.5 w-3.5" />
 										</button>
@@ -4183,18 +4604,18 @@ export default function VideoEditor() {
 										type="button"
 										onClick={startVideoNameEdit}
 										onDoubleClick={startVideoNameEdit}
-										className="min-w-0 max-w-[400px] truncate rounded-md px-2 py-1 text-[13px] font-medium text-white/60 transition hover:bg-white/[0.06] hover:text-white/85 cursor-text"
+										className="min-w-0 max-w-[400px] shrink truncate rounded-md px-2 py-1 text-[13px] font-medium text-white/60 transition hover:bg-white/[0.06] hover:text-white/85 cursor-text"
 										title={videoName}
-										aria-label="Edit video name"
+										aria-label={t("editor.shell.editVideoName", "Edit video name")}
 									>
 										{videoName}
 									</button>
-									<Tooltip content="Edit Name" side="bottom">
+									<Tooltip content={t("editor.shell.editName", "Edit Name")} side="bottom">
 										<button
 											type="button"
 											onClick={startVideoNameEdit}
-											className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-500 opacity-70 transition hover:bg-white/8 hover:text-white hover:opacity-100 cursor-pointer"
-											aria-label="Edit video name"
+											className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-500 opacity-70 transition hover:bg-white/8 hover:text-white hover:opacity-100 cursor-pointer"
+											aria-label={t("editor.shell.editVideoName", "Edit video name")}
 										>
 											<Pencil className="h-3.5 w-3.5" />
 										</button>
@@ -4205,11 +4626,15 @@ export default function VideoEditor() {
 
 						{/* Right: Undo/Redo, Presets, Layout, Settings, Export */}
 						<div
-							className="ml-auto flex items-center gap-0.5"
+							className="flex shrink-0 items-center gap-0.5"
 							style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
 						>
 							{/* Undo / Redo */}
-							<Tooltip content="Undo" shortcut={isMac ? "⌘ + Z" : "Ctrl + Z"} side="bottom">
+							<Tooltip
+								content={t("editor.shell.undo", "Undo")}
+								shortcut={isMac ? "⌘ + Z" : "Ctrl + Z"}
+								side="bottom"
+							>
 								<button
 									type="button"
 									onClick={handleUndo}
@@ -4219,7 +4644,11 @@ export default function VideoEditor() {
 									<Undo2 className="h-4 w-4" />
 								</button>
 							</Tooltip>
-							<Tooltip content="Redo" shortcut={isMac ? "⌘ + ⇧ + Z" : "Ctrl + Y"} side="bottom">
+							<Tooltip
+								content={t("editor.shell.redo", "Redo")}
+								shortcut={isMac ? "⌘ + ⇧ + Z" : "Ctrl + Y"}
+								side="bottom"
+							>
 								<button
 									type="button"
 									onClick={handleRedo}
@@ -4240,7 +4669,9 @@ export default function VideoEditor() {
 										className="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-slate-300 transition hover:bg-white/8 hover:text-white cursor-pointer"
 									>
 										<Sparkles className="h-3.5 w-3.5" />
-										<span className="text-xs font-medium">Presets</span>
+										<span className="hidden text-xs font-medium lg:inline">
+											{t("editor.header.presets", "Presets")}
+										</span>
 										<ChevronDown className="h-3 w-3 text-slate-500" />
 									</button>
 								</DropdownMenuTrigger>
@@ -4249,7 +4680,7 @@ export default function VideoEditor() {
 									className="bg-[#1a1a1a] border-white/10 min-w-[160px]"
 								>
 									<DropdownMenuLabel className="text-[11px] font-medium text-white/45">
-										Apply preset
+										{t("editor.shell.applyPreset", "Apply preset")}
 									</DropdownMenuLabel>
 									{allPresets.map((preset) => (
 										<DropdownMenuItem
@@ -4265,19 +4696,19 @@ export default function VideoEditor() {
 										onSelect={handleSavePreset}
 										className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer"
 									>
-										Save current as preset...
+										{t("editor.shell.saveCurrentAsPreset", "Save current as preset...")}
 									</DropdownMenuItem>
 									<DropdownMenuSub>
 										<DropdownMenuSubTrigger
 											disabled={customPresets.length === 0}
 											className="text-slate-300"
 										>
-											Delete preset
+											{t("editor.shell.deletePreset", "Delete preset")}
 										</DropdownMenuSubTrigger>
 										<DropdownMenuSubContent className="min-w-[180px] border-white/10 bg-[#1a1a1a]">
 											{customPresets.length === 0 ? (
 												<DropdownMenuItem disabled className="text-slate-500">
-													No saved presets
+													{t("editor.shell.noSavedPresets", "No saved presets")}
 												</DropdownMenuItem>
 											) : (
 												customPresets.map((preset) => (
@@ -4296,7 +4727,7 @@ export default function VideoEditor() {
 							</DropdownMenu>
 
 							{/* Layout toggle */}
-							<Tooltip content="Toggle Layout" side="bottom">
+							<Tooltip content={t("editor.shell.toggleLayout", "Toggle Layout")} side="bottom">
 								<button
 									type="button"
 									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
@@ -4306,26 +4737,76 @@ export default function VideoEditor() {
 								</button>
 							</Tooltip>
 
-							{/* Language Switcher */}
+							<Tooltip content={t("editor.shell.projects", "Projects")} side="bottom">
+								<button
+									type="button"
+									aria-label={t("editor.shell.openProjectBrowser", "Open project browser")}
+									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
+									onClick={() => setProjectBrowserOpen(true)}
+								>
+									<FolderOpen className="h-4 w-4" />
+								</button>
+							</Tooltip>
+							<ProjectBrowserDialog
+								open={projectBrowserOpen}
+								onOpenChange={setProjectBrowserOpen}
+								onOpenProject={handleOpenProjectAtPath}
+							/>
+
+							{/* Language, appearance, feedback */}
 							<LanguageSwitcher />
+							<AppearanceSwitcher />
+							<FeedbackDialog />
 
 							<div className="w-[1px] h-5 bg-white/10 mx-1" />
 
-							{/* Export button - amber */}
-							<Tooltip
-								content="Export Video or GIF"
-								shortcut={isMac ? "⌘ + E" : "Ctrl + E"}
-								side="bottom"
+							<button
+								type="button"
+								onClick={() => handleExportMenuOpenChange(true)}
+								title={`${tSettings("export.buttonTooltip", "Export video or GIF")} (${isMac ? "⌘E" : "Ctrl+E"})`}
+								disabled={!videoPath}
+								className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-white font-semibold text-xs transition bg-[#f59e0b] hover:bg-[#d97706] cursor-pointer shadow-lg shadow-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50"
 							>
-								<button
-									type="button"
-									onClick={() => dispatchSession({ type: "set-export-settings-open", value: true })}
-									className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-white font-semibold text-xs transition bg-[#f59e0b] hover:bg-[#d97706] cursor-pointer shadow-lg shadow-amber-500/20"
-								>
-									<Download className="h-3.5 w-3.5" />
-									<span>Export</span>
-								</button>
-							</Tooltip>
+								<Download className="h-3.5 w-3.5" />
+								<span>{tSettings("export.button", "Export")}</span>
+							</button>
+							<ExportDialog
+								open={showExportDialog}
+								onOpenChange={handleExportMenuOpenChange}
+								status={exportStatus}
+								progress={exportProgress}
+								error={exportError}
+								exportedFilePath={exportedFilePath}
+								details={exportDetails}
+								hasPendingSave={hasPendingExportSave}
+								format={exportFormat}
+								onFormatChange={setExportFormat}
+								video={quickVideoExport}
+								onVideoChange={(patch) =>
+									setQuickVideoExport((previous) => ({ ...previous, ...patch }))
+								}
+								gif={quickGifExport}
+								onGifChange={(patch) =>
+									setQuickGifExport((previous) => ({ ...previous, ...patch }))
+								}
+								videoDimensions={quickExportDimensions.video}
+								gifDimensions={quickExportDimensions.gif}
+								showCaptionSidecar={Boolean(captionTrack?.segments.length)}
+								includeCaptionSidecar={includeCaptionSidecar}
+								onIncludeCaptionSidecarChange={setIncludeCaptionSidecar}
+								extraMessages={exportAnnouncements}
+								onExport={() => handleOpenExportDialog("file")}
+								onCancel={handleCancelExport}
+								onRetrySave={() => void handleRetrySaveExport()}
+								onDismiss={handleExportDialogClose}
+								onReveal={() => {
+									if (exportedFilePath) void window.electronAPI.revealInFolder(exportedFilePath);
+								}}
+								onOpenAdvanced={() => {
+									dispatchSession({ type: "set-export-dialog-open", value: false });
+									dispatchSession({ type: "set-export-settings-open", value: true });
+								}}
+							/>
 						</div>
 					</div>
 
@@ -4393,13 +4874,14 @@ export default function VideoEditor() {
 											backgroundBlur={backgroundBlur}
 											zoomMotionBlur={zoomMotionBlur}
 											connectZooms={connectZooms}
+											zoomTiming={zoomTiming}
 											frameBorderEnabled={frameBorderEnabled}
 											frameBorderWidth={frameBorderWidth}
 											frameBorderColor={frameBorderColor}
 											frameBorderOpacity={frameBorderOpacity}
 											deviceMockup={deviceMockup}
 											borderRadius={borderRadius}
-											padding={padding}
+											padding={effectivePadding}
 											cropRegion={effectiveLayerCropRegion}
 											trimRegions={trimRegions}
 											speedRegions={speedRegions}
@@ -4430,6 +4912,7 @@ export default function VideoEditor() {
 											clickHighlightColor={clickHighlightColor}
 											clickHighlightSize={clickHighlightSize}
 											clickHighlightOpacity={clickHighlightOpacity}
+											cursorClickStyle={cursorClickStyle}
 											cursorTrailLength={cursorTrailLength}
 											cursorTrailOpacity={cursorTrailOpacity}
 											cursorTypeMode={cursorTypeMode}
@@ -4469,48 +4952,48 @@ export default function VideoEditor() {
 
 								{/* Right section: settings sidebar */}
 								<Panel
-									defaultSize={25}
-									minSize={20}
-									maxSize={45}
+									defaultSize={Math.max(25, sidebarMinSize)}
+									minSize={sidebarMinSize}
+									maxSize={Math.max(45, sidebarMinSize)}
 									className="flex flex-col min-w-0 h-full gap-2 relative"
 								>
 									<div className="shrink-0 flex items-center justify-center z-10">
-										<div className="inline-grid grid-cols-3 gap-1 rounded-full border border-white/[0.08] bg-[#0A0F0D]/80 p-1 backdrop-blur-xl shadow-lg shadow-black/50">
+										<div className="grid w-full max-w-sm grid-cols-3 gap-1 rounded-full border border-white/[0.08] bg-[#0A0F0D]/80 p-1 backdrop-blur-xl shadow-lg shadow-black/50">
 											<button
 												type="button"
 												onClick={() => setRightSidebarSection("edit")}
-												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full px-4 py-1.5 text-[11px] font-semibold transition-all duration-300 ${
+												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full px-2 py-1.5 text-[11px] font-semibold transition-all duration-300 ${
 													rightSidebarSection === "edit"
-														? "bg-gradient-to-r from-amber-400 to-amber-600 text-black shadow-md shadow-amber-500/20 scale-100"
+														? "bg-gradient-to-r from-amber-400 to-amber-600 text-neutral-950 shadow-md shadow-amber-500/20 scale-100"
 														: "text-slate-400 hover:bg-white/5 hover:text-slate-200"
 												}`}
 											>
 												<SlidersHorizontal className="h-3.5 w-3.5 shrink-0" />
-												<span className="truncate">Edit</span>
+												<span className="truncate">{t("editor.sidebar.edit", "Edit")}</span>
 											</button>
 											<button
 												type="button"
 												onClick={() => setRightSidebarSection("layers")}
-												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full px-4 py-1.5 text-[11px] font-semibold transition-all duration-300 ${
+												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full px-2 py-1.5 text-[11px] font-semibold transition-all duration-300 ${
 													rightSidebarSection === "layers"
-														? "bg-gradient-to-r from-amber-400 to-amber-600 text-black shadow-md shadow-amber-500/20 scale-100"
+														? "bg-gradient-to-r from-amber-400 to-amber-600 text-neutral-950 shadow-md shadow-amber-500/20 scale-100"
 														: "text-slate-400 hover:bg-white/5 hover:text-slate-200"
 												}`}
 											>
 												<Layers className="h-3.5 w-3.5 shrink-0" />
-												<span className="truncate">Layers</span>
+												<span className="truncate">{t("editor.sidebar.layers", "Layers")}</span>
 											</button>
 											<button
 												type="button"
 												onClick={() => setRightSidebarSection("polish")}
-												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full px-4 py-1.5 text-[11px] font-semibold transition-all duration-300 ${
+												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full px-2 py-1.5 text-[11px] font-semibold transition-all duration-300 ${
 													rightSidebarSection === "polish"
-														? "bg-gradient-to-r from-amber-400 to-amber-600 text-black shadow-md shadow-amber-500/20 scale-100"
+														? "bg-gradient-to-r from-amber-400 to-amber-600 text-neutral-950 shadow-md shadow-amber-500/20 scale-100"
 														: "text-slate-400 hover:bg-white/5 hover:text-slate-200"
 												}`}
 											>
 												<Sparkles className="h-3.5 w-3.5 shrink-0" />
-												<span className="truncate">Polish</span>
+												<span className="truncate">{t("editor.sidebar.polish", "Polish")}</span>
 											</button>
 										</div>
 									</div>
@@ -4567,8 +5050,12 @@ export default function VideoEditor() {
 												onBackgroundBlurChange={setBackgroundBlur}
 												zoomMotionBlur={zoomMotionBlur}
 												onZoomMotionBlurChange={setZoomMotionBlur}
+												zoomTemporalBlur={zoomTemporalBlur}
+												onZoomTemporalBlurChange={setZoomTemporalBlur}
 												connectZooms={connectZooms}
+												zoomTiming={zoomTiming}
 												onConnectZoomsChange={setConnectZooms}
+												onZoomTimingChange={setZoomTiming}
 												showCursor={showCursor}
 												onShowCursorChange={setShowCursor}
 												loopCursor={loopCursor}
@@ -4614,7 +5101,11 @@ export default function VideoEditor() {
 												clickHighlightSize={clickHighlightSize}
 												onClickHighlightSizeChange={setClickHighlightSize}
 												clickHighlightOpacity={clickHighlightOpacity}
+												cursorClickStyle={cursorClickStyle}
 												onClickHighlightOpacityChange={setClickHighlightOpacity}
+												onCursorClickStyleChange={setCursorClickStyle}
+												motionPreset={motionPreset}
+												onApplyMotionPreset={applyMotionPreset}
 												cursorTrailLength={cursorTrailLength}
 												onCursorTrailLengthChange={setCursorTrailLength}
 												cursorTrailOpacity={cursorTrailOpacity}
@@ -4646,6 +5137,8 @@ export default function VideoEditor() {
 												borderRadius={borderRadius}
 												onBorderRadiusChange={setBorderRadius}
 												padding={padding}
+												paddingSides={paddingSides}
+												onPaddingSidesChange={setPaddingSides}
 												onPaddingChange={setPadding}
 												cropRegion={cropRegion}
 												baseCropRegion={legacyCaptureCorrectionCrop}
@@ -4701,6 +5194,7 @@ export default function VideoEditor() {
 												onAudioVolumeChange={handleAudioVolumeChange}
 												onAudioFadeChange={handleAudioFadeChange}
 												onAudioLoopChange={handleAudioLoopChange}
+												onAudioNormalizeChange={handleAudioNormalizeChange}
 												onAudioDelete={handleAudioDelete}
 												missingAudioPath={missingSelectedAudioPath}
 												onRelinkMissingAudio={handleRelinkMissingAudio}
@@ -4709,6 +5203,8 @@ export default function VideoEditor() {
 												captionGenerationOptions={captionGenerationOptions}
 												captionGenerationProgress={captionGenerationProgress}
 												captionModelStatus={captionModelStatus}
+												onDeleteCaptionModel={handleDeleteCaptionModel}
+												onCustomWhisperFile={handleCustomWhisperFile}
 												captionSettings={captionSettings}
 												selectedCaptionId={selectedCaptionId}
 												onSelectCaption={setSelectedCaptionId}
@@ -4756,6 +5252,9 @@ export default function VideoEditor() {
 									hasAudio={videoHasAudio}
 									clipVolume={clipVolume}
 									onClipVolumeChange={setClipVolume}
+									onSeparateClipAudio={handleSeparateClipAudio}
+									timelineExpanded={timelineExpanded}
+									onToggleTimelineExpanded={handleToggleTimelineExpanded}
 									onSeek={handleSeek}
 									cursorTelemetry={effectiveCursorTelemetry}
 									zoomRegions={effectiveZoomRegions}
@@ -4856,22 +5355,7 @@ export default function VideoEditor() {
 							),
 							Math.round(duration * 1000),
 						)}
-						onExport={handleOpenExportDialog}
-					/>
-
-					<ExportDialog
-						isOpen={showExportDialog}
-						onClose={handleExportDialogClose}
-						progress={exportProgress}
-						isExporting={isExporting}
-						exportStatus={exportStatus}
-						error={exportError}
-						onCancel={handleCancelExport}
-						onRetrySave={handleRetrySaveExport}
-						canRetrySave={hasPendingExportSave}
-						exportFormat={exportFormat}
-						details={exportDetails}
-						exportedFilePath={exportedFilePath}
+						onExport={(destination) => handleOpenExportDialog(destination, true)}
 					/>
 
 					<QuickShareDialog
@@ -4880,6 +5364,12 @@ export default function VideoEditor() {
 						onSave={handleQuickShareSave}
 						onCopy={() => void handleExportToClipboard()}
 						onEdit={handleQuickShareEdit}
+					/>
+
+					<MissingCursorDataDialog
+						open={missingCursorDataOpen}
+						isMac={isMac}
+						onClose={() => setMissingCursorDataOpen(false)}
 					/>
 
 					<PresetNameDialog

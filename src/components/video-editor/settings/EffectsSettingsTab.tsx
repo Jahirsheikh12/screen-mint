@@ -19,7 +19,17 @@ import {
 	TabContent,
 	TabHeader,
 } from "../settingsPanelLayout";
-import { DEFAULT_ZOOM_MOTION_BLUR, PREVIEW_QUALITY_OPTIONS, type PreviewQuality } from "../types";
+import {
+	DEFAULT_ZOOM_MOTION_BLUR,
+	PADDING_LINKED_MAX,
+	PADDING_UNLINKED_VERTICAL_MAX,
+	type PaddingSides,
+	PREVIEW_QUALITY_OPTIONS,
+	type PreviewQuality,
+	type ZoomTemporalBlurSettings,
+	type ZoomTimingSettings,
+} from "../types";
+import { ZoomTimingControls } from "./ZoomTimingControls";
 
 type SettingsTranslator = (key: string, fallback?: string) => string;
 
@@ -29,12 +39,16 @@ interface EffectsSettingsTabProps {
 	onPreviewQualityChange?: (quality: PreviewQuality) => void;
 	connectZooms: boolean;
 	onConnectZoomsChange?: (enabled: boolean) => void;
+	zoomTiming: ZoomTimingSettings;
+	onZoomTimingChange?: (timing: ZoomTimingSettings) => void;
 	hideBackground: boolean;
 	onHideBackgroundChange?: (hidden: boolean) => void;
 	backgroundBlur: number;
 	onBackgroundBlurChange?: (amount: number) => void;
 	zoomMotionBlur: number;
 	onZoomMotionBlurChange?: (amount: number) => void;
+	zoomTemporalBlur: ZoomTemporalBlurSettings;
+	onZoomTemporalBlurChange?: (settings: ZoomTemporalBlurSettings) => void;
 	showAdvancedShadowSettings: boolean;
 	onToggleAdvancedShadowSettings: () => void;
 	frameShadowSize: number;
@@ -55,6 +69,8 @@ interface EffectsSettingsTabProps {
 	onBorderRadiusChange?: (radius: number) => void;
 	padding: number;
 	onPaddingChange?: (padding: number) => void;
+	paddingSides: PaddingSides | null;
+	onPaddingSidesChange?: (sides: PaddingSides | null) => void;
 	onCropToggle: () => void;
 }
 
@@ -64,12 +80,16 @@ export function EffectsSettingsTab({
 	onPreviewQualityChange,
 	connectZooms,
 	onConnectZoomsChange,
+	zoomTiming,
+	onZoomTimingChange,
 	hideBackground,
 	onHideBackgroundChange,
 	backgroundBlur,
 	onBackgroundBlurChange,
 	zoomMotionBlur,
 	onZoomMotionBlurChange,
+	zoomTemporalBlur,
+	onZoomTemporalBlurChange,
 	showAdvancedShadowSettings,
 	onToggleAdvancedShadowSettings,
 	frameShadowSize,
@@ -90,13 +110,18 @@ export function EffectsSettingsTab({
 	onBorderRadiusChange,
 	padding,
 	onPaddingChange,
+	paddingSides,
+	onPaddingSidesChange,
 	onCropToggle,
 }: EffectsSettingsTabProps) {
 	return (
 		<TabContent>
 			<TabHeader
 				title={tSettings("effects.title")}
-				description="Control visual effects, transitions, and frame properties"
+				description={tSettings(
+					"effectsTab.controlVisualEffectsTransitions",
+					"Control visual effects, transitions, and frame properties",
+				)}
 				trailing={<KeyboardShortcutsHelp />}
 			/>
 
@@ -135,8 +160,11 @@ export function EffectsSettingsTab({
 			</SettingsSection>
 
 			<SettingsSection
-				title="Transitions"
-				description="How zoom transitions connect and blend together"
+				title={tSettings("effectsTab.transitions", "Transitions")}
+				description={tSettings(
+					"effectsTab.howZoomTransitionsConnect",
+					"How zoom transitions connect and blend together",
+				)}
 			>
 				<div className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 					<div>
@@ -144,7 +172,10 @@ export function EffectsSettingsTab({
 							{tSettings("effects.connectZooms")}
 						</div>
 						<div className="text-[10px] text-slate-500 mt-0.5">
-							Smoothly link adjacent zoom regions
+							{tSettings(
+								"effectsTab.smoothlyLinkAdjacentZoom",
+								"Smoothly link adjacent zoom regions",
+							)}
 						</div>
 					</div>
 					<Switch
@@ -153,13 +184,21 @@ export function EffectsSettingsTab({
 						className="data-[state=checked]:bg-[#F59E0B] scale-90"
 					/>
 				</div>
+				<ZoomTimingControls
+					zoomTiming={zoomTiming}
+					connectZooms={connectZooms}
+					onZoomTimingChange={onZoomTimingChange}
+				/>
 				<div className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 					<div>
 						<div className="text-xs font-medium text-slate-300">
 							{tSettings("effects.removeBackground")}
 						</div>
 						<div className="text-[10px] text-slate-500 mt-0.5">
-							Hide wallpaper, color, and gradient backgrounds
+							{tSettings(
+								"effectsTab.hideWallpaperColorAnd",
+								"Hide wallpaper, color, and gradient backgrounds",
+							)}
 						</div>
 					</div>
 					<Switch
@@ -171,8 +210,11 @@ export function EffectsSettingsTab({
 			</SettingsSection>
 
 			<SettingsSection
-				title="Visual Effects"
-				description="Fine-tune blur, shadow, and motion effects"
+				title={tSettings("effectsTab.visualEffects", "Visual Effects")}
+				description={tSettings(
+					"effectsTab.fineTuneBlurShadow",
+					"Fine-tune blur, shadow, and motion effects",
+				)}
 			>
 				<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 					<SliderControl
@@ -200,6 +242,58 @@ export function EffectsSettingsTab({
 						formatValue={(value) => `${value.toFixed(2)}×`}
 						parseInput={(text) => parseFloat(text.replace(/×$/, ""))}
 					/>
+				</div>
+				<div className="space-y-3 p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner">
+					<div className="flex items-center justify-between">
+						<div>
+							<div className="text-xs font-medium text-slate-300">
+								{tSettings("effectsTab.temporalZoomBlur", "Temporal Zoom Blur")}
+							</div>
+							<div className="text-[10px] text-slate-500 mt-0.5">
+								{tSettings(
+									"effectsTab.blendSubFrameSamples",
+									"Blend sub-frame samples during zoom motion. Applied on export.",
+								)}
+							</div>
+						</div>
+						<Switch
+							checked={zoomTemporalBlur.enabled}
+							onCheckedChange={(enabled) =>
+								onZoomTemporalBlurChange?.({ ...zoomTemporalBlur, enabled })
+							}
+							className="data-[state=checked]:bg-[#F59E0B] scale-90"
+						/>
+					</div>
+					{zoomTemporalBlur.enabled && (
+						<>
+							<SliderControl
+								label={tSettings("effectsTab.blurSamples", "Blur Samples")}
+								value={zoomTemporalBlur.sampleCount ?? 8}
+								defaultValue={8}
+								min={2}
+								max={32}
+								step={1}
+								onChange={(value) =>
+									onZoomTemporalBlurChange?.({ ...zoomTemporalBlur, sampleCount: value })
+								}
+								formatValue={(value) => `${Math.round(value)}`}
+								parseInput={(text) => parseInt(text, 10)}
+							/>
+							<SliderControl
+								label={tSettings("effectsTab.shutter", "Shutter")}
+								value={zoomTemporalBlur.shutterFraction ?? 0.5}
+								defaultValue={0.5}
+								min={0}
+								max={1}
+								step={0.05}
+								onChange={(value) =>
+									onZoomTemporalBlurChange?.({ ...zoomTemporalBlur, shutterFraction: value })
+								}
+								formatValue={(value) => `${Math.round(value * 360)}°`}
+								parseInput={(text) => parseFloat(text.replace(/°$/, "")) / 360}
+							/>
+						</>
+					)}
 				</div>
 				<div className="rounded-xl border border-white/5 bg-white/[0.04] transition-colors duration-200 hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]">
 					<button
@@ -267,7 +361,13 @@ export function EffectsSettingsTab({
 				</div>
 			</SettingsSection>
 
-			<SettingsSection title="Frame" description="Adjust the recording frame shape and spacing">
+			<SettingsSection
+				title={tSettings("effectsTab.frame", "Frame")}
+				description={tSettings(
+					"effectsTab.adjustTheRecordingFrame",
+					"Adjust the recording frame shape and spacing",
+				)}
+			>
 				<div className="rounded-xl border border-white/5 bg-white/[0.04] px-3 py-2.5 transition-colors duration-200 hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]">
 					<div className="flex items-center justify-between gap-3">
 						<div>
@@ -349,18 +449,71 @@ export function EffectsSettingsTab({
 						parseInput={(text) => parseFloat(text.replace(/px$/, ""))}
 					/>
 				</div>
-				<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
-					<SliderControl
-						label={tSettings("effects.padding")}
-						value={padding}
-						defaultValue={DEFAULT_VIDEO_PREVIEW_PADDING}
-						min={0}
-						max={100}
-						step={1}
-						onChange={(value) => onPaddingChange?.(value)}
-						formatValue={(value) => `${value}%`}
-						parseInput={(text) => parseFloat(text.replace(/%$/, ""))}
-					/>
+				<div className="space-y-3 p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+					<div className="flex items-center justify-between">
+						<span className="text-xs font-medium text-slate-300">
+							{tSettings("effects.padding")}
+						</span>
+						<div className="grid grid-cols-2 gap-1 rounded-lg bg-white/[0.04] p-0.5">
+							{(["linked", "unlinked"] as const).map((mode) => {
+								const isActive = (mode === "linked") === (paddingSides === null);
+								return (
+									<button
+										key={mode}
+										type="button"
+										aria-pressed={isActive}
+										onClick={() =>
+											onPaddingSidesChange?.(
+												mode === "linked"
+													? null
+													: { top: padding, bottom: padding, left: padding, right: padding },
+											)
+										}
+										className={cn(
+											"rounded-md px-2 py-1 text-[10px] font-medium transition-colors",
+											isActive ? "bg-[#F59E0B] text-white" : "text-slate-400 hover:text-slate-200",
+										)}
+									>
+										{mode === "linked"
+											? tSettings("effectsTab.linked", "Linked")
+											: tSettings("effectsTab.perSide", "Per side")}
+									</button>
+								);
+							})}
+						</div>
+					</div>
+					{paddingSides === null ? (
+						<SliderControl
+							label={tSettings("effectsTab.allSides", "All sides")}
+							value={padding}
+							defaultValue={DEFAULT_VIDEO_PREVIEW_PADDING}
+							min={0}
+							max={PADDING_LINKED_MAX}
+							step={1}
+							onChange={(value) => onPaddingChange?.(value)}
+							formatValue={(value) => `${value}%`}
+							parseInput={(text) => parseFloat(text.replace(/%$/, ""))}
+						/>
+					) : (
+						(["top", "bottom", "left", "right"] as const).map((side) => (
+							<SliderControl
+								key={side}
+								label={side[0].toUpperCase() + side.slice(1)}
+								value={paddingSides[side]}
+								defaultValue={padding}
+								min={0}
+								max={
+									side === "top" || side === "bottom"
+										? PADDING_UNLINKED_VERTICAL_MAX
+										: PADDING_LINKED_MAX
+								}
+								step={1}
+								onChange={(value) => onPaddingSidesChange?.({ ...paddingSides, [side]: value })}
+								formatValue={(value) => `${value}%`}
+								parseInput={(text) => parseFloat(text.replace(/%$/, ""))}
+							/>
+						))
+					)}
 				</div>
 				<Button
 					onClick={onCropToggle}

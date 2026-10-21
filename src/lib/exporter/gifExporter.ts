@@ -4,6 +4,7 @@ import type {
 	CaptionRegion,
 	CaptionSettings,
 	CropRegion,
+	CursorClickStyleSettings,
 	CursorMovementStyle,
 	CursorPack,
 	CursorSpringSettings,
@@ -14,11 +15,14 @@ import type {
 	KeyboardShortcutCallout,
 	KeyboardShortcutPosition,
 	KeyboardShortcutTheme,
+	PaddingValue,
 	SpeedRegion,
 	TrimRegion,
 	WebcamEffects,
 	WebcamRegion,
 	ZoomRegion,
+	ZoomTemporalBlurSettings,
+	ZoomTimingSettings,
 } from "@/components/video-editor/types";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import { shouldYieldExportFrame, yieldToExportScheduler } from "./exportScheduler";
@@ -62,14 +66,16 @@ interface GifExporterConfig {
 	backgroundBlur: number;
 	hideBackground?: boolean;
 	zoomMotionBlur?: number;
+	zoomTemporalBlur?: ZoomTemporalBlurSettings;
 	connectZooms?: boolean;
+	zoomTiming?: Partial<ZoomTimingSettings>;
 	deviceMockup?: DeviceMockup;
 	frameBorderEnabled?: boolean;
 	frameBorderWidth?: number;
 	frameBorderColor?: string;
 	frameBorderOpacity?: number;
 	borderRadius?: number;
-	padding?: number;
+	padding?: PaddingValue;
 	videoPadding?: number;
 	cropRegion: CropRegion;
 	aspectRatio?: AspectRatio;
@@ -96,6 +102,7 @@ interface GifExporterConfig {
 	clickHighlightColor?: string;
 	clickHighlightSize?: number;
 	clickHighlightOpacity?: number;
+	cursorClickStyle?: CursorClickStyleSettings;
 	cursorTrailLength?: number;
 	cursorTrailOpacity?: number;
 	cursorTypeMode?: CursorTypeMode;
@@ -242,7 +249,9 @@ export class GifExporter {
 				backgroundBlur: this.config.backgroundBlur,
 				hideBackground: this.config.hideBackground,
 				zoomMotionBlur: this.config.zoomMotionBlur,
+				zoomTemporalBlur: this.config.zoomTemporalBlur,
 				connectZooms: this.config.connectZooms,
+				zoomTiming: this.config.zoomTiming,
 				deviceMockup: this.config.deviceMockup,
 				frameBorderEnabled: this.config.frameBorderEnabled,
 				frameBorderWidth: this.config.frameBorderWidth,
@@ -280,6 +289,7 @@ export class GifExporter {
 				clickHighlightColor: this.config.clickHighlightColor,
 				clickHighlightSize: this.config.clickHighlightSize,
 				clickHighlightOpacity: this.config.clickHighlightOpacity,
+				cursorClickStyle: this.config.cursorClickStyle,
 				cursorTrailLength: this.config.cursorTrailLength,
 				cursorTrailOpacity: this.config.cursorTrailOpacity,
 				cursorTypeMode: this.config.cursorTypeMode,

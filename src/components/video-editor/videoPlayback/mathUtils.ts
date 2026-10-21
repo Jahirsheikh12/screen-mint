@@ -1,3 +1,5 @@
+import type { ZoomTransitionEasing } from "../types";
+
 export function clamp01(value: number) {
 	return Math.max(0, Math.min(1, value));
 }
@@ -83,4 +85,20 @@ export function easeInOutCubic(t: number) {
 export function easeOutCubic(t: number) {
 	const x = clamp01(t);
 	return 1 - Math.pow(1 - x, 3);
+}
+
+/** Maps 0..1 transition progress through the named zoom curve. */
+export function applyZoomEasing(easing: ZoomTransitionEasing, t: number) {
+	switch (easing) {
+		case "glide":
+			return cubicBezier(0.25, 0.1, 0.25, 1, t);
+		case "smooth":
+			return easeInOutCubic(t);
+		case "snappy":
+			return easeOutExpo(t);
+		case "linear":
+			return clamp01(t);
+		default:
+			return easeOutScreenStudio(t);
+	}
 }

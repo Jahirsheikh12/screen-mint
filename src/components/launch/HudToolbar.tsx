@@ -21,7 +21,7 @@ import { useI18n, useScopedT } from "@/contexts/I18nContext";
 import type { MobileCapturePairingState } from "@/electron-ipc/contracts";
 import type { CameraDeviceOption, HudMode, HudSettings } from "@/hooks/useHudState";
 import type { AppLocale } from "@/i18n/config";
-import { SUPPORTED_LOCALES } from "@/i18n/config";
+import { LOCALE_LABELS, SUPPORTED_LOCALES } from "@/i18n/config";
 import { AudioLevelMeter } from "../ui/audio-level-meter";
 import {
 	DropdownMenu,
@@ -44,6 +44,8 @@ type HudToolbarProps = {
 	contentPanelVisible: boolean;
 	onTabClick: (mode: HudMode) => void;
 	recording: boolean;
+	/** What the active tab will record, shown as the tab's tooltip. */
+	sourceLabel?: string;
 	paused: boolean;
 	elapsed: number;
 	onToggleRecording: () => void;
@@ -114,8 +116,6 @@ const DROPDOWN_CLASSES =
 	"border-white/10 bg-[#1c1c1e] text-white/90 shadow-none data-[state=open]:!animate-none data-[state=closed]:!animate-none";
 const DEFAULT_CAMERA_VALUE = "__default_camera__";
 
-const LOCALE_LABELS: Record<string, string> = { en: "EN", es: "ES", "zh-CN": "\u4E2D\u6587" };
-
 const ND = styles.electronNoDrag;
 
 export function HudToolbar({
@@ -123,6 +123,7 @@ export function HudToolbar({
 	contentPanelVisible,
 	onTabClick,
 	recording,
+	sourceLabel,
 	paused,
 	elapsed,
 	onToggleRecording,
@@ -202,6 +203,21 @@ export function HudToolbar({
 	// otherwise flash the idle toolbar for a frame. Stay compact until the
 	// finalize work (`actionBusy`) clears.
 	const [showCompact, setShowCompact] = useState(recording);
+
+	// Space pauses or resumes while the HUD has focus, as its tooltip says.
+	useEffect(() => {
+		if (!recording) return;
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.code !== "Space" || event.repeat) return;
+			const target = event.target as HTMLElement | null;
+			// Focused controls keep their own Space behaviour.
+			if (target?.closest("button, input, textarea, select, [contenteditable=true]")) return;
+			event.preventDefault();
+			onTogglePause();
+		};
+		window.addEventListener("keydown", onKeyDown);
+		return () => window.removeEventListener("keydown", onKeyDown);
+	}, [recording, onTogglePause]);
 	useEffect(() => {
 		if (recording) {
 			setShowCompact(true);
@@ -384,6 +400,7 @@ export function HudToolbar({
 							type="button"
 							onClick={() => onTabClick(tab)}
 							disabled={recording}
+							title={mode === tab ? sourceLabel : undefined}
 							className={`flex shrink-0 items-center gap-1.5 rounded-[7px] px-2.5 py-[6px] text-[11px] font-medium transition-all ${
 								isActive ? "bg-white/[0.1] text-white/90" : "text-white/65 hover:text-white/95"
 							} cursor-pointer`}
@@ -475,7 +492,7 @@ export function HudToolbar({
 								</span>
 							</DropdownMenuRadioItem>
 							<DropdownMenuRadioItem value={DEFAULT_CAMERA_VALUE} className="text-xs">
-								Default camera
+								{t("recording.defaultCamera")}
 							</DropdownMenuRadioItem>
 							{cameraDeviceOptions.map((device) => (
 								<DropdownMenuRadioItem
@@ -559,25 +576,25 @@ export function HudToolbar({
 						</DropdownMenuCheckboxItem>
 						<DropdownMenuSeparator className="bg-white/[0.08]" />
 						<DropdownMenuLabel className="text-[11px] font-medium text-white/45">
-							Preview size
+							{t("recording.previewSize")}
 						</DropdownMenuLabel>
 						<DropdownMenuRadioGroup
 							value={cameraSession.previewSize}
 							onValueChange={(value) => setCameraPreviewSize(value as "small" | "medium" | "large")}
 						>
 							<DropdownMenuRadioItem value="small" className="text-xs">
-								Small
+								{t("recording.previewSmall")}
 							</DropdownMenuRadioItem>
 							<DropdownMenuRadioItem value="medium" className="text-xs">
-								Medium
+								{t("recording.previewMedium")}
 							</DropdownMenuRadioItem>
 							<DropdownMenuRadioItem value="large" className="text-xs">
-								Large
+								{t("recording.previewLarge")}
 							</DropdownMenuRadioItem>
 						</DropdownMenuRadioGroup>
 						<DropdownMenuSeparator className="bg-white/[0.08]" />
 						<DropdownMenuLabel className="text-[11px] font-medium text-white/45">
-							Preview corner
+							{t("recording.previewCorner")}
 						</DropdownMenuLabel>
 						<DropdownMenuRadioGroup
 							value={cameraSession.previewCorner}
@@ -588,31 +605,31 @@ export function HudToolbar({
 							}
 						>
 							<DropdownMenuRadioItem value="top-left" className="text-xs">
-								Top left
+								{t("recording.cornerTopLeft")}
 							</DropdownMenuRadioItem>
 							<DropdownMenuRadioItem value="top-right" className="text-xs">
-								Top right
+								{t("recording.cornerTopRight")}
 							</DropdownMenuRadioItem>
 							<DropdownMenuRadioItem value="bottom-left" className="text-xs">
-								Bottom left
+								{t("recording.cornerBottomLeft")}
 							</DropdownMenuRadioItem>
 							<DropdownMenuRadioItem value="bottom-right" className="text-xs">
-								Bottom right
+								{t("recording.cornerBottomRight")}
 							</DropdownMenuRadioItem>
 						</DropdownMenuRadioGroup>
 						<DropdownMenuSeparator className="bg-white/[0.08]" />
 						<DropdownMenuLabel className="text-[11px] font-medium text-white/45">
-							Preview shape
+							{t("recording.previewShape")}
 						</DropdownMenuLabel>
 						<DropdownMenuRadioGroup
 							value={cameraSession.previewShape}
 							onValueChange={(value) => setCameraPreviewShape(value as "rounded-rect" | "circle")}
 						>
 							<DropdownMenuRadioItem value="rounded-rect" className="text-xs">
-								Rounded rectangle
+								{t("recording.shapeRoundedRect")}
 							</DropdownMenuRadioItem>
 							<DropdownMenuRadioItem value="circle" className="text-xs">
-								Circle
+								{t("recording.shapeCircle")}
 							</DropdownMenuRadioItem>
 						</DropdownMenuRadioGroup>
 					</DropdownMenuContent>

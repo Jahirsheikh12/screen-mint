@@ -29,6 +29,7 @@ import {
 	VAD_MODEL_FILE_NAME,
 } from "../../src/lib/captions/transcriptionConfig";
 import { buildCaptionSegmentsFromWords } from "./captionSegmentation";
+import { findSystemWhisperCli, resolveCustomWhisperFiles } from "./customWhisper";
 
 const execFileAsync = promisify(execFile);
 const nodeRequire = createRequire(import.meta.url);
@@ -54,6 +55,8 @@ export interface WhisperCaptionModelStatus {
 	availableModels: CaptionModel[];
 	downloadedModels: CaptionModel[];
 	availableSourceAudios: CaptionSourceAudio[];
+	customModelPath: string | null;
+	customExecutablePath: string | null;
 }
 
 type CaptionProgressCallback = (progress: CaptionGenerationProgress) => void;
@@ -78,18 +81,21 @@ export async function getCaptionModelStatus(
 	microphoneAudioPath?: string | null,
 	ffmpegPath?: string,
 ): Promise<WhisperCaptionModelStatus> {
-	const downloadedModels = await getDownloadedModels();
-	const availableSourceAudios = await detectAvailableSourceAudios(
-		videoPath,
-		microphoneAudioPath,
-		ffmpegPath,
-	);
+	const [downloadedModels, availableSourceAudios, custom] = await Promise.all([
+		getDownloadedModels(),
+		detectAvailableSourceAudios(videoPath, microphoneAudioPath, ffmpegPath),
+		resolveCustomWhisperFiles(),
+	]);
 
 	return {
-		ready: downloadedModels.length > 0 && availableSourceAudios.length > 0,
+		ready:
+			(downloadedModels.length > 0 || custom.modelPath !== null) &&
+			availableSourceAudios.length > 0,
 		availableModels: ["base", "small", "medium"],
 		downloadedModels,
 		availableSourceAudios,
+		customModelPath: custom.modelPath,
+		customExecutablePath: custom.executablePath,
 	};
 }
 
@@ -99,7 +105,8 @@ export async function generateCaptions(
 ): Promise<CaptionTrack> {
 	cancellationRequested = false;
 	const captionsDir = await ensureCaptionsDir();
-	const cliPath = await ensureWhisperCli(captionsDir, onProgress);
+	const custom = await resolveCustomWhisperFiles();
+	const cliPath = custom.executablePath ?? (await ensureWhisperCli(captionsDir, onProgress));
 	throwIfCancelled();
 	const vadModelPath = await ensureVadModelFile(captionsDir, onProgress);
 	throwIfCancelled();
@@ -132,7 +139,9 @@ export async function generateCaptions(
 
 		let resolvedModel = request.model;
 		try {
-			const modelPath = await ensureModelFile(captionsDir, resolvedModel, onProgress);
+			// A custom model replaces the size picker, so there is no smaller model to fall back to.
+			const modelPath =
+				custom.modelPath ?? (await ensureModelFile(captionsDir, resolvedModel, onProgress));
 			throwIfCancelled();
 			await runWhisperCli(
 				cliPath,
@@ -144,9 +153,10 @@ export async function generateCaptions(
 				onProgress,
 			);
 		} catch (error) {
-			const fallbackModel = isWhisperOutOfMemoryError(error)
-				? getFallbackCaptionModel(resolvedModel)
-				: null;
+			const fallbackModel =
+				!custom.modelPath && isWhisperOutOfMemoryError(error)
+					? getFallbackCaptionModel(resolvedModel)
+					: null;
 			if (!fallbackModel) {
 				throw error;
 			}
@@ -285,9 +295,60 @@ async function ensureModelFile(
 		throw new Error(`Failed to download Whisper model (${response.status}).`);
 	}
 
-	const buffer = Buffer.from(await response.arrayBuffer());
-	await fs.writeFile(targetPath, buffer);
+	await downloadToFile(response, targetPath, (fraction) =>
+		onProgress({
+			stage: "model",
+			percentage: 8 + Math.round(fraction * 8),
+			message: `Downloading Whisper ${model} model... ${Math.round(fraction * 100)}%`,
+		}),
+	);
 	return targetPath;
+}
+
+/**
+ * Streams a download to `<target>.part` and renames on success, so an interrupted download is
+ * never mistaken for an installed model and large models are not buffered in memory.
+ */
+async function downloadToFile(
+	response: Response,
+	targetPath: string,
+	onFraction?: (fraction: number) => void,
+) {
+	const partPath = `${targetPath}.part`;
+	const total = Number(response.headers.get("content-length")) || 0;
+	const handle = await fs.open(partPath, "w");
+	try {
+		if (!response.body) throw new Error("Download has no body.");
+		const reader = response.body.getReader();
+		let received = 0;
+		let lastReported = -1;
+		for (;;) {
+			const { done, value } = await reader.read();
+			if (done) break;
+			await handle.write(value);
+			received += value.byteLength;
+			if (total > 0 && onFraction) {
+				const percent = Math.floor((received / total) * 100);
+				if (percent !== lastReported) {
+					lastReported = percent;
+					onFraction(received / total);
+				}
+			}
+		}
+	} catch (error) {
+		await handle.close();
+		await fs.rm(partPath, { force: true });
+		throw error;
+	}
+	await handle.close();
+	await fs.rename(partPath, targetPath);
+}
+
+export async function deleteCaptionModel(model: CaptionModel): Promise<void> {
+	const fileName = MODEL_FILE_NAMES[model];
+	if (!fileName) throw new Error(`Unknown caption model: ${model}`);
+	const captionsDir = await ensureCaptionsDir();
+	await fs.rm(path.join(captionsDir, "models", fileName), { force: true });
 }
 
 async function ensureVadModelFile(captionsDir: string, onProgress: CaptionProgressCallback) {
@@ -312,8 +373,7 @@ async function ensureVadModelFile(captionsDir: string, onProgress: CaptionProgre
 		throw new Error(`Failed to download Whisper VAD model (${response.status}).`);
 	}
 
-	const buffer = Buffer.from(await response.arrayBuffer());
-	await fs.writeFile(targetPath, buffer);
+	await downloadToFile(response, targetPath);
 	return targetPath;
 }
 
@@ -332,22 +392,31 @@ async function ensureWhisperCli(captionsDir: string, onProgress: CaptionProgress
 	});
 
 	try {
-		await fs.access(sourceDir);
-	} catch {
-		await execFileAsync(
-			"git",
-			["clone", "--depth", "1", "--branch", WHISPER_TAG, WHISPER_REPO_URL, sourceDir],
-			{ maxBuffer: 20 * 1024 * 1024 },
-		);
+		try {
+			await fs.access(sourceDir);
+		} catch {
+			await execFileAsync(
+				"git",
+				["clone", "--depth", "1", "--branch", WHISPER_TAG, WHISPER_REPO_URL, sourceDir],
+				{ maxBuffer: 20 * 1024 * 1024 },
+			);
+		}
+
+		onProgress({
+			stage: "bootstrap",
+			percentage: 5,
+			message: "Building Whisper CLI...",
+		});
+
+		await buildWhisperCli(sourceDir);
+	} catch (error) {
+		// No git or build tools here: use a whisper.cpp CLI that is already installed, if any.
+		const systemCli = await findSystemWhisperCli();
+		if (systemCli) {
+			return systemCli;
+		}
+		throw error;
 	}
-
-	onProgress({
-		stage: "bootstrap",
-		percentage: 5,
-		message: "Building Whisper CLI...",
-	});
-
-	await buildWhisperCli(sourceDir);
 
 	const cliPath = await findWhisperCli(sourceDir, buildDir);
 	if (!cliPath) {

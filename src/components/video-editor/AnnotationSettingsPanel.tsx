@@ -32,12 +32,13 @@ import { useScopedT } from "../../contexts/I18nContext";
 import { AddCustomFontDialog } from "./AddCustomFontDialog";
 import { getArrowComponent } from "./arrowComponent";
 import { ColorPicker } from "./ColorPicker";
-import type {
-	AnnotationRegion,
-	AnnotationType,
-	ArrowDirection,
-	BlurData,
-	FigureData,
+import {
+	type AnnotationRegion,
+	type AnnotationType,
+	type ArrowDirection,
+	type BlurData,
+	DEFAULT_BLUR_DATA,
+	type FigureData,
 } from "./types";
 
 interface AnnotationSettingsPanelProps {
@@ -256,7 +257,7 @@ export function AnnotationSettingsPanel({
 											{customFonts.length > 0 && (
 												<>
 													<div className="px-2 py-1.5 text-[10px] font-medium text-slate-400 uppercase tracking-wider">
-														Custom Fonts
+														{t("annotationPanel.customFonts", "Custom Fonts")}
 													</div>
 													{customFonts.map((font) => (
 														<SelectItem
@@ -493,7 +494,7 @@ export function AnnotationSettingsPanel({
 							<div className="rounded-lg border border-white/10 overflow-hidden bg-white/5 p-2">
 								<img
 									src={annotation.content}
-									alt="Uploaded annotation"
+									alt={t("annotationPanel.uploadedAnnotation", "Uploaded annotation")}
 									className="w-full h-auto rounded-md"
 								/>
 							</div>
@@ -614,7 +615,80 @@ export function AnnotationSettingsPanel({
 					</TabsContent>
 
 					<TabsContent value="blur" className="mt-0 space-y-4">
-						<div>
+						<div className="grid grid-cols-2 gap-2">
+							{(
+								[
+									{ value: "blur", label: t("annotationPanel.blur", "Blur") },
+									{ value: "solid", label: t("annotationPanel.solidColor", "Solid color") },
+								] as const
+							).map((option) => {
+								const isActive = (annotation.blurData?.mode ?? "blur") === option.value;
+								return (
+									<button
+										key={option.value}
+										type="button"
+										aria-pressed={isActive}
+										onClick={() =>
+											onBlurDataChange?.({
+												...(annotation.blurData ?? DEFAULT_BLUR_DATA),
+												mode: option.value,
+											})
+										}
+										className={cn(
+											"h-9 rounded-lg border text-xs transition-all",
+											isActive
+												? "bg-[#F59E0B] border-[#F59E0B] text-white"
+												: "bg-white/5 border-white/10 hover:bg-white/10 text-slate-400",
+										)}
+									>
+										{option.label}
+									</button>
+								);
+							})}
+						</div>
+
+						{annotation.blurData?.mode === "solid" && (
+							<div className="flex items-center justify-between">
+								<label htmlFor="blur-solid-color" className="text-xs font-medium text-slate-200">
+									{t("annotationPanel.coverColor", "Cover color")}
+								</label>
+								<input
+									id="blur-solid-color"
+									type="color"
+									value={annotation.blurData.solidColor ?? "#000000"}
+									onChange={(event) =>
+										onBlurDataChange?.({
+											...(annotation.blurData ?? DEFAULT_BLUR_DATA),
+											solidColor: event.target.value,
+										})
+									}
+									className="h-8 w-12 cursor-pointer rounded border border-white/10 bg-transparent"
+								/>
+							</div>
+						)}
+
+						{annotation.blurData?.shape !== "circle" && (
+							<div>
+								<label className="text-xs font-medium text-slate-200 mb-2 block">
+									{t("annotationPanel.cornerRadius", "Corner radius")}
+								</label>
+								<Slider
+									value={[annotation.blurData?.borderRadius ?? 8]}
+									onValueChange={([value]) =>
+										onBlurDataChange?.({
+											...(annotation.blurData ?? DEFAULT_BLUR_DATA),
+											borderRadius: value,
+										})
+									}
+									min={0}
+									max={64}
+									step={1}
+									className="w-full"
+								/>
+							</div>
+						)}
+
+						<div className={cn(annotation.blurData?.mode === "solid" && "hidden")}>
 							<label className="text-xs font-medium text-slate-200 mb-2 block">
 								{t("annotations.blurAmount")}
 							</label>
@@ -622,7 +696,7 @@ export function AnnotationSettingsPanel({
 								value={[annotation.blurData?.blurAmount ?? 10]}
 								onValueChange={([value]) => {
 									onBlurDataChange?.({
-										...(annotation.blurData ?? { blurAmount: 10, shape: "rectangle" }),
+										...(annotation.blurData ?? DEFAULT_BLUR_DATA),
 										blurAmount: value,
 									});
 								}}
@@ -649,7 +723,7 @@ export function AnnotationSettingsPanel({
 										type="button"
 										onClick={() => {
 											onBlurDataChange?.({
-												...(annotation.blurData ?? { blurAmount: 10, shape: "rectangle" }),
+												...(annotation.blurData ?? DEFAULT_BLUR_DATA),
 												shape,
 											});
 										}}

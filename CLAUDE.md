@@ -27,15 +27,20 @@ Run a single test file: `npx vitest run src/lib/exporter/gifExporter.test.ts`
 ### Process Model
 
 - **Main process** (`electron/main.ts`): Window lifecycle, tray icon, native recording, file I/O, permissions, auto-cleanup
-- **Preload** (`electron/preload.ts`): contextBridge API exposing ~40 IPC methods to renderer
-- **IPC handlers** (`electron/ipc/handlers.ts`): All main↔renderer communication; recording pipelines, file operations, project persistence, shortcuts, cursor telemetry
+- **Preload** (`electron/preload.ts`): contextBridge API (`window.electronAPI`, ~170 IPC calls) to the renderer
+- **IPC handlers** (`electron/ipc/`): `handlers.ts` (recording pipelines, cursor telemetry) plus focused modules such as `projectFileHandlers.ts`, `captionHandlers.ts`, `chunkSessionHandlers.ts`, `systemSettingsHandlers.ts`. Channel names live in `src/electron-ipc/contracts.ts`
+- **Crash recovery** (`electron/recordingRecovery.ts`): marks an in-progress recording; the next launch offers files from an interrupted session
 - **Renderer** (`src/`): React SPA routed by `?windowType=` URL parameter (no router library)
 
-### Three Window Types
+### Window Types
 
-1. **HUD Overlay** (`?windowType=hud-overlay`): 500×155 floating bar at screen bottom for recording controls. Transparent, always-on-top.
-2. **Editor** (`?windowType=editor`): Main video editor window (1200×800, maximized). Houses timeline, playback, annotations, export.
-3. **Source Selector** (`?windowType=source-selector`): 620×420 popup for picking capture sources.
+1. **HUD Overlay** (`?windowType=hud-overlay`): floating recording bar at screen bottom. Transparent, always-on-top.
+2. **Editor** (`?windowType=editor`): main video editor (timeline, playback, annotations, export, project browser).
+3. **Source Selector** (`?windowType=source-selector`): popup for picking capture sources.
+4. **Countdown** (`?windowType=countdown`): pre-recording countdown overlay.
+5. **Area Overlay** (`?windowType=area-overlay`): area-selection overlay.
+6. **Speaker Notes** (`?windowType=speaker-notes`): notes window shown while recording.
+7. **Export Worker** (`?windowType=export-worker`): hidden renderer for composited exports.
 
 `App.tsx` switches components based on the `windowType` query param.
 
@@ -48,15 +53,17 @@ Run a single test file: `npx vitest run src/lib/exporter/gifExporter.test.ts`
 
 ### Export Engine (`src/lib/exporter/`)
 
-GPU-accelerated pipeline: WebCodec streaming decode → PIXI.js frame rendering (zoom, crop, annotations, cursor) → MP4 mux (mp4box) or GIF (gif.js with Web Workers). Key files: `videoExporter.ts`, `gifExporter.ts`, `frameRenderer.ts`, `streamingDecoder.ts`, `muxer.ts`.
+Pipeline: web-demuxer + WebCodecs streaming decode → PIXI.js frame rendering (zoom, crop, annotations, cursor, captions, webcam) → MP4 mux (mediabunny) or GIF (gifenc in a Web Worker, or FFmpeg palettes). Key files: `videoExporter.ts`, `gifExporter.ts`, `frameRenderer.ts`, `streamingDecoder.ts`, `muxer.ts`, `audioEncoder.ts`.
+
+`exportV2.ts` (`selectExportV2Engine`) picks an engine: `direct-native` (plain FFmpeg), `native-composed` (FFmpeg filtergraph for simple layouts; anything with zooms, webcam, external audio, speed edits or animated captions goes to the renderer), or `composited-hardware` (PIXI renderer). Zoom/camera math lives in `src/components/video-editor/videoPlayback/` (`zoomRegionUtils.ts`, `cameraEvaluator.ts`) and is shared by preview and export.
 
 ### State Management
 
-No external state library. `VideoEditor.tsx` uses ~50 `useState` hooks. Undo/redo via `useRef` history stacks. Only two React Contexts: `I18nContext` and `ShortcutsContext`.
+No external state library. `VideoEditor.tsx` holds most editor state in ~110 `useState` hooks. Undo/redo via `useRef` history stacks. Only two React Contexts: `I18nContext` and `ShortcutsContext`.
 
 ### i18n System
 
-- Config: `src/i18n/config.ts` — languages: `en` (source), `es`
+- Config: `src/i18n/config.ts` — languages: `en` (source), `es`, `fr`, `de`, `it`, `nl`, `ko`, `pt-BR`, `zh-CN`, `zh-TW` (labels in `LOCALE_LABELS`)
 - Locale files: `src/i18n/locales/{lang}/{namespace}.json`
 - 7 namespaces: `common`, `launch`, `editor`, `timeline`, `settings`, `dialogs`, `shortcuts`
 - Implementation: `src/contexts/I18nContext.tsx` — compile-time JSON import, recursive key lookup, `{{var}}` interpolation
@@ -74,7 +81,7 @@ No external state library. `VideoEditor.tsx` uses ~50 `useState` hooks. Undo/red
 
 ### Project File Format
 
-`.screenmint` files. Serialization in `src/components/video-editor/projectPersistence.ts`.
+`.screenmint` files, currently `PROJECT_VERSION = 12`. Serialization and normalization in `src/components/video-editor/projectPersistence.ts`. When a new setting changes how older projects would look, keep their look on load via `withLegacyZoomTiming` (applies to projects saved before v12). Saves are atomic (temp file + rename).
 
 ## Code Quality
 
@@ -82,4 +89,4 @@ No external state library. `VideoEditor.tsx` uses ~50 `useState` hooks. Undo/red
 - **Strict TypeScript**: `noExplicitAny: error`, no unused variables/params
 - **Hook rules enforced**: `useHookAtTopLevel: error`
 - **Import organization**: automatic via Biome
-- Tests use Vitest + fast-check (property-based testing). Test files: `src/**/*.{test,spec}.{ts,tsx}`
+- Tests use Vitest + fast-check (property-based testing). Test files: `src/**/*.{test,spec}.{ts,tsx}` and `electron/**/*.test.ts`

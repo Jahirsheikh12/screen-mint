@@ -10,15 +10,24 @@ import {
 	Menu,
 	nativeImage,
 	session,
+	shell,
 	Tray,
 } from "electron";
-import { getSelectedSourceId, killWgcCaptureProcess, registerIpcHandlers } from "./ipc/handlers";
+import {
+	adoptRecoveredRecording,
+	getSelectedSourceId,
+	killWgcCaptureProcess,
+	registerIpcHandlers,
+} from "./ipc/handlers";
+import { takeInterruptedRecordings } from "./recordingRecovery";
 import { getScreenMintUpdater } from "./updater";
 import {
+	closeUpdateToastWindow,
 	createEditorWindow,
 	createHudOverlayWindow,
 	createSourceSelectorWindow,
 	fadeOutAndDestroyWindow,
+	showUpdateToastWindow,
 } from "./windows";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -112,7 +121,11 @@ function createHudOverlayWindowWrapper() {
 }
 
 function focusOrCreateMainWindow() {
-	if (BrowserWindow.getAllWindows().length === 0) {
+	// The update toast is a notification, not an app window, so it shouldn't stop the HUD reopening.
+	const hasAppWindow = BrowserWindow.getAllWindows().some(
+		(window) => !window.webContents.getURL().includes("windowType=update-toast"),
+	);
+	if (!hasAppWindow) {
 		createWindow();
 		return;
 	}
@@ -302,6 +315,13 @@ function setupApplicationMenu() {
 						void getScreenMintUpdater().checkForUpdates("manual");
 					},
 				},
+				{ type: "separator" },
+				{
+					label: "Report an Issue…",
+					click: () => {
+						void shell.openExternal("https://github.com/Jahirsheikh12/screen-mint/issues/new");
+					},
+				},
 			],
 		},
 	);
@@ -381,6 +401,26 @@ function updateTrayMenu(recording: boolean = false) {
 	tray.setImage(trayIcon);
 	tray.setToolTip(trayToolTip);
 	tray.setContextMenu(Menu.buildFromTemplate(menuTemplate));
+}
+
+/** If the last session crashed mid-recording, offer the partial video. */
+async function offerInterruptedRecordingRecovery() {
+	const files = await takeInterruptedRecordings();
+	if (files.length === 0) return;
+	const { response } = await dialog.showMessageBox({
+		type: "warning",
+		buttons: ["Open in Editor", "Show in Folder", "Not Now"],
+		defaultId: 0,
+		cancelId: 2,
+		message: "ScreenMint closed while recording",
+		detail: `Your last recording stopped unexpectedly. The part that was saved is here:\n${files[0]}`,
+	});
+	if (response === 0) {
+		adoptRecoveredRecording(files[0]);
+		createEditorWindowWrapper();
+	} else if (response === 1) {
+		shell.showItemInFolder(files[0]);
+	}
 }
 
 function createEditorWindowWrapper() {
@@ -534,6 +574,15 @@ app.whenReady().then(async () => {
 	// Ensure recordings directory exists
 	await ensureRecordingsDir();
 	await updater.init();
+	const syncUpdateToast = (state: ReturnType<typeof updater.getState>) => {
+		if (state.showUpdatePrompt && !state.showWhatsNew && !state.busy.recording) {
+			showUpdateToastWindow();
+		} else {
+			closeUpdateToastWindow();
+		}
+	};
+	updater.onStateChange(syncUpdateToast);
+	syncUpdateToast(updater.getState());
 
 	registerIpcHandlers(
 		createEditorWindowWrapper,
@@ -550,6 +599,7 @@ app.whenReady().then(async () => {
 			}
 		},
 	);
+	void offerInterruptedRecordingRecovery();
 
 	// Register the display media handler so that renderer's getDisplayMedia()
 	// calls land on the pre-selected source without showing a system picker.

@@ -1,24 +1,42 @@
 {
 	"export": {
-		"pleaseTryAgain": "Por favor inténtalo de nuevo",
-		"compilingGifProgress": "Compilando GIF... {{progress}}%",
-		"compilingGifWait": "Compilando GIF... Esto puede tardar un momento",
-		"takeMoment": "Esto puede tardar un momento...",
-		"exportFailed": "Error en la exportación",
-		"compilingGifTitle": "Compilando GIF",
-		"exportingFormat": "Exportando {{format}}",
-		"exportComplete": "Exportación completada",
-		"formatReady": "Tu {{format}} está listo",
-		"showInFolder": "Mostrar en carpeta",
-		"compiling": "Compilando",
-		"renderingFrames": "Renderizando cuadros",
-		"processing": "Procesando...",
-		"status": "Estado",
-		"format": "Formato",
-		"compilingStatus": "Compilando...",
-		"frames": "Cuadros",
-		"cancelExport": "Cancelar exportación",
-		"savedSuccess": "¡{{format}} guardado exitosamente!"
+		"showInFolder": "Mostrar en la carpeta",
+		"exporting": "Exportando",
+		"renderingFile": "Renderizando tu archivo.",
+		"preparing": "Preparando la exportación…",
+		"openingSaveDialog": "Abriendo el diálogo de guardado…",
+		"savingFile": "Guardando el archivo…",
+		"renderingAudio": "Renderizando audio {{percent}} %",
+		"finalizing": "Finalizando {{percent}} %",
+		"compilingGif": "Generando GIF {{percent}} %",
+		"percentComplete": "{{percent}} % completado",
+		"renderSpeed": "Velocidad de renderizado: {{fps}} FPS",
+		"issue": "Problema al exportar",
+		"saveAgain": "Guardar de nuevo",
+		"close": "Cerrar",
+		"complete": "Exportación completada",
+		"savedSuccessfully": "Tu archivo se ha guardado.",
+		"done": "Listo",
+		"savedTo": "Exportado en {{path}}",
+		"canceled": "Exportación cancelada",
+		"saveCanceled": "Guardado cancelado. Pulsa Guardar de nuevo para guardarlo sin volver a renderizar.",
+		"saveFailed": "No se pudo guardar la exportación",
+		"openFolderFailed": "No se pudo abrir la carpeta de grabaciones.",
+		"revealFailed": "No se pudo mostrar el archivo en su carpeta.",
+		"noVideo": "No hay ningún vídeo cargado",
+		"ready": "Listo",
+		"videoNotReady": "El vídeo aún no está listo",
+		"copiedToClipboard": "Copiado al portapapeles.",
+		"copyFailed": "No se pudo copiar al portapapeles",
+		"openSaveDialogFailed": "No se pudo abrir el diálogo de guardado",
+		"failed": "Error al exportar",
+		"failedWithReason": "Error al exportar: {{reason}}",
+		"tips": {
+			"zooms": "Consejo: menos regiones de zoom se renderizan más rápido. Puedes desactivar los zooms automáticos en Ajustes.",
+			"presets": "Consejo: los ajustes de movimiento de la pestaña Cursor cambian el zoom y el cursor con un solo clic.",
+			"clicks": "Consejo: puedes cambiar el estilo del efecto de clic en la pestaña Cursor.",
+			"project": "Consejo: guarda el proyecto para volver y exportar de nuevo con otros ajustes."
+		}
 	},
 	"addFont": {
 		"title": "Agregar fuente de Google",
@@ -39,7 +57,9 @@
 		"addSuccess": "Fuente \"{{name}}\" agregada exitosamente",
 		"addFailed": "Error al agregar la fuente",
 		"loadTimeout": "La fuente tardó demasiado en cargar. Por favor verifica la URL e inténtalo de nuevo.",
-		"loadFailed": "No se pudo cargar la fuente. Por favor verifica que la URL de Google Fonts sea correcta."
+		"loadFailed": "No se pudo cargar la fuente. Por favor verifica que la URL de Google Fonts sea correcta.",
+		"cancel": "Cancelar",
+		"failedToLoadFont": "No se pudo cargar la fuente"
 	},
 	"shortcutsConfig": {
 		"title": "Atajos de teclado",
@@ -57,5 +77,38 @@
 		"resetToDefaults": "Restablecer valores predeterminados",
 		"cancel": "Cancelar",
 		"save": "Guardar"
+	},
+	"projectBrowser": {
+		"projects": "Proyectos",
+		"recentProjectsAndProjects": "Proyectos recientes y proyectos guardados en tu carpeta de grabaciones.",
+		"loadingProjects": "Cargando proyectos…",
+		"noSavedProjectsYet": "Aún no hay proyectos guardados"
+	},
+	"editor": {
+		"savePreset": "Guardar estilo",
+		"giveThisPresetA": "Dale a este estilo un nombre claro para reutilizarlo fácilmente.",
+		"presetName": "Nombre del estilo",
+		"myPreset": "Mi estilo",
+		"cancel": "Cancelar",
+		"savePreset2": "Guardar estilo",
+		"confirmAction": "Confirmar acción",
+		"continue": "Continuar"
+	},
+	"quickShare": {
+		"quickShare": "Compartir rápido",
+		"chooseWhatToDo": "Elige qué hacer a continuación con esta grabación.",
+		"save": "Guardar",
+		"exportAndSaveTo": "Exporta y guarda en un archivo.",
+		"copy": "Copiar",
+		"exportLocallyAndCopy": "Exporta localmente y copia la ruta del archivo guardado.",
+		"edit": "Editar",
+		"openTheRecordingIn": "Abre la grabación en el editor."
+	},
+	"missingCursorData": {
+		"title": "No hay datos del cursor en esta grabación",
+		"description": "El vídeo se grabó correctamente, pero no se pudo seguir el puntero, así que el suavizado del cursor, los efectos de clic y los zooms basados en el cursor no están disponibles.",
+		"macHint": "Comprueba que ScreenMint tiene permiso en Ajustes del Sistema › Privacidad y seguridad › Accesibilidad y vuelve a grabar.",
+		"openSettings": "Abrir ajustes de Accesibilidad",
+		"confirm": "Aceptar"
 	}
 }

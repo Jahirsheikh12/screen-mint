@@ -50,6 +50,7 @@ export {
 	resolveGifExportPlan,
 	resolveVideoExportPlan,
 } from "./planner";
+export * from "./quickExport";
 export { StreamingVideoDecoder } from "./streamingDecoder";
 export { isWebGLAvailable, renderThreeSceneFrame } from "./threeSceneRenderer";
 export type {

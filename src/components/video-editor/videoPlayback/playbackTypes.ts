@@ -10,6 +10,7 @@ import type {
 	CaptionRegion,
 	CaptionSettings,
 	CropRegion,
+	CursorClickStyleSettings,
 	CursorMovementStyle,
 	CursorPack,
 	CursorSpringSettings,
@@ -20,6 +21,7 @@ import type {
 	KeyboardShortcutCallout,
 	KeyboardShortcutPosition,
 	KeyboardShortcutTheme,
+	PaddingValue,
 	PreviewQuality,
 	SpeedRegion,
 	TrimRegion,
@@ -29,6 +31,7 @@ import type {
 	WebcamRegion,
 	ZoomFocus,
 	ZoomRegion,
+	ZoomTimingSettings,
 } from "../types";
 import type { PreviewHoldReason } from "./previewHoldState";
 
@@ -54,13 +57,14 @@ export interface VideoPlaybackProps {
 	hideBackground?: boolean;
 	zoomMotionBlur?: number;
 	connectZooms?: boolean;
+	zoomTiming?: Partial<ZoomTimingSettings>;
 	frameBorderEnabled?: boolean;
 	frameBorderWidth?: number;
 	frameBorderColor?: string;
 	frameBorderOpacity?: number;
 	deviceMockup?: DeviceMockup;
 	borderRadius?: number;
-	padding?: number;
+	padding?: PaddingValue;
 	cropRegion?: CropRegion;
 	trimRegions?: TrimRegion[];
 	speedRegions?: SpeedRegion[];
@@ -92,6 +96,7 @@ export interface VideoPlaybackProps {
 	clickHighlightColor?: string;
 	clickHighlightSize?: number;
 	clickHighlightOpacity?: number;
+	cursorClickStyle?: CursorClickStyleSettings;
 	cursorTrailLength?: number;
 	cursorTrailOpacity?: number;
 	cursorTypeMode?: CursorTypeMode;

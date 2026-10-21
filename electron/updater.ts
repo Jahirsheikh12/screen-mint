@@ -24,6 +24,10 @@ type UpdaterPreferences = {
 	pendingWhatsNewVersion: string | null;
 	pendingWhatsNewReleaseName: string | null;
 	pendingWhatsNewReleaseNotes: string | null;
+	/** Opt in to pre-release builds. */
+	experimentalUpdates: boolean;
+	/** Version the user chose to skip; automatic checks won't prompt for it. */
+	skippedVersion: string | null;
 };
 
 type AppAdapter = {
@@ -140,6 +144,8 @@ function createDefaultPreferences(): UpdaterPreferences {
 		pendingWhatsNewVersion: null,
 		pendingWhatsNewReleaseName: null,
 		pendingWhatsNewReleaseNotes: null,
+		experimentalUpdates: false,
+		skippedVersion: null,
 	};
 }
 
@@ -205,6 +211,7 @@ export class ScreenMintUpdater {
 	private readonly appAdapter: AppAdapter;
 	private readonly updaterBackend: UpdaterBackend;
 	private readonly windowProvider: () => BrowserWindow[];
+	private readonly stateListeners = new Set<(state: UpdaterState) => void>();
 	private readonly now: () => number;
 	private readonly checkIntervalMs: number;
 	private readonly initialCheckDelayMs: number;
@@ -270,6 +277,7 @@ export class ScreenMintUpdater {
 			whatsNewReleaseName: null,
 			whatsNewReleaseNotes: null,
 			busy: cloneBusyState(this.busyState),
+			experimentalUpdatesEnabled: false,
 		};
 	}
 
@@ -316,7 +324,7 @@ export class ScreenMintUpdater {
 			return true;
 		}
 
-		return this.sessionDeferredVersion !== version;
+		return this.sessionDeferredVersion !== version && this.preferences.skippedVersion !== version;
 	}
 
 	private buildWhatsNewState(): Partial<UpdaterState> {
@@ -376,8 +384,17 @@ export class ScreenMintUpdater {
 		return this.getState();
 	}
 
+	/** Main-process subscribers (e.g. the update toast window). Returns an unsubscribe function. */
+	onStateChange(listener: (state: UpdaterState) => void): () => void {
+		this.stateListeners.add(listener);
+		return () => this.stateListeners.delete(listener);
+	}
+
 	private broadcastState(): void {
 		const payload = this.getState();
+		for (const listener of this.stateListeners) {
+			listener(payload);
+		}
 		for (const window of this.windowProvider()) {
 			if (!window.isDestroyed()) {
 				window.webContents.send("updater-state-changed", payload);
@@ -530,18 +547,33 @@ export class ScreenMintUpdater {
 					typeof parsed.pendingWhatsNewReleaseNotes === "string"
 						? parsed.pendingWhatsNewReleaseNotes
 						: null,
+				experimentalUpdates: parsed.experimentalUpdates === true,
+				skippedVersion: typeof parsed.skippedVersion === "string" ? parsed.skippedVersion : null,
 			};
 		} catch {
 			this.preferences = createDefaultPreferences();
 		}
 	}
 
-	private async savePreferences(): Promise<void> {
-		try {
-			await fs.writeFile(this.settingsPath, JSON.stringify(this.preferences, null, 2), "utf-8");
-		} catch (error) {
-			console.error("Failed to persist updater settings:", error);
-		}
+	private savePreferencesChain: Promise<void> = Promise.resolve();
+
+	/**
+	 * Saves are queued so an older snapshot can never land after a newer one, and each write goes
+	 * through a temp file + rename so a crash can't leave half-written settings.
+	 */
+	private savePreferences(): Promise<void> {
+		const snapshot = JSON.stringify(this.preferences, null, 2);
+		this.savePreferencesChain = this.savePreferencesChain.then(async () => {
+			const tempPath = `${this.settingsPath}.${process.pid}.tmp`;
+			try {
+				await fs.writeFile(tempPath, snapshot, "utf-8");
+				await fs.rename(tempPath, this.settingsPath);
+			} catch (error) {
+				await fs.rm(tempPath, { force: true }).catch(() => undefined);
+				console.error("Failed to persist updater settings:", error);
+			}
+		});
+		return this.savePreferencesChain;
 	}
 
 	private scheduleAutomaticChecks(): void {
@@ -585,7 +617,7 @@ export class ScreenMintUpdater {
 		this.updaterBackend.autoDownload = false;
 		this.updaterBackend.autoInstallOnAppQuit = supportsInAppInstall(process.platform, process.env);
 		if ("allowPrerelease" in this.updaterBackend) {
-			this.updaterBackend.allowPrerelease = false;
+			this.updaterBackend.allowPrerelease = this.preferences.experimentalUpdates;
 		}
 		if ("fullChangelog" in this.updaterBackend) {
 			this.updaterBackend.fullChangelog = false;
@@ -596,6 +628,7 @@ export class ScreenMintUpdater {
 			manualDownloadUrl: this.state.canCheck ? createReleaseUrl(null) : null,
 			message: this.state.canCheck ? null : "Updates are available in packaged builds only.",
 			installMode: this.computeInstallMode(),
+			experimentalUpdatesEnabled: this.preferences.experimentalUpdates,
 			...whatsNewState,
 		});
 		this.scheduleAutomaticChecks();
@@ -646,7 +679,7 @@ export class ScreenMintUpdater {
 		}
 
 		this.preferences.lastCheckAt = new Date(this.now()).toISOString();
-		void this.savePreferences();
+		await this.savePreferences();
 		this.setState({
 			checkSource: source,
 			checkedAt: this.preferences.lastCheckAt,
@@ -802,6 +835,21 @@ export class ScreenMintUpdater {
 				installMode: "none",
 			});
 		}
+	}
+
+	async setExperimentalUpdates(enabled: boolean): Promise<UpdaterState> {
+		this.preferences.experimentalUpdates = enabled;
+		if ("allowPrerelease" in this.updaterBackend) {
+			this.updaterBackend.allowPrerelease = enabled;
+		}
+		await this.savePreferences();
+		return this.setState({ experimentalUpdatesEnabled: enabled });
+	}
+
+	async skipVersion(): Promise<UpdaterState> {
+		this.preferences.skippedVersion = this.state.latestVersion;
+		await this.savePreferences();
+		return this.setState({ showUpdatePrompt: false });
 	}
 
 	async dismissUpdate(): Promise<UpdaterState> {

@@ -37,9 +37,12 @@ import type {
 	SelectedArea,
 	CursorTelemetrySample as SessionCursorTelemetrySample,
 } from "../../src/lib/recording/session";
+import { buildAreaCropFilter, toDisplaySourceRect } from "../areaCapture";
+import { createExportTempPath } from "../exportTemp";
 import { RECORDINGS_DIR } from "../main";
+import { markRecordingStarted, markRecordingStopped } from "../recordingRecovery";
 import { getScreenMintUpdater } from "../updater";
-import { createExportWorkerWindow } from "../windows";
+import { createExportWorkerWindow, flashSourceHighlight } from "../windows";
 import { registerAppShellIpcHandlers } from "./appShellHandlers";
 import { registerAssetIpcHandlers } from "./assetHandlers";
 import { registerCaptionIpcHandlers } from "./captionHandlers";
@@ -368,6 +371,12 @@ async function loadRecordingsDirectorySetting() {
 	} catch {
 		customRecordingsDir = null;
 	}
+}
+
+/** Makes a recovered recording the current editor video. */
+export function adoptRecoveredRecording(videoPath: string) {
+	currentVideoPath = videoPath;
+	currentProjectPath = null;
 }
 
 async function getRecordingsDir() {
@@ -1016,6 +1025,12 @@ async function resolveExportV2OutputPath(request: ExportV2StartRequest) {
 		};
 	}
 
+	if (request.destination === "temp") {
+		const tempPath = createExportTempPath(app.getPath("temp"), extension);
+		await fs.mkdir(path.dirname(tempPath), { recursive: true });
+		return { path: tempPath, canceled: false };
+	}
+
 	if (request.destination === "file") {
 		const result = await dialog.showSaveDialog(getExportSaveDialogOptions(fileName));
 		return { path: result.filePath, canceled: result.canceled || !result.filePath };
@@ -1288,7 +1303,7 @@ function buildExportV2VideoArgs(
 
 	args.push(
 		"-g",
-		String(Math.max(1, Math.round(request.frameRate * 2))),
+		String(Math.max(1, Math.round(request.frameRate * (request.keyframeIntervalSeconds ?? 2)))),
 		"-pix_fmt",
 		"yuv420p",
 		"-colorspace",
@@ -2755,10 +2770,16 @@ async function prepareCompatibleWebcamSegments(params: {
 	};
 }
 
-async function cropVideoToArea(videoPath: string, area: SelectedArea, outputPath: string) {
+/** Recordings whose native recorder already captured only the selected area. */
+const areaCroppedAtCapture = new Set<string>();
+
+async function cropVideoToArea(
+	videoPath: string,
+	area: SelectedArea,
+	outputPath: string,
+	durationMs: number,
+) {
 	const ffmpegPath = getFfmpegBinaryPath();
-	const { x, y, width, height } = area.normalizedBounds;
-	const cropFilter = `crop=iw*${width}:ih*${height}:iw*${x}:ih*${y}`;
 
 	await execFileAsync(
 		ffmpegPath,
@@ -2767,13 +2788,13 @@ async function cropVideoToArea(videoPath: string, area: SelectedArea, outputPath
 			"-i",
 			videoPath,
 			"-vf",
-			cropFilter,
+			buildAreaCropFilter(area.normalizedBounds),
 			"-c:v",
 			"libx264",
 			"-preset",
-			"ultrafast",
-			"-tune",
-			"zerolatency",
+			"veryfast",
+			"-crf",
+			"18",
 			"-pix_fmt",
 			"yuv420p",
 			"-c:a",
@@ -2782,7 +2803,8 @@ async function cropVideoToArea(videoPath: string, area: SelectedArea, outputPath
 			"+faststart",
 			outputPath,
 		],
-		{ timeout: 120000, maxBuffer: 10 * 1024 * 1024 },
+		// Re-encoding scales with length; allow ~2x realtime plus headroom instead of a fixed cap.
+		{ timeout: Math.max(120_000, durationMs * 2 + 60_000), maxBuffer: 10 * 1024 * 1024 },
 	);
 
 	return outputPath;
@@ -2882,12 +2904,20 @@ async function finalizeRecordingSession(payload: {
 		]);
 
 	let finalVideoPath = mergedVideoPath;
-	if (payload.selectedArea) {
+	const croppedAtCapture = videoSegmentPaths.every((segmentPath) =>
+		areaCroppedAtCapture.has(segmentPath),
+	);
+	for (const segmentPath of videoSegmentPaths) areaCroppedAtCapture.delete(segmentPath);
+	if (payload.selectedArea && !croppedAtCapture) {
 		const croppedOutputPath = path.join(recordingsDir, `recording-${Date.now()}-area.mp4`);
 		finalVideoPath = await cropVideoToArea(
 			mergedVideoPath,
 			payload.selectedArea,
 			croppedOutputPath,
+			normalizedVideoSegments.reduce(
+				(total, segment) => total + Math.max(0, segment.durationMs),
+				0,
+			),
 		);
 		if (mergedVideoPath !== videoSegmentPaths[0]) {
 			await fs.rm(mergedVideoPath, { force: true }).catch(() => undefined);
@@ -3448,6 +3478,32 @@ async function resolveMacWindowBounds(source: SelectedSource): Promise<WindowBou
 		return getWindowBoundsFromNativeSource(matchedSource);
 	} catch {
 		return null;
+	}
+}
+
+async function flashSelectedSourceHighlight(source: SelectedSource) {
+	try {
+		if (source.id?.startsWith("screen:")) {
+			const display = getScreen()
+				.getAllDisplays()
+				.find((candidate) => String(candidate.id) === String(source.display_id));
+			if (display) flashSourceHighlight(display.bounds);
+			return;
+		}
+		if (!source.id?.startsWith("window:")) return;
+		let bounds: WindowBounds | null = null;
+		if (process.platform === "darwin") {
+			bounds = await resolveMacWindowBounds(source);
+		} else if (process.platform === "win32") {
+			const physical = await resolveWindowsWindowBounds(source);
+			// Win32 reports physical pixels; Electron windows are placed in DIPs.
+			bounds = physical ? getScreen().screenToDipRect(null, physical) : null;
+		} else if (process.platform === "linux") {
+			bounds = await resolveLinuxWindowBounds(source);
+		}
+		if (bounds) flashSourceHighlight(bounds);
+	} catch (error) {
+		console.warn("Could not highlight the selected source:", error);
 	}
 }
 
@@ -4383,6 +4439,9 @@ export function registerIpcHandlers(
 		stopWindowBoundsCapture,
 		getSourceSelectorWindow,
 		getNativeMacWindowSources,
+		flashSourceHighlight: (source) => {
+			void flashSelectedSourceHighlight(source);
+		},
 	});
 	registerScreenshotIpcHandlers({
 		getRecordingsDir,
@@ -4530,11 +4589,14 @@ export function registerIpcHandlers(
 						outputPath,
 						fps: Math.max(30, options?.recordingFps ?? 30),
 					};
+					// WGC records the whole display and the area is cropped afterwards, so the size
+					// limit is widened to apply to the cropped area rather than the full display.
+					const areaFraction = options?.selectedArea?.normalizedBounds;
 					if (options?.recordingWidth) {
-						config.width = options.recordingWidth;
+						config.width = Math.round(options.recordingWidth / (areaFraction?.width ?? 1));
 					}
 					if (options?.recordingHeight) {
-						config.height = options.recordingHeight;
+						config.height = Math.round(options.recordingHeight / (areaFraction?.height ?? 1));
 					}
 					if (options?.videoBitsPerSecond) {
 						config.bitrate = options.videoBitsPerSecond;
@@ -4542,10 +4604,6 @@ export function registerIpcHandlers(
 					if (typeof options?.hardwareAcceleration === "boolean") {
 						config.hardwareAcceleration = options.hardwareAcceleration;
 					}
-					if (options?.selectedArea) {
-						config.area = options.selectedArea;
-					}
-
 					if (options?.capturesSystemAudio) {
 						const audioPath = path.join(recordingsDir, `recording-${timestamp}.system.wav`);
 						config.captureSystemAudio = true;
@@ -4676,10 +4734,6 @@ export function registerIpcHandlers(
 				if (typeof options?.hardwareAcceleration === "boolean") {
 					config.hardwareAcceleration = options.hardwareAcceleration;
 				}
-				if (options?.selectedArea) {
-					config.area = options.selectedArea;
-				}
-
 				if (options?.microphoneDeviceId) {
 					config.microphoneDeviceId = options.microphoneDeviceId;
 				}
@@ -4697,6 +4751,13 @@ export function registerIpcHandlers(
 					config.displayId = screenId;
 				} else {
 					config.displayId = Number(getScreen().getPrimaryDisplay().id);
+				}
+				const sourceRect =
+					config.displayId !== undefined && options?.selectedArea
+						? toDisplaySourceRect(options.selectedArea, Number(config.displayId))
+						: null;
+				if (sourceRect) {
+					config.sourceRect = sourceRect;
 				}
 
 				nativeCaptureOutputBuffer = "";
@@ -4717,6 +4778,9 @@ export function registerIpcHandlers(
 				});
 
 				await waitForNativeCaptureStart(nativeCaptureProcess);
+				if (sourceRect && nativeCaptureOutputBuffer.includes("Source rect applied")) {
+					areaCroppedAtCapture.add(outputPath);
+				}
 				nativeScreenRecordingActive = true;
 				return { success: true };
 			} catch (error) {
@@ -5140,6 +5204,11 @@ export function registerIpcHandlers(
 	);
 
 	ipcMain.handle(IPC_CHANNELS.recording.setState, (_, recording: boolean) => {
+		if (recording) {
+			void getRecordingsDir().then(markRecordingStarted);
+		} else {
+			void markRecordingStopped();
+		}
 		if (recording) {
 			stopCursorCapture();
 			stopInteractionCapture();

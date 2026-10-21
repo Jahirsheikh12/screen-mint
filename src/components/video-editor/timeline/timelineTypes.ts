@@ -99,6 +99,10 @@ export interface TimelineEditorProps {
 	hasAudio?: boolean;
 	clipVolume?: number;
 	onClipVolumeChange?: (volume: number) => void;
+	/** Moves the recording's audio onto its own audio track region. */
+	onSeparateClipAudio?: () => void;
+	timelineExpanded?: boolean;
+	onToggleTimelineExpanded?: () => void;
 }
 
 export interface TimelineRenderItem {

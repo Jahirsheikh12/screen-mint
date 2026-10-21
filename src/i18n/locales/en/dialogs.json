@@ -1,24 +1,42 @@
 {
 	"export": {
-		"pleaseTryAgain": "Please try again",
-		"compilingGifProgress": "Compiling GIF... {{progress}}%",
-		"compilingGifWait": "Compiling GIF... This may take a while",
-		"takeMoment": "This may take a moment...",
-		"exportFailed": "Export Failed",
-		"compilingGifTitle": "Compiling GIF",
-		"exportingFormat": "Exporting {{format}}",
-		"exportComplete": "Export Complete",
-		"formatReady": "Your {{format}} is ready",
 		"showInFolder": "Show in Folder",
-		"compiling": "Compiling",
-		"renderingFrames": "Rendering Frames",
-		"processing": "Processing...",
-		"status": "Status",
-		"format": "Format",
-		"compilingStatus": "Compiling...",
-		"frames": "Frames",
-		"cancelExport": "Cancel Export",
-		"savedSuccess": "{{format}} saved successfully!"
+		"exporting": "Exporting",
+		"renderingFile": "Rendering your file.",
+		"preparing": "Preparing export…",
+		"openingSaveDialog": "Opening save dialog…",
+		"savingFile": "Saving file…",
+		"renderingAudio": "Rendering audio {{percent}}%",
+		"finalizing": "Finalizing {{percent}}%",
+		"compilingGif": "Compiling GIF {{percent}}%",
+		"percentComplete": "{{percent}}% complete",
+		"renderSpeed": "Render speed {{fps}} FPS",
+		"issue": "Export issue",
+		"saveAgain": "Save Again",
+		"close": "Close",
+		"complete": "Export complete",
+		"savedSuccessfully": "Your file was saved.",
+		"done": "Done",
+		"savedTo": "Exported to {{path}}",
+		"canceled": "Export canceled",
+		"saveCanceled": "Save canceled. Click Save Again to save without rendering again.",
+		"saveFailed": "Failed to save the export",
+		"openFolderFailed": "Failed to open the recordings folder.",
+		"revealFailed": "Failed to show the file in its folder.",
+		"noVideo": "No video loaded",
+		"ready": "Ready",
+		"videoNotReady": "The video isn't ready yet",
+		"copiedToClipboard": "Copied to clipboard.",
+		"copyFailed": "Could not copy to the clipboard",
+		"openSaveDialogFailed": "Couldn't open the save dialog",
+		"failed": "Export failed",
+		"failedWithReason": "Export failed: {{reason}}",
+		"tips": {
+			"zooms": "Tip: Fewer zoom regions render faster. You can turn off automatic zooms in Settings.",
+			"presets": "Tip: Motion presets in the Cursor tab change zoom and cursor feel in one click.",
+			"clicks": "Tip: You can change the click effect style in the Cursor tab.",
+			"project": "Tip: Save the project to come back and export again with different settings."
+		}
 	},
 	"addFont": {
 		"title": "Add Google Font",
@@ -39,7 +57,9 @@
 		"addSuccess": "Font \"{{name}}\" added successfully",
 		"addFailed": "Failed to add font",
 		"loadTimeout": "Font took too long to load. Please check the URL and try again.",
-		"loadFailed": "The font could not be loaded. Please verify the Google Fonts URL is correct."
+		"loadFailed": "The font could not be loaded. Please verify the Google Fonts URL is correct.",
+		"cancel": "Cancel",
+		"failedToLoadFont": "Failed to load font"
 	},
 	"shortcutsConfig": {
 		"title": "Keyboard Shortcuts",
@@ -57,5 +77,38 @@
 		"resetToDefaults": "Reset to defaults",
 		"cancel": "Cancel",
 		"save": "Save"
+	},
+	"projectBrowser": {
+		"projects": "Projects",
+		"recentProjectsAndProjects": "Recent projects and projects saved in your recordings folder.",
+		"loadingProjects": "Loading projects…",
+		"noSavedProjectsYet": "No saved projects yet"
+	},
+	"editor": {
+		"savePreset": "Save Preset",
+		"giveThisPresetA": "Give this preset a clear name so it is easy to reuse later.",
+		"presetName": "Preset name",
+		"myPreset": "My preset",
+		"cancel": "Cancel",
+		"savePreset2": "Save preset",
+		"confirmAction": "Confirm action",
+		"continue": "Continue"
+	},
+	"quickShare": {
+		"quickShare": "Quick Share",
+		"chooseWhatToDo": "Choose what to do with this recording next.",
+		"save": "Save",
+		"exportAndSaveTo": "Export and save to a file.",
+		"copy": "Copy",
+		"exportLocallyAndCopy": "Export locally and copy the saved file path.",
+		"edit": "Edit",
+		"openTheRecordingIn": "Open the recording in the editor."
+	},
+	"missingCursorData": {
+		"title": "No cursor data for this recording",
+		"description": "Your video recorded fine, but the pointer couldn't be tracked, so cursor smoothing, click effects and cursor-based zooms aren't available for it.",
+		"macHint": "Check that ScreenMint is allowed under System Settings › Privacy & Security › Accessibility, then record again.",
+		"openSettings": "Open Accessibility settings",
+		"confirm": "Okay"
 	}
 }

@@ -21,25 +21,34 @@ export interface ShortcutBinding {
 export type ShortcutsConfig = Record<ShortcutAction, ShortcutBinding>;
 
 export interface FixedShortcut {
+	/** Translation key under shortcuts.actions. */
+	key: string;
 	label: string;
 	display: string;
 	bindings: ShortcutBinding[];
 }
 
 export const FIXED_SHORTCUTS: FixedShortcut[] = [
-	{ label: "Cycle Annotations Forward", display: "Tab", bindings: [{ key: "tab" }] },
 	{
+		key: "cycleForward",
+		label: "Cycle Annotations Forward",
+		display: "Tab",
+		bindings: [{ key: "tab" }],
+	},
+	{
+		key: "cycleBackward",
 		label: "Cycle Annotations Backward",
 		display: "Shift + Tab",
 		bindings: [{ key: "tab", shift: true }],
 	},
 	{
+		key: "deleteSelectedAlt",
 		label: "Delete Selected (alt)",
 		display: "Del / ⌫",
 		bindings: [{ key: "delete" }, { key: "backspace" }],
 	},
-	{ label: "Pan Timeline", display: "Shift + Ctrl + Scroll", bindings: [] },
-	{ label: "Zoom Timeline", display: "Ctrl + Scroll", bindings: [] },
+	{ key: "panTimeline", label: "Pan Timeline", display: "Shift + Ctrl + Scroll", bindings: [] },
+	{ key: "zoomTimeline", label: "Zoom Timeline", display: "Ctrl + Scroll", bindings: [] },
 ];
 
 export type ShortcutConflict =

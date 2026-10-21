@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { LEGACY_ZOOM_TIMING } from "../types";
 import { createPlaybackCameraState, evaluatePlaybackCameraFrame } from "./cameraEvaluator";
 import { buildCursorSimulationPath } from "./cursorSimulation";
 import { recordedSessionFixtures } from "./recordedSessionFixtures";
@@ -19,6 +20,8 @@ function collectFrames(fixture: (typeof recordedSessionFixtures)[number], should
 			cursorSimulationPath: path,
 			zoomRegions: fixture.zoomRegions,
 			connectZooms: true,
+			// Goldens were captured with the original fixed timing.
+			zoomTiming: LEGACY_ZOOM_TIMING,
 			geometry: fixture.geometry,
 			shouldSmooth,
 		});

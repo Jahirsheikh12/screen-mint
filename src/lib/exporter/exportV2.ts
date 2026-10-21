@@ -5,6 +5,7 @@ import type {
 	CaptionRegion,
 	CaptionSettings,
 	CropRegion,
+	CursorClickStyleSettings,
 	CursorMovementStyle,
 	CursorPack,
 	CursorSpringSettings,
@@ -15,11 +16,14 @@ import type {
 	KeyboardShortcutCallout,
 	KeyboardShortcutPosition,
 	KeyboardShortcutTheme,
+	PaddingValue,
 	SpeedRegion,
 	TrimRegion,
 	WebcamEffects,
 	WebcamRegion,
 	ZoomRegion,
+	ZoomTemporalBlurSettings,
+	ZoomTimingSettings,
 } from "@/components/video-editor/types";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import type {
@@ -38,7 +42,7 @@ export type ExportV2Engine =
 	| "composited-hardware"
 	| "legacy-renderer";
 export type ExportV2HardwareAcceleration = "hardware" | "software" | "unknown";
-export type ExportV2Destination = "file" | "clipboard" | "recordings";
+export type ExportV2Destination = "file" | "clipboard" | "recordings" | "temp";
 
 export interface ExportV2Capabilities {
 	enabled: boolean;
@@ -98,6 +102,7 @@ export interface ExportV2StartRequest {
 	frameRate: number;
 	bitrate?: number;
 	bitrateMode?: VideoBitrateMode;
+	keyframeIntervalSeconds?: number;
 	durationMs?: number;
 	trimRegions?: ExportV2TrimRegion[];
 	speedRegions?: ExportV2SpeedRegion[];
@@ -153,14 +158,16 @@ export interface ExportCompositionPayload {
 	backgroundBlur: number;
 	hideBackground?: boolean;
 	zoomMotionBlur?: number;
+	zoomTemporalBlur?: ZoomTemporalBlurSettings;
 	connectZooms?: boolean;
+	zoomTiming?: Partial<ZoomTimingSettings>;
 	deviceMockup?: DeviceMockup;
 	frameBorderEnabled?: boolean;
 	frameBorderWidth?: number;
 	frameBorderColor?: string;
 	frameBorderOpacity?: number;
 	borderRadius?: number;
-	padding?: number;
+	padding?: PaddingValue;
 	videoPadding?: number;
 	cropRegion: CropRegion;
 	aspectRatio?: AspectRatio;
@@ -187,6 +194,7 @@ export interface ExportCompositionPayload {
 	clickHighlightColor?: string;
 	clickHighlightSize?: number;
 	clickHighlightOpacity?: number;
+	cursorClickStyle?: CursorClickStyleSettings;
 	cursorTrailLength?: number;
 	cursorTrailOpacity?: number;
 	cursorTypeMode?: CursorTypeMode;
@@ -199,6 +207,7 @@ export interface ExportCompositionPayload {
 	highQualitySvgCursors?: boolean;
 	cameraSpring?: import("@/components/video-editor/types").CameraSpringSettings;
 	audioRegions?: AudioRegion[];
+	sourceAudioVolume?: number;
 	previewWidth?: number;
 	previewHeight?: number;
 	webcamPath?: string | null;

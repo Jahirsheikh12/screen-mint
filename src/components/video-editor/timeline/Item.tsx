@@ -3,6 +3,7 @@ import { useItem } from "dnd-timeline";
 import { Camera, Gauge, MessageSquare, Music, Scissors, Trash2, ZoomIn } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useI18n } from "@/contexts/I18nContext";
 import { cn } from "@/lib/utils";
 import glassStyles from "./ItemGlass.module.css";
 import WaveformCanvas from "./WaveformCanvas";
@@ -64,6 +65,7 @@ export default function Item({
 	sourceDurationMs,
 	children,
 }: ItemProps) {
+	const { t } = useI18n();
 	const { setNodeRef, attributes, listeners, itemStyle, itemContentStyle } = useItem({
 		id,
 		span,
@@ -174,7 +176,7 @@ export default function Item({
 								}}
 							>
 								<Trash2 className="w-3.5 h-3.5" />
-								Delete
+								{t("timeline.items.delete", "Delete")}
 							</button>
 						</div>
 					</div>,
@@ -199,7 +201,7 @@ export default function Item({
 							cursor: "col-resize",
 							pointerEvents: "auto",
 						}}
-						title="Resize left"
+						title={t("timeline.items.resizeLeft", "Resize left")}
 					/>
 					<div
 						className={cn(glassStyles.zoomEndCap, glassStyles.right)}
@@ -207,7 +209,7 @@ export default function Item({
 							cursor: "col-resize",
 							pointerEvents: "auto",
 						}}
-						title="Resize right"
+						title={t("timeline.items.resizeRight", "Resize right")}
 					/>
 					{/* Waveform visualization for clips with audio */}
 					{isClip &&
@@ -270,14 +272,16 @@ export default function Item({
 										<>
 											<Scissors className="w-3.5 h-3.5 shrink-0" />
 											<span className="text-[11px] font-semibold tracking-tight whitespace-nowrap">
-												Trim
+												{t("timeline.items.trim", "Trim")}
 											</span>
 										</>
 									) : isSpeed ? (
 										<>
 											<Gauge className="w-3.5 h-3.5 shrink-0" />
 											<span className="text-[11px] font-semibold tracking-tight whitespace-nowrap">
-												{speedValue !== undefined ? `${speedValue}×` : "Speed"}
+												{speedValue !== undefined
+													? `${speedValue}×`
+													: t("timeline.items.speed", "Speed")}
 											</span>
 										</>
 									) : isAudio ? (

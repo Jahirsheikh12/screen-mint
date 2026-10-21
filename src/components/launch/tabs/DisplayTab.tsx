@@ -126,7 +126,7 @@ export function DisplayTab({ disabled, onSelectSource, onPermissionDenied }: Dis
 							disabled={disabled}
 							className={`relative flex flex-col items-center gap-3 rounded-lg p-3 transition-colors text-left overflow-hidden ${
 								isSelected
-									? "bg-white/10 ring-1 ring-[#0A84FF]"
+									? "bg-white/10 ring-1 ring-[#F59E0B]"
 									: "bg-white/5 border border-transparent hover:bg-white/10"
 							} ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
 						>
