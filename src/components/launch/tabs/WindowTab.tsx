@@ -128,7 +128,7 @@ export function WindowTab({
 								<div className="w-1.5 h-1.5 rounded-full bg-[#28c840]" />
 							</div>
 
-							<div className="relative w-full aspect-[16/10] bg-sunken overflow-hidden border-b border-line">
+							<div className="relative w-full aspect-[16/10] bg-fill-subtle overflow-hidden border-b border-line">
 								{source.thumbnail ? (
 									<img
 										src={source.thumbnail}

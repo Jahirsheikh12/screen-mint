@@ -162,13 +162,13 @@ export default function Item({
 					<div className="fixed inset-0 z-[9998]" onMouseDown={closeMenu}>
 						<div
 							ref={menuRef}
-							className="fixed z-[9999] min-w-[140px] rounded-lg bg-raised border border-line-strong shadow-2xl py-1 animate-in fade-in zoom-in-95 duration-100"
+							className="fixed z-[9999] min-w-[140px] rounded-lg bg-raised p-1 shadow-popover animate-in fade-in zoom-in-95 duration-100"
 							style={{ left: contextMenu.x, top: contextMenu.y }}
 							onMouseDown={(e) => e.stopPropagation()}
 						>
 							<button
 								type="button"
-								className="w-full flex items-center gap-2 px-3 py-1.5 text-label text-danger-fg hover:bg-fill-hover transition-colors cursor-pointer"
+								className="w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-body text-danger-fg hover:bg-fill-hover transition-colors cursor-pointer"
 								onMouseDown={(e) => {
 									e.stopPropagation();
 									onDelete?.();
@@ -189,7 +189,7 @@ export default function Item({
 						"w-full h-full overflow-hidden flex items-center justify-center gap-1.5 cursor-grab active:cursor-grabbing relative",
 						isSelected && glassStyles.selected,
 					)}
-					style={{ height: isClip ? 44 : 40, color: "#fff", minWidth: 24 }}
+					style={{ height: isClip ? 44 : 40, minWidth: 24 }}
 					onClick={(event) => {
 						event.stopPropagation();
 						onSelect?.();
@@ -231,7 +231,6 @@ export default function Item({
 							"relative z-10 flex flex-col items-center justify-center text-fg opacity-80 group-hover:opacity-100 transition-opacity select-none overflow-hidden",
 							isCaption && "w-full px-3 min-w-0",
 						)}
-						style={isClip && waveformData ? { textShadow: "0 1px 3px rgba(0,0,0,0.7)" } : undefined}
 					>
 						{isClip ? (
 							<div className="flex items-center gap-2">

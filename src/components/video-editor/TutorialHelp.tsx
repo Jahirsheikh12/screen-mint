@@ -54,7 +54,7 @@ export function TutorialHelp() {
 						<h3 className="text-body font-medium text-fg-muted uppercase tracking-wider">
 							{t("tutorial.visualExample")}
 						</h3>
-						<div className="relative h-24 bg-[#000] rounded-lg border border-line-strong flex items-center px-4 overflow-hidden select-none">
+						<div className="relative h-24 bg-sunken rounded-lg border border-line-strong flex items-center px-4 overflow-hidden select-none">
 							{/* Background track (Kept parts) */}
 							<div className="absolute inset-x-4 h-2 bg-track/20 rounded-full overflow-hidden">
 								{/* Solid line representing video */}
@@ -64,7 +64,7 @@ export function TutorialHelp() {
 								className="absolute left-[20%] h-8 bg-danger/20 border border-danger rounded flex flex-col items-center justify-center z-10"
 								style={{ width: "20%" }}
 							>
-								<span className="text-micro font-bold text-danger-fg bg-sunken px-1 rounded">
+								<span className="text-micro font-bold text-danger-fg bg-fill-subtle px-1 rounded">
 									{t("tutorial.removed")}
 								</span>
 							</div>
@@ -73,7 +73,7 @@ export function TutorialHelp() {
 								className="absolute left-[65%] h-8 bg-danger/20 border border-danger rounded flex flex-col items-center justify-center z-10"
 								style={{ width: "15%" }}
 							>
-								<span className="text-micro font-bold text-danger-fg bg-sunken px-1 rounded">
+								<span className="text-micro font-bold text-danger-fg bg-fill-subtle px-1 rounded">
 									{t("tutorial.removed")}
 								</span>
 							</div>
@@ -92,7 +92,7 @@ export function TutorialHelp() {
 							<ArrowRight className="w-4 h-4 text-fg-disabled rotate-90" />
 						</div>
 						{/* Result */}
-						<div className="relative h-12 bg-[#000] rounded-lg border border-line-strong flex items-center justify-center gap-1 px-4 select-none">
+						<div className="relative h-12 bg-sunken rounded-lg border border-line-strong flex items-center justify-center gap-1 px-4 select-none">
 							<div
 								className="h-8 bg-fill-pressed rounded flex items-center justify-center opacity-80"
 								style={{ width: "30%" }}

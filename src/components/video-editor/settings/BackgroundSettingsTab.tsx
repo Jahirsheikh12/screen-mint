@@ -113,32 +113,32 @@ export function BackgroundSettingsTab({
 					onValueChange={(value) => onBackgroundTabChange(value as BackgroundTab)}
 					className="w-full"
 				>
-					<TabsList className="mb-3 bg-sunken border border-line shadow-inner p-1 w-full grid grid-cols-4 h-9 rounded-xl">
+					<TabsList className="mb-3 bg-fill-subtle border border-line p-1 w-full grid grid-cols-4 h-9 rounded-lg">
 						<TabsTrigger
 							value="image"
 							disabled={hideBackground}
-							className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-accent data-[state=active]:to-accent-hover data-[state=active]:text-on-accent data-[state=active]:shadow-sm text-fg-muted text-caption font-medium py-1 rounded-lg transition-all duration-300 ease-out"
+							className="data-[state=active]:bg-control data-[state=active]:text-fg data-[state=active]:shadow-sm text-fg-muted text-caption font-medium py-1 rounded-lg transition-all duration-300 ease-out"
 						>
 							{tSettings("background.image")}
 						</TabsTrigger>
 						<TabsTrigger
 							value="video"
 							disabled={hideBackground}
-							className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-accent data-[state=active]:to-accent-hover data-[state=active]:text-on-accent data-[state=active]:shadow-sm text-fg-muted text-caption font-medium py-1 rounded-lg transition-all duration-300 ease-out"
+							className="data-[state=active]:bg-control data-[state=active]:text-fg data-[state=active]:shadow-sm text-fg-muted text-caption font-medium py-1 rounded-lg transition-all duration-300 ease-out"
 						>
 							{tSettings("background.video", "Video")}
 						</TabsTrigger>
 						<TabsTrigger
 							value="color"
 							disabled={hideBackground}
-							className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-accent data-[state=active]:to-accent-hover data-[state=active]:text-on-accent data-[state=active]:shadow-sm text-fg-muted text-caption font-medium py-1 rounded-lg transition-all duration-300 ease-out"
+							className="data-[state=active]:bg-control data-[state=active]:text-fg data-[state=active]:shadow-sm text-fg-muted text-caption font-medium py-1 rounded-lg transition-all duration-300 ease-out"
 						>
 							{tSettings("background.color")}
 						</TabsTrigger>
 						<TabsTrigger
 							value="gradient"
 							disabled={hideBackground}
-							className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-accent data-[state=active]:to-accent-hover data-[state=active]:text-on-accent data-[state=active]:shadow-sm text-fg-muted text-caption font-medium py-1 rounded-lg transition-all duration-300 ease-out"
+							className="data-[state=active]:bg-control data-[state=active]:text-fg data-[state=active]:shadow-sm text-fg-muted text-caption font-medium py-1 rounded-lg transition-all duration-300 ease-out"
 						>
 							{tSettings("background.gradient")}
 						</TabsTrigger>
@@ -163,7 +163,7 @@ export function BackgroundSettingsTab({
 								onClick={() => fileInputRef.current?.click()}
 								disabled={hideBackground}
 								variant="outline"
-								className="w-full gap-2 bg-fill-subtle text-fg border-line hover:bg-accent/15 hover:text-accent-fg hover:border-accent/30 transition-all duration-200 h-8 text-micro rounded-xl"
+								className="w-full gap-2 bg-fill-subtle text-fg border-line hover:bg-accent/15 hover:text-accent-fg hover:border-accent/30 transition-all duration-200 h-8 text-micro rounded-lg"
 							>
 								<Upload className="w-3 h-3" />
 								{tSettings("background.uploadCustom")}
@@ -176,9 +176,9 @@ export function BackgroundSettingsTab({
 										<div
 											key={`custom-${idx}`}
 											className={cn(
-												"aspect-square w-9 h-9 rounded-lg border-2 overflow-hidden cursor-pointer transition-all duration-200 relative group shadow-sm hover:scale-105",
+												"aspect-square w-9 h-9 rounded-lg border-2 overflow-hidden cursor-pointer transition-all duration-200 relative group shadow-sm",
 												isSelected
-													? "border-accent ring-2 ring-accent/30 shadow-[0_0_12px_rgba(245,158,11,0.5)]"
+													? "border-accent ring-2 ring-accent/30"
 													: "border-line-strong hover:border-accent/40 opacity-80 hover:opacity-100 bg-fill-subtle",
 											)}
 											style={{
@@ -235,9 +235,9 @@ export function BackgroundSettingsTab({
 												key={wallpaperValue}
 												disabled={hideBackground}
 												className={cn(
-													"aspect-square w-9 h-9 rounded-lg border-2 overflow-hidden cursor-pointer transition-all duration-200 shadow-sm hover:scale-105 p-0 bg-fill-subtle",
+													"aspect-square w-9 h-9 rounded-lg border-2 overflow-hidden cursor-pointer transition-all duration-200 shadow-sm p-0 bg-fill-subtle",
 													isSelected
-														? "border-accent ring-2 ring-accent/30 shadow-[0_0_12px_rgba(245,158,11,0.5)]"
+														? "border-accent ring-2 ring-accent/30"
 														: "border-line-strong hover:border-accent/40 opacity-80 hover:opacity-100",
 												)}
 												aria-label={label}
@@ -266,13 +266,13 @@ export function BackgroundSettingsTab({
 								onClick={() => void handleChooseVideo()}
 								disabled={hideBackground}
 								variant="outline"
-								className="w-full gap-2 bg-fill-subtle text-fg border-line hover:bg-accent/15 hover:text-accent-fg hover:border-accent/30 transition-all duration-200 h-8 text-micro rounded-xl"
+								className="w-full gap-2 bg-fill-subtle text-fg border-line hover:bg-accent/15 hover:text-accent-fg hover:border-accent/30 transition-all duration-200 h-8 text-micro rounded-lg"
 							>
 								<Upload className="w-3 h-3" />
 								{tSettings("background.uploadVideo", "Choose video")}
 							</Button>
 							{isVideoWallpaper(selected) ? (
-								<div className="flex min-w-0 items-center gap-2.5 rounded-xl border border-accent/30 bg-accent/10 p-2">
+								<div className="flex min-w-0 items-center gap-2.5 rounded-lg border border-accent/30 bg-accent/10 p-2">
 									<video
 										src={selected}
 										muted
@@ -313,7 +313,7 @@ export function BackgroundSettingsTab({
 						<TabsContent value="gradient" className="mt-0">
 							<div className="flex flex-col gap-3 px-0.5">
 								<div
-									className="w-full rounded-xl overflow-hidden relative"
+									className="w-full rounded-lg overflow-hidden relative"
 									style={{
 										height: 130,
 										background: gradient,
@@ -347,7 +347,7 @@ export function BackgroundSettingsTab({
 											<span className="text-caption text-fg-muted font-medium">
 												{tSettings("backgroundTab.from", "From")}
 											</span>
-											<div className="flex items-center gap-1.5 h-8 rounded-lg border border-line-strong bg-sunken px-1.5 shadow-inner focus-within:border-accent/50 focus-within:ring-1 focus-within:ring-accent/20 transition-all">
+											<div className="flex items-center gap-1.5 h-8 rounded-md border border-line-strong bg-sunken px-1.5 focus-within:border-accent/50 focus-within:ring-1 focus-within:ring-accent/20 transition-all">
 												<label className="relative w-6 h-6 rounded-md overflow-hidden shrink-0 cursor-pointer border border-line-strong">
 													<div
 														className="absolute inset-0 rounded-md"
@@ -395,7 +395,7 @@ export function BackgroundSettingsTab({
 											<span className="text-caption text-fg-muted font-medium">
 												{tSettings("backgroundTab.to", "To")}
 											</span>
-											<div className="flex items-center gap-1.5 h-8 rounded-lg border border-line-strong bg-sunken px-1.5 shadow-inner focus-within:border-accent/50 focus-within:ring-1 focus-within:ring-accent/20 transition-all">
+											<div className="flex items-center gap-1.5 h-8 rounded-md border border-line-strong bg-sunken px-1.5 focus-within:border-accent/50 focus-within:ring-1 focus-within:ring-accent/20 transition-all">
 												<label className="relative w-6 h-6 rounded-md overflow-hidden shrink-0 cursor-pointer border border-line-strong">
 													<div
 														className="absolute inset-0 rounded-md"
@@ -509,7 +509,7 @@ export function BackgroundSettingsTab({
 												<div
 													key={`preset-${idx}`}
 													className={cn(
-														"aspect-square rounded-lg border-2 overflow-hidden cursor-pointer transition-all duration-200 shadow-sm hover:scale-105",
+														"aspect-square rounded-lg border-2 overflow-hidden cursor-pointer transition-all duration-200 shadow-sm",
 														isSelected
 															? "border-accent ring-1 ring-accent/30"
 															: "border-line-strong hover:border-accent/40 opacity-80 hover:opacity-100",

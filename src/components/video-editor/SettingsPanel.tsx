@@ -954,14 +954,12 @@ export default function SettingsPanel({
 	];
 
 	return (
-		<div className="w-full h-full shrink-0 min-w-0 bg-canvas/90 backdrop-blur-2xl border border-line rounded-2xl flex flex-row shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden">
+		<div className="w-full h-full shrink-0 min-w-0 bg-surface rounded-xl flex flex-row shadow-panel overflow-hidden">
 			{/* Sidebar navigation */}
-			<div className="flex flex-col gap-2 p-2 border-r border-line bg-sunken w-[60px] shrink-0 overflow-y-auto custom-scrollbar items-center">
+			<div className="flex flex-col gap-1 p-2 border-r border-line w-[52px] shrink-0 overflow-y-auto custom-scrollbar items-center">
 				{tabGroups.map((group, groupIndex) => (
-					<div key={group.label} className="flex flex-col items-center w-full gap-1.5">
-						{groupIndex > 0 && (
-							<div className="w-6 h-[1px] bg-gradient-to-r from-transparent via-line-strong to-transparent my-1" />
-						)}
+					<div key={group.label} className="flex flex-col items-center w-full gap-1">
+						{groupIndex > 0 && <div className="my-1.5 h-px w-5 bg-line" />}
 						{sidebarTabs
 							.filter((tab) => group.ids.includes(tab.id))
 							.map((tab) => (
@@ -1343,7 +1341,7 @@ export default function SettingsPanel({
 										</Button>
 										<Button
 											onClick={() => setShowCropModal(false)}
-											className="h-10 px-6 text-label font-semibold bg-gradient-to-r from-accent to-accent-hover text-on-accent rounded-xl shadow-lg shadow-accent/20 hover:shadow-accent/30 hover:scale-[1.01] active:scale-[0.98] transition-all duration-200 border border-accent/30"
+											className="h-10 px-6 text-label font-semibold bg-accent hover:bg-accent-hover text-on-accent rounded-xl shadow-sm active:scale-[0.98] transition-all duration-200 border border-accent/30"
 										>
 											{t("common.actions.done")}
 										</Button>

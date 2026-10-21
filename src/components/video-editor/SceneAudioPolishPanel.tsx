@@ -83,13 +83,13 @@ export function SceneAudioPolishPanel({
 	};
 
 	const inputClass =
-		"w-full bg-sunken border border-line hover:border-line-strong focus:border-accent/50 text-fg h-8 px-2.5 rounded-lg text-caption outline-none transition-all shadow-inner font-medium placeholder:text-fg-subtle";
+		"w-full bg-sunken border border-line hover:border-line-strong focus:border-accent/50 text-fg h-8 px-2.5 rounded-md text-caption outline-none transition-all font-medium placeholder:text-fg-subtle";
 	const selectClass = cn(inputClass, "appearance-none cursor-pointer pr-8");
 
 	return (
 		<div
 			className={cn(
-				"w-full h-full shrink-0 min-w-0 bg-canvas/90 backdrop-blur-2xl border border-line rounded-2xl flex flex-col shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden",
+				"w-full h-full shrink-0 min-w-0 bg-canvas/90 backdrop-blur-2xl border border-line rounded-2xl flex flex-col shadow-panel overflow-hidden",
 				embedded ? "" : "w-[400px]",
 			)}
 		>
@@ -100,7 +100,6 @@ export function SceneAudioPolishPanel({
 						"editor.polishPanel.environmentLensAndLighting",
 						"Environment, lens, and lighting configuration",
 					)}
-					accentColor="amber"
 				>
 					<label className="mb-2 flex items-center justify-between gap-3 text-caption text-fg-muted p-3 rounded-lg bg-fill-subtle border border-line hover:bg-fill-subtle transition-colors cursor-pointer group">
 						<span className="font-medium group-hover:text-fg-muted transition-colors">
@@ -111,7 +110,7 @@ export function SceneAudioPolishPanel({
 								type="checkbox"
 								checked={scene3D.enabled}
 								onChange={(event) => updateScene({ enabled: event.target.checked })}
-								className="peer appearance-none w-8 h-4 bg-sunken border border-line-strong rounded-full checked:bg-accent checked:border-accent transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-accent/50 shadow-inner"
+								className="peer appearance-none w-8 h-4 bg-sunken border border-line-strong rounded-full checked:bg-accent checked:border-accent transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
 							/>
 							<div className="absolute left-[2px] top-[2px] w-3 h-3 bg-fg-subtle rounded-full pointer-events-none peer-checked:translate-x-4 peer-checked:bg-fixed-white transition-transform shadow-sm" />
 						</div>
@@ -278,7 +277,6 @@ export function SceneAudioPolishPanel({
 						"editor.polishPanel.trackVolumeAndDucking",
 						"Track volume and ducking rules",
 					)}
-					accentColor="amber"
 				>
 					<label className="flex items-center justify-between gap-3 text-caption text-fg-muted p-3 rounded-lg bg-fill-subtle border border-line hover:bg-fill-subtle transition-colors cursor-pointer group">
 						<span className="font-medium group-hover:text-fg-muted transition-colors flex items-center gap-2">
@@ -306,7 +304,7 @@ export function SceneAudioPolishPanel({
 						{audioMix.tracks.map((track) => (
 							<div
 								key={track.id}
-								className="rounded-xl border border-line bg-sunken overflow-hidden shadow-sm"
+								className="rounded-lg border border-line bg-fill-subtle overflow-hidden shadow-sm"
 							>
 								<div className="px-3 py-2 bg-fill-subtle border-b border-line flex items-center justify-between">
 									<span className="text-caption font-bold text-fg tracking-wider uppercase">
@@ -448,9 +446,8 @@ export function SceneAudioPolishPanel({
 						"editor.polishPanel.oneClickStudioTemplates",
 						"One-click studio templates",
 					)}
-					accentColor="amber"
 				>
-					<div className="grid grid-cols-[1fr_auto] gap-2 items-center p-3 rounded-xl border border-line bg-sunken">
+					<div className="grid grid-cols-[1fr_auto] gap-2 items-center p-3 rounded-lg border border-line bg-fill-subtle">
 						<SelectWrapper>
 							<select
 								defaultValue="product-hunt"
@@ -469,7 +466,7 @@ export function SceneAudioPolishPanel({
 						</SelectWrapper>
 						<button
 							type="button"
-							className="h-8 px-4 rounded-lg bg-gradient-to-r from-accent to-accent text-fg text-caption font-bold tracking-wider shadow-sm hover:from-accent hover:to-accent hover:shadow-accent/20 transition-all duration-300"
+							className="h-8 px-4 rounded-lg bg-gradient-to-r from-accent to-accent text-fg text-caption font-bold tracking-wider shadow-sm hover:from-accent hover:to-accent transition-all duration-300"
 							onClick={(event) => {
 								const select = event.currentTarget.previousElementSibling?.querySelector(
 									"select",

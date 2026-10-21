@@ -169,7 +169,7 @@ function ChoiceButton({
 				"relative min-h-[42px] rounded-lg border px-3 py-2 text-left transition-all duration-150",
 				"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/45",
 				selected
-					? "border-accent/55 bg-accent/12 text-on-accent shadow-[0_0_0_1px_rgba(245,158,11,0.12)]"
+					? "border-accent/55 bg-accent/12 text-on-accent"
 					: "border-line bg-fill-subtle text-fg-subtle hover:border-line-strong hover:bg-fill-subtle hover:text-fg-muted",
 				disabled && "cursor-not-allowed opacity-35 hover:border-line hover:bg-fill-subtle",
 				className,
@@ -899,7 +899,7 @@ export function ExportSettingsDialog({
 										"These are the exact output settings that will be sent to the renderer.",
 									)}
 								/>
-								<div className="grid grid-cols-2 gap-3 rounded-lg border border-line bg-sunken p-3">
+								<div className="grid grid-cols-2 gap-3 rounded-lg border border-line bg-fill-subtle p-3">
 									<SummaryStat
 										label={t("exportAdvanced.canvas", "Canvas")}
 										value={`${activePlan.width}x${activePlan.height}`}
@@ -935,7 +935,7 @@ export function ExportSettingsDialog({
 
 								<Warnings warnings={activeWarnings} />
 
-								<div className="mt-5 space-y-2 rounded-lg border border-line bg-sunken p-3 text-caption leading-4 text-fg-subtle">
+								<div className="mt-5 space-y-2 rounded-lg border border-line bg-fill-subtle p-3 text-caption leading-4 text-fg-subtle">
 									<div className="flex justify-between gap-4">
 										<span>{t("exportAdvanced.summaryProfile", "Profile")}</span>
 										<span className="text-right text-fg-muted">
@@ -984,7 +984,7 @@ export function ExportSettingsDialog({
 							disabled={exportDestination === "link"}
 							onClick={handleExportClick}
 							className={cn(
-								"flex h-11 min-w-[180px] items-center justify-center gap-2 rounded-lg bg-accent px-5 text-body font-bold text-on-accent shadow-[0_8px_28px_rgba(245,158,11,0.22)] transition-all",
+								"flex h-11 min-w-[180px] items-center justify-center gap-2 rounded-lg bg-accent px-5 text-body font-bold text-on-accent transition-all",
 								"hover:bg-accent active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-35",
 							)}
 						>

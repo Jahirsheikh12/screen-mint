@@ -85,7 +85,7 @@ export function ZoomTimingControls({
 	);
 
 	return (
-		<div className="space-y-3 rounded-xl border border-line bg-sunken p-2.5">
+		<div className="space-y-3 rounded-lg border border-line bg-fill-subtle p-2.5">
 			{durationSlider("zoomInDurationMs", "Zoom In Duration", 3000)}
 			{durationSlider("zoomInOverlapMs", "Zoom In Overlap", 2000)}
 			{easingSelect("zoomInEasing", "Zoom In Curve")}

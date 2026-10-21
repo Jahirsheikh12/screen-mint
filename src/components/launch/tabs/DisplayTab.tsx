@@ -130,7 +130,7 @@ export function DisplayTab({ disabled, onSelectSource, onPermissionDenied }: Dis
 									: "bg-fill-subtle border border-transparent hover:bg-fill-hover"
 							} ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
 						>
-							<div className="relative w-full aspect-[16/10] rounded border border-line-strong overflow-hidden bg-sunken">
+							<div className="relative w-full aspect-[16/10] rounded border border-line-strong overflow-hidden bg-fill-subtle">
 								{source.thumbnail ? (
 									<img
 										src={source.thumbnail}

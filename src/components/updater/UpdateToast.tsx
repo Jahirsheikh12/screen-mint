@@ -135,7 +135,7 @@ export function UpdateToast() {
 				{state.status === "downloading" ? (
 					<div className="h-1.5 overflow-hidden rounded-full bg-fill-hover">
 						<div
-							className="h-full rounded-full bg-gradient-to-r from-accent to-accent-hover transition-[width] duration-300"
+							className="h-full rounded-full bg-accent hover:bg-accent-hover transition-[width] duration-300"
 							style={{ width: formatProgress(state.progress) }}
 						/>
 					</div>

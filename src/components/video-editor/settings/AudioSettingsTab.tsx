@@ -82,7 +82,7 @@ export function AudioSettingsTab({
 					"Upload your own track or browse the built-in library",
 				)}
 			>
-				<div className="p-3 rounded-xl bg-sunken border border-line shadow-inner">
+				<div className="p-3 rounded-lg bg-fill-subtle border border-line">
 					<p className="text-caption text-fg-muted leading-relaxed">
 						{tSettings(
 							"audio.subtitle",
@@ -91,9 +91,10 @@ export function AudioSettingsTab({
 					</p>
 					<div className="mt-3 flex gap-2">
 						<Button
+							variant="outline"
 							type="button"
 							onClick={() => void onImportAudio()}
-							className="w-full gap-2 bg-fill-subtle text-fg border border-line hover:bg-accent/10 hover:text-accent-fg hover:border-accent/30 transition-all duration-200 rounded-xl"
+							className="w-full gap-2 bg-fill-subtle text-fg border border-line hover:bg-accent/10 hover:text-accent-fg hover:border-accent/30 transition-all duration-200 rounded-lg"
 						>
 							<Upload className="h-3.5 w-3.5" />
 							{tSettings("audio.upload", "Upload audio")}
@@ -109,7 +110,7 @@ export function AudioSettingsTab({
 					"Curated tracks organized by mood",
 				)}
 			>
-				<div className="rounded-xl bg-sunken border border-line shadow-inner overflow-hidden">
+				<div className="rounded-lg bg-fill-subtle border border-line overflow-hidden">
 					{Object.entries(builtInTracksByMood).map(([mood, tracks], moodIndex) => (
 						<div key={mood} className={cn("p-2.5", moodIndex > 0 && "border-t border-line")}>
 							<div className="text-micro uppercase tracking-wider text-fg-subtle font-semibold mb-2">
@@ -124,9 +125,9 @@ export function AudioSettingsTab({
 											type="button"
 											onClick={() => void onSelectBuiltInTrack(track.id)}
 											className={cn(
-												"w-full rounded-xl border px-2.5 py-2 text-left transition-all duration-200",
+												"w-full rounded-lg border px-2.5 py-2 text-left transition-all duration-200",
 												isSelected
-													? "border-accent/40 bg-accent/10 shadow-sm shadow-accent/10"
+													? "border-accent/40 bg-accent/10 shadow-sm"
 													: "border-line bg-sunken hover:bg-fill-subtle hover:border-line-strong",
 											)}
 										>
@@ -141,7 +142,7 @@ export function AudioSettingsTab({
 														className={cn(
 															"flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-all duration-200",
 															playingBuiltInTrackId === track.id
-																? "border-accent/40 bg-accent/15 text-accent-fg shadow-sm shadow-accent/20"
+																? "border-accent/40 bg-accent/15 text-accent-fg shadow-sm"
 																: "border-line-strong bg-fill-subtle text-fg-muted hover:bg-fill-hover hover:text-fg",
 														)}
 														aria-label={
@@ -186,11 +187,10 @@ export function AudioSettingsTab({
 					"audioTab.adjustPropertiesForThe",
 					"Adjust properties for the selected audio region",
 				)}
-				accentColor="amber"
 			>
 				{selectedAudio ? (
 					<>
-						<div className="rounded-xl bg-sunken border border-line shadow-inner px-3 py-2.5">
+						<div className="rounded-lg bg-fill-subtle border border-line px-3 py-2.5">
 							<div className="text-label font-medium text-fg">
 								{getAudioRegionDisplayName(selectedAudio)}
 							</div>
@@ -203,18 +203,20 @@ export function AudioSettingsTab({
 
 						<div className="grid grid-cols-2 gap-1.5">
 							<Button
+								variant="outline"
 								type="button"
 								onClick={() => void onReplaceBuiltInAudio()}
 								disabled={!selectedBuiltInTrack}
-								className="gap-1.5 bg-fill-subtle text-fg border border-line hover:bg-fill-hover hover:border-line-strong rounded-xl text-micro transition-all duration-200"
+								className="gap-1.5 bg-fill-subtle text-fg border border-line hover:bg-fill-hover hover:border-line-strong rounded-lg text-micro transition-all duration-200"
 							>
 								<Music className="h-3 w-3" />
 								{tSettings("audio.replaceBuiltIn", "Replace selected")}
 							</Button>
 							<Button
+								variant="outline"
 								type="button"
 								onClick={() => void onReplaceWithUploadedAudio()}
-								className="gap-1.5 bg-fill-subtle text-fg border border-line hover:bg-fill-hover hover:border-line-strong rounded-xl text-micro transition-all duration-200"
+								className="gap-1.5 bg-fill-subtle text-fg border border-line hover:bg-fill-hover hover:border-line-strong rounded-lg text-micro transition-all duration-200"
 							>
 								<Upload className="h-3 w-3" />
 								{tSettings("audio.replaceUpload", "Replace with file")}
@@ -222,23 +224,25 @@ export function AudioSettingsTab({
 						</div>
 
 						{missingAudioPath && (
-							<div className="rounded-xl border border-accent/20 bg-accent/10 px-3 py-2.5 text-caption text-fg">
+							<div className="rounded-lg border border-accent/20 bg-accent/10 px-3 py-2.5 text-caption text-fg">
 								<div className="font-semibold text-fg">
 									{tSettings("audio.missingTitle", "Audio source missing")}
 								</div>
 								<div className="mt-1 truncate text-fg-muted">{missingAudioPath}</div>
 								<div className="mt-2 flex gap-2">
 									<Button
+										variant="outline"
 										type="button"
 										onClick={() => void onRelinkMissingAudio?.()}
-										className="flex-1 bg-accent/20 text-fg hover:bg-accent/30 rounded-xl"
+										className="flex-1 bg-accent/20 text-fg hover:bg-accent/30 rounded-lg"
 									>
 										{tSettings("audio.relink", "Relink audio")}
 									</Button>
 									<Button
+										variant="outline"
 										type="button"
 										onClick={() => onRemoveMissingAudio?.()}
-										className="flex-1 bg-fill-hover text-fg hover:bg-fill-pressed rounded-xl"
+										className="flex-1 bg-fill-hover text-fg hover:bg-fill-pressed rounded-lg"
 									>
 										{tSettings("audio.remove", "Remove")}
 									</Button>
@@ -246,7 +250,7 @@ export function AudioSettingsTab({
 							</div>
 						)}
 
-						<div className="flex items-center justify-between p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+						<div className="flex items-center justify-between p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 							<div>
 								<div className="text-label font-medium text-fg-muted">
 									{tSettings("audio.loop", "Loop audio")}
@@ -258,11 +262,10 @@ export function AudioSettingsTab({
 							<Switch
 								checked={selectedAudio.loop}
 								onCheckedChange={(checked) => onAudioLoopChange?.(selectedAudio.id, checked)}
-								className="data-[state=checked]:bg-accent scale-90"
 							/>
 						</div>
 
-						<div className="flex items-center justify-between p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+						<div className="flex items-center justify-between p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 							<div>
 								<div className="text-label font-medium text-fg-muted">
 									{tSettings("audioTab.normalize", "Normalize")}
@@ -277,11 +280,10 @@ export function AudioSettingsTab({
 							<Switch
 								checked={selectedAudio.normalize === true}
 								onCheckedChange={(checked) => onAudioNormalizeChange?.(selectedAudio.id, checked)}
-								className="data-[state=checked]:bg-accent scale-90"
 							/>
 						</div>
 
-						<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+						<div className="p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 							<SliderControl
 								label={tSettings("audio.volume", "Volume")}
 								value={selectedAudio.volume}
@@ -294,7 +296,7 @@ export function AudioSettingsTab({
 								parseInput={(text) => parseFloat(text.replace(/%$/, "")) / 100}
 							/>
 						</div>
-						<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+						<div className="p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 							<SliderControl
 								label={tSettings("audio.fadeIn", "Fade In")}
 								value={selectedAudio.fadeInMs}
@@ -307,7 +309,7 @@ export function AudioSettingsTab({
 								parseInput={(text) => parseFloat(text.replace(/ms$/, ""))}
 							/>
 						</div>
-						<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+						<div className="p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 							<SliderControl
 								label={tSettings("audio.fadeOut", "Fade Out")}
 								value={selectedAudio.fadeOutMs}
@@ -325,14 +327,14 @@ export function AudioSettingsTab({
 							onClick={() => onAudioDelete?.(selectedAudio.id)}
 							variant="destructive"
 							size="sm"
-							className="w-full gap-2 bg-danger/8 text-danger-fg border border-danger/15 hover:bg-danger/15 hover:border-danger/25 transition-all duration-200 h-9 text-label rounded-xl"
+							className="w-full gap-2 bg-danger/8 text-danger-fg border border-danger/15 hover:bg-danger/15 hover:border-danger/25 transition-all duration-200 h-9 text-label rounded-lg"
 						>
 							<Trash2 className="h-3.5 w-3.5" />
 							{tSettings("audio.deleteRegion", "Delete Audio Region")}
 						</Button>
 					</>
 				) : (
-					<div className="flex items-center justify-center py-4 px-4 rounded-xl bg-fill-subtle border border-dashed border-line">
+					<div className="flex items-center justify-center py-4 px-4 rounded-lg bg-fill-subtle border border-dashed border-line">
 						<p className="text-micro text-fg-subtle text-center">
 							{tSettings(
 								"audio.empty",

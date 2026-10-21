@@ -78,9 +78,11 @@ const ALLOWED = new Set([
 	"video-editor/settings/StudioSettingsTab.tsx",
 	"video-editor/videoPlayback/PlaybackOverlays.tsx",
 	"launch/AreaSelectionOverlay.tsx",
+	// macOS window-control dots in the window picker.
+	"launch/tabs/WindowTab.tsx",
 ]);
 const RAW_COLOUR =
-	/\b(?:bg|text|border(?:-[tblrxy])?|ring|divide|from|via|to|fill|stroke|outline|placeholder|caret)-(?:white|black|(?:slate|zinc|neutral|gray|stone|amber|orange|yellow|red|emerald|green|blue|sky)-\d+|\[#[0-9a-fA-F]{3,8}\])\b/g;
+	/\b(?:bg|text|border(?:-[tblrxy])?|ring|divide|from|via|to|fill|stroke|outline|placeholder|caret)-(?:white|black|(?:slate|zinc|neutral|gray|stone|amber|orange|yellow|red|emerald|green|blue|sky)-\d+|\[#[0-9a-fA-F]{3,8}\])(?![\w-])/g;
 
 function tsxFiles(dir: string): string[] {
 	return readdirSync(dir).flatMap((name) => {

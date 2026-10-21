@@ -138,7 +138,7 @@ const MOTION_PRESET_OPTIONS: Array<{ value: MotionPresetId; label: string; descr
 	];
 
 const CLICK_CARD =
-	"p-2.5 rounded-xl bg-sunken border border-line shadow-inner transition-colors duration-200";
+	"p-2.5 rounded-lg bg-fill-subtle border border-line transition-colors duration-200";
 
 export function CursorSettingsTab({
 	tSettings,
@@ -243,14 +243,15 @@ export function CursorSettingsTab({
 						const isActive = motionPreset === option.value;
 						return (
 							<Button
+								variant="outline"
 								key={option.value}
 								type="button"
 								title={tSettings(`cursor.presets.${option.value}Hint`, option.description)}
 								onClick={() => onApplyMotionPreset?.(option.value)}
 								className={cn(
-									"h-9 rounded-xl border text-label font-semibold transition-all duration-200",
+									"h-9 rounded-lg border text-label font-semibold transition-all duration-200",
 									isActive
-										? "border-accent bg-gradient-to-br from-accent to-accent-hover text-on-accent"
+										? "border-accent/50 bg-accent/12 text-accent-fg"
 										: "border-line bg-fill-subtle text-fg-muted hover:bg-fill-hover hover:text-fg",
 								)}
 							>
@@ -260,7 +261,7 @@ export function CursorSettingsTab({
 					})}
 					<div
 						className={cn(
-							"flex h-9 items-center justify-center whitespace-nowrap rounded-xl border px-3 text-label font-semibold",
+							"flex h-9 items-center justify-center whitespace-nowrap rounded-lg border px-3 text-label font-semibold",
 							motionPreset === null
 								? "border-line-strong bg-fill-hover text-fg"
 								: "border-line text-fg-disabled",
@@ -278,7 +279,7 @@ export function CursorSettingsTab({
 					"Control whether the cursor shows and when it fades away",
 				)}
 			>
-				<div className="flex items-center justify-between p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+				<div className="flex items-center justify-between p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 					<div>
 						<div className="text-label font-medium text-fg-muted">
 							{tSettings("effects.showCursor", "Cursor")}
@@ -287,14 +288,10 @@ export function CursorSettingsTab({
 							{tSettings("cursor.showCursorHint", "Show the cursor in preview and export.")}
 						</div>
 					</div>
-					<Switch
-						checked={showCursor}
-						onCheckedChange={onShowCursorChange}
-						className="data-[state=checked]:bg-accent scale-90"
-					/>
+					<Switch checked={showCursor} onCheckedChange={onShowCursorChange} />
 				</div>
 				<DisabledSettingsGroup disabled={cursorControlsDisabled}>
-					<div className="flex items-center justify-between p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+					<div className="flex items-center justify-between p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 						<div>
 							<div className="text-label font-medium text-fg-muted">
 								{tSettings("cursor.hideWhenIdle", "Hide When Idle")}
@@ -310,11 +307,10 @@ export function CursorSettingsTab({
 							checked={hideWhenIdle}
 							onCheckedChange={onHideWhenIdleChange}
 							disabled={cursorControlsDisabled}
-							className="data-[state=checked]:bg-accent scale-90"
 						/>
 					</div>
 					<DisabledSettingsGroup disabled={!hideWhenIdle}>
-						<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner">
+						<div className="p-2.5 rounded-lg bg-fill-subtle border border-line">
 							<SliderControl
 								label={tSettings("cursor.idleDelay", "Idle Delay")}
 								value={idleHideDelayMs}
@@ -359,25 +355,25 @@ export function CursorSettingsTab({
 									disabled={cursorControlsDisabled}
 									onClick={() => onCursorTypeModeChange?.(option.value)}
 									className={cn(
-										"flex items-start gap-3 rounded-xl border p-3 text-left transition-all duration-200",
+										"flex items-start gap-3 rounded-lg border p-3 text-left transition-all duration-200",
 										cursorTypeMode === option.value
-											? "border-accent/55 bg-accent/10 shadow-[0_0_0_1px_rgba(245,158,11,0.2)]"
-											: "border-line bg-sunken hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]",
+											? "border-accent/50 bg-accent/10"
+											: "border-line bg-fill-subtle hover:border-line-strong",
 									)}
 								>
 									<div
 										className={cn(
-											"mt-1 h-4 w-4 rounded-full border",
+											"mt-0.5 h-3.5 w-3.5 shrink-0 rounded-full border",
 											cursorTypeMode === option.value
-												? "border-accent bg-accent"
+												? "border-[4px] border-accent"
 												: "border-line-strong bg-transparent",
 										)}
 									/>
 									<div>
-										<div className="text-heading font-semibold text-fg">
+										<div className="text-body font-medium text-fg">
 											{tSettings(`cursor.options.type.${option.value}`, option.label)}
 										</div>
-										<div className="mt-0.5 text-label leading-relaxed text-fg-muted">
+										<div className="mt-0.5 text-caption leading-relaxed text-fg-muted">
 											{description}
 										</div>
 									</div>
@@ -385,7 +381,7 @@ export function CursorSettingsTab({
 							);
 						})}
 					</div>
-					<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner">
+					<div className="p-2.5 rounded-lg bg-fill-subtle border border-line">
 						<SliderControl
 							label={tSettings("effects.cursorSize", "Size")}
 							value={cursorSize}
@@ -399,7 +395,7 @@ export function CursorSettingsTab({
 							disabled={cursorControlsDisabled}
 						/>
 					</div>
-					<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner">
+					<div className="p-2.5 rounded-lg bg-fill-subtle border border-line">
 						<SliderControl
 							label={tSettings("cursor.tilt", "Tilt")}
 							value={cursorTilt}
@@ -439,25 +435,25 @@ export function CursorSettingsTab({
 										disabled={smoothingControlsDisabled}
 										onClick={() => onCursorMovementStyleChange?.(option.value)}
 										className={cn(
-											"flex items-start gap-3 rounded-xl border p-3 text-left transition-all duration-200",
+											"flex items-start gap-3 rounded-lg border p-3 text-left transition-all duration-200",
 											cursorMovementStyle === option.value
-												? "border-accent/55 bg-accent/10 shadow-[0_0_0_1px_rgba(245,158,11,0.2)]"
-												: "border-line bg-sunken hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]",
+												? "border-accent/50 bg-accent/10"
+												: "border-line bg-fill-subtle hover:border-line-strong",
 										)}
 									>
 										<div
 											className={cn(
-												"mt-1 h-4 w-4 rounded-full border",
+												"mt-0.5 h-3.5 w-3.5 shrink-0 rounded-full border",
 												cursorMovementStyle === option.value
-													? "border-accent bg-accent"
+													? "border-[4px] border-accent"
 													: "border-line-strong bg-transparent",
 											)}
 										/>
 										<div>
-											<div className="text-heading font-semibold text-fg">
+											<div className="text-body font-medium text-fg">
 												{tSettings(`cursor.options.movement.${option.value}`, option.label)}
 											</div>
-											<div className="mt-0.5 text-label leading-relaxed text-fg-muted">
+											<div className="mt-0.5 text-caption leading-relaxed text-fg-muted">
 												{tSettings(
 													`cursor.options.movement.${option.value}Hint`,
 													descriptionMap[option.value],
@@ -469,7 +465,7 @@ export function CursorSettingsTab({
 							})}
 						</div>
 					</DisabledSettingsGroup>
-					<div className="flex items-center justify-between p-2.5 rounded-xl bg-sunken border border-line shadow-inner">
+					<div className="flex items-center justify-between p-2.5 rounded-lg bg-fill-subtle border border-line">
 						<div>
 							<div className="text-label font-medium text-fg-muted">
 								{tSettings("cursor.smoothMovement", "Smooth Movement")}
@@ -485,12 +481,11 @@ export function CursorSettingsTab({
 							checked={smoothMovementEnabled}
 							onCheckedChange={onSmoothMovementEnabledChange}
 							disabled={cursorControlsDisabled}
-							className="data-[state=checked]:bg-accent scale-90"
 						/>
 					</div>
 					{smoothMovementEnabled && cursorMovementStyle === "custom" && (
 						<>
-							<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner">
+							<div className="p-2.5 rounded-lg bg-fill-subtle border border-line">
 								<SliderControl
 									label={tSettings("cursor.tension", "Tension")}
 									value={cursorSpring.tension}
@@ -504,7 +499,7 @@ export function CursorSettingsTab({
 									disabled={smoothingControlsDisabled}
 								/>
 							</div>
-							<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner">
+							<div className="p-2.5 rounded-lg bg-fill-subtle border border-line">
 								<SliderControl
 									label={tSettings("cursor.friction", "Friction")}
 									value={cursorSpring.friction}
@@ -518,7 +513,7 @@ export function CursorSettingsTab({
 									disabled={smoothingControlsDisabled}
 								/>
 							</div>
-							<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner">
+							<div className="p-2.5 rounded-lg bg-fill-subtle border border-line">
 								<SliderControl
 									label={tSettings("cursor.mass", "Mass")}
 									value={cursorSpring.mass}
@@ -543,7 +538,7 @@ export function CursorSettingsTab({
 						"Fine-tune how the camera follows the cursor during zoom.",
 					)}
 				>
-					<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner">
+					<div className="p-2.5 rounded-lg bg-fill-subtle border border-line">
 						<SliderControl
 							label={tSettings("cursor.cameraTension", "Tension")}
 							value={cameraSpring?.tension ?? DEFAULT_CAMERA_SPRING.tension}
@@ -562,7 +557,7 @@ export function CursorSettingsTab({
 							disabled={cursorControlsDisabled}
 						/>
 					</div>
-					<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner">
+					<div className="p-2.5 rounded-lg bg-fill-subtle border border-line">
 						<SliderControl
 							label={tSettings("cursor.cameraFriction", "Friction")}
 							value={cameraSpring?.friction ?? DEFAULT_CAMERA_SPRING.friction}
@@ -581,7 +576,7 @@ export function CursorSettingsTab({
 							disabled={cursorControlsDisabled}
 						/>
 					</div>
-					<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner">
+					<div className="p-2.5 rounded-lg bg-fill-subtle border border-line">
 						<SliderControl
 							label={tSettings("cursor.cameraMass", "Mass")}
 							value={cameraSpring?.mass ?? DEFAULT_CAMERA_SPRING.mass}
@@ -609,7 +604,7 @@ export function CursorSettingsTab({
 						"Choose how cursor images are rendered in preview and export.",
 					)}
 				>
-					<div className="flex items-center justify-between p-2.5 rounded-xl bg-sunken border border-line shadow-inner">
+					<div className="flex items-center justify-between p-2.5 rounded-lg bg-fill-subtle border border-line">
 						<div>
 							<div className="text-label font-medium text-fg-muted">
 								{tSettings("cursor.highQualitySvg", "High Quality SVG Cursors")}
@@ -625,7 +620,6 @@ export function CursorSettingsTab({
 							checked={highQualitySvgCursors}
 							onCheckedChange={onHighQualitySvgCursorsChange}
 							disabled={cursorControlsDisabled}
-							className="data-[state=checked]:bg-accent scale-90"
 						/>
 					</div>
 				</SettingsSection>
@@ -633,7 +627,6 @@ export function CursorSettingsTab({
 				<SettingsSection
 					title={tSettings("cursor.clickEffects", "Click Effects")}
 					description={tSettings("cursor.clickEffectsHint", "Visual feedback when clicking")}
-					accentColor="amber"
 				>
 					<div className="grid grid-cols-4 gap-1.5">
 						{([{ value: "off", label: "Off" }, ...CURSOR_CLICK_EFFECT_STYLE_OPTIONS] as const).map(
@@ -644,6 +637,7 @@ export function CursorSettingsTab({
 										: clickEffectsEnabled && cursorClickStyle.effect === option.value;
 								return (
 									<Button
+										variant="outline"
 										key={option.value}
 										type="button"
 										disabled={cursorControlsDisabled}
@@ -656,9 +650,9 @@ export function CursorSettingsTab({
 											onCursorClickStyleChange?.({ ...cursorClickStyle, effect: option.value });
 										}}
 										className={cn(
-											"h-9 rounded-xl border text-label font-semibold transition-all duration-200",
+											"h-9 rounded-lg border text-label font-semibold transition-all duration-200",
 											isActive
-												? "border-accent bg-gradient-to-br from-accent to-accent-hover text-on-accent"
+												? "border-accent/50 bg-accent/12 text-accent-fg"
 												: "border-line bg-fill-subtle text-fg-muted hover:bg-fill-hover hover:text-fg",
 										)}
 									>
@@ -718,7 +712,7 @@ export function CursorSettingsTab({
 						disabled={clickEffectControlsDisabled}
 						onClick={() => setShowAdvancedClickEffects((value) => !value)}
 						aria-expanded={showAdvancedClickEffects}
-						className="flex w-full items-center justify-between rounded-xl border border-line bg-fill-subtle px-3 py-2 text-left text-caption font-medium text-fg-muted disabled:opacity-45"
+						className="flex w-full items-center justify-between rounded-lg border border-line bg-fill-subtle px-3 py-2 text-left text-caption font-medium text-fg-muted disabled:opacity-45"
 					>
 						{tSettings("cursor.advanced", "Advanced")}
 						<span className="text-micro text-fg-subtle">
@@ -795,7 +789,7 @@ export function CursorSettingsTab({
 						</div>
 					)}
 				</SettingsSection>
-				<div className="mb-3 rounded-xl border border-line bg-sunken px-3 py-2.5">
+				<div className="mb-3 rounded-lg border border-line bg-fill-subtle px-3 py-2.5">
 					<button
 						type="button"
 						onClick={onToggleLegacyCursorSettings}
@@ -830,7 +824,7 @@ export function CursorSettingsTab({
 								"Compatibility controls for older projects",
 							)}
 						>
-							<div className="flex items-center justify-between p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+							<div className="flex items-center justify-between p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 								<div>
 									<div className="text-label font-medium text-fg-muted">
 										{tSettings("effects.loopCursor")}
@@ -843,7 +837,6 @@ export function CursorSettingsTab({
 									checked={loopCursor}
 									onCheckedChange={onLoopCursorChange}
 									disabled={cursorControlsDisabled}
-									className="data-[state=checked]:bg-accent scale-90"
 								/>
 							</div>
 						</SettingsSection>
@@ -852,7 +845,7 @@ export function CursorSettingsTab({
 							title={tSettings("cursor.appearance", "Appearance")}
 							description={tSettings("cursor.appearanceHint", "Customize how your cursor looks")}
 						>
-							<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+							<div className="p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 								<div className="text-label font-medium text-fg-muted mb-2">
 									{tSettings("cursor.pack")}
 								</div>
@@ -866,7 +859,7 @@ export function CursorSettingsTab({
 											className={cn(
 												"group relative flex flex-col items-center gap-1 p-1.5 rounded-lg transition-all duration-200 cursor-pointer",
 												cursorPack === opt.value
-													? "bg-gradient-to-b from-accent/20 to-accent-hover/10 ring-1 ring-accent/60 shadow-sm shadow-accent/10"
+													? "bg-gradient-to-b from-accent/20 to-accent-hover/10 ring-1 ring-accent/60 shadow-sm"
 													: "bg-sunken hover:bg-fill-hover border border-line hover:border-line-strong",
 											)}
 											title={packLabel(opt)}
@@ -874,9 +867,7 @@ export function CursorSettingsTab({
 											<div
 												className={cn(
 													"w-8 h-8 flex items-center justify-center rounded-md transition-transform duration-200 group-hover:scale-110",
-													cursorPack === opt.value
-														? "drop-shadow-[0_0_4px_rgba(245,158,11,0.3)]"
-														: "",
+													cursorPack === opt.value ? "" : "",
 												)}
 											>
 												<img
@@ -914,7 +905,7 @@ export function CursorSettingsTab({
 													{cursorStatePreviewItems.map((item) => (
 														<div
 															key={item.cursorType}
-															className="group flex min-w-0 flex-col items-center gap-1 rounded-lg border border-line bg-sunken p-1.5"
+															className="group flex min-w-0 flex-col items-center gap-1 rounded-lg border border-line bg-fill-subtle p-1.5"
 															title={item.label}
 														>
 															<div className="flex h-8 w-8 items-center justify-center rounded-md bg-fill-subtle">
@@ -936,7 +927,7 @@ export function CursorSettingsTab({
 									*/}
 							</div>
 
-							<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+							<div className="p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 								<div className="flex items-center justify-between mb-2.5">
 									<span className="text-caption font-medium text-fg-muted">
 										{tSettings("cursor.color", "Cursor Color")}
@@ -969,12 +960,12 @@ export function CursorSettingsTab({
 										value={cursorColor}
 										disabled={cursorControlsDisabled}
 										onChange={(e) => onCursorColorChange?.(e.target.value)}
-										className="flex-1 h-8 rounded-lg border border-line bg-sunken px-2.5 text-caption text-fg font-mono tracking-wider focus:outline-none focus:border-accent/40 focus:ring-1 focus:ring-accent/20 transition-all duration-200"
+										className="flex-1 h-8 rounded-md border border-line bg-sunken px-2.5 text-caption text-fg font-mono tracking-wider focus:outline-none focus:border-accent/40 focus:ring-1 focus:ring-accent/20 transition-all duration-200"
 									/>
 								</div>
 							</div>
 
-							<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+							<div className="p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 								<SliderControl
 									label={tSettings("cursor.opacity", "Cursor Opacity")}
 									value={cursorOpacity}
@@ -997,7 +988,7 @@ export function CursorSettingsTab({
 								"Fine-tune motion blur and trail effects",
 							)}
 						>
-							<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+							<div className="p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 								<SliderControl
 									label={tSettings("effects.cursorMotionBlur")}
 									value={cursorMotionBlur}
@@ -1012,7 +1003,7 @@ export function CursorSettingsTab({
 								/>
 							</div>
 
-							<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+							<div className="p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 								<SliderControl
 									label={tSettings("cursor.trailLength", "Trail Length")}
 									value={cursorTrailLength}
@@ -1031,7 +1022,7 @@ export function CursorSettingsTab({
 							</div>
 
 							{cursorTrailLength > 0 && (
-								<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200 animate-in fade-in slide-in-from-top-1 duration-200">
+								<div className="p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200 animate-in fade-in slide-in-from-top-1 duration-200">
 									<SliderControl
 										label={tSettings("cursor.trailOpacity", "Trail Opacity")}
 										value={cursorTrailOpacity}

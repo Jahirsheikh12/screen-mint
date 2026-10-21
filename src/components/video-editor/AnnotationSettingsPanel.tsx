@@ -166,24 +166,24 @@ export function AnnotationSettingsPanel({
 					onValueChange={(value) => onTypeChange(value as AnnotationType)}
 					className="mb-6"
 				>
-					<TabsList className="mb-4 bg-fill-subtle border border-line p-1 w-full grid grid-cols-4 h-auto rounded-xl">
+					<TabsList className="mb-4 bg-fill-subtle border border-line p-1 w-full grid grid-cols-4 h-auto rounded-lg">
 						<TabsTrigger
 							value="text"
-							className="data-[state=active]:bg-accent data-[state=active]:text-on-accent text-fg-muted py-2 rounded-lg transition-all gap-2"
+							className="data-[state=active]:bg-control data-[state=active]:text-fg data-[state=active]:shadow-sm text-fg-muted py-2 rounded-lg transition-all gap-2"
 						>
 							<Type className="w-4 h-4" />
 							{t("annotations.text")}
 						</TabsTrigger>
 						<TabsTrigger
 							value="image"
-							className="data-[state=active]:bg-accent data-[state=active]:text-on-accent text-fg-muted py-2 rounded-lg transition-all gap-2"
+							className="data-[state=active]:bg-control data-[state=active]:text-fg data-[state=active]:shadow-sm text-fg-muted py-2 rounded-lg transition-all gap-2"
 						>
 							<ImageIcon className="w-4 h-4" />
 							{t("annotations.image")}
 						</TabsTrigger>
 						<TabsTrigger
 							value="figure"
-							className="data-[state=active]:bg-accent data-[state=active]:text-on-accent text-fg-muted py-2 rounded-lg transition-all gap-2"
+							className="data-[state=active]:bg-control data-[state=active]:text-fg data-[state=active]:shadow-sm text-fg-muted py-2 rounded-lg transition-all gap-2"
 						>
 							<svg
 								className="w-4 h-4"
@@ -198,7 +198,7 @@ export function AnnotationSettingsPanel({
 						</TabsTrigger>
 						<TabsTrigger
 							value="blur"
-							className="data-[state=active]:bg-accent data-[state=active]:text-on-accent text-fg-muted py-2 rounded-lg transition-all gap-2"
+							className="data-[state=active]:bg-control data-[state=active]:text-fg data-[state=active]:shadow-sm text-fg-muted py-2 rounded-lg transition-all gap-2"
 						>
 							<svg
 								className="w-4 h-4"
@@ -320,7 +320,7 @@ export function AnnotationSettingsPanel({
 												fontWeight: annotation.style.fontWeight === "bold" ? "normal" : "bold",
 											})
 										}
-										className="h-8 w-8 data-[state=on]:bg-accent data-[state=on]:text-on-accent text-fg-muted hover:bg-fill-subtle hover:text-fg"
+										className="h-8 w-8 data-[state=on]:bg-accent/15 data-[state=on]:text-accent-fg text-fg-muted hover:bg-fill-subtle hover:text-fg"
 									>
 										<Bold className="h-4 w-4" />
 									</ToggleGroupItem>
@@ -333,7 +333,7 @@ export function AnnotationSettingsPanel({
 												fontStyle: annotation.style.fontStyle === "italic" ? "normal" : "italic",
 											})
 										}
-										className="h-8 w-8 data-[state=on]:bg-accent data-[state=on]:text-on-accent text-fg-muted hover:bg-fill-subtle hover:text-fg"
+										className="h-8 w-8 data-[state=on]:bg-accent/15 data-[state=on]:text-accent-fg text-fg-muted hover:bg-fill-subtle hover:text-fg"
 									>
 										<Italic className="h-4 w-4" />
 									</ToggleGroupItem>
@@ -347,7 +347,7 @@ export function AnnotationSettingsPanel({
 													annotation.style.textDecoration === "underline" ? "none" : "underline",
 											})
 										}
-										className="h-8 w-8 data-[state=on]:bg-accent data-[state=on]:text-on-accent text-fg-muted hover:bg-fill-subtle hover:text-fg"
+										className="h-8 w-8 data-[state=on]:bg-accent/15 data-[state=on]:text-accent-fg text-fg-muted hover:bg-fill-subtle hover:text-fg"
 									>
 										<Underline className="h-4 w-4" />
 									</ToggleGroupItem>
@@ -362,7 +362,7 @@ export function AnnotationSettingsPanel({
 										value="left"
 										aria-label={t("annotations.alignLeft")}
 										onClick={() => onStyleChange({ textAlign: "left" })}
-										className="h-8 w-8 data-[state=on]:bg-accent data-[state=on]:text-on-accent text-fg-muted hover:bg-fill-subtle hover:text-fg"
+										className="h-8 w-8 data-[state=on]:bg-accent/15 data-[state=on]:text-accent-fg text-fg-muted hover:bg-fill-subtle hover:text-fg"
 									>
 										<AlignLeft className="h-4 w-4" />
 									</ToggleGroupItem>
@@ -370,7 +370,7 @@ export function AnnotationSettingsPanel({
 										value="center"
 										aria-label={t("annotations.alignCenter")}
 										onClick={() => onStyleChange({ textAlign: "center" })}
-										className="h-8 w-8 data-[state=on]:bg-accent data-[state=on]:text-on-accent text-fg-muted hover:bg-fill-subtle hover:text-fg"
+										className="h-8 w-8 data-[state=on]:bg-accent/15 data-[state=on]:text-accent-fg text-fg-muted hover:bg-fill-subtle hover:text-fg"
 									>
 										<AlignCenter className="h-4 w-4" />
 									</ToggleGroupItem>
@@ -378,7 +378,7 @@ export function AnnotationSettingsPanel({
 										value="right"
 										aria-label={t("annotations.alignRight")}
 										onClick={() => onStyleChange({ textAlign: "right" })}
-										className="h-8 w-8 data-[state=on]:bg-accent data-[state=on]:text-on-accent text-fg-muted hover:bg-fill-subtle hover:text-fg"
+										className="h-8 w-8 data-[state=on]:bg-accent/15 data-[state=on]:text-accent-fg text-fg-muted hover:bg-fill-subtle hover:text-fg"
 									>
 										<AlignRight className="h-4 w-4" />
 									</ToggleGroupItem>
@@ -407,7 +407,7 @@ export function AnnotationSettingsPanel({
 												<ChevronDown className="h-3 w-3 text-fg-disabled" />
 											</Button>
 										</PopoverTrigger>
-										<PopoverContent className="w-[280px] p-3.5 bg-surface border border-line rounded-xl shadow-2xl shadow-black/60">
+										<PopoverContent className="w-[280px] p-3.5 bg-surface border border-line rounded-lg shadow-2xl shadow-black/60">
 											<ColorPicker
 												color={annotation.style.color}
 												colors={colorPalette}
@@ -443,7 +443,7 @@ export function AnnotationSettingsPanel({
 												<ChevronDown className="h-3 w-3 text-fg-disabled" />
 											</Button>
 										</PopoverTrigger>
-										<PopoverContent className="w-[280px] p-3.5 bg-surface border border-line rounded-xl shadow-2xl shadow-black/60">
+										<PopoverContent className="w-[280px] p-3.5 bg-surface border border-line rounded-lg shadow-2xl shadow-black/60">
 											<ColorPicker
 												color={
 													annotation.style.backgroundColor === "transparent"
@@ -484,7 +484,7 @@ export function AnnotationSettingsPanel({
 						<Button
 							onClick={() => fileInputRef.current?.click()}
 							variant="outline"
-							className="w-full gap-2 bg-fill-subtle text-fg border-line-strong hover:bg-accent hover:text-on-accent hover:border-accent transition-all py-8"
+							className="w-full gap-2 bg-fill-subtle text-fg border-line-strong hover:bg-accent/10 hover:text-accent-fg hover:border-accent/40 transition-colors py-8"
 						>
 							<Upload className="w-5 h-5" />
 							{t("annotations.uploadImage")}
@@ -597,7 +597,7 @@ export function AnnotationSettingsPanel({
 										<ChevronDown className="h-3 w-3 text-fg-disabled" />
 									</Button>
 								</PopoverTrigger>
-								<PopoverContent className="w-[280px] p-3.5 bg-surface border border-line rounded-xl shadow-2xl shadow-black/60">
+								<PopoverContent className="w-[280px] p-3.5 bg-surface border border-line rounded-lg shadow-2xl shadow-black/60">
 									<ColorPicker
 										color={annotation.figureData?.color || "#F59E0B"}
 										colors={colorPalette}
@@ -637,7 +637,7 @@ export function AnnotationSettingsPanel({
 										className={cn(
 											"h-9 rounded-lg border text-label transition-all",
 											isActive
-												? "bg-accent border-accent text-on-accent"
+												? "border-accent/50 bg-accent/12 text-accent-fg"
 												: "bg-fill-subtle border-line-strong hover:bg-fill-hover text-fg-muted",
 										)}
 									>
@@ -731,7 +731,7 @@ export function AnnotationSettingsPanel({
 											"h-12 rounded-lg border flex items-center justify-center transition-all gap-2",
 											annotation.blurData?.shape === shape ||
 												(!annotation.blurData && shape === "rectangle")
-												? "bg-accent border-accent text-on-accent"
+												? "border-accent/50 bg-accent/12 text-accent-fg"
 												: "bg-fill-subtle border-line-strong hover:bg-fill-hover hover:border-line-strong text-fg-muted",
 										)}
 									>

@@ -43,7 +43,7 @@ export function ColorPicker({ color, colors, onChange, className }: ColorPickerP
 							className={cn(
 								"relative w-full aspect-square rounded-lg transition-all duration-150",
 								isSelected
-									? "ring-2 ring-accent shadow-[0_0_12px_rgba(245,158,11,0.5)] scale-110 z-10"
+									? "ring-2 ring-accent scale-110 z-10"
 									: "hover:scale-110 hover:z-10 shadow-sm border border-line-strong",
 							)}
 							style={{ backgroundColor: swatch }}
@@ -64,7 +64,7 @@ export function ColorPicker({ color, colors, onChange, className }: ColorPickerP
 
 			{/* Hex input + preview */}
 			<div className="flex items-center gap-2">
-				<label className="relative w-8 h-8 rounded-lg border border-line-strong shadow-sm cursor-pointer overflow-hidden shrink-0 hover:border-accent/50 hover:shadow-[0_0_8px_rgba(245,158,11,0.3)] transition-all duration-200">
+				<label className="relative w-8 h-8 rounded-lg border border-line-strong shadow-sm cursor-pointer overflow-hidden shrink-0 hover:border-accent/50 transition-all duration-200">
 					<div className="absolute inset-[2px] rounded-[5px]" style={{ backgroundColor: color }} />
 					<input
 						type="color"
@@ -92,7 +92,7 @@ export function ColorPicker({ color, colors, onChange, className }: ColorPickerP
 						onKeyDown={(e) => {
 							if (e.key === "Enter") handleHexCommit(hexInput);
 						}}
-						className="w-full h-8 rounded-lg border border-line-strong bg-sunken pl-6 pr-2.5 text-caption text-fg font-mono tracking-widest uppercase shadow-inner outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-all duration-200"
+						className="w-full h-8 rounded-md border border-line-strong bg-sunken pl-6 pr-2.5 text-caption text-fg font-mono tracking-widest uppercase outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-all duration-200"
 					/>
 				</div>
 			</div>

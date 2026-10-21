@@ -92,7 +92,7 @@ export function SliderControl({
 							if (e.key === "Enter") commitEdit();
 							if (e.key === "Escape") cancelEdit();
 						}}
-						className="w-14 shrink-0 text-caption text-right font-mono bg-sunken border border-line-strong rounded-md px-1.5 py-1 text-fg outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 shadow-inner transition-all duration-200"
+						className="w-14 shrink-0 text-caption text-right font-mono bg-sunken border border-line-strong rounded-md px-1.5 py-1 text-fg outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-all duration-200"
 					/>
 				) : (
 					<span

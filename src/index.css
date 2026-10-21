@@ -39,6 +39,17 @@
 		--info: 59 130 246;
 		--info-fg: 96 165 250;
 		--track: 255 255 255;
+		--chip-fill: 0.2;
+		--chip-fill-hover: 0.27;
+		--chip-fill-selected: 0.34;
+		--chip-border: 0.42;
+		--chip-zoom: 52 211 153;
+		--chip-trim: 248 113 113;
+		--chip-speed: 251 146 60;
+		--chip-webcam: 96 165 250;
+		--chip-audio: 232 121 249;
+		--chip-caption: 34 211 238;
+		--chip-annotation: 250 204 21;
 		--shadow-panel: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 10px 30px -14px rgba(0, 0, 0, 0.7);
 		--shadow-popover: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 16px 40px -10px rgba(0, 0, 0, 0.75);
 		--shadow-dialog: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 28px 70px -14px rgba(0, 0, 0, 0.85);
@@ -76,6 +87,17 @@
 		--info: 37 99 235;
 		--info-fg: 29 78 216;
 		--track: 28 25 23;
+		--chip-fill: 0.13;
+		--chip-fill-hover: 0.18;
+		--chip-fill-selected: 0.22;
+		--chip-border: 0.45;
+		--chip-zoom: 5 150 105;
+		--chip-trim: 220 38 38;
+		--chip-speed: 234 88 12;
+		--chip-webcam: 37 99 235;
+		--chip-audio: 192 38 211;
+		--chip-caption: 8 145 178;
+		--chip-annotation: 202 138 4;
 		--shadow-panel:
 			0 0 0 1px rgba(28, 25, 23, 0.06), 0 1px 2px rgba(28, 25, 23, 0.05),
 			0 6px 20px -8px rgba(28, 25, 23, 0.1);
@@ -112,6 +134,12 @@
 	}
 	:is(input, textarea, select, [contenteditable="true"]):focus-visible {
 		outline-offset: 0;
+	}
+
+	/* Default track for range inputs; components can still set their own background. */
+	input[type="range"] {
+		background: rgb(var(--track) / 0.16);
+		border-radius: 9999px;
 	}
 
 	::selection {

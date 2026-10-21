@@ -129,20 +129,21 @@ export function EffectsSettingsTab({
 				title={tSettings("previewQuality.title")}
 				description={tSettings("previewQuality.description")}
 			>
-				<div className="rounded-xl border border-line bg-fill-subtle p-2.5">
+				<div className="rounded-lg border border-line bg-fill-subtle p-2.5">
 					<div className="grid grid-cols-3 gap-1.5">
 						{PREVIEW_QUALITY_OPTIONS.map((option) => {
 							const isActive = previewQuality === option.value;
 							return (
 								<Button
+									variant="outline"
 									key={option.value}
 									type="button"
 									onClick={() => onPreviewQualityChange?.(option.value)}
 									className={cn(
-										"h-10 rounded-xl border shadow-sm transition-all justify-center",
+										"h-10 rounded-lg border shadow-sm transition-all justify-center",
 										"duration-200 ease-out",
 										isActive
-											? "border-accent bg-gradient-to-br from-accent to-accent-hover text-on-accent shadow-lg shadow-accent/25"
+											? "border-accent/50 bg-accent/12 text-accent-fg"
 											: "border-line bg-fill-subtle text-fg-muted hover:bg-fill-hover hover:border-line-strong hover:text-fg",
 									)}
 								>
@@ -166,7 +167,7 @@ export function EffectsSettingsTab({
 					"How zoom transitions connect and blend together",
 				)}
 			>
-				<div className="flex items-center justify-between p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+				<div className="flex items-center justify-between p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 					<div>
 						<div className="text-label font-medium text-fg-muted">
 							{tSettings("effects.connectZooms")}
@@ -178,18 +179,14 @@ export function EffectsSettingsTab({
 							)}
 						</div>
 					</div>
-					<Switch
-						checked={connectZooms}
-						onCheckedChange={onConnectZoomsChange}
-						className="data-[state=checked]:bg-accent scale-90"
-					/>
+					<Switch checked={connectZooms} onCheckedChange={onConnectZoomsChange} />
 				</div>
 				<ZoomTimingControls
 					zoomTiming={zoomTiming}
 					connectZooms={connectZooms}
 					onZoomTimingChange={onZoomTimingChange}
 				/>
-				<div className="flex items-center justify-between p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+				<div className="flex items-center justify-between p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 					<div>
 						<div className="text-label font-medium text-fg-muted">
 							{tSettings("effects.removeBackground")}
@@ -204,7 +201,6 @@ export function EffectsSettingsTab({
 					<Switch
 						checked={hideBackground}
 						onCheckedChange={(checked) => onHideBackgroundChange?.(checked)}
-						className="data-[state=checked]:bg-accent scale-90"
 					/>
 				</div>
 			</SettingsSection>
@@ -216,7 +212,7 @@ export function EffectsSettingsTab({
 					"Fine-tune blur, shadow, and motion effects",
 				)}
 			>
-				<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+				<div className="p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 					<SliderControl
 						label={tSettings("effects.backgroundBlur")}
 						value={backgroundBlur}
@@ -230,7 +226,7 @@ export function EffectsSettingsTab({
 						disabled={hideBackground}
 					/>
 				</div>
-				<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+				<div className="p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 					<SliderControl
 						label={tSettings("effects.zoomMotionBlur")}
 						value={zoomMotionBlur}
@@ -243,7 +239,7 @@ export function EffectsSettingsTab({
 						parseInput={(text) => parseFloat(text.replace(/×$/, ""))}
 					/>
 				</div>
-				<div className="space-y-3 p-2.5 rounded-xl bg-sunken border border-line shadow-inner">
+				<div className="space-y-3 p-2.5 rounded-lg bg-fill-subtle border border-line">
 					<div className="flex items-center justify-between">
 						<div>
 							<div className="text-label font-medium text-fg-muted">
@@ -261,7 +257,6 @@ export function EffectsSettingsTab({
 							onCheckedChange={(enabled) =>
 								onZoomTemporalBlurChange?.({ ...zoomTemporalBlur, enabled })
 							}
-							className="data-[state=checked]:bg-accent scale-90"
 						/>
 					</div>
 					{zoomTemporalBlur.enabled && (
@@ -295,7 +290,7 @@ export function EffectsSettingsTab({
 						</>
 					)}
 				</div>
-				<div className="rounded-xl border border-line bg-fill-subtle transition-colors duration-200 hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]">
+				<div className="rounded-lg border border-line bg-fill-subtle transition-colors duration-200 hover:border-line-strong">
 					<button
 						type="button"
 						onClick={onToggleAdvancedShadowSettings}
@@ -317,7 +312,7 @@ export function EffectsSettingsTab({
 					</button>
 					{showAdvancedShadowSettings && (
 						<div className="flex flex-col gap-1.5 border-t border-line px-2.5 py-2.5">
-							<div className="rounded-xl border border-line bg-sunken p-2.5">
+							<div className="rounded-lg border border-line bg-fill-subtle p-2.5">
 								<SliderControl
 									label={tSettings("effects.shadowSize")}
 									value={frameShadowSize}
@@ -330,7 +325,7 @@ export function EffectsSettingsTab({
 									parseInput={(text) => parseFloat(text.replace(/px$/, ""))}
 								/>
 							</div>
-							<div className="rounded-xl border border-line bg-sunken p-2.5">
+							<div className="rounded-lg border border-line bg-fill-subtle p-2.5">
 								<SliderControl
 									label={tSettings("effects.shadowOpacity")}
 									value={frameShadowOpacity}
@@ -343,7 +338,7 @@ export function EffectsSettingsTab({
 									parseInput={(text) => parseFloat(text.replace(/%$/, "")) / 100}
 								/>
 							</div>
-							<div className="rounded-xl border border-line bg-sunken p-2.5">
+							<div className="rounded-lg border border-line bg-fill-subtle p-2.5">
 								<SliderControl
 									label={tSettings("effects.shadowBlur")}
 									value={frameShadowBlur}
@@ -368,7 +363,7 @@ export function EffectsSettingsTab({
 					"Adjust the recording frame shape and spacing",
 				)}
 			>
-				<div className="rounded-xl border border-line bg-fill-subtle px-3 py-2.5 transition-colors duration-200 hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]">
+				<div className="rounded-lg border border-line bg-fill-subtle px-3 py-2.5 transition-colors duration-200 hover:border-line-strong">
 					<div className="flex items-center justify-between gap-3">
 						<div>
 							<div className="text-caption font-medium text-fg">{tSettings("effects.border")}</div>
@@ -379,13 +374,13 @@ export function EffectsSettingsTab({
 						<Switch
 							checked={frameBorderEnabled}
 							onCheckedChange={(checked) => onFrameBorderEnabledChange?.(checked)}
-							className="data-[state=checked]:bg-[#3b82f6]"
+							className="data-[state=checked]:bg-info"
 						/>
 					</div>
 				</div>
 				<DisabledSettingsGroup disabled={!frameBorderEnabled}>
 					<div className="flex flex-col gap-1.5">
-						<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+						<div className="p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 							<SliderControl
 								label={tSettings("effects.borderWidth")}
 								value={frameBorderWidth}
@@ -399,7 +394,7 @@ export function EffectsSettingsTab({
 								disabled={!frameBorderEnabled}
 							/>
 						</div>
-						<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+						<div className="p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 							<label className="mb-2 block text-label font-medium text-fg-muted">
 								{tSettings("effects.borderColor")}
 							</label>
@@ -418,7 +413,7 @@ export function EffectsSettingsTab({
 								]}
 							/>
 						</div>
-						<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+						<div className="p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 							<SliderControl
 								label={tSettings("effects.borderOpacity")}
 								value={frameBorderOpacity}
@@ -434,7 +429,7 @@ export function EffectsSettingsTab({
 						</div>
 					</div>
 				</DisabledSettingsGroup>
-				<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+				<div className="p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 					<SliderControl
 						label={tSettings("effects.roundness")}
 						value={borderRadius}
@@ -447,7 +442,7 @@ export function EffectsSettingsTab({
 						parseInput={(text) => parseFloat(text.replace(/px$/, ""))}
 					/>
 				</div>
-				<div className="space-y-3 p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+				<div className="space-y-3 p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 					<div className="flex items-center justify-between">
 						<span className="text-label font-medium text-fg-muted">
 							{tSettings("effects.padding")}
@@ -469,7 +464,7 @@ export function EffectsSettingsTab({
 										}
 										className={cn(
 											"rounded-md px-2 py-1 text-micro font-medium transition-colors",
-											isActive ? "bg-accent text-on-accent" : "text-fg-muted hover:text-fg",
+											isActive ? "bg-control text-fg shadow-sm" : "text-fg-muted hover:text-fg",
 										)}
 									>
 										{mode === "linked"
@@ -516,7 +511,7 @@ export function EffectsSettingsTab({
 				<Button
 					onClick={onCropToggle}
 					variant="outline"
-					className="w-full gap-2 bg-fill-subtle text-fg border-line hover:bg-accent/10 hover:border-accent/30 hover:text-accent-fg text-micro h-9 rounded-xl transition-all duration-200"
+					className="w-full gap-2 bg-fill-subtle text-fg border-line hover:bg-accent/10 hover:border-accent/30 hover:text-accent-fg text-micro h-9 rounded-lg transition-all duration-200"
 				>
 					<Crop className="w-3.5 h-3.5" />
 					{tSettings("crop.title")}

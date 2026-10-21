@@ -60,7 +60,7 @@ export function AnnotationSettingsTab({
 				</>
 			) : (
 				<div className="flex flex-col items-center justify-center py-12 text-center">
-					<div className="w-14 h-14 rounded-2xl bg-sunken border border-line shadow-inner flex items-center justify-center mb-4">
+					<div className="w-14 h-14 rounded-2xl bg-sunken border border-line flex items-center justify-center mb-4">
 						<MessageSquare className="w-7 h-7 text-fg-disabled" />
 					</div>
 					<p className="text-body font-medium text-fg-muted">

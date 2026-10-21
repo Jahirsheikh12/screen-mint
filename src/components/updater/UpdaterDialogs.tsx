@@ -19,7 +19,7 @@ type UpdaterDialogsProps = {
 
 function renderReleaseNotes(notes: string | null, fallback: string) {
 	return (
-		<div className="max-h-[320px] overflow-y-auto rounded-2xl border border-line-strong bg-sunken p-4">
+		<div className="max-h-[320px] overflow-y-auto rounded-2xl border border-line-strong bg-fill-subtle p-4">
 			<div className="whitespace-pre-wrap text-body leading-6 text-fg-muted">
 				{notes?.trim() || fallback}
 			</div>

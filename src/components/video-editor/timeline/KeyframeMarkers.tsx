@@ -97,7 +97,7 @@ const KeyframeMarkers: React.FC<KeyframeMarkersProps> = ({
 							style={{
 								width: "10px",
 								height: "10px",
-								background: "#ffe100ff",
+								background: "rgb(var(--accent))",
 								transform: "rotate(45deg)",
 								border: "none",
 								opacity: isSelected ? 1 : 0.6,

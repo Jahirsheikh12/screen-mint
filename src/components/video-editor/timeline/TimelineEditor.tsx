@@ -232,7 +232,7 @@ function Timeline({
 				...style,
 				height: "auto",
 				backgroundImage:
-					"linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px)",
+					"linear-gradient(to right, var(--fill-subtle) 1px, transparent 1px), linear-gradient(to bottom, var(--fill-subtle) 1px, transparent 1px)",
 				backgroundSize: "24px 24px",
 				backgroundPosition: "0 0",
 			}}
@@ -1783,7 +1783,7 @@ export default function TimelineEditor({
 								step="0.01"
 								value={clipVolume}
 								onChange={(e) => onClipVolumeChange?.(Number.parseFloat(e.target.value))}
-								className="hidden w-16 h-1 accent-amber-500 cursor-pointer opacity-60 group-hover/vol:opacity-100 transition-opacity lg:block"
+								className="hidden w-16 h-1 cursor-pointer opacity-60 group-hover/vol:opacity-100 transition-opacity lg:block"
 							/>
 						</Tooltip>
 						{onSeparateClipAudio && (
@@ -1911,7 +1911,7 @@ export default function TimelineEditor({
 						</Button>
 					</Tooltip>
 
-					<div className="w-[1px] h-5 bg-fill-hover mx-1" />
+					<div className="mx-1 h-5 w-px bg-line-strong" />
 
 					<Tooltip
 						content={t("timeline.editor.zoomIn", "Zoom In")}
@@ -1966,7 +1966,7 @@ export default function TimelineEditor({
 						</Tooltip>
 					)}
 
-					<div className="w-[1px] h-5 bg-fill-hover mx-1" />
+					<div className="mx-1 h-5 w-px bg-line-strong" />
 
 					<Tooltip content={t("timeline.editor.playbackSpeed", "Playback Speed")} side="bottom">
 						<span className="text-caption text-fg-muted font-medium tabular-nums px-1">
@@ -1974,7 +1974,7 @@ export default function TimelineEditor({
 						</span>
 					</Tooltip>
 
-					<div className="w-[1px] h-5 bg-fill-hover mx-1" />
+					<div className="mx-1 h-5 w-px bg-line-strong" />
 
 					<Tooltip content={t("timeline.editor.timelineZoom", "Timeline Zoom")} side="bottom">
 						<input
@@ -1998,7 +1998,7 @@ export default function TimelineEditor({
 						/>
 					</Tooltip>
 
-					<div className="w-[1px] h-5 bg-fill-hover mx-1" />
+					<div className="mx-1 h-5 w-px bg-line-strong" />
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button

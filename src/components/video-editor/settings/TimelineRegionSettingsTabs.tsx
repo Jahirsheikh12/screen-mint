@@ -71,16 +71,17 @@ export function ZoomSettingsTab({
 						const isActive = selectedZoomMode === option.value;
 						return (
 							<Button
+								variant="outline"
 								key={option.value}
 								type="button"
 								disabled={!zoomEnabled}
 								onClick={() => onZoomModeChange?.(option.value)}
 								className={cn(
-									"h-10 rounded-xl border shadow-sm transition-all justify-center",
+									"h-10 rounded-lg border shadow-sm transition-all justify-center",
 									"duration-200 ease-out",
 									zoomEnabled ? "opacity-100 cursor-pointer" : "opacity-40 cursor-not-allowed",
 									isActive
-										? "border-accent bg-gradient-to-br from-accent to-accent-hover text-on-accent shadow-lg shadow-accent/25"
+										? "border-accent/50 bg-accent/12 text-accent-fg"
 										: "border-line bg-fill-subtle text-fg-muted hover:bg-fill-hover hover:border-line-strong hover:text-fg",
 								)}
 							>
@@ -104,16 +105,17 @@ export function ZoomSettingsTab({
 						const isActive = selectedZoomDepth === option.depth;
 						return (
 							<Button
+								variant="outline"
 								key={option.depth}
 								type="button"
 								disabled={!zoomEnabled}
 								onClick={() => onZoomDepthChange?.(option.depth)}
 								className={cn(
-									"h-10 rounded-xl border shadow-sm transition-all justify-center",
+									"h-10 rounded-lg border shadow-sm transition-all justify-center",
 									"duration-200 ease-out",
 									zoomEnabled ? "opacity-100 cursor-pointer" : "opacity-40 cursor-not-allowed",
 									isActive
-										? "border-accent bg-gradient-to-br from-accent to-accent-hover text-on-accent shadow-lg shadow-accent/25"
+										? "border-accent/50 bg-accent/12 text-accent-fg"
 										: "border-line bg-fill-subtle text-fg-muted hover:bg-fill-hover hover:border-line-strong hover:text-fg",
 								)}
 							>
@@ -123,7 +125,7 @@ export function ZoomSettingsTab({
 					})}
 				</div>
 				{!zoomEnabled && (
-					<div className="flex items-center justify-center py-3 px-4 rounded-xl bg-fill-subtle border border-dashed border-line">
+					<div className="flex items-center justify-center py-3 px-4 rounded-lg bg-fill-subtle border border-dashed border-line">
 						<p className="text-micro text-fg-subtle text-center">
 							{tSettings("zoom.selectRegion")}
 						</p>
@@ -134,7 +136,7 @@ export function ZoomSettingsTab({
 						onClick={onZoomDelete}
 						variant="destructive"
 						size="sm"
-						className="w-full gap-2 bg-danger/8 text-danger-fg border border-danger/15 hover:bg-danger/15 hover:border-danger/25 transition-all duration-200 h-9 text-label rounded-xl"
+						className="w-full gap-2 bg-danger/8 text-danger-fg border border-danger/15 hover:bg-danger/15 hover:border-danger/25 transition-all duration-200 h-9 text-label rounded-lg"
 					>
 						<Trash2 className="w-3.5 h-3.5" />
 						{tSettings("zoom.deleteZoom")}
@@ -149,13 +151,12 @@ export function ZoomSettingsTab({
 						"regionsTab.removeTheSelectedTrim",
 						"Remove the selected trim region from the timeline",
 					)}
-					accentColor="red"
 				>
 					<Button
 						onClick={onTrimDelete}
 						variant="destructive"
 						size="sm"
-						className="w-full gap-2 bg-danger/8 text-danger-fg border border-danger/15 hover:bg-danger/15 hover:border-danger/25 transition-all duration-200 h-9 text-label rounded-xl"
+						className="w-full gap-2 bg-danger/8 text-danger-fg border border-danger/15 hover:bg-danger/15 hover:border-danger/25 transition-all duration-200 h-9 text-label rounded-lg"
 					>
 						<Trash2 className="w-3.5 h-3.5" />
 						{tSettings("trim.deleteRegion")}
@@ -204,19 +205,19 @@ export function SpeedSettingsTab({
 					"regionsTab.chooseASpeedMultiplier",
 					"Choose a speed multiplier for the selected region",
 				)}
-				accentColor="amber"
 			>
 				<div className="grid grid-cols-3 gap-1.5">
 					{SPEED_OPTIONS.map((option) => {
 						const isActive = selectedSpeedValue === option.speed;
 						return (
 							<Button
+								variant="outline"
 								key={option.speed}
 								type="button"
 								disabled={!selectedSpeedId}
 								onClick={() => onSpeedChange?.(option.speed)}
 								className={cn(
-									"h-10 rounded-xl border shadow-sm transition-all justify-center",
+									"h-10 rounded-lg border shadow-sm transition-all justify-center",
 									"duration-200 ease-out",
 									selectedSpeedId ? "opacity-100 cursor-pointer" : "opacity-40 cursor-not-allowed",
 									isActive
@@ -230,7 +231,7 @@ export function SpeedSettingsTab({
 					})}
 				</div>
 				{!selectedSpeedId && (
-					<div className="flex items-center justify-center py-3 px-4 rounded-xl bg-fill-subtle border border-dashed border-line">
+					<div className="flex items-center justify-center py-3 px-4 rounded-lg bg-fill-subtle border border-dashed border-line">
 						<p className="text-micro text-fg-subtle text-center">
 							{tSettings("speed.selectRegion")}
 						</p>
@@ -241,7 +242,7 @@ export function SpeedSettingsTab({
 						onClick={() => selectedSpeedId && onSpeedDelete?.(selectedSpeedId)}
 						variant="destructive"
 						size="sm"
-						className="w-full gap-2 bg-danger/8 text-danger-fg border border-danger/15 hover:bg-danger/15 hover:border-danger/25 transition-all duration-200 h-9 text-label rounded-xl"
+						className="w-full gap-2 bg-danger/8 text-danger-fg border border-danger/15 hover:bg-danger/15 hover:border-danger/25 transition-all duration-200 h-9 text-label rounded-lg"
 					>
 						<Trash2 className="w-3.5 h-3.5" />
 						{tSettings("speed.deleteRegion")}

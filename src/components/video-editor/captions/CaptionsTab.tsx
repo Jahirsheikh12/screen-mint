@@ -291,7 +291,7 @@ export function CaptionsTab(props: CaptionsTabProps) {
 						/>
 					))}
 					{isNamingPreset ? (
-						<div className="col-span-2 flex items-center gap-1.5 p-2 rounded-xl border border-accent/30 bg-accent/5">
+						<div className="col-span-2 flex items-center gap-1.5 p-2 rounded-lg border border-accent/30 bg-accent/5">
 							<input
 								autoFocus
 								value={presetName}
@@ -315,21 +315,23 @@ export function CaptionsTab(props: CaptionsTabProps) {
 								{t("editor.captions.presets.save", "Save")}
 							</Button>
 							<Button
+								variant="outline"
 								type="button"
 								onClick={() => {
 									setIsNamingPreset(false);
 									setPresetName("");
 								}}
-								className="h-8 w-8 rounded-lg bg-sunken shadow-inner text-fg-muted hover:bg-fill-hover"
+								className="h-8 w-8 rounded-lg bg-sunken text-fg-muted hover:bg-fill-hover"
 							>
 								<X className="w-3.5 h-3.5" />
 							</Button>
 						</div>
 					) : (
 						<Button
+							variant="outline"
 							type="button"
 							onClick={() => setIsNamingPreset(true)}
-							className="col-span-2 h-9 rounded-xl border border-dashed border-line-strong bg-fill-subtle text-caption text-fg-muted hover:bg-fill-subtle hover:text-fg"
+							className="col-span-2 h-9 rounded-lg border border-dashed border-line-strong bg-fill-subtle text-caption text-fg-muted hover:bg-fill-subtle hover:text-fg"
 						>
 							<Save className="w-3.5 h-3.5 mr-1.5" />
 							{t("editor.captions.presets.saveAs", "Save current style as preset")}
@@ -350,10 +352,10 @@ export function CaptionsTab(props: CaptionsTabProps) {
 							onClick={() => onCaptionSettingsChange({ animationMode: mode.value })}
 							title={t(`${mode.i18nKey}Desc`, mode.description)}
 							className={cn(
-								"min-h-11 min-w-0 rounded-xl border px-1 py-1 text-center text-micro font-semibold leading-tight transition-colors duration-150 flex flex-col items-center justify-center gap-0.5 break-words [hyphens:auto]",
+								"min-h-11 min-w-0 rounded-lg border px-1 py-1 text-center text-micro font-semibold leading-tight transition-colors duration-150 flex flex-col items-center justify-center gap-0.5 break-words [hyphens:auto]",
 								captionSettings.animationMode === mode.value
 									? "border-accent bg-gradient-to-b from-accent/15 to-accent/5 text-on-accent"
-									: "border-line bg-sunken text-fg-muted hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]",
+									: "border-line bg-fill-subtle text-fg-muted hover:border-line-strong",
 							)}
 						>
 							<span className="max-w-full">{t(mode.i18nKey, mode.fallback)}</span>
@@ -369,13 +371,14 @@ export function CaptionsTab(props: CaptionsTabProps) {
 					"Pin captions to a preset position or drag freely on the preview",
 				)}
 			>
-				<div className="rounded-xl bg-sunken border border-line shadow-inner p-2.5 space-y-2">
+				<div className="rounded-lg bg-fill-subtle border border-line p-2.5 space-y-2">
 					<div className="grid grid-cols-4 gap-1.5">
 						{POSITION_OPTIONS.map((pos) => {
 							const isActive =
 								captionSettings.position === pos && !captionSettings.positionOverride;
 							return (
 								<Button
+									variant="outline"
 									key={pos}
 									type="button"
 									onClick={() => {
@@ -385,8 +388,8 @@ export function CaptionsTab(props: CaptionsTabProps) {
 									className={cn(
 										"min-h-8 min-w-0 px-1 py-1 leading-tight break-words rounded-lg border text-micro font-semibold capitalize transition-colors",
 										isActive
-											? "border-accent bg-accent text-on-accent"
-											: "border-line bg-sunken text-fg-muted hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]",
+											? "border-accent/50 bg-accent/12 text-accent-fg"
+											: "border-line bg-fill-subtle text-fg-muted hover:border-line-strong",
 									)}
 								>
 									{t(`editor.captions.positions.${pos}`, POSITION_LABELS[pos])}
@@ -394,13 +397,14 @@ export function CaptionsTab(props: CaptionsTabProps) {
 							);
 						})}
 						<Button
+							variant="outline"
 							type="button"
 							onClick={() => onToggleCaptionPositionEditing(!isEditingCaptionPosition)}
 							className={cn(
 								"min-h-8 min-w-0 px-1 py-1 leading-tight break-words rounded-lg border text-micro font-semibold transition-colors flex items-center justify-center gap-1",
 								isEditingCaptionPosition
-									? "border-accent bg-accent text-on-accent"
-									: "border-line bg-sunken text-fg-muted hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]",
+									? "border-accent/50 bg-accent/12 text-accent-fg"
+									: "border-line bg-fill-subtle text-fg-muted hover:border-line-strong",
 							)}
 						>
 							<MoveDiagonal className="w-3 h-3" />
@@ -409,9 +413,10 @@ export function CaptionsTab(props: CaptionsTabProps) {
 					</div>
 					{captionSettings.positionOverride && (
 						<Button
+							variant="outline"
 							type="button"
 							onClick={() => onCaptionSettingsChange({ positionOverride: null })}
-							className="w-full h-8 rounded-lg border border-line bg-sunken text-micro font-semibold text-fg-muted hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] flex items-center justify-center gap-1"
+							className="w-full h-8 rounded-lg border border-line bg-fill-subtle text-micro font-semibold text-fg-muted hover:border-line-strong flex items-center justify-center gap-1"
 						>
 							<RotateCcw className="w-3 h-3" />
 							{t("editor.captions.positions.reset", "Reset to preset")}
@@ -473,7 +478,7 @@ export function CaptionsTab(props: CaptionsTabProps) {
 					"Generate captions from your recording audio",
 				)}
 			>
-				<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner space-y-2">
+				<div className="p-2.5 rounded-lg bg-fill-subtle border border-line space-y-2">
 					<div className="flex items-center justify-between">
 						<div>
 							<div className="text-label font-medium text-fg-muted">
@@ -528,7 +533,7 @@ export function CaptionsTab(props: CaptionsTabProps) {
 									preferredBackend: event.target.value as "auto" | "whisper.cpp" | "apple-speech",
 								})
 							}
-							className="h-9 rounded-lg border border-line bg-sunken shadow-inner px-3 text-label text-fg outline-none"
+							className="h-9 rounded-md border border-line bg-sunken px-3 text-label text-fg outline-none"
 						>
 							<option value="auto">{t("editor.captions.backendAuto", "Automatic")}</option>
 							<option value="whisper.cpp">{t("editor.captions.backendWhisper", "Whisper")}</option>
@@ -551,7 +556,7 @@ export function CaptionsTab(props: CaptionsTabProps) {
 									model: event.target.value as "base" | "small" | "medium",
 								})
 							}
-							className="h-9 rounded-lg border border-line bg-sunken shadow-inner px-3 text-label text-fg outline-none disabled:opacity-50"
+							className="h-9 rounded-md border border-line bg-sunken px-3 text-label text-fg outline-none disabled:opacity-50"
 						>
 							<option value="base">{t("editor.captions.modelBase", "Base")}</option>
 							<option value="small">{t("editor.captions.modelSmall", "Small")}</option>
@@ -570,7 +575,7 @@ export function CaptionsTab(props: CaptionsTabProps) {
 									preferredSourceAudio: event.target.value as "microphone" | "mixed",
 								})
 							}
-							className="h-9 rounded-lg border border-line bg-sunken shadow-inner px-3 text-label text-fg outline-none"
+							className="h-9 rounded-md border border-line bg-sunken px-3 text-label text-fg outline-none"
 						>
 							{captionModelStatus?.availableSourceAudios.includes("microphone") && (
 								<option value="microphone">
@@ -644,7 +649,7 @@ export function CaptionsTab(props: CaptionsTabProps) {
 							})
 						}
 						placeholder={t("editor.captions.languagePlaceholder", "Language (auto)")}
-						className="w-full h-9 rounded-lg border border-line bg-sunken shadow-inner px-3 text-label text-fg outline-none"
+						className="w-full h-9 rounded-md border border-line bg-sunken px-3 text-label text-fg outline-none"
 					/>
 					<textarea
 						value={captionGenerationOptions?.prompt ?? ""}
@@ -654,10 +659,11 @@ export function CaptionsTab(props: CaptionsTabProps) {
 							"editor.captions.promptPlaceholder",
 							"Optional prompt to bias names or terminology",
 						)}
-						className="w-full min-h-[64px] rounded-lg border border-line bg-sunken shadow-inner px-3 py-2 text-label text-fg outline-none resize-none"
+						className="w-full min-h-[64px] rounded-md border border-line bg-sunken px-3 py-2 text-label text-fg outline-none resize-none"
 					/>
 
 					<Button
+						variant="outline"
 						type="button"
 						onClick={onAutoTranscribe}
 						disabled={isTranscribing || !hasUsableCaptionAudio}
@@ -696,7 +702,7 @@ export function CaptionsTab(props: CaptionsTabProps) {
 					"Bring in external transcripts or save your own",
 				)}
 			>
-				<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner space-y-2">
+				<div className="p-2.5 rounded-lg bg-fill-subtle border border-line space-y-2">
 					<input
 						ref={fileInputRef}
 						type="file"
@@ -705,9 +711,10 @@ export function CaptionsTab(props: CaptionsTabProps) {
 						className="hidden"
 					/>
 					<Button
+						variant="outline"
 						type="button"
 						onClick={() => fileInputRef.current?.click()}
-						className="w-full h-8 rounded-lg border border-line bg-sunken text-caption font-semibold text-fg hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]"
+						className="w-full h-8 rounded-lg border border-line bg-fill-subtle text-caption font-semibold text-fg hover:border-line-strong"
 					>
 						<Upload className="w-3.5 h-3.5 mr-1.5" />
 						{t("editor.captions.import.button", "Import SRT / VTT")}
@@ -717,26 +724,29 @@ export function CaptionsTab(props: CaptionsTabProps) {
 					)}
 					<div className="grid grid-cols-3 gap-1.5">
 						<Button
+							variant="outline"
 							type="button"
 							onClick={() => onCaptionExport?.("srt")}
 							disabled={captionRegions.length === 0}
-							className="h-8 rounded-lg border border-line bg-sunken text-micro text-fg-muted hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] disabled:opacity-40"
+							className="h-8 rounded-lg border border-line bg-fill-subtle text-micro text-fg-muted hover:border-line-strong disabled:opacity-40"
 						>
 							{t("editor.captions.exportSrt", "Export SRT")}
 						</Button>
 						<Button
+							variant="outline"
 							type="button"
 							onClick={() => onCaptionExport?.("vtt")}
 							disabled={captionRegions.length === 0}
-							className="h-8 rounded-lg border border-line bg-sunken text-micro text-fg-muted hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] disabled:opacity-40"
+							className="h-8 rounded-lg border border-line bg-fill-subtle text-micro text-fg-muted hover:border-line-strong disabled:opacity-40"
 						>
 							{t("editor.captions.exportVtt", "Export VTT")}
 						</Button>
 						<Button
+							variant="outline"
 							type="button"
 							onClick={() => onCaptionExport?.("txt")}
 							disabled={captionRegions.length === 0}
-							className="h-8 rounded-lg border border-line bg-sunken text-micro text-fg-muted hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] disabled:opacity-40"
+							className="h-8 rounded-lg border border-line bg-fill-subtle text-micro text-fg-muted hover:border-line-strong disabled:opacity-40"
 						>
 							{t("editor.captions.exportTxt", "Export TXT")}
 						</Button>
@@ -752,7 +762,7 @@ export function CaptionsTab(props: CaptionsTabProps) {
 						"Edit, split, or reorder individual caption segments",
 					)}
 				>
-					<div className="rounded-xl bg-sunken border border-line shadow-inner overflow-hidden">
+					<div className="rounded-lg bg-fill-subtle border border-line overflow-hidden">
 						<div className="flex items-center justify-between px-3 py-2 border-b border-line">
 							<label className="text-label font-medium text-fg-muted">
 								{captionRegions.length} {t("editor.captions.list.count", "segments")}
@@ -809,11 +819,7 @@ function CaptionsHeader({
 					</div>
 					<p className="text-caption text-fg-subtle mt-1 leading-relaxed">{description}</p>
 				</div>
-				<Switch
-					checked={enabled}
-					onCheckedChange={onToggle}
-					className="data-[state=checked]:bg-accent scale-90 shrink-0 mt-1"
-				/>
+				<Switch checked={enabled} onCheckedChange={onToggle} className="shrink-0 mt-1" />
 			</div>
 		</div>
 	);
@@ -829,20 +835,17 @@ function Section({
 	children: React.ReactNode;
 }) {
 	return (
-		<div className="mb-6 relative rounded-xl border border-line-strong bg-sunken p-4 pt-5 shadow-[0_8px_32px_rgba(0,0,0,0.2)] backdrop-blur-md overflow-hidden">
-			<div className="absolute left-0 top-0 h-[1px] w-full bg-gradient-to-r to-transparent opacity-60 from-accent" />
-			<div className="mb-4 pl-1">
-				<h3 className="text-caption font-bold uppercase tracking-[0.15em] text-fg-muted flex items-center gap-2">
+		<section className="mb-6">
+			<div className="mb-2.5 px-0.5">
+				<h3 className="flex items-center gap-2 text-micro font-semibold uppercase tracking-[0.08em] text-fg-subtle">
 					{title}
 				</h3>
 				{description && (
-					<p className="text-micro text-fg-subtle mt-1.5 leading-relaxed font-medium">
-						{description}
-					</p>
+					<p className="mt-1 text-caption leading-relaxed text-fg-subtle">{description}</p>
 				)}
 			</div>
 			<div className="flex flex-col gap-1.5">{children}</div>
-		</div>
+		</section>
 	);
 }
 
@@ -891,7 +894,7 @@ function CaptionPreviewCard({
 	return (
 		<div className="mb-4">
 			<div
-				className="relative w-full aspect-video rounded-xl overflow-hidden border border-line flex items-center justify-center"
+				className="relative w-full aspect-video rounded-lg overflow-hidden border border-line flex items-center justify-center"
 				style={{
 					background: "linear-gradient(135deg, #1a1a1e 0%, #0e0e11 50%, #1a1a1e 100%)",
 				}}
@@ -963,7 +966,7 @@ function CaptionPreviewCard({
 						return <span key={word}>{word}</span>;
 					})}
 				</div>
-				<div className="absolute bottom-2 left-2 text-micro uppercase tracking-wider text-fg-disabled">
+				<div className="absolute bottom-2 left-2 text-micro uppercase tracking-wider text-fixed-white/40">
 					{t("editor.captionsTab.livePreview", "Live preview")}
 				</div>
 			</div>
@@ -995,26 +998,29 @@ function PresetCard({
 			type="button"
 			onClick={onClick}
 			className={cn(
-				"relative group h-16 rounded-xl border overflow-hidden flex flex-col items-center justify-center gap-0.5 transition-all",
+				"relative group h-16 rounded-lg border overflow-hidden flex flex-col items-center justify-center gap-0.5 transition-all",
 				isActive
-					? "border-accent bg-accent/10 shadow-lg shadow-accent/10"
-					: "border-line bg-sunken hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] hover:border-line-strong",
+					? "border-accent/60 bg-accent/10"
+					: "border-line bg-fill-subtle hover:border-line-strong",
 			)}
 		>
-			<div
-				className="px-2 py-0.5 max-w-[90%] truncate"
-				style={{
-					fontFamily: style.fontFamily,
-					fontSize: 11,
-					fontWeight: style.fontWeight,
-					fontStyle: style.fontStyle,
-					color: style.color,
-					backgroundColor: bgColor,
-					borderRadius: Math.min(6, style.borderRadius),
-					textTransform: style.textTransform,
-				}}
-			>
-				{t("editor.captionsTab.aa", "Aa")}
+			{/* Captions draw over video, so the sample sits on a dark chip in both themes. */}
+			<div className="flex max-w-[90%] rounded bg-scrim/85 px-1.5 py-1">
+				<div
+					className="px-2 py-0.5 max-w-full truncate"
+					style={{
+						fontFamily: style.fontFamily,
+						fontSize: 11,
+						fontWeight: style.fontWeight,
+						fontStyle: style.fontStyle,
+						color: style.color,
+						backgroundColor: bgColor,
+						borderRadius: Math.min(6, style.borderRadius),
+						textTransform: style.textTransform,
+					}}
+				>
+					{t("editor.captionsTab.aa", "Aa")}
+				</div>
 			</div>
 			<div className="text-micro text-fg-subtle truncate max-w-full px-2">{preset.name}</div>
 			{isCustom && (
@@ -1058,7 +1064,7 @@ function StyleControls({
 					<select
 						value={style.fontFamily}
 						onChange={(e) => onStyleChange({ fontFamily: e.target.value })}
-						className="col-span-2 h-8 rounded-lg border border-line bg-sunken shadow-inner px-2 text-caption text-fg outline-none"
+						className="col-span-2 h-8 rounded-md border border-line bg-sunken px-2 text-caption text-fg outline-none"
 					>
 						{FONT_FAMILIES.map((font) => (
 							<option key={font.label} value={font.value}>
@@ -1091,8 +1097,8 @@ function StyleControls({
 						className={cn(
 							"h-8 rounded-lg border text-caption italic",
 							style.fontStyle === "italic"
-								? "border-accent bg-accent/15 text-on-accent"
-								: "border-line bg-sunken text-fg-muted hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]",
+								? "border-accent/50 bg-accent/12 text-accent-fg"
+								: "border-line bg-fill-subtle text-fg-muted hover:border-line-strong",
 						)}
 					>
 						{t("editor.captionsTab.italic", "Italic")}
@@ -1132,8 +1138,8 @@ function StyleControls({
 					className={cn(
 						"mt-2 w-full h-8 rounded-lg border text-caption font-semibold",
 						style.textTransform === "uppercase"
-							? "border-accent bg-accent/15 text-on-accent"
-							: "border-line bg-sunken text-fg-muted hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]",
+							? "border-accent/50 bg-accent/12 text-accent-fg"
+							: "border-line bg-fill-subtle text-fg-muted hover:border-line-strong",
 					)}
 				>
 					UPPERCASE
@@ -1303,7 +1309,7 @@ function StyleControls({
 
 function StyleCard({ title, children }: { title: string; children: React.ReactNode }) {
 	return (
-		<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner">
+		<div className="p-2.5 rounded-lg bg-fill-subtle border border-line">
 			<div className="text-micro uppercase tracking-wider text-fg-subtle mb-1.5">{title}</div>
 			{children}
 		</div>
@@ -1332,7 +1338,7 @@ function WeightPicker({
 					onClick={() => onChange(opt.value)}
 					className={cn(
 						"text-micro font-semibold rounded-md transition-colors",
-						value === opt.value ? "bg-accent text-on-accent" : "text-fg-muted hover:text-fg",
+						value === opt.value ? "bg-control text-fg shadow-sm" : "text-fg-muted hover:text-fg",
 					)}
 				>
 					{opt.label}
@@ -1369,7 +1375,7 @@ function CaptionList({
 						key={caption.id}
 						onClick={() => onSelectCaption?.(caption.id)}
 						className={cn(
-							"flex items-start gap-2 p-2 rounded-xl border cursor-pointer transition-all",
+							"flex items-start gap-2 p-2 rounded-lg border cursor-pointer transition-all",
 							isSelected
 								? "border-accent/40 bg-accent/10"
 								: "border-line bg-fill-subtle hover:bg-sunken",
@@ -1396,22 +1402,24 @@ function CaptionList({
 							/>
 							<div className="flex gap-1.5 mt-1">
 								<Button
+									variant="outline"
 									type="button"
 									onClick={(event) => {
 										event.stopPropagation();
 										onCaptionSplit?.(caption.id);
 									}}
-									className="h-6 px-2 rounded-lg border border-line bg-sunken text-micro text-fg-muted hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]"
+									className="h-6 px-2 rounded-lg border border-line bg-fill-subtle text-micro text-fg-muted hover:border-line-strong"
 								>
 									{t("editor.captionsTab.split", "Split")}
 								</Button>
 								<Button
+									variant="outline"
 									type="button"
 									onClick={(event) => {
 										event.stopPropagation();
 										onCaptionMergeNext?.(caption.id);
 									}}
-									className="h-6 px-2 rounded-lg border border-line bg-sunken text-micro text-fg-muted hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]"
+									className="h-6 px-2 rounded-lg border border-line bg-fill-subtle text-micro text-fg-muted hover:border-line-strong"
 								>
 									{t("editor.captionsTab.mergeNext", "Merge next")}
 								</Button>

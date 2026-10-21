@@ -4659,7 +4659,7 @@ export default function VideoEditor() {
 								</button>
 							</Tooltip>
 
-							<div className="w-[1px] h-5 bg-fill-hover mx-1" />
+							<div className="mx-1 h-5 w-px bg-line-strong" />
 
 							{/* Presets dropdown */}
 							<DropdownMenu>
@@ -4758,14 +4758,14 @@ export default function VideoEditor() {
 							<AppearanceSwitcher />
 							<FeedbackDialog />
 
-							<div className="w-[1px] h-5 bg-fill-hover mx-1" />
+							<div className="mx-1 h-5 w-px bg-line-strong" />
 
 							<button
 								type="button"
 								onClick={() => handleExportMenuOpenChange(true)}
 								title={`${tSettings("export.buttonTooltip", "Export video or GIF")} (${isMac ? "⌘E" : "Ctrl+E"})`}
 								disabled={!videoPath}
-								className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-on-accent font-semibold text-label transition bg-accent hover:bg-accent-hover cursor-pointer shadow-lg shadow-accent/20 disabled:cursor-not-allowed disabled:opacity-50"
+								className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-on-accent font-semibold text-label transition bg-accent hover:bg-accent-hover cursor-pointer shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								<Download className="h-3.5 w-3.5" />
 								<span>{tSettings("export.button", "Export")}</span>
@@ -4958,14 +4958,14 @@ export default function VideoEditor() {
 									className="flex flex-col min-w-0 h-full gap-2 relative"
 								>
 									<div className="shrink-0 flex items-center justify-center z-10">
-										<div className="grid w-full max-w-sm grid-cols-3 gap-1 rounded-full border border-line bg-canvas/80 p-1 backdrop-blur-xl shadow-lg shadow-black/50">
+										<div className="grid w-full max-w-sm grid-cols-3 gap-0.5 rounded-lg bg-fill-hover p-0.5">
 											<button
 												type="button"
 												onClick={() => setRightSidebarSection("edit")}
-												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full px-2 py-1.5 text-caption font-semibold transition-all duration-300 ${
+												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-label font-medium transition-colors duration-fast ${
 													rightSidebarSection === "edit"
-														? "bg-accent text-on-accent shadow-sm scale-100"
-														: "text-fg-muted hover:bg-fill-subtle hover:text-fg"
+														? "bg-control text-fg shadow-sm"
+														: "text-fg-muted hover:text-fg"
 												}`}
 											>
 												<SlidersHorizontal className="h-3.5 w-3.5 shrink-0" />
@@ -4974,10 +4974,10 @@ export default function VideoEditor() {
 											<button
 												type="button"
 												onClick={() => setRightSidebarSection("layers")}
-												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full px-2 py-1.5 text-caption font-semibold transition-all duration-300 ${
+												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-label font-medium transition-colors duration-fast ${
 													rightSidebarSection === "layers"
-														? "bg-accent text-on-accent shadow-sm scale-100"
-														: "text-fg-muted hover:bg-fill-subtle hover:text-fg"
+														? "bg-control text-fg shadow-sm"
+														: "text-fg-muted hover:text-fg"
 												}`}
 											>
 												<Layers className="h-3.5 w-3.5 shrink-0" />
@@ -4986,10 +4986,10 @@ export default function VideoEditor() {
 											<button
 												type="button"
 												onClick={() => setRightSidebarSection("polish")}
-												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full px-2 py-1.5 text-caption font-semibold transition-all duration-300 ${
+												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-label font-medium transition-colors duration-fast ${
 													rightSidebarSection === "polish"
-														? "bg-accent text-on-accent shadow-sm scale-100"
-														: "text-fg-muted hover:bg-fill-subtle hover:text-fg"
+														? "bg-control text-fg shadow-sm"
+														: "text-fg-muted hover:text-fg"
 												}`}
 											>
 												<Sparkles className="h-3.5 w-3.5 shrink-0" />
@@ -5244,7 +5244,7 @@ export default function VideoEditor() {
 
 						{/* Full-width Timeline section */}
 						<Panel defaultSize={workspaceLayoutSizes[1]} minSize={12}>
-							<div className="h-[calc(100%-0.5rem)] min-h-0 mx-2 mb-2 bg-surface rounded-2xl border border-line shadow-2xl overflow-hidden flex flex-col relative z-10">
+							<div className="h-[calc(100%-0.75rem)] min-h-0 mx-3 mb-3 bg-surface rounded-xl shadow-panel overflow-hidden flex flex-col relative z-10">
 								<TimelineEditor
 									videoDuration={duration}
 									currentTime={currentTime}

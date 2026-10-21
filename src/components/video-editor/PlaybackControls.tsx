@@ -35,13 +35,14 @@ export default function PlaybackControls({
 	return (
 		<div className="flex items-center gap-2 px-1 py-0.5 rounded-full bg-scrim/60 backdrop-blur-md border border-line-strong shadow-xl transition-all duration-300 hover:bg-scrim/70 hover:border-line-strong">
 			<Button
+				variant="outline"
 				onClick={onTogglePlayPause}
 				size="icon"
 				className={cn(
 					"w-8 h-8 rounded-full transition-all duration-200 border border-line-strong",
 					isPlaying
 						? "bg-fill-hover text-fg hover:bg-fill-pressed"
-						: "bg-fg text-canvas hover:bg-fg/90 hover:scale-105 shadow-sm",
+						: "bg-fg text-canvas hover:bg-fg/90 shadow-sm",
 				)}
 				aria-label={isPlaying ? t("playback.pause") : t("playback.play")}
 			>

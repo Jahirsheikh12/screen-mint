@@ -72,7 +72,7 @@ function getPresetVisual(id: ScenePresetId): PresetVisual {
 		PRESET_VISUALS[id as Exclude<ScenePresetId, "custom">] ?? {
 			icon: Sparkles,
 			accent: "from-accent to-orange-400",
-			glow: "shadow-accent/10",
+			glow: "",
 			chips: ["Custom"],
 		}
 	);
@@ -114,7 +114,7 @@ export function StudioSettingsTab({
 				badgeColor="amber"
 			/>
 
-			<section className="overflow-hidden rounded-xl border border-line bg-surface shadow-lg shadow-black/20">
+			<section className="overflow-hidden rounded-lg border border-line bg-surface shadow-lg shadow-black/20">
 				<div className="relative p-3">
 					<div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(245,158,11,0.18),transparent_42%),linear-gradient(135deg,rgba(45,212,191,0.1),transparent_38%)]" />
 					<div className="relative">
@@ -146,7 +146,7 @@ export function StudioSettingsTab({
 							<Button
 								type="button"
 								onClick={onAutoBeautify}
-								className="h-9 justify-center gap-2 rounded-lg bg-accent text-label font-semibold text-on-accent shadow-lg shadow-accent/20 hover:bg-accent-hover"
+								className="h-9 justify-center gap-2 rounded-lg bg-accent text-label font-semibold text-on-accent shadow-sm hover:bg-accent-hover"
 							>
 								<Sparkles className="h-3.5 w-3.5" />
 								{tSettings("studioTab.apply", "Apply")}
@@ -164,7 +164,7 @@ export function StudioSettingsTab({
 						</div>
 
 						<div className="mt-3 grid grid-cols-2 gap-2">
-							<div className="rounded-lg border border-line bg-sunken px-2.5 py-2">
+							<div className="rounded-lg border border-line bg-fill-subtle px-2.5 py-2">
 								<div className="flex items-center gap-1.5 text-micro text-fg-muted">
 									<MousePointerClick className="h-3 w-3" />
 									{tSettings("studioTab.cursorData", "Cursor data")}
@@ -175,7 +175,7 @@ export function StudioSettingsTab({
 										: tSettings("studioTab.missing", "Missing")}
 								</div>
 							</div>
-							<div className="rounded-lg border border-line bg-sunken px-2.5 py-2">
+							<div className="rounded-lg border border-line bg-fill-subtle px-2.5 py-2">
 								<div className="flex items-center gap-1.5 text-micro text-fg-muted">
 									<RefreshCw className="h-3 w-3" />
 									{tSettings("studioTab.zooms", "Zooms")}
@@ -205,7 +205,7 @@ export function StudioSettingsTab({
 						</p>
 					</div>
 					{activePresetId && (
-						<span className="shrink-0 rounded-full border border-accent/25 bg-accent/10 px-2 py-1 text-micro font-semibold uppercase tracking-wide text-accent-fg shadow-sm shadow-accent/10">
+						<span className="shrink-0 rounded-full border border-accent/25 bg-accent/10 px-2 py-1 text-micro font-semibold uppercase tracking-wide text-accent-fg shadow-sm">
 							{tSettings("studioTab.active", "Active")}
 						</span>
 					)}
@@ -223,8 +223,8 @@ export function StudioSettingsTab({
 								type="button"
 								onClick={() => onApplyPreset(preset.id)}
 								className={cn(
-									"group relative overflow-hidden rounded-xl border p-2.5 text-left transition-all duration-200",
-									"bg-fill-subtle hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]",
+									"group relative overflow-hidden rounded-lg border p-2.5 text-left transition-all duration-200",
+									"bg-fill-subtle hover:-translate-y-0.5 hover:border-line-strong",
 									isActive
 										? cn("border-accent/60 shadow-lg", visual.glow)
 										: "border-line hover:border-line-strong",
@@ -239,7 +239,7 @@ export function StudioSettingsTab({
 								<div className="flex items-center gap-2.5 pl-1">
 									<span
 										className={cn(
-											"flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-[#08110f] shadow-sm transition-transform duration-200 group-hover:scale-105",
+											"flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-[#08110f] shadow-sm transition-transform duration-200 group-",
 											visual.accent,
 										)}
 									>
@@ -260,7 +260,7 @@ export function StudioSettingsTab({
 											{visual.chips.map((chip) => (
 												<span
 													key={chip}
-													className="rounded-md border border-line bg-sunken px-1.5 py-0.5 text-micro font-medium text-fg-muted"
+													className="rounded-md border border-line bg-fill-subtle px-1.5 py-0.5 text-micro font-medium text-fg-muted"
 												>
 													{tSettings(`studioTab.chip${chip}`, chip)}
 												</span>

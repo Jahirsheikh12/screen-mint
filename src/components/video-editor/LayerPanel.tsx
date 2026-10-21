@@ -69,12 +69,12 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 	};
 
 	const inputClass =
-		"w-full bg-sunken border border-line hover:border-line-strong focus:border-accent/50 text-fg h-8 px-2.5 rounded-lg text-caption outline-none transition-all shadow-inner font-medium disabled:opacity-40 disabled:cursor-not-allowed";
+		"w-full bg-sunken border border-line hover:border-line-strong focus:border-accent/50 text-fg h-8 px-2.5 rounded-md text-caption outline-none transition-all font-medium disabled:opacity-40 disabled:cursor-not-allowed";
 
 	return (
 		<div
 			className={cn(
-				"w-full h-full shrink-0 min-w-0 bg-canvas/90 backdrop-blur-2xl border border-line rounded-2xl flex flex-col shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden",
+				"w-full h-full shrink-0 min-w-0 bg-canvas/90 backdrop-blur-2xl border border-line rounded-2xl flex flex-col shadow-panel overflow-hidden",
 				embedded ? "" : "w-[400px]",
 			)}
 		>
@@ -82,7 +82,6 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 				<SettingsSection
 					title={t("editor.layerPanel.layers", "Layers")}
 					description={`${layers.length > 0 ? `${layers.length} editable layer${layers.length === 1 ? "" : "s"}` : t("editor.layerPanel.noVideoLayerLoaded", "No video layer loaded")}`}
-					accentColor="amber"
 				>
 					<div className="flex flex-col gap-1 pr-1 -mr-1">
 						{ordered.length === 0 ? (
@@ -102,9 +101,9 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 										key={layer.id}
 										onClick={() => setSelectedLayerId(layer.id)}
 										className={cn(
-											"group grid w-full grid-cols-[1fr_auto] items-center gap-2 rounded-xl border px-3 py-2 text-left transition-all duration-200 cursor-pointer",
+											"group grid w-full grid-cols-[1fr_auto] items-center gap-2 rounded-lg border px-3 py-2 text-left transition-all duration-200 cursor-pointer",
 											selected
-												? "border-accent/30 bg-gradient-to-r from-accent/10 to-accent/5 shadow-sm shadow-accent/5"
+												? "border-accent/30 bg-gradient-to-r from-accent/10 to-accent/5 shadow-sm"
 												: "border-line bg-fill-subtle hover:bg-fill-subtle hover:border-line-strong",
 										)}
 									>
@@ -180,9 +179,8 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 							"editor.layerPanel.transformAndVisibilityControls",
 							"Transform and visibility controls",
 						)}
-						accentColor="amber"
 					>
-						<div className="flex items-center justify-between gap-2 p-1 bg-fill-subtle border border-line rounded-xl pl-2">
+						<div className="flex items-center justify-between gap-2 p-1 bg-fill-subtle border border-line rounded-lg pl-2">
 							<input
 								value={selectedLayer.name}
 								onChange={(event) =>
@@ -410,7 +408,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 						</div>
 
 						<div className="mt-5 flex items-center justify-between border-t border-line pt-4">
-							<div className="flex gap-2 bg-sunken border border-line rounded-lg p-1 shadow-inner">
+							<div className="flex gap-2 bg-fill-subtle border border-line rounded-lg p-1">
 								<button
 									type="button"
 									className="rounded-md p-1.5 text-fg-muted hover:text-accent-fg hover:bg-accent/10 transition-colors disabled:opacity-30"

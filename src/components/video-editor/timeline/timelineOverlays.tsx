@@ -93,7 +93,7 @@ export function PlaybackCursor({
 			}}
 		>
 			<div
-				className="absolute top-0 bottom-0 w-[1.5px] bg-accent shadow-[0_0_8px_rgba(245,158,11,0.4)] cursor-ew-resize pointer-events-auto hover:shadow-[0_0_12px_rgba(245,158,11,0.6)] transition-shadow"
+				className="absolute top-0 bottom-0 w-[1.5px] bg-accent cursor-ew-resize pointer-events-auto transition-shadow"
 				style={{
 					[sideProperty]: `${offset}px`,
 				}}

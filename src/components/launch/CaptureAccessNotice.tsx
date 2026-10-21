@@ -59,7 +59,7 @@ export function CaptureAccessNotice({
 				) : null}
 			</div>
 			{details ? (
-				<div className="max-w-md rounded-lg border border-line-strong bg-sunken px-3 py-2 text-left">
+				<div className="max-w-md rounded-lg border border-line-strong bg-fill-subtle px-3 py-2 text-left">
 					<p className="text-micro uppercase tracking-[0.18em] text-fg-subtle">
 						{t("permissions.diagnostics")}
 					</p>

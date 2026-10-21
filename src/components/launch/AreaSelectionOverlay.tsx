@@ -870,7 +870,7 @@ export function AreaSelectionOverlay() {
 						transform: "translateX(-50%)",
 						maxWidth: "calc(100vw - 32px)",
 					}}
-					className="flex flex-wrap items-center justify-center gap-2 rounded-xl border border-white/10 bg-[rgba(28,28,30,0.85)] px-3 py-2 text-label text-white shadow-[0_12px_32px_rgba(0,0,0,0.4)] backdrop-blur-3xl"
+					className="flex flex-wrap items-center justify-center gap-2 rounded-xl border border-white/10 bg-[rgba(28,28,30,0.85)] px-3 py-2 text-label text-white shadow-panel backdrop-blur-3xl"
 					onPointerDown={(e) => e.stopPropagation()}
 				>
 					{/* Dimension inputs (W × H) */}
