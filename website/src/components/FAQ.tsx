@@ -1,13 +1,13 @@
-import gsap from "gsap";
-import { useEffect, useRef } from "react";
+import { motion } from "motion/react";
 import {
 	Accordion,
 	AccordionContent,
 	AccordionItem,
 	AccordionTrigger,
 } from "../components/ui/accordion";
-import { prefersReducedMotion } from "../hooks/useGSAP";
-import { SPONSOR_FAQS } from "../lib/sponsors";
+import { reveal } from "../lib/motion";
+import { SPONSOR_FAQS, SUPPORT_EMAIL_HREF } from "../lib/sponsors";
+import { Slate } from "./Chapters";
 
 const faqs = [
 	{
@@ -54,127 +54,53 @@ const faqs = [
 ];
 
 export function FAQ() {
-	const sectionRef = useRef<HTMLElement>(null);
-
-	useEffect(() => {
-		if (prefersReducedMotion()) return;
-
-		const ctx = gsap.context(() => {
-			gsap.fromTo(
-				".faq-heading",
-				{ opacity: 0, y: 15 },
-				{
-					opacity: 1,
-					y: 0,
-					duration: 0.7,
-					ease: "power2.out",
-					scrollTrigger: { trigger: ".faq-heading", start: "top 95%", once: true },
-				},
-			);
-
-			gsap.fromTo(
-				".faq-col-left .faq-item-wrap",
-				{ opacity: 0, x: -10 },
-				{
-					opacity: 1,
-					x: 0,
-					duration: 0.5,
-					stagger: 0.06,
-					ease: "power2.out",
-					scrollTrigger: { trigger: ".faq-grid", start: "top 95%", once: true },
-				},
-			);
-
-			gsap.fromTo(
-				".faq-col-right .faq-item-wrap",
-				{ opacity: 0, x: 10 },
-				{
-					opacity: 1,
-					x: 0,
-					duration: 0.5,
-					stagger: 0.06,
-					ease: "power2.out",
-					scrollTrigger: { trigger: ".faq-grid", start: "top 95%", once: true },
-				},
-			);
-		}, sectionRef);
-
-		return () => ctx.revert();
-	}, []);
-
-	const leftColumn = faqs.filter((_, i) => i % 2 === 0);
-	const rightColumn = faqs.filter((_, i) => i % 2 === 1);
-
 	return (
-		<section ref={sectionRef} id="faq" className="relative py-20 md:py-28 px-6">
-			<div className="section-divider max-w-6xl mx-auto mb-20" />
+		<section id="faq" className="px-5 py-20 md:px-8 md:py-28">
+			<div className="mx-auto max-w-[1240px]">
+				<motion.div {...reveal}>
+					<Slate label="FAQ" timecode={`${faqs.length} questions`} />
+				</motion.div>
 
-			<div className="max-w-5xl mx-auto">
-				{/* Heading */}
-				<div className="faq-heading text-center mb-14 will-animate">
-					<p className="section-eyebrow mb-4">FAQ</p>
-					<h2 className="section-headline">
-						Got questions<span className="text-brand-500">?</span>
-					</h2>
-				</div>
+				<div className="mt-10 grid gap-10 lg:mt-14 lg:grid-cols-12 lg:gap-14">
+					<motion.div {...reveal} className="lg:sticky lg:top-28 lg:col-span-4 lg:self-start">
+						<h2 className="font-display text-[clamp(2.5rem,4.6vw,4.25rem)] font-normal leading-[0.98] tracking-[-0.02em] text-paper">
+							Before you <em className="whitespace-nowrap text-reel">hit record.</em>
+						</h2>
+						<p className="mt-6 text-[17px] leading-[1.6] text-paper/60">
+							Still stuck?{" "}
+							<a
+								href={SUPPORT_EMAIL_HREF}
+								className="text-paper underline decoration-paper/25 underline-offset-[5px] hover:decoration-reel"
+							>
+								Send an email
+							</a>
+							.
+						</p>
+					</motion.div>
 
-				{/* Two-column FAQ grid */}
-				<div className="faq-grid grid md:grid-cols-2 gap-4">
-					<div className="faq-col-left">
-						<Accordion type="single" collapsible className="flex flex-col gap-2">
-							{leftColumn.map((faq) => {
-								const originalIndex = faqs.indexOf(faq);
-								return (
-									<div key={faq.question} className="faq-item-wrap will-animate">
-										<AccordionItem
-											value={`faq-${originalIndex}`}
-											className="rounded-xl border-0 data-[state=open]:bg-white/[0.03] data-[state=open]:border data-[state=open]:border-white/[0.06] px-5 md:px-6 transition-colors"
-										>
-											<AccordionTrigger className="py-5 text-[14px] md:text-[15px] font-medium text-white/50 hover:text-white/70 hover:no-underline data-[state=open]:text-white gap-4 [&>svg]:text-white/20 [&[data-state=open]>svg]:text-brand-500">
-												<div className="flex items-start gap-4 text-left">
-													<span className="text-[12px] font-mono text-white/10 mt-0.5 flex-shrink-0 tabular-nums">
-														{String(originalIndex + 1).padStart(2, "0")}
-													</span>
-													<span>{faq.question}</span>
-												</div>
-											</AccordionTrigger>
-											<AccordionContent className="text-[13px] text-white/25 leading-relaxed pl-10 pr-4">
-												{faq.answer}
-											</AccordionContent>
-										</AccordionItem>
-									</div>
-								);
-							})}
+					<motion.div {...reveal} className="lg:col-span-8">
+						<Accordion type="single" collapsible className="border-t border-paper/15">
+							{faqs.map((faq, i) => (
+								<AccordionItem
+									key={faq.question}
+									value={faq.question}
+									className="border-b border-paper/10"
+								>
+									<AccordionTrigger className="gap-6 py-5 text-left text-[17px] font-medium text-paper/85 hover:text-paper hover:no-underline data-[state=open]:text-paper md:text-[18px] [&>svg]:h-5 [&>svg]:w-5 [&>svg]:text-paper/40 [&[data-state=open]>svg]:text-reel">
+										<span className="flex gap-5">
+											<span className="w-7 shrink-0 pt-[5px] font-mono text-[12px] tabular-nums text-paper/40">
+												{String(i + 1).padStart(2, "0")}
+											</span>
+											{faq.question}
+										</span>
+									</AccordionTrigger>
+									<AccordionContent className="pb-6 pl-12 pr-10 text-[16px] leading-[1.65] text-paper/60">
+										{faq.answer}
+									</AccordionContent>
+								</AccordionItem>
+							))}
 						</Accordion>
-					</div>
-
-					<div className="faq-col-right">
-						<Accordion type="single" collapsible className="flex flex-col gap-2">
-							{rightColumn.map((faq) => {
-								const originalIndex = faqs.indexOf(faq);
-								return (
-									<div key={faq.question} className="faq-item-wrap will-animate">
-										<AccordionItem
-											value={`faq-${originalIndex}`}
-											className="rounded-xl border-0 data-[state=open]:bg-white/[0.03] data-[state=open]:border data-[state=open]:border-white/[0.06] px-5 md:px-6 transition-colors"
-										>
-											<AccordionTrigger className="py-5 text-[14px] md:text-[15px] font-medium text-white/50 hover:text-white/70 hover:no-underline data-[state=open]:text-white gap-4 [&>svg]:text-white/20 [&[data-state=open]>svg]:text-brand-500">
-												<div className="flex items-start gap-4 text-left">
-													<span className="text-[12px] font-mono text-white/10 mt-0.5 flex-shrink-0 tabular-nums">
-														{String(originalIndex + 1).padStart(2, "0")}
-													</span>
-													<span>{faq.question}</span>
-												</div>
-											</AccordionTrigger>
-											<AccordionContent className="text-[13px] text-white/25 leading-relaxed pl-10 pr-4">
-												{faq.answer}
-											</AccordionContent>
-										</AccordionItem>
-									</div>
-								);
-							})}
-						</Accordion>
-					</div>
+					</motion.div>
 				</div>
 			</div>
 		</section>

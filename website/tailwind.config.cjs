@@ -18,6 +18,9 @@ module.exports = {
 					900: "#78350f",
 					950: "#451a03",
 				},
+				ink: { DEFAULT: "#0e0c0a", 2: "#171411", 3: "#211d18" },
+				paper: "#efe8dc",
+				reel: "#ffb21a",
 				surface: {
 					0: "#121212",
 					1: "#1a1a1a",
@@ -25,6 +28,11 @@ module.exports = {
 					3: "#242424",
 					4: "#2a2a2a",
 				},
+			},
+			fontFamily: {
+				display: ['"Newsreader"', "Georgia", "serif"],
+				body: ['"Schibsted Grotesk"', "system-ui", "sans-serif"],
+				mono: ['"Fragment Mono"', "ui-monospace", "monospace"],
 			},
 			backgroundImage: {
 				"brand-gradient": "linear-gradient(135deg, #d97706, #F59E0B)",
