@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { useScopedT } from "@/contexts/I18nContext";
 
 export function SpeakerNotesWindow() {
+	const t = useScopedT("launch");
 	const [text, setText] = useState("");
 
 	useEffect(() => {
@@ -48,23 +50,23 @@ export function SpeakerNotesWindow() {
 	};
 
 	return (
-		<div className="h-full w-full rounded-2xl border border-white/10 bg-[rgba(14,14,16,0.88)] p-3 text-white shadow-2xl backdrop-blur-2xl">
+		<div className="h-screen w-full rounded-2xl border border-white/10 bg-[rgba(14,14,16,0.88)] p-3 text-white shadow-2xl backdrop-blur-2xl">
 			<div className="mb-2 flex items-center justify-between">
 				<div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">
-					Speaker Notes
+					{t("speakerNotes.title")}
 				</div>
 				<button
 					type="button"
 					onClick={() => void window.electronAPI.closeSpeakerNotesWindow()}
 					className="rounded-md px-2 py-1 text-[11px] text-white/45 transition hover:bg-white/10 hover:text-white/80"
 				>
-					Close
+					{t("speakerNotes.close")}
 				</button>
 			</div>
 			<textarea
 				value={text}
 				onChange={(event) => persistText(event.target.value)}
-				placeholder="Write talking points, reminders, or a script here..."
+				placeholder={t("speakerNotes.placeholder")}
 				className="h-[calc(100%-2rem)] w-full resize-none rounded-xl border border-white/8 bg-black/20 p-3 text-sm leading-6 text-white/90 outline-none placeholder:text-white/25"
 			/>
 		</div>

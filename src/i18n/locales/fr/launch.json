@@ -50,7 +50,21 @@
 		"systemAudio": "Audio système",
 		"microphone": "Micro",
 		"language": "Langue",
-		"finalizing": "Finalisation…"
+		"finalizing": "Finalisation…",
+		"defaultCamera": "Caméra par défaut",
+		"previewSize": "Taille de l'aperçu",
+		"previewSmall": "Petite",
+		"previewMedium": "Moyenne",
+		"previewLarge": "Grande",
+		"previewCorner": "Coin de l'aperçu",
+		"cornerTopLeft": "En haut à gauche",
+		"cornerTopRight": "En haut à droite",
+		"cornerBottomLeft": "En bas à gauche",
+		"cornerBottomRight": "En bas à droite",
+		"previewShape": "Forme de l'aperçu",
+		"shapeRoundedRect": "Rectangle arrondi",
+		"shapeCircle": "Cercle",
+		"showScreenshot": "Afficher"
 	},
 	"tabs": {
 		"display": "Écran",
@@ -106,7 +120,12 @@
 		"qualityHigh": "Haute",
 		"qualityMedium": "Moyenne",
 		"fps": "Fréquence d'images",
-		"hardwareAcceleration": "Accélération matérielle"
+		"hardwareAcceleration": "Accélération matérielle",
+		"title": "Réglages",
+		"experimentalUpdates": "Mises à jour expérimentales",
+		"recordingsFolder": "Dossier des enregistrements",
+		"chooseFolder": "Choisir un dossier…",
+		"openFolder": "Ouvrir le dossier"
 	},
 	"afterRecording": {
 		"afterRecording": "Après l'enregistrement",
@@ -145,7 +164,8 @@
 		"kbdShare": "partager",
 		"kbdClose": "fermer",
 		"kbdSwitch": "changer d'onglet",
-		"eyebrow": "Prêt à enregistrer"
+		"eyebrow": "Prêt à enregistrer",
+		"clearSearch": "Effacer la recherche"
 	},
 	"permissions": {
 		"screenRecordingNeeded": "ScreenMint a besoin de l'autorisation d'enregistrement d'écran avant de commencer. Les Réglages Système ont été ouverts. Après l'avoir activée, quittez et rouvrez ScreenMint.",
@@ -168,6 +188,12 @@
 		"systemAudioUnavailable": "L'audio système n'est pas disponible pour cette source. L'enregistrement continuera sans audio système.",
 		"microphoneDenied": "L'accès au micro a été refusé. L'enregistrement continuera sans audio du micro.",
 		"failedToStart": "Impossible de démarrer l'enregistrement : {{error}}",
-		"failedToStartGeneric": "Impossible de démarrer l'enregistrement"
+		"failedToStartGeneric": "Impossible de démarrer l'enregistrement",
+		"diagnostics": "Diagnostic"
+	},
+	"speakerNotes": {
+		"title": "Notes de présentation",
+		"close": "Fermer",
+		"placeholder": "Notez ici vos points clés, rappels ou votre script…"
 	}
 }

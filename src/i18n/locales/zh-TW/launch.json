@@ -50,7 +50,21 @@
 		"systemAudio": "系統音訊",
 		"microphone": "麥克風",
 		"language": "語言",
-		"finalizing": "正在完成…"
+		"finalizing": "正在完成…",
+		"defaultCamera": "預設相機",
+		"previewSize": "預覽大小",
+		"previewSmall": "小",
+		"previewMedium": "中",
+		"previewLarge": "大",
+		"previewCorner": "預覽位置",
+		"cornerTopLeft": "左上角",
+		"cornerTopRight": "右上角",
+		"cornerBottomLeft": "左下角",
+		"cornerBottomRight": "右下角",
+		"previewShape": "預覽形狀",
+		"shapeRoundedRect": "圓角矩形",
+		"shapeCircle": "圓形",
+		"showScreenshot": "檢視"
 	},
 	"tabs": {
 		"display": "顯示器",
@@ -106,7 +120,12 @@
 		"qualityHigh": "高",
 		"qualityMedium": "中",
 		"fps": "影格速率",
-		"hardwareAcceleration": "硬體加速"
+		"hardwareAcceleration": "硬體加速",
+		"title": "設定",
+		"experimentalUpdates": "實驗性更新",
+		"recordingsFolder": "錄影資料夾",
+		"chooseFolder": "選擇資料夾…",
+		"openFolder": "開啟資料夾"
 	},
 	"afterRecording": {
 		"afterRecording": "錄製完成後",
@@ -145,7 +164,8 @@
 		"kbdShare": "分享",
 		"kbdClose": "關閉",
 		"kbdSwitch": "切換分頁",
-		"eyebrow": "準備錄製"
+		"eyebrow": "準備錄製",
+		"clearSearch": "清除搜尋"
 	},
 	"permissions": {
 		"screenRecordingNeeded": "開始前 ScreenMint 需要螢幕錄製權限。已開啟「系統設定」。開啟權限後，請結束並重新開啟 ScreenMint。",
@@ -168,6 +188,12 @@
 		"systemAudioUnavailable": "此來源無法使用系統音訊。錄製會在沒有系統音訊的情況下繼續。",
 		"microphoneDenied": "麥克風存取遭拒。錄製會在沒有麥克風音訊的情況下繼續。",
 		"failedToStart": "無法開始錄製：{{error}}",
-		"failedToStartGeneric": "無法開始錄製"
+		"failedToStartGeneric": "無法開始錄製",
+		"diagnostics": "診斷資訊"
+	},
+	"speakerNotes": {
+		"title": "講者備忘稿",
+		"close": "關閉",
+		"placeholder": "在這裡寫下重點、提醒或講稿…"
 	}
 }

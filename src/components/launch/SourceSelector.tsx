@@ -597,7 +597,7 @@ export function SourceSelector() {
 							type="button"
 							className={styles.searchClearBtn}
 							onClick={() => setSearch("")}
-							aria-label="Clear search"
+							aria-label={t("sourceSelector.clearSearch", "Clear search")}
 						>
 							<FiX size={11} strokeWidth={3} />
 						</button>

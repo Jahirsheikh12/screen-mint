@@ -38,7 +38,8 @@
 			"downloadedBodyInApp": "ScreenMint {{version}} staat klaar. Klik op 'Nu bijwerken' om te herstarten en de installatie af te ronden.",
 			"downloadedBodyExternal": "ScreenMint {{version}} staat klaar. Klik op 'Nu bijwerken' om het installatieprogramma te openen. ScreenMint sluit af zodat je de update kunt afronden.",
 			"manualBody": "ScreenMint {{version}} is beschikbaar, maar deze installatie kan zichzelf niet bijwerken. 'Nu bijwerken' opent de downloadpagina.",
-			"busyHint": "Rond opnemen, exporteren of transcriberen af voordat je verdergaat met de update."
+			"busyHint": "Rond opnemen, exporteren of transcriberen af voordat je verdergaat met de update.",
+			"skipVersion": "Deze versie overslaan"
 		},
 		"whatsNew": {
 			"title": "Nieuw in {{version}}",

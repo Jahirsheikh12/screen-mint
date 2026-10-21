@@ -1,4 +1,5 @@
 import { ShieldAlert } from "lucide-react";
+import { useScopedT } from "@/contexts/I18nContext";
 import { Button } from "../ui/button";
 import styles from "./LaunchWindow.module.css";
 
@@ -23,6 +24,7 @@ export function CaptureAccessNotice({
 	openSettingsLabel = "Open Settings",
 	retryLabel = "Retry",
 }: CaptureAccessNoticeProps) {
+	const t = useScopedT("launch");
 	return (
 		<div
 			className={`flex flex-col items-center gap-5 px-6 py-8 text-center ${styles.overlayEnter}`}
@@ -58,7 +60,9 @@ export function CaptureAccessNotice({
 			</div>
 			{details ? (
 				<div className="max-w-md rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-left">
-					<p className="text-[10px] uppercase tracking-[0.18em] text-white/35">Diagnostics</p>
+					<p className="text-[10px] uppercase tracking-[0.18em] text-white/35">
+						{t("permissions.diagnostics")}
+					</p>
 					<p className="mt-1 break-words font-mono text-[11px] leading-5 text-white/50">
 						{details}
 					</p>

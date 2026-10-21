@@ -50,7 +50,21 @@
 		"systemAudio": "Systemton",
 		"microphone": "Mikrofon",
 		"language": "Sprache",
-		"finalizing": "Wird abgeschlossen…"
+		"finalizing": "Wird abgeschlossen…",
+		"defaultCamera": "Standardkamera",
+		"previewSize": "Vorschaugröße",
+		"previewSmall": "Klein",
+		"previewMedium": "Mittel",
+		"previewLarge": "Groß",
+		"previewCorner": "Vorschauecke",
+		"cornerTopLeft": "Oben links",
+		"cornerTopRight": "Oben rechts",
+		"cornerBottomLeft": "Unten links",
+		"cornerBottomRight": "Unten rechts",
+		"previewShape": "Vorschauform",
+		"shapeRoundedRect": "Abgerundetes Rechteck",
+		"shapeCircle": "Kreis",
+		"showScreenshot": "Anzeigen"
 	},
 	"tabs": {
 		"display": "Bildschirm",
@@ -106,7 +120,12 @@
 		"qualityHigh": "Hoch",
 		"qualityMedium": "Mittel",
 		"fps": "Bildrate",
-		"hardwareAcceleration": "Hardwarebeschleunigung"
+		"hardwareAcceleration": "Hardwarebeschleunigung",
+		"title": "Einstellungen",
+		"experimentalUpdates": "Experimentelle Updates",
+		"recordingsFolder": "Aufnahmeordner",
+		"chooseFolder": "Ordner wählen…",
+		"openFolder": "Ordner öffnen"
 	},
 	"afterRecording": {
 		"afterRecording": "Nach der Aufnahme",
@@ -145,7 +164,8 @@
 		"kbdShare": "teilen",
 		"kbdClose": "schließen",
 		"kbdSwitch": "Tab wechseln",
-		"eyebrow": "Bereit zur Aufnahme"
+		"eyebrow": "Bereit zur Aufnahme",
+		"clearSearch": "Suche löschen"
 	},
 	"permissions": {
 		"screenRecordingNeeded": "ScreenMint braucht die Berechtigung zur Bildschirmaufnahme. Die Systemeinstellungen wurden geöffnet. Aktivieren Sie sie und starten Sie ScreenMint danach neu.",
@@ -168,6 +188,12 @@
 		"systemAudioUnavailable": "Für diese Quelle ist kein Systemton verfügbar. Die Aufnahme läuft ohne Systemton weiter.",
 		"microphoneDenied": "Der Mikrofonzugriff wurde verweigert. Die Aufnahme läuft ohne Mikrofonton weiter.",
 		"failedToStart": "Aufnahme konnte nicht gestartet werden: {{error}}",
-		"failedToStartGeneric": "Aufnahme konnte nicht gestartet werden"
+		"failedToStartGeneric": "Aufnahme konnte nicht gestartet werden",
+		"diagnostics": "Diagnose"
+	},
+	"speakerNotes": {
+		"title": "Sprechernotizen",
+		"close": "Schließen",
+		"placeholder": "Notiere hier Stichpunkte, Erinnerungen oder ein Skript…"
 	}
 }

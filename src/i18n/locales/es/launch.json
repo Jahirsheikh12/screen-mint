@@ -50,7 +50,21 @@
 		"systemAudio": "Audio del sistema",
 		"microphone": "Micrófono",
 		"language": "Idioma",
-		"finalizing": "Finalizando…"
+		"finalizing": "Finalizando…",
+		"defaultCamera": "Cámara predeterminada",
+		"previewSize": "Tamaño de la vista previa",
+		"previewSmall": "Pequeño",
+		"previewMedium": "Mediano",
+		"previewLarge": "Grande",
+		"previewCorner": "Esquina de la vista previa",
+		"cornerTopLeft": "Arriba a la izquierda",
+		"cornerTopRight": "Arriba a la derecha",
+		"cornerBottomLeft": "Abajo a la izquierda",
+		"cornerBottomRight": "Abajo a la derecha",
+		"previewShape": "Forma de la vista previa",
+		"shapeRoundedRect": "Rectángulo redondeado",
+		"shapeCircle": "Círculo",
+		"showScreenshot": "Mostrar"
 	},
 	"tabs": {
 		"display": "Pantalla",
@@ -106,7 +120,12 @@
 		"qualityHigh": "Alta",
 		"qualityMedium": "Media",
 		"fps": "Tasa de fotogramas",
-		"hardwareAcceleration": "Aceleración por hardware"
+		"hardwareAcceleration": "Aceleración por hardware",
+		"title": "Ajustes",
+		"experimentalUpdates": "Actualizaciones experimentales",
+		"recordingsFolder": "Carpeta de grabaciones",
+		"chooseFolder": "Elegir carpeta…",
+		"openFolder": "Abrir carpeta"
 	},
 	"afterRecording": {
 		"afterRecording": "Después de grabar",
@@ -145,7 +164,8 @@
 		"kbdShare": "compartir",
 		"kbdClose": "cerrar",
 		"kbdSwitch": "cambiar pestaña",
-		"eyebrow": "Listo para grabar"
+		"eyebrow": "Listo para grabar",
+		"clearSearch": "Borrar búsqueda"
 	},
 	"permissions": {
 		"screenRecordingNeeded": "ScreenMint necesita permiso de grabación de pantalla antes de comenzar. Se ha abierto Configuración del sistema. Después de habilitarlo, cierra y vuelve a abrir ScreenMint.",
@@ -168,6 +188,12 @@
 		"systemAudioUnavailable": "El audio del sistema no está disponible para esta fuente. La grabación continuará sin audio del sistema.",
 		"microphoneDenied": "Se denegó el acceso al micrófono. La grabación continuará sin audio del micrófono.",
 		"failedToStart": "Error al iniciar la grabación: {{error}}",
-		"failedToStartGeneric": "Error al iniciar la grabación"
+		"failedToStartGeneric": "Error al iniciar la grabación",
+		"diagnostics": "Diagnóstico"
+	},
+	"speakerNotes": {
+		"title": "Notas del orador",
+		"close": "Cerrar",
+		"placeholder": "Escribe aquí puntos clave, recordatorios o un guion…"
 	}
 }

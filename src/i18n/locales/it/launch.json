@@ -50,7 +50,21 @@
 		"systemAudio": "Audio di sistema",
 		"microphone": "Microfono",
 		"language": "Lingua",
-		"finalizing": "Finalizzazione…"
+		"finalizing": "Finalizzazione…",
+		"defaultCamera": "Videocamera predefinita",
+		"previewSize": "Dimensione anteprima",
+		"previewSmall": "Piccola",
+		"previewMedium": "Media",
+		"previewLarge": "Grande",
+		"previewCorner": "Angolo anteprima",
+		"cornerTopLeft": "In alto a sinistra",
+		"cornerTopRight": "In alto a destra",
+		"cornerBottomLeft": "In basso a sinistra",
+		"cornerBottomRight": "In basso a destra",
+		"previewShape": "Forma anteprima",
+		"shapeRoundedRect": "Rettangolo arrotondato",
+		"shapeCircle": "Cerchio",
+		"showScreenshot": "Mostra"
 	},
 	"tabs": {
 		"display": "Schermo",
@@ -106,7 +120,12 @@
 		"qualityHigh": "Alta",
 		"qualityMedium": "Media",
 		"fps": "Frequenza fotogrammi",
-		"hardwareAcceleration": "Accelerazione hardware"
+		"hardwareAcceleration": "Accelerazione hardware",
+		"title": "Impostazioni",
+		"experimentalUpdates": "Aggiornamenti sperimentali",
+		"recordingsFolder": "Cartella delle registrazioni",
+		"chooseFolder": "Scegli cartella…",
+		"openFolder": "Apri cartella"
 	},
 	"afterRecording": {
 		"afterRecording": "Dopo la registrazione",
@@ -145,7 +164,8 @@
 		"kbdShare": "condividi",
 		"kbdClose": "chiudi",
 		"kbdSwitch": "cambia scheda",
-		"eyebrow": "Pronto a registrare"
+		"eyebrow": "Pronto a registrare",
+		"clearSearch": "Cancella ricerca"
 	},
 	"permissions": {
 		"screenRecordingNeeded": "ScreenMint ha bisogno del permesso di registrazione dello schermo. Le Impostazioni di Sistema sono state aperte. Dopo averlo attivato, chiudi e riapri ScreenMint.",
@@ -168,6 +188,12 @@
 		"systemAudioUnavailable": "L'audio di sistema non è disponibile per questa sorgente. La registrazione continuerà senza audio di sistema.",
 		"microphoneDenied": "L'accesso al microfono è stato negato. La registrazione continuerà senza audio del microfono.",
 		"failedToStart": "Impossibile avviare la registrazione: {{error}}",
-		"failedToStartGeneric": "Impossibile avviare la registrazione"
+		"failedToStartGeneric": "Impossibile avviare la registrazione",
+		"diagnostics": "Diagnostica"
+	},
+	"speakerNotes": {
+		"title": "Note del relatore",
+		"close": "Chiudi",
+		"placeholder": "Scrivi qui punti chiave, promemoria o un copione…"
 	}
 }
