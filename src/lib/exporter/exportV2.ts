@@ -102,6 +102,7 @@ export interface ExportV2StartRequest {
 	frameRate: number;
 	bitrate?: number;
 	bitrateMode?: VideoBitrateMode;
+	keyframeIntervalSeconds?: number;
 	durationMs?: number;
 	trimRegions?: ExportV2TrimRegion[];
 	speedRegions?: ExportV2SpeedRegion[];

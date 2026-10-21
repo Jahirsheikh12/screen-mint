@@ -1303,7 +1303,7 @@ function buildExportV2VideoArgs(
 
 	args.push(
 		"-g",
-		String(Math.max(1, Math.round(request.frameRate * 2))),
+		String(Math.max(1, Math.round(request.frameRate * (request.keyframeIntervalSeconds ?? 2)))),
 		"-pix_fmt",
 		"yuv420p",
 		"-colorspace",

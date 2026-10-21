@@ -5,6 +5,8 @@ export interface ExportConfig {
 	frameRate: number;
 	bitrate: number;
 	codec?: string;
+	/** Seconds between forced keyframes; defaults to 2. */
+	keyframeIntervalSeconds?: number;
 }
 
 export type ExportPhase =

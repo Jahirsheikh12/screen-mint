@@ -665,7 +665,10 @@ export class VideoExporter {
 			this.encodeQueue++;
 			const keyFrameInterval = Math.max(
 				1,
-				Math.round((this.activeConfig?.frameRate ?? this.config.frameRate) * 2),
+				Math.round(
+					(this.activeConfig?.frameRate ?? this.config.frameRate) *
+						(this.config.keyframeIntervalSeconds ?? 2),
+				),
 			);
 			this.encoder.encode(exportFrame, { keyFrame: frameIndex % keyFrameInterval === 0 });
 		} else {

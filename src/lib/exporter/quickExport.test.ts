@@ -5,6 +5,7 @@ import {
 	resolveVideoExportPlan,
 } from "./planner";
 import {
+	DEFAULT_QUICK_VIDEO_SETTINGS,
 	normalizeQuickGifSettings,
 	normalizeQuickVideoSettings,
 	resolveQuickBaseDimensions,
@@ -83,6 +84,22 @@ describe("planner integration", () => {
 		expect(plan).toMatchObject({ width: 1728, height: 1080, frameRate: 24 });
 		expect(plan.bitrate).toBe(6_400_000);
 		expect(plan.encoderCandidates).toHaveLength(1);
+		expect(plan.keyframeIntervalSeconds).toBe(3);
+	});
+
+	it("sets the keyframe interval from the encoding mode, and leaves advanced plans unset", () => {
+		const interval = (encoding: "fast" | "balanced" | "quality") =>
+			resolveVideoExportPlan(
+				source,
+				toVideoExportSettings({ quality: "high", encoding, frameRate: 30 }),
+				16 / 10,
+			).keyframeIntervalSeconds;
+		expect(interval("fast")).toBe(4);
+		expect(interval("quality")).toBe(2.5);
+		const advanced = { ...toVideoExportSettings(DEFAULT_QUICK_VIDEO_SETTINGS), quick: undefined };
+		expect(
+			resolveVideoExportPlan(source, advanced, 16 / 10).keyframeIntervalSeconds,
+		).toBeUndefined();
 	});
 
 	it("caps GIF height without upscaling small sources", () => {

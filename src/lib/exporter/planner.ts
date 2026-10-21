@@ -1,4 +1,5 @@
 import {
+	getQuickKeyframeIntervalSeconds,
 	type QuickVideoSettings,
 	resolveQuickBaseDimensions,
 	resolveQuickVideoBitrate,
@@ -95,6 +96,8 @@ export interface ResolvedVideoExportPlan {
 	fallbackReason?: string;
 	fallbackSteps: string[];
 	encoderCandidates: ResolvedVideoEncoderCandidate[];
+	/** Set only by the Export menu's encoding mode; encoders default to 2 s. */
+	keyframeIntervalSeconds?: number;
 }
 
 export interface ResolvedGifExportPlan {
@@ -535,6 +538,7 @@ function resolveQuickVideoPlan(
 		encoderCandidates: [
 			{ width, height, frameRate: quick.frameRate, bitrate, codecCandidates, fallbackSteps: [] },
 		],
+		keyframeIntervalSeconds: getQuickKeyframeIntervalSeconds(quick.encoding),
 	};
 }
 
