@@ -1,8 +1,12 @@
 import { ArrowDown, ArrowUp, Eye, EyeOff, Lock, LockOpen, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useI18n } from "@/contexts/I18nContext";
+import { useScopedT } from "@/contexts/I18nContext";
 import { cn } from "@/lib/utils";
-import type { EditorLayer, EditorLayerTransform } from "./layerModel";
+import {
+	type EditorLayer,
+	type EditorLayerTransform,
+	PRIMARY_VIDEO_LAYER_NAME,
+} from "./layerModel";
 import {
 	deleteEditorLayer,
 	moveEditorLayerZ,
@@ -19,17 +23,6 @@ interface LayerPanelProps {
 	layers: EditorLayer[];
 	onLayersChange: (layers: EditorLayer[]) => void;
 	embedded?: boolean;
-}
-
-function layerKindLabel(layer: EditorLayer) {
-	switch (layer.type) {
-		case "scene-3d":
-			return "3D";
-		case "webcam":
-			return "Cam";
-		default:
-			return layer.type;
-	}
 }
 
 function hasUsableMedia(layer: EditorLayer) {
@@ -56,7 +49,16 @@ function transformWithCrop(
 }
 
 export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPanelProps) {
-	const { t } = useI18n();
+	const t = useScopedT("editor");
+	const layerKindLabel = (layer: EditorLayer) =>
+		t(`layerPanel.layerKinds.${layer.type}`, layer.type);
+	// Only names the app generated get translated; names the user typed are shown as typed.
+	const layerDisplayName = (layer: EditorLayer) => {
+		if (layer.type === "video" && layer.isPrimary && layer.name === PRIMARY_VIDEO_LAYER_NAME) {
+			return t("layerPanel.primaryRecording", PRIMARY_VIDEO_LAYER_NAME);
+		}
+		return layer.name === layer.type ? layerKindLabel(layer) : layer.name;
+	};
 	const ordered = useMemo(() => [...layers].sort((a, b) => b.zIndex - a.zIndex), [layers]);
 	const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
 	const selectedLayer = layers.find((layer) => layer.id === selectedLayerId) ?? ordered[0] ?? null;
@@ -80,14 +82,22 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 		>
 			<div className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar p-4 relative pb-20">
 				<SettingsSection
-					title={t("editor.layerPanel.layers", "Layers")}
-					description={`${layers.length > 0 ? `${layers.length} editable layer${layers.length === 1 ? "" : "s"}` : t("editor.layerPanel.noVideoLayerLoaded", "No video layer loaded")}`}
+					title={t("layerPanel.layers", "Layers")}
+					description={
+						layers.length === 0
+							? t("layerPanel.noVideoLayerLoaded", "No video layer loaded")
+							: layers.length === 1
+								? t("layerPanel.editableLayersOne", "1 editable layer")
+								: t("layerPanel.editableLayersMany", "{{count}} editable layers", {
+										count: layers.length,
+									})
+					}
 				>
 					<div className="flex flex-col gap-1 pr-1 -mr-1">
 						{ordered.length === 0 ? (
 							<div className="rounded-lg border border-dashed border-line-strong px-3 py-4 text-label text-fg-muted text-center bg-fill-subtle">
 								{t(
-									"editor.layerPanel.loadOrRecordA",
+									"layerPanel.loadOrRecordA",
 									"Load or record a video to create the primary editable layer.",
 								)}
 							</div>
@@ -125,7 +135,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 														selected ? "text-fg" : "text-fg-muted group-hover:text-fg",
 													)}
 												>
-													{layer.name}
+													{layerDisplayName(layer)}
 												</span>
 											</div>
 											<div
@@ -136,7 +146,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 											>
 												{usable
 													? `z ${layer.zIndex} · ${Math.round(layer.opacity * 100)}%`
-													: t("editor.layerPanel.pendingCapturedMedia", "Pending captured media")}
+													: t("layerPanel.pendingCapturedMedia", "Pending captured media")}
 											</div>
 										</div>
 										<div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
@@ -174,20 +184,20 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 
 				{selectedLayer && (
 					<SettingsSection
-						title={t("editor.layerPanel.layerSettings", "Layer Settings")}
+						title={t("layerPanel.layerSettings", "Layer Settings")}
 						description={t(
-							"editor.layerPanel.transformAndVisibilityControls",
+							"layerPanel.transformAndVisibilityControls",
 							"Transform and visibility controls",
 						)}
 					>
 						<div className="flex items-center justify-between gap-2 p-1 bg-fill-subtle border border-line rounded-lg pl-2">
 							<input
-								value={selectedLayer.name}
+								value={layerDisplayName(selectedLayer)}
 								onChange={(event) =>
 									onLayersChange(renameEditorLayer(layers, selectedLayer.id, event.target.value))
 								}
 								className="min-w-0 flex-1 bg-transparent border-none text-caption font-bold text-fg outline-none placeholder:text-fg-subtle focus:ring-0 px-1"
-								aria-label={t("editor.layerPanel.layerName", "Layer name")}
+								aria-label={t("layerPanel.layerName", "Layer name")}
 							/>
 							<div className="flex gap-1 shrink-0">
 								<button
@@ -200,8 +210,8 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 									}
 									aria-label={
 										selectedLayer.visible
-											? t("editor.layerPanel.hideLayer", "Hide layer")
-											: t("editor.layerPanel.showLayer", "Show layer")
+											? t("layerPanel.hideLayer", "Hide layer")
+											: t("layerPanel.showLayer", "Show layer")
 									}
 								>
 									{selectedLayer.visible ? (
@@ -220,8 +230,8 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 									}
 									aria-label={
 										selectedLayer.locked
-											? t("editor.layerPanel.unlockLayer", "Unlock layer")
-											: t("editor.layerPanel.lockLayer", "Lock layer")
+											? t("layerPanel.unlockLayer", "Unlock layer")
+											: t("layerPanel.lockLayer", "Lock layer")
 									}
 								>
 									{selectedLayer.locked ? (
@@ -236,7 +246,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 						{!hasUsableMedia(selectedLayer) && (
 							<div className="rounded-lg border border-accent/20 bg-accent/10 px-3 py-2 text-micro font-medium text-accent-fg/80 mt-1">
 								{t(
-									"editor.layerPanel.thisLayerIsPlanned",
+									"layerPanel.thisLayerIsPlanned",
 									"This layer is planned but does not have captured media yet.",
 								)}
 							</div>
@@ -245,12 +255,12 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 						<div className="mt-3">
 							<div className="text-micro font-bold text-fg-muted uppercase tracking-widest mb-3 flex items-center gap-2">
 								<div className="w-2 h-2 rounded-full bg-accent/50" />{" "}
-								{t("editor.layerPanel.transform", "Transform")}
+								{t("layerPanel.transform", "Transform")}
 							</div>
 							<div className="grid grid-cols-3 gap-2">
 								<label className="space-y-1.5">
 									<span className="text-micro font-medium text-fg-subtle pl-0.5">
-										{t("editor.layerPanel.xPosition", "X Position")}
+										{t("layerPanel.xPosition", "X Position")}
 									</span>
 									<input
 										type="number"
@@ -266,7 +276,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 								</label>
 								<label className="space-y-1.5">
 									<span className="text-micro font-medium text-fg-subtle pl-0.5">
-										{t("editor.layerPanel.yPosition", "Y Position")}
+										{t("layerPanel.yPosition", "Y Position")}
 									</span>
 									<input
 										type="number"
@@ -282,7 +292,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 								</label>
 								<label className="space-y-1.5">
 									<span className="text-micro font-medium text-fg-subtle pl-0.5">
-										{t("editor.layerPanel.scale", "Scale")}
+										{t("layerPanel.scale", "Scale")}
 									</span>
 									<input
 										type="number"
@@ -302,7 +312,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 							<div className="grid grid-cols-3 gap-2 mt-2">
 								<label className="space-y-1.5">
 									<span className="text-micro font-medium text-fg-subtle pl-0.5">
-										{t("editor.layerPanel.opacity", "Opacity")}
+										{t("layerPanel.opacity", "Opacity")}
 									</span>
 									<input
 										type="number"
@@ -325,7 +335,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 								</label>
 								<label className="space-y-1.5">
 									<span className="text-micro font-medium text-fg-subtle pl-0.5">
-										{t("editor.layerPanel.startMs", "Start ms")}
+										{t("layerPanel.startMs", "Start ms")}
 									</span>
 									<input
 										type="number"
@@ -345,7 +355,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 								</label>
 								<label className="space-y-1.5">
 									<span className="text-micro font-medium text-fg-subtle pl-0.5">
-										{t("editor.layerPanel.endMs", "End ms")}
+										{t("layerPanel.endMs", "End ms")}
 									</span>
 									<input
 										type="number"
@@ -371,14 +381,13 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 
 						<div className="mt-4">
 							<div className="text-micro font-bold text-fg-muted uppercase tracking-widest mb-3 flex items-center gap-2">
-								<div className="w-2 h-2 rounded-full bg-info/50" />{" "}
-								{t("editor.layerPanel.crop", "Crop")}
+								<div className="w-2 h-2 rounded-full bg-info/50" /> {t("layerPanel.crop", "Crop")}
 							</div>
 							<div className="grid grid-cols-4 gap-2">
 								{(["x", "y", "width", "height"] as const).map((key) => (
 									<label key={key} className="space-y-1.5">
-										<span className="text-micro font-medium text-fg-subtle pl-0.5 capitalize">
-											{key}
+										<span className="text-micro font-medium text-fg-subtle pl-0.5">
+											{t(`layerPanel.cropFields.${key}`, key)}
 										</span>
 										<input
 											type="number"
@@ -416,7 +425,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 										onLayersChange(moveEditorLayerZ(layers, selectedLayer.id, "forward"))
 									}
 									disabled={!editable}
-									aria-label={t("editor.layerPanel.moveLayerForward", "Move layer forward")}
+									aria-label={t("layerPanel.moveLayerForward", "Move layer forward")}
 								>
 									<ArrowUp className="h-4 w-4" />
 								</button>
@@ -428,19 +437,19 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 										onLayersChange(moveEditorLayerZ(layers, selectedLayer.id, "backward"))
 									}
 									disabled={!editable}
-									aria-label={t("editor.layerPanel.moveLayerBackward", "Move layer backward")}
+									aria-label={t("layerPanel.moveLayerBackward", "Move layer backward")}
 								>
 									<ArrowDown className="h-4 w-4" />
 								</button>
 							</div>
 							<button
 								type="button"
-								className="inline-flex items-center gap-2 rounded-lg bg-danger/10 hover:bg-danger/20 border border-danger/20 px-3 py-2 text-caption font-bold tracking-wider text-danger-fg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+								className="inline-flex items-center gap-2 rounded-lg bg-danger/10 hover:bg-danger/20 border border-danger/20 px-3 py-2 text-caption font-bold uppercase tracking-wider text-danger-fg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
 								onClick={() => onLayersChange(deleteEditorLayer(layers, selectedLayer.id))}
 								disabled={!editable}
 							>
 								<Trash2 className="h-3.5 w-3.5" />
-								DELETE
+								{t("layerPanel.delete", "Delete")}
 							</button>
 						</div>
 					</SettingsSection>

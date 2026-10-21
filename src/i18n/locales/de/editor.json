@@ -322,7 +322,27 @@
 		"endMs": "Ende (ms)",
 		"crop": "Zuschnitt",
 		"moveLayerForward": "Ebene nach vorne",
-		"moveLayerBackward": "Ebene nach hinten"
+		"moveLayerBackward": "Ebene nach hinten",
+		"editableLayersOne": "1 bearbeitbare Ebene",
+		"editableLayersMany": "{{count}} bearbeitbare Ebenen",
+		"primaryRecording": "Hauptaufnahme",
+		"delete": "Löschen",
+		"cropFields": {
+			"x": "X",
+			"y": "Y",
+			"width": "Breite",
+			"height": "Höhe"
+		},
+		"layerKinds": {
+			"video": "Video",
+			"window": "Fenster",
+			"screenshot": "Screenshot",
+			"webcam": "Kamera",
+			"audio": "Audio",
+			"annotation": "Anmerkung",
+			"caption": "Untertitel",
+			"scene-3d": "3D"
+		}
 	},
 	"annotationPanel": {
 		"customFonts": "Eigene Schriften",

@@ -322,7 +322,27 @@
 		"endMs": "끝 (ms)",
 		"crop": "자르기",
 		"moveLayerForward": "레이어 앞으로",
-		"moveLayerBackward": "레이어 뒤로"
+		"moveLayerBackward": "레이어 뒤로",
+		"editableLayersOne": "편집 가능한 레이어 1개",
+		"editableLayersMany": "편집 가능한 레이어 {{count}}개",
+		"primaryRecording": "기본 녹화",
+		"delete": "삭제",
+		"cropFields": {
+			"x": "X",
+			"y": "Y",
+			"width": "너비",
+			"height": "높이"
+		},
+		"layerKinds": {
+			"video": "비디오",
+			"window": "창",
+			"screenshot": "스크린샷",
+			"webcam": "카메라",
+			"audio": "오디오",
+			"annotation": "주석",
+			"caption": "자막",
+			"scene-3d": "3D"
+		}
 	},
 	"annotationPanel": {
 		"customFonts": "사용자 글꼴",

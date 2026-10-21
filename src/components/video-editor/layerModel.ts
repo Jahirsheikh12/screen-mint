@@ -139,6 +139,9 @@ function normalizeTransform(candidate: unknown): EditorLayerTransform {
 	};
 }
 
+// Stored as-is in projects; LayerPanel shows it in the UI language until the user renames it.
+export const PRIMARY_VIDEO_LAYER_NAME = "Primary recording";
+
 export function buildPrimaryVideoLayer(
 	videoPath: string,
 	durationMs?: number | null,
@@ -146,7 +149,7 @@ export function buildPrimaryVideoLayer(
 	return {
 		id: "layer-primary-video",
 		type: "video",
-		name: "Primary recording",
+		name: PRIMARY_VIDEO_LAYER_NAME,
 		visible: true,
 		locked: false,
 		zIndex: 0,

@@ -322,7 +322,27 @@
 		"endMs": "Fin (ms)",
 		"crop": "Recortar",
 		"moveLayerForward": "Subir la capa",
-		"moveLayerBackward": "Bajar la capa"
+		"moveLayerBackward": "Bajar la capa",
+		"editableLayersOne": "1 capa editable",
+		"editableLayersMany": "{{count}} capas editables",
+		"primaryRecording": "Grabación principal",
+		"delete": "Eliminar",
+		"cropFields": {
+			"x": "X",
+			"y": "Y",
+			"width": "Ancho",
+			"height": "Alto"
+		},
+		"layerKinds": {
+			"video": "Vídeo",
+			"window": "Ventana",
+			"screenshot": "Captura",
+			"webcam": "Cámara",
+			"audio": "Audio",
+			"annotation": "Anotación",
+			"caption": "Subtítulo",
+			"scene-3d": "3D"
+		}
 	},
 	"annotationPanel": {
 		"customFonts": "Fuentes personalizadas",

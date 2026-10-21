@@ -322,7 +322,27 @@
 		"endMs": "結束（毫秒）",
 		"crop": "裁切",
 		"moveLayerForward": "圖層上移",
-		"moveLayerBackward": "圖層下移"
+		"moveLayerBackward": "圖層下移",
+		"editableLayersOne": "1 個可編輯圖層",
+		"editableLayersMany": "{{count}} 個可編輯圖層",
+		"primaryRecording": "主要錄製",
+		"delete": "刪除",
+		"cropFields": {
+			"x": "X",
+			"y": "Y",
+			"width": "寬度",
+			"height": "高度"
+		},
+		"layerKinds": {
+			"video": "影片",
+			"window": "視窗",
+			"screenshot": "截圖",
+			"webcam": "攝影機",
+			"audio": "音訊",
+			"annotation": "註解",
+			"caption": "字幕",
+			"scene-3d": "3D"
+		}
 	},
 	"annotationPanel": {
 		"customFonts": "自訂字型",

@@ -322,7 +322,27 @@
 		"endMs": "Fin (ms)",
 		"crop": "Recadrage",
 		"moveLayerForward": "Avancer le calque",
-		"moveLayerBackward": "Reculer le calque"
+		"moveLayerBackward": "Reculer le calque",
+		"editableLayersOne": "1 calque modifiable",
+		"editableLayersMany": "{{count}} calques modifiables",
+		"primaryRecording": "Enregistrement principal",
+		"delete": "Supprimer",
+		"cropFields": {
+			"x": "X",
+			"y": "Y",
+			"width": "Largeur",
+			"height": "Hauteur"
+		},
+		"layerKinds": {
+			"video": "Vidéo",
+			"window": "Fenêtre",
+			"screenshot": "Capture",
+			"webcam": "Caméra",
+			"audio": "Audio",
+			"annotation": "Annotation",
+			"caption": "Sous-titre",
+			"scene-3d": "3D"
+		}
 	},
 	"annotationPanel": {
 		"customFonts": "Polices personnalisées",

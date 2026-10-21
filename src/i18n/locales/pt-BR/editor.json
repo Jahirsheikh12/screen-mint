@@ -322,7 +322,27 @@
 		"endMs": "Fim (ms)",
 		"crop": "Cortar",
 		"moveLayerForward": "Trazer a camada para frente",
-		"moveLayerBackward": "Enviar a camada para trás"
+		"moveLayerBackward": "Enviar a camada para trás",
+		"editableLayersOne": "1 camada editável",
+		"editableLayersMany": "{{count}} camadas editáveis",
+		"primaryRecording": "Gravação principal",
+		"delete": "Excluir",
+		"cropFields": {
+			"x": "X",
+			"y": "Y",
+			"width": "Largura",
+			"height": "Altura"
+		},
+		"layerKinds": {
+			"video": "Vídeo",
+			"window": "Janela",
+			"screenshot": "Captura",
+			"webcam": "Câmera",
+			"audio": "Áudio",
+			"annotation": "Anotação",
+			"caption": "Legenda",
+			"scene-3d": "3D"
+		}
 	},
 	"annotationPanel": {
 		"customFonts": "Fontes personalizadas",
