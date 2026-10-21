@@ -97,7 +97,7 @@ export function AnnotationOverlay({
 					);
 				}
 				return (
-					<div className="w-full h-full flex items-center justify-center text-slate-400 text-sm">
+					<div className="w-full h-full flex items-center justify-center text-fg-muted text-body">
 						{t("editor.annotationOverlay.noImage", "No image")}
 					</div>
 				);
@@ -105,7 +105,7 @@ export function AnnotationOverlay({
 			case "figure":
 				if (!annotation.figureData) {
 					return (
-						<div className="w-full h-full flex items-center justify-center text-slate-400 text-sm">
+						<div className="w-full h-full flex items-center justify-center text-fg-muted text-body">
 							{t("editor.annotationOverlay.noArrowData", "No arrow data")}
 						</div>
 					);
@@ -172,7 +172,7 @@ export function AnnotationOverlay({
 			bounds="parent"
 			className={cn(
 				"cursor-move transition-all",
-				isSelected && "ring-2 ring-[#F59E0B] ring-offset-2 ring-offset-transparent",
+				isSelected && "ring-2 ring-accent ring-offset-2 ring-offset-transparent",
 			)}
 			style={{
 				zIndex: isSelectedBoost ? zIndex + 1000 : zIndex, // Boost selected annotation to ensure it's on top

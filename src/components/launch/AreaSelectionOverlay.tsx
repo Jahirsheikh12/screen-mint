@@ -852,7 +852,7 @@ export function AreaSelectionOverlay() {
 						top: rect.y + rect.height / 2,
 						transform: "translate(-50%, -50%)",
 					}}
-					className="pointer-events-none rounded-lg bg-[rgba(28,28,30,0.85)] px-3 py-1.5 text-[13px] font-medium tabular-nums text-white backdrop-blur-3xl shadow-[0_4px_12px_rgba(0,0,0,0.3)] border border-white/10"
+					className="pointer-events-none rounded-lg bg-[rgba(28,28,30,0.85)] px-3 py-1.5 text-body font-medium tabular-nums text-white backdrop-blur-3xl shadow-[0_4px_12px_rgba(0,0,0,0.3)] border border-white/10"
 				>
 					{Math.round(rect.width)} <span className="mx-1 text-white/50">&times;</span>{" "}
 					{Math.round(rect.height)}
@@ -870,13 +870,13 @@ export function AreaSelectionOverlay() {
 						transform: "translateX(-50%)",
 						maxWidth: "calc(100vw - 32px)",
 					}}
-					className="flex flex-wrap items-center justify-center gap-2 rounded-xl border border-white/10 bg-[rgba(28,28,30,0.85)] px-3 py-2 text-xs text-white shadow-[0_12px_32px_rgba(0,0,0,0.4)] backdrop-blur-3xl"
+					className="flex flex-wrap items-center justify-center gap-2 rounded-xl border border-white/10 bg-[rgba(28,28,30,0.85)] px-3 py-2 text-label text-white shadow-[0_12px_32px_rgba(0,0,0,0.4)] backdrop-blur-3xl"
 					onPointerDown={(e) => e.stopPropagation()}
 				>
 					{/* Dimension inputs (W × H) */}
 					{display && (
 						<div className="flex items-center gap-1">
-							<label className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[11px] hover:bg-white/10 transition-colors focus-within:bg-white/10 focus-within:ring-1 focus-within:ring-[#F59E0B]">
+							<label className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-caption hover:bg-white/10 transition-colors focus-within:bg-white/10 focus-within:ring-1 focus-within:ring-accent">
 								<span className="font-medium text-white/50">{t("area.widthShort", "W")}</span>
 								<input
 									ref={widthRef}
@@ -892,8 +892,8 @@ export function AreaSelectionOverlay() {
 									className="w-10 bg-transparent text-right font-medium tabular-nums text-white outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
 								/>
 							</label>
-							<span className="text-white/30 text-[10px] select-none font-medium">&times;</span>
-							<label className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[11px] hover:bg-white/10 transition-colors focus-within:bg-white/10 focus-within:ring-1 focus-within:ring-[#F59E0B]">
+							<span className="text-white/30 text-micro select-none font-medium">&times;</span>
+							<label className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-caption hover:bg-white/10 transition-colors focus-within:bg-white/10 focus-within:ring-1 focus-within:ring-accent">
 								<span className="font-medium text-white/50">{t("area.heightShort", "H")}</span>
 								<input
 									ref={heightRef}
@@ -918,7 +918,7 @@ export function AreaSelectionOverlay() {
 							{(["x", "y"] as const).map((axis) => (
 								<label
 									key={axis}
-									className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[11px] hover:bg-white/10 transition-colors focus-within:bg-white/10 focus-within:ring-1 focus-within:ring-[#F59E0B]"
+									className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-caption hover:bg-white/10 transition-colors focus-within:bg-white/10 focus-within:ring-1 focus-within:ring-accent"
 								>
 									<span className="font-medium text-white/50">{axis.toUpperCase()}</span>
 									<input
@@ -951,7 +951,7 @@ export function AreaSelectionOverlay() {
 									key={preset.id}
 									type="button"
 									onClick={() => applyAspectPreset(preset)}
-									className={`rounded px-2 py-1 text-[11px] font-medium transition-colors ${
+									className={`rounded px-2 py-1 text-caption font-medium transition-colors ${
 										active
 											? "bg-white/15 text-white shadow-sm"
 											: "text-white/50 hover:bg-white/10 hover:text-white/90"
@@ -977,7 +977,7 @@ export function AreaSelectionOverlay() {
 						<button
 							type="button"
 							onClick={confirmSelection}
-							className="flex items-center gap-1.5 rounded-md border border-transparent bg-[#F59E0B] px-3.5 py-1 font-semibold text-black shadow-sm transition-colors hover:bg-[#FBBF24]"
+							className="flex items-center gap-1.5 rounded-md border border-transparent bg-accent px-3.5 py-1 font-semibold text-black shadow-sm transition-colors hover:bg-accent"
 						>
 							<FiCheck size={13} />
 							<span>{t("area.confirmSelection")}</span>

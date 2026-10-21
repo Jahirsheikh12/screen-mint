@@ -18,24 +18,24 @@ export function SettingsSection({
 	return (
 		<div
 			className={cn(
-				"mb-6 relative rounded-xl border border-white/10 bg-black/20 p-4 pt-5 shadow-[0_8px_32px_rgba(0,0,0,0.2)] backdrop-blur-md overflow-hidden",
+				"mb-6 relative rounded-xl border border-line-strong bg-sunken p-4 pt-5 shadow-[0_8px_32px_rgba(0,0,0,0.2)] backdrop-blur-md overflow-hidden",
 				className,
 			)}
 		>
 			<div
 				className={cn(
 					"absolute left-0 top-0 h-[1px] w-full bg-gradient-to-r to-transparent opacity-60",
-					accentColor === "amber" && "from-amber-500",
-					accentColor === "blue" && "from-blue-500",
-					accentColor === "red" && "from-red-500",
+					accentColor === "amber" && "from-accent",
+					accentColor === "blue" && "from-info",
+					accentColor === "red" && "from-danger",
 				)}
 			/>
 			<div className="mb-4 pl-1">
-				<h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-400 flex items-center gap-2">
+				<h3 className="text-caption font-bold uppercase tracking-[0.15em] text-fg-muted flex items-center gap-2">
 					{title}
 				</h3>
 				{description && (
-					<p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed font-medium">
+					<p className="text-micro text-fg-subtle mt-1.5 leading-relaxed font-medium">
 						{description}
 					</p>
 				)}
@@ -97,20 +97,20 @@ export function TabHeader({
 	trailing?: React.ReactNode;
 }) {
 	const badgeColorMap = {
-		amber: "text-[#F59E0B] bg-[#F59E0B]/10 border border-[#F59E0B]/20",
+		amber: "text-accent-fg bg-accent/10 border border-accent/20",
 		blue: "text-[#3b82f6] bg-[#3b82f6]/10 border border-[#3b82f6]/20",
 	};
 
 	return (
-		<div className="mb-6 pb-4 border-b border-white/[0.04] relative">
-			<div className="absolute bottom-0 left-0 w-1/3 h-[1px] bg-gradient-to-r from-amber-500/50 to-transparent" />
+		<div className="mb-6 pb-4 border-b border-line relative">
+			<div className="absolute bottom-0 left-0 w-1/3 h-[1px] bg-gradient-to-r from-accent/50 to-transparent" />
 			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-2.5">
-					<span className="text-[14px] font-bold text-white tracking-tight">{title}</span>
+					<span className="text-title font-bold text-fg tracking-tight">{title}</span>
 					{badge && (
 						<span
 							className={cn(
-								"text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full",
+								"text-micro uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full",
 								badgeColorMap[badgeColor],
 							)}
 						>
@@ -121,9 +121,7 @@ export function TabHeader({
 				{trailing}
 			</div>
 			{description && (
-				<p className="text-[12px] text-slate-400 mt-1.5 leading-relaxed font-medium">
-					{description}
-				</p>
+				<p className="text-label text-fg-muted mt-1.5 leading-relaxed font-medium">{description}</p>
 			)}
 		</div>
 	);
@@ -156,8 +154,8 @@ export function SidebarTabButton({
 			className={cn(
 				"relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 ease-out group",
 				isActive
-					? "bg-amber-500/10 text-amber-400 shadow-[inset_0_0_12px_rgba(245,158,11,0.2)] border border-amber-500/20"
-					: "text-slate-400 hover:text-slate-200 hover:bg-white/5 border border-transparent",
+					? "bg-accent/10 text-accent-fg shadow-[inset_0_0_12px_rgba(245,158,11,0.2)] border border-accent/20"
+					: "text-fg-muted hover:text-fg hover:bg-fill-subtle border border-transparent",
 			)}
 		>
 			<Icon

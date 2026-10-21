@@ -72,19 +72,19 @@ export function KeyboardSettingsTab({
 					"Toggle keyboard shortcut overlay visibility",
 				)}
 			>
-				<div className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+				<div className="flex items-center justify-between p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 					<div>
-						<div className="text-xs font-medium text-slate-300">
+						<div className="text-label font-medium text-fg-muted">
 							{tSettings("keyboard.showShortcuts")}
 						</div>
-						<div className="text-[10px] text-slate-500 mt-0.5">
+						<div className="text-micro text-fg-subtle mt-0.5">
 							{tSettings("keyboardTab.overlayShortcutKeysIn", "Overlay shortcut keys in the video")}
 						</div>
 					</div>
 					<Switch
 						checked={showKeyboardShortcuts}
 						onCheckedChange={onShowKeyboardShortcutsChange}
-						className="data-[state=checked]:bg-[#F59E0B] scale-90"
+						className="data-[state=checked]:bg-accent scale-90"
 					/>
 				</div>
 			</SettingsSection>
@@ -97,8 +97,8 @@ export function KeyboardSettingsTab({
 						"Position and style of the shortcut display",
 					)}
 				>
-					<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
-						<div className="text-xs font-medium text-slate-300 mb-2">
+					<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+						<div className="text-label font-medium text-fg-muted mb-2">
 							{tSettings("keyboard.position")}
 						</div>
 						<div className="grid grid-cols-2 gap-1">
@@ -109,10 +109,10 @@ export function KeyboardSettingsTab({
 									disabled={!showKeyboardShortcuts}
 									onClick={() => onKeyboardShortcutPositionChange?.(option.value)}
 									className={cn(
-										"px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all duration-200 cursor-pointer",
+										"px-2 py-1.5 rounded-lg text-micro font-medium transition-all duration-200 cursor-pointer",
 										keyboardShortcutPosition === option.value
-											? "bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-white shadow-sm shadow-[#F59E0B]/20"
-											: "bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200 border border-white/[0.04]",
+											? "bg-gradient-to-r from-accent to-accent-hover text-on-accent shadow-sm shadow-accent/20"
+											: "bg-fill-subtle text-fg-muted hover:bg-fill-hover hover:text-fg border border-line",
 									)}
 								>
 									{tSettings(`keyboard.positions.${option.value}`)}
@@ -121,8 +121,8 @@ export function KeyboardSettingsTab({
 						</div>
 					</div>
 
-					<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
-						<div className="text-xs font-medium text-slate-300 mb-2">
+					<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+						<div className="text-label font-medium text-fg-muted mb-2">
 							{tSettings("keyboard.theme")}
 						</div>
 						<div className="grid grid-cols-3 gap-1">
@@ -133,10 +133,10 @@ export function KeyboardSettingsTab({
 									disabled={!showKeyboardShortcuts}
 									onClick={() => onKeyboardShortcutThemeChange?.(option.value)}
 									className={cn(
-										"px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all duration-200 cursor-pointer",
+										"px-2 py-1.5 rounded-lg text-micro font-medium transition-all duration-200 cursor-pointer",
 										keyboardShortcutTheme === option.value
-											? "bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-white shadow-sm shadow-[#F59E0B]/20"
-											: "bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200 border border-white/[0.04]",
+											? "bg-gradient-to-r from-accent to-accent-hover text-on-accent shadow-sm shadow-accent/20"
+											: "bg-fill-subtle text-fg-muted hover:bg-fill-hover hover:text-fg border border-line",
 									)}
 								>
 									{tSettings(`keyboard.themes.${option.value}`)}
@@ -153,7 +153,7 @@ export function KeyboardSettingsTab({
 						"Fine-tune size, opacity, and timing",
 					)}
 				>
-					<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+					<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 						<SliderControl
 							label={tSettings("keyboard.scale")}
 							value={keyboardShortcutScale}
@@ -168,7 +168,7 @@ export function KeyboardSettingsTab({
 						/>
 					</div>
 
-					<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+					<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 						<SliderControl
 							label={tSettings("keyboard.opacity")}
 							value={keyboardShortcutOpacity}
@@ -183,7 +183,7 @@ export function KeyboardSettingsTab({
 						/>
 					</div>
 
-					<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+					<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 						<SliderControl
 							label={tSettings("keyboard.displayDuration")}
 							value={keyboardShortcutDisplayMs}
@@ -198,7 +198,7 @@ export function KeyboardSettingsTab({
 						/>
 					</div>
 
-					<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+					<div className="p-2.5 rounded-xl bg-sunken border border-line shadow-inner hover:border-accent/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
 						<SliderControl
 							label={tSettings("keyboard.maxVisible")}
 							value={keyboardShortcutMaxVisible}

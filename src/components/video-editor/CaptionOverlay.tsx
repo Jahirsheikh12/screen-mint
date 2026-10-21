@@ -193,7 +193,7 @@ export function CaptionOverlay({
 			</div>
 			{isEditing && (
 				<div
-					className="pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 rounded-md bg-black/70 px-2 py-0.5 text-[10px] font-medium text-amber-200"
+					className="pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 rounded-md bg-black/70 px-2 py-0.5 text-micro font-medium text-accent-fg"
 					style={{ whiteSpace: "nowrap" }}
 				>
 					Drag to position · double-click to reset

@@ -63,19 +63,19 @@ export function ZoomTimingControls({
 		label: string,
 	) => (
 		<div className="flex items-center justify-between gap-3">
-			<span className="text-xs font-medium text-slate-300">
+			<span className="text-label font-medium text-fg-muted">
 				{tSettings(`zoomTiming.${key}`, label)}
 			</span>
 			<Select
 				value={zoomTiming[key]}
 				onValueChange={(value) => update({ [key]: value as ZoomTransitionEasing })}
 			>
-				<SelectTrigger className="h-8 w-32 bg-white/5 border-white/10 text-xs text-slate-200 hover:bg-white/10">
+				<SelectTrigger className="h-8 w-32 bg-fill-subtle border-line-strong text-label text-fg hover:bg-fill-hover">
 					<SelectValue />
 				</SelectTrigger>
-				<SelectContent className="bg-[#1a1a1f] border-white/10 z-[100]">
+				<SelectContent className="bg-raised border-line-strong z-[100]">
 					{ZOOM_TRANSITION_EASING_OPTIONS.map((option) => (
-						<SelectItem key={option.value} value={option.value} className="text-xs">
+						<SelectItem key={option.value} value={option.value} className="text-label">
 							{tSettings(`zoomTiming.easing.${option.value}`, option.label)}
 						</SelectItem>
 					))}
@@ -85,7 +85,7 @@ export function ZoomTimingControls({
 	);
 
 	return (
-		<div className="space-y-3 rounded-xl border border-white/5 bg-black/40 p-2.5">
+		<div className="space-y-3 rounded-xl border border-line bg-sunken p-2.5">
 			{durationSlider("zoomInDurationMs", "Zoom In Duration", 3000)}
 			{durationSlider("zoomInOverlapMs", "Zoom In Overlap", 2000)}
 			{easingSelect("zoomInEasing", "Zoom In Curve")}

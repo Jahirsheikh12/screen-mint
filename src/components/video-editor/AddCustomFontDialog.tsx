@@ -116,23 +116,23 @@ export function AddCustomFontDialog({ onFontAdded }: AddCustomFontDialogProps) {
 				<Button
 					variant="outline"
 					size="sm"
-					className="w-full bg-white/5 border-white/10 text-slate-200 hover:bg-white/10 h-9 text-xs"
+					className="w-full bg-fill-subtle border-line-strong text-fg hover:bg-fill-hover h-9 text-label"
 				>
 					<Plus className="w-3 h-3 mr-1" />
 					{t("addFont.title")}
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="bg-[#1a1a1c] border-white/10 text-slate-200">
+			<DialogContent className="bg-raised border-line-strong text-fg">
 				<DialogHeader>
 					<DialogTitle>{t("addFont.heading")}</DialogTitle>
-					<DialogDescription className="text-slate-400">
+					<DialogDescription className="text-fg-muted">
 						{t("addFont.description")}
 					</DialogDescription>
 				</DialogHeader>
 
 				<div className="space-y-4 mt-4">
 					<div className="space-y-2">
-						<Label htmlFor="import-url" className="text-slate-200">
+						<Label htmlFor="import-url" className="text-fg">
 							{t("addFont.urlLabel")}
 						</Label>
 						<Input
@@ -140,13 +140,13 @@ export function AddCustomFontDialog({ onFontAdded }: AddCustomFontDialogProps) {
 							placeholder={t("addFont.urlPlaceholder")}
 							value={importUrl}
 							onChange={(e) => handleImportUrlChange(e.target.value)}
-							className="bg-white/5 border-white/10 text-slate-200"
+							className="bg-fill-subtle border-line-strong text-fg"
 						/>
-						<p className="text-xs text-slate-400">{t("addFont.urlHelp")}</p>
+						<p className="text-label text-fg-muted">{t("addFont.urlHelp")}</p>
 					</div>
 
 					<div className="space-y-2">
-						<Label htmlFor="font-name" className="text-slate-200">
+						<Label htmlFor="font-name" className="text-fg">
 							{t("addFont.nameLabel")}
 						</Label>
 						<Input
@@ -154,23 +154,23 @@ export function AddCustomFontDialog({ onFontAdded }: AddCustomFontDialogProps) {
 							placeholder={t("addFont.namePlaceholder")}
 							value={fontName}
 							onChange={(e) => setFontName(e.target.value)}
-							className="bg-white/5 border-white/10 text-slate-200"
+							className="bg-fill-subtle border-line-strong text-fg"
 						/>
-						<p className="text-xs text-slate-400">{t("addFont.nameHelp")}</p>
+						<p className="text-label text-fg-muted">{t("addFont.nameHelp")}</p>
 					</div>
 
 					<div className="flex justify-end gap-2 mt-6">
 						<Button
 							variant="outline"
 							onClick={() => setOpen(false)}
-							className="bg-white/5 border-white/10 text-slate-200 hover:bg-white/10"
+							className="bg-fill-subtle border-line-strong text-fg hover:bg-fill-hover"
 						>
 							{t("addFont.cancel")}
 						</Button>
 						<Button
 							onClick={handleAdd}
 							disabled={loading}
-							className="bg-blue-600 hover:bg-blue-700 text-white"
+							className="bg-info hover:bg-info text-fg"
 						>
 							{loading ? t("addFont.adding") : t("addFont.addFont")}
 						</Button>

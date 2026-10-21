@@ -12,6 +12,7 @@ import { SpeakerNotesWindow } from "./components/launch/SpeakerNotesWindow";
 import { useI18n } from "./contexts/I18nContext";
 import { ShortcutsProvider } from "./contexts/ShortcutsContext";
 import { loadAllCustomFonts } from "./lib/customFonts";
+import { useThemePreference } from "./lib/theme";
 
 const VideoEditor = lazy(() => import("./components/video-editor/VideoEditor"));
 const ShortcutsConfigDialog = lazy(() =>
@@ -22,7 +23,7 @@ const ShortcutsConfigDialog = lazy(() =>
 
 function AppLoadingScreen({ label }: { label: string }) {
 	return (
-		<div className="flex h-full w-full items-center justify-center bg-[#0a0a0b] text-white">
+		<div className="flex h-full w-full items-center justify-center bg-canvas text-fg">
 			<div
 				className="flex flex-col items-center gap-5"
 				style={{ animation: "app-loading-enter 0.6s cubic-bezier(0.16,1,0.3,1) both" }}
@@ -38,13 +39,13 @@ function AppLoadingScreen({ label }: { label: string }) {
 					/>
 				</div>
 				<div className="flex flex-col items-center gap-2">
-					<h1 className="text-lg font-semibold tracking-tight text-white/90">ScreenMint</h1>
-					<p className="text-[13px] text-white/35">{label}</p>
+					<h1 className="text-lg font-semibold tracking-tight text-fg">ScreenMint</h1>
+					<p className="text-body text-fg-subtle">{label}</p>
 				</div>
 				{/* Minimal loading bar */}
-				<div className="w-24 h-[2px] rounded-full bg-white/[0.06] overflow-hidden mt-1">
+				<div className="w-24 h-[2px] rounded-full bg-fill-hover overflow-hidden mt-1">
 					<div
-						className="h-full rounded-full bg-white/20"
+						className="h-full rounded-full bg-fill-pressed"
 						style={{
 							animation: "app-loading-bar 1.5s ease-in-out infinite",
 						}}
@@ -73,7 +74,7 @@ function AppLoadingScreen({ label }: { label: string }) {
 }
 
 function EditorLoadingSurface() {
-	return <div className="h-screen w-screen bg-[#0c0c0f]" aria-hidden="true" />;
+	return <div className="h-screen w-screen bg-canvas" aria-hidden="true" />;
 }
 
 // Read windowType synchronously so the very first render picks the correct component
@@ -83,6 +84,7 @@ const INITIAL_WINDOW_TYPE = new URLSearchParams(window.location.search).get("win
 export default function App() {
 	const [windowType] = useState(INITIAL_WINDOW_TYPE);
 	const { t } = useI18n();
+	const [themePreference] = useThemePreference();
 
 	useEffect(() => {
 		loadAllCustomFonts().catch((error) => {
@@ -140,7 +142,7 @@ export default function App() {
 		<>
 			{content}
 			<UpdaterDialogs windowType={windowType} />
-			<Toaster theme="dark" className="pointer-events-auto" />
+			<Toaster theme={themePreference} className="pointer-events-auto" />
 		</>
 	);
 }

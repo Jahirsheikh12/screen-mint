@@ -21,28 +21,28 @@ export function TutorialHelp() {
 				<Button
 					variant="ghost"
 					size="sm"
-					className="h-7 px-2 text-xs text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-all gap-1.5"
+					className="h-7 px-2 text-label text-fg-muted hover:text-fg hover:bg-fill-hover transition-all gap-1.5"
 				>
 					<HelpCircle className="w-3.5 h-3.5" />
 					<span className="font-medium">{t("tutorial.howTrimmingWorks")}</span>
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="max-w-2xl bg-[#0A0F0D] border-white/10 [&>button]:text-slate-400 [&>button:hover]:text-white">
+			<DialogContent className="max-w-2xl bg-canvas border-line-strong [&>button]:text-fg-muted [&>button:hover]:text-fg">
 				<DialogHeader>
-					<DialogTitle className="text-xl font-semibold text-slate-200 flex items-center gap-2">
-						<Scissors className="w-5 h-5 text-[#ef4444]" /> {t("tutorial.title")}
+					<DialogTitle className="text-xl font-semibold text-fg flex items-center gap-2">
+						<Scissors className="w-5 h-5 text-danger-fg" /> {t("tutorial.title")}
 					</DialogTitle>
-					<DialogDescription className="text-slate-400">
+					<DialogDescription className="text-fg-muted">
 						{t("tutorial.understanding")}
 					</DialogDescription>
 				</DialogHeader>
 				<div className="mt-4 space-y-8">
 					{/* Explanation */}
-					<div className="bg-white/5 rounded-lg p-4 border border-white/5">
-						<p className="text-slate-300 leading-relaxed">
+					<div className="bg-fill-subtle rounded-lg p-4 border border-line">
+						<p className="text-fg-muted leading-relaxed">
 							{t("tutorial.descriptionP1")}
 							{wordGap}
-							<span className="text-[#ef4444] font-bold">{t("tutorial.descriptionRemove")}</span>
+							<span className="text-danger-fg font-bold">{t("tutorial.descriptionRemove")}</span>
 							{wordGap}
 							{t("tutorial.descriptionP2")}
 							{wordGap}
@@ -51,86 +51,86 @@ export function TutorialHelp() {
 					</div>
 					{/* Visual Illustration */}
 					<div className="space-y-2">
-						<h3 className="text-sm font-medium text-slate-400 uppercase tracking-wider">
+						<h3 className="text-body font-medium text-fg-muted uppercase tracking-wider">
 							{t("tutorial.visualExample")}
 						</h3>
-						<div className="relative h-24 bg-[#000] rounded-lg border border-white/10 flex items-center px-4 overflow-hidden select-none">
+						<div className="relative h-24 bg-[#000] rounded-lg border border-line-strong flex items-center px-4 overflow-hidden select-none">
 							{/* Background track (Kept parts) */}
-							<div className="absolute inset-x-4 h-2 bg-slate-600 rounded-full overflow-hidden">
+							<div className="absolute inset-x-4 h-2 bg-track/20 rounded-full overflow-hidden">
 								{/* Solid line representing video */}
 							</div>
 							{/* Removed Segment 1 */}
 							<div
-								className="absolute left-[20%] h-8 bg-[#ef4444]/20 border border-[#ef4444] rounded flex flex-col items-center justify-center z-10"
+								className="absolute left-[20%] h-8 bg-danger/20 border border-danger rounded flex flex-col items-center justify-center z-10"
 								style={{ width: "20%" }}
 							>
-								<span className="text-[10px] font-bold text-[#ef4444] bg-black/50 px-1 rounded">
+								<span className="text-micro font-bold text-danger-fg bg-sunken px-1 rounded">
 									{t("tutorial.removed")}
 								</span>
 							</div>
 							{/* Removed Segment 2 */}
 							<div
-								className="absolute left-[65%] h-8 bg-[#ef4444]/20 border border-[#ef4444] rounded flex flex-col items-center justify-center z-10"
+								className="absolute left-[65%] h-8 bg-danger/20 border border-danger rounded flex flex-col items-center justify-center z-10"
 								style={{ width: "15%" }}
 							>
-								<span className="text-[10px] font-bold text-[#ef4444] bg-black/50 px-1 rounded">
+								<span className="text-micro font-bold text-danger-fg bg-sunken px-1 rounded">
 									{t("tutorial.removed")}
 								</span>
 							</div>
 							{/* Labels for kept parts */}
-							<div className="absolute left-[5%] text-[10px] text-slate-400 font-medium">
+							<div className="absolute left-[5%] text-micro text-fg-muted font-medium">
 								{t("tutorial.kept")}
 							</div>
-							<div className="absolute left-[50%] text-[10px] text-slate-400 font-medium">
+							<div className="absolute left-[50%] text-micro text-fg-muted font-medium">
 								{t("tutorial.kept")}
 							</div>
-							<div className="absolute left-[90%] text-[10px] text-slate-400 font-medium">
+							<div className="absolute left-[90%] text-micro text-fg-muted font-medium">
 								{t("tutorial.kept")}
 							</div>
 						</div>
 						<div className="flex justify-center mt-2">
-							<ArrowRight className="w-4 h-4 text-slate-600 rotate-90" />
+							<ArrowRight className="w-4 h-4 text-fg-disabled rotate-90" />
 						</div>
 						{/* Result */}
-						<div className="relative h-12 bg-[#000] rounded-lg border border-white/10 flex items-center justify-center gap-1 px-4 select-none">
+						<div className="relative h-12 bg-[#000] rounded-lg border border-line-strong flex items-center justify-center gap-1 px-4 select-none">
 							<div
-								className="h-8 bg-slate-700 rounded flex items-center justify-center opacity-80"
+								className="h-8 bg-fill-pressed rounded flex items-center justify-center opacity-80"
 								style={{ width: "30%" }}
 							>
-								<span className="text-[10px] text-white font-medium">
+								<span className="text-micro text-fg font-medium">
 									{t("tutorial.part", undefined, { number: "1" })}
 								</span>
 							</div>
 							<div
-								className="h-8 bg-slate-700 rounded flex items-center justify-center opacity-80"
+								className="h-8 bg-fill-pressed rounded flex items-center justify-center opacity-80"
 								style={{ width: "30%" }}
 							>
-								<span className="text-[10px] text-white font-medium">
+								<span className="text-micro text-fg font-medium">
 									{t("tutorial.part", undefined, { number: "2" })}
 								</span>
 							</div>
 							<div
-								className="h-8 bg-slate-700 rounded flex items-center justify-center opacity-80"
+								className="h-8 bg-fill-pressed rounded flex items-center justify-center opacity-80"
 								style={{ width: "30%" }}
 							>
-								<span className="text-[10px] text-white font-medium">
+								<span className="text-micro text-fg font-medium">
 									{t("tutorial.part", undefined, { number: "3" })}
 								</span>
 							</div>
-							<span className="absolute right-4 text-xs text-slate-400">
+							<span className="absolute right-4 text-label text-fg-muted">
 								{t("tutorial.finalVideo")}
 							</span>
 						</div>
 					</div>
 					{/* Steps */}
 					<div className="grid grid-cols-2 gap-4">
-						<div className="p-3 rounded bg-white/5 border border-white/5">
-							<div className="text-[#ef4444] font-bold mb-1">{t("tutorial.addTrimStep")}</div>
-							<p className="text-xs text-slate-400">{t("tutorial.addTrimDesc")}</p>
+						<div className="p-3 rounded bg-fill-subtle border border-line">
+							<div className="text-danger-fg font-bold mb-1">{t("tutorial.addTrimStep")}</div>
+							<p className="text-label text-fg-muted">{t("tutorial.addTrimDesc")}</p>
 						</div>
-						<div className="p-3 rounded bg-white/5 border border-white/5">
-							<div className="text-[#ef4444] font-bold mb-1">{t("tutorial.adjustStep")}</div>
-							<p className="text-xs text-slate-400">{t("tutorial.adjustDesc")}</p>
+						<div className="p-3 rounded bg-fill-subtle border border-line">
+							<div className="text-danger-fg font-bold mb-1">{t("tutorial.adjustStep")}</div>
+							<p className="text-label text-fg-muted">{t("tutorial.adjustDesc")}</p>
 						</div>
 					</div>
 				</div>

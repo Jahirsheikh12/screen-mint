@@ -44,16 +44,16 @@ export function FeedbackDialog() {
 					type="button"
 					onClick={() => setOpen(true)}
 					aria-label={t("feedback.trigger", "Feedback")}
-					className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
+					className="inline-flex h-8 w-8 items-center justify-center rounded-md text-fg-muted transition hover:bg-fill-hover hover:text-fg cursor-pointer"
 				>
 					<MessageSquare className="h-4 w-4" />
 				</button>
 			</Tooltip>
 			<Dialog open={open} onOpenChange={setOpen}>
-				<DialogContent className="max-w-[400px] gap-4 border-white/10 bg-[#0A0F0D] text-white">
+				<DialogContent className="max-w-[400px] gap-4 border-line-strong bg-canvas text-fg">
 					<DialogHeader className="text-left">
 						<DialogTitle>{t("feedback.title", "Feedback & contact")}</DialogTitle>
-						<DialogDescription className="text-slate-400">
+						<DialogDescription className="text-fg-muted">
 							{t(
 								"feedback.description",
 								"Found a bug or missing something? Tell us on GitHub — every report helps.",
@@ -66,18 +66,18 @@ export function FeedbackDialog() {
 								key={key}
 								type="button"
 								onClick={() => void openLink(url)}
-								className="flex min-w-0 items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-3 text-left transition hover:border-[#F59E0B]/40 hover:bg-[#F59E0B]/10 cursor-pointer"
+								className="flex min-w-0 items-center gap-3 rounded-xl border border-line-strong bg-fill-subtle px-3.5 py-3 text-left transition hover:border-accent/40 hover:bg-accent/10 cursor-pointer"
 							>
-								<Icon className="h-4 w-4 shrink-0 text-[#F59E0B]" />
+								<Icon className="h-4 w-4 shrink-0 text-accent-fg" />
 								<span className="min-w-0 flex-1">
-									<span className="block break-words text-sm font-medium text-white">
+									<span className="block break-words text-body font-medium text-fg">
 										{t(`feedback.${key}`)}
 									</span>
-									<span className="block break-words text-xs text-slate-400">
+									<span className="block break-words text-label text-fg-muted">
 										{t(`feedback.${key}Hint`)}
 									</span>
 								</span>
-								<ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+								<ExternalLink className="h-3.5 w-3.5 shrink-0 text-fg-subtle" />
 							</button>
 						))}
 					</div>

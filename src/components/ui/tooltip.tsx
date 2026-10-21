@@ -48,8 +48,8 @@ function getArrowStyle(side: TooltipSide): string {
 		"position:absolute",
 		"width:8px",
 		"height:8px",
-		"background:rgba(30,30,30,0.92)",
-		"border:1px solid rgba(255,255,255,0.08)",
+		"background:rgb(var(--raised))",
+		"border:1px solid var(--line-strong)",
 		"transform:rotate(45deg)",
 	];
 	switch (side) {
@@ -148,18 +148,18 @@ function useTooltipHandlers({
 				"gap:6px",
 				"white-space:nowrap",
 				"border-radius:6px",
-				"background:rgba(30,30,30,0.92)",
+				"background:rgb(var(--raised) / 0.97)",
 				"backdrop-filter:blur(12px)",
 				"-webkit-backdrop-filter:blur(12px)",
-				"border:1px solid rgba(255,255,255,0.08)",
+				"border:1px solid var(--line)",
 				"padding:4px 10px",
-				"box-shadow:0 4px 16px rgba(0,0,0,0.35),0 0 0 0.5px rgba(0,0,0,0.15)",
+				"box-shadow:var(--shadow-popover)",
 				"font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif",
 			].join(";");
 
 			const label = document.createElement("span");
 			label.style.cssText =
-				"font-size:12px;font-weight:500;color:rgba(255,255,255,0.92);line-height:1.3;letter-spacing:-0.01em";
+				"font-size:12px;font-weight:500;color:rgb(var(--fg));line-height:1.3;letter-spacing:-0.01em";
 			label.textContent = typeof content === "string" ? content : "";
 			pill.appendChild(label);
 
@@ -169,8 +169,8 @@ function useTooltipHandlers({
 					"font-size:10px",
 					"font-weight:500",
 					"font-family:SF Mono,ui-monospace,monospace",
-					"color:rgba(255,255,255,0.38)",
-					"background:rgba(255,255,255,0.08)",
+					"color:rgb(var(--fg-subtle))",
+					"background:var(--fill-hover)",
 					"border-radius:3px",
 					"padding:1px 5px",
 					"line-height:1.4",

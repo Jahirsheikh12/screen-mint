@@ -69,12 +69,12 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 	};
 
 	const inputClass =
-		"w-full bg-black/40 border border-white/[0.08] hover:border-white/[0.15] focus:border-amber-500/50 text-slate-200 h-8 px-2.5 rounded-lg text-[11px] outline-none transition-all shadow-inner font-medium disabled:opacity-40 disabled:cursor-not-allowed";
+		"w-full bg-sunken border border-line hover:border-line-strong focus:border-accent/50 text-fg h-8 px-2.5 rounded-lg text-caption outline-none transition-all shadow-inner font-medium disabled:opacity-40 disabled:cursor-not-allowed";
 
 	return (
 		<div
 			className={cn(
-				"w-full h-full shrink-0 min-w-0 bg-[#0B0F0D]/90 backdrop-blur-2xl border border-white/[0.08] rounded-2xl flex flex-col shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden",
+				"w-full h-full shrink-0 min-w-0 bg-canvas/90 backdrop-blur-2xl border border-line rounded-2xl flex flex-col shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden",
 				embedded ? "" : "w-[400px]",
 			)}
 		>
@@ -86,7 +86,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 				>
 					<div className="flex flex-col gap-1 pr-1 -mr-1">
 						{ordered.length === 0 ? (
-							<div className="rounded-lg border border-dashed border-white/10 px-3 py-4 text-xs text-slate-400 text-center bg-white/[0.02]">
+							<div className="rounded-lg border border-dashed border-line-strong px-3 py-4 text-label text-fg-muted text-center bg-fill-subtle">
 								{t(
 									"editor.layerPanel.loadOrRecordA",
 									"Load or record a video to create the primary editable layer.",
@@ -104,28 +104,26 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 										className={cn(
 											"group grid w-full grid-cols-[1fr_auto] items-center gap-2 rounded-xl border px-3 py-2 text-left transition-all duration-200 cursor-pointer",
 											selected
-												? "border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-amber-500/5 shadow-sm shadow-amber-500/5"
-												: "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/[0.1]",
+												? "border-accent/30 bg-gradient-to-r from-accent/10 to-accent/5 shadow-sm shadow-accent/5"
+												: "border-line bg-fill-subtle hover:bg-fill-subtle hover:border-line-strong",
 										)}
 									>
 										<div className="min-w-0">
 											<div className="flex items-center gap-2">
 												<span
 													className={cn(
-														"rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider",
+														"rounded px-1.5 py-0.5 text-micro font-bold uppercase tracking-wider",
 														selected
-															? "bg-amber-500 text-white"
-															: "bg-white/10 text-slate-300 group-hover:bg-white/20",
+															? "bg-accent text-on-accent"
+															: "bg-fill-hover text-fg-muted group-hover:bg-fill-pressed",
 													)}
 												>
 													{layerKindLabel(layer)}
 												</span>
 												<span
 													className={cn(
-														"truncate text-[11px] font-semibold transition-colors",
-														selected
-															? "text-amber-100"
-															: "text-slate-300 group-hover:text-slate-100",
+														"truncate text-caption font-semibold transition-colors",
+														selected ? "text-fg" : "text-fg-muted group-hover:text-fg",
 													)}
 												>
 													{layer.name}
@@ -133,8 +131,8 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 											</div>
 											<div
 												className={cn(
-													"mt-0.5 truncate text-[10px] font-medium transition-colors",
-													selected ? "text-amber-200/60" : "text-slate-500",
+													"mt-0.5 truncate text-micro font-medium transition-colors",
+													selected ? "text-accent-fg/60" : "text-fg-subtle",
 												)}
 											>
 												{usable
@@ -146,7 +144,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 											<span
 												className={cn(
 													"rounded-md p-1",
-													selected ? "text-amber-200" : "text-slate-400 hover:text-slate-200",
+													selected ? "text-accent-fg" : "text-fg-muted hover:text-fg",
 												)}
 											>
 												{layer.visible ? (
@@ -158,7 +156,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 											<span
 												className={cn(
 													"rounded-md p-1",
-													selected ? "text-amber-200" : "text-slate-400 hover:text-slate-200",
+													selected ? "text-accent-fg" : "text-fg-muted hover:text-fg",
 												)}
 											>
 												{layer.locked ? (
@@ -184,19 +182,19 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 						)}
 						accentColor="amber"
 					>
-						<div className="flex items-center justify-between gap-2 p-1 bg-white/[0.03] border border-white/[0.05] rounded-xl pl-2">
+						<div className="flex items-center justify-between gap-2 p-1 bg-fill-subtle border border-line rounded-xl pl-2">
 							<input
 								value={selectedLayer.name}
 								onChange={(event) =>
 									onLayersChange(renameEditorLayer(layers, selectedLayer.id, event.target.value))
 								}
-								className="min-w-0 flex-1 bg-transparent border-none text-[11px] font-bold text-amber-100 outline-none placeholder:text-slate-600 focus:ring-0 px-1"
+								className="min-w-0 flex-1 bg-transparent border-none text-caption font-bold text-fg outline-none placeholder:text-fg-subtle focus:ring-0 px-1"
 								aria-label={t("editor.layerPanel.layerName", "Layer name")}
 							/>
 							<div className="flex gap-1 shrink-0">
 								<button
 									type="button"
-									className="rounded-lg p-1.5 text-slate-400 hover:text-amber-400 hover:bg-amber-400/10 transition-colors"
+									className="rounded-lg p-1.5 text-fg-muted hover:text-accent-fg hover:bg-accent/10 transition-colors"
 									onClick={() =>
 										onLayersChange(
 											setEditorLayerVisibility(layers, selectedLayer.id, !selectedLayer.visible),
@@ -216,7 +214,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 								</button>
 								<button
 									type="button"
-									className="rounded-lg p-1.5 text-slate-400 hover:text-amber-400 hover:bg-amber-400/10 transition-colors"
+									className="rounded-lg p-1.5 text-fg-muted hover:text-accent-fg hover:bg-accent/10 transition-colors"
 									onClick={() =>
 										onLayersChange(
 											setEditorLayerLocked(layers, selectedLayer.id, !selectedLayer.locked),
@@ -238,7 +236,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 						</div>
 
 						{!hasUsableMedia(selectedLayer) && (
-							<div className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-[10px] font-medium text-amber-200/80 mt-1">
+							<div className="rounded-lg border border-accent/20 bg-accent/10 px-3 py-2 text-micro font-medium text-accent-fg/80 mt-1">
 								{t(
 									"editor.layerPanel.thisLayerIsPlanned",
 									"This layer is planned but does not have captured media yet.",
@@ -247,13 +245,13 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 						)}
 
 						<div className="mt-3">
-							<div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-								<div className="w-2 h-2 rounded-full bg-amber-500/50" />{" "}
+							<div className="text-micro font-bold text-fg-muted uppercase tracking-widest mb-3 flex items-center gap-2">
+								<div className="w-2 h-2 rounded-full bg-accent/50" />{" "}
 								{t("editor.layerPanel.transform", "Transform")}
 							</div>
 							<div className="grid grid-cols-3 gap-2">
 								<label className="space-y-1.5">
-									<span className="text-[10px] font-medium text-slate-500 pl-0.5">
+									<span className="text-micro font-medium text-fg-subtle pl-0.5">
 										{t("editor.layerPanel.xPosition", "X Position")}
 									</span>
 									<input
@@ -269,7 +267,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 									/>
 								</label>
 								<label className="space-y-1.5">
-									<span className="text-[10px] font-medium text-slate-500 pl-0.5">
+									<span className="text-micro font-medium text-fg-subtle pl-0.5">
 										{t("editor.layerPanel.yPosition", "Y Position")}
 									</span>
 									<input
@@ -285,7 +283,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 									/>
 								</label>
 								<label className="space-y-1.5">
-									<span className="text-[10px] font-medium text-slate-500 pl-0.5">
+									<span className="text-micro font-medium text-fg-subtle pl-0.5">
 										{t("editor.layerPanel.scale", "Scale")}
 									</span>
 									<input
@@ -305,7 +303,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 							</div>
 							<div className="grid grid-cols-3 gap-2 mt-2">
 								<label className="space-y-1.5">
-									<span className="text-[10px] font-medium text-slate-500 pl-0.5">
+									<span className="text-micro font-medium text-fg-subtle pl-0.5">
 										{t("editor.layerPanel.opacity", "Opacity")}
 									</span>
 									<input
@@ -328,7 +326,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 									/>
 								</label>
 								<label className="space-y-1.5">
-									<span className="text-[10px] font-medium text-slate-500 pl-0.5">
+									<span className="text-micro font-medium text-fg-subtle pl-0.5">
 										{t("editor.layerPanel.startMs", "Start ms")}
 									</span>
 									<input
@@ -348,7 +346,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 									/>
 								</label>
 								<label className="space-y-1.5">
-									<span className="text-[10px] font-medium text-slate-500 pl-0.5">
+									<span className="text-micro font-medium text-fg-subtle pl-0.5">
 										{t("editor.layerPanel.endMs", "End ms")}
 									</span>
 									<input
@@ -374,14 +372,14 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 						</div>
 
 						<div className="mt-4">
-							<div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-								<div className="w-2 h-2 rounded-full bg-blue-500/50" />{" "}
+							<div className="text-micro font-bold text-fg-muted uppercase tracking-widest mb-3 flex items-center gap-2">
+								<div className="w-2 h-2 rounded-full bg-info/50" />{" "}
 								{t("editor.layerPanel.crop", "Crop")}
 							</div>
 							<div className="grid grid-cols-4 gap-2">
 								{(["x", "y", "width", "height"] as const).map((key) => (
 									<label key={key} className="space-y-1.5">
-										<span className="text-[10px] font-medium text-slate-500 pl-0.5 capitalize">
+										<span className="text-micro font-medium text-fg-subtle pl-0.5 capitalize">
 											{key}
 										</span>
 										<input
@@ -411,11 +409,11 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 							</div>
 						</div>
 
-						<div className="mt-5 flex items-center justify-between border-t border-white/[0.06] pt-4">
-							<div className="flex gap-2 bg-black/40 border border-white/5 rounded-lg p-1 shadow-inner">
+						<div className="mt-5 flex items-center justify-between border-t border-line pt-4">
+							<div className="flex gap-2 bg-sunken border border-line rounded-lg p-1 shadow-inner">
 								<button
 									type="button"
-									className="rounded-md p-1.5 text-slate-400 hover:text-amber-400 hover:bg-amber-400/10 transition-colors disabled:opacity-30"
+									className="rounded-md p-1.5 text-fg-muted hover:text-accent-fg hover:bg-accent/10 transition-colors disabled:opacity-30"
 									onClick={() =>
 										onLayersChange(moveEditorLayerZ(layers, selectedLayer.id, "forward"))
 									}
@@ -424,10 +422,10 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 								>
 									<ArrowUp className="h-4 w-4" />
 								</button>
-								<div className="w-[1px] bg-white/[0.06] my-1" />
+								<div className="w-[1px] bg-fill-hover my-1" />
 								<button
 									type="button"
-									className="rounded-md p-1.5 text-slate-400 hover:text-amber-400 hover:bg-amber-400/10 transition-colors disabled:opacity-30"
+									className="rounded-md p-1.5 text-fg-muted hover:text-accent-fg hover:bg-accent/10 transition-colors disabled:opacity-30"
 									onClick={() =>
 										onLayersChange(moveEditorLayerZ(layers, selectedLayer.id, "backward"))
 									}
@@ -439,7 +437,7 @@ export function LayerPanel({ layers, onLayersChange, embedded = false }: LayerPa
 							</div>
 							<button
 								type="button"
-								className="inline-flex items-center gap-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 px-3 py-2 text-[11px] font-bold tracking-wider text-red-400 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+								className="inline-flex items-center gap-2 rounded-lg bg-danger/10 hover:bg-danger/20 border border-danger/20 px-3 py-2 text-caption font-bold tracking-wider text-danger-fg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
 								onClick={() => onLayersChange(deleteEditorLayer(layers, selectedLayer.id))}
 								disabled={!editable}
 							>

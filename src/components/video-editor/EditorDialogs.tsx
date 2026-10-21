@@ -29,10 +29,10 @@ export function PresetNameDialog({
 	const { t } = useI18n();
 	return (
 		<Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
-			<DialogContent className="border-white/10 bg-[#0A0F0D] text-white sm:max-w-md">
+			<DialogContent className="border-line-strong bg-canvas text-fg sm:max-w-md">
 				<DialogHeader>
 					<DialogTitle>{t("dialogs.editor.savePreset", "Save Preset")}</DialogTitle>
-					<DialogDescription className="text-slate-400">
+					<DialogDescription className="text-fg-muted">
 						{t(
 							"dialogs.editor.giveThisPresetA",
 							"Give this preset a clear name so it is easy to reuse later.",
@@ -40,7 +40,7 @@ export function PresetNameDialog({
 					</DialogDescription>
 				</DialogHeader>
 				<div className="space-y-2">
-					<label htmlFor="preset-name" className="text-sm font-medium text-slate-200">
+					<label htmlFor="preset-name" className="text-body font-medium text-fg">
 						{t("dialogs.editor.presetName", "Preset name")}
 					</label>
 					<Input
@@ -54,7 +54,7 @@ export function PresetNameDialog({
 						}}
 						autoFocus
 						placeholder={t("dialogs.editor.myPreset", "My preset")}
-						className="border-white/10 bg-white/[0.04] text-white"
+						className="border-line-strong bg-fill-subtle text-fg"
 					/>
 				</div>
 				<DialogFooter>
@@ -64,7 +64,7 @@ export function PresetNameDialog({
 					<Button
 						onClick={onConfirm}
 						disabled={name.trim().length === 0}
-						className="bg-[#F59E0B] text-neutral-950 hover:bg-[#d97706]"
+						className="bg-accent text-on-accent hover:bg-accent-hover"
 					>
 						{t("dialogs.editor.savePreset2", "Save preset")}
 					</Button>
@@ -84,12 +84,12 @@ export function ConfirmActionDialog({ dialog, onCancel, onConfirm }: ConfirmActi
 	const { t } = useI18n();
 	return (
 		<Dialog open={Boolean(dialog)} onOpenChange={(open) => !open && onCancel()}>
-			<DialogContent className="border-white/10 bg-[#0A0F0D] text-white sm:max-w-md">
+			<DialogContent className="border-line-strong bg-canvas text-fg sm:max-w-md">
 				<DialogHeader>
 					<DialogTitle>
 						{dialog?.title ?? t("dialogs.editor.confirmAction", "Confirm action")}
 					</DialogTitle>
-					<DialogDescription className="whitespace-pre-line text-slate-400">
+					<DialogDescription className="whitespace-pre-line text-fg-muted">
 						{dialog?.description ?? ""}
 					</DialogDescription>
 				</DialogHeader>
@@ -101,8 +101,8 @@ export function ConfirmActionDialog({ dialog, onCancel, onConfirm }: ConfirmActi
 						onClick={onConfirm}
 						className={
 							dialog?.tone === "danger"
-								? "bg-red-500 text-white hover:bg-red-600"
-								: "bg-[#F59E0B] text-neutral-950 hover:bg-[#d97706]"
+								? "bg-danger text-on-danger hover:bg-danger/90"
+								: "bg-accent text-on-accent hover:bg-accent-hover"
 						}
 					>
 						{dialog?.confirmLabel ?? t("dialogs.editor.continue", "Continue")}
@@ -124,12 +124,12 @@ export function MissingCursorDataDialog({ open, isMac, onClose }: MissingCursorD
 	const { t } = useI18n();
 	return (
 		<Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-			<DialogContent className="border-white/10 bg-[#0A0F0D] text-white sm:max-w-md">
+			<DialogContent className="border-line-strong bg-canvas text-fg sm:max-w-md">
 				<DialogHeader>
 					<DialogTitle>
 						{t("dialogs.missingCursorData.title", "No cursor data for this recording")}
 					</DialogTitle>
-					<DialogDescription className="text-slate-400">
+					<DialogDescription className="text-fg-muted">
 						{t(
 							"dialogs.missingCursorData.description",
 							"Your video recorded fine, but the pointer couldn't be tracked, so cursor smoothing, click effects and cursor-based zooms aren't available for it.",
@@ -137,7 +137,7 @@ export function MissingCursorDataDialog({ open, isMac, onClose }: MissingCursorD
 					</DialogDescription>
 				</DialogHeader>
 				{isMac ? (
-					<p className="text-sm text-slate-300">
+					<p className="text-body text-fg-muted">
 						{t(
 							"dialogs.missingCursorData.macHint",
 							"Check that ScreenMint is allowed under System Settings › Privacy & Security › Accessibility, then record again.",
@@ -153,7 +153,7 @@ export function MissingCursorDataDialog({ open, isMac, onClose }: MissingCursorD
 							{t("dialogs.missingCursorData.openSettings", "Open Accessibility settings")}
 						</Button>
 					) : null}
-					<Button onClick={onClose} className="bg-[#F59E0B] text-neutral-950 hover:bg-[#d97706]">
+					<Button onClick={onClose} className="bg-accent text-on-accent hover:bg-accent-hover">
 						{t("dialogs.missingCursorData.confirm", "Okay")}
 					</Button>
 				</DialogFooter>

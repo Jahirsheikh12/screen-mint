@@ -24,9 +24,8 @@ document.documentElement.dataset.platform = /mac/i.test(navigator.platform) ? "m
 		document.body.style.background = "transparent";
 		const root = document.getElementById("root");
 		if (root) root.style.background = "transparent";
-	} else if (wt === "editor") {
-		applyTheme(readThemePreference());
 	}
+	applyTheme(readThemePreference());
 	if (wt === "hud-overlay") {
 		document.documentElement.style.overflow = "hidden";
 		document.body.style.overflow = "hidden";

@@ -56,7 +56,7 @@ export function WindowTab({
 
 	if (loading && windows.length === 0) {
 		return (
-			<div className="flex items-center justify-center py-12 text-white/40 text-xs font-medium">
+			<div className="flex items-center justify-center py-12 text-fg-subtle text-label font-medium">
 				{t("window.loadingWindows", "Loading windows...")}
 			</div>
 		);
@@ -86,16 +86,16 @@ export function WindowTab({
 	if (windows.length === 0) {
 		return (
 			<div className="flex flex-col items-center gap-4 py-12">
-				<div className="w-12 h-12 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
-					<MdMonitor size={24} className="text-white/20" />
+				<div className="w-12 h-12 rounded-lg bg-fill-subtle border border-line-strong flex items-center justify-center">
+					<MdMonitor size={24} className="text-fg-disabled" />
 				</div>
-				<span className="text-white/50 text-xs font-medium">
+				<span className="text-fg-subtle text-label font-medium">
 					{t("window.noWindows", "No available windows found")}
 				</span>
 				<button
 					type="button"
 					onClick={onFallbackToDisplay}
-					className="px-4 py-1.5 rounded bg-white/10 hover:bg-white/15 text-white/80 text-[11px] font-medium transition-colors"
+					className="px-4 py-1.5 rounded bg-fill-hover hover:bg-fill-pressed text-fg-muted text-caption font-medium transition-colors"
 				>
 					{t("window.recordEntireDisplay", "Record Entire Display Instead")}
 				</button>
@@ -118,17 +118,17 @@ export function WindowTab({
 							disabled={disabled}
 							className={`relative flex flex-col overflow-hidden rounded-md transition-colors text-left ${
 								isSelected
-									? "bg-white/10 ring-1 ring-[#F59E0B]"
-									: "bg-white/5 border border-transparent hover:bg-white/10"
+									? "bg-fill-hover ring-1 ring-accent"
+									: "bg-fill-subtle border border-transparent hover:bg-fill-hover"
 							} ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
 						>
-							<div className="flex items-center gap-1 px-2 h-5 bg-white/5 border-b border-white/5 w-full">
+							<div className="flex items-center gap-1 px-2 h-5 bg-fill-subtle border-b border-line w-full">
 								<div className="w-1.5 h-1.5 rounded-full bg-[#ff5f57]" />
 								<div className="w-1.5 h-1.5 rounded-full bg-[#febc2e]" />
 								<div className="w-1.5 h-1.5 rounded-full bg-[#28c840]" />
 							</div>
 
-							<div className="relative w-full aspect-[16/10] bg-black/30 overflow-hidden border-b border-white/5">
+							<div className="relative w-full aspect-[16/10] bg-sunken overflow-hidden border-b border-line">
 								{source.thumbnail ? (
 									<img
 										src={source.thumbnail}
@@ -140,7 +140,7 @@ export function WindowTab({
 										{source.appIcon ? (
 											<img src={source.appIcon} alt="" className="w-8 h-8 opacity-40 grayscale" />
 										) : (
-											<MdMonitor size={20} className="text-white/10" />
+											<MdMonitor size={20} className="text-fg-disabled" />
 										)}
 									</div>
 								)}
@@ -148,22 +148,22 @@ export function WindowTab({
 
 							<div className="flex items-center gap-2 w-full px-2 py-2">
 								{source.appIcon ? (
-									<div className="w-4 h-4 rounded-sm overflow-hidden shrink-0 bg-white/5 flex items-center justify-center p-[1px]">
+									<div className="w-4 h-4 rounded-sm overflow-hidden shrink-0 bg-fill-subtle flex items-center justify-center p-[1px]">
 										<img src={source.appIcon} alt="" className="w-full h-full object-contain" />
 									</div>
 								) : (
-									<div className="w-4 h-4 rounded-sm shrink-0 bg-white/5 flex items-center justify-center">
-										<div className="w-1.5 h-1.5 border border-white/30 rounded-[1px]" />
+									<div className="w-4 h-4 rounded-sm shrink-0 bg-fill-subtle flex items-center justify-center">
+										<div className="w-1.5 h-1.5 border border-line-strong rounded-[1px]" />
 									</div>
 								)}
 								<div className="flex flex-col min-w-0">
 									<span
-										className={`text-[11px] font-medium truncate leading-none ${isSelected ? "text-white" : "text-white/90"}`}
+										className={`text-caption font-medium truncate leading-none ${isSelected ? "text-fg" : "text-fg"}`}
 									>
 										{source.appName || source.name}
 									</span>
 									{source.windowTitle && source.windowTitle !== source.appName && (
-										<span className="text-[9px] truncate leading-none text-white/40 mt-0.5">
+										<span className="text-micro truncate leading-none text-fg-subtle mt-0.5">
 											{source.windowTitle}
 										</span>
 									)}

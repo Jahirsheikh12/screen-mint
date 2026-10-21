@@ -65,7 +65,7 @@ export function SliderControl({
 		<div className="flex min-w-0 flex-col gap-2">
 			<div className="flex min-w-0 items-center justify-between gap-2">
 				<div className="flex min-w-0 items-center gap-1.5">
-					<span className="min-w-0 break-words text-[11px] font-medium leading-tight text-slate-300">
+					<span className="min-w-0 break-words text-caption font-medium leading-tight text-fg-muted">
 						{label}
 					</span>
 					{isModified && (
@@ -73,7 +73,7 @@ export function SliderControl({
 							type="button"
 							disabled={disabled}
 							onClick={() => !disabled && onChange(defaultValue)}
-							className="shrink-0 text-slate-600 hover:text-[#F59E0B] transition-colors duration-200"
+							className="shrink-0 text-fg-disabled hover:text-accent-fg transition-colors duration-200"
 							title={t("editor.slider.resetToDefault", "Reset to default")}
 						>
 							<RotateCcw className="w-2.5 h-2.5" />
@@ -92,14 +92,14 @@ export function SliderControl({
 							if (e.key === "Enter") commitEdit();
 							if (e.key === "Escape") cancelEdit();
 						}}
-						className="w-14 shrink-0 text-[11px] text-right font-mono bg-black/40 border border-white/10 rounded-md px-1.5 py-1 text-slate-200 outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 shadow-inner transition-all duration-200"
+						className="w-14 shrink-0 text-caption text-right font-mono bg-sunken border border-line-strong rounded-md px-1.5 py-1 text-fg outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 shadow-inner transition-all duration-200"
 					/>
 				) : (
 					<span
 						className={
 							disabled
-								? "shrink-0 whitespace-nowrap text-[11px] text-slate-600 font-mono tabular-nums bg-white/[0.02] px-1.5 py-1 rounded-md transition-colors duration-200"
-								: "shrink-0 whitespace-nowrap text-[11px] text-slate-300 font-mono tabular-nums cursor-text hover:text-white bg-black/30 border border-white/[0.04] px-1.5 py-1 rounded-md transition-colors duration-200 hover:border-white/10 shadow-sm"
+								? "shrink-0 whitespace-nowrap text-caption text-fg-disabled font-mono tabular-nums bg-fill-subtle px-1.5 py-1 rounded-md transition-colors duration-200"
+								: "shrink-0 whitespace-nowrap text-caption text-fg-muted font-mono tabular-nums cursor-text hover:text-fg bg-sunken border border-line px-1.5 py-1 rounded-md transition-colors duration-200 hover:border-line-strong shadow-sm"
 						}
 						onClick={() => {
 							if (disabled) return;

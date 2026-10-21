@@ -162,13 +162,13 @@ export default function Item({
 					<div className="fixed inset-0 z-[9998]" onMouseDown={closeMenu}>
 						<div
 							ref={menuRef}
-							className="fixed z-[9999] min-w-[140px] rounded-lg bg-[#1c1c1e] border border-white/10 shadow-2xl py-1 animate-in fade-in zoom-in-95 duration-100"
+							className="fixed z-[9999] min-w-[140px] rounded-lg bg-raised border border-line-strong shadow-2xl py-1 animate-in fade-in zoom-in-95 duration-100"
 							style={{ left: contextMenu.x, top: contextMenu.y }}
 							onMouseDown={(e) => e.stopPropagation()}
 						>
 							<button
 								type="button"
-								className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-red-400 hover:bg-white/10 transition-colors cursor-pointer"
+								className="w-full flex items-center gap-2 px-3 py-1.5 text-label text-danger-fg hover:bg-fill-hover transition-colors cursor-pointer"
 								onMouseDown={(e) => {
 									e.stopPropagation();
 									onDelete?.();
@@ -228,7 +228,7 @@ export default function Item({
 					{/* Content */}
 					<div
 						className={cn(
-							"relative z-10 flex flex-col items-center justify-center text-white/90 opacity-80 group-hover:opacity-100 transition-opacity select-none overflow-hidden",
+							"relative z-10 flex flex-col items-center justify-center text-fg opacity-80 group-hover:opacity-100 transition-opacity select-none overflow-hidden",
 							isCaption && "w-full px-3 min-w-0",
 						)}
 						style={isClip && waveformData ? { textShadow: "0 1px 3px rgba(0,0,0,0.7)" } : undefined}
@@ -236,24 +236,24 @@ export default function Item({
 						{isClip ? (
 							<div className="flex items-center gap-2">
 								<span
-									className={`text-[11px] font-medium ${waveformData ? "text-white/70" : "text-white/40"}`}
+									className={`text-caption font-medium ${waveformData ? "text-fg-muted" : "text-fg-subtle"}`}
 								>
 									{children}
 								</span>
 								{clipDuration && (
-									<span className="text-[12px] font-semibold tracking-tight whitespace-nowrap">
+									<span className="text-label font-semibold tracking-tight whitespace-nowrap">
 										{clipDuration}
 									</span>
 								)}
 								{clipSpeed && (
 									<span
-										className={`text-[11px] whitespace-nowrap ${waveformData ? "text-white/70" : "text-white/50"}`}
+										className={`text-caption whitespace-nowrap ${waveformData ? "text-fg-muted" : "text-fg-subtle"}`}
 									>
 										⏱ {clipSpeed}
 									</span>
 								)}
 								{!clipDuration && !clipSpeed && (
-									<span className="text-[9px] tabular-nums tracking-tight whitespace-nowrap opacity-50">
+									<span className="text-micro tabular-nums tracking-tight whitespace-nowrap opacity-50">
 										{timeLabel}
 									</span>
 								)}
@@ -264,21 +264,21 @@ export default function Item({
 									{isZoom ? (
 										<>
 											<ZoomIn className="w-3.5 h-3.5 shrink-0" />
-											<span className="text-[11px] font-semibold tracking-tight whitespace-nowrap">
+											<span className="text-caption font-semibold tracking-tight whitespace-nowrap">
 												{ZOOM_LABELS[zoomDepth] || `${zoomDepth}×`}
 											</span>
 										</>
 									) : isTrim ? (
 										<>
 											<Scissors className="w-3.5 h-3.5 shrink-0" />
-											<span className="text-[11px] font-semibold tracking-tight whitespace-nowrap">
+											<span className="text-caption font-semibold tracking-tight whitespace-nowrap">
 												{t("timeline.items.trim", "Trim")}
 											</span>
 										</>
 									) : isSpeed ? (
 										<>
 											<Gauge className="w-3.5 h-3.5 shrink-0" />
-											<span className="text-[11px] font-semibold tracking-tight whitespace-nowrap">
+											<span className="text-caption font-semibold tracking-tight whitespace-nowrap">
 												{speedValue !== undefined
 													? `${speedValue}×`
 													: t("timeline.items.speed", "Speed")}
@@ -287,14 +287,14 @@ export default function Item({
 									) : isAudio ? (
 										<>
 											<Music className="w-3.5 h-3.5 shrink-0" />
-											<span className="text-[11px] font-semibold tracking-tight truncate max-w-full">
+											<span className="text-caption font-semibold tracking-tight truncate max-w-full">
 												{children}
 											</span>
 										</>
 									) : isCamera ? (
 										<>
 											<Camera className="w-3.5 h-3.5 shrink-0" />
-											<span className="text-[11px] font-semibold tracking-tight whitespace-nowrap">
+											<span className="text-caption font-semibold tracking-tight whitespace-nowrap">
 												{children}
 											</span>
 										</>
@@ -302,7 +302,7 @@ export default function Item({
 										<>
 											<MessageSquare className="w-3.5 h-3.5 shrink-0" />
 											<span
-												className="text-[10px] font-medium tracking-tight truncate text-white/95 flex-1 min-w-0 text-left"
+												className="text-micro font-medium tracking-tight truncate text-fg flex-1 min-w-0 text-left"
 												title={typeof children === "string" ? children : undefined}
 											>
 												{children}
@@ -311,14 +311,14 @@ export default function Item({
 									) : (
 										<>
 											<MessageSquare className="w-3.5 h-3.5 shrink-0" />
-											<span className="text-[11px] font-semibold tracking-tight whitespace-nowrap">
+											<span className="text-caption font-semibold tracking-tight whitespace-nowrap">
 												{children}
 											</span>
 										</>
 									)}
 								</div>
 								<span
-									className={`text-[9px] tabular-nums tracking-tight whitespace-nowrap transition-opacity ${
+									className={`text-micro tabular-nums tracking-tight whitespace-nowrap transition-opacity ${
 										isSelected ? "opacity-60" : "opacity-0 group-hover:opacity-40"
 									}`}
 								>

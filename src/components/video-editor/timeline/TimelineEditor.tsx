@@ -270,14 +270,14 @@ function Timeline({
 					}}
 				>
 					<div
-						className={`absolute top-0 bottom-0 w-[1px] ${trimMode ? "bg-red-500/60" : "bg-white/15"}`}
+						className={`absolute top-0 bottom-0 w-[1px] ${trimMode ? "bg-danger/60" : "bg-fill-pressed"}`}
 						style={{
 							[sideProperty]: `${ghostX}px`,
 						}}
 					/>
 					{trimMode && (
 						<div className="absolute top-1 z-50" style={{ [sideProperty]: `${ghostX - 6}px` }}>
-							<Scissors className="w-3 h-3 text-red-400/80" />
+							<Scissors className="w-3 h-3 text-danger-fg/80" />
 						</div>
 					)}
 				</div>
@@ -1674,15 +1674,15 @@ export default function TimelineEditor({
 
 	if (!videoDuration || videoDuration === 0) {
 		return (
-			<div className="flex-1 flex flex-col items-center justify-center rounded-lg bg-[#0A0F0D] gap-3">
-				<div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
-					<Plus className="w-6 h-6 text-slate-600" />
+			<div className="flex-1 flex flex-col items-center justify-center rounded-lg bg-canvas gap-3">
+				<div className="w-12 h-12 rounded-full bg-fill-subtle flex items-center justify-center">
+					<Plus className="w-6 h-6 text-fg-disabled" />
 				</div>
 				<div className="text-center">
-					<p className="text-sm font-medium text-slate-300">
+					<p className="text-body font-medium text-fg-muted">
 						{t("timeline.editor.noVideoLoaded", "No Video Loaded")}
 					</p>
-					<p className="text-xs text-slate-500 mt-1">
+					<p className="text-label text-fg-subtle mt-1">
 						{t("timeline.editor.dragAndDropA", "Drag and drop a video to start editing")}
 					</p>
 				</div>
@@ -1691,7 +1691,7 @@ export default function TimelineEditor({
 	}
 
 	return (
-		<div className="flex-1 min-h-0 flex flex-col bg-[#121214] overflow-hidden">
+		<div className="flex-1 min-h-0 flex flex-col bg-surface overflow-hidden">
 			{/* Transport Controls Bar */}
 			<div className="relative flex items-center gap-1 px-3 py-1.5 bg-transparent z-20">
 				{/* Left: Layer visibility */}
@@ -1701,7 +1701,7 @@ export default function TimelineEditor({
 							<Button
 								variant="ghost"
 								size="sm"
-								className="h-8 px-2.5 text-xs text-slate-300 hover:text-white hover:bg-white/10 transition-all gap-1.5"
+								className="h-8 px-2.5 text-label text-fg-muted hover:text-fg hover:bg-fill-hover transition-all gap-1.5"
 							>
 								<Layers className="w-3.5 h-3.5" />
 								<span className="hidden font-medium lg:inline">
@@ -1711,30 +1711,30 @@ export default function TimelineEditor({
 												count: visibleLayerCount,
 											})}
 								</span>
-								<ChevronDown className="w-3 h-3 text-slate-500" />
+								<ChevronDown className="w-3 h-3 text-fg-subtle" />
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent
 							align="start"
-							className="bg-[#1a1a1a] border-white/10 min-w-[180px]"
+							className="bg-raised border-line-strong min-w-[180px]"
 						>
-							<DropdownMenuItem disabled className="text-slate-500 text-xs">
+							<DropdownMenuItem disabled className="text-fg-subtle text-label">
 								<Check className="w-3 h-3 mr-1.5" /> {t("timeline.editor.clip", "Clip")}
 							</DropdownMenuItem>
-							<DropdownMenuItem disabled className="text-slate-500 text-xs">
+							<DropdownMenuItem disabled className="text-fg-subtle text-label">
 								<Check className="w-3 h-3 mr-1.5" /> {t("timeline.editor.zoom", "Zoom")}
 							</DropdownMenuItem>
-							<DropdownMenuSeparator className="bg-white/10" />
+							<DropdownMenuSeparator className="bg-fill-hover" />
 							{ADDITIONAL_LAYER_OPTIONS.map((opt) => (
 								<DropdownMenuItem
 									key={opt.type}
 									onClick={() => toggleLayer(opt.type)}
-									className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer flex items-center gap-1.5"
+									className="text-fg-muted hover:text-fg hover:bg-fill-hover cursor-pointer flex items-center gap-1.5"
 								>
 									{visibleLayers.has(opt.type) ? (
-										<Check className="w-3 h-3 text-[#F59E0B]" />
+										<Check className="w-3 h-3 text-accent-fg" />
 									) : (
-										<Plus className="w-3 h-3 text-slate-500" />
+										<Plus className="w-3 h-3 text-fg-subtle" />
 									)}
 									<opt.icon className="w-3.5 h-3.5" />
 									{opt.label}
@@ -1758,7 +1758,7 @@ export default function TimelineEditor({
 							<Button
 								variant="ghost"
 								size="icon"
-								className="h-7 w-7 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+								className="h-7 w-7 text-fg-muted hover:text-fg hover:bg-fill-hover transition-all"
 								onClick={() => {
 									if (clipVolume === 0) {
 										onClipVolumeChange?.(prevVolumeRef.current > 0 ? prevVolumeRef.current : 1);
@@ -1798,7 +1798,7 @@ export default function TimelineEditor({
 										"timeline.editor.separateClipFromAudio",
 										"Separate clip from audio",
 									)}
-									className="h-7 w-7 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+									className="h-7 w-7 text-fg-muted hover:text-fg hover:bg-fill-hover transition-all"
 									onClick={onSeparateClipAudio}
 								>
 									<Unlink className="w-3.5 h-3.5" />
@@ -1809,12 +1809,10 @@ export default function TimelineEditor({
 				)}
 
 				{/* Time Display */}
-				<div className="flex shrink-0 items-center gap-1.5 ml-2 bg-white/5 hover:bg-white/10 transition-colors px-2.5 py-1 rounded-md border border-white/5 z-10 tabular-nums text-[11px] cursor-default whitespace-nowrap">
-					<span className="text-slate-200 font-medium">
-						{formatPlaybackTime(displayCurrentTimeMs)}
-					</span>
-					<span className="text-slate-500 font-medium">/</span>
-					<span className="text-slate-500 font-medium">{formatPlaybackTime(displayTotalMs)}</span>
+				<div className="flex shrink-0 items-center gap-1.5 ml-2 bg-fill-subtle hover:bg-fill-hover transition-colors px-2.5 py-1 rounded-md border border-line z-10 tabular-nums text-caption cursor-default whitespace-nowrap">
+					<span className="text-fg font-medium">{formatPlaybackTime(displayCurrentTimeMs)}</span>
+					<span className="text-fg-subtle font-medium">/</span>
+					<span className="text-fg-subtle font-medium">{formatPlaybackTime(displayTotalMs)}</span>
 				</div>
 
 				{/* Center: play controls, centred in the space between the side groups */}
@@ -1829,7 +1827,7 @@ export default function TimelineEditor({
 								onClick={onSkipBack}
 								variant="ghost"
 								size="icon"
-								className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+								className="h-8 w-8 text-fg-muted hover:text-fg hover:bg-fill-hover transition-all"
 							>
 								<SkipBack className="w-4 h-4" />
 							</Button>
@@ -1848,8 +1846,8 @@ export default function TimelineEditor({
 								className={cn(
 									"h-8 w-8 transition-all",
 									isPlaying
-										? "text-white hover:text-white/80 hover:bg-white/10"
-										: "text-slate-400 hover:text-white hover:bg-white/10",
+										? "text-fg hover:text-fg-muted hover:bg-fill-hover"
+										: "text-fg-muted hover:text-fg hover:bg-fill-hover",
 								)}
 							>
 								{isPlaying ? (
@@ -1868,7 +1866,7 @@ export default function TimelineEditor({
 								onClick={onSkipForward}
 								variant="ghost"
 								size="icon"
-								className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+								className="h-8 w-8 text-fg-muted hover:text-fg hover:bg-fill-hover transition-all"
 							>
 								<SkipForward className="w-4 h-4" />
 							</Button>
@@ -1883,7 +1881,7 @@ export default function TimelineEditor({
 							onClick={handleSuggestZooms}
 							variant="ghost"
 							size="icon"
-							className="h-8 w-8 text-amber-400/80 hover:text-amber-300 hover:bg-amber-400/10 transition-all"
+							className="h-8 w-8 text-accent-fg/80 hover:text-accent-fg hover:bg-accent/10 transition-all"
 						>
 							<WandSparkles className="w-4 h-4" />
 						</Button>
@@ -1905,15 +1903,15 @@ export default function TimelineEditor({
 							className={cn(
 								"h-8 w-8 transition-all",
 								trimMode
-									? "text-red-400 bg-red-500/15 hover:text-red-300 hover:bg-red-500/25 ring-1 ring-red-500/30"
-									: "text-slate-400 hover:text-white hover:bg-white/10",
+									? "text-danger-fg bg-danger/15 hover:text-danger-fg hover:bg-danger/25 ring-1 ring-danger/30"
+									: "text-fg-muted hover:text-fg hover:bg-fill-hover",
 							)}
 						>
 							<Scissors className="w-4 h-4" />
 						</Button>
 					</Tooltip>
 
-					<div className="w-[1px] h-5 bg-white/10 mx-1" />
+					<div className="w-[1px] h-5 bg-fill-hover mx-1" />
 
 					<Tooltip
 						content={t("timeline.editor.zoomIn", "Zoom In")}
@@ -1924,7 +1922,7 @@ export default function TimelineEditor({
 							onClick={handleTimelineZoomIn}
 							variant="ghost"
 							size="icon"
-							className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+							className="h-8 w-8 text-fg-muted hover:text-fg hover:bg-fill-hover transition-all"
 						>
 							<ZoomIn className="w-4 h-4" />
 						</Button>
@@ -1934,7 +1932,7 @@ export default function TimelineEditor({
 							onClick={handleTimelineZoomOut}
 							variant="ghost"
 							size="icon"
-							className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+							className="h-8 w-8 text-fg-muted hover:text-fg hover:bg-fill-hover transition-all"
 						>
 							<ZoomOut className="w-4 h-4" />
 						</Button>
@@ -1957,7 +1955,7 @@ export default function TimelineEditor({
 										? t("timeline.editor.collapseTimeline2", "Collapse timeline")
 										: t("timeline.editor.expandTimeline2", "Expand timeline")
 								}
-								className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+								className="h-8 w-8 text-fg-muted hover:text-fg hover:bg-fill-hover transition-all"
 							>
 								{timelineExpanded ? (
 									<Minimize2 className="w-4 h-4" />
@@ -1968,15 +1966,15 @@ export default function TimelineEditor({
 						</Tooltip>
 					)}
 
-					<div className="w-[1px] h-5 bg-white/10 mx-1" />
+					<div className="w-[1px] h-5 bg-fill-hover mx-1" />
 
 					<Tooltip content={t("timeline.editor.playbackSpeed", "Playback Speed")} side="bottom">
-						<span className="text-[11px] text-slate-400 font-medium tabular-nums px-1">
+						<span className="text-caption text-fg-muted font-medium tabular-nums px-1">
 							{playbackSpeed}x
 						</span>
 					</Tooltip>
 
-					<div className="w-[1px] h-5 bg-white/10 mx-1" />
+					<div className="w-[1px] h-5 bg-fill-hover mx-1" />
 
 					<Tooltip content={t("timeline.editor.timelineZoom", "Timeline Zoom")} side="bottom">
 						<input
@@ -2000,61 +1998,61 @@ export default function TimelineEditor({
 						/>
 					</Tooltip>
 
-					<div className="w-[1px] h-5 bg-white/10 mx-1" />
+					<div className="w-[1px] h-5 bg-fill-hover mx-1" />
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button
 								variant="ghost"
 								size="sm"
-								className="h-7 px-2 text-xs text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-all gap-1"
+								className="h-7 px-2 text-label text-fg-muted hover:text-fg hover:bg-fill-hover transition-all gap-1"
 							>
 								<span className="font-medium">{getAspectRatioLabel(aspectRatio)}</span>
 								<ChevronDown className="w-3 h-3" />
 							</Button>
 						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end" className="bg-[#1a1a1a] border-white/10">
+						<DropdownMenuContent align="end" className="bg-raised border-line-strong">
 							{ASPECT_RATIOS.map((ratio) => (
 								<DropdownMenuItem
 									key={ratio}
 									onClick={() => onAspectRatioChange(ratio)}
-									className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer flex items-center justify-between gap-3"
+									className="text-fg-muted hover:text-fg hover:bg-fill-hover cursor-pointer flex items-center justify-between gap-3"
 								>
 									<span>{getAspectRatioLabel(ratio)}</span>
-									{aspectRatio === ratio && <Check className="w-3 h-3 text-[#F59E0B]" />}
+									{aspectRatio === ratio && <Check className="w-3 h-3 text-accent-fg" />}
 								</DropdownMenuItem>
 							))}
-							<div className="mx-1 my-1 h-px bg-white/10" />
-							<div className="px-2 py-1.5 flex items-center gap-2 text-slate-300">
-								<span className="text-sm">{t("timeline.editor.custom", "Custom")}</span>
+							<div className="mx-1 my-1 h-px bg-fill-hover" />
+							<div className="px-2 py-1.5 flex items-center gap-2 text-fg-muted">
+								<span className="text-body">{t("timeline.editor.custom", "Custom")}</span>
 								<input
 									type="text"
 									inputMode="numeric"
 									value={customAspectWidth}
 									onChange={(event) => setCustomAspectWidth(event.target.value.replace(/\D/g, ""))}
 									onKeyDown={handleCustomAspectRatioKeyDown}
-									className="w-12 h-7 rounded border border-white/15 bg-black/20 px-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#F59E0B]"
+									className="w-12 h-7 rounded border border-line-strong bg-sunken px-1.5 text-body text-fg focus:outline-none focus:ring-1 focus:ring-accent"
 									aria-label={t("timeline.editor.customAspectWidth", "Custom aspect width")}
 								/>
-								<span className="text-slate-500">:</span>
+								<span className="text-fg-subtle">:</span>
 								<input
 									type="text"
 									inputMode="numeric"
 									value={customAspectHeight}
 									onChange={(event) => setCustomAspectHeight(event.target.value.replace(/\D/g, ""))}
 									onKeyDown={handleCustomAspectRatioKeyDown}
-									className="w-12 h-7 rounded border border-white/15 bg-black/20 px-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#F59E0B]"
+									className="w-12 h-7 rounded border border-line-strong bg-sunken px-1.5 text-body text-fg focus:outline-none focus:ring-1 focus:ring-accent"
 									aria-label={t("timeline.editor.customAspectHeight", "Custom aspect height")}
 								/>
 								<Button
 									variant="ghost"
 									size="sm"
 									onClick={applyCustomAspectRatio}
-									className="h-7 px-2 text-xs text-slate-300 hover:text-white hover:bg-white/10"
+									className="h-7 px-2 text-label text-fg-muted hover:text-fg hover:bg-fill-hover"
 								>
 									{t("timeline.editor.set", "Set")}
 								</Button>
 								{isCustomAspectRatio(aspectRatio) && (
-									<Check className="w-3 h-3 text-[#F59E0B] ml-auto" />
+									<Check className="w-3 h-3 text-accent-fg ml-auto" />
 								)}
 							</div>
 						</DropdownMenuContent>
@@ -2065,7 +2063,7 @@ export default function TimelineEditor({
 			{/* Timeline Area */}
 			<div
 				ref={timelineContainerRef}
-				className="flex-1 min-h-0 overflow-auto bg-[#121214] relative timeline-scrollbar"
+				className="flex-1 min-h-0 overflow-auto bg-surface relative timeline-scrollbar"
 				onClick={() => setSelectedKeyframeId(null)}
 				onWheel={handleTimelineWheel}
 			>

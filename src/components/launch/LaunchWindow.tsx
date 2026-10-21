@@ -27,7 +27,7 @@ import { DisplayTab } from "./tabs/DisplayTab";
 import { WindowTab } from "./tabs/WindowTab";
 
 const DROPDOWN_CLASSES =
-	"border-white/10 bg-[#1c1c1e] text-white/90 shadow-none data-[state=open]:!animate-none data-[state=closed]:!animate-none";
+	"border-line-strong bg-raised text-fg shadow-none data-[state=open]:!animate-none data-[state=closed]:!animate-none";
 const HUD_INTERACTIVE_SELECTOR = "[data-hud-interactive]";
 const HUD_DRAG_BLOCK_SELECTOR =
 	"button, a, input, select, textarea, [role='button'], [role='menuitem'], [data-hud-no-drag]";
@@ -537,7 +537,7 @@ export function LaunchWindow() {
 
 						{/* Divider */}
 						{hud.mode !== "device" && (hud.mode !== "area" || hud.hasSelectedArea) && (
-							<div className="mx-6 h-px bg-white/[0.05]" />
+							<div className="mx-6 h-px bg-fill-subtle" />
 						)}
 
 						{/* Record button — unified pill with inline dropdown trigger. In area mode it
@@ -549,18 +549,18 @@ export function LaunchWindow() {
 										<button
 											type="button"
 											disabled={isRecordDisabled}
-											className={`flex items-center gap-2.5 rounded-full px-6 py-2.5 text-[13px] font-semibold transition-all ${
+											className={`flex items-center gap-2.5 rounded-full px-6 py-2.5 text-body font-semibold transition-all ${
 												isRecordDisabled
-													? "bg-red-500/15 text-white/30 cursor-not-allowed"
-													: "bg-red-500 text-white hover:bg-red-600 cursor-pointer"
+													? "bg-danger/15 text-danger-fg cursor-not-allowed"
+													: "bg-danger text-on-danger hover:bg-danger/90 cursor-pointer"
 											}`}
 										>
 											<BsRecordCircle size={13} />
 											<span>{t("recording.startRecording")}</span>
 											<div
-												className={`h-4 w-px ml-1 ${isRecordDisabled ? "bg-white/[0.08]" : "bg-white/25"}`}
+												className={`h-4 w-px ml-1 ${isRecordDisabled ? "bg-fill-hover" : "bg-fill-pressed"}`}
 											/>
-											<ChevronDown size={13} className={isRecordDisabled ? "" : "text-white/70"} />
+											<ChevronDown size={13} className={isRecordDisabled ? "" : "text-fg-muted"} />
 										</button>
 									</DropdownMenuTrigger>
 									<DropdownMenuContent
@@ -572,12 +572,12 @@ export function LaunchWindow() {
 										<DropdownMenuItem
 											disabled={isRecordDisabled}
 											onSelect={() => hud.toggleRecording()}
-											className="text-xs font-semibold"
+											className="text-label font-semibold"
 										>
-											<BsRecordCircle size={12} className="mr-2 text-red-400" />
+											<BsRecordCircle size={12} className="mr-2 text-danger-fg" />
 											{t("recording.startRecording")}
 										</DropdownMenuItem>
-										<DropdownMenuSeparator className="bg-white/[0.08]" />
+										<DropdownMenuSeparator className="bg-fill-hover" />
 										<DropdownMenuRadioGroup
 											value={hud.hudSettings.afterRecordingAction}
 											onValueChange={(value) =>
@@ -586,20 +586,20 @@ export function LaunchWindow() {
 												})
 											}
 										>
-											<DropdownMenuRadioItem value="create-project" className="text-xs">
+											<DropdownMenuRadioItem value="create-project" className="text-label">
 												{t("afterRecording.createProject")}
 											</DropdownMenuRadioItem>
-											<DropdownMenuRadioItem value="export-clipboard" className="text-xs">
+											<DropdownMenuRadioItem value="export-clipboard" className="text-label">
 												{t("afterRecording.exportClipboard")}
 											</DropdownMenuRadioItem>
-											<DropdownMenuRadioItem value="export-share-link" className="text-xs">
+											<DropdownMenuRadioItem value="export-share-link" className="text-label">
 												{t("afterRecording.exportShareLink")}
 											</DropdownMenuRadioItem>
-											<DropdownMenuRadioItem value="export-save-file" className="text-xs">
+											<DropdownMenuRadioItem value="export-save-file" className="text-label">
 												{t("afterRecording.exportSaveFile")}
 											</DropdownMenuRadioItem>
 										</DropdownMenuRadioGroup>
-										<DropdownMenuSeparator className="bg-white/[0.08]" />
+										<DropdownMenuSeparator className="bg-fill-hover" />
 										<DropdownMenuCheckboxItem
 											checked={hud.hudSettings.autoCreateZooms}
 											onCheckedChange={(checked) =>
@@ -607,7 +607,7 @@ export function LaunchWindow() {
 													autoCreateZooms: Boolean(checked),
 												})
 											}
-											className="text-xs"
+											className="text-label"
 										>
 											{t("afterRecording.autoCreateZooms")}
 										</DropdownMenuCheckboxItem>
@@ -641,7 +641,7 @@ export function LaunchWindow() {
 							}}
 						>
 							<div
-								className="relative overflow-hidden bg-black"
+								className="relative overflow-hidden bg-scrim"
 								style={{
 									width: hudWebcamPreviewLayout.width,
 									height: hudWebcamPreviewLayout.height,

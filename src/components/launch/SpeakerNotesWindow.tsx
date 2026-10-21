@@ -50,15 +50,15 @@ export function SpeakerNotesWindow() {
 	};
 
 	return (
-		<div className="h-screen w-full rounded-2xl border border-white/10 bg-[rgba(14,14,16,0.88)] p-3 text-white shadow-2xl backdrop-blur-2xl">
+		<div className="h-screen w-full rounded-2xl border border-line-strong bg-[rgba(14,14,16,0.88)] p-3 text-fg shadow-2xl backdrop-blur-2xl">
 			<div className="mb-2 flex items-center justify-between">
-				<div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">
+				<div className="text-caption font-semibold uppercase tracking-[0.18em] text-fg-subtle">
 					{t("speakerNotes.title")}
 				</div>
 				<button
 					type="button"
 					onClick={() => void window.electronAPI.closeSpeakerNotesWindow()}
-					className="rounded-md px-2 py-1 text-[11px] text-white/45 transition hover:bg-white/10 hover:text-white/80"
+					className="rounded-md px-2 py-1 text-caption text-fg-subtle transition hover:bg-fill-hover hover:text-fg-muted"
 				>
 					{t("speakerNotes.close")}
 				</button>
@@ -67,7 +67,7 @@ export function SpeakerNotesWindow() {
 				value={text}
 				onChange={(event) => persistText(event.target.value)}
 				placeholder={t("speakerNotes.placeholder")}
-				className="h-[calc(100%-2rem)] w-full resize-none rounded-xl border border-white/8 bg-black/20 p-3 text-sm leading-6 text-white/90 outline-none placeholder:text-white/25"
+				className="h-[calc(100%-2rem)] w-full resize-none rounded-xl border border-line bg-sunken p-3 text-body leading-6 text-fg outline-none placeholder:text-fg-subtle"
 			/>
 		</div>
 	);
