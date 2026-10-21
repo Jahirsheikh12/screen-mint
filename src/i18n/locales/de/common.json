@@ -39,7 +39,8 @@
 			"downloadedBodyExternal": "ScreenMint {{version}} ist bereit. Klicken Sie auf „Jetzt aktualisieren“, um den Installer zu öffnen. ScreenMint wird beendet, damit Sie das Update abschließen können.",
 			"manualBody": "ScreenMint {{version}} ist verfügbar, aber diese Installation kann sich nicht selbst aktualisieren. „Jetzt aktualisieren“ öffnet die Download-Seite.",
 			"busyHint": "Schließen Sie Aufnahme, Export oder Transkription ab, bevor Sie mit dem Update fortfahren.",
-			"skipVersion": "Diese Version überspringen"
+			"skipVersion": "Diese Version überspringen",
+			"experimentalBadge": "Experimentell"
 		},
 		"whatsNew": {
 			"title": "Neu in {{version}}",

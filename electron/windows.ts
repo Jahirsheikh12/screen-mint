@@ -985,3 +985,81 @@ ipcMain.handle(IPC_CHANNELS.hudWindow.resize, (_event, contentVisible: boolean) 
 		applyHudCompactBounds();
 	}
 });
+
+let updateToastWindow: BrowserWindow | null = null;
+
+/** Small corner card for update prompts, so they show even when only the HUD is open. */
+export function showUpdateToastWindow(): BrowserWindow {
+	if (updateToastWindow && !updateToastWindow.isDestroyed()) {
+		updateToastWindow.showInactive();
+		return updateToastWindow;
+	}
+
+	const { workArea } = getScreen().getPrimaryDisplay();
+	const width = 380;
+	const height = 280;
+	const win = new BrowserWindow({
+		width,
+		height,
+		x: Math.floor(workArea.x + workArea.width - width - 16),
+		y: Math.floor(workArea.y + workArea.height - height - 16),
+		frame: false,
+		transparent: true,
+		resizable: false,
+		movable: false,
+		minimizable: false,
+		maximizable: false,
+		fullscreenable: false,
+		alwaysOnTop: true,
+		skipTaskbar: true,
+		hasShadow: false,
+		show: false,
+		webPreferences: {
+			preload: path.join(__dirname, "preload.mjs"),
+			nodeIntegration: false,
+			contextIsolation: true,
+		},
+	});
+
+	win.setAlwaysOnTop(true, "floating");
+	if (isHudOverlayCaptureProtectionSupported()) {
+		// Keep update prompts out of recordings.
+		win.setContentProtection(true);
+	}
+
+	updateToastWindow = win;
+	const onResize = (event: Electron.IpcMainEvent, contentHeight: unknown) => {
+		if (event.sender !== win.webContents || typeof contentHeight !== "number") return;
+		const next = Math.round(Math.min(Math.max(contentHeight, 80), workArea.height - 32));
+		const bounds = win.getBounds();
+		if (bounds.height === next) return;
+		win.setBounds({ ...bounds, y: bounds.y + bounds.height - next, height: next });
+	};
+	ipcMain.on(IPC_CHANNELS.updater.resizeToast, onResize);
+	win.on("closed", () => {
+		ipcMain.removeListener(IPC_CHANNELS.updater.resizeToast, onResize);
+		if (updateToastWindow === win) {
+			updateToastWindow = null;
+		}
+	});
+	win.webContents.once("did-finish-load", () => {
+		if (!win.isDestroyed()) win.showInactive();
+	});
+
+	if (VITE_DEV_SERVER_URL) {
+		win.loadURL(VITE_DEV_SERVER_URL + "?windowType=update-toast");
+	} else {
+		win.loadFile(path.join(RENDERER_DIST, "index.html"), {
+			query: { windowType: "update-toast" },
+		});
+	}
+
+	return win;
+}
+
+export function closeUpdateToastWindow(): void {
+	if (updateToastWindow && !updateToastWindow.isDestroyed()) {
+		updateToastWindow.close();
+	}
+	updateToastWindow = null;
+}

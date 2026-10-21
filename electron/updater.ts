@@ -211,6 +211,7 @@ export class ScreenMintUpdater {
 	private readonly appAdapter: AppAdapter;
 	private readonly updaterBackend: UpdaterBackend;
 	private readonly windowProvider: () => BrowserWindow[];
+	private readonly stateListeners = new Set<(state: UpdaterState) => void>();
 	private readonly now: () => number;
 	private readonly checkIntervalMs: number;
 	private readonly initialCheckDelayMs: number;
@@ -383,8 +384,17 @@ export class ScreenMintUpdater {
 		return this.getState();
 	}
 
+	/** Main-process subscribers (e.g. the update toast window). Returns an unsubscribe function. */
+	onStateChange(listener: (state: UpdaterState) => void): () => void {
+		this.stateListeners.add(listener);
+		return () => this.stateListeners.delete(listener);
+	}
+
 	private broadcastState(): void {
 		const payload = this.getState();
+		for (const listener of this.stateListeners) {
+			listener(payload);
+		}
 		for (const window of this.windowProvider()) {
 			if (!window.isDestroyed()) {
 				window.webContents.send("updater-state-changed", payload);

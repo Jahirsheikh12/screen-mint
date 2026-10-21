@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { AnnouncementToasts } from "@/components/announcements/AnnouncementToasts";
 import { Toaster } from "@/components/ui/sonner";
 import { UpdaterDialogs } from "@/components/updater/UpdaterDialogs";
+import { UpdateToast } from "@/components/updater/UpdateToast";
 import { CountdownOverlay } from "./components/countdown/CountdownOverlay";
 import { ExportWorker } from "./components/export-worker/ExportWorker";
 import { AreaSelectionOverlay } from "./components/launch/AreaSelectionOverlay";
@@ -115,6 +116,9 @@ export default function App() {
 			break;
 		case "export-worker":
 			content = <ExportWorker />;
+			break;
+		case "update-toast":
+			content = <UpdateToast />;
 			break;
 		case "editor":
 			content = (

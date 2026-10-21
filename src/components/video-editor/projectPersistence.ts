@@ -144,7 +144,7 @@ import {
 	type ZoomTransitionEasing,
 } from "./types";
 import { normalizeCursorSpring, resolveCursorV2Fields } from "./videoPlayback/cursorV2";
-import { normalizeWebcamEffects } from "./webcamEffects";
+import { normalizeWebcamEffects, normalizeWebcamSourceCrop } from "./webcamEffects";
 import { normalizeWebcamRegion } from "./webcamRegionUtils";
 
 function normalizeCameraSpring(
@@ -448,6 +448,10 @@ function normalizePartialWebcamEffects(candidate: unknown): Partial<WebcamEffect
 
 	if (typeof partial.faceAwareFraming === "boolean") {
 		normalized.faceAwareFraming = partial.faceAwareFraming;
+	}
+
+	if (partial.sourceCrop && typeof partial.sourceCrop === "object") {
+		normalized.sourceCrop = normalizeWebcamSourceCrop(partial.sourceCrop);
 	}
 
 	if (typeof partial.subtleAvoidance === "boolean") {

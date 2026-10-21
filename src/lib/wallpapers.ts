@@ -134,3 +134,17 @@ export function normalizeWallpaperSelection(path: string): string {
 
 	return isRemovedBuiltInWallpaperPath(normalizedPath) ? DEFAULT_WALLPAPER_PATH : path;
 }
+
+const VIDEO_WALLPAPER_PATTERN = /\.(mp4|m4v|webm|mov)(?:[?#].*)?$/i;
+
+/** Video backgrounds are stored as file:// URLs and loop behind the recording. */
+export function isVideoWallpaper(value: string | null | undefined): boolean {
+	return Boolean(value && !value.startsWith("data:") && VIDEO_WALLPAPER_PATTERN.test(value));
+}
+
+/** Background-video position for a source-video time; preview and export share it. */
+export function getVideoWallpaperTime(sourceSeconds: number, durationSeconds: number): number {
+	if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) return 0;
+	const time = Math.max(0, sourceSeconds) % durationSeconds;
+	return Number.isFinite(time) ? time : 0;
+}

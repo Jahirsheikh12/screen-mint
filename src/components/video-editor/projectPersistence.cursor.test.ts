@@ -8,12 +8,16 @@ describe("cursor project persistence", () => {
 		expect(result.cursorPack).toBe("classic");
 	});
 
-	it("only exposes classic, custom, macOS and inverted cursor packs", () => {
+	it("exposes the built-in cursor packs in picker order", () => {
 		expect(CURSOR_PACK_OPTIONS).toEqual([
 			{ value: "classic", label: "Classic" },
 			{ value: "custom", label: "Custom" },
 			{ value: "macos", label: "macOS" },
 			{ value: "inverted", label: "Inverted" },
+			{ value: "amber", label: "Amber" },
+			{ value: "mint", label: "Mint" },
+			{ value: "rose", label: "Rose" },
+			{ value: "mono", label: "Mono" },
 		]);
 	});
 

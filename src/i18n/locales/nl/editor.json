@@ -190,7 +190,8 @@
 			"typewriterDesc": "Toont woorden één voor één",
 			"karaokeFill": "Karaoke",
 			"karaokeFillDesc": "Geleidelijke kleurvulling"
-		}
+		},
+		"rows": "Regels"
 	},
 	"captionsTab": {
 		"livePreview": "Livevoorbeeld",
@@ -353,5 +354,23 @@
 		"fadeOut": "Uitfaden",
 		"autoPolish": "Automatisch afwerken",
 		"oneClickStudioTemplates": "Studiosjablonen met één klik"
+	},
+	"theme": {
+		"appearance": "Weergave",
+		"light": "Licht",
+		"dark": "Donker",
+		"system": "Systeem"
+	},
+	"feedback": {
+		"trigger": "Feedback",
+		"title": "Feedback en contact",
+		"description": "Een bug gevonden of mis je iets? Laat het ons weten op GitHub – elke melding helpt.",
+		"reportBug": "Bug melden",
+		"reportBugHint": "Werkt er iets niet? Open een issue met de stappen om het te reproduceren.",
+		"suggestFeature": "Functie voorstellen",
+		"suggestFeatureHint": "Vertel ons wat ScreenMint beter zou maken voor jou.",
+		"viewSource": "Bekijken op GitHub",
+		"viewSourceHint": "Bekijk de broncode, releases en bestaande issues.",
+		"openFailed": "Kan de link niet openen."
 	}
 }

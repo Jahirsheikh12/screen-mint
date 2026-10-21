@@ -21,7 +21,16 @@ import type {
 	WebcamPreviewMode,
 	WebcamRegion,
 } from "../types";
-import { CAMERA_ZOOM_SCALE_DISABLED, getRecommendedWebcamDefaults } from "../types";
+import {
+	CAMERA_ZOOM_SCALE_DISABLED,
+	DEFAULT_WEBCAM_SOURCE_CROP,
+	getRecommendedWebcamDefaults,
+	MAX_WEBCAM_SOURCE_CROP,
+	type WebcamSourceCrop,
+} from "../types";
+
+const WEBCAM_CROP_SIDES: readonly (keyof WebcamSourceCrop)[] = ["top", "bottom", "left", "right"];
+
 import {
 	buildWebcamStylePresets,
 	normalizeWebcamEffects,
@@ -123,6 +132,9 @@ export function WebcamSettingsTab({
 	const resolvedWebcamEffects = useMemo(
 		() => normalizeWebcamEffects(webcamEffects),
 		[webcamEffects],
+	);
+	const hasWebcamCrop = WEBCAM_CROP_SIDES.some(
+		(side) => resolvedWebcamEffects.sourceCrop[side] > 0,
 	);
 	const webcamEffectCapability = useMemo(
 		() =>
@@ -492,6 +504,41 @@ export function WebcamSettingsTab({
 							parseInput={(t) => parseFloat(t.replace(/%$/, ""))}
 							disabled={webcamControlsDisabled}
 						/>
+					</div>
+
+					<div className="space-y-1 p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+						<div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+							<span className="min-w-0 break-words text-xs font-medium text-slate-300">
+								{tSettings("webcamTab.crop", "Crop")}
+							</span>
+							<button
+								type="button"
+								onClick={() => onWebcamEffectsChange?.({ sourceCrop: DEFAULT_WEBCAM_SOURCE_CROP })}
+								disabled={webcamControlsDisabled || !hasWebcamCrop}
+								className="shrink-0 text-[10px] font-medium text-[#F59E0B] transition-opacity hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed"
+							>
+								{tSettings("webcamTab.resetCrop", "Reset")}
+							</button>
+						</div>
+						{WEBCAM_CROP_SIDES.map((side) => (
+							<SliderControl
+								key={side}
+								label={tSettings(`webcamTab.cropSides.${side}`)}
+								value={Math.round(resolvedWebcamEffects.sourceCrop[side] * 100)}
+								defaultValue={0}
+								min={0}
+								max={MAX_WEBCAM_SOURCE_CROP * 100}
+								step={1}
+								onChange={(v) =>
+									onWebcamEffectsChange?.({
+										sourceCrop: { ...resolvedWebcamEffects.sourceCrop, [side]: v / 100 },
+									})
+								}
+								formatValue={(v) => `${Math.round(v)}%`}
+								parseInput={(t) => parseFloat(t.replace(/%$/, ""))}
+								disabled={webcamControlsDisabled}
+							/>
+						))}
 					</div>
 
 					<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">

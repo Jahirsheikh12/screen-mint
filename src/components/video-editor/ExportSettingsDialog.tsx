@@ -985,7 +985,7 @@ export function ExportSettingsDialog({
 							disabled={exportDestination === "link"}
 							onClick={handleExportClick}
 							className={cn(
-								"flex h-11 min-w-[180px] items-center justify-center gap-2 rounded-lg bg-[#F59E0B] px-5 text-[13px] font-bold text-black shadow-[0_8px_28px_rgba(245,158,11,0.22)] transition-all",
+								"flex h-11 min-w-[180px] items-center justify-center gap-2 rounded-lg bg-[#F59E0B] px-5 text-[13px] font-bold text-neutral-950 shadow-[0_8px_28px_rgba(245,158,11,0.22)] transition-all",
 								"hover:bg-[#FBBF24] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-35",
 							)}
 						>

@@ -103,5 +103,12 @@
 		"exportLocallyAndCopy": "Exportar localmente e copiar o caminho do arquivo salvo.",
 		"edit": "Editar",
 		"openTheRecordingIn": "Abrir a gravação no editor."
+	},
+	"missingCursorData": {
+		"title": "Sem dados do cursor nesta gravação",
+		"description": "O vídeo foi gravado normalmente, mas não foi possível rastrear o ponteiro, então a suavização do cursor, os efeitos de clique e os zooms baseados no cursor não estão disponíveis.",
+		"macHint": "Verifique se o ScreenMint tem permissão em Ajustes do Sistema › Privacidade e Segurança › Acessibilidade e grave de novo.",
+		"openSettings": "Abrir ajustes de Acessibilidade",
+		"confirm": "OK"
 	}
 }

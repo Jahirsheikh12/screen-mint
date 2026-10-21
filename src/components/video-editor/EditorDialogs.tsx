@@ -64,7 +64,7 @@ export function PresetNameDialog({
 					<Button
 						onClick={onConfirm}
 						disabled={name.trim().length === 0}
-						className="bg-[#F59E0B] text-black hover:bg-[#d97706]"
+						className="bg-[#F59E0B] text-neutral-950 hover:bg-[#d97706]"
 					>
 						{t("dialogs.editor.savePreset2", "Save preset")}
 					</Button>
@@ -102,10 +102,59 @@ export function ConfirmActionDialog({ dialog, onCancel, onConfirm }: ConfirmActi
 						className={
 							dialog?.tone === "danger"
 								? "bg-red-500 text-white hover:bg-red-600"
-								: "bg-[#F59E0B] text-black hover:bg-[#d97706]"
+								: "bg-[#F59E0B] text-neutral-950 hover:bg-[#d97706]"
 						}
 					>
 						{dialog?.confirmLabel ?? t("dialogs.editor.continue", "Continue")}
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+}
+
+interface MissingCursorDataDialogProps {
+	open: boolean;
+	isMac: boolean;
+	onClose: () => void;
+}
+
+/** Shown once when a fresh recording arrives without cursor tracking data. */
+export function MissingCursorDataDialog({ open, isMac, onClose }: MissingCursorDataDialogProps) {
+	const { t } = useI18n();
+	return (
+		<Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+			<DialogContent className="border-white/10 bg-[#0A0F0D] text-white sm:max-w-md">
+				<DialogHeader>
+					<DialogTitle>
+						{t("dialogs.missingCursorData.title", "No cursor data for this recording")}
+					</DialogTitle>
+					<DialogDescription className="text-slate-400">
+						{t(
+							"dialogs.missingCursorData.description",
+							"Your video recorded fine, but the pointer couldn't be tracked, so cursor smoothing, click effects and cursor-based zooms aren't available for it.",
+						)}
+					</DialogDescription>
+				</DialogHeader>
+				{isMac ? (
+					<p className="text-sm text-slate-300">
+						{t(
+							"dialogs.missingCursorData.macHint",
+							"Check that ScreenMint is allowed under System Settings › Privacy & Security › Accessibility, then record again.",
+						)}
+					</p>
+				) : null}
+				<DialogFooter className="flex-wrap gap-2">
+					{isMac ? (
+						<Button
+							variant="secondary"
+							onClick={() => void window.electronAPI.openAccessibilityPreferences()}
+						>
+							{t("dialogs.missingCursorData.openSettings", "Open Accessibility settings")}
+						</Button>
+					) : null}
+					<Button onClick={onClose} className="bg-[#F59E0B] text-neutral-950 hover:bg-[#d97706]">
+						{t("dialogs.missingCursorData.confirm", "Okay")}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

@@ -96,7 +96,10 @@
 		"uploadCustom": "Enviar imagem",
 		"uploadSuccess": "Imagem enviada!",
 		"uploadError": "Envie uma imagem JPG, JPEG, PNG ou WEBP.",
-		"uploadErrorDescription": "Formatos aceitos: JPG, JPEG, PNG, WEBP."
+		"uploadErrorDescription": "Formatos aceitos: JPG, JPEG, PNG, WEBP.",
+		"video": "Vídeo",
+		"uploadVideo": "Escolher vídeo",
+		"videoHint": "Repete sem som atrás da sua gravação. MP4, MOV ou WebM."
 	},
 	"cursor": {
 		"title": "Cursor",
@@ -161,7 +164,11 @@
 			"pack": {
 				"classic": "Clássico",
 				"custom": "Personalizado",
-				"inverted": "Invertido"
+				"inverted": "Invertido",
+				"amber": "Âmbar",
+				"mint": "Menta",
+				"rose": "Rosa",
+				"mono": "Mono"
 			},
 			"type": {
 				"auto": "Auto",
@@ -466,6 +473,14 @@
 			"exact": "Correspondência exata",
 			"performance": "Desempenho",
 			"power-saving": "Economia de energia"
+		},
+		"crop": "Recortar",
+		"resetCrop": "Redefinir",
+		"cropSides": {
+			"top": "Superior",
+			"bottom": "Inferior",
+			"left": "Esquerda",
+			"right": "Direita"
 		}
 	},
 	"audioTab": {

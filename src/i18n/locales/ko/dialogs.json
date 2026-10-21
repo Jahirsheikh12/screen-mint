@@ -103,5 +103,12 @@
 		"exportLocallyAndCopy": "로컬로 내보내고 저장된 파일 경로를 복사합니다.",
 		"edit": "편집",
 		"openTheRecordingIn": "편집기에서 녹화를 엽니다."
+	},
+	"missingCursorData": {
+		"title": "이 녹화에는 커서 데이터가 없습니다",
+		"description": "영상은 정상적으로 녹화되었지만 포인터를 추적하지 못해 커서 부드럽게 하기, 클릭 효과, 커서 기반 확대를 사용할 수 없습니다.",
+		"macHint": "시스템 설정 › 개인정보 보호 및 보안 › 손쉬운 사용에서 ScreenMint가 허용되어 있는지 확인한 후 다시 녹화하세요.",
+		"openSettings": "손쉬운 사용 설정 열기",
+		"confirm": "확인"
 	}
 }

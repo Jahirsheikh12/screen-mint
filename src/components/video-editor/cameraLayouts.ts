@@ -4,6 +4,7 @@ import type {
 	CursorTelemetryPoint,
 	WebcamMotionPreset,
 	WebcamRegion,
+	WebcamSourceCrop,
 	ZoomRegion,
 	ZoomTimingSettings,
 } from "./types";
@@ -84,8 +85,20 @@ export interface ResolvedWebcamRenderModel extends ResolvedCameraLayoutState {
 export function resolveWebcamSourceCrop(
 	sourceSize: WebcamSourceSize | null | undefined,
 	displayRect: PixelRect,
+	trim?: WebcamSourceCrop | null,
 ): PixelRect | null {
-	return getCoverCropRect(sourceSize, displayRect);
+	if (!sourceSize || !trim || (!trim.top && !trim.right && !trim.bottom && !trim.left)) {
+		return getCoverCropRect(sourceSize, displayRect);
+	}
+	// Cover-fit inside the trimmed frame, then shift back into source pixels.
+	const x = sourceSize.width * trim.left;
+	const y = sourceSize.height * trim.top;
+	const trimmedSize = {
+		width: Math.max(1, sourceSize.width * (1 - trim.left - trim.right)),
+		height: Math.max(1, sourceSize.height * (1 - trim.top - trim.bottom)),
+	};
+	const crop = getCoverCropRect(trimmedSize, displayRect);
+	return crop ? { ...crop, x: crop.x + x, y: crop.y + y } : null;
 }
 
 function clamp(value: number, min: number, max: number) {

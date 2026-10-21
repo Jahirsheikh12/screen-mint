@@ -856,7 +856,7 @@ export function CursorSettingsTab({
 								<div className="text-xs font-medium text-slate-300 mb-2">
 									{tSettings("cursor.pack")}
 								</div>
-								<div className="grid grid-cols-5 gap-1.5">
+								<div className="grid grid-cols-[repeat(auto-fill,minmax(76px,1fr))] gap-1.5">
 									{CURSOR_PACK_OPTIONS.map((opt) => (
 										<button
 											key={opt.value}
@@ -888,7 +888,7 @@ export function CursorSettingsTab({
 											</div>
 											<span
 												className={cn(
-													"text-[8px] font-medium leading-tight text-center truncate w-full",
+													"text-[8px] font-medium leading-tight text-center break-words w-full",
 													cursorPack === opt.value
 														? "text-[#F59E0B]"
 														: "text-slate-500 group-hover:text-slate-300",

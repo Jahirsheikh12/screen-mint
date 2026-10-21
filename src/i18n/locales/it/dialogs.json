@@ -103,5 +103,12 @@
 		"exportLocallyAndCopy": "Esporta in locale e copia il percorso del file.",
 		"edit": "Modifica",
 		"openTheRecordingIn": "Apri la registrazione nell’editor."
+	},
+	"missingCursorData": {
+		"title": "Nessun dato del cursore per questa registrazione",
+		"description": "Il video è stato registrato correttamente, ma il puntatore non è stato tracciato: levigatura del cursore, effetti dei clic e zoom basati sul cursore non sono disponibili.",
+		"macHint": "Verifica che ScreenMint sia autorizzato in Impostazioni di Sistema › Privacy e sicurezza › Accessibilità, poi registra di nuovo.",
+		"openSettings": "Apri le impostazioni di Accessibilità",
+		"confirm": "OK"
 	}
 }

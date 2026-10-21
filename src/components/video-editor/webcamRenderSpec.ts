@@ -265,16 +265,19 @@ export function resolveWebcamRenderSpec(params: {
 			compositionRect: params.compositionRect,
 			contentRect: params.contentRect,
 		});
+	const trim = effectiveEffects.sourceCrop;
+	const hasTrim = Boolean(trim && (trim.top || trim.right || trim.bottom || trim.left));
 	const hydratedRenderModel =
 		params.sourceSize &&
 		params.sourceSize.width > 0 &&
 		params.sourceSize.height > 0 &&
-		(renderModel.sourceCrop == null ||
+		(hasTrim ||
+			renderModel.sourceCrop == null ||
 			renderModel.sourceCrop.width <= 0 ||
 			renderModel.sourceCrop.height <= 0)
 			? {
 					...renderModel,
-					sourceCrop: resolveWebcamSourceCrop(params.sourceSize, renderModel.displayRect),
+					sourceCrop: resolveWebcamSourceCrop(params.sourceSize, renderModel.displayRect, trim),
 				}
 			: renderModel;
 

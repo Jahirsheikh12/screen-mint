@@ -396,6 +396,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	openImageFilePicker: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.files.openImagePicker);
 	},
+	openBackgroundVideoPicker: () => {
+		return ipcRenderer.invoke(IPC_CHANNELS.files.openBackgroundVideoPicker);
+	},
 	setCurrentVideoPath: (path: string) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.currentMedia.setVideoPath, path);
 	},
@@ -499,6 +502,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	},
 	skipUpdateVersion: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.updater.skipVersion);
+	},
+	resizeUpdateToast: (height: number) => {
+		ipcRenderer.send(IPC_CHANNELS.updater.resizeToast, height);
 	},
 	getUpdaterState: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.updater.getState);

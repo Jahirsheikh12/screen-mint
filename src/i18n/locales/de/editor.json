@@ -190,7 +190,8 @@
 			"typewriterDesc": "Zeigt die Wörter nacheinander",
 			"karaokeFill": "Karaoke",
 			"karaokeFillDesc": "Fortschreitende Farbfüllung"
-		}
+		},
+		"rows": "Zeilen"
 	},
 	"captionsTab": {
 		"livePreview": "Live-Vorschau",
@@ -353,5 +354,23 @@
 		"fadeOut": "Ausblenden",
 		"autoPolish": "Automatisch veredeln",
 		"oneClickStudioTemplates": "Studio-Vorlagen mit einem Klick"
+	},
+	"theme": {
+		"appearance": "Darstellung",
+		"light": "Hell",
+		"dark": "Dunkel",
+		"system": "System"
+	},
+	"feedback": {
+		"trigger": "Feedback",
+		"title": "Feedback & Kontakt",
+		"description": "Fehler gefunden oder fehlt etwas? Sagen Sie es uns auf GitHub – jede Meldung hilft.",
+		"reportBug": "Fehler melden",
+		"reportBugHint": "Etwas funktioniert nicht? Erstellen Sie ein Issue mit den Schritten zum Nachstellen.",
+		"suggestFeature": "Funktion vorschlagen",
+		"suggestFeatureHint": "Sagen Sie uns, was ScreenMint für Sie besser machen würde.",
+		"viewSource": "Auf GitHub ansehen",
+		"viewSourceHint": "Quellcode, Releases und bestehende Issues durchsuchen.",
+		"openFailed": "Der Link konnte nicht geöffnet werden."
 	}
 }

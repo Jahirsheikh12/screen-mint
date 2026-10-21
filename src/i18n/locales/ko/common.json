@@ -39,7 +39,8 @@
 			"downloadedBodyExternal": "ScreenMint {{version}}이(가) 준비되었습니다. '지금 업데이트'를 눌러 설치 프로그램을 여세요. 업데이트를 마칠 수 있도록 ScreenMint가 종료됩니다.",
 			"manualBody": "ScreenMint {{version}}을(를) 사용할 수 있지만 이 설치본은 스스로 업데이트할 수 없습니다. '지금 업데이트'를 누르면 다운로드 페이지가 열립니다.",
 			"busyHint": "업데이트를 계속하기 전에 녹화, 내보내기 또는 받아쓰기를 마치세요.",
-			"skipVersion": "이 버전 건너뛰기"
+			"skipVersion": "이 버전 건너뛰기",
+			"experimentalBadge": "실험적"
 		},
 		"whatsNew": {
 			"title": "{{version}}의 새로운 기능",

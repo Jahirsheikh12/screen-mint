@@ -103,5 +103,12 @@
 		"exportLocallyAndCopy": "Exporter en local et copier le chemin du fichier.",
 		"edit": "Modifier",
 		"openTheRecordingIn": "Ouvrir l’enregistrement dans l’éditeur."
+	},
+	"missingCursorData": {
+		"title": "Aucune donnée de curseur pour cet enregistrement",
+		"description": "La vidéo s'est bien enregistrée, mais le pointeur n'a pas pu être suivi : le lissage du curseur, les effets de clic et les zooms basés sur le curseur ne sont pas disponibles.",
+		"macHint": "Vérifiez que ScreenMint est autorisé dans Réglages Système › Confidentialité et sécurité › Accessibilité, puis enregistrez à nouveau.",
+		"openSettings": "Ouvrir les réglages d'Accessibilité",
+		"confirm": "OK"
 	}
 }

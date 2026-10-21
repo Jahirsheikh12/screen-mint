@@ -103,5 +103,12 @@
 		"exportLocallyAndCopy": "在本機匯出並複製已儲存檔案的路徑。",
 		"edit": "編輯",
 		"openTheRecordingIn": "在編輯器中開啟這段錄影。"
+	},
+	"missingCursorData": {
+		"title": "此錄影沒有游標資料",
+		"description": "影片已正常錄製，但無法追蹤滑鼠指標，因此游標平滑、點擊效果與以游標為準的縮放無法使用。",
+		"macHint": "請在「系統設定 › 隱私權與安全性 › 輔助使用」中確認已允許 ScreenMint，然後重新錄影。",
+		"openSettings": "開啟輔助使用設定",
+		"confirm": "好"
 	}
 }

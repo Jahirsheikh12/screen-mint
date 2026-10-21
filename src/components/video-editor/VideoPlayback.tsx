@@ -19,6 +19,7 @@ import {
 	useState,
 } from "react";
 import { useI18n } from "@/contexts/I18nContext";
+import { isVideoWallpaper } from "@/lib/wallpapers";
 import { getAspectRatioValue } from "@/utils/aspectRatioUtils";
 import { createWebcamZoomMotionState } from "./cameraLayouts";
 import { applyOpacityToHex, buildFrameShadowFilter, hasVisibleFrameShadow } from "./frameEffects";
@@ -62,6 +63,7 @@ import {
 	type ZoomFocus,
 	type ZoomRegion,
 } from "./types";
+import { BackgroundVideoLayer } from "./videoPlayback/BackgroundVideoLayer";
 import {
 	createPlaybackCameraState,
 	evaluatePlaybackCameraFrame,
@@ -2103,16 +2105,20 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			};
 		}, []);
 
+		const isVideoBackground = isVideoWallpaper(resolvedWallpaper);
 		const isImageUrl = Boolean(
-			resolvedWallpaper &&
+			!isVideoBackground &&
+				resolvedWallpaper &&
 				(resolvedWallpaper.startsWith("file://") ||
 					resolvedWallpaper.startsWith("http") ||
 					resolvedWallpaper.startsWith("/") ||
 					resolvedWallpaper.startsWith("data:")),
 		);
-		const backgroundStyle = isImageUrl
-			? { backgroundImage: `url(${resolvedWallpaper || ""})` }
-			: { background: resolvedWallpaper || "" };
+		const backgroundStyle = isVideoBackground
+			? {}
+			: isImageUrl
+				? { backgroundImage: `url(${resolvedWallpaper || ""})` }
+				: { background: resolvedWallpaper || "" };
 		const ratioVideoWidth =
 			lockedVideoDimensionsRef.current?.width ?? videoRef.current?.videoWidth ?? 16;
 		const ratioVideoHeight =
@@ -2165,7 +2171,15 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 								inset: `-${backgroundBlurInset}px`,
 								filter: backgroundBlur > 0 ? `blur(${backgroundBlur}px)` : "none",
 							}}
-						/>
+						>
+							{isVideoBackground && resolvedWallpaper ? (
+								<BackgroundVideoLayer
+									src={resolvedWallpaper}
+									currentTime={currentTime}
+									isPlaying={isPlaying}
+								/>
+							) : null}
+						</div>
 					</div>
 				)}
 				<div

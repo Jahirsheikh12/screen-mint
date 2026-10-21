@@ -103,5 +103,12 @@
 		"exportLocallyAndCopy": "Lokaal exporteren en het bestandspad kopiëren.",
 		"edit": "Bewerken",
 		"openTheRecordingIn": "De opname in de editor openen."
+	},
+	"missingCursorData": {
+		"title": "Geen cursorgegevens voor deze opname",
+		"description": "De video is goed opgenomen, maar de aanwijzer kon niet worden gevolgd. Vloeiende cursor, klikeffecten en zooms op basis van de cursor zijn daarom niet beschikbaar.",
+		"macHint": "Controleer of ScreenMint is toegestaan in Systeeminstellingen › Privacy en beveiliging › Toegankelijkheid en neem daarna opnieuw op.",
+		"openSettings": "Toegankelijkheidsinstellingen openen",
+		"confirm": "Oké"
 	}
 }

@@ -190,7 +190,8 @@
 			"typewriterDesc": "Reveal words one at a time",
 			"karaokeFill": "Karaoke fill",
 			"karaokeFillDesc": "Progressive color fill"
-		}
+		},
+		"rows": "Rows"
 	},
 	"captionsTab": {
 		"livePreview": "Live preview",
@@ -353,5 +354,23 @@
 		"fadeOut": "Fade Out",
 		"autoPolish": "Auto Polish",
 		"oneClickStudioTemplates": "One-click studio templates"
+	},
+	"theme": {
+		"appearance": "Appearance",
+		"light": "Light",
+		"dark": "Dark",
+		"system": "System"
+	},
+	"feedback": {
+		"trigger": "Feedback",
+		"title": "Feedback & contact",
+		"description": "Found a bug or missing something? Tell us on GitHub — every report helps.",
+		"reportBug": "Report a bug",
+		"reportBugHint": "Something broken? Open an issue with the steps to reproduce it.",
+		"suggestFeature": "Suggest a feature",
+		"suggestFeatureHint": "Tell us what would make ScreenMint better for you.",
+		"viewSource": "View on GitHub",
+		"viewSourceHint": "Browse the source code, releases and existing issues.",
+		"openFailed": "Couldn't open the link."
 	}
 }

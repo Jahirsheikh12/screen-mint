@@ -103,5 +103,12 @@
 		"exportLocallyAndCopy": "Export locally and copy the saved file path.",
 		"edit": "Edit",
 		"openTheRecordingIn": "Open the recording in the editor."
+	},
+	"missingCursorData": {
+		"title": "No cursor data for this recording",
+		"description": "Your video recorded fine, but the pointer couldn't be tracked, so cursor smoothing, click effects and cursor-based zooms aren't available for it.",
+		"macHint": "Check that ScreenMint is allowed under System Settings › Privacy & Security › Accessibility, then record again.",
+		"openSettings": "Open Accessibility settings",
+		"confirm": "Okay"
 	}
 }

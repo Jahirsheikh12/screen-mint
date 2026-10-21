@@ -86,10 +86,10 @@ export const SUPPORTED_CURSOR_KEYS: CursorType[] = [
 	"screenshot-selection",
 ];
 
-export const cursorAssetPacks: Record<
-	CursorPack,
-	Partial<Record<CursorType, CursorAssetDefinition>>
-> = {
+type CursorPackDefinitions = Partial<Record<CursorType, CursorAssetDefinition>>;
+type RecoloredCursorPack = "amber" | "mint" | "rose" | "mono";
+
+const baseCursorPacks: Record<Exclude<CursorPack, RecoloredCursorPack>, CursorPackDefinitions> = {
 	classic: {
 		arrow: {
 			url: arrowClassicUrl,
@@ -312,9 +312,39 @@ export const cursorAssetPacks: Record<
 	},
 };
 
+/** Colour variants of the macOS-style art (same geometry, so same anchors). */
+const RECOLORED_PACK_URLS = import.meta.glob<string>(
+	"../../../assets/cursors/{amber,mint,rose,mono}/*.svg",
+	{ eager: true, query: "?url", import: "default" },
+);
+
+function buildRecoloredPack(pack: RecoloredCursorPack): CursorPackDefinitions {
+	const definitions: CursorPackDefinitions = {};
+	for (const [key, base] of Object.entries(baseCursorPacks.macos) as [
+		CursorType,
+		CursorAssetDefinition,
+	][]) {
+		const url = RECOLORED_PACK_URLS[`../../../assets/cursors/${pack}/${key}.svg`];
+		if (url) definitions[key] = { ...base, url };
+	}
+	return definitions;
+}
+
+export const cursorAssetPacks: Record<CursorPack, CursorPackDefinitions> = {
+	...baseCursorPacks,
+	amber: buildRecoloredPack("amber"),
+	mint: buildRecoloredPack("mint"),
+	rose: buildRecoloredPack("rose"),
+	mono: buildRecoloredPack("mono"),
+};
+
 export const cursorPackPreviewUrls: Record<CursorPack, string> = {
 	classic: arrowClassicUrl,
 	custom: pointerCustomUrl,
 	macos: arrowMacosUrl,
 	inverted: arrowInvertedUrl,
+	amber: cursorAssetPacks.amber.arrow?.url ?? arrowMacosUrl,
+	mint: cursorAssetPacks.mint.arrow?.url ?? arrowMacosUrl,
+	rose: cursorAssetPacks.rose.arrow?.url ?? arrowMacosUrl,
+	mono: cursorAssetPacks.mono.arrow?.url ?? arrowMacosUrl,
 };

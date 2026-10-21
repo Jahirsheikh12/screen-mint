@@ -190,7 +190,8 @@
 			"typewriterDesc": "단어를 하나씩 보여 줍니다",
 			"karaokeFill": "노래방",
 			"karaokeFillDesc": "색이 점점 채워집니다"
-		}
+		},
+		"rows": "줄 수"
 	},
 	"captionsTab": {
 		"livePreview": "실시간 미리보기",
@@ -353,5 +354,23 @@
 		"fadeOut": "페이드 아웃",
 		"autoPolish": "자동 다듬기",
 		"oneClickStudioTemplates": "원클릭 스튜디오 템플릿"
+	},
+	"theme": {
+		"appearance": "모양",
+		"light": "라이트",
+		"dark": "다크",
+		"system": "시스템"
+	},
+	"feedback": {
+		"trigger": "피드백",
+		"title": "피드백 및 문의",
+		"description": "버그를 발견했거나 필요한 기능이 있나요? GitHub에 알려 주세요. 모든 제보가 도움이 됩니다.",
+		"reportBug": "버그 신고",
+		"reportBugHint": "문제가 있나요? 재현 단계와 함께 이슈를 열어 주세요.",
+		"suggestFeature": "기능 제안",
+		"suggestFeatureHint": "ScreenMint를 더 좋게 만들 아이디어를 알려 주세요.",
+		"viewSource": "GitHub에서 보기",
+		"viewSourceHint": "소스 코드, 릴리스, 기존 이슈를 살펴보세요.",
+		"openFailed": "링크를 열 수 없습니다."
 	}
 }

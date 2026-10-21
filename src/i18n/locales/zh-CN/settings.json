@@ -96,7 +96,10 @@
 		"uploadCustom": "上传自定义",
 		"uploadSuccess": "自定义图片上传成功！",
 		"uploadError": "请上传 JPG、JPEG、PNG 或 WEBP 图片文件。",
-		"uploadErrorDescription": "支持格式：JPG、JPEG、PNG、WEBP。"
+		"uploadErrorDescription": "支持格式：JPG、JPEG、PNG、WEBP。",
+		"video": "视频",
+		"uploadVideo": "选择视频",
+		"videoHint": "在录制画面后方静音循环播放。支持 MP4、MOV 或 WebM。"
 	},
 	"cursor": {
 		"title": "光标",
@@ -161,7 +164,11 @@
 			"pack": {
 				"classic": "经典",
 				"custom": "自定义",
-				"inverted": "反色"
+				"inverted": "反色",
+				"amber": "琥珀",
+				"mint": "薄荷",
+				"rose": "玫瑰",
+				"mono": "单色"
 			},
 			"type": {
 				"auto": "自动",
@@ -466,6 +473,14 @@
 			"exact": "精确匹配",
 			"performance": "性能",
 			"power-saving": "省电"
+		},
+		"crop": "裁剪",
+		"resetCrop": "重置",
+		"cropSides": {
+			"top": "上",
+			"bottom": "下",
+			"left": "左",
+			"right": "右"
 		}
 	},
 	"audioTab": {

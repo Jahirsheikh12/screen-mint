@@ -3,6 +3,7 @@ import { getAssetPath, getRenderableAssetUrl } from "@/lib/assetPath";
 import {
 	DEFAULT_WALLPAPER_PATH,
 	DEFAULT_WALLPAPER_RELATIVE_PATH,
+	isVideoWallpaper,
 	normalizeWallpaperSelection,
 } from "@/lib/wallpapers";
 
@@ -35,7 +36,8 @@ export function useResolvedWallpaper(wallpaper: string | undefined): string | nu
 					return;
 				}
 
-				if (selectedWallpaper.startsWith("data:")) {
+				// Played straight from disk; inlining a video as a data URL would load it into memory.
+				if (selectedWallpaper.startsWith("data:") || isVideoWallpaper(selectedWallpaper)) {
 					if (mounted) setResolvedWallpaper(selectedWallpaper);
 					return;
 				}

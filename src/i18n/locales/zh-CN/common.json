@@ -39,7 +39,8 @@
 			"downloadedBodyExternal": "ScreenMint {{version}} 已准备好。点击“立即更新”会打开安装器，ScreenMint 会退出，以便你完成更新。",
 			"manualBody": "ScreenMint {{version}} 已可用，但当前安装方式无法自更新。点击“立即更新”会打开最新下载页面。",
 			"busyHint": "请先完成录制、导出或转录，再继续更新。",
-			"skipVersion": "跳过此版本"
+			"skipVersion": "跳过此版本",
+			"experimentalBadge": "实验性"
 		},
 		"whatsNew": {
 			"title": "{{version}} 的新内容",

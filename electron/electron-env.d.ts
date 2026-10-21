@@ -386,6 +386,12 @@ declare global {
 			openVideoFilePicker: () => Promise<{ success: boolean; path?: string; canceled?: boolean }>;
 			openAudioFilePicker: () => Promise<{ success: boolean; path?: string; canceled?: boolean }>;
 			openImageFilePicker: () => Promise<{ success: boolean; path?: string; canceled?: boolean }>;
+			/** Picks a video for the canvas background; unlike openVideoFilePicker it keeps the open project. */
+			openBackgroundVideoPicker: () => Promise<{
+				success: boolean;
+				path?: string;
+				canceled?: boolean;
+			}>;
 			setCurrentVideoPath: (path: string) => Promise<{ success: boolean }>;
 			getCurrentVideoPath: () => Promise<{ success: boolean; path?: string }>;
 			clearCurrentVideoPath: () => Promise<{ success: boolean }>;
@@ -485,6 +491,8 @@ declare global {
 			getUpdaterState: () => Promise<UpdaterState>;
 			setExperimentalUpdates: (enabled: boolean) => Promise<UpdaterState>;
 			skipUpdateVersion: () => Promise<UpdaterState>;
+			/** Fits the update toast window to its card (bottom edge stays put). */
+			resizeUpdateToast: (height: number) => void;
 			checkForUpdates: () => Promise<UpdaterState>;
 			downloadUpdate: () => Promise<UpdaterState>;
 			installUpdateAndRestart: () => Promise<{ success: boolean; reason?: string }>;

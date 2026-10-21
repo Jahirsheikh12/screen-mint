@@ -190,7 +190,8 @@
 			"typewriterDesc": "逐个显示词语",
 			"karaokeFill": "卡拉 OK",
 			"karaokeFillDesc": "颜色逐渐填充"
-		}
+		},
+		"rows": "行数"
 	},
 	"captionsTab": {
 		"livePreview": "实时预览",
@@ -353,5 +354,23 @@
 		"fadeOut": "淡出",
 		"autoPolish": "自动润色",
 		"oneClickStudioTemplates": "一键工作室模板"
+	},
+	"theme": {
+		"appearance": "外观",
+		"light": "浅色",
+		"dark": "深色",
+		"system": "跟随系统"
+	},
+	"feedback": {
+		"trigger": "反馈",
+		"title": "反馈与联系",
+		"description": "发现了问题或缺少某个功能？请在 GitHub 上告诉我们，每一条反馈都有帮助。",
+		"reportBug": "报告问题",
+		"reportBugHint": "遇到故障？请提交 issue 并附上复现步骤。",
+		"suggestFeature": "建议新功能",
+		"suggestFeatureHint": "告诉我们怎样让 ScreenMint 更好用。",
+		"viewSource": "在 GitHub 上查看",
+		"viewSourceHint": "浏览源代码、版本发布和已有 issue。",
+		"openFailed": "无法打开链接。"
 	}
 }

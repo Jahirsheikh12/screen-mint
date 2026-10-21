@@ -96,7 +96,10 @@
 		"uploadCustom": "Upload Custom",
 		"uploadSuccess": "Custom image uploaded successfully!",
 		"uploadError": "Please upload a JPG, JPEG, PNG, or WEBP image file.",
-		"uploadErrorDescription": "Supported formats: JPG, JPEG, PNG, WEBP."
+		"uploadErrorDescription": "Supported formats: JPG, JPEG, PNG, WEBP.",
+		"video": "Video",
+		"uploadVideo": "Choose video",
+		"videoHint": "Loops silently behind your recording. MP4, MOV or WebM."
 	},
 	"cursor": {
 		"title": "Cursor",
@@ -161,7 +164,11 @@
 			"pack": {
 				"classic": "Classic",
 				"custom": "Custom",
-				"inverted": "Inverted"
+				"inverted": "Inverted",
+				"amber": "Amber",
+				"mint": "Mint",
+				"rose": "Rose",
+				"mono": "Mono"
 			},
 			"type": {
 				"auto": "Auto",
@@ -466,6 +473,14 @@
 			"exact": "Exact Match",
 			"performance": "Performance",
 			"power-saving": "Power Saving"
+		},
+		"crop": "Crop",
+		"resetCrop": "Reset",
+		"cropSides": {
+			"top": "Top",
+			"bottom": "Bottom",
+			"left": "Left",
+			"right": "Right"
 		}
 	},
 	"audioTab": {

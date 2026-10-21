@@ -82,11 +82,12 @@ import {
 	normalizeVideoDisplayName,
 } from "@/lib/fileNames";
 import { type AspectRatio, getAspectRatioValue } from "@/utils/aspectRatioUtils";
+import { AppearanceSwitcher } from "./AppearanceSwitcher";
 import { type AudioMixSettings, DEFAULT_AUDIO_MIX_SETTINGS } from "./audioMix";
 import { loadAudioSelectionDurationMs } from "./audioRegionUtils";
 import { type AutoPolishContentType, buildAutoPolishResult } from "./autoPolish";
 import { buildCaptionSidecar } from "./captionSidecar";
-import { ConfirmActionDialog, PresetNameDialog } from "./EditorDialogs";
+import { ConfirmActionDialog, MissingCursorDataDialog, PresetNameDialog } from "./EditorDialogs";
 import { ExportSettingsDialog } from "./ExportSettingsDialog";
 import {
 	cloneEditorHistorySnapshot,
@@ -109,6 +110,7 @@ import {
 	mergeVideoExportDetails,
 	resolveSourceFrameRate,
 } from "./exportUtils";
+import { FeedbackDialog } from "./FeedbackDialog";
 import { getLegacyShadowIntensityFromFrameShadow } from "./frameEffects";
 import { deriveKeyboardShortcutCallouts } from "./keyboardShortcuts";
 import { LayerPanel } from "./LayerPanel";
@@ -1774,6 +1776,7 @@ export default function VideoEditor() {
 			applyLoadedProject,
 		});
 
+	const cursorTelemetryLoadedForRef = useRef<string | null>(null);
 	useEffect(() => {
 		let mounted = true;
 
@@ -1802,6 +1805,7 @@ export default function VideoEditor() {
 				}
 			} finally {
 				if (mounted) {
+					cursorTelemetryLoadedForRef.current = videoPath;
 					setCursorTelemetryLoadSettled(true);
 				}
 			}
@@ -1813,6 +1817,19 @@ export default function VideoEditor() {
 			mounted = false;
 		};
 	}, [videoPath]);
+
+	// A fresh recording with no cursor samples means tracking failed; say so once per recording.
+	const [missingCursorDataOpen, setMissingCursorDataOpen] = useState(false);
+	const missingCursorDataShownForRef = useRef<string | null>(null);
+	useEffect(() => {
+		if (!cursorTelemetryLoadSettled || !videoPath || cursorTelemetry.length > 0) return;
+		if (cursorTelemetryLoadedForRef.current !== videoPath) return;
+		const recordingPath = postRecordingContext?.recordingPath;
+		if (!recordingPath || toFileUrl(recordingPath) !== videoPath) return;
+		if (missingCursorDataShownForRef.current === videoPath) return;
+		missingCursorDataShownForRef.current = videoPath;
+		setMissingCursorDataOpen(true);
+	}, [cursorTelemetryLoadSettled, cursorTelemetry.length, postRecordingContext, videoPath]);
 
 	useEffect(() => {
 		if (!postRecordingContext?.recordingPath || !videoPath) {
@@ -4735,8 +4752,10 @@ export default function VideoEditor() {
 								onOpenProject={handleOpenProjectAtPath}
 							/>
 
-							{/* Language Switcher */}
+							{/* Language, appearance, feedback */}
 							<LanguageSwitcher />
+							<AppearanceSwitcher />
+							<FeedbackDialog />
 
 							<div className="w-[1px] h-5 bg-white/10 mx-1" />
 
@@ -4944,7 +4963,7 @@ export default function VideoEditor() {
 												onClick={() => setRightSidebarSection("edit")}
 												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full px-2 py-1.5 text-[11px] font-semibold transition-all duration-300 ${
 													rightSidebarSection === "edit"
-														? "bg-gradient-to-r from-amber-400 to-amber-600 text-black shadow-md shadow-amber-500/20 scale-100"
+														? "bg-gradient-to-r from-amber-400 to-amber-600 text-neutral-950 shadow-md shadow-amber-500/20 scale-100"
 														: "text-slate-400 hover:bg-white/5 hover:text-slate-200"
 												}`}
 											>
@@ -4956,7 +4975,7 @@ export default function VideoEditor() {
 												onClick={() => setRightSidebarSection("layers")}
 												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full px-2 py-1.5 text-[11px] font-semibold transition-all duration-300 ${
 													rightSidebarSection === "layers"
-														? "bg-gradient-to-r from-amber-400 to-amber-600 text-black shadow-md shadow-amber-500/20 scale-100"
+														? "bg-gradient-to-r from-amber-400 to-amber-600 text-neutral-950 shadow-md shadow-amber-500/20 scale-100"
 														: "text-slate-400 hover:bg-white/5 hover:text-slate-200"
 												}`}
 											>
@@ -4968,7 +4987,7 @@ export default function VideoEditor() {
 												onClick={() => setRightSidebarSection("polish")}
 												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full px-2 py-1.5 text-[11px] font-semibold transition-all duration-300 ${
 													rightSidebarSection === "polish"
-														? "bg-gradient-to-r from-amber-400 to-amber-600 text-black shadow-md shadow-amber-500/20 scale-100"
+														? "bg-gradient-to-r from-amber-400 to-amber-600 text-neutral-950 shadow-md shadow-amber-500/20 scale-100"
 														: "text-slate-400 hover:bg-white/5 hover:text-slate-200"
 												}`}
 											>
@@ -5343,6 +5362,12 @@ export default function VideoEditor() {
 						onSave={handleQuickShareSave}
 						onCopy={() => void handleExportToClipboard()}
 						onEdit={handleQuickShareEdit}
+					/>
+
+					<MissingCursorDataDialog
+						open={missingCursorDataOpen}
+						isMac={isMac}
+						onClose={() => setMissingCursorDataOpen(false)}
 					/>
 
 					<PresetNameDialog

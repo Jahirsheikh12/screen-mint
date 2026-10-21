@@ -96,7 +96,10 @@
 		"uploadCustom": "Importer",
 		"uploadSuccess": "Image importée !",
 		"uploadError": "Importez une image JPG, JPEG, PNG ou WEBP.",
-		"uploadErrorDescription": "Formats acceptés : JPG, JPEG, PNG, WEBP."
+		"uploadErrorDescription": "Formats acceptés : JPG, JPEG, PNG, WEBP.",
+		"video": "Vidéo",
+		"uploadVideo": "Choisir une vidéo",
+		"videoHint": "Tourne en boucle, sans son, derrière votre enregistrement. MP4, MOV ou WebM."
 	},
 	"cursor": {
 		"title": "Curseur",
@@ -161,7 +164,11 @@
 			"pack": {
 				"classic": "Classique",
 				"custom": "Personnalisé",
-				"inverted": "Inversé"
+				"inverted": "Inversé",
+				"amber": "Ambre",
+				"mint": "Menthe",
+				"rose": "Rose",
+				"mono": "Mono"
 			},
 			"type": {
 				"auto": "Auto",
@@ -466,6 +473,14 @@
 			"exact": "Correspondance exacte",
 			"performance": "Performance",
 			"power-saving": "Économie d’énergie"
+		},
+		"crop": "Recadrer",
+		"resetCrop": "Réinitialiser",
+		"cropSides": {
+			"top": "Haut",
+			"bottom": "Bas",
+			"left": "Gauche",
+			"right": "Droite"
 		}
 	},
 	"audioTab": {

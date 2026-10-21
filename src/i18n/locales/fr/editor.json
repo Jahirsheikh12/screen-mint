@@ -190,7 +190,8 @@
 			"typewriterDesc": "Affiche les mots un par un",
 			"karaokeFill": "Karaoké",
 			"karaokeFillDesc": "Remplissage progressif de couleur"
-		}
+		},
+		"rows": "Lignes"
 	},
 	"captionsTab": {
 		"livePreview": "Aperçu en direct",
@@ -353,5 +354,23 @@
 		"fadeOut": "Fondu de sortie",
 		"autoPolish": "Finition automatique",
 		"oneClickStudioTemplates": "Modèles studio en un clic"
+	},
+	"theme": {
+		"appearance": "Apparence",
+		"light": "Clair",
+		"dark": "Sombre",
+		"system": "Système"
+	},
+	"feedback": {
+		"trigger": "Commentaires",
+		"title": "Commentaires et contact",
+		"description": "Un bug ou une fonction qui manque ? Dites-le-nous sur GitHub : chaque signalement aide.",
+		"reportBug": "Signaler un bug",
+		"reportBugHint": "Quelque chose ne marche pas ? Ouvrez un ticket avec les étapes pour le reproduire.",
+		"suggestFeature": "Proposer une fonctionnalité",
+		"suggestFeatureHint": "Dites-nous ce qui rendrait ScreenMint meilleur pour vous.",
+		"viewSource": "Voir sur GitHub",
+		"viewSourceHint": "Parcourez le code source, les versions et les tickets existants.",
+		"openFailed": "Impossible d'ouvrir le lien."
 	}
 }

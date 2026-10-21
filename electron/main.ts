@@ -22,10 +22,12 @@ import {
 import { takeInterruptedRecordings } from "./recordingRecovery";
 import { getScreenMintUpdater } from "./updater";
 import {
+	closeUpdateToastWindow,
 	createEditorWindow,
 	createHudOverlayWindow,
 	createSourceSelectorWindow,
 	fadeOutAndDestroyWindow,
+	showUpdateToastWindow,
 } from "./windows";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -119,7 +121,11 @@ function createHudOverlayWindowWrapper() {
 }
 
 function focusOrCreateMainWindow() {
-	if (BrowserWindow.getAllWindows().length === 0) {
+	// The update toast is a notification, not an app window, so it shouldn't stop the HUD reopening.
+	const hasAppWindow = BrowserWindow.getAllWindows().some(
+		(window) => !window.webContents.getURL().includes("windowType=update-toast"),
+	);
+	if (!hasAppWindow) {
 		createWindow();
 		return;
 	}
@@ -568,6 +574,15 @@ app.whenReady().then(async () => {
 	// Ensure recordings directory exists
 	await ensureRecordingsDir();
 	await updater.init();
+	const syncUpdateToast = (state: ReturnType<typeof updater.getState>) => {
+		if (state.showUpdatePrompt && !state.showWhatsNew && !state.busy.recording) {
+			showUpdateToastWindow();
+		} else {
+			closeUpdateToastWindow();
+		}
+	};
+	updater.onStateChange(syncUpdateToast);
+	syncUpdateToast(updater.getState());
 
 	registerIpcHandlers(
 		createEditorWindowWrapper,

@@ -75,6 +75,7 @@ import {
 	type WebcamSegmentationProvider,
 } from "@/components/video-editor/webcamSegmentation";
 import { getAssetPath, getRenderableAssetUrl } from "@/lib/assetPath";
+import { getVideoWallpaperTime, isVideoWallpaper } from "@/lib/wallpapers";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import { renderAnnotations, renderCaptions } from "./annotationRenderer";
 import { StreamingVideoFrameProvider } from "./streamingDecoder";
@@ -173,6 +174,36 @@ interface FrameShadowSettings {
 	blur: number;
 }
 
+const BACKGROUND_VIDEO_SEEK_TIMEOUT_MS = 2000;
+
+function loadBackgroundVideo(url: string): Promise<HTMLVideoElement> {
+	const video = document.createElement("video");
+	video.muted = true;
+	video.playsInline = true;
+	video.preload = "auto";
+	return new Promise((resolve, reject) => {
+		video.onloadeddata = () => resolve(video);
+		video.onerror = () => reject(new Error(`Failed to load background video: ${url}`));
+		video.src = url;
+	});
+}
+
+/** Draws a source scaled to cover the canvas, centred (CSS `object-fit: cover`). */
+function drawCover(
+	ctx: CanvasRenderingContext2D,
+	source: HTMLImageElement | HTMLVideoElement,
+	width: number,
+	height: number,
+): void {
+	const sourceWidth = source instanceof HTMLVideoElement ? source.videoWidth : source.width;
+	const sourceHeight = source instanceof HTMLVideoElement ? source.videoHeight : source.height;
+	if (sourceWidth <= 0 || sourceHeight <= 0) return;
+	const scale = Math.max(width / sourceWidth, height / sourceHeight);
+	const drawWidth = sourceWidth * scale;
+	const drawHeight = sourceHeight * scale;
+	ctx.drawImage(source, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
+}
+
 // Renders video frames with all effects (background, zoom, crop, blur, shadow) to an offscreen canvas for export.
 
 export class FrameRenderer {
@@ -185,6 +216,7 @@ export class FrameRenderer {
 	private frameCanvas: HTMLCanvasElement | null = null;
 	private frameCtx: CanvasRenderingContext2D | null = null;
 	private backgroundCanvas: HTMLCanvasElement | null = null;
+	private backgroundVideo: HTMLVideoElement | null = null;
 	private maskGraphics: Graphics | null = null;
 	private blurFilter: BlurFilter | null = null;
 	private motionBlurFilter: MotionBlurFilter | null = null;
@@ -436,7 +468,11 @@ export class FrameRenderer {
 
 		try {
 			// Render background based on type
-			if (
+			if (isVideoWallpaper(wallpaper)) {
+				// Redrawn every frame by updateBackgroundVideoFrame().
+				this.backgroundVideo = await loadBackgroundVideo(wallpaper);
+				drawCover(bgCtx, this.backgroundVideo, this.config.width, this.config.height);
+			} else if (
 				wallpaper.startsWith("file://") ||
 				wallpaper.startsWith("data:") ||
 				wallpaper.startsWith("/") ||
@@ -463,25 +499,7 @@ export class FrameRenderer {
 					img.src = imageUrl;
 				});
 
-				// Draw the image using cover and center positioning
-				const imgAspect = img.width / img.height;
-				const canvasAspect = this.config.width / this.config.height;
-
-				let drawWidth, drawHeight, drawX, drawY;
-
-				if (imgAspect > canvasAspect) {
-					drawHeight = this.config.height;
-					drawWidth = drawHeight * imgAspect;
-					drawX = (this.config.width - drawWidth) / 2;
-					drawY = 0;
-				} else {
-					drawWidth = this.config.width;
-					drawHeight = drawWidth / imgAspect;
-					drawX = 0;
-					drawY = (this.config.height - drawHeight) / 2;
-				}
-
-				bgCtx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+				drawCover(bgCtx, img, this.config.width, this.config.height);
 			} else if (wallpaper.startsWith("#")) {
 				bgCtx.fillStyle = wallpaper;
 				bgCtx.fillRect(0, 0, this.config.width, this.config.height);
@@ -562,9 +580,39 @@ export class FrameRenderer {
 		return resolved;
 	}
 
+	/** Seeks the looping background video to the current source time and redraws it. */
+	private async updateBackgroundVideoFrame(): Promise<void> {
+		const video = this.backgroundVideo;
+		const ctx = this.backgroundCanvas?.getContext("2d");
+		if (!video || !ctx) return;
+		const target = getVideoWallpaperTime(this.currentVideoTime, video.duration);
+		if (Math.abs(video.currentTime - target) > 0.001) {
+			await new Promise<void>((resolve) => {
+				// ponytail: one element seek per frame; decode the background with WebCodecs if exports get slow.
+				const timeout = window.setTimeout(resolve, BACKGROUND_VIDEO_SEEK_TIMEOUT_MS);
+				video.addEventListener(
+					"seeked",
+					() => {
+						window.clearTimeout(timeout);
+						resolve();
+					},
+					{ once: true },
+				);
+				video.currentTime = target;
+			});
+		}
+		ctx.clearRect(0, 0, this.config.width, this.config.height);
+		drawCover(ctx, video, this.config.width, this.config.height);
+	}
+
 	private async resolveWallpaperForExport(wallpaper: string): Promise<string> {
 		if (!wallpaper) {
 			return wallpaper;
+		}
+
+		if (isVideoWallpaper(wallpaper)) {
+			// Stream from disk; getRenderableAssetUrl would inline the whole file.
+			return wallpaper.startsWith("/") ? `file://${encodeURI(wallpaper)}` : wallpaper;
 		}
 
 		if (
@@ -699,6 +747,7 @@ export class FrameRenderer {
 		}
 
 		this.currentVideoTime = timestamp / 1000000;
+		await this.updateBackgroundVideoFrame();
 
 		if (!this.frameCanvas || !this.frameCtx) {
 			throw new Error("Frame canvas not initialized");
@@ -1298,6 +1347,11 @@ export class FrameRenderer {
 		this.frameCanvas = null;
 		this.frameCtx = null;
 		this.backgroundCanvas = null;
+		if (this.backgroundVideo) {
+			this.backgroundVideo.removeAttribute("src");
+			this.backgroundVideo.load();
+			this.backgroundVideo = null;
+		}
 		if (this.app) {
 			this.app.destroy(true, {
 				children: true,

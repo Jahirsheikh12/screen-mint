@@ -231,6 +231,24 @@ export function registerExportFileIpcHandlers({
 		}
 	});
 
+	ipcMain.handle(IPC_CHANNELS.files.openBackgroundVideoPicker, async () => {
+		try {
+			const result = await dialog.showOpenDialog({
+				title: "Select Background Video",
+				// Formats Chromium can decode in the preview and the export renderer.
+				filters: [{ name: "Video Files", extensions: ["mp4", "m4v", "webm", "mov"] }],
+				properties: ["openFile"],
+			});
+			if (result.canceled || result.filePaths.length === 0) {
+				return { success: false, canceled: true };
+			}
+			return { success: true, path: result.filePaths[0] };
+		} catch (error) {
+			console.error("Failed to open background video picker:", error);
+			return { success: false, error: String(error) };
+		}
+	});
+
 	ipcMain.handle(IPC_CHANNELS.files.openImagePicker, async () => {
 		try {
 			const result = await dialog.showOpenDialog({

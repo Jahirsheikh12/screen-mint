@@ -190,7 +190,8 @@
 			"typewriterDesc": "逐一顯示字詞",
 			"karaokeFill": "卡拉 OK",
 			"karaokeFillDesc": "顏色逐漸填滿"
-		}
+		},
+		"rows": "行數"
 	},
 	"captionsTab": {
 		"livePreview": "即時預覽",
@@ -353,5 +354,23 @@
 		"fadeOut": "淡出",
 		"autoPolish": "自動潤飾",
 		"oneClickStudioTemplates": "一鍵工作室範本"
+	},
+	"theme": {
+		"appearance": "外觀",
+		"light": "淺色",
+		"dark": "深色",
+		"system": "跟隨系統"
+	},
+	"feedback": {
+		"trigger": "意見回饋",
+		"title": "意見回饋與聯絡",
+		"description": "發現問題或缺少某個功能？請在 GitHub 告訴我們，每一則回報都有幫助。",
+		"reportBug": "回報問題",
+		"reportBugHint": "遇到故障？請建立 issue 並附上重現步驟。",
+		"suggestFeature": "建議新功能",
+		"suggestFeatureHint": "告訴我們如何讓 ScreenMint 更好用。",
+		"viewSource": "在 GitHub 上查看",
+		"viewSourceHint": "瀏覽原始碼、版本發佈與現有 issue。",
+		"openFailed": "無法開啟連結。"
 	}
 }

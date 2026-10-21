@@ -96,7 +96,10 @@
 		"uploadCustom": "직접 업로드",
 		"uploadSuccess": "이미지를 업로드했습니다!",
 		"uploadError": "JPG, JPEG, PNG 또는 WEBP 이미지를 업로드하세요.",
-		"uploadErrorDescription": "지원 형식: JPG, JPEG, PNG, WEBP."
+		"uploadErrorDescription": "지원 형식: JPG, JPEG, PNG, WEBP.",
+		"video": "동영상",
+		"uploadVideo": "동영상 선택",
+		"videoHint": "녹화 화면 뒤에서 소리 없이 반복 재생됩니다. MP4, MOV, WebM을 지원합니다."
 	},
 	"cursor": {
 		"title": "커서",
@@ -161,7 +164,11 @@
 			"pack": {
 				"classic": "클래식",
 				"custom": "사용자 지정",
-				"inverted": "반전"
+				"inverted": "반전",
+				"amber": "앰버",
+				"mint": "민트",
+				"rose": "로즈",
+				"mono": "모노"
 			},
 			"type": {
 				"auto": "자동",
@@ -466,6 +473,14 @@
 			"exact": "정확히 일치",
 			"performance": "성능",
 			"power-saving": "절전"
+		},
+		"crop": "자르기",
+		"resetCrop": "초기화",
+		"cropSides": {
+			"top": "위",
+			"bottom": "아래",
+			"left": "왼쪽",
+			"right": "오른쪽"
 		}
 	},
 	"audioTab": {

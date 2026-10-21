@@ -124,6 +124,7 @@ export const IPC_CHANNELS = {
 		openVideoPicker: "open-video-file-picker",
 		openAudioPicker: "open-audio-file-picker",
 		openImagePicker: "open-image-file-picker",
+		openBackgroundVideoPicker: "open-background-video-picker",
 		revealInFolder: "reveal-in-folder",
 		openRecordingsFolder: "open-recordings-folder",
 		copyTextToClipboard: "copy-text-to-clipboard",
@@ -183,6 +184,7 @@ export const IPC_CHANNELS = {
 		setBusyState: "set-updater-busy-state",
 		setExperimentalUpdates: "set-experimental-updates",
 		skipVersion: "skip-update-version",
+		resizeToast: "resize-update-toast",
 	},
 	shortcuts: {
 		get: "get-shortcuts",

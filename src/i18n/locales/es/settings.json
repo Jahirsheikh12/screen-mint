@@ -96,7 +96,10 @@
 		"uploadCustom": "Subir personalizado",
 		"uploadSuccess": "¡Imagen personalizada subida exitosamente!",
 		"uploadError": "Por favor sube un archivo de imagen JPG, JPEG, PNG o WEBP.",
-		"uploadErrorDescription": "Formatos compatibles: JPG, JPEG, PNG, WEBP."
+		"uploadErrorDescription": "Formatos compatibles: JPG, JPEG, PNG, WEBP.",
+		"video": "Vídeo",
+		"uploadVideo": "Elegir vídeo",
+		"videoHint": "Se reproduce en bucle y sin sonido detrás de tu grabación. MP4, MOV o WebM."
 	},
 	"cursor": {
 		"title": "Cursor",
@@ -161,7 +164,11 @@
 			"pack": {
 				"classic": "Clásico",
 				"custom": "Personalizado",
-				"inverted": "Invertido"
+				"inverted": "Invertido",
+				"amber": "Ámbar",
+				"mint": "Menta",
+				"rose": "Rosa",
+				"mono": "Mono"
 			},
 			"type": {
 				"auto": "Auto",
@@ -466,6 +473,14 @@
 			"exact": "Coincidencia exacta",
 			"performance": "Rendimiento",
 			"power-saving": "Ahorro de energía"
+		},
+		"crop": "Recortar",
+		"resetCrop": "Restablecer",
+		"cropSides": {
+			"top": "Arriba",
+			"bottom": "Abajo",
+			"left": "Izquierda",
+			"right": "Derecha"
 		}
 	},
 	"audioTab": {

@@ -103,7 +103,7 @@ function Segmented<T extends string | number>({
 							<span
 								className={cn(
 									"relative z-10 flex flex-col items-center break-words text-center leading-tight transition-colors [hyphens:auto]",
-									active ? "text-black" : "text-white/55 hover:text-white",
+									active ? "text-neutral-950" : "text-white/55 hover:text-white",
 								)}
 							>
 								{render(option, active)}
@@ -207,7 +207,7 @@ export function ExportDialog(props: ExportDialogProps) {
 								<span
 									className={cn(
 										"mt-0.5 text-[9px] tabular-nums",
-										active ? "text-black/60" : "text-white/35",
+										active ? "text-neutral-950/60" : "text-white/35",
 									)}
 								>
 									{props.videoDimensions[option].width} × {props.videoDimensions[option].height}

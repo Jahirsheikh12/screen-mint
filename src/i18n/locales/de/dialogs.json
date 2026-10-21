@@ -103,5 +103,12 @@
 		"exportLocallyAndCopy": "Lokal exportieren und den Dateipfad kopieren.",
 		"edit": "Bearbeiten",
 		"openTheRecordingIn": "Die Aufnahme im Editor öffnen."
+	},
+	"missingCursorData": {
+		"title": "Keine Cursordaten für diese Aufnahme",
+		"description": "Das Video wurde aufgenommen, aber der Mauszeiger konnte nicht verfolgt werden. Cursor-Glättung, Klickeffekte und cursorbasierte Zooms sind daher nicht verfügbar.",
+		"macHint": "Prüfen Sie, ob ScreenMint unter Systemeinstellungen › Datenschutz & Sicherheit › Bedienungshilfen erlaubt ist, und nehmen Sie dann erneut auf.",
+		"openSettings": "Bedienungshilfen öffnen",
+		"confirm": "OK"
 	}
 }

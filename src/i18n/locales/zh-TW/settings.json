@@ -96,7 +96,10 @@
 		"uploadCustom": "上傳自訂",
 		"uploadSuccess": "自訂圖片已上傳！",
 		"uploadError": "請上傳 JPG、JPEG、PNG 或 WEBP 圖片。",
-		"uploadErrorDescription": "支援格式：JPG、JPEG、PNG、WEBP。"
+		"uploadErrorDescription": "支援格式：JPG、JPEG、PNG、WEBP。",
+		"video": "影片",
+		"uploadVideo": "選擇影片",
+		"videoHint": "在錄影畫面後方靜音循環播放。支援 MP4、MOV 或 WebM。"
 	},
 	"cursor": {
 		"title": "游標",
@@ -161,7 +164,11 @@
 			"pack": {
 				"classic": "經典",
 				"custom": "自訂",
-				"inverted": "反色"
+				"inverted": "反色",
+				"amber": "琥珀",
+				"mint": "薄荷",
+				"rose": "玫瑰",
+				"mono": "單色"
 			},
 			"type": {
 				"auto": "自動",
@@ -466,6 +473,14 @@
 			"exact": "精確符合",
 			"performance": "效能",
 			"power-saving": "省電"
+		},
+		"crop": "裁切",
+		"resetCrop": "重設",
+		"cropSides": {
+			"top": "上",
+			"bottom": "下",
+			"left": "左",
+			"right": "右"
 		}
 	},
 	"audioTab": {

@@ -437,6 +437,17 @@ export function CaptionsTab(props: CaptionsTabProps) {
 						formatValue={(v) => `${v}%`}
 						parseInput={(val) => parseFloat(val.replace(/%$/, ""))}
 					/>
+					<SliderControl
+						label={t("editor.captions.rows", "Rows")}
+						value={captionSettings.maxLines}
+						defaultValue={2}
+						min={1}
+						max={4}
+						step={1}
+						onChange={(v) => onCaptionSettingsChange({ maxLines: Math.round(v) })}
+						formatValue={(v) => `${Math.round(v)}`}
+						parseInput={(val) => Number.parseInt(val, 10)}
+					/>
 				</div>
 			</Section>
 

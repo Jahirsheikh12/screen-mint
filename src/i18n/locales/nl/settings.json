@@ -96,7 +96,10 @@
 		"uploadCustom": "Eigen uploaden",
 		"uploadSuccess": "Eigen afbeelding geüpload!",
 		"uploadError": "Upload een JPG-, JPEG-, PNG- of WEBP-afbeelding.",
-		"uploadErrorDescription": "Ondersteunde formaten: JPG, JPEG, PNG, WEBP."
+		"uploadErrorDescription": "Ondersteunde formaten: JPG, JPEG, PNG, WEBP.",
+		"video": "Video",
+		"uploadVideo": "Video kiezen",
+		"videoHint": "Speelt geluidloos in een lus achter je opname. MP4, MOV of WebM."
 	},
 	"cursor": {
 		"title": "Cursor",
@@ -161,7 +164,11 @@
 			"pack": {
 				"classic": "Klassiek",
 				"custom": "Aangepast",
-				"inverted": "Omgekeerd"
+				"inverted": "Omgekeerd",
+				"amber": "Amber",
+				"mint": "Mint",
+				"rose": "Roze",
+				"mono": "Mono"
 			},
 			"type": {
 				"auto": "Auto",
@@ -466,6 +473,14 @@
 			"exact": "Exacte match",
 			"performance": "Prestaties",
 			"power-saving": "Energiebesparing"
+		},
+		"crop": "Bijsnijden",
+		"resetCrop": "Herstellen",
+		"cropSides": {
+			"top": "Boven",
+			"bottom": "Onder",
+			"left": "Links",
+			"right": "Rechts"
 		}
 	},
 	"audioTab": {

@@ -155,7 +155,15 @@ export interface CameraSpringSettings {
 	mass: number;
 }
 
-export type CursorPack = "classic" | "custom" | "macos" | "inverted";
+export type CursorPack =
+	| "classic"
+	| "custom"
+	| "macos"
+	| "inverted"
+	| "amber"
+	| "mint"
+	| "rose"
+	| "mono";
 
 export interface CursorVisualSettings {
 	size: number;
@@ -193,6 +201,10 @@ export const CURSOR_PACK_OPTIONS: { value: CursorPack; label: string }[] = [
 	{ value: "custom", label: "Custom" },
 	{ value: "macos", label: "macOS" },
 	{ value: "inverted", label: "Inverted" },
+	{ value: "amber", label: "Amber" },
+	{ value: "mint", label: "Mint" },
+	{ value: "rose", label: "Rose" },
+	{ value: "mono", label: "Mono" },
 ];
 export const CURSOR_TYPE_VALUES: CursorType[] = [
 	"arrow",
@@ -583,7 +595,25 @@ export interface WebcamEffects {
 	noiseReduction: number;
 	faceAwareFraming: boolean;
 	subtleAvoidance: boolean;
+	/** Trim from each edge of the camera frame, as a fraction of its width/height. */
+	sourceCrop: WebcamSourceCrop;
 }
+
+export interface WebcamSourceCrop {
+	top: number;
+	right: number;
+	bottom: number;
+	left: number;
+}
+
+export const DEFAULT_WEBCAM_SOURCE_CROP: WebcamSourceCrop = {
+	top: 0,
+	right: 0,
+	bottom: 0,
+	left: 0,
+};
+/** Each side may trim at most this much so a usable frame always remains. */
+export const MAX_WEBCAM_SOURCE_CROP = 0.45;
 
 export interface WebcamHealthMetrics {
 	targetFps: number;
@@ -638,6 +668,7 @@ export const DEFAULT_WEBCAM_EFFECTS: WebcamEffects = {
 	noiseReduction: 0,
 	faceAwareFraming: false,
 	subtleAvoidance: true,
+	sourceCrop: DEFAULT_WEBCAM_SOURCE_CROP,
 };
 
 export const DEFAULT_WEBCAM_HEALTH_METRICS: WebcamHealthMetrics = {
