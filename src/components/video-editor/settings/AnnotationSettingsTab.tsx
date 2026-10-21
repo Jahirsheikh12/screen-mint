@@ -60,13 +60,13 @@ export function AnnotationSettingsTab({
 				</>
 			) : (
 				<div className="flex flex-col items-center justify-center py-12 text-center">
-					<div className="w-14 h-14 rounded-2xl bg-black/40 border border-white/5 shadow-inner flex items-center justify-center mb-4">
-						<MessageSquare className="w-7 h-7 text-slate-600" />
+					<div className="w-12 h-12 rounded-xl bg-fill-hover flex items-center justify-center mb-4">
+						<MessageSquare className="w-7 h-7 text-fg-disabled" />
 					</div>
-					<p className="text-sm font-medium text-slate-400">
+					<p className="text-body font-medium text-fg-muted">
 						{tSettings("annotationTab.noAnnotationSelected", "No Annotation Selected")}
 					</p>
-					<p className="text-[11px] text-slate-500 mt-1.5 max-w-[200px] leading-relaxed">
+					<p className="text-caption text-fg-subtle mt-1.5 max-w-[200px] leading-relaxed">
 						{tSettings(
 							"annotationTab.selectAnAnnotationOn",
 							"Select an annotation on the timeline to edit its settings",

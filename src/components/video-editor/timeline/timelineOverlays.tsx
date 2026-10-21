@@ -93,7 +93,7 @@ export function PlaybackCursor({
 			}}
 		>
 			<div
-				className="absolute top-0 bottom-0 w-[1.5px] bg-[#f59e0b] shadow-[0_0_8px_rgba(245,158,11,0.4)] cursor-ew-resize pointer-events-auto hover:shadow-[0_0_12px_rgba(245,158,11,0.6)] transition-shadow"
+				className="absolute top-0 bottom-0 w-[1.5px] bg-accent cursor-ew-resize pointer-events-auto transition-shadow"
 				style={{
 					[sideProperty]: `${offset}px`,
 				}}
@@ -106,10 +106,10 @@ export function PlaybackCursor({
 					className="absolute -top-1.5 left-1/2 -translate-x-1/2 hover:scale-125 transition-transform"
 					style={{ width: "14px", height: "14px" }}
 				>
-					<div className="w-3 h-3 mx-auto mt-[1px] bg-[#f59e0b] rounded-full shadow-lg border-2 border-[#fbbf24]" />
+					<div className="w-3 h-3 mx-auto mt-[1px] bg-accent rounded-full shadow-lg border-2 border-accent" />
 				</div>
 				{isDragging && (
-					<div className="absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded bg-black/80 text-[10px] text-white/90 font-medium tabular-nums whitespace-nowrap border border-white/10 shadow-lg pointer-events-none">
+					<div className="absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded bg-scrim/80 text-micro text-fg font-medium tabular-nums whitespace-nowrap border border-line-strong shadow-lg pointer-events-none">
 						{formatPlayheadTime(clampedTime)}
 					</div>
 				)}
@@ -184,7 +184,7 @@ export function TimelineAxis({
 
 	return (
 		<div
-			className="h-8 bg-[#0c0c0f] border-b border-white/5 relative overflow-hidden select-none"
+			className="h-8 bg-canvas border-b border-line relative overflow-hidden select-none"
 			style={{
 				[sideProperty === "right" ? "marginRight" : "marginLeft"]: `${sidebarWidth}px`,
 			}}
@@ -194,7 +194,7 @@ export function TimelineAxis({
 				return (
 					<div
 						key={`minor-${time}`}
-						className="absolute bottom-0 h-1 w-[1px] bg-white/5"
+						className="absolute bottom-0 h-1 w-[1px] bg-fill-subtle"
 						style={{ [sideProperty]: `${offset}px` }}
 					/>
 				);
@@ -215,11 +215,11 @@ export function TimelineAxis({
 				return (
 					<div key={marker.time} style={markerStyle}>
 						<div className="flex flex-col items-center pb-1">
-							<div className="h-2 w-[1px] bg-white/20 mb-1" />
+							<div className="h-2 w-[1px] bg-fill-pressed mb-1" />
 							<span
 								className={cn(
-									"text-[10px] font-medium tabular-nums tracking-tight",
-									marker.time === currentTimeMs ? "text-[#fbbf24]" : "text-slate-500",
+									"text-micro font-medium tabular-nums tracking-tight",
+									marker.time === currentTimeMs ? "text-accent-fg" : "text-fg-subtle",
 								)}
 							>
 								{marker.label}

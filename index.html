@@ -14,18 +14,18 @@
       (function() {
         var wt = new URLSearchParams(window.location.search).get('windowType') || '';
         var root = document.getElementById('root');
+        // Mirrors applyTheme() in src/lib/theme.ts.
+        var pref = 'dark';
+        try { pref = localStorage.getItem('screenmint.theme') || 'dark'; } catch (e) {}
+        var light = pref === 'light' ||
+          (pref === 'system' && window.matchMedia && !window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.setAttribute('data-theme', light ? 'light' : 'dark');
         if (['hud-overlay','source-selector','countdown','area-overlay','speaker-notes','update-toast'].indexOf(wt) !== -1) {
           document.documentElement.setAttribute('data-overlay', '');
           document.documentElement.style.background = 'transparent';
           document.body.style.background = 'transparent';
-        } else if (wt === 'editor') {
-          // Mirrors applyTheme() in src/lib/theme.ts.
-          var pref = 'dark';
-          try { pref = localStorage.getItem('screenmint.theme') || 'dark'; } catch (e) {}
-          var light = pref === 'light' ||
-            (pref === 'system' && window.matchMedia && !window.matchMedia('(prefers-color-scheme: dark)').matches);
-          var bg = light ? '#f4f4f2' : '#0c0c0f';
-          document.documentElement.setAttribute('data-theme', light ? 'light' : 'dark');
+        } else {
+          var bg = light ? '#f4f3f0' : '#0e0e10';
           document.documentElement.style.background = bg;
           document.body.style.background = bg;
           if (root) root.style.background = bg;

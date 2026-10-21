@@ -113,7 +113,7 @@ const MODE_ICONS: Record<HudMode, React.ComponentType<{ size?: number; className
 };
 
 const DROPDOWN_CLASSES =
-	"border-white/10 bg-[#1c1c1e] text-white/90 shadow-none data-[state=open]:!animate-none data-[state=closed]:!animate-none";
+	"border border-line-strong bg-raised text-fg shadow-none data-[state=open]:!animate-none data-[state=closed]:!animate-none";
 const DEFAULT_CAMERA_VALUE = "__default_camera__";
 
 const ND = styles.electronNoDrag;
@@ -257,19 +257,19 @@ export function HudToolbar({
 				<div
 					className={`flex shrink-0 items-center gap-2 rounded-lg px-2.5 py-1.5 transition-opacity duration-200 ${
 						paused
-							? "bg-yellow-500/[0.08] border border-yellow-500/[0.12]"
-							: "bg-red-500/[0.08] border border-red-500/[0.1]"
+							? "bg-accent/[0.08] border border-accent/[0.12]"
+							: "bg-danger/[0.08] border border-danger/[0.1]"
 					} ${compactBusy ? "opacity-60" : "opacity-100"}`}
 				>
 					<div
-						className={`h-[7px] w-[7px] rounded-full ${paused ? "bg-yellow-400" : "bg-red-500"} ${paused || compactBusy ? "" : styles.recordingPulse}`}
+						className={`h-[7px] w-[7px] rounded-full ${paused ? "bg-accent" : "bg-danger"} ${paused || compactBusy ? "" : styles.recordingPulse}`}
 					/>
-					<span className="text-[12px] font-mono font-semibold tabular-nums tracking-wide text-white/85">
+					<span className="text-label font-mono font-semibold tabular-nums tracking-wide text-fg-muted">
 						{formatTime(elapsed)}
 					</span>
 				</div>
 
-				<div className="h-4 w-px bg-white/[0.06] mx-0.5 shrink-0" />
+				<div className="h-4 w-px bg-fill-hover mx-0.5 shrink-0" />
 
 				{/* Control buttons */}
 				<div
@@ -284,8 +284,8 @@ export function HudToolbar({
 							aria-label={pauseLabel}
 							className={`flex items-center justify-center rounded-lg w-7 h-7 transition-all ${
 								paused
-									? "bg-yellow-500/[0.1] text-yellow-400 hover:bg-yellow-500/[0.18]"
-									: "bg-white/[0.05] text-white/55 hover:bg-white/[0.1] hover:text-white/80"
+									? "bg-accent/[0.1] text-accent-fg hover:bg-accent/[0.18]"
+									: "bg-fill-subtle text-fg-subtle hover:bg-fill-hover hover:text-fg-muted"
 							} ${compactBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
 						>
 							{paused ? <FaPlay size={10} /> : <FaPause size={10} />}
@@ -299,7 +299,7 @@ export function HudToolbar({
 							onClick={onRetakeRecording}
 							disabled={compactBusy}
 							aria-label={t("recording.retakeRecording")}
-							className={`flex items-center justify-center rounded-lg w-7 h-7 text-white/65 transition-all hover:bg-white/[0.1] hover:text-white/95 ${compactBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+							className={`flex items-center justify-center rounded-lg w-7 h-7 text-fg-muted transition-all hover:bg-fill-hover hover:text-fg ${compactBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
 						>
 							<FiRotateCcw size={12} strokeWidth={2.75} />
 						</button>
@@ -312,14 +312,14 @@ export function HudToolbar({
 							onClick={onDeleteRecording}
 							disabled={compactBusy}
 							aria-label={t("recording.deleteRecording")}
-							className={`flex items-center justify-center rounded-lg w-7 h-7 text-white/60 transition-all hover:bg-red-500/[0.12] hover:text-red-400 ${compactBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+							className={`flex items-center justify-center rounded-lg w-7 h-7 text-fg transition-all hover:bg-danger/[0.12] hover:text-danger-fg ${compactBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
 						>
 							<FiTrash2 size={12} strokeWidth={2.75} />
 						</button>
 					</Tooltip>
 				</div>
 
-				<div className="h-4 w-px bg-white/[0.06] mx-0.5 shrink-0" />
+				<div className="h-4 w-px bg-fill-hover mx-0.5 shrink-0" />
 
 				{/* Stop button — prominent (switches to "Finalising…" while busy) */}
 				<button
@@ -327,15 +327,15 @@ export function HudToolbar({
 					onClick={onToggleRecording}
 					disabled={compactBusy}
 					aria-label={t("recording.stopRecording")}
-					className={`${ND} flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
+					className={`${ND} flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-caption font-semibold transition-all ${
 						compactBusy
-							? "cursor-not-allowed bg-white/[0.06] text-white/60"
-							: "cursor-pointer bg-red-500/[0.12] text-red-400 hover:bg-red-500/[0.22] hover:text-red-300"
+							? "cursor-not-allowed bg-fill-hover text-fg"
+							: "cursor-pointer bg-danger/[0.12] text-danger-fg hover:bg-danger/[0.22] hover:text-danger-fg"
 					}`}
 				>
 					{compactBusy ? (
 						<span
-							className="h-[10px] w-[10px] rounded-full border-[1.5px] border-white/25 border-t-white/80 animate-spin"
+							className="h-[10px] w-[10px] rounded-full border-[1.5px] border-line-strong border-t-fg animate-spin"
 							aria-hidden="true"
 						/>
 					) : (
@@ -352,7 +352,7 @@ export function HudToolbar({
 						type="button"
 						onClick={onHide}
 						aria-label={t("recording.hideHud")}
-						className={`${ND} flex items-center justify-center rounded-lg w-7 h-7 text-white/55 transition-colors hover:bg-white/[0.1] hover:text-white/90 cursor-pointer ml-0.5`}
+						className={`${ND} flex items-center justify-center rounded-lg w-7 h-7 text-fg-subtle transition-colors hover:bg-fill-hover hover:text-fg cursor-pointer ml-0.5`}
 					>
 						<FiMinus size={12} strokeWidth={3} />
 					</button>
@@ -381,16 +381,16 @@ export function HudToolbar({
 					type="button"
 					onClick={onClose}
 					aria-label={t("recording.closeApp")}
-					className={`${ND} flex items-center justify-center rounded-lg p-2 text-white/55 hover:text-red-400 hover:bg-white/[0.1] transition-colors cursor-pointer`}
+					className={`${ND} flex items-center justify-center rounded-lg p-2 text-fg-subtle hover:text-danger-fg hover:bg-fill-hover transition-colors cursor-pointer`}
 				>
 					<FiX size={14} strokeWidth={2.75} />
 				</button>
 			</Tooltip>
 
-			<div className="h-4 w-px bg-white/[0.06] mx-0.5 shrink-0" />
+			<div className="h-4 w-px bg-fill-hover mx-0.5 shrink-0" />
 
 			{/* Segmented tab control */}
-			<div className={`${ND} flex shrink-0 items-center rounded-[10px] bg-white/[0.04] p-[3px]`}>
+			<div className={`${ND} flex shrink-0 items-center rounded-[10px] bg-fill-subtle p-[3px]`}>
 				{tabs.map((tab) => {
 					const Icon = MODE_ICONS[tab];
 					const isActive = mode === tab && contentPanelVisible;
@@ -401,8 +401,8 @@ export function HudToolbar({
 							onClick={() => onTabClick(tab)}
 							disabled={recording}
 							title={mode === tab ? sourceLabel : undefined}
-							className={`flex shrink-0 items-center gap-1.5 rounded-[7px] px-2.5 py-[6px] text-[11px] font-medium transition-all ${
-								isActive ? "bg-white/[0.1] text-white/90" : "text-white/65 hover:text-white/95"
+							className={`flex shrink-0 items-center gap-1.5 rounded-[7px] px-2.5 py-[6px] text-caption font-medium transition-all ${
+								isActive ? "bg-fill-hover text-fg" : "text-fg-muted hover:text-fg"
 							} cursor-pointer`}
 						>
 							<Icon size={13} className="shrink-0" />
@@ -412,7 +412,7 @@ export function HudToolbar({
 				})}
 			</div>
 
-			<div className="h-4 w-px bg-white/[0.06] mx-0.5 shrink-0" />
+			<div className="h-4 w-px bg-fill-hover mx-0.5 shrink-0" />
 
 			{showQuickRecord && (
 				<>
@@ -421,17 +421,17 @@ export function HudToolbar({
 						onClick={onQuickRecord}
 						disabled={quickRecordDisabled}
 						title={t("recording.startRecording")}
-						className={`${ND} flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-semibold transition-all ${
+						className={`${ND} flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-caption font-semibold transition-all ${
 							quickRecordDisabled
-								? "cursor-not-allowed bg-red-500/15 text-white/30"
-								: "cursor-pointer bg-red-500 text-white hover:bg-red-600"
+								? "cursor-not-allowed bg-danger/15 text-danger-fg"
+								: "cursor-pointer bg-danger text-on-danger hover:bg-danger/90"
 						}`}
 					>
 						<BsRecordCircle size={12} className="shrink-0" />
 						<span className="max-w-[88px] truncate">{t("recording.record")}</span>
 					</button>
 
-					<div className="h-4 w-px bg-white/[0.06] mx-0.5 shrink-0" />
+					<div className="h-4 w-px bg-fill-hover mx-0.5 shrink-0" />
 				</>
 			)}
 
@@ -448,8 +448,8 @@ export function HudToolbar({
 							aria-label={t("recording.selectCamera")}
 							className={`flex items-center justify-center rounded-lg w-8 h-8 transition-colors cursor-pointer ${
 								webcamEnabled
-									? "text-white/90 bg-white/[0.08]"
-									: "text-white/60 hover:text-white/95 hover:bg-white/[0.08]"
+									? "text-fg bg-fill-hover"
+									: "text-fg-muted hover:text-fg hover:bg-fill-hover"
 							}`}
 						>
 							{webcamEnabled ? <MdVideocam size={15} /> : <MdVideocamOff size={15} />}
@@ -460,7 +460,7 @@ export function HudToolbar({
 						align="center"
 						className={`min-w-[220px] ${DROPDOWN_CLASSES} ${styles.hudScrollArea}`}
 					>
-						<DropdownMenuLabel className="text-[11px] text-white/45 font-medium">
+						<DropdownMenuLabel className="text-caption text-fg-subtle font-medium">
 							{t("recording.selectCamera")}
 						</DropdownMenuLabel>
 						<DropdownMenuRadioGroup
@@ -481,44 +481,44 @@ export function HudToolbar({
 								setCameraDeviceId(value);
 							}}
 						>
-							<DropdownMenuRadioItem value="__off__" className="text-xs">
+							<DropdownMenuRadioItem value="__off__" className="text-label">
 								{t("recording.cameraOff")}
 							</DropdownMenuRadioItem>
-							<DropdownMenuRadioItem value="__mobile__" className="text-xs">
+							<DropdownMenuRadioItem value="__mobile__" className="text-label">
 								<span className="inline-flex items-center gap-2">
 									<Smartphone size={13} />
 									{t("recording.mobileCamera")}
-									{mobileConnected && <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />}
+									{mobileConnected && <span className="h-1.5 w-1.5 rounded-full bg-success" />}
 								</span>
 							</DropdownMenuRadioItem>
-							<DropdownMenuRadioItem value={DEFAULT_CAMERA_VALUE} className="text-xs">
+							<DropdownMenuRadioItem value={DEFAULT_CAMERA_VALUE} className="text-label">
 								{t("recording.defaultCamera")}
 							</DropdownMenuRadioItem>
 							{cameraDeviceOptions.map((device) => (
 								<DropdownMenuRadioItem
 									key={device.deviceId || DEFAULT_CAMERA_VALUE}
 									value={device.deviceId || DEFAULT_CAMERA_VALUE}
-									className="text-xs"
+									className="text-label"
 								>
 									{device.label}
 								</DropdownMenuRadioItem>
 							))}
 						</DropdownMenuRadioGroup>
 						{cameraDevices.length === 0 && (
-							<DropdownMenuItem disabled className="text-xs text-white/30">
+							<DropdownMenuItem disabled className="text-label text-fg-disabled">
 								{t("recording.noCameraFound")}
 							</DropdownMenuItem>
 						)}
 						{cameraSession.sourceType === "mobile" && (
 							<>
-								<DropdownMenuSeparator className="bg-white/[0.08]" />
+								<DropdownMenuSeparator className="bg-fill-hover" />
 								<div className="px-2 py-2">
 									<div className="flex items-center justify-between gap-3">
 										<div className="min-w-0">
-											<div className="text-xs font-semibold text-white/90">
+											<div className="text-label font-semibold text-fg">
 												{t("recording.mobilePairingTitle")}
 											</div>
-											<div className="mt-0.5 truncate text-[11px] text-white/45">
+											<div className="mt-0.5 truncate text-caption text-fg-subtle">
 												{mobileCaptureState.status === "connected"
 													? t("recording.mobileConnected")
 													: mobileCaptureState.status === "phone-opened"
@@ -530,7 +530,7 @@ export function HudToolbar({
 										</div>
 										<button
 											type="button"
-											className="rounded-md bg-white/[0.08] px-2 py-1 text-[11px] text-white/80 hover:bg-white/[0.12]"
+											className="rounded-md bg-fill-hover px-2 py-1 text-caption text-fg-muted hover:bg-fill-pressed"
 											onClick={() => setMobileCameraEnabled(true)}
 										>
 											{t("recording.mobileReconnect")}
@@ -541,28 +541,28 @@ export function HudToolbar({
 											<img
 												src={mobileQrDataUrl}
 												alt={t("recording.mobileQrAlt")}
-												className="h-[72px] w-[72px] rounded-md bg-white p-1"
+												className="h-[72px] w-[72px] rounded-md bg-fixed-white p-1"
 											/>
-											<div className="min-w-0 text-[11px] leading-4 text-white/50">
+											<div className="min-w-0 text-caption leading-4 text-fg-subtle">
 												<div>{t("recording.mobileScanHint")}</div>
-												<div className="mt-1 truncate text-white/35">
+												<div className="mt-1 truncate text-fg-subtle">
 													{mobileCaptureState.pairingUrl}
 												</div>
 											</div>
 										</div>
 									)}
-									<div className="mt-2 text-[10px] leading-3 text-white/35">
+									<div className="mt-2 text-micro leading-3 text-fg-subtle">
 										{t("recording.mobilePrivacyHint")}
 									</div>
 								</div>
 							</>
 						)}
-						<DropdownMenuSeparator className="bg-white/[0.08]" />
+						<DropdownMenuSeparator className="bg-fill-hover" />
 						<DropdownMenuCheckboxItem
 							checked={!cameraSession.previewVisible}
 							onCheckedChange={(checked) => setCameraPreviewVisible(!checked)}
 							disabled={!cameraSession.enabled}
-							className="text-xs"
+							className="text-label"
 						>
 							{t("recording.hideCameraPreview")}
 						</DropdownMenuCheckboxItem>
@@ -570,30 +570,30 @@ export function HudToolbar({
 							checked={cameraSession.previewMirrored}
 							onCheckedChange={(checked) => setCameraPreviewMirrored(Boolean(checked))}
 							disabled={!cameraSession.enabled}
-							className="text-xs"
+							className="text-label"
 						>
 							{t("recording.mirrorCameraPreview")}
 						</DropdownMenuCheckboxItem>
-						<DropdownMenuSeparator className="bg-white/[0.08]" />
-						<DropdownMenuLabel className="text-[11px] font-medium text-white/45">
+						<DropdownMenuSeparator className="bg-fill-hover" />
+						<DropdownMenuLabel className="text-caption font-medium text-fg-subtle">
 							{t("recording.previewSize")}
 						</DropdownMenuLabel>
 						<DropdownMenuRadioGroup
 							value={cameraSession.previewSize}
 							onValueChange={(value) => setCameraPreviewSize(value as "small" | "medium" | "large")}
 						>
-							<DropdownMenuRadioItem value="small" className="text-xs">
+							<DropdownMenuRadioItem value="small" className="text-label">
 								{t("recording.previewSmall")}
 							</DropdownMenuRadioItem>
-							<DropdownMenuRadioItem value="medium" className="text-xs">
+							<DropdownMenuRadioItem value="medium" className="text-label">
 								{t("recording.previewMedium")}
 							</DropdownMenuRadioItem>
-							<DropdownMenuRadioItem value="large" className="text-xs">
+							<DropdownMenuRadioItem value="large" className="text-label">
 								{t("recording.previewLarge")}
 							</DropdownMenuRadioItem>
 						</DropdownMenuRadioGroup>
-						<DropdownMenuSeparator className="bg-white/[0.08]" />
-						<DropdownMenuLabel className="text-[11px] font-medium text-white/45">
+						<DropdownMenuSeparator className="bg-fill-hover" />
+						<DropdownMenuLabel className="text-caption font-medium text-fg-subtle">
 							{t("recording.previewCorner")}
 						</DropdownMenuLabel>
 						<DropdownMenuRadioGroup
@@ -604,31 +604,31 @@ export function HudToolbar({
 								)
 							}
 						>
-							<DropdownMenuRadioItem value="top-left" className="text-xs">
+							<DropdownMenuRadioItem value="top-left" className="text-label">
 								{t("recording.cornerTopLeft")}
 							</DropdownMenuRadioItem>
-							<DropdownMenuRadioItem value="top-right" className="text-xs">
+							<DropdownMenuRadioItem value="top-right" className="text-label">
 								{t("recording.cornerTopRight")}
 							</DropdownMenuRadioItem>
-							<DropdownMenuRadioItem value="bottom-left" className="text-xs">
+							<DropdownMenuRadioItem value="bottom-left" className="text-label">
 								{t("recording.cornerBottomLeft")}
 							</DropdownMenuRadioItem>
-							<DropdownMenuRadioItem value="bottom-right" className="text-xs">
+							<DropdownMenuRadioItem value="bottom-right" className="text-label">
 								{t("recording.cornerBottomRight")}
 							</DropdownMenuRadioItem>
 						</DropdownMenuRadioGroup>
-						<DropdownMenuSeparator className="bg-white/[0.08]" />
-						<DropdownMenuLabel className="text-[11px] font-medium text-white/45">
+						<DropdownMenuSeparator className="bg-fill-hover" />
+						<DropdownMenuLabel className="text-caption font-medium text-fg-subtle">
 							{t("recording.previewShape")}
 						</DropdownMenuLabel>
 						<DropdownMenuRadioGroup
 							value={cameraSession.previewShape}
 							onValueChange={(value) => setCameraPreviewShape(value as "rounded-rect" | "circle")}
 						>
-							<DropdownMenuRadioItem value="rounded-rect" className="text-xs">
+							<DropdownMenuRadioItem value="rounded-rect" className="text-label">
 								{t("recording.shapeRoundedRect")}
 							</DropdownMenuRadioItem>
-							<DropdownMenuRadioItem value="circle" className="text-xs">
+							<DropdownMenuRadioItem value="circle" className="text-label">
 								{t("recording.shapeCircle")}
 							</DropdownMenuRadioItem>
 						</DropdownMenuRadioGroup>
@@ -650,8 +650,8 @@ export function HudToolbar({
 							}
 							className={`flex items-center justify-center rounded-lg w-8 h-8 transition-colors cursor-pointer ${
 								microphoneEnabled
-									? "text-white/90 bg-white/[0.08]"
-									: "text-white/60 hover:text-white/95 hover:bg-white/[0.08]"
+									? "text-fg bg-fill-hover"
+									: "text-fg-muted hover:text-fg hover:bg-fill-hover"
 							}`}
 						>
 							{microphoneEnabled ? <MdMic size={15} /> : <MdMicOff size={15} />}
@@ -667,12 +667,12 @@ export function HudToolbar({
 							onCheckedChange={(checked) => {
 								if (!recording) setMicrophoneEnabled(Boolean(checked));
 							}}
-							className="text-xs"
+							className="text-label"
 						>
 							{t("recording.enableMicrophone")}
 						</DropdownMenuCheckboxItem>
-						<DropdownMenuSeparator className="bg-white/[0.08]" />
-						<DropdownMenuLabel className="text-[11px] text-white/45 font-medium">
+						<DropdownMenuSeparator className="bg-fill-hover" />
+						<DropdownMenuLabel className="text-caption text-fg-subtle font-medium">
 							{t("recording.microphone")}
 						</DropdownMenuLabel>
 						{micDevices.map((device) => (
@@ -682,10 +682,10 @@ export function HudToolbar({
 									setSelectedMicDeviceId(device.deviceId);
 									setMicrophoneDeviceId(device.deviceId);
 								}}
-								className={`text-xs cursor-pointer ${
+								className={`text-label cursor-pointer ${
 									(microphoneDeviceId || selectedMicDeviceId) === device.deviceId
-										? "text-white font-medium"
-										: "text-white/50"
+										? "text-fg font-medium"
+										: "text-fg-subtle"
 								}`}
 							>
 								{device.label}
@@ -693,7 +693,7 @@ export function HudToolbar({
 						))}
 						{showMicControls && (
 							<>
-								<DropdownMenuSeparator className="bg-white/[0.08]" />
+								<DropdownMenuSeparator className="bg-fill-hover" />
 								<div className="px-2 py-1.5">
 									<AudioLevelMeter level={audioLevel} className="w-full" />
 								</div>
@@ -721,8 +721,8 @@ export function HudToolbar({
 						}
 						className={`flex items-center justify-center rounded-lg w-8 h-8 transition-colors cursor-pointer ${
 							systemAudioEnabled
-								? "text-white/90 bg-white/[0.08]"
-								: "text-white/60 hover:text-white/95 hover:bg-white/[0.08]"
+								? "text-fg bg-fill-hover"
+								: "text-fg-muted hover:text-fg hover:bg-fill-hover"
 						}`}
 					>
 						{systemAudioEnabled ? <MdVolumeUp size={15} /> : <MdVolumeOff size={15} />}
@@ -730,7 +730,7 @@ export function HudToolbar({
 				</Tooltip>
 			</div>
 
-			<div className="h-4 w-px bg-white/[0.06] mx-0.5 shrink-0" />
+			<div className="h-4 w-px bg-fill-hover mx-0.5 shrink-0" />
 
 			{/* Right utilities */}
 			<div className={`${ND} flex shrink-0 items-center`}>
@@ -743,13 +743,13 @@ export function HudToolbar({
 							aria-label={t("recording.captureScreenshot")}
 							className={`flex items-center justify-center rounded-lg w-8 h-8 transition-colors ${
 								screenshotDisabled || screenshotBusy
-									? "cursor-not-allowed text-white/25"
-									: "cursor-pointer text-white/60 hover:text-white/95 hover:bg-white/[0.08]"
+									? "cursor-not-allowed text-fg-disabled"
+									: "cursor-pointer text-fg-muted hover:text-fg hover:bg-fill-hover"
 							}`}
 						>
 							{screenshotBusy ? (
 								<span
-									className="h-[13px] w-[13px] rounded-full border-[1.5px] border-white/20 border-t-white/80 animate-spin"
+									className="h-[13px] w-[13px] rounded-full border-[1.5px] border-line-strong border-t-fg animate-spin"
 									aria-hidden="true"
 								/>
 							) : (
@@ -765,7 +765,7 @@ export function HudToolbar({
 					type="button"
 					onClick={onOpenVideoFile}
 					title={t("recording.openVideoFile")}
-					className="flex items-center justify-center rounded-lg w-8 h-8 text-white/25 hover:text-white/55 hover:bg-white/[0.05] transition-colors cursor-pointer"
+					className="flex items-center justify-center rounded-lg w-8 h-8 text-fg-disabled hover:text-fg-subtle hover:bg-fill-subtle transition-colors cursor-pointer"
 				>
 					<MdVideoFile size={14} />
 				</button>
@@ -773,7 +773,7 @@ export function HudToolbar({
 					type="button"
 					onClick={onOpenProject}
 					title={t("recording.openProject")}
-					className="flex items-center justify-center rounded-lg w-8 h-8 text-white/25 hover:text-white/55 hover:bg-white/[0.05] transition-colors cursor-pointer"
+					className="flex items-center justify-center rounded-lg w-8 h-8 text-fg-disabled hover:text-fg-subtle hover:bg-fill-subtle transition-colors cursor-pointer"
 				>
 					<FaFolderOpen size={12} />
 				</button>
@@ -788,7 +788,7 @@ export function HudToolbar({
 							onMouseEnter={languageTooltip.onMouseEnter}
 							onMouseLeave={languageTooltip.onMouseLeave}
 							aria-label={t("recording.language")}
-							className="flex items-center justify-center rounded-lg w-8 h-8 text-white/55 hover:text-white/95 hover:bg-white/[0.08] transition-colors cursor-pointer"
+							className="flex items-center justify-center rounded-lg w-8 h-8 text-fg-subtle hover:text-fg hover:bg-fill-hover transition-colors cursor-pointer"
 						>
 							<Languages size={13} strokeWidth={2.5} />
 						</button>
@@ -802,8 +802,8 @@ export function HudToolbar({
 							<DropdownMenuItem
 								key={code}
 								onSelect={() => setLocale(code as AppLocale)}
-								className={`text-xs cursor-pointer ${
-									locale === code ? "text-white font-medium" : "text-white/50"
+								className={`text-label cursor-pointer ${
+									locale === code ? "text-fg font-medium" : "text-fg-subtle"
 								}`}
 							>
 								{LOCALE_LABELS[code] ?? code}
@@ -817,14 +817,14 @@ export function HudToolbar({
 						type="button"
 						onClick={onHide}
 						aria-label={t("recording.hideHud")}
-						className="flex items-center justify-center rounded-lg w-8 h-8 text-white/55 hover:text-white/95 hover:bg-white/[0.08] transition-colors cursor-pointer"
+						className="flex items-center justify-center rounded-lg w-8 h-8 text-fg-subtle hover:text-fg hover:bg-fill-hover transition-colors cursor-pointer"
 					>
 						<FiMinus size={14} strokeWidth={3} />
 					</button>
 				</Tooltip>
 			</div>
 
-			<div className="h-4 w-px bg-white/[0.06] mx-0.5 shrink-0" />
+			<div className="h-4 w-px bg-fill-hover mx-0.5 shrink-0" />
 
 			{/* Settings gear */}
 			<SettingsDropdown

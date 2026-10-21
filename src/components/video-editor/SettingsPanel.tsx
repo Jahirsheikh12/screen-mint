@@ -17,6 +17,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { BUILT_IN_BACKGROUND_MUSIC } from "@/lib/backgroundMusic";
 import { WALLPAPER_PATHS } from "@/lib/wallpapers";
 import { type AspectRatio } from "@/utils/aspectRatioUtils";
@@ -688,6 +689,8 @@ export default function SettingsPanel({
 		}
 	};
 
+	useEscapeKey(showCropModal, () => handleCropCancel());
+
 	const handleCropToggle = () => {
 		if (!showCropModal && cropRegion) {
 			cropSnapshotRef.current = { ...cropRegion };
@@ -954,14 +957,12 @@ export default function SettingsPanel({
 	];
 
 	return (
-		<div className="w-full h-full shrink-0 min-w-0 bg-[#0B0F0D]/90 backdrop-blur-2xl border border-white/[0.08] rounded-2xl flex flex-row shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden">
+		<div className="w-full h-full shrink-0 min-w-0 bg-surface rounded-xl flex flex-row shadow-panel overflow-hidden">
 			{/* Sidebar navigation */}
-			<div className="flex flex-col gap-2 p-2 border-r border-white/[0.04] bg-black/40 w-[60px] shrink-0 overflow-y-auto custom-scrollbar items-center">
+			<div className="flex flex-col gap-1 p-2 border-r border-line w-[52px] shrink-0 overflow-y-auto custom-scrollbar items-center">
 				{tabGroups.map((group, groupIndex) => (
-					<div key={group.label} className="flex flex-col items-center w-full gap-1.5">
-						{groupIndex > 0 && (
-							<div className="w-6 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent my-1" />
-						)}
+					<div key={group.label} className="flex flex-col items-center w-full gap-1">
+						{groupIndex > 0 && <div className="my-1.5 h-px w-5 bg-line" />}
 						{sidebarTabs
 							.filter((tab) => group.ids.includes(tab.id))
 							.map((tab) => (
@@ -1281,7 +1282,7 @@ export default function SettingsPanel({
 					<>
 						{/* Backdrop */}
 						<div
-							className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 opacity-100 duration-300 ease-out animate-in fade-in"
+							className="fixed inset-0 bg-scrim/50 backdrop-blur-[2px] z-50 opacity-100 duration-300 ease-out animate-in fade-in"
 							onClick={handleCropCancel}
 						/>
 
@@ -1290,23 +1291,22 @@ export default function SettingsPanel({
 							<div
 								role="dialog"
 								aria-modal="true"
-								className="pointer-events-auto w-[90vw] max-w-5xl max-h-[90vh] bg-[#0A0F0D] rounded-2xl shadow-2xl shadow-black/60 border border-white/[0.08] overflow-hidden opacity-100 scale-100 translate-y-0 duration-300 ease-out animate-in fade-in zoom-in-95 slide-in-from-bottom-3"
+								className="pointer-events-auto w-[90vw] max-w-5xl max-h-[90vh] bg-raised rounded-xl shadow-dialog overflow-hidden opacity-100 scale-100 translate-y-0 duration-300 ease-out animate-in fade-in zoom-in-95 slide-in-from-bottom-3"
 							>
 								{/* Top accent line */}
-								<div className="h-[2px] bg-gradient-to-r from-transparent via-[#F59E0B] to-transparent" />
 
 								<div className="flex max-h-[calc(90vh-2px)] flex-col p-5 sm:p-8">
 									{/* Header */}
 									<div className="mb-4 flex shrink-0 items-center justify-between gap-3 sm:mb-6">
 										<div className="flex min-w-0 items-center gap-3">
-											<div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-[#F59E0B]/20 to-[#d97706]/10 border border-[#F59E0B]/20 flex items-center justify-center">
-												<Crop className="w-5 h-5 text-[#F59E0B]" />
+											<div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-accent/20 to-accent-hover/10 border border-accent/20 flex items-center justify-center">
+												<Crop className="w-5 h-5 text-accent-fg" />
 											</div>
 											<div>
-												<h2 className="text-[15px] font-semibold text-white tracking-tight">
+												<h2 className="text-heading font-semibold text-fg tracking-tight">
 													{tSettings("crop.title")}
 												</h2>
-												<p className="text-[11px] text-slate-500 mt-0.5">
+												<p className="text-caption text-fg-subtle mt-0.5">
 													{tSettings("crop.instruction")}
 												</p>
 											</div>
@@ -1314,14 +1314,14 @@ export default function SettingsPanel({
 										<button
 											type="button"
 											onClick={handleCropCancel}
-											className="rounded-xl p-2 text-white/40 hover:text-white hover:bg-white/[0.06] transition-all duration-200 active:scale-95"
+											className="rounded-xl p-2 text-fg-subtle hover:text-fg hover:bg-fill-hover transition-all duration-200 active:scale-95"
 										>
 											<X className="w-4 h-4" />
 										</button>
 									</div>
 
 									{/* Crop area: the only part that scrolls, so the buttons stay visible */}
-									<div className="custom-scrollbar min-h-0 flex-1 overflow-auto rounded-xl border border-white/[0.06] bg-black/20">
+									<div className="custom-scrollbar min-h-0 flex-1 overflow-auto rounded-xl border border-line bg-sunken">
 										<CropControl
 											videoElement={videoElement || null}
 											cropRegion={cropRegion}
@@ -1332,18 +1332,18 @@ export default function SettingsPanel({
 									</div>
 
 									{/* Footer */}
-									<div className="h-px shrink-0 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent mt-4 mb-4 sm:mt-6 sm:mb-5" />
+									<div className="h-px shrink-0 bg-gradient-to-r from-transparent via-line to-transparent mt-4 mb-4 sm:mt-6 sm:mb-5" />
 									<div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
 										<Button
 											variant="outline"
 											onClick={handleCropCancel}
-											className="h-10 px-5 text-xs font-medium bg-white/[0.03] border-white/[0.08] text-slate-400 hover:bg-white/[0.06] hover:text-slate-200 hover:border-white/[0.12] rounded-xl transition-all duration-200"
+											className="h-10 px-5 text-label font-medium bg-fill-subtle border-line text-fg-muted hover:bg-fill-hover hover:text-fg hover:border-line-strong rounded-xl transition-all duration-200"
 										>
 											{t("editor.settingsPanel.cancel", "Cancel")}
 										</Button>
 										<Button
 											onClick={() => setShowCropModal(false)}
-											className="h-10 px-6 text-xs font-semibold bg-gradient-to-r from-[#F59E0B] to-[#d97706] text-white rounded-xl shadow-lg shadow-[#F59E0B]/20 hover:shadow-[#F59E0B]/30 hover:scale-[1.01] active:scale-[0.98] transition-all duration-200 border border-[#F59E0B]/30"
+											className="h-10 px-6 text-label font-semibold bg-accent hover:bg-accent-hover text-on-accent rounded-xl shadow-sm active:scale-[0.98] transition-all duration-200 border border-accent/30"
 										>
 											{t("common.actions.done")}
 										</Button>

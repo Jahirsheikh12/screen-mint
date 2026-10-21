@@ -63,7 +63,7 @@ function ContentClamp({ children, className, truncateLength = 50, ...props }: Co
 				</span>
 			</PopoverTrigger>
 			<PopoverContent
-				className="w-auto max-w-sm rounded-lg border border-white bg-popover p-3 text-sm text-popover-foreground"
+				className="w-auto max-w-sm rounded-lg bg-raised p-3 text-body text-fg shadow-popover"
 				sideOffset={8}
 				animated={false}
 				onMouseEnter={handleMouseEnter}
@@ -71,7 +71,7 @@ function ContentClamp({ children, className, truncateLength = 50, ...props }: Co
 				onPointerDownOutside={(e) => e.preventDefault()}
 				onClick={(e) => e.stopPropagation()}
 			>
-				<PopoverArrow className="fill-white" />
+				<PopoverArrow className="fill-raised" />
 				{children}
 			</PopoverContent>
 		</Popover>

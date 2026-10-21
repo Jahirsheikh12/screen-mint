@@ -50,7 +50,7 @@ export function AreaTab({ disabled, hasArea, onPermissionDenied }: AreaTabProps)
 
 	if (loading && sources.length === 0) {
 		return (
-			<div className="flex items-center justify-center py-12 text-white/40 text-xs">
+			<div className="flex items-center justify-center py-12 text-fg-subtle text-label">
 				{t("sourceSelector.loadingSources")}
 			</div>
 		);
@@ -133,10 +133,10 @@ export function AreaTab({ disabled, hasArea, onPermissionDenied }: AreaTabProps)
 				type="button"
 				onClick={openAreaSelector}
 				disabled={disabled}
-				className={`flex items-center gap-2.5 rounded-xl px-6 py-3 text-sm font-medium transition-all ${
+				className={`flex items-center gap-2.5 rounded-xl px-6 py-3 text-body font-medium transition-all ${
 					disabled
-						? "bg-white/[0.04] text-white/25 cursor-not-allowed"
-						: "bg-white/[0.08] text-white/70 hover:bg-white/[0.12] cursor-pointer border border-white/[0.1]"
+						? "bg-fill-subtle text-fg-disabled cursor-not-allowed"
+						: "bg-fill-hover text-fg-muted hover:bg-fill-pressed cursor-pointer border border-line-strong"
 				}`}
 			>
 				<MdCropFree size={18} />
@@ -147,7 +147,7 @@ export function AreaTab({ disabled, hasArea, onPermissionDenied }: AreaTabProps)
 					type="button"
 					onClick={clearArea}
 					disabled={disabled}
-					className="-mt-2 text-[11px] text-white/40 transition-colors hover:text-white/75 disabled:cursor-not-allowed"
+					className="-mt-2 text-caption text-fg-subtle transition-colors hover:text-fg-muted disabled:cursor-not-allowed"
 				>
 					{t("area.clearArea", "Clear area")}
 				</button>
@@ -161,10 +161,10 @@ export function AreaTab({ disabled, hasArea, onPermissionDenied }: AreaTabProps)
 						type="button"
 						onClick={() => applyPreset(preset.width, preset.height)}
 						disabled={disabled}
-						className={`rounded-md border px-2.5 py-1 text-[10px] transition ${
+						className={`rounded-md border px-2.5 py-1 text-micro transition ${
 							disabled
-								? "cursor-not-allowed border-white/[0.04] bg-white/[0.03] text-white/20"
-								: "cursor-pointer border-white/[0.08] bg-white/[0.05] text-white/55 hover:bg-white/[0.08] hover:text-white/80"
+								? "cursor-not-allowed border-line bg-fill-subtle text-fg-disabled"
+								: "cursor-pointer border-line bg-fill-subtle text-fg-subtle hover:bg-fill-hover hover:text-fg-muted"
 						}`}
 					>
 						{preset.label}

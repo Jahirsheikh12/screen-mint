@@ -322,7 +322,27 @@
 		"endMs": "Einde (ms)",
 		"crop": "Bijsnijden",
 		"moveLayerForward": "Laag naar voren",
-		"moveLayerBackward": "Laag naar achteren"
+		"moveLayerBackward": "Laag naar achteren",
+		"editableLayersOne": "1 bewerkbare laag",
+		"editableLayersMany": "{{count}} bewerkbare lagen",
+		"primaryRecording": "Hoofdopname",
+		"delete": "Verwijderen",
+		"cropFields": {
+			"x": "X",
+			"y": "Y",
+			"width": "Breedte",
+			"height": "Hoogte"
+		},
+		"layerKinds": {
+			"video": "Video",
+			"window": "Venster",
+			"screenshot": "Screenshot",
+			"webcam": "Webcam",
+			"audio": "Audio",
+			"annotation": "Annotatie",
+			"caption": "Ondertitel",
+			"scene-3d": "3D"
+		}
 	},
 	"annotationPanel": {
 		"customFonts": "Eigen lettertypen",

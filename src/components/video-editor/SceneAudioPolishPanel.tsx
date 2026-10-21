@@ -58,7 +58,7 @@ function SelectWrapper({ children }: { children: React.ReactNode }) {
 	return (
 		<div className="relative w-full group">
 			{children}
-			<ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none group-hover:text-amber-500 transition-colors" />
+			<ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-fg-subtle pointer-events-none group-hover:text-accent-fg transition-colors" />
 		</div>
 	);
 }
@@ -83,13 +83,13 @@ export function SceneAudioPolishPanel({
 	};
 
 	const inputClass =
-		"w-full bg-black/40 border border-white/[0.08] hover:border-white/[0.15] focus:border-amber-500/50 text-slate-200 h-8 px-2.5 rounded-lg text-[11px] outline-none transition-all shadow-inner font-medium placeholder:text-slate-600";
+		"w-full bg-sunken border border-line hover:border-line-strong focus:border-accent/50 text-fg h-8 px-2.5 rounded-md text-caption outline-none transition-all font-medium placeholder:text-fg-subtle";
 	const selectClass = cn(inputClass, "appearance-none cursor-pointer pr-8");
 
 	return (
 		<div
 			className={cn(
-				"w-full h-full shrink-0 min-w-0 bg-[#0B0F0D]/90 backdrop-blur-2xl border border-white/[0.08] rounded-2xl flex flex-col shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden",
+				"w-full h-full shrink-0 min-w-0 bg-surface rounded-xl flex flex-col shadow-panel overflow-hidden",
 				embedded ? "" : "w-[400px]",
 			)}
 		>
@@ -100,10 +100,9 @@ export function SceneAudioPolishPanel({
 						"editor.polishPanel.environmentLensAndLighting",
 						"Environment, lens, and lighting configuration",
 					)}
-					accentColor="amber"
 				>
-					<label className="mb-2 flex items-center justify-between gap-3 text-[11px] text-slate-400 p-3 rounded-lg bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.05] transition-colors cursor-pointer group">
-						<span className="font-medium group-hover:text-slate-300 transition-colors">
+					<label className="mb-2 flex items-center justify-between gap-3 text-caption text-fg-muted p-3 rounded-lg bg-fill-subtle border border-line hover:bg-fill-subtle transition-colors cursor-pointer group">
+						<span className="font-medium group-hover:text-fg-muted transition-colors">
 							{t("editor.polishPanel.enable3dRendering", "Enable 3D Rendering")}
 						</span>
 						<div className="relative flex items-center">
@@ -111,15 +110,15 @@ export function SceneAudioPolishPanel({
 								type="checkbox"
 								checked={scene3D.enabled}
 								onChange={(event) => updateScene({ enabled: event.target.checked })}
-								className="peer appearance-none w-8 h-4 bg-black/40 border border-white/10 rounded-full checked:bg-amber-500 checked:border-amber-500 transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 shadow-inner"
+								className="peer appearance-none w-8 h-4 bg-sunken border border-line-strong rounded-full checked:bg-accent checked:border-accent transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
 							/>
-							<div className="absolute left-[2px] top-[2px] w-3 h-3 bg-slate-400 rounded-full pointer-events-none peer-checked:translate-x-4 peer-checked:bg-white transition-transform shadow-sm" />
+							<div className="absolute left-[2px] top-[2px] w-3 h-3 bg-fg-subtle rounded-full pointer-events-none peer-checked:translate-x-4 peer-checked:bg-fixed-white transition-transform shadow-sm" />
 						</div>
 					</label>
 
 					<div className="grid grid-cols-2 gap-3 mt-1">
 						<div className="space-y-1.5">
-							<label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider pl-0.5">
+							<label className="text-micro font-semibold text-fg-subtle uppercase tracking-wider pl-0.5">
 								{t("editor.polishPanel.preset", "Preset")}
 							</label>
 							<SelectWrapper>
@@ -131,7 +130,7 @@ export function SceneAudioPolishPanel({
 									className={selectClass}
 								>
 									{SCENE_3D_PRESET_IDS.map((preset) => (
-										<option key={preset} value={preset} className="bg-[#111316]">
+										<option key={preset} value={preset} className="bg-surface">
 											{preset.split("-").join(" ")}
 										</option>
 									))}
@@ -139,7 +138,7 @@ export function SceneAudioPolishPanel({
 							</SelectWrapper>
 						</div>
 						<div className="space-y-1.5">
-							<label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider pl-0.5">
+							<label className="text-micro font-semibold text-fg-subtle uppercase tracking-wider pl-0.5">
 								{t("editor.polishPanel.device", "Device")}
 							</label>
 							<SelectWrapper>
@@ -151,7 +150,7 @@ export function SceneAudioPolishPanel({
 									className={selectClass}
 								>
 									{DEVICE_MOCKUP_OPTIONS.map((option) => (
-										<option key={option.value} value={option.value} className="bg-[#111316]">
+										<option key={option.value} value={option.value} className="bg-surface">
 											{option.label}
 										</option>
 									))}
@@ -159,7 +158,7 @@ export function SceneAudioPolishPanel({
 							</SelectWrapper>
 						</div>
 						<div className="space-y-1.5">
-							<label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider pl-0.5">
+							<label className="text-micro font-semibold text-fg-subtle uppercase tracking-wider pl-0.5">
 								{t("editor.polishPanel.environment", "Environment")}
 							</label>
 							<SelectWrapper>
@@ -171,7 +170,7 @@ export function SceneAudioPolishPanel({
 									className={selectClass}
 								>
 									{ENVIRONMENTS.map((environment) => (
-										<option key={environment} value={environment} className="bg-[#111316]">
+										<option key={environment} value={environment} className="bg-surface">
 											{environment.split("-").join(" ")}
 										</option>
 									))}
@@ -179,7 +178,7 @@ export function SceneAudioPolishPanel({
 							</SelectWrapper>
 						</div>
 						<div className="space-y-1.5">
-							<label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider pl-0.5">
+							<label className="text-micro font-semibold text-fg-subtle uppercase tracking-wider pl-0.5">
 								{t("editor.polishPanel.fallback", "Fallback")}
 							</label>
 							<SelectWrapper>
@@ -191,7 +190,7 @@ export function SceneAudioPolishPanel({
 									className={selectClass}
 								>
 									{DEVICE_MOCKUP_OPTIONS.map((option) => (
-										<option key={option.value} value={option.value} className="bg-[#111316]">
+										<option key={option.value} value={option.value} className="bg-surface">
 											{option.label}
 										</option>
 									))}
@@ -201,8 +200,8 @@ export function SceneAudioPolishPanel({
 					</div>
 
 					<div className="mt-4">
-						<div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-							<div className="w-2 h-2 rounded-full bg-blue-500/50" />{" "}
+						<div className="text-micro font-bold text-fg-muted uppercase tracking-widest mb-3 flex items-center gap-2">
+							<div className="w-2 h-2 rounded-full bg-info/50" />{" "}
 							{t("editor.polishPanel.lens", "Lens")}
 						</div>
 						<div className="grid grid-cols-3 gap-2">
@@ -215,7 +214,7 @@ export function SceneAudioPolishPanel({
 								["motionBlur", "Motion"],
 							].map(([key, label]) => (
 								<label key={key} className="space-y-1.5">
-									<span className="text-[10px] font-medium text-slate-500 pl-0.5">{label}</span>
+									<span className="text-micro font-medium text-fg-subtle pl-0.5">{label}</span>
 									<input
 										type="number"
 										step={key === "focalLengthMm" ? 1 : 0.05}
@@ -237,8 +236,8 @@ export function SceneAudioPolishPanel({
 					</div>
 
 					<div className="mt-4">
-						<div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-							<div className="w-2 h-2 rounded-full bg-amber-500/50" />{" "}
+						<div className="text-micro font-bold text-fg-muted uppercase tracking-widest mb-3 flex items-center gap-2">
+							<div className="w-2 h-2 rounded-full bg-accent/50" />{" "}
 							{t("editor.polishPanel.lighting", "Lighting")}
 						</div>
 						<div className="grid grid-cols-3 gap-2">
@@ -250,7 +249,7 @@ export function SceneAudioPolishPanel({
 								["shadowSoftness", "Shadow"],
 							].map(([key, label]) => (
 								<label key={key} className="space-y-1.5">
-									<span className="text-[10px] font-medium text-slate-500 pl-0.5">{label}</span>
+									<span className="text-micro font-medium text-fg-subtle pl-0.5">{label}</span>
 									<input
 										type="number"
 										step="0.05"
@@ -278,11 +277,10 @@ export function SceneAudioPolishPanel({
 						"editor.polishPanel.trackVolumeAndDucking",
 						"Track volume and ducking rules",
 					)}
-					accentColor="amber"
 				>
-					<label className="flex items-center justify-between gap-3 text-[11px] text-slate-400 p-3 rounded-lg bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.05] transition-colors cursor-pointer group">
-						<span className="font-medium group-hover:text-slate-300 transition-colors flex items-center gap-2">
-							<AudioLines className="w-3.5 h-3.5 text-amber-500" />{" "}
+					<label className="flex items-center justify-between gap-3 text-caption text-fg-muted p-3 rounded-lg bg-fill-subtle border border-line hover:bg-fill-subtle transition-colors cursor-pointer group">
+						<span className="font-medium group-hover:text-fg-muted transition-colors flex items-center gap-2">
+							<AudioLines className="w-3.5 h-3.5 text-accent-fg" />{" "}
 							{t("editor.polishPanel.masterVolume", "Master Volume")}
 						</span>
 						<input
@@ -299,17 +297,17 @@ export function SceneAudioPolishPanel({
 									}),
 								)
 							}
-							className={cn(inputClass, "w-16 text-center !px-1 h-7 bg-black/60")}
+							className={cn(inputClass, "w-16 text-center !px-1 h-7 bg-scrim/60")}
 						/>
 					</label>
 					<div className="space-y-2 mt-2">
 						{audioMix.tracks.map((track) => (
 							<div
 								key={track.id}
-								className="rounded-xl border border-white/5 bg-black/20 overflow-hidden shadow-sm"
+								className="rounded-lg border border-line bg-fill-subtle overflow-hidden shadow-sm"
 							>
-								<div className="px-3 py-2 bg-white/[0.03] border-b border-white/[0.05] flex items-center justify-between">
-									<span className="text-[11px] font-bold text-slate-200 tracking-wider uppercase">
+								<div className="px-3 py-2 bg-fill-subtle border-b border-line flex items-center justify-between">
+									<span className="text-caption font-bold text-fg tracking-wider uppercase">
 										{track.label}
 									</span>
 									<div className="flex items-center gap-3">
@@ -326,11 +324,11 @@ export function SceneAudioPolishPanel({
 															})),
 														)
 													}
-													className="peer appearance-none w-6 h-3.5 bg-black/40 border border-white/10 rounded-full checked:bg-red-500 checked:border-red-500 transition-colors cursor-pointer outline-none"
+													className="peer appearance-none w-6 h-3.5 bg-sunken border border-line-strong rounded-full checked:bg-danger checked:border-danger transition-colors cursor-pointer outline-none"
 												/>
-												<div className="absolute left-[2px] top-[2px] w-2.5 h-2.5 bg-slate-400 rounded-full pointer-events-none peer-checked:translate-x-2.5 peer-checked:bg-white transition-transform" />
+												<div className="absolute left-[2px] top-[2px] w-2.5 h-2.5 bg-fg-subtle rounded-full pointer-events-none peer-checked:translate-x-2.5 peer-checked:bg-fixed-white transition-transform" />
 											</div>
-											<span className="text-[10px] font-medium text-slate-500 group-hover:text-slate-300">
+											<span className="text-micro font-medium text-fg-subtle group-hover:text-fg-muted">
 												{t("editor.polishPanel.mute", "Mute")}
 											</span>
 										</label>
@@ -347,18 +345,18 @@ export function SceneAudioPolishPanel({
 															})),
 														)
 													}
-													className="peer appearance-none w-6 h-3.5 bg-black/40 border border-white/10 rounded-full checked:bg-amber-500 checked:border-amber-500 transition-colors cursor-pointer outline-none"
+													className="peer appearance-none w-6 h-3.5 bg-sunken border border-line-strong rounded-full checked:bg-accent checked:border-accent transition-colors cursor-pointer outline-none"
 												/>
-												<div className="absolute left-[2px] top-[2px] w-2.5 h-2.5 bg-slate-400 rounded-full pointer-events-none peer-checked:translate-x-2.5 peer-checked:bg-white transition-transform" />
+												<div className="absolute left-[2px] top-[2px] w-2.5 h-2.5 bg-fg-subtle rounded-full pointer-events-none peer-checked:translate-x-2.5 peer-checked:bg-fixed-white transition-transform" />
 											</div>
-											<span className="text-[10px] font-medium text-slate-500 group-hover:text-slate-300">
+											<span className="text-micro font-medium text-fg-subtle group-hover:text-fg-muted">
 												{t("editor.polishPanel.solo", "Solo")}
 											</span>
 										</label>
 									</div>
 								</div>
 								<div className="p-3 grid grid-cols-4 gap-2">
-									<label className="flex flex-col gap-1.5 cursor-pointer group col-span-1 justify-center border-r border-white/5 pr-2">
+									<label className="flex flex-col gap-1.5 cursor-pointer group col-span-1 justify-center border-r border-line pr-2">
 										<div className="flex items-center gap-2">
 											<div className="relative flex items-center">
 												<input
@@ -372,17 +370,17 @@ export function SceneAudioPolishPanel({
 															})),
 														)
 													}
-													className="peer appearance-none w-6 h-3.5 bg-black/40 border border-white/10 rounded-full checked:bg-blue-500 checked:border-blue-500 transition-colors cursor-pointer outline-none"
+													className="peer appearance-none w-6 h-3.5 bg-sunken border border-line-strong rounded-full checked:bg-info checked:border-info transition-colors cursor-pointer outline-none"
 												/>
-												<div className="absolute left-[2px] top-[2px] w-2.5 h-2.5 bg-slate-400 rounded-full pointer-events-none peer-checked:translate-x-2.5 peer-checked:bg-white transition-transform" />
+												<div className="absolute left-[2px] top-[2px] w-2.5 h-2.5 bg-fg-subtle rounded-full pointer-events-none peer-checked:translate-x-2.5 peer-checked:bg-fixed-white transition-transform" />
 											</div>
-											<span className="text-[10px] font-medium text-slate-500 group-hover:text-slate-300">
+											<span className="text-micro font-medium text-fg-subtle group-hover:text-fg-muted">
 												{t("editor.polishPanel.duck", "Duck")}
 											</span>
 										</div>
 									</label>
 									<label className="space-y-1.5 col-span-1 pl-1">
-										<span className="text-[9px] font-semibold text-slate-500 uppercase pl-0.5">
+										<span className="text-micro font-semibold text-fg-subtle uppercase pl-0.5">
 											{t("editor.polishPanel.vol", "Vol")}
 										</span>
 										<input
@@ -401,7 +399,7 @@ export function SceneAudioPolishPanel({
 										/>
 									</label>
 									<label className="space-y-1.5 col-span-1">
-										<span className="text-[9px] font-semibold text-slate-500 uppercase pl-0.5">
+										<span className="text-micro font-semibold text-fg-subtle uppercase pl-0.5">
 											{t("editor.polishPanel.fadeIn", "Fade In")}
 										</span>
 										<input
@@ -419,7 +417,7 @@ export function SceneAudioPolishPanel({
 										/>
 									</label>
 									<label className="space-y-1.5 col-span-1">
-										<span className="text-[9px] font-semibold text-slate-500 uppercase pl-0.5">
+										<span className="text-micro font-semibold text-fg-subtle uppercase pl-0.5">
 											{t("editor.polishPanel.fadeOut", "Fade Out")}
 										</span>
 										<input
@@ -448,9 +446,8 @@ export function SceneAudioPolishPanel({
 						"editor.polishPanel.oneClickStudioTemplates",
 						"One-click studio templates",
 					)}
-					accentColor="amber"
 				>
-					<div className="grid grid-cols-[1fr_auto] gap-2 items-center p-3 rounded-xl border border-white/5 bg-black/20">
+					<div className="grid grid-cols-[1fr_auto] gap-2 items-center p-3 rounded-lg border border-line bg-fill-subtle">
 						<SelectWrapper>
 							<select
 								defaultValue="product-hunt"
@@ -461,7 +458,7 @@ export function SceneAudioPolishPanel({
 								data-selected="product-hunt"
 							>
 								{CONTENT_TYPES.map((type) => (
-									<option key={type.value} value={type.value} className="bg-[#111316]">
+									<option key={type.value} value={type.value} className="bg-surface">
 										{type.label}
 									</option>
 								))}
@@ -469,7 +466,7 @@ export function SceneAudioPolishPanel({
 						</SelectWrapper>
 						<button
 							type="button"
-							className="h-8 px-4 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[11px] font-bold tracking-wider shadow-sm hover:from-amber-400 hover:to-amber-500 hover:shadow-amber-500/20 transition-all duration-300"
+							className="h-8 px-4 rounded-lg bg-gradient-to-r from-accent to-accent text-fg text-caption font-bold tracking-wider shadow-sm hover:from-accent hover:to-accent transition-all duration-300"
 							onClick={(event) => {
 								const select = event.currentTarget.previousElementSibling?.querySelector(
 									"select",

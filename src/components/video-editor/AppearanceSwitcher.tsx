@@ -23,15 +23,15 @@ export function AppearanceSwitcher() {
 			<DropdownMenuTrigger asChild>
 				<button
 					type="button"
-					className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
+					className="inline-flex h-8 w-8 items-center justify-center rounded-md text-fg-muted transition hover:bg-fill-hover hover:text-fg cursor-pointer"
 					title={label}
 					aria-label={label}
 				>
 					<Icon className="h-4 w-4" />
 				</button>
 			</DropdownMenuTrigger>
-			<DropdownMenuContent align="end" className="min-w-[150px] border-white/10 bg-[#1a1a1a]">
-				<DropdownMenuLabel className="text-[11px] font-medium text-white/45">
+			<DropdownMenuContent align="end" className="min-w-[150px] border-line-strong bg-raised">
+				<DropdownMenuLabel className="text-caption font-medium text-fg-subtle">
 					{label}
 				</DropdownMenuLabel>
 				<DropdownMenuRadioGroup
@@ -44,7 +44,7 @@ export function AppearanceSwitcher() {
 							<DropdownMenuRadioItem
 								key={option}
 								value={option}
-								className="gap-2 text-slate-300 hover:bg-white/10 hover:text-white cursor-pointer"
+								className="gap-2 text-fg-muted hover:bg-fill-hover hover:text-fg cursor-pointer"
 							>
 								<OptionIcon className="h-3.5 w-3.5" />
 								{t(`theme.${option}`)}

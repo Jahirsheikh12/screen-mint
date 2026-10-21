@@ -75,7 +75,7 @@ const KeyframeMarkers: React.FC<KeyframeMarkersProps> = ({
 				return (
 					<div
 						key={kf.id}
-						className={`absolute top-8 cursor-grab active:cursor-grabbing ${isSelected ? "ring-2 ring-[#F59E0B]" : ""}`}
+						className={`absolute top-8 cursor-grab active:cursor-grabbing ${isSelected ? "ring-2 ring-accent" : ""}`}
 						style={{
 							left: `${sidebarWidth + offset - 8}px`,
 							zIndex: isDragging ? 50 : 40,
@@ -97,7 +97,7 @@ const KeyframeMarkers: React.FC<KeyframeMarkersProps> = ({
 							style={{
 								width: "10px",
 								height: "10px",
-								background: "#ffe100ff",
+								background: "rgb(var(--accent))",
 								transform: "rotate(45deg)",
 								border: "none",
 								opacity: isSelected ? 1 : 0.6,

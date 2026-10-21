@@ -85,7 +85,7 @@ export function DisplayTab({ disabled, onSelectSource, onPermissionDenied }: Dis
 
 	if (loading) {
 		return (
-			<div className="flex items-center justify-center py-12 text-white/40 text-xs font-medium">
+			<div className="flex items-center justify-center py-12 text-fg-subtle text-label font-medium">
 				{t("sourceSelector.loadingSources", "Loading displays...")}
 			</div>
 		);
@@ -126,11 +126,11 @@ export function DisplayTab({ disabled, onSelectSource, onPermissionDenied }: Dis
 							disabled={disabled}
 							className={`relative flex flex-col items-center gap-3 rounded-lg p-3 transition-colors text-left overflow-hidden ${
 								isSelected
-									? "bg-white/10 ring-1 ring-[#F59E0B]"
-									: "bg-white/5 border border-transparent hover:bg-white/10"
+									? "bg-fill-hover ring-1 ring-accent"
+									: "bg-fill-subtle border border-transparent hover:bg-fill-hover"
 							} ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
 						>
-							<div className="relative w-full aspect-[16/10] rounded border border-white/10 overflow-hidden bg-black/50">
+							<div className="relative w-full aspect-[16/10] rounded border border-line-strong overflow-hidden bg-fill-subtle">
 								{source.thumbnail ? (
 									<img
 										src={source.thumbnail}
@@ -139,19 +139,19 @@ export function DisplayTab({ disabled, onSelectSource, onPermissionDenied }: Dis
 									/>
 								) : (
 									<div className="flex h-full w-full items-center justify-center">
-										<MdMonitor size={24} className="text-white/20" />
+										<MdMonitor size={24} className="text-fg-disabled" />
 									</div>
 								)}
 							</div>
 
 							<div className="flex flex-col items-center gap-0.5 w-full">
 								<span
-									className={`text-xs font-medium truncate w-full text-center ${isSelected ? "text-white" : "text-white/80"}`}
+									className={`text-label font-medium truncate w-full text-center ${isSelected ? "text-fg" : "text-fg-muted"}`}
 								>
 									{source.name}
 								</span>
 								{info && (
-									<span className="text-[10px] text-white/40 tabular-nums">
+									<span className="text-micro text-fg-subtle tabular-nums">
 										{info.width} &times; {info.height} &bull; {Math.round(info.refreshRate)}Hz
 									</span>
 								)}

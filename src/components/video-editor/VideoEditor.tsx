@@ -254,12 +254,12 @@ function LanguageSwitcher() {
 		<button
 			type="button"
 			onClick={() => setLocale(next)}
-			className="inline-flex h-8 items-center gap-1.5 rounded-md px-2 text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
+			className="inline-flex h-8 items-center gap-1.5 rounded-md px-2 text-fg-muted transition hover:bg-fill-hover hover:text-fg cursor-pointer"
 			title={t("common.app.language", "Language")}
 			aria-label={t("common.app.language", "Language")}
 		>
 			<Languages className="h-4 w-4" />
-			<span className="text-xs font-medium">
+			<span className="text-label font-medium">
 				{LOCALE_LABELS[locale as AppLocale] ?? locale.toUpperCase()}
 			</span>
 		</button>
@@ -4451,18 +4451,18 @@ export default function VideoEditor() {
 
 	if (error) {
 		return (
-			<div className="flex items-center justify-center h-screen bg-[#0a0a0b]">
+			<div className="flex items-center justify-center h-screen bg-canvas">
 				<div
 					className="flex flex-col items-center gap-4"
 					style={{
 						animation: "editor-loading-enter 0.5s cubic-bezier(0.16,1,0.3,1) both",
 					}}
 				>
-					<div className="text-red-400/80 text-sm">{error}</div>
+					<div className="text-danger-fg/80 text-body">{error}</div>
 					<button
 						type="button"
 						onClick={handleLoadProject}
-						className="px-4 py-2 rounded-lg bg-white/[0.08] text-white/70 text-[13px] font-medium hover:bg-white/[0.12] hover:text-white/90 transition-all border border-white/[0.06]"
+						className="px-4 py-2 rounded-lg bg-fill-hover text-fg-muted text-body font-medium hover:bg-fill-pressed hover:text-fg transition-all border border-line"
 					>
 						{t("editor.shell.loadProjectFile", "Load Project File")}
 					</button>
@@ -4480,7 +4480,7 @@ export default function VideoEditor() {
 	}
 
 	return (
-		<div className="relative h-screen bg-[#0c0c0f] overflow-hidden">
+		<div className="relative h-screen bg-canvas overflow-hidden">
 			{/* Skeleton overlay — fades out */}
 			{skeletonVisible && (
 				<div
@@ -4497,12 +4497,12 @@ export default function VideoEditor() {
 			{/* Real editor — fades in once loading is done */}
 			{!loading && (
 				<div
-					className="flex flex-col h-full text-slate-200 selection:bg-[#f59e0b]/30 transition-opacity duration-300 ease-out"
+					className="flex flex-col h-full text-fg selection:bg-accent/30 transition-opacity duration-300 ease-out"
 					style={{ opacity: editorReady ? 1 : 0 }}
 				>
 					{/* Header Bar - matches Screen Studio reference */}
 					<div
-						className="relative h-11 flex-shrink-0 bg-[#111114] border-b border-white/5 flex items-center gap-2 px-4 z-50"
+						className="relative h-11 flex-shrink-0 bg-surface border-b border-line flex items-center gap-2 px-4 z-50"
 						style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
 					>
 						{/* Left: macOS traffic lights spacer + action icons */}
@@ -4518,7 +4518,7 @@ export default function VideoEditor() {
 								<button
 									type="button"
 									onClick={() => void handleSaveProject()}
-									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
+									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-fg-muted transition hover:bg-fill-hover hover:text-fg cursor-pointer"
 								>
 									<Save className="h-4 w-4" />
 								</button>
@@ -4530,7 +4530,7 @@ export default function VideoEditor() {
 								<button
 									type="button"
 									onClick={() => void openRecordingsFolder()}
-									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
+									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-fg-muted transition hover:bg-fill-hover hover:text-fg cursor-pointer"
 								>
 									<FolderOpen className="h-4 w-4" />
 								</button>
@@ -4541,7 +4541,7 @@ export default function VideoEditor() {
 							>
 								<button
 									type="button"
-									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
+									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-fg-muted transition hover:bg-fill-hover hover:text-fg cursor-pointer"
 									onClick={openConfig}
 								>
 									<Keyboard className="h-4 w-4" />
@@ -4550,7 +4550,7 @@ export default function VideoEditor() {
 							<Tooltip content={t("editor.shell.deleteProject", "Delete Project")} side="bottom">
 								<button
 									type="button"
-									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-red-400/80 hover:text-white cursor-pointer"
+									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-fg-muted transition hover:bg-danger hover:text-on-danger cursor-pointer"
 									onClick={() => void handleDeleteProject()}
 								>
 									<Trash2 className="h-4 w-4" />
@@ -4573,14 +4573,14 @@ export default function VideoEditor() {
 										onBlur={handleVideoNameInputBlur}
 										onKeyDown={handleVideoNameInputKeyDown}
 										aria-label={t("editor.shell.videoName", "Video name")}
-										className="h-7 w-full max-w-[320px] min-w-0 rounded-md border border-white/10 bg-white/[0.07] px-2.5 text-center text-[13px] font-medium text-white/85 outline-none transition placeholder:text-white/25 focus:border-amber-300/45 focus:bg-white/[0.09] focus:ring-2 focus:ring-amber-300/15"
+										className="h-7 w-full max-w-[320px] min-w-0 rounded-md border border-line-strong bg-fill-hover px-2.5 text-center text-body font-medium text-fg-muted outline-none transition placeholder:text-fg-subtle focus:border-accent/45 focus:bg-fill-hover focus:ring-2 focus:ring-accent/15"
 									/>
 									<Tooltip content={t("editor.shell.saveName", "Save Name")} side="bottom">
 										<button
 											type="button"
 											onMouseDown={(event) => event.preventDefault()}
 											onClick={commitVideoNameEdit}
-											className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
+											className="inline-flex h-7 w-7 items-center justify-center rounded-md text-fg-muted transition hover:bg-fill-hover hover:text-fg cursor-pointer"
 											aria-label={t("editor.shell.saveVideoName", "Save video name")}
 										>
 											<Check className="h-3.5 w-3.5" />
@@ -4591,7 +4591,7 @@ export default function VideoEditor() {
 											type="button"
 											onMouseDown={(event) => event.preventDefault()}
 											onClick={cancelVideoNameEdit}
-											className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/8 hover:text-white cursor-pointer"
+											className="inline-flex h-7 w-7 items-center justify-center rounded-md text-fg-subtle transition hover:bg-fill-hover hover:text-fg cursor-pointer"
 											aria-label={t("editor.shell.cancelVideoNameEdit", "Cancel video name edit")}
 										>
 											<X className="h-3.5 w-3.5" />
@@ -4604,7 +4604,7 @@ export default function VideoEditor() {
 										type="button"
 										onClick={startVideoNameEdit}
 										onDoubleClick={startVideoNameEdit}
-										className="min-w-0 max-w-[400px] shrink truncate rounded-md px-2 py-1 text-[13px] font-medium text-white/60 transition hover:bg-white/[0.06] hover:text-white/85 cursor-text"
+										className="min-w-0 max-w-[400px] shrink truncate rounded-md px-2 py-1 text-body font-medium text-fg-muted transition hover:bg-fill-hover hover:text-fg-muted cursor-text"
 										title={videoName}
 										aria-label={t("editor.shell.editVideoName", "Edit video name")}
 									>
@@ -4614,7 +4614,7 @@ export default function VideoEditor() {
 										<button
 											type="button"
 											onClick={startVideoNameEdit}
-											className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-500 opacity-70 transition hover:bg-white/8 hover:text-white hover:opacity-100 cursor-pointer"
+											className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-fg-subtle opacity-70 transition hover:bg-fill-hover hover:text-fg hover:opacity-100 cursor-pointer"
 											aria-label={t("editor.shell.editVideoName", "Edit video name")}
 										>
 											<Pencil className="h-3.5 w-3.5" />
@@ -4638,7 +4638,7 @@ export default function VideoEditor() {
 								<button
 									type="button"
 									onClick={handleUndo}
-									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/8 hover:text-white cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-fg-subtle transition hover:bg-fill-hover hover:text-fg cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
 									disabled={!canUndo}
 								>
 									<Undo2 className="h-4 w-4" />
@@ -4652,62 +4652,62 @@ export default function VideoEditor() {
 								<button
 									type="button"
 									onClick={handleRedo}
-									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/8 hover:text-white cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-fg-subtle transition hover:bg-fill-hover hover:text-fg cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
 									disabled={!canRedo}
 								>
 									<Redo2 className="h-4 w-4" />
 								</button>
 							</Tooltip>
 
-							<div className="w-[1px] h-5 bg-white/10 mx-1" />
+							<div className="mx-1 h-5 w-px bg-line-strong" />
 
 							{/* Presets dropdown */}
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
 									<button
 										type="button"
-										className="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-slate-300 transition hover:bg-white/8 hover:text-white cursor-pointer"
+										className="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-fg-muted transition hover:bg-fill-hover hover:text-fg cursor-pointer"
 									>
 										<Sparkles className="h-3.5 w-3.5" />
-										<span className="hidden text-xs font-medium lg:inline">
+										<span className="hidden text-label font-medium lg:inline">
 											{t("editor.header.presets", "Presets")}
 										</span>
-										<ChevronDown className="h-3 w-3 text-slate-500" />
+										<ChevronDown className="h-3 w-3 text-fg-subtle" />
 									</button>
 								</DropdownMenuTrigger>
 								<DropdownMenuContent
 									align="end"
-									className="bg-[#1a1a1a] border-white/10 min-w-[160px]"
+									className="bg-raised border-line-strong min-w-[160px]"
 								>
-									<DropdownMenuLabel className="text-[11px] font-medium text-white/45">
+									<DropdownMenuLabel className="text-caption font-medium text-fg-subtle">
 										{t("editor.shell.applyPreset", "Apply preset")}
 									</DropdownMenuLabel>
 									{allPresets.map((preset) => (
 										<DropdownMenuItem
 											key={preset.id}
 											onSelect={() => applyPreset(preset)}
-											className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer"
+											className="text-fg-muted hover:text-fg hover:bg-fill-hover cursor-pointer"
 										>
 											{preset.name}
 										</DropdownMenuItem>
 									))}
-									<DropdownMenuSeparator className="bg-white/10" />
+									<DropdownMenuSeparator className="bg-fill-hover" />
 									<DropdownMenuItem
 										onSelect={handleSavePreset}
-										className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer"
+										className="text-fg-muted hover:text-fg hover:bg-fill-hover cursor-pointer"
 									>
 										{t("editor.shell.saveCurrentAsPreset", "Save current as preset...")}
 									</DropdownMenuItem>
 									<DropdownMenuSub>
 										<DropdownMenuSubTrigger
 											disabled={customPresets.length === 0}
-											className="text-slate-300"
+											className="text-fg-muted"
 										>
 											{t("editor.shell.deletePreset", "Delete preset")}
 										</DropdownMenuSubTrigger>
-										<DropdownMenuSubContent className="min-w-[180px] border-white/10 bg-[#1a1a1a]">
+										<DropdownMenuSubContent className="min-w-[180px] border-line-strong bg-raised">
 											{customPresets.length === 0 ? (
-												<DropdownMenuItem disabled className="text-slate-500">
+												<DropdownMenuItem disabled className="text-fg-subtle">
 													{t("editor.shell.noSavedPresets", "No saved presets")}
 												</DropdownMenuItem>
 											) : (
@@ -4715,7 +4715,7 @@ export default function VideoEditor() {
 													<DropdownMenuItem
 														key={`delete-${preset.id}`}
 														onSelect={() => handleDeletePreset(preset.id)}
-														className="text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer"
+														className="text-fg-muted hover:text-fg hover:bg-fill-hover cursor-pointer"
 													>
 														{preset.name}
 													</DropdownMenuItem>
@@ -4730,7 +4730,7 @@ export default function VideoEditor() {
 							<Tooltip content={t("editor.shell.toggleLayout", "Toggle Layout")} side="bottom">
 								<button
 									type="button"
-									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
+									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-fg-muted transition hover:bg-fill-hover hover:text-fg cursor-pointer"
 									onClick={cycleWorkspaceLayout}
 								>
 									<SplitSquareHorizontal className="h-4 w-4" />
@@ -4741,7 +4741,7 @@ export default function VideoEditor() {
 								<button
 									type="button"
 									aria-label={t("editor.shell.openProjectBrowser", "Open project browser")}
-									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white cursor-pointer"
+									className="inline-flex h-8 w-8 items-center justify-center rounded-md text-fg-muted transition hover:bg-fill-hover hover:text-fg cursor-pointer"
 									onClick={() => setProjectBrowserOpen(true)}
 								>
 									<FolderOpen className="h-4 w-4" />
@@ -4758,14 +4758,14 @@ export default function VideoEditor() {
 							<AppearanceSwitcher />
 							<FeedbackDialog />
 
-							<div className="w-[1px] h-5 bg-white/10 mx-1" />
+							<div className="mx-1 h-5 w-px bg-line-strong" />
 
 							<button
 								type="button"
 								onClick={() => handleExportMenuOpenChange(true)}
 								title={`${tSettings("export.buttonTooltip", "Export video or GIF")} (${isMac ? "⌘E" : "Ctrl+E"})`}
 								disabled={!videoPath}
-								className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-white font-semibold text-xs transition bg-[#f59e0b] hover:bg-[#d97706] cursor-pointer shadow-lg shadow-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+								className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-on-accent font-semibold text-label transition bg-accent hover:bg-accent-hover cursor-pointer shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								<Download className="h-3.5 w-3.5" />
 								<span>{tSettings("export.button", "Export")}</span>
@@ -4821,26 +4821,26 @@ export default function VideoEditor() {
 								{/* Video preview area */}
 								<Panel minSize={40} className="flex flex-col min-w-0 overflow-hidden rounded-xl">
 									{missingWebcamPath && (
-										<div className="mx-3 mt-3 rounded-lg border border-amber-400/20 bg-amber-400/10 px-3 py-2.5 text-xs text-amber-100">
+										<div className="mx-3 mt-3 rounded-lg border border-accent/20 bg-accent/10 px-3 py-2.5 text-label text-fg">
 											<div className="flex items-center justify-between gap-3">
 												<div className="min-w-0">
-													<div className="font-semibold text-amber-50">
+													<div className="font-semibold text-fg">
 														{t("settings.webcam.missingTitle", "Webcam source missing")}
 													</div>
-													<div className="mt-1 truncate text-amber-100/80">{missingWebcamPath}</div>
+													<div className="mt-1 truncate text-fg-muted">{missingWebcamPath}</div>
 												</div>
 												<div className="flex shrink-0 items-center gap-2">
 													<button
 														type="button"
 														onClick={() => void handleRelinkMissingWebcam()}
-														className="rounded-md border border-amber-300/30 bg-amber-300/15 px-2.5 py-1 text-[11px] font-semibold text-amber-50 hover:bg-amber-300/25"
+														className="rounded-md border border-accent/30 bg-accent/15 px-2.5 py-1 text-caption font-semibold text-fg hover:bg-accent/25"
 													>
 														{t("settings.webcam.relink", "Relink webcam")}
 													</button>
 													<button
 														type="button"
 														onClick={() => void handleRemoveWebcamFromProject()}
-														className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-slate-200 hover:bg-white/10"
+														className="rounded-md border border-line-strong bg-fill-subtle px-2.5 py-1 text-caption font-semibold text-fg hover:bg-fill-hover"
 													>
 														{t("settings.webcam.remove", "Remove webcam")}
 													</button>
@@ -4946,8 +4946,8 @@ export default function VideoEditor() {
 									</div>
 								</Panel>
 
-								<PanelResizeHandle className="w-1.5 flex items-center justify-center group cursor-col-resize z-10 transition-colors rounded-full hover:bg-white/10 active:bg-white/20">
-									<div className="h-16 w-1 rounded-full bg-white/10 group-hover:bg-[#F59E0B]/50 group-active:bg-[#F59E0B] transition-colors" />
+								<PanelResizeHandle className="w-1.5 flex items-center justify-center group cursor-col-resize z-10 transition-colors rounded-full hover:bg-fill-hover active:bg-fill-pressed">
+									<div className="h-16 w-1 rounded-full bg-fill-hover group-hover:bg-accent/50 group-active:bg-accent transition-colors" />
 								</PanelResizeHandle>
 
 								{/* Right section: settings sidebar */}
@@ -4958,14 +4958,14 @@ export default function VideoEditor() {
 									className="flex flex-col min-w-0 h-full gap-2 relative"
 								>
 									<div className="shrink-0 flex items-center justify-center z-10">
-										<div className="grid w-full max-w-sm grid-cols-3 gap-1 rounded-full border border-white/[0.08] bg-[#0A0F0D]/80 p-1 backdrop-blur-xl shadow-lg shadow-black/50">
+										<div className="grid w-full max-w-sm grid-cols-3 gap-0.5 rounded-lg bg-fill-hover p-0.5">
 											<button
 												type="button"
 												onClick={() => setRightSidebarSection("edit")}
-												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full px-2 py-1.5 text-[11px] font-semibold transition-all duration-300 ${
+												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-label font-medium transition-colors duration-fast ${
 													rightSidebarSection === "edit"
-														? "bg-gradient-to-r from-amber-400 to-amber-600 text-neutral-950 shadow-md shadow-amber-500/20 scale-100"
-														: "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+														? "bg-control text-fg shadow-sm"
+														: "text-fg-muted hover:text-fg"
 												}`}
 											>
 												<SlidersHorizontal className="h-3.5 w-3.5 shrink-0" />
@@ -4974,10 +4974,10 @@ export default function VideoEditor() {
 											<button
 												type="button"
 												onClick={() => setRightSidebarSection("layers")}
-												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full px-2 py-1.5 text-[11px] font-semibold transition-all duration-300 ${
+												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-label font-medium transition-colors duration-fast ${
 													rightSidebarSection === "layers"
-														? "bg-gradient-to-r from-amber-400 to-amber-600 text-neutral-950 shadow-md shadow-amber-500/20 scale-100"
-														: "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+														? "bg-control text-fg shadow-sm"
+														: "text-fg-muted hover:text-fg"
 												}`}
 											>
 												<Layers className="h-3.5 w-3.5 shrink-0" />
@@ -4986,10 +4986,10 @@ export default function VideoEditor() {
 											<button
 												type="button"
 												onClick={() => setRightSidebarSection("polish")}
-												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full px-2 py-1.5 text-[11px] font-semibold transition-all duration-300 ${
+												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-label font-medium transition-colors duration-fast ${
 													rightSidebarSection === "polish"
-														? "bg-gradient-to-r from-amber-400 to-amber-600 text-neutral-950 shadow-md shadow-amber-500/20 scale-100"
-														: "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+														? "bg-control text-fg shadow-sm"
+														: "text-fg-muted hover:text-fg"
 												}`}
 											>
 												<Sparkles className="h-3.5 w-3.5 shrink-0" />
@@ -5239,12 +5239,12 @@ export default function VideoEditor() {
 						</Panel>
 
 						<PanelResizeHandle className="h-4 flex items-center justify-center mx-2 group/handle outline-none cursor-row-resize">
-							<div className="w-12 h-1 bg-white/10 group-hover/handle:bg-white/30 rounded-full transition-colors duration-200"></div>
+							<div className="w-12 h-1 bg-fill-hover group-hover/handle:bg-fg-subtle rounded-full transition-colors duration-200"></div>
 						</PanelResizeHandle>
 
 						{/* Full-width Timeline section */}
 						<Panel defaultSize={workspaceLayoutSizes[1]} minSize={12}>
-							<div className="h-[calc(100%-0.5rem)] min-h-0 mx-2 mb-2 bg-[#121214] rounded-2xl border border-[#27272a]/80 shadow-2xl overflow-hidden flex flex-col relative z-10">
+							<div className="h-[calc(100%-0.75rem)] min-h-0 mx-3 mb-3 bg-surface rounded-xl shadow-panel overflow-hidden flex flex-col relative z-10">
 								<TimelineEditor
 									videoDuration={duration}
 									currentTime={currentTime}

@@ -9,8 +9,8 @@ const DEFAULT_THEME_PREFERENCE: ThemePreference = "dark";
 
 /** Window background behind the first paint, per theme. Keep in sync with index.html. */
 export const THEME_WINDOW_BACKGROUND: Record<ResolvedTheme, string> = {
-	dark: "#0c0c0f",
-	light: "#f4f4f2",
+	dark: "#0e0e10",
+	light: "#f4f3f0",
 };
 
 export function normalizeThemePreference(value: unknown): ThemePreference {
@@ -36,12 +36,13 @@ export function resolveTheme(preference: ThemePreference, prefersDark: boolean):
 	return preference;
 }
 
-/** Light swaps the UI colour variables in index.css; dark is the default look. */
+/** Selects the token set in index.css. Overlay windows stay transparent and only take the tokens. */
 export function applyTheme(preference: ThemePreference): ResolvedTheme {
 	const theme = resolveTheme(preference, systemPrefersDark());
 	const root = document.documentElement;
 	root.dataset.theme = theme;
 	root.style.colorScheme = theme;
+	if (root.hasAttribute("data-overlay")) return theme;
 	root.style.background = THEME_WINDOW_BACKGROUND[theme];
 	document.body.style.background = THEME_WINDOW_BACKGROUND[theme];
 	const appRoot = document.getElementById("root");
@@ -49,7 +50,7 @@ export function applyTheme(preference: ThemePreference): ResolvedTheme {
 	return theme;
 }
 
-/** Preference shared by every editor window (localStorage + storage events). */
+/** Preference shared by every window (localStorage + storage events). */
 export function useThemePreference(): [ThemePreference, (next: ThemePreference) => void] {
 	const [preference, setPreferenceState] = useState(readThemePreference);
 
@@ -79,6 +80,8 @@ export function useThemePreference(): [ThemePreference, (next: ThemePreference) 
 		} catch {
 			// Storage unavailable: the choice still applies to this window.
 		}
+		// Other hook instances in this window don't get the cross-window storage event.
+		window.dispatchEvent(new StorageEvent("storage", { key: THEME_STORAGE_KEY, newValue: next }));
 		setPreferenceState(next);
 	}, []);
 

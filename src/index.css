@@ -3,113 +3,163 @@
 @tailwind utilities;
 
 @layer base {
-	/* UI ink and greys used through Tailwind's `white`, `black` and `slate` (tailwind.config.cjs).
-	   Dark values equal Tailwind's defaults; light mode swaps them below. */
-	:root {
-		--sm-white: 255 255 255;
-		--sm-black: 0 0 0;
-		--sm-slate-50: 248 250 252;
-		--sm-slate-100: 241 245 249;
-		--sm-slate-200: 226 232 240;
-		--sm-slate-300: 203 213 225;
-		--sm-slate-400: 148 163 184;
-		--sm-slate-500: 100 116 139;
-		--sm-slate-600: 71 85 105;
-		--sm-slate-700: 51 65 85;
-		--sm-slate-800: 30 41 59;
-		--sm-slate-900: 15 23 42;
-		--sm-slate-950: 2 6 23;
+	/* Design tokens. Colours are RGB channels so Tailwind alpha modifiers work (`bg-surface/80`);
+	   fills and lines are full colours because their ink flips between themes.
+	   Dark is the default; `data-theme` on <html> is set by src/lib/theme.ts and index.html. */
+	:root,
+	[data-theme="dark"] {
+		color-scheme: dark;
+		--canvas: 14 14 16;
+		--surface: 20 20 22;
+		--raised: 29 29 32;
+		--control: 54 54 59;
+		--sunken: 10 10 11;
+		--stage: 9 9 10;
+		--scrim: 0 0 0;
+		--fg: 237 237 239;
+		--fg-muted: 166 166 173;
+		--fg-subtle: 138 138 147;
+		--fg-disabled: 84 84 92;
+		--line: rgba(255, 255, 255, 0.07);
+		--line-strong: rgba(255, 255, 255, 0.13);
+		--fill-subtle: rgba(255, 255, 255, 0.035);
+		--fill-hover: rgba(255, 255, 255, 0.07);
+		--fill-pressed: rgba(255, 255, 255, 0.11);
+		--accent: 245 158 11;
+		--accent-hover: 251 177 38;
+		--accent-fg: 251 191 36;
+		--on-accent: 26 18 6;
+		--focus: 245 158 11;
+		--danger: 220 38 38;
+		--danger-fg: 248 113 113;
+		--success: 16 185 129;
+		--success-fg: 52 211 153;
+		--warning: 245 158 11;
+		--warning-fg: 252 211 77;
+		--info: 59 130 246;
+		--info-fg: 96 165 250;
+		--track: 255 255 255;
+		--chip-fill: 0.2;
+		--chip-fill-hover: 0.27;
+		--chip-fill-selected: 0.34;
+		--chip-border: 0.42;
+		--chip-zoom: 52 211 153;
+		--chip-trim: 248 113 113;
+		--chip-speed: 251 146 60;
+		--chip-webcam: 96 165 250;
+		--chip-audio: 232 121 249;
+		--chip-caption: 34 211 238;
+		--chip-annotation: 250 204 21;
+		--shadow-panel: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 10px 30px -14px rgba(0, 0, 0, 0.7);
+		--shadow-popover: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 16px 40px -10px rgba(0, 0, 0, 0.75);
+		--shadow-dialog: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 28px 70px -14px rgba(0, 0, 0, 0.85);
 	}
+	/* Light is drawn for paper, not inverted: white panels lift off a warm canvas with soft shadows. */
 	[data-theme="light"] {
-		--sm-white: 24 24 27;
-		/* Dark wells, overlays and shadows become soft slate tints on light surfaces. */
-		--sm-black: 148 163 184;
-		--sm-slate-50: 2 6 23;
-		--sm-slate-100: 15 23 42;
-		--sm-slate-200: 30 41 59;
-		--sm-slate-300: 51 65 85;
-		--sm-slate-400: 71 85 105;
-		--sm-slate-500: 100 116 139;
-		--sm-slate-600: 148 163 184;
-		--sm-slate-700: 203 213 225;
-		--sm-slate-800: 226 232 240;
-		--sm-slate-900: 241 245 249;
-		--sm-slate-950: 248 250 252;
+		color-scheme: light;
+		--canvas: 244 243 240;
+		--surface: 255 255 255;
+		--raised: 255 255 255;
+		--control: 255 255 255;
+		--sunken: 239 237 233;
+		--stage: 231 229 225;
+		--scrim: 28 25 23;
+		--fg: 28 25 23;
+		--fg-muted: 87 83 78;
+		--fg-subtle: 112 106 100;
+		--fg-disabled: 168 162 158;
+		--line: rgba(28, 25, 23, 0.09);
+		--line-strong: rgba(28, 25, 23, 0.17);
+		--fill-subtle: rgba(28, 25, 23, 0.03);
+		--fill-hover: rgba(28, 25, 23, 0.06);
+		--fill-pressed: rgba(28, 25, 23, 0.1);
+		--accent: 245 158 11;
+		--accent-hover: 217 119 6;
+		--accent-fg: 163 72 7;
+		--on-accent: 26 18 6;
+		--focus: 180 83 9;
+		--danger: 220 38 38;
+		--danger-fg: 185 28 28;
+		--success: 5 150 105;
+		--success-fg: 4 120 87;
+		--warning: 217 119 6;
+		--warning-fg: 146 64 14;
+		--info: 37 99 235;
+		--info-fg: 29 78 216;
+		--track: 28 25 23;
+		--chip-fill: 0.13;
+		--chip-fill-hover: 0.18;
+		--chip-fill-selected: 0.22;
+		--chip-border: 0.45;
+		--chip-zoom: 5 150 105;
+		--chip-trim: 220 38 38;
+		--chip-speed: 234 88 12;
+		--chip-webcam: 37 99 235;
+		--chip-audio: 192 38 211;
+		--chip-caption: 8 145 178;
+		--chip-annotation: 202 138 4;
+		--shadow-panel:
+			0 0 0 1px rgba(28, 25, 23, 0.06), 0 1px 2px rgba(28, 25, 23, 0.05),
+			0 6px 20px -8px rgba(28, 25, 23, 0.1);
+		--shadow-popover: 0 0 0 1px rgba(28, 25, 23, 0.08), 0 16px 36px -10px rgba(28, 25, 23, 0.22);
+		--shadow-dialog: 0 0 0 1px rgba(28, 25, 23, 0.07), 0 28px 64px -16px rgba(28, 25, 23, 0.3);
 	}
 
 	:root {
-		--brand-accent: #f59e0b;
-		--brand-accent-rgb: 245, 158, 11;
-		--brand-gradient: linear-gradient(135deg, #f59e0b, #f97316);
-		--surface-glass: rgba(245, 158, 11, 0.06);
-		--glow-primary: rgba(245, 158, 11, 0.25);
-		--background: 0 0% 100%;
-		--foreground: 20 14.3% 4.1%;
-		--card: 0 0% 100%;
-		--card-foreground: 20 14.3% 4.1%;
-		--popover: 0 0% 100%;
-		--popover-foreground: 20 14.3% 4.1%;
-		--primary: 38 92% 50%;
-		--primary-foreground: 38 20% 98%;
-		--secondary: 60 4.8% 95.9%;
-		--secondary-foreground: 24 9.8% 10%;
-		--muted: 60 4.8% 95.9%;
-		--muted-foreground: 25 5.3% 44.7%;
-		--accent: 38 30% 95%;
-		--accent-foreground: 38 92% 38%;
-		--destructive: 0 84.2% 60.2%;
-		--destructive-foreground: 60 9.1% 97.8%;
-		--border: 20 5.9% 90%;
-		--input: 20 5.9% 90%;
-		--ring: 38 92% 50%;
-		--chart-1: 38 92% 50%;
-		--chart-2: 25 95% 53%;
-		--chart-3: 197 37% 24%;
-		--chart-4: 43 74% 66%;
-		--chart-5: 27 87% 67%;
 		--radius: 0.5rem;
-	}
-	.dark {
-		--background: 30 25% 3%;
-		--foreground: 38 10% 95%;
-		--card: 30 20% 7%;
-		--card-foreground: 38 10% 95%;
-		--popover: 30 20% 7%;
-		--popover-foreground: 38 10% 95%;
-		--primary: 38 92% 50%;
-		--primary-foreground: 38 20% 98%;
-		--secondary: 30 10% 9%;
-		--secondary-foreground: 38 10% 95%;
-		--muted: 30 10% 9%;
-		--muted-foreground: 30 10% 55%;
-		--accent: 38 30% 10%;
-		--accent-foreground: 38 20% 98%;
-		--destructive: 0 62.8% 30.6%;
-		--destructive-foreground: 60 9.1% 97.8%;
-		--border: 30 15% 11%;
-		--input: 30 15% 11%;
-		--ring: 38 92% 50%;
-		--chart-1: 38 92% 55%;
-		--chart-2: 25 80% 50%;
-		--chart-3: 15 60% 45%;
-		--chart-4: 280 65% 60%;
-		--chart-5: 340 75% 55%;
+		--ease-standard: cubic-bezier(0.2, 0, 0, 1);
+		--ease-emphasized: cubic-bezier(0.3, 0, 0, 1.25);
+		/* shadcn names, aliased onto the tokens above so ui/** follows the theme. */
+		--background: var(--canvas);
+		--foreground: var(--fg);
 	}
 }
 
 @layer base {
 	* {
-		@apply border-border;
+		border-color: var(--line);
 	}
 	body {
-		@apply bg-background text-foreground;
+		background: rgb(var(--canvas));
+		color: rgb(var(--fg));
+		-webkit-font-smoothing: antialiased;
 		-webkit-user-select: none;
 		user-select: none;
 	}
 
+	/* One keyboard focus ring everywhere, even where a component sets outline-none for mouse focus. */
+	:focus-visible {
+		outline: 2px solid rgb(var(--focus)) !important;
+		outline-offset: 2px;
+	}
+	:is(input, textarea, select, [contenteditable="true"]):focus-visible {
+		outline-offset: 0;
+	}
+
+	/* Default track for range inputs; components can still set their own background. */
+	input[type="range"] {
+		background: rgb(var(--track) / 0.16);
+		border-radius: 9999px;
+	}
+
+	::selection {
+		background: rgb(var(--accent) / 0.3);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		*,
+		*::before,
+		*::after {
+			animation-duration: 0.01ms !important;
+			animation-iteration-count: 1 !important;
+			transition-duration: 0.01ms !important;
+			scroll-behavior: auto !important;
+		}
+	}
+
 	/* Overlay windows (HUD, source-selector, countdown, etc.) must be transparent.
 	   The data-overlay attribute is set by an inline script in index.html before
-	   CSS paints, preventing the white flash from bg-background. */
+	   CSS paints, preventing a flash of the canvas colour. */
 	html[data-overlay],
 	html[data-overlay] body,
 	html[data-overlay] #root {
@@ -152,38 +202,35 @@
 		display: none; /* Chrome, Safari, Opera */
 	}
 
-	/* Themed scrollbar for timeline area */
+	/* Quiet scrollbar for the timeline and long panels */
 	.timeline-scrollbar::-webkit-scrollbar {
-		width: 6px;
-		height: 6px;
+		width: 8px;
+		height: 8px;
 	}
 
-	.timeline-scrollbar::-webkit-scrollbar-track {
-		background: rgba(245, 158, 11, 0.05);
-		border-radius: 3px;
-	}
-
-	.timeline-scrollbar::-webkit-scrollbar-thumb {
-		background: rgba(245, 158, 11, 0.25);
-		border-radius: 3px;
-		transition: background 0.2s;
-	}
-
-	.timeline-scrollbar::-webkit-scrollbar-thumb:hover {
-		background: rgba(245, 158, 11, 0.4);
-	}
-
+	.timeline-scrollbar::-webkit-scrollbar-track,
 	.timeline-scrollbar::-webkit-scrollbar-corner {
 		background: transparent;
 	}
 
-	/* Firefox themed scrollbar */
-	.timeline-scrollbar {
-		scrollbar-width: thin;
-		scrollbar-color: rgba(245, 158, 11, 0.25) rgba(245, 158, 11, 0.05);
+	.timeline-scrollbar::-webkit-scrollbar-thumb {
+		background: var(--line-strong);
+		border: 2px solid transparent;
+		background-clip: padding-box;
+		border-radius: 999px;
 	}
 
-	/* Smooth playback scrubber */
+	.timeline-scrollbar::-webkit-scrollbar-thumb:hover {
+		background: rgb(var(--fg-subtle) / 0.6);
+		background-clip: padding-box;
+	}
+
+	.timeline-scrollbar {
+		scrollbar-width: thin;
+		scrollbar-color: var(--line-strong) transparent;
+	}
+
+	/* Range inputs: a white knob that reads on both themes */
 	input[type="range"] {
 		-webkit-appearance: none;
 		appearance: none;
@@ -192,89 +239,31 @@
 	input[type="range"]::-webkit-slider-thumb {
 		-webkit-appearance: none;
 		appearance: none;
-		width: 16px;
-		height: 16px;
+		width: 14px;
+		height: 14px;
 		border-radius: 50%;
 		background: #fff;
 		cursor: pointer;
-		box-shadow: 0 2px 8px rgba(255, 255, 255, 0.32);
-		border: 2px solid #fff;
-		transition: all 0.08s ease-out;
+		border: 1px solid var(--line-strong);
+		box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
+		transition: transform 120ms var(--ease-standard);
 	}
 
 	input[type="range"]::-webkit-slider-thumb:hover {
-		background: #fff;
-		transform: scale(1.15);
-		box-shadow: 0 3px 10px rgba(255, 255, 255, 0.5);
-		border-color: var(--brand-accent);
+		transform: scale(1.12);
 	}
 
 	input[type="range"]::-webkit-slider-thumb:active {
-		transform: scale(1.25);
+		transform: scale(1.2);
 	}
 
 	input[type="range"]::-moz-range-thumb {
-		width: 16px;
-		height: 16px;
+		width: 14px;
+		height: 14px;
 		border-radius: 50%;
 		background: #fff;
 		cursor: pointer;
-		border: 2px solid #fff;
-		box-shadow: 0 2px 8px rgba(255, 255, 255, 0.32);
-		transition: all 0.08s ease-out;
+		border: 1px solid var(--line-strong);
+		box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
 	}
-
-	input[type="range"]::-moz-range-thumb:hover {
-		background: #fff;
-		transform: scale(1.15);
-		box-shadow: 0 3px 10px rgba(255, 255, 255, 0.5);
-		border-color: var(--brand-accent);
-	}
-
-	input[type="range"]::-moz-range-thumb:active {
-		transform: scale(1.25);
-	}
-}
-
-/* Light theme: fixed dark surfaces written as arbitrary hex classes keep their exact dark look
-   and are remapped here. New UI should prefer `white`/`slate` utilities, which swap on their own. */
-[data-theme="light"]
-	:is(.bg-\[\#090b0d\], .bg-\[\#0a0a0b\], .bg-\[\#0a0f0d\], .bg-\[\#0A0F0D\], .bg-\[\#0c0c0f\]) {
-	background-color: #f4f4f2;
-}
-[data-theme="light"] :is(.bg-\[\#0A0F0D\]\/90, .bg-\[\#0B0F0D\]\/90) {
-	background-color: rgb(244 244 242 / 0.9);
-}
-[data-theme="light"] .bg-\[\#0A0F0D\]\/80 {
-	background-color: rgb(244 244 242 / 0.8);
-}
-[data-theme="light"]
-	:is(
-		.bg-\[\#111114\],
-		.bg-\[\#111316\],
-		.bg-\[\#111715\],
-		.bg-\[\#121214\],
-		.bg-\[\#141416\],
-		.bg-\[\#1a1a1a\],
-		.bg-\[\#1a1a1c\],
-		.bg-\[\#1a1a1f\],
-		.bg-\[\#1c1c1e\],
-		.bg-\[\#23232a\]
-	) {
-	background-color: #ffffff;
-}
-[data-theme="light"] :is(.bg-\[\#161618\]\/80, .bg-\[\#161622\]\/80, .bg-\[\#1a1815\]\/80) {
-	background-color: rgb(255 255 255 / 0.8);
-}
-[data-theme="light"] :is(.border-\[\#090b0d\], .border-\[\#27272a\]\/80) {
-	border-color: rgb(0 0 0 / 0.1);
-}
-/* Pale amber text reads on dark only; use the deep amber on light surfaces. */
-[data-theme="light"]
-	:is(.text-\[\#fde68a\], .text-\[\#FCD34D\]\/88, .text-\[\#fbbf24\], .text-\[\#FBBF24\]) {
-	color: #b45309;
-}
-[data-theme="light"] input[type="range"]::-webkit-slider-thumb {
-	border-color: rgb(0 0 0 / 0.25);
-	box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
 }

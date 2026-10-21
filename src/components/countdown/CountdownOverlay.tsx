@@ -96,7 +96,7 @@ export function CountdownOverlay() {
 						key={id}
 						className="absolute inset-0 rounded-full"
 						style={{
-							border: "1.5px solid rgba(245, 158, 11, 0.4)",
+							border: "1.5px solid rgb(var(--accent) / 0.4)",
 							animation: "countdown-ripple 1s ease-out forwards",
 						}}
 					/>
@@ -108,22 +108,9 @@ export function CountdownOverlay() {
 					style={{
 						width: 170,
 						height: 170,
-						background:
-							"radial-gradient(circle at 30% 30%, rgba(30, 30, 30, 0.95), rgba(10, 10, 10, 0.98))",
+						background: "rgb(var(--surface) / 0.92)",
 						backdropFilter: "blur(24px)",
-						boxShadow:
-							"0 0 60px rgba(245, 158, 11, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 20px 40px rgba(0, 0, 0, 0.5)",
-					}}
-				/>
-
-				{/* Ambient glow behind ring */}
-				<div
-					className="absolute rounded-full"
-					style={{
-						width: 162,
-						height: 162,
-						background: "transparent",
-						boxShadow: "0 0 40px rgba(245, 158, 11, 0.1), 0 0 80px rgba(245, 158, 11, 0.05)",
+						boxShadow: "var(--shadow-dialog)",
 					}}
 				/>
 
@@ -140,7 +127,7 @@ export function CountdownOverlay() {
 						cy={size / 2}
 						r={radius}
 						fill="none"
-						stroke="rgba(245, 158, 11, 0.08)"
+						stroke="rgb(var(--track) / 0.1)"
 						strokeWidth={strokeWidth}
 					/>
 					{/* Progress arc */}
@@ -149,24 +136,15 @@ export function CountdownOverlay() {
 						cy={size / 2}
 						r={radius}
 						fill="none"
-						stroke="url(#countdown-gradient)"
+						stroke="rgb(var(--accent))"
 						strokeWidth={strokeWidth}
 						strokeLinecap="round"
 						strokeDasharray={circumference}
 						strokeDashoffset={dashOffset}
 						style={{
 							transition: "stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1)",
-							filter: "drop-shadow(0 0 6px rgba(245, 158, 11, 0.5))",
 						}}
 					/>
-					{/* Gradient for the arc */}
-					<defs>
-						<linearGradient id="countdown-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-							<stop offset="0%" stopColor="#FBBF24" />
-							<stop offset="50%" stopColor="#F59E0B" />
-							<stop offset="100%" stopColor="#D97706" />
-						</linearGradient>
-					</defs>
 				</svg>
 
 				{/* Tick markers around the ring */}
@@ -183,7 +161,7 @@ export function CountdownOverlay() {
 								y1={size / 2 + outerR * Math.sin(rad)}
 								x2={size / 2 + innerR * Math.cos(rad)}
 								y2={size / 2 + innerR * Math.sin(rad)}
-								stroke="#F59E0B"
+								stroke="rgb(var(--fg))"
 								strokeWidth={i % 3 === 0 ? 1.5 : 0.5}
 								strokeLinecap="round"
 							/>
@@ -198,8 +176,7 @@ export function CountdownOverlay() {
 						width: 7,
 						height: 7,
 						borderRadius: "50%",
-						background: "#FBBF24",
-						boxShadow: "0 0 12px rgba(245, 158, 11, 0.8), 0 0 4px rgba(245, 158, 11, 0.6)",
+						background: "rgb(var(--accent))",
 						top: "50%",
 						left: "50%",
 						transform: `rotate(${360 * (1 - progress) - 90}deg) translate(${radius}px) translate(-50%, -50%)`,
@@ -216,9 +193,8 @@ export function CountdownOverlay() {
 							fontSize: 80,
 							fontWeight: 700,
 							lineHeight: 1,
-							color: "#fff",
+							color: "rgb(var(--fg))",
 							fontFamily: "ui-rounded, 'SF Pro Rounded', system-ui, -apple-system, sans-serif",
-							textShadow: "0 0 30px rgba(245, 158, 11, 0.25), 0 2px 4px rgba(0, 0, 0, 0.3)",
 							animation: "countdown-number-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
 							letterSpacing: "-0.02em",
 						}}
@@ -231,11 +207,14 @@ export function CountdownOverlay() {
 				<div
 					className="absolute"
 					style={{
-						bottom: -32,
+						bottom: -22,
 						left: "50%",
 						transform: "translateX(-50%)",
+						padding: "2px 8px",
+						borderRadius: 999,
+						background: "rgb(var(--surface) / 0.85)",
 						fontSize: 11,
-						color: "rgba(255, 255, 255, 0.3)",
+						color: "rgb(var(--fg-subtle))",
 						fontWeight: 500,
 						letterSpacing: "0.05em",
 						whiteSpace: "nowrap",

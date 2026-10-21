@@ -129,31 +129,32 @@ export function EffectsSettingsTab({
 				title={tSettings("previewQuality.title")}
 				description={tSettings("previewQuality.description")}
 			>
-				<div className="rounded-xl border border-white/5 bg-white/[0.04] p-2.5">
+				<div className="rounded-lg border border-line bg-fill-subtle p-2.5">
 					<div className="grid grid-cols-3 gap-1.5">
 						{PREVIEW_QUALITY_OPTIONS.map((option) => {
 							const isActive = previewQuality === option.value;
 							return (
 								<Button
+									variant="outline"
 									key={option.value}
 									type="button"
 									onClick={() => onPreviewQualityChange?.(option.value)}
 									className={cn(
-										"h-10 rounded-xl border shadow-sm transition-all justify-center",
+										"h-10 rounded-lg border shadow-sm transition-all justify-center",
 										"duration-200 ease-out",
 										isActive
-											? "border-[#F59E0B] bg-gradient-to-br from-[#F59E0B] to-[#d97706] text-white shadow-lg shadow-[#F59E0B]/25"
-											: "border-white/5 bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:border-white/[0.1] hover:text-slate-200",
+											? "border-accent/50 bg-accent/12 text-accent-fg"
+											: "border-line bg-fill-subtle text-fg-muted hover:bg-fill-hover hover:border-line-strong hover:text-fg",
 									)}
 								>
-									<span className="text-xs font-semibold">
+									<span className="text-label font-semibold">
 										{tSettings(`previewQuality.options.${option.value}`)}
 									</span>
 								</Button>
 							);
 						})}
 					</div>
-					<p className="mt-2 text-[10px] leading-relaxed text-slate-500">
+					<p className="mt-2 text-micro leading-relaxed text-fg-subtle">
 						{tSettings("previewQuality.helper")}
 					</p>
 				</div>
@@ -166,35 +167,31 @@ export function EffectsSettingsTab({
 					"How zoom transitions connect and blend together",
 				)}
 			>
-				<div className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+				<div className="flex items-center justify-between p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 					<div>
-						<div className="text-xs font-medium text-slate-300">
+						<div className="text-label font-medium text-fg-muted">
 							{tSettings("effects.connectZooms")}
 						</div>
-						<div className="text-[10px] text-slate-500 mt-0.5">
+						<div className="text-micro text-fg-subtle mt-0.5">
 							{tSettings(
 								"effectsTab.smoothlyLinkAdjacentZoom",
 								"Smoothly link adjacent zoom regions",
 							)}
 						</div>
 					</div>
-					<Switch
-						checked={connectZooms}
-						onCheckedChange={onConnectZoomsChange}
-						className="data-[state=checked]:bg-[#F59E0B] scale-90"
-					/>
+					<Switch checked={connectZooms} onCheckedChange={onConnectZoomsChange} />
 				</div>
 				<ZoomTimingControls
 					zoomTiming={zoomTiming}
 					connectZooms={connectZooms}
 					onZoomTimingChange={onZoomTimingChange}
 				/>
-				<div className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+				<div className="flex items-center justify-between p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 					<div>
-						<div className="text-xs font-medium text-slate-300">
+						<div className="text-label font-medium text-fg-muted">
 							{tSettings("effects.removeBackground")}
 						</div>
-						<div className="text-[10px] text-slate-500 mt-0.5">
+						<div className="text-micro text-fg-subtle mt-0.5">
 							{tSettings(
 								"effectsTab.hideWallpaperColorAnd",
 								"Hide wallpaper, color, and gradient backgrounds",
@@ -204,7 +201,6 @@ export function EffectsSettingsTab({
 					<Switch
 						checked={hideBackground}
 						onCheckedChange={(checked) => onHideBackgroundChange?.(checked)}
-						className="data-[state=checked]:bg-[#F59E0B] scale-90"
 					/>
 				</div>
 			</SettingsSection>
@@ -216,7 +212,7 @@ export function EffectsSettingsTab({
 					"Fine-tune blur, shadow, and motion effects",
 				)}
 			>
-				<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+				<div className="p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 					<SliderControl
 						label={tSettings("effects.backgroundBlur")}
 						value={backgroundBlur}
@@ -230,7 +226,7 @@ export function EffectsSettingsTab({
 						disabled={hideBackground}
 					/>
 				</div>
-				<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+				<div className="p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 					<SliderControl
 						label={tSettings("effects.zoomMotionBlur")}
 						value={zoomMotionBlur}
@@ -243,13 +239,13 @@ export function EffectsSettingsTab({
 						parseInput={(text) => parseFloat(text.replace(/×$/, ""))}
 					/>
 				</div>
-				<div className="space-y-3 p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner">
+				<div className="space-y-3 p-2.5 rounded-lg bg-fill-subtle border border-line">
 					<div className="flex items-center justify-between">
 						<div>
-							<div className="text-xs font-medium text-slate-300">
+							<div className="text-label font-medium text-fg-muted">
 								{tSettings("effectsTab.temporalZoomBlur", "Temporal Zoom Blur")}
 							</div>
-							<div className="text-[10px] text-slate-500 mt-0.5">
+							<div className="text-micro text-fg-subtle mt-0.5">
 								{tSettings(
 									"effectsTab.blendSubFrameSamples",
 									"Blend sub-frame samples during zoom motion. Applied on export.",
@@ -261,7 +257,6 @@ export function EffectsSettingsTab({
 							onCheckedChange={(enabled) =>
 								onZoomTemporalBlurChange?.({ ...zoomTemporalBlur, enabled })
 							}
-							className="data-[state=checked]:bg-[#F59E0B] scale-90"
 						/>
 					</div>
 					{zoomTemporalBlur.enabled && (
@@ -295,29 +290,29 @@ export function EffectsSettingsTab({
 						</>
 					)}
 				</div>
-				<div className="rounded-xl border border-white/5 bg-white/[0.04] transition-colors duration-200 hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]">
+				<div className="rounded-lg border border-line bg-fill-subtle transition-colors duration-200 hover:border-line-strong">
 					<button
 						type="button"
 						onClick={onToggleAdvancedShadowSettings}
 						className="flex w-full items-center justify-between px-3 py-2.5 text-left"
 					>
 						<div>
-							<div className="text-[11px] font-medium text-slate-200">
+							<div className="text-caption font-medium text-fg">
 								{tSettings("effects.advancedShadowSettings")}
 							</div>
-							<div className="mt-0.5 text-[10px] leading-relaxed text-slate-500">
+							<div className="mt-0.5 text-micro leading-relaxed text-fg-subtle">
 								{tSettings("effects.advancedShadowDescription")}
 							</div>
 						</div>
 						{showAdvancedShadowSettings ? (
-							<ChevronUp className="h-3.5 w-3.5 text-slate-400" />
+							<ChevronUp className="h-3.5 w-3.5 text-fg-muted" />
 						) : (
-							<ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+							<ChevronDown className="h-3.5 w-3.5 text-fg-muted" />
 						)}
 					</button>
 					{showAdvancedShadowSettings && (
-						<div className="flex flex-col gap-1.5 border-t border-white/5 px-2.5 py-2.5">
-							<div className="rounded-xl border border-white/5 bg-black/10 p-2.5">
+						<div className="flex flex-col gap-1.5 border-t border-line px-2.5 py-2.5">
+							<div className="rounded-lg border border-line bg-fill-subtle p-2.5">
 								<SliderControl
 									label={tSettings("effects.shadowSize")}
 									value={frameShadowSize}
@@ -330,7 +325,7 @@ export function EffectsSettingsTab({
 									parseInput={(text) => parseFloat(text.replace(/px$/, ""))}
 								/>
 							</div>
-							<div className="rounded-xl border border-white/5 bg-black/10 p-2.5">
+							<div className="rounded-lg border border-line bg-fill-subtle p-2.5">
 								<SliderControl
 									label={tSettings("effects.shadowOpacity")}
 									value={frameShadowOpacity}
@@ -343,7 +338,7 @@ export function EffectsSettingsTab({
 									parseInput={(text) => parseFloat(text.replace(/%$/, "")) / 100}
 								/>
 							</div>
-							<div className="rounded-xl border border-white/5 bg-black/10 p-2.5">
+							<div className="rounded-lg border border-line bg-fill-subtle p-2.5">
 								<SliderControl
 									label={tSettings("effects.shadowBlur")}
 									value={frameShadowBlur}
@@ -368,26 +363,24 @@ export function EffectsSettingsTab({
 					"Adjust the recording frame shape and spacing",
 				)}
 			>
-				<div className="rounded-xl border border-white/5 bg-white/[0.04] px-3 py-2.5 transition-colors duration-200 hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]">
+				<div className="rounded-lg border border-line bg-fill-subtle px-3 py-2.5 transition-colors duration-200 hover:border-line-strong">
 					<div className="flex items-center justify-between gap-3">
 						<div>
-							<div className="text-[11px] font-medium text-slate-200">
-								{tSettings("effects.border")}
-							</div>
-							<div className="mt-0.5 text-[10px] leading-relaxed text-slate-500">
+							<div className="text-caption font-medium text-fg">{tSettings("effects.border")}</div>
+							<div className="mt-0.5 text-micro leading-relaxed text-fg-subtle">
 								{tSettings("effects.borderDescription")}
 							</div>
 						</div>
 						<Switch
 							checked={frameBorderEnabled}
 							onCheckedChange={(checked) => onFrameBorderEnabledChange?.(checked)}
-							className="data-[state=checked]:bg-[#3b82f6]"
+							className="data-[state=checked]:bg-info"
 						/>
 					</div>
 				</div>
 				<DisabledSettingsGroup disabled={!frameBorderEnabled}>
 					<div className="flex flex-col gap-1.5">
-						<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+						<div className="p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 							<SliderControl
 								label={tSettings("effects.borderWidth")}
 								value={frameBorderWidth}
@@ -401,8 +394,8 @@ export function EffectsSettingsTab({
 								disabled={!frameBorderEnabled}
 							/>
 						</div>
-						<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
-							<label className="mb-2 block text-xs font-medium text-slate-300">
+						<div className="p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
+							<label className="mb-2 block text-label font-medium text-fg-muted">
 								{tSettings("effects.borderColor")}
 							</label>
 							<ColorPicker
@@ -420,7 +413,7 @@ export function EffectsSettingsTab({
 								]}
 							/>
 						</div>
-						<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+						<div className="p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 							<SliderControl
 								label={tSettings("effects.borderOpacity")}
 								value={frameBorderOpacity}
@@ -436,7 +429,7 @@ export function EffectsSettingsTab({
 						</div>
 					</div>
 				</DisabledSettingsGroup>
-				<div className="p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+				<div className="p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 					<SliderControl
 						label={tSettings("effects.roundness")}
 						value={borderRadius}
@@ -449,12 +442,12 @@ export function EffectsSettingsTab({
 						parseInput={(text) => parseFloat(text.replace(/px$/, ""))}
 					/>
 				</div>
-				<div className="space-y-3 p-2.5 rounded-xl bg-black/40 border border-white/5 shadow-inner hover:border-amber-500/30 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)] transition-colors duration-200">
+				<div className="space-y-3 p-2.5 rounded-lg bg-fill-subtle border border-line hover:border-line-strong transition-colors duration-200">
 					<div className="flex items-center justify-between">
-						<span className="text-xs font-medium text-slate-300">
+						<span className="text-label font-medium text-fg-muted">
 							{tSettings("effects.padding")}
 						</span>
-						<div className="grid grid-cols-2 gap-1 rounded-lg bg-white/[0.04] p-0.5">
+						<div className="grid grid-cols-2 gap-1 rounded-lg bg-fill-subtle p-0.5">
 							{(["linked", "unlinked"] as const).map((mode) => {
 								const isActive = (mode === "linked") === (paddingSides === null);
 								return (
@@ -470,8 +463,8 @@ export function EffectsSettingsTab({
 											)
 										}
 										className={cn(
-											"rounded-md px-2 py-1 text-[10px] font-medium transition-colors",
-											isActive ? "bg-[#F59E0B] text-white" : "text-slate-400 hover:text-slate-200",
+											"rounded-md px-2 py-1 text-micro font-medium transition-colors",
+											isActive ? "bg-control text-fg shadow-sm" : "text-fg-muted hover:text-fg",
 										)}
 									>
 										{mode === "linked"
@@ -518,7 +511,7 @@ export function EffectsSettingsTab({
 				<Button
 					onClick={onCropToggle}
 					variant="outline"
-					className="w-full gap-2 bg-white/[0.04] text-slate-200 border-white/[0.08] hover:bg-[#F59E0B]/10 hover:border-[#F59E0B]/30 hover:text-[#F59E0B] text-[10px] h-9 rounded-xl transition-all duration-200"
+					className="w-full gap-2 bg-fill-subtle text-fg border-line hover:bg-accent/10 hover:border-accent/30 hover:text-accent-fg text-micro h-9 rounded-lg transition-all duration-200"
 				>
 					<Crop className="w-3.5 h-3.5" />
 					{tSettings("crop.title")}

@@ -135,7 +135,7 @@ export function PlaybackOverlays({
 		>
 			<div
 				ref={focusIndicatorRef}
-				className="absolute rounded-md border border-[#F59E0B]/80 bg-[#F59E0B]/20 shadow-[0_0_0_1px_rgba(245,158,11,0.35)]"
+				className="absolute rounded-md border border-accent/80 bg-accent/20"
 				style={{ display: "none", pointerEvents: "none" }}
 			/>
 			{sortedAnnotations.map((annotation) => (

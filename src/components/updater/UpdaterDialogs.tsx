@@ -19,8 +19,8 @@ type UpdaterDialogsProps = {
 
 function renderReleaseNotes(notes: string | null, fallback: string) {
 	return (
-		<div className="max-h-[320px] overflow-y-auto rounded-2xl border border-white/10 bg-black/20 p-4">
-			<div className="whitespace-pre-wrap text-sm leading-6 text-white/78">
+		<div className="max-h-[320px] overflow-y-auto rounded-2xl border border-line-strong bg-fill-subtle p-4">
+			<div className="whitespace-pre-wrap text-body leading-6 text-fg-muted">
 				{notes?.trim() || fallback}
 			</div>
 		</div>
@@ -72,30 +72,29 @@ export function UpdaterDialogs({ windowType }: UpdaterDialogsProps) {
 					}
 				}}
 			>
-				<DialogContent className="max-w-2xl overflow-y-auto rounded-2xl border border-white/[0.08] bg-[#0A0F0D] p-0 text-white shadow-2xl shadow-black/60 [&>button]:text-slate-400 [&>button:hover]:bg-white/[0.06] [&>button:hover]:text-white">
-					<div className="h-[2px] bg-gradient-to-r from-transparent via-[#F59E0B] to-transparent" />
+				<DialogContent className="max-w-2xl overflow-y-auto p-0">
 					<div className="p-6">
 						<div className="mb-5 flex items-start gap-3">
-							<div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#F59E0B]/20 bg-[#F59E0B]/10">
-								<Sparkles className="h-5 w-5 text-[#F59E0B]" />
+							<div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-accent/20 bg-accent/10">
+								<Sparkles className="h-5 w-5 text-accent-fg" />
 							</div>
 							<DialogHeader className="space-y-1 text-left">
-								<DialogTitle className="text-lg font-semibold text-white">
+								<DialogTitle className="text-heading font-semibold text-fg">
 									{whatsNewTitle}
 								</DialogTitle>
-								<DialogDescription className="text-sm leading-6 text-slate-400">
+								<DialogDescription className="text-body leading-6 text-fg-muted">
 									{state.whatsNewReleaseName || t("updates.whatsNew.intro")}
 								</DialogDescription>
 							</DialogHeader>
 						</div>
 
 						<div className="space-y-4">
-							<div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
+							<div className="rounded-2xl border border-line bg-fill-subtle p-4">
 								<div className="mb-3 flex items-center justify-between">
-									<div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+									<div className="text-micro font-semibold uppercase tracking-[0.16em] text-fg-subtle">
 										{t("updates.whatsNew.intro")}
 									</div>
-									<div className="rounded-full border border-[#F59E0B]/20 bg-[#F59E0B]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#F59E0B]">
+									<div className="rounded-full border border-accent/20 bg-accent/10 px-2.5 py-1 text-micro font-semibold uppercase tracking-[0.16em] text-accent-fg">
 										ScreenMint
 									</div>
 								</div>
@@ -106,7 +105,7 @@ export function UpdaterDialogs({ windowType }: UpdaterDialogsProps) {
 						<DialogFooter className="mt-6 flex flex-wrap gap-2 sm:justify-end sm:space-x-0">
 							<Button
 								type="button"
-								className="h-10 rounded-xl bg-[#F59E0B] px-4 text-white hover:bg-[#b45309]"
+								className="h-10 rounded-xl bg-accent px-4 text-on-accent hover:bg-accent-hover"
 								onClick={() => {
 									void window.electronAPI.dismissWhatsNew();
 								}}
