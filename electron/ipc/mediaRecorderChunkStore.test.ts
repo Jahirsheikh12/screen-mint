@@ -37,4 +37,20 @@ describe("MediaRecorderChunkStore", () => {
 
 		await expect(fs.access(session.path)).rejects.toThrow();
 	});
+
+	it("reports a stream error instead of throwing it as an uncaught exception", async () => {
+		const session = await store.start("broken.webm");
+		await store.append(session.id, new TextEncoder().encode("ok"));
+
+		// Simulate an async write failure (e.g. ENOSPC) with no write in flight.
+		const stream = (
+			store as unknown as { sessions: Map<string, { stream: NodeJS.EventEmitter }> }
+		).sessions.get(session.id)?.stream;
+		stream?.emit("error", new Error("ENOSPC"));
+
+		await expect(store.append(session.id, new TextEncoder().encode("more"))).rejects.toThrow(
+			"ENOSPC",
+		);
+		await expect(store.finish(session.id)).rejects.toThrow("ENOSPC");
+	});
 });

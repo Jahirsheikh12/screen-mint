@@ -487,7 +487,7 @@ declare global {
 				enabled: boolean,
 			) => Promise<{ success: boolean; enabled: boolean }>;
 			setHasUnsavedChanges: (hasChanges: boolean) => void;
-			onRequestSaveBeforeClose: (callback: () => Promise<void>) => () => void;
+			onRequestSaveBeforeClose: (callback: () => Promise<boolean>) => () => void;
 			isWgcAvailable: () => Promise<{ available: boolean }>;
 			muxWgcRecording: () => Promise<{
 				success: boolean;

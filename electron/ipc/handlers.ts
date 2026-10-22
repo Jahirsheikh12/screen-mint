@@ -183,6 +183,8 @@ type ExportV2StreamSession = {
 	pending: Promise<void>;
 	bytesWritten: number;
 	closed: boolean;
+	// webContents id of the renderer that opened it, so a dead worker's files can be cleaned up.
+	ownerId: number;
 };
 const exportV2StreamSessions = new Map<string, ExportV2StreamSession>();
 type ExportV2GifPipeSession = {
@@ -310,6 +312,14 @@ export function killWgcCaptureProcess() {
 		wgcMicAudioPath = null;
 		wgcPendingVideoPath = null;
 		currentMicrophoneAudioPath = null;
+	}
+}
+
+export function stopNativeCaptureOnQuit() {
+	// The macOS helper finalizes its file and exits when told to stop or when stdin closes.
+	if (nativeCaptureProcess && !nativeCaptureProcess.stdin.destroyed) {
+		nativeCaptureStopRequested = true;
+		nativeCaptureProcess.stdin.end("stop\n");
 	}
 }
 
@@ -1037,7 +1047,7 @@ async function resolveExportV2OutputPath(request: ExportV2StartRequest) {
 	};
 }
 
-async function startExportV2StreamSession(filePath: string) {
+async function startExportV2StreamSession(filePath: string, ownerId: number) {
 	await fs.mkdir(path.dirname(filePath), { recursive: true });
 	const id = `export-stream-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 	const handle = await fs.open(filePath, "w");
@@ -1048,6 +1058,7 @@ async function startExportV2StreamSession(filePath: string) {
 		pending: Promise.resolve(),
 		bytesWritten: 0,
 		closed: false,
+		ownerId,
 	};
 	exportV2StreamSessions.set(id, session);
 	return { id, path: filePath };
@@ -1100,6 +1111,34 @@ async function discardExportV2StreamSession(id: string) {
 	await session.pending.catch(() => undefined);
 	await session.handle.close().catch(() => undefined);
 	await fs.rm(session.path, { force: true }).catch(() => undefined);
+}
+
+async function discardExportV2StreamSessionsForOwner(ownerId: number) {
+	const owned = [...exportV2StreamSessions.values()].filter(
+		(session) => session.ownerId === ownerId,
+	);
+	await Promise.all(owned.map((session) => discardExportV2StreamSession(session.id)));
+}
+
+// Ends a worker job that did not finish on its own (cancel, timeout, worker crash or close):
+// settles it, removes the partial files the worker was writing and closes the worker.
+async function abortExportV2WorkerJob(
+	jobId: string,
+	result: ExportV2StartResult,
+	workerContentsId?: number,
+) {
+	const resolver = exportV2WorkerResolvers.get(jobId);
+	const worker = exportV2WorkerWindows.get(jobId);
+	const contentsId =
+		workerContentsId ?? (worker && !worker.isDestroyed() ? worker.webContents.id : undefined);
+	resolver?.(result);
+	if (contentsId !== undefined) {
+		await discardExportV2StreamSessionsForOwner(contentsId);
+	}
+	await discardExportV2GifPipeSessionsForJob(jobId);
+	if (worker && !worker.isDestroyed()) {
+		worker.close();
+	}
 }
 
 async function startExportV2GifPipeSession(request: ExportV2GifPipeStartRequest) {
@@ -1492,6 +1531,7 @@ async function runExportV2WorkerJob(
 ): Promise<ExportV2StartResult> {
 	const jobId = request.jobId ?? `export-v2-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 	const worker = createExportWorkerWindow();
+	const workerContentsId = worker.webContents.id;
 	const workerReady = worker.webContents.isLoading()
 		? new Promise<void>((resolve) => {
 				worker.webContents.once("did-finish-load", () => resolve());
@@ -1503,19 +1543,35 @@ async function runExportV2WorkerJob(
 	return await new Promise<ExportV2StartResult>((resolve) => {
 		const timeout = setTimeout(
 			() => {
-				exportV2WorkerResolvers.delete(jobId);
-				resolve({
-					success: false,
-					fallbackToLegacy: true,
+				void abortExportV2WorkerJob(
 					jobId,
-					error: "Export worker timed out.",
-				});
+					{ success: false, fallbackToLegacy: true, jobId, error: "Export worker timed out." },
+					workerContentsId,
+				);
 			},
 			30 * 60 * 1000,
 		);
+		const onWorkerGone = () => {
+			void abortExportV2WorkerJob(
+				jobId,
+				{
+					success: false,
+					fallbackToLegacy: true,
+					jobId,
+					error: "Export worker stopped unexpectedly.",
+				},
+				workerContentsId,
+			);
+		};
+		worker.once("closed", onWorkerGone);
+		worker.webContents.once("render-process-gone", onWorkerGone);
 
 		exportV2WorkerResolvers.set(jobId, (result) => {
 			clearTimeout(timeout);
+			worker.off("closed", onWorkerGone);
+			if (!worker.isDestroyed()) {
+				worker.webContents.off("render-process-gone", onWorkerGone);
+			}
 			exportV2WorkerResolvers.delete(jobId);
 			exportV2WorkerOwners.delete(jobId);
 			exportV2WorkerWindows.delete(jobId);
@@ -4726,7 +4782,9 @@ export function registerIpcHandlers(
 			},
 		) => {
 			try {
-				return await finalizeRecordingSession(payload);
+				const result = await finalizeRecordingSession(payload);
+				await markRecordingStopped();
+				return result;
 			} catch (error) {
 				console.error("Failed to finalize recording session:", error);
 				return {
@@ -4754,6 +4812,7 @@ export function registerIpcHandlers(
 			pendingFinalizationPromise = (async (): Promise<FinalizeResult> => {
 				try {
 					const result = await finalizeRecordingSession(payload);
+					await markRecordingStopped();
 					const finalized: FinalizeResult = {
 						success: true,
 						path: result.path,
@@ -4810,6 +4869,8 @@ export function registerIpcHandlers(
 		) => {
 			await discardRecordingArtifacts(payload.paths);
 			if (payload.clearCurrentVideo) {
+				// The session was thrown away; nothing is left to recover.
+				await markRecordingStopped();
 				currentVideoPath = null;
 				currentMicrophoneAudioPath = null;
 			}
@@ -4821,10 +4882,10 @@ export function registerIpcHandlers(
 	);
 
 	ipcMain.handle(IPC_CHANNELS.recording.setState, (_, recording: boolean) => {
+		// The recovery marker spans the whole session (pauses included); it is cleared when the
+		// session is finalized or discarded, not here.
 		if (recording) {
 			void getRecordingsDir().then(markRecordingStarted);
-		} else {
-			void markRecordingStopped();
 		}
 		if (recording) {
 			stopCursorCapture();
@@ -4943,19 +5004,8 @@ export function registerIpcHandlers(
 	ipcMain.handle(IPC_CHANNELS.exportV2.cancel, async (_, jobId: string) => {
 		const job = exportV2Jobs.get(jobId);
 		if (!job) {
-			const resolver = exportV2WorkerResolvers.get(jobId);
-			const worker = exportV2WorkerWindows.get(jobId);
-			if (resolver) {
-				exportV2WorkerResolvers.delete(jobId);
-				exportV2WorkerOwners.delete(jobId);
-				exportV2WorkerWindows.delete(jobId);
-				resolver({ success: false, canceled: true, jobId });
-			}
-			if (worker && !worker.isDestroyed()) {
-				worker.close();
-			}
-			await discardExportV2GifPipeSessionsForJob(jobId);
 			exportV2CanceledJobs.add(jobId);
+			await abortExportV2WorkerJob(jobId, { success: false, canceled: true, jobId });
 			return { success: true };
 		}
 

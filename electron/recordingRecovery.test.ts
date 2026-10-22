@@ -20,4 +20,17 @@ describe("recording recovery", () => {
 			),
 		).toEqual(["/r/screen.webm", "/r/mic.webm"]);
 	});
+
+	it("never offers the webcam or microphone track as the recording", () => {
+		expect(
+			pickRecoveredRecordings(
+				[
+					{ path: "/r/webcam-1.webm", size: 9_000, mtimeMs: 12_000 },
+					{ path: "/r/microphone-1.webm", size: 8_000, mtimeMs: 12_000 },
+					{ path: "/r/recording-1.webm", size: 500, mtimeMs: 12_000 },
+				],
+				10_000,
+			),
+		).toEqual(["/r/recording-1.webm"]);
+	});
 });

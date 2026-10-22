@@ -1505,10 +1505,10 @@ export default function VideoEditor() {
 	}, []);
 
 	const saveProject = useCallback(
-		async (forceSaveAs: boolean) => {
+		async (forceSaveAs: boolean): Promise<boolean> => {
 			if (!videoPath) {
 				toast.error(t("editor.shell.noVideoLoaded", "No video loaded"));
-				return;
+				return false;
 			}
 
 			const sourcePath = videoSourcePath ?? fromFileUrl(videoPath);
@@ -1516,7 +1516,7 @@ export default function VideoEditor() {
 				toast.error(
 					t("editor.shell.unableToDetermineSource", "Unable to determine source video path"),
 				);
-				return;
+				return false;
 			}
 
 			const projectArtifacts = editorPersistenceService.buildProjectArtifacts({
@@ -1612,14 +1612,14 @@ export default function VideoEditor() {
 
 			if (result.canceled) {
 				toast.info(t("editor.shell.projectSaveCanceled", "Project save canceled"));
-				return;
+				return false;
 			}
 
 			if (!result.success) {
 				toast.error(
 					result.message || t("editor.shell.failedToSaveProject", "Failed to save project"),
 				);
-				return;
+				return false;
 			}
 
 			if (result.path) {
@@ -1631,6 +1631,7 @@ export default function VideoEditor() {
 			});
 
 			toast.success(`Project saved to ${result.path}`);
+			return true;
 		},
 		[
 			videoPath,

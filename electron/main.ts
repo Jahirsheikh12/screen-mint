@@ -18,6 +18,7 @@ import {
 	getSelectedSourceId,
 	killWgcCaptureProcess,
 	registerIpcHandlers,
+	stopNativeCaptureOnQuit,
 } from "./ipc/handlers";
 import { takeInterruptedRecordings } from "./recordingRecovery";
 import { getScreenMintUpdater } from "./updater";
@@ -434,26 +435,26 @@ function createEditorWindowWrapper() {
 			closeEditorWindowBypassingUnsavedPrompt(outgoing);
 		}
 	}
-	mainWindow = null;
-	mainWindow = createEditorWindow();
+	const editorWindow = createEditorWindow();
+	mainWindow = editorWindow;
 	editorHasUnsavedChanges = false;
 
-	mainWindow.on("closed", () => {
-		if (mainWindow?.isDestroyed()) {
-			mainWindow = null;
-		}
+	editorWindow.on("closed", () => {
 		isForceClosing = false;
+		// A replaced editor closes after its successor opened; leave the new window's state alone.
+		if (mainWindow !== editorWindow) return;
+		mainWindow = null;
 		editorHasUnsavedChanges = false;
 	});
 
-	mainWindow.on("close", (event) => {
+	editorWindow.on("close", (event) => {
 		if (isForceClosing || !editorHasUnsavedChanges) {
 			return;
 		}
 
 		event.preventDefault();
 
-		const choice = dialog.showMessageBoxSync(mainWindow!, {
+		const choice = dialog.showMessageBoxSync(editorWindow, {
 			type: "warning",
 			buttons: ["Save & Close", "Discard & Close", "Cancel"],
 			defaultId: 0,
@@ -464,12 +465,16 @@ function createEditorWindowWrapper() {
 		});
 
 		if (choice === 0) {
-			mainWindow!.webContents.send("request-save-before-close");
-			ipcMain.once("save-before-close-done", () => {
-				closeEditorWindowBypassingUnsavedPrompt(mainWindow);
+			// Only one save-and-close can be pending; a repeated close replaces it.
+			ipcMain.removeAllListeners("save-before-close-done");
+			ipcMain.once("save-before-close-done", (_event, saved: boolean) => {
+				if (saved) {
+					closeEditorWindowBypassingUnsavedPrompt(editorWindow);
+				}
 			});
+			editorWindow.webContents.send("request-save-before-close");
 		} else if (choice === 1) {
-			closeEditorWindowBypassingUnsavedPrompt(mainWindow);
+			closeEditorWindowBypassingUnsavedPrompt(editorWindow);
 		}
 	});
 }
@@ -533,6 +538,7 @@ async function promptToMoveAppToApplications() {
 // explicitly with Cmd + Q.
 app.on("before-quit", () => {
 	killWgcCaptureProcess();
+	stopNativeCaptureOnQuit();
 });
 
 app.on("window-all-closed", () => {

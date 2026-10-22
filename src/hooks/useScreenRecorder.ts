@@ -167,6 +167,7 @@ export function useScreenRecorder(
 	const finalizeSessionRef = useRef<(nextAction: PendingRecordingAction) => Promise<void>>(
 		async () => undefined,
 	);
+	const abortSessionRef = useRef<() => Promise<boolean>>(async () => false);
 	const pendingActionRef = useRef<PendingRecordingAction>(null);
 	const sessionRef = useRef<RecordingSessionState>(INITIAL_RECORDING_SESSION_STATE);
 	const browserSessionStopPending = useRef(false);
@@ -977,23 +978,6 @@ export function useScreenRecorder(
 		microphoneSegmentsRef.current = [];
 	}, []);
 
-	const discardCurrentArtifacts = useCallback(
-		async (clearCurrentPaths = false) => {
-			await window.electronAPI.discardRecordingArtifacts({
-				paths: [
-					...recordingSegmentsRef.current.map((segment) => segment.path),
-					...microphoneSegmentsRef.current.map((segment) => segment.path),
-				],
-				clearCurrentVideo: clearCurrentPaths,
-				clearCurrentWebcam: clearCurrentPaths,
-			});
-			resetSegmentBuffers();
-			await window.electronAPI.closeAreaOverlay();
-			await window.electronAPI.clearCurrentWebcamPath();
-		},
-		[resetSegmentBuffers],
-	);
-
 	const getCaptureMode = useCallback(
 		(selectedSource: { id?: string } | null, selectedArea: SelectedArea | null): CaptureMode => {
 			if (selectedArea && selectedSource?.id?.startsWith("screen:")) {
@@ -1186,23 +1170,20 @@ export function useScreenRecorder(
 		const removeRecordingInterruptedListener = window.electronAPI?.onRecordingInterrupted?.(
 			(state) => {
 				playAppAudioCue("recording-error");
-				nativeScreenRecording.current = false;
-				wgcRecording.current = false;
-				cleanupCapturedMedia();
-				void window.electronAPI.setRecordingState(false);
-				void window.electronAPI.closeAreaOverlay();
-				void discardCurrentArtifacts(true);
-				pendingActionRef.current = null;
-				dispatchSession({ type: "reset" });
-				dispatchSession({ type: "clear-pending-action" });
-
-				if (state.reason === "window-unavailable" && !hasPromptedForReselect.current) {
-					hasPromptedForReselect.current = true;
-					alert(state.message);
-					void window.electronAPI.openSourceSelector();
-				} else {
-					console.error(state.message);
-				}
+				console.error(state.message);
+				void (async () => {
+					// Segments saved before the interruption (pause/resume) open in the editor.
+					const salvaged = await abortSessionRef.current();
+					if (
+						!salvaged &&
+						state.reason === "window-unavailable" &&
+						!hasPromptedForReselect.current
+					) {
+						hasPromptedForReselect.current = true;
+						alert(state.message);
+						void window.electronAPI.openSourceSelector();
+					}
+				})().catch((error) => console.error("Failed to end interrupted recording:", error));
 			},
 		);
 
@@ -1224,7 +1205,7 @@ export function useScreenRecorder(
 
 			cleanupCapturedMedia();
 		};
-	}, [cleanupCapturedMedia, discardCurrentArtifacts]);
+	}, [cleanupCapturedMedia]);
 
 	const startRecording = useCallback(async () => {
 		if (startInFlight.current) {
@@ -1383,7 +1364,7 @@ export function useScreenRecorder(
 					}
 
 					if (!isResumingNative && webcamEnabled) {
-						void startWebcamRecording();
+						await startWebcamRecording();
 						if (usesMobileMicrophone) {
 							void startMobileMicrophoneRecording();
 						}
@@ -1637,6 +1618,7 @@ export function useScreenRecorder(
 				}
 			};
 			recorder.onstop = async () => {
+				mediaRecorder.current = null;
 				cleanupCapturedMedia();
 				const pendingAction = pendingActionRef.current;
 				browserSessionStopPending.current = false;
@@ -1651,6 +1633,7 @@ export function useScreenRecorder(
 						screenChunkCount,
 					);
 					if (!videoPath) {
+						await abortSessionRef.current();
 						return;
 					}
 
@@ -1686,10 +1669,16 @@ export function useScreenRecorder(
 						screenChunkWriteError,
 						screenChunkCount,
 					);
+					await abortSessionRef.current();
 				}
 			};
-			recorder.onerror = () => {
-				dispatchSession({ type: "reset" });
+			recorder.onerror = (event) => {
+				console.error("MediaRecorder error:", event);
+				void window.electronAPI.setRecordingState(false);
+				// onstop saves whatever was captured; make sure it runs.
+				if (recorder.state !== "inactive") {
+					recorder.stop();
+				}
 			};
 			recorder.start(RECORDER_TIMESLICE_MS);
 			currentSegmentStartedAtRef.current = Date.now();
@@ -1712,7 +1701,7 @@ export function useScreenRecorder(
 			}
 
 			if (webcamEnabled) {
-				void startWebcamRecording();
+				await startWebcamRecording();
 			} else {
 				await window.electronAPI.clearCurrentWebcamPath();
 			}
@@ -1724,14 +1713,19 @@ export function useScreenRecorder(
 					? `Failed to start recording: ${error.message}`
 					: "Failed to start recording",
 			);
-			dispatchSession({ type: "reset" });
-			cleanupCapturedMedia();
 			await discardChunkWriter(
 				screenChunkSessionId,
 				screenChunkWriteChain,
 				screenChunkWriteError,
 				screenChunkCount,
 			);
+			if (recordingSegmentsRef.current.length > 0) {
+				// A failed resume: keep the segments recorded before the pause.
+				await abortSessionRef.current();
+			} else {
+				dispatchSession({ type: "reset" });
+				cleanupCapturedMedia();
+			}
 		} finally {
 			startInFlight.current = false;
 			setStarting(false);
@@ -1907,6 +1901,25 @@ export function useScreenRecorder(
 		],
 	);
 
+	// Ends a session that failed part-way. Segments already saved open in the editor (returns
+	// true); with nothing saved, everything is discarded and the HUD resets (returns false).
+	const abortSession = useCallback(async (): Promise<boolean> => {
+		nativeScreenRecording.current = false;
+		wgcRecording.current = false;
+		mediaRecorder.current = null;
+		cleanupCapturedMedia();
+		await window.electronAPI.setRecordingState(false);
+		void window.electronAPI.closeAreaOverlay();
+		if (recordingSegmentsRef.current.length > 0) {
+			await finalizeSessionRef.current("stop");
+			return true;
+		}
+		await handleDiscardAction("delete");
+		return false;
+	}, [cleanupCapturedMedia, handleDiscardAction]);
+
+	abortSessionRef.current = abortSession;
+
 	stopRecording.current = () => {
 		void (async () => {
 			dispatchSession({ type: "queue-stop" });
@@ -1938,6 +1951,7 @@ export function useScreenRecorder(
 		})().catch((error) => {
 			playAppAudioCue("recording-error");
 			console.error("Failed to stop recording session:", error);
+			void abortSessionRef.current();
 		});
 	};
 
@@ -1978,6 +1992,7 @@ export function useScreenRecorder(
 			}
 		})().catch((error) => {
 			console.error("Failed to toggle pause for native recording:", error);
+			void abortSessionRef.current();
 		});
 	}, [recording, starting, stopActiveNativeSegment, startRecording]);
 

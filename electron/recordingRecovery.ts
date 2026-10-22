@@ -3,9 +3,9 @@ import path from "node:path";
 import { app } from "electron";
 
 /**
- * Crash recovery for recordings. A marker is written when recording starts and removed when it
- * stops. If the app dies mid-recording, the marker survives and the next launch can offer the
- * video files written to the recordings folder since then.
+ * Crash recovery for recordings. A marker is written when a recording session starts and removed
+ * when the session is finalized or discarded. If the app dies mid-session (paused or not), the
+ * marker survives and the next launch can offer the screen recordings written since then.
  */
 interface RecordingMarker {
 	startedAt: number;
@@ -20,14 +20,20 @@ function getMarkerPath() {
 
 export async function markRecordingStarted(recordingsDir: string) {
 	const marker: RecordingMarker = { startedAt: Date.now(), recordingsDir };
-	await fs.writeFile(getMarkerPath(), JSON.stringify(marker)).catch(() => undefined);
+	// "wx" keeps an existing marker, so resuming after a pause keeps the session's start time.
+	await fs
+		.writeFile(getMarkerPath(), JSON.stringify(marker), { flag: "wx" })
+		.catch(() => undefined);
 }
 
 export async function markRecordingStopped() {
 	await fs.rm(getMarkerPath(), { force: true }).catch(() => undefined);
 }
 
-/** Video files modified after the recording started, largest first. */
+// Webcam and microphone tracks share the folder but are not the screen recording.
+const COMPANION_FILE_PREFIXES = ["webcam-", "microphone-"];
+
+/** Screen recording files modified after the recording started, largest first. */
 export function pickRecoveredRecordings(
 	entries: Array<{ path: string; size: number; mtimeMs: number }>,
 	startedAt: number,
@@ -37,6 +43,7 @@ export function pickRecoveredRecordings(
 			(entry) =>
 				entry.size > 0 &&
 				entry.mtimeMs >= startedAt - 1000 &&
+				!COMPANION_FILE_PREFIXES.some((prefix) => path.basename(entry.path).startsWith(prefix)) &&
 				VIDEO_EXTENSIONS.has(path.extname(entry.path).toLowerCase()),
 		)
 		.sort((a, b) => b.size - a.size)

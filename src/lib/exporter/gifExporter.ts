@@ -382,8 +382,11 @@ export class GifExporter {
 
 					const sourceTimestampUs = sourceTimestampMs * 1000;
 					this.reportProgress(frameIndex, totalFrames, "rendering", undefined, warnings);
-					await this.renderer!.renderFrame(videoFrame, sourceTimestampUs);
-					videoFrame.close();
+					try {
+						await this.renderer!.renderFrame(videoFrame, sourceTimestampUs);
+					} finally {
+						videoFrame.close();
+					}
 
 					const imageData = canvasCtx.getImageData(0, 0, this.config.width, this.config.height);
 					await this.postFrameToWorker(imageData.data.buffer, frameDelay, "sample-frame");
@@ -416,8 +419,11 @@ export class GifExporter {
 					}
 
 					const sourceTimestampUs = sourceTimestampMs * 1000;
-					await this.renderer!.renderFrame(videoFrame, sourceTimestampUs);
-					videoFrame.close();
+					try {
+						await this.renderer!.renderFrame(videoFrame, sourceTimestampUs);
+					} finally {
+						videoFrame.close();
+					}
 
 					const imageData = canvasCtx.getImageData(0, 0, this.config.width, this.config.height);
 					await this.postFrameToWorker(imageData.data.buffer, frameDelay, "frame");
@@ -549,8 +555,11 @@ export class GifExporter {
 
 					const sourceTimestampUs = sourceTimestampMs * 1000;
 					this.reportProgress(frameIndex, totalFrames, "rendering", undefined, warnings);
-					await this.renderer!.renderFrame(videoFrame, sourceTimestampUs);
-					videoFrame.close();
+					try {
+						await this.renderer!.renderFrame(videoFrame, sourceTimestampUs);
+					} finally {
+						videoFrame.close();
+					}
 
 					const imageData = canvasCtx.getImageData(0, 0, this.config.width, this.config.height);
 					const frameBuffer = imageData.data.buffer.slice(
