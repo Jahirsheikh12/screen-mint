@@ -4,9 +4,6 @@
 		"selectRegion": "Select a zoom region to adjust",
 		"deleteZoom": "Delete Zoom"
 	},
-	"trim": {
-		"deleteRegion": "Delete Trim Region"
-	},
 	"speed": {
 		"playbackSpeed": "Playback Speed",
 		"selectRegion": "Select a speed region to adjust",
@@ -519,8 +516,6 @@
 		"chooseMagnificationLevelFor": "Choose magnification level for zoom regions",
 		"zoomDepth": "Zoom Depth",
 		"selectHowMuchTo": "Select how much to magnify the zoomed area",
-		"trimRegion": "Trim Region",
-		"removeTheSelectedTrim": "Remove the selected trim region from the timeline",
 		"adjustPlaybackSpeedFor": "Adjust playback speed for selected timeline regions",
 		"speedPresets": "Speed Presets",
 		"chooseASpeedMultiplier": "Choose a speed multiplier for the selected region",

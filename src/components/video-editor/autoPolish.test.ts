@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildAutoPolishResult } from "./autoPolish";
 
 describe("Auto Polish", () => {
-	it("chooses deterministic scene, zoom, caption, and export settings", () => {
+	it("chooses deterministic zoom, caption, and export settings", () => {
 		const result = buildAutoPolishResult({
 			aspectRatio: "16:9",
 			durationMs: 30_000,
@@ -21,7 +21,6 @@ describe("Auto Polish", () => {
 			},
 		});
 
-		expect(result.scene3D.presetId).toBe("product-hunt-launch");
 		expect(result.zoomRegions).toHaveLength(1);
 		expect(result.showCursor).toBe(true);
 		expect(result.showCaptions).toBe(true);

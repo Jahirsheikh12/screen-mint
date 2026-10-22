@@ -5,7 +5,6 @@ export type EditorHistorySnapshot = ProjectEditorState & {
 	selectedCameraLayoutId: string | null;
 	webcamSelected: boolean;
 	selectedZoomId: string | null;
-	selectedTrimId: string | null;
 	selectedSpeedId: string | null;
 	selectedAnnotationId: string | null;
 	selectedAudioId: string | null;
@@ -14,6 +13,24 @@ export type EditorHistorySnapshot = ProjectEditorState & {
 
 export function cloneEditorHistorySnapshot(snapshot: EditorHistorySnapshot): EditorHistorySnapshot {
 	return JSON.parse(JSON.stringify(snapshot));
+}
+
+// Edits closer together than this (slider drags, typing) become one undo step.
+const HISTORY_COALESCE_MS = 400;
+
+/** Serializes only the edit state; selection travels with a snapshot but is not an edit. */
+export function serializeEdits(snapshot: EditorHistorySnapshot): string {
+	const {
+		selectedCameraLayoutId: _camera,
+		webcamSelected: _webcam,
+		selectedZoomId: _zoom,
+		selectedSpeedId: _speed,
+		selectedAnnotationId: _annotation,
+		selectedAudioId: _audio,
+		selectedCaptionId: _caption,
+		...edits
+	} = snapshot;
+	return JSON.stringify(edits);
 }
 
 interface UseEditorHistoryOptions {
@@ -31,6 +48,7 @@ export function useEditorHistory({
 	const historyFutureRef = useRef<EditorHistorySnapshot[]>([]);
 	const historyCurrentRef = useRef<EditorHistorySnapshot | null>(null);
 	const applyingHistoryRef = useRef(false);
+	const lastPushAtRef = useRef(0);
 	const [canUndo, setCanUndo] = useState(false);
 	const [canRedo, setCanRedo] = useState(false);
 
@@ -55,6 +73,7 @@ export function useEditorHistory({
 		historyFutureRef.current.push(cloneEditorHistorySnapshot(current));
 		historyCurrentRef.current = cloneEditorHistorySnapshot(previous);
 		applyingHistoryRef.current = true;
+		lastPushAtRef.current = 0;
 		syncHistoryAvailability();
 		applySnapshot(previous);
 	}, [applySnapshot, buildSnapshot, syncHistoryAvailability]);
@@ -75,6 +94,7 @@ export function useEditorHistory({
 		historyPastRef.current.push(cloneEditorHistorySnapshot(current));
 		historyCurrentRef.current = cloneEditorHistorySnapshot(next);
 		applyingHistoryRef.current = true;
+		lastPushAtRef.current = 0;
 		syncHistoryAvailability();
 		applySnapshot(next);
 	}, [applySnapshot, buildSnapshot, syncHistoryAvailability]);
@@ -95,21 +115,36 @@ export function useEditorHistory({
 			return;
 		}
 
-		const currentSerialized = JSON.stringify(historyCurrentRef.current);
-		const nextSerialized = JSON.stringify(snapshot);
-		if (currentSerialized === nextSerialized) {
+		if (serializeEdits(historyCurrentRef.current) === serializeEdits(snapshot)) {
+			// Selection-only change: remember it, but it is not an undo step.
+			historyCurrentRef.current = snapshot;
 			syncHistoryAvailability();
 			return;
 		}
 
-		historyPastRef.current.push(cloneEditorHistorySnapshot(historyCurrentRef.current));
-		if (historyPastRef.current.length > maxHistory) {
-			historyPastRef.current.shift();
+		const now = Date.now();
+		const continuesLastEdit =
+			historyPastRef.current.length > 0 && now - lastPushAtRef.current < HISTORY_COALESCE_MS;
+		lastPushAtRef.current = now;
+		if (!continuesLastEdit) {
+			historyPastRef.current.push(cloneEditorHistorySnapshot(historyCurrentRef.current));
+			if (historyPastRef.current.length > maxHistory) {
+				historyPastRef.current.shift();
+			}
 		}
 		historyCurrentRef.current = snapshot;
 		historyFutureRef.current = [];
 		syncHistoryAvailability();
 	}, [buildSnapshot, maxHistory, syncHistoryAvailability]);
+
+	/** Starts history over, e.g. when a different project or recording is loaded. */
+	const resetHistory = useCallback(() => {
+		historyPastRef.current = [];
+		historyFutureRef.current = [];
+		historyCurrentRef.current = null;
+		lastPushAtRef.current = 0;
+		syncHistoryAvailability();
+	}, [syncHistoryAvailability]);
 
 	return {
 		historyPastRef,
@@ -118,5 +153,6 @@ export function useEditorHistory({
 		canRedo,
 		handleUndo,
 		handleRedo,
+		resetHistory,
 	};
 }

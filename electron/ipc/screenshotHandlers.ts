@@ -1,6 +1,5 @@
-import fs from "node:fs/promises";
 import path from "node:path";
-import { clipboard, desktopCapturer, ipcMain, nativeImage } from "electron";
+import { clipboard, desktopCapturer, ipcMain } from "electron";
 import {
 	IPC_CHANNELS,
 	type IpcSelectedSource,
@@ -18,11 +17,6 @@ interface ScreenshotIpcHandlersContext {
 	writeBufferToUniqueFile: (directory: string, fileName: string, buffer: Buffer) => Promise<string>;
 	isEnabled?: () => boolean;
 }
-
-type ScreenshotCopyRequest = {
-	pngData?: Uint8Array;
-	path?: string;
-};
 
 function createScreenshotFileName(source: IpcSelectedSource | null, requestedName?: string) {
 	if (requestedName?.trim()) {
@@ -91,21 +85,6 @@ function cropSelectedAreaImage(image: Electron.NativeImage, selectedArea: Select
 		width: Math.max(1, Math.min(crop.width, size.width - crop.x)),
 		height: Math.max(1, Math.min(crop.height, size.height - crop.y)),
 	});
-}
-
-async function copyPngToClipboard(payload: ScreenshotCopyRequest) {
-	const image = payload.path
-		? nativeImage.createFromPath(payload.path)
-		: payload.pngData
-			? nativeImage.createFromBuffer(Buffer.from(payload.pngData))
-			: null;
-
-	if (!image || image.isEmpty()) {
-		return { success: false, message: "No screenshot image was available to copy." };
-	}
-
-	clipboard.writeImage(image);
-	return { success: true };
 }
 
 export function registerScreenshotIpcHandlers({
@@ -187,31 +166,6 @@ export function registerScreenshotIpcHandlers({
 				return {
 					success: false,
 					message: "Failed to capture screenshot",
-					error: String(error),
-				};
-			}
-		},
-	);
-
-	ipcMain.handle(
-		IPC_CHANNELS.screenshot.copyToClipboard,
-		async (_, payload: ScreenshotCopyRequest) => {
-			try {
-				if (!isEnabled()) {
-					return {
-						success: false,
-						message: "Screenshot capture is disabled in this build.",
-					};
-				}
-
-				if (payload.path) {
-					await fs.access(payload.path);
-				}
-				return await copyPngToClipboard(payload);
-			} catch (error) {
-				return {
-					success: false,
-					message: "Failed to copy screenshot to clipboard",
 					error: String(error),
 				};
 			}

@@ -51,6 +51,16 @@ export const FIXED_SHORTCUTS: FixedShortcut[] = [
 	{ key: "zoomTimeline", label: "Zoom Timeline", display: "Ctrl + Scroll", bindings: [] },
 ];
 
+// Built into the editor (undo, redo, export, leave trim mode); not rebindable, so a custom
+// shortcut must not take them over.
+const RESERVED_BINDINGS: Array<{ label: string; binding: ShortcutBinding }> = [
+	{ label: "Undo", binding: { key: "z", ctrl: true } },
+	{ label: "Redo", binding: { key: "z", ctrl: true, shift: true } },
+	{ label: "Redo", binding: { key: "y", ctrl: true } },
+	{ label: "Export", binding: { key: "e", ctrl: true } },
+	{ label: "Exit Trim Mode", binding: { key: "escape" } },
+];
+
 export type ShortcutConflict =
 	| { type: "configurable"; action: ShortcutAction }
 	| { type: "fixed"; label: string };
@@ -72,6 +82,11 @@ export function findConflict(
 	for (const fixed of FIXED_SHORTCUTS) {
 		if (fixed.bindings.some((b) => bindingsEqual(b, binding))) {
 			return { type: "fixed", label: fixed.label };
+		}
+	}
+	for (const reserved of RESERVED_BINDINGS) {
+		if (bindingsEqual(reserved.binding, binding)) {
+			return { type: "fixed", label: reserved.label };
 		}
 	}
 	for (const action of SHORTCUT_ACTIONS) {
@@ -111,6 +126,8 @@ export function matchesShortcut(
 
 	const primaryMod = isMacPlatform ? e.metaKey : e.ctrlKey;
 	if (primaryMod !== !!binding.ctrl) return false;
+	// On macOS bindings use Cmd; a stray Ctrl (Ctrl+Z) must not trigger the plain-key binding.
+	if (isMacPlatform && e.ctrlKey) return false;
 	if (e.shiftKey !== !!binding.shift) return false;
 	if (e.altKey !== !!binding.alt) return false;
 

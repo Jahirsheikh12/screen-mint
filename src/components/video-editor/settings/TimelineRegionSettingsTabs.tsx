@@ -23,9 +23,7 @@ interface ZoomSettingsTabProps {
 	onZoomDepthChange?: (depth: ZoomDepth) => void;
 	onZoomModeChange?: (mode: ZoomMode) => void;
 	zoomEnabled: boolean;
-	trimEnabled: boolean;
 	onZoomDelete: () => void;
-	onTrimDelete: () => void;
 }
 
 export function ZoomSettingsTab({
@@ -35,9 +33,7 @@ export function ZoomSettingsTab({
 	onZoomDepthChange,
 	onZoomModeChange,
 	zoomEnabled,
-	trimEnabled,
 	onZoomDelete,
-	onTrimDelete,
 }: ZoomSettingsTabProps) {
 	return (
 		<TabContent>
@@ -143,26 +139,6 @@ export function ZoomSettingsTab({
 					</Button>
 				)}
 			</SettingsSection>
-
-			{trimEnabled && (
-				<SettingsSection
-					title={tSettings("regionsTab.trimRegion", "Trim Region")}
-					description={tSettings(
-						"regionsTab.removeTheSelectedTrim",
-						"Remove the selected trim region from the timeline",
-					)}
-				>
-					<Button
-						onClick={onTrimDelete}
-						variant="destructive"
-						size="sm"
-						className="w-full gap-2 bg-danger/8 text-danger-fg border border-danger/15 hover:bg-danger/15 hover:border-danger/25 transition-all duration-200 h-9 text-label rounded-lg"
-					>
-						<Trash2 className="w-3.5 h-3.5" />
-						{tSettings("trim.deleteRegion")}
-					</Button>
-				</SettingsSection>
-			)}
 		</TabContent>
 	);
 }

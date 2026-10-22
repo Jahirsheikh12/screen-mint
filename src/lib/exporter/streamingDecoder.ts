@@ -304,157 +304,165 @@ export class StreamingVideoDecoder {
 			}
 		})();
 
-		// Route decoded frames into segments by timestamp, then deliver with VFR→CFR resampling
-		let segmentIdx = 0;
-		let segmentFrameIndex = 0;
+		let heldFrame: VideoFrame | null = null;
+		let lastFrame: VideoFrame | null = null;
 		let exportFrameIndex = 0;
 		let lastDecodedFrameSec: number | null = null;
-		let heldFrame: VideoFrame | null = null;
-		let heldFrameSec = 0;
+		try {
+			// Route decoded frames into segments by timestamp, then deliver with VFR→CFR resampling
+			let segmentIdx = 0;
+			let segmentFrameIndex = 0;
+			let heldFrameSec = 0;
 
-		const emitHeldFrameForTarget = async (segment: {
-			startSec: number;
-			endSec: number;
-			speed: number;
-		}) => {
-			if (!heldFrame) return false;
-			const segmentFrameCount = segmentOutputFrameCounts[segmentIdx];
-			if (segmentFrameIndex >= segmentFrameCount) return false;
-
-			const segmentDurationSec = segment.endSec - segment.startSec;
-			const sourceTimeSec =
-				segment.startSec + (segmentFrameIndex / segmentFrameCount) * segmentDurationSec;
-			if (sourceTimeSec >= segment.endSec - epsilonSec) return false;
-
-			const clone = new VideoFrame(heldFrame, { timestamp: heldFrame.timestamp });
-			await onFrame(clone, exportFrameIndex * frameDurationUs, sourceTimeSec * 1000);
-			segmentFrameIndex++;
-			exportFrameIndex++;
-			return true;
-		};
-
-		while (!this.cancelled && segmentIdx < segments.length) {
-			const frame = await getNextFrame();
-			if (!frame) break;
-
-			const frameTimeSec = frame.timestamp / 1_000_000;
-			lastDecodedFrameSec = frameTimeSec;
-
-			// Finalize completed segments before handling this frame.
-			while (
-				segmentIdx < segments.length &&
-				frameTimeSec >= segments[segmentIdx].endSec - epsilonSec
-			) {
-				const segment = segments[segmentIdx];
-				while (!this.cancelled && (await emitHeldFrameForTarget(segment))) {
-					// Keep emitting remaining output frames for this segment from the last known frame.
-				}
-
-				segmentIdx++;
-				segmentFrameIndex = 0;
-				if (
-					heldFrame &&
-					segmentIdx < segments.length &&
-					heldFrameSec < segments[segmentIdx].startSec - epsilonSec
-				) {
-					heldFrame.close();
-					heldFrame = null;
-				}
-			}
-
-			if (segmentIdx >= segments.length) {
-				frame.close();
-				continue;
-			}
-
-			const currentSegment = segments[segmentIdx];
-
-			// Before current segment (trimmed region or pre-roll).
-			if (frameTimeSec < currentSegment.startSec - epsilonSec) {
-				frame.close();
-				continue;
-			}
-
-			if (!heldFrame) {
-				heldFrame = frame;
-				heldFrameSec = frameTimeSec;
-				continue;
-			}
-
-			// Any target timestamp before this midpoint is closer to heldFrame than current frame.
-			const handoffBoundarySec = (heldFrameSec + frameTimeSec) / 2;
-			while (!this.cancelled) {
+			const emitHeldFrameForTarget = async (segment: {
+				startSec: number;
+				endSec: number;
+				speed: number;
+			}) => {
+				if (!heldFrame) return false;
 				const segmentFrameCount = segmentOutputFrameCounts[segmentIdx];
-				if (segmentFrameIndex >= segmentFrameCount) {
-					break;
-				}
+				if (segmentFrameIndex >= segmentFrameCount) return false;
 
-				const segmentDurationSec = currentSegment.endSec - currentSegment.startSec;
+				const segmentDurationSec = segment.endSec - segment.startSec;
 				const sourceTimeSec =
-					currentSegment.startSec + (segmentFrameIndex / segmentFrameCount) * segmentDurationSec;
-				if (sourceTimeSec >= currentSegment.endSec - epsilonSec) {
-					break;
-				}
-				if (sourceTimeSec > handoffBoundarySec) {
-					break;
-				}
+					segment.startSec + (segmentFrameIndex / segmentFrameCount) * segmentDurationSec;
+				if (sourceTimeSec >= segment.endSec - epsilonSec) return false;
 
 				const clone = new VideoFrame(heldFrame, { timestamp: heldFrame.timestamp });
 				await onFrame(clone, exportFrameIndex * frameDurationUs, sourceTimeSec * 1000);
 				segmentFrameIndex++;
 				exportFrameIndex++;
-			}
+				return true;
+			};
 
-			heldFrame.close();
-			heldFrame = frame;
-			heldFrameSec = frameTimeSec;
-		}
-
-		// Flush remaining output frames for the last decoded frame.
-		if (heldFrame && segmentIdx < segments.length) {
 			while (!this.cancelled && segmentIdx < segments.length) {
-				const segment = segments[segmentIdx];
-				if (heldFrameSec < segment.startSec - epsilonSec) {
-					break;
-				}
+				const frame = await getNextFrame();
+				if (!frame) break;
+				lastFrame = frame;
 
-				while (!this.cancelled && (await emitHeldFrameForTarget(segment))) {
-					// Keep emitting output frames for the active segment.
-				}
+				const frameTimeSec = frame.timestamp / 1_000_000;
+				lastDecodedFrameSec = frameTimeSec;
 
-				segmentIdx++;
-				segmentFrameIndex = 0;
-				if (
+				// Finalize completed segments before handling this frame.
+				while (
 					segmentIdx < segments.length &&
-					heldFrameSec < segments[segmentIdx].startSec - epsilonSec
+					frameTimeSec >= segments[segmentIdx].endSec - epsilonSec
 				) {
-					break;
+					const segment = segments[segmentIdx];
+					while (!this.cancelled && (await emitHeldFrameForTarget(segment))) {
+						// Keep emitting remaining output frames for this segment from the last known frame.
+					}
+
+					segmentIdx++;
+					segmentFrameIndex = 0;
+					if (
+						heldFrame &&
+						segmentIdx < segments.length &&
+						heldFrameSec < segments[segmentIdx].startSec - epsilonSec
+					) {
+						heldFrame.close();
+						heldFrame = null;
+					}
 				}
+
+				if (segmentIdx >= segments.length) {
+					frame.close();
+					continue;
+				}
+
+				const currentSegment = segments[segmentIdx];
+
+				// Before current segment (trimmed region or pre-roll).
+				if (frameTimeSec < currentSegment.startSec - epsilonSec) {
+					frame.close();
+					continue;
+				}
+
+				if (!heldFrame) {
+					heldFrame = frame;
+					heldFrameSec = frameTimeSec;
+					continue;
+				}
+
+				// Any target timestamp before this midpoint is closer to heldFrame than current frame.
+				const handoffBoundarySec = (heldFrameSec + frameTimeSec) / 2;
+				while (!this.cancelled) {
+					const segmentFrameCount = segmentOutputFrameCounts[segmentIdx];
+					if (segmentFrameIndex >= segmentFrameCount) {
+						break;
+					}
+
+					const segmentDurationSec = currentSegment.endSec - currentSegment.startSec;
+					const sourceTimeSec =
+						currentSegment.startSec + (segmentFrameIndex / segmentFrameCount) * segmentDurationSec;
+					if (sourceTimeSec >= currentSegment.endSec - epsilonSec) {
+						break;
+					}
+					if (sourceTimeSec > handoffBoundarySec) {
+						break;
+					}
+
+					const clone = new VideoFrame(heldFrame, { timestamp: heldFrame.timestamp });
+					await onFrame(clone, exportFrameIndex * frameDurationUs, sourceTimeSec * 1000);
+					segmentFrameIndex++;
+					exportFrameIndex++;
+				}
+
+				heldFrame.close();
+				heldFrame = frame;
+				heldFrameSec = frameTimeSec;
 			}
-			heldFrame.close();
-			heldFrame = null;
-		}
 
-		// Drain leftover decoded frames
-		while (!decodeDone) {
-			const frame = await getNextFrame();
-			if (!frame) break;
-			frame.close();
-		}
+			// Flush remaining output frames for the last decoded frame.
+			if (heldFrame && segmentIdx < segments.length) {
+				while (!this.cancelled && segmentIdx < segments.length) {
+					const segment = segments[segmentIdx];
+					if (heldFrameSec < segment.startSec - epsilonSec) {
+						break;
+					}
 
-		try {
-			reader.cancel();
-		} catch {
-			/* already closed */
-		}
-		await feedPromise;
-		for (const f of pendingFrames) f.close();
-		pendingFrames.length = 0;
+					while (!this.cancelled && (await emitHeldFrameForTarget(segment))) {
+						// Keep emitting output frames for the active segment.
+					}
 
-		if (this.decoder?.state === "configured") {
-			this.decoder.close();
+					segmentIdx++;
+					segmentFrameIndex = 0;
+					if (
+						segmentIdx < segments.length &&
+						heldFrameSec < segments[segmentIdx].startSec - epsilonSec
+					) {
+						break;
+					}
+				}
+				heldFrame.close();
+				heldFrame = null;
+			}
+
+			// Drain leftover decoded frames
+			while (!decodeDone) {
+				const frame = await getNextFrame();
+				if (!frame) break;
+				frame.close();
+			}
+		} finally {
+			// Also runs when onFrame or the decoder throws, so no frame or decoder outlives the call.
+			// close() on an already-closed VideoFrame is a no-op.
+			heldFrame?.close();
+			lastFrame?.close();
+			try {
+				void reader.cancel().catch(() => undefined);
+			} catch {
+				/* already closed */
+			}
+			await feedPromise;
+			for (const f of pendingFrames) f.close();
+			pendingFrames.length = 0;
+
+			if (this.decoder?.state === "configured") {
+				this.decoder.close();
+			}
+			this.decoder = null;
 		}
-		this.decoder = null;
 
 		const requiredEndSec = segments.length > 0 ? segments[segments.length - 1].endSec : 0;
 		if (

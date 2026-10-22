@@ -19,6 +19,13 @@ function resolveAssetBasePath() {
 	}
 }
 
+// The renderer reads media through this handler; anything else (keys, documents) is refused.
+const READABLE_MEDIA_EXTENSIONS = new Set([
+	...[".mp4", ".m4v", ".mov", ".webm", ".mkv", ".avi"],
+	...[".mp3", ".wav", ".aac", ".m4a", ".flac", ".ogg", ".opus"],
+	...[".png", ".jpg", ".jpeg", ".webp", ".gif", ".avif", ".bmp", ".svg"],
+]);
+
 export function registerAssetIpcHandlers() {
 	ipcMain.handle(IPC_CHANNELS.assets.getBasePath, () => {
 		return resolveAssetBasePath();
@@ -30,6 +37,9 @@ export function registerAssetIpcHandlers() {
 
 	ipcMain.handle(IPC_CHANNELS.assets.readLocalFile, async (_, filePath: string) => {
 		try {
+			if (!READABLE_MEDIA_EXTENSIONS.has(path.extname(filePath).toLowerCase())) {
+				throw new Error("Only media files can be read.");
+			}
 			const data = await fs.readFile(filePath);
 			return { success: true, data };
 		} catch (error) {

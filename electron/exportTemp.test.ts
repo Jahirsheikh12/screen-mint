@@ -3,10 +3,13 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+	approveExportPath,
 	createExportTempPath,
 	getExportTempDir,
+	isApprovedExportPath,
 	isExportTempPath,
 	moveFile,
+	sweepStaleExportTempFiles,
 	writeCaptionSidecars,
 } from "./exportTemp";
 
@@ -48,5 +51,47 @@ describe("moveFile and sidecars", () => {
 		const written = await writeCaptionSidecars(target, { srt: "1\n", vtt: "WEBVTT\n" });
 		expect(written).toEqual([path.join(dir, "My Video.srt"), path.join(dir, "My Video.vtt")]);
 		expect(await writeCaptionSidecars(target, undefined)).toEqual([]);
+	});
+});
+
+describe("approved export paths", () => {
+	it("accepts only paths main approved, however they are spelled", () => {
+		const chosen = path.join(os.tmpdir(), "approved", "My Video.mp4");
+		approveExportPath(chosen);
+
+		expect(isApprovedExportPath(chosen)).toBe(true);
+		expect(
+			isApprovedExportPath(path.join(os.tmpdir(), "approved", "x", "..", "My Video.mp4")),
+		).toBe(true);
+		expect(isApprovedExportPath(path.join(os.tmpdir(), "approved", "..", "evil.mp4"))).toBe(false);
+		expect(isApprovedExportPath("/etc/passwd")).toBe(false);
+		expect(isApprovedExportPath(undefined)).toBe(false);
+	});
+});
+
+describe("startup temp sweep", () => {
+	it("clears pending renders and day-old clipboard copies, keeps recent ones", async () => {
+		const root = await fs.mkdtemp(path.join(os.tmpdir(), "screenmint-sweep-"));
+		try {
+			const pending = createExportTempPath(root, "mp4");
+			await fs.mkdir(path.dirname(pending), { recursive: true });
+			await fs.writeFile(pending, "x");
+			const oldCopy = path.join(root, "screenmint-clipboard-1.mp4");
+			const recentCopy = path.join(root, "screenmint-clipboard-2.mp4");
+			const unrelated = path.join(root, "someone-else.mp4");
+			for (const file of [oldCopy, recentCopy, unrelated]) await fs.writeFile(file, "x");
+			const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+			await fs.utimes(oldCopy, twoDaysAgo, twoDaysAgo);
+			await fs.utimes(unrelated, twoDaysAgo, twoDaysAgo);
+
+			await sweepStaleExportTempFiles(root);
+
+			await expect(fs.access(pending)).rejects.toThrow();
+			await expect(fs.access(oldCopy)).rejects.toThrow();
+			await expect(fs.access(recentCopy)).resolves.toBeUndefined();
+			await expect(fs.access(unrelated)).resolves.toBeUndefined();
+		} finally {
+			await fs.rm(root, { recursive: true, force: true });
+		}
 	});
 });

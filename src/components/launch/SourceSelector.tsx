@@ -1,8 +1,6 @@
-import type { MouseEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FiCheck, FiLayers, FiMonitor, FiSearch, FiSquare, FiX } from "react-icons/fi";
+import { FiCheck, FiMonitor, FiSearch, FiSquare, FiX } from "react-icons/fi";
 import { CaptureAccessNotice } from "@/components/launch/CaptureAccessNotice";
-import type { LayerCaptureSource } from "@/lib/recording/layeredCapture";
 import { useScopedT } from "../../contexts/I18nContext";
 import { useCaptureSourceAccess } from "../../hooks/useCaptureSourceAccess";
 import styles from "./SourceSelector.module.css";
@@ -102,23 +100,19 @@ function SkeletonGrid({ variant }: { variant: TabKey }) {
 type DisplayCardProps = {
 	source: DesktopSource;
 	selected: boolean;
-	primary: boolean;
 	focused: boolean;
-	onClick: (event: MouseEvent<HTMLButtonElement>) => void;
+	onClick: () => void;
 	onDoubleClick: () => void;
 	primaryLabel: string;
-	layerLabel: string;
 };
 
 function DisplayCard({
 	source,
 	selected,
-	primary,
 	focused,
 	onClick,
 	onDoubleClick,
 	primaryLabel,
-	layerLabel,
 }: DisplayCardProps) {
 	const resolution = source.width && source.height ? `${source.width} × ${source.height}` : null;
 
@@ -147,11 +141,7 @@ function DisplayCard({
 					)}
 				</div>
 				<div className={styles.displayCheck}>
-					{primary ? (
-						<FiCheck size={13} strokeWidth={3.5} />
-					) : (
-						<FiLayers size={13} strokeWidth={3} />
-					)}
+					<FiCheck size={13} strokeWidth={3.5} />
 				</div>
 			</div>
 			<div className={styles.displayStand} />
@@ -159,7 +149,6 @@ function DisplayCard({
 			<div className={styles.displayMeta}>
 				<span className={styles.displayName}>{source.name}</span>
 				{source.isPrimary && <span className={styles.displayBadgePrimary}>{primaryLabel}</span>}
-				{selected && !primary && <span className={styles.displayBadgePrimary}>{layerLabel}</span>}
 				{resolution && <span className={styles.displayResolution}>{resolution}</span>}
 			</div>
 		</button>
@@ -169,25 +158,19 @@ function DisplayCard({
 type WindowCardProps = {
 	source: DesktopSource;
 	selected: boolean;
-	primary: boolean;
 	focused: boolean;
-	onClick: (event: MouseEvent<HTMLButtonElement>) => void;
+	onClick: () => void;
 	onDoubleClick: () => void;
 	untitledLabel: string;
-	primaryLabel: string;
-	layerLabel: string;
 };
 
 function WindowCard({
 	source,
 	selected,
-	primary,
 	focused,
 	onClick,
 	onDoubleClick,
 	untitledLabel,
-	primaryLabel,
-	layerLabel,
 }: WindowCardProps) {
 	const appName = source.appName ?? source.name;
 	const titleLine = source.windowTitle && source.windowTitle !== appName ? source.windowTitle : "";
@@ -223,11 +206,7 @@ function WindowCard({
 					</div>
 				)}
 				<div className={styles.windowCheck}>
-					{primary ? (
-						<FiCheck size={12} strokeWidth={3.5} />
-					) : (
-						<FiLayers size={12} strokeWidth={3} />
-					)}
+					<FiCheck size={12} strokeWidth={3.5} />
 				</div>
 			</div>
 			<div className={styles.windowMeta}>
@@ -242,9 +221,6 @@ function WindowCard({
 					<span className={styles.windowAppName}>{appName || untitledLabel}</span>
 					{titleLine && <span className={styles.windowTitle}>{titleLine}</span>}
 				</div>
-				{selected && (
-					<span className={styles.windowLayerBadge}>{primary ? primaryLabel : layerLabel}</span>
-				)}
 			</div>
 		</button>
 	);
@@ -252,7 +228,7 @@ function WindowCard({
 
 export function SourceSelector() {
 	const t = useScopedT("launch");
-	const [selectedIds, setSelectedIds] = useState<string[]>([]);
+	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [activeTab, setActiveTab] = useState<TabKey>("screens");
 	const [search, setSearch] = useState("");
 	const [focusIndex, setFocusIndex] = useState(0);
@@ -315,15 +291,6 @@ export function SourceSelector() {
 	const otherTabHasMatches =
 		search.trim().length > 0 &&
 		(activeTab === "screens" ? filteredWindows.length > 0 : filteredScreens.length > 0);
-	const primaryId = selectedIds[0] ?? null;
-	const selectedSources = useMemo(
-		() =>
-			selectedIds.flatMap((id) => {
-				const source = sources.find((candidate) => candidate.id === id);
-				return source ? [source] : [];
-			}),
-		[selectedIds, sources],
-	);
 
 	useEffect(() => {
 		if (loading) return;
@@ -345,40 +312,18 @@ export function SourceSelector() {
 		}
 	}, [visibleSources.length, focusIndex]);
 
-	const buildLayerSource = useCallback(
-		(source: DesktopSource, index: number): LayerCaptureSource => {
-			const kind = source.sourceType === "window" ? "window" : "display";
-			return {
-				id: source.id,
-				kind,
-				source,
-				selectedArea: null,
-				layerId: `layer-source-${source.id.replace(/[^a-zA-Z0-9_-]+/g, "-")}`,
-				isPrimary: index === 0,
-			};
-		},
-		[],
-	);
-
 	const shareSelection = useCallback(
-		async (ids: string[]) => {
-			const selection = ids.flatMap((id) => {
-				const source = sources.find((candidate) => candidate.id === id);
-				return source ? [source] : [];
-			});
-			const target = selection[0];
+		async (id: string | null) => {
+			const target = sources.find((candidate) => candidate.id === id);
 			if (!target) return;
-			await window.electronAPI.setLayeredCaptureSources({
-				sources: selection.map(buildLayerSource),
-			});
 			await window.electronAPI.selectSource(target);
 		},
-		[buildLayerSource, sources],
+		[sources],
 	);
 
 	const handleShare = useCallback(async () => {
-		await shareSelection(selectedIds);
-	}, [selectedIds, shareSelection]);
+		await shareSelection(selectedId);
+	}, [selectedId, shareSelection]);
 
 	const handleCancel = useCallback(() => {
 		window.close();
@@ -392,25 +337,18 @@ export function SourceSelector() {
 				return;
 			}
 			if (e.key === "Enter") {
-				if (selectedIds.length > 0) {
+				if (selectedId) {
 					e.preventDefault();
 					void handleShare();
 				} else if (visibleSources[focusIndex]) {
 					e.preventDefault();
-					setSelectedIds([visibleSources[focusIndex].id]);
+					setSelectedId(visibleSources[focusIndex].id);
 				}
 				return;
 			}
 			if (e.key === " " && visibleSources[focusIndex]) {
 				e.preventDefault();
-				const focusedSource = visibleSources[focusIndex];
-				setSelectedIds((prev) => {
-					if (focusedSource.sourceType !== "window") return [focusedSource.id];
-					if (prev.includes(focusedSource.id)) {
-						return prev.filter((id) => id !== focusedSource.id);
-					}
-					return prev.length === 0 ? [focusedSource.id] : [...prev, focusedSource.id];
-				});
+				setSelectedId(visibleSources[focusIndex].id);
 				return;
 			}
 			if (e.key === "Tab") {
@@ -426,7 +364,7 @@ export function SourceSelector() {
 			const moveFocus = (next: number) => {
 				const clamped = Math.max(0, Math.min(visibleSources.length - 1, next));
 				setFocusIndex(clamped);
-				setSelectedIds(visibleSources[clamped] ? [visibleSources[clamped].id] : []);
+				setSelectedId(visibleSources[clamped]?.id ?? null);
 			};
 
 			if (e.key === "ArrowRight") {
@@ -445,29 +383,17 @@ export function SourceSelector() {
 		};
 		window.addEventListener("keydown", onKey);
 		return () => window.removeEventListener("keydown", onKey);
-	}, [activeTab, focusIndex, handleCancel, handleShare, selectedIds.length, visibleSources]);
+	}, [activeTab, focusIndex, handleCancel, handleShare, selectedId, visibleSources]);
 
-	const onCardClick = useCallback(
-		(source: DesktopSource, index: number, event: MouseEvent<HTMLButtonElement>) => {
-			if (event.shiftKey || event.metaKey || event.ctrlKey) {
-				setSelectedIds((prev) => {
-					if (source.sourceType !== "window") return [source.id];
-					if (prev.includes(source.id)) return prev.filter((id) => id !== source.id);
-					return prev.length === 0 ? [source.id] : [...prev, source.id];
-				});
-			} else {
-				setSelectedIds([source.id]);
-			}
-			setFocusIndex(index);
-		},
-		[],
-	);
+	const onCardClick = useCallback((source: DesktopSource, index: number) => {
+		setSelectedId(source.id);
+		setFocusIndex(index);
+	}, []);
 
 	const onCardDoubleClick = useCallback(
 		(source: DesktopSource) => {
-			const ids = [source.id];
-			setSelectedIds(ids);
-			void shareSelection(ids);
+			setSelectedId(source.id);
+			void shareSelection(source.id);
 		},
 		[shareSelection],
 	);
@@ -518,7 +444,6 @@ export function SourceSelector() {
 	}
 
 	const primaryLabel = t("sourceSelector.primary", "Primary");
-	const layerLabel = t("sourceSelector.layer", "Layer");
 	const untitledLabel = t("sourceSelector.untitledWindow", "Untitled window");
 	const showSearchHint = search.trim().length > 0 && otherTabHasMatches;
 
@@ -532,10 +457,7 @@ export function SourceSelector() {
 					</div>
 					<div className={styles.title}>{t("sourceSelector.title", "Choose what to share")}</div>
 					<div className={styles.subtitle}>
-						{t(
-							"sourceSelector.subtitle",
-							"Pick a primary source. Shift-click windows to add editable layers.",
-						)}
+						{t("sourceSelector.subtitle", "Pick a screen or window to record.")}
 					</div>
 				</div>
 				<button
@@ -646,13 +568,11 @@ export function SourceSelector() {
 							<DisplayCard
 								key={source.id}
 								source={source}
-								selected={selectedIds.includes(source.id)}
-								primary={primaryId === source.id}
+								selected={selectedId === source.id}
 								focused={focusIndex === index}
-								onClick={(event) => onCardClick(source, index, event)}
+								onClick={() => onCardClick(source, index)}
 								onDoubleClick={() => onCardDoubleClick(source)}
 								primaryLabel={primaryLabel}
-								layerLabel={layerLabel}
 							/>
 						))}
 					</div>
@@ -663,14 +583,11 @@ export function SourceSelector() {
 							<WindowCard
 								key={source.id}
 								source={source}
-								selected={selectedIds.includes(source.id)}
-								primary={primaryId === source.id}
+								selected={selectedId === source.id}
 								focused={focusIndex === index}
-								onClick={(event) => onCardClick(source, index, event)}
+								onClick={() => onCardClick(source, index)}
 								onDoubleClick={() => onCardDoubleClick(source)}
 								untitledLabel={untitledLabel}
-								primaryLabel={primaryLabel}
-								layerLabel={layerLabel}
 							/>
 						))}
 					</div>
@@ -691,10 +608,6 @@ export function SourceSelector() {
 						{t("sourceSelector.kbdSwitch", "switch tab")}
 					</span>
 					<span className={styles.kbdGroup}>
-						<kbd className={styles.kbd}>space</kbd>
-						{t("sourceSelector.kbdLayer", "toggle layer")}
-					</span>
-					<span className={styles.kbdGroup}>
 						<kbd className={styles.kbd}>↵</kbd>
 						{t("sourceSelector.kbdShare", "share")}
 					</span>
@@ -711,12 +624,10 @@ export function SourceSelector() {
 						type="button"
 						className={styles.btnPrimary}
 						onClick={() => void handleShare()}
-						disabled={!primaryId}
+						disabled={!selectedId}
 					>
 						<FiCheck size={14} strokeWidth={3.5} />
-						{selectedSources.length > 1
-							? t("sourceSelector.shareLayered", "Share layered")
-							: t("sourceSelector.share", "Share")}
+						{t("sourceSelector.share", "Share")}
 					</button>
 				</div>
 			</div>

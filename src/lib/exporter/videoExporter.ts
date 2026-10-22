@@ -66,7 +66,6 @@ interface VideoExporterConfig extends ExportConfig {
 	frameBorderOpacity?: number;
 	borderRadius?: number;
 	padding?: PaddingValue;
-	videoPadding?: number;
 	cropRegion: CropRegion;
 	aspectRatio?: AspectRatio;
 	annotationRegions?: AnnotationRegion[];
@@ -159,6 +158,8 @@ export class VideoExporter {
 	private muxer: VideoMuxer | null = null;
 	private audioProcessor: AudioProcessor | null = null;
 	private cancelled = false;
+	// First encoder or muxer failure; stops the export and is reported instead of "cancelled".
+	private fatalError: Error | null = null;
 	private encodeQueue = 0;
 	private readonly schedulerMode: ExportSchedulerMode;
 	private maxEncodeQueue: number;
@@ -195,6 +196,7 @@ export class VideoExporter {
 		try {
 			this.cleanup();
 			this.cancelled = false;
+			this.fatalError = null;
 			this.exportStartedAtMs = performance.now();
 			this.warnings = [];
 			this.exportStreamSessionId = null;
@@ -345,9 +347,12 @@ export class VideoExporter {
 					const sourceTimestampUs = sourceTimestampMs * 1000;
 					this.reportPhase("rendering", frameIndex, totalFrames);
 					const renderStartedAt = performance.now();
-					await this.renderer!.renderFrame(videoFrame, sourceTimestampUs);
+					try {
+						await this.renderer!.renderFrame(videoFrame, sourceTimestampUs);
+					} finally {
+						videoFrame.close();
+					}
 					this.addStageTiming("render", performance.now() - renderStartedAt);
-					videoFrame.close();
 
 					this.reportPhase("encoding", frameIndex, totalFrames);
 					const encodeStartedAt = performance.now();
@@ -361,6 +366,9 @@ export class VideoExporter {
 				this.config.forceFFmpegDecoder,
 			);
 
+			if (this.fatalError) {
+				throw this.fatalError;
+			}
 			if (this.cancelled) {
 				return { success: false, error: "Export cancelled" };
 			}
@@ -378,6 +386,9 @@ export class VideoExporter {
 			await this.profileStage("muxDrain", () =>
 				this.awaitWithWindowsTimeout(this.pendingMuxing, "muxing queued video chunks"),
 			);
+			if (this.fatalError) {
+				throw this.fatalError;
+			}
 
 			if (audioPreparation && !this.cancelled) {
 				const audioResult = await this.profileStage("audioWait", () =>
@@ -452,17 +463,18 @@ export class VideoExporter {
 				},
 			};
 		} catch (error) {
-			if (this.exportStreamSessionId && !this.exportStreamFinished) {
-				await window.electronAPI
-					.exportV2StreamDiscard(this.exportStreamSessionId)
-					.catch(() => undefined);
-			}
 			console.error("Export error:", error);
 			return {
 				success: false,
 				error: error instanceof Error ? error.message : String(error),
 			};
 		} finally {
+			// Any exit without a finished stream (error or cancel) leaves a partial file behind.
+			if (this.exportStreamSessionId && !this.exportStreamFinished) {
+				await window.electronAPI
+					.exportV2StreamDiscard(this.exportStreamSessionId)
+					.catch(() => undefined);
+			}
 			this.cleanup();
 		}
 	}
@@ -908,6 +920,7 @@ export class VideoExporter {
 						this.addStageTiming("muxWrite", performance.now() - muxStartedAt);
 					} catch (error) {
 						console.error("Muxing error:", error);
+						this.fail(error);
 					}
 				});
 				this.encodeQueue--;
@@ -918,9 +931,7 @@ export class VideoExporter {
 					`[VideoExporter] Encoder error (codec: ${resolvedCodec}, ${activeConfig.width}x${activeConfig.height}):`,
 					error,
 				);
-				// Stop export — encoding failed
-				this.cancelled = true;
-				this.encoderQueueDrain.notify();
+				this.fail(error);
 			},
 		});
 		this.encoder.addEventListener("dequeue", () => {
@@ -939,6 +950,12 @@ export class VideoExporter {
 		};
 
 		this.encoder.configure(baseConfig);
+	}
+
+	private fail(error: unknown): void {
+		this.fatalError ??= error instanceof Error ? error : new Error(String(error));
+		this.cancelled = true;
+		this.encoderQueueDrain.notify();
 	}
 
 	cancel(): void {
@@ -984,6 +1001,8 @@ export class VideoExporter {
 		}
 
 		this.muxer = null;
+		// Stops audio preparation still running after an error; a no-op once it has finished.
+		this.audioProcessor?.cancel();
 		this.audioProcessor = null;
 		this.encodeQueue = 0;
 		this.encoderQueueDrain.clear();

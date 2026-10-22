@@ -18,6 +18,19 @@ export function createExportTempPath(tempRoot: string, extension: "mp4" | "gif")
 	return path.join(getExportTempDir(tempRoot), `export-${id}.${extension}`);
 }
 
+// Output paths main itself chose (save dialogs, resolved export targets). Paths the renderer asks
+// to write must be one of these, so a compromised renderer cannot write anywhere on disk.
+const approvedExportPaths = new Set<string>();
+
+export function approveExportPath<T extends string | undefined>(filePath: T): T {
+	if (filePath) approvedExportPaths.add(path.resolve(filePath));
+	return filePath;
+}
+
+export function isApprovedExportPath(candidate: unknown): candidate is string {
+	return typeof candidate === "string" && approvedExportPaths.has(path.resolve(candidate));
+}
+
 /** Only files the app itself rendered into its export temp folder may be moved or deleted. */
 export function isExportTempPath(tempRoot: string, candidate: unknown): candidate is string {
 	if (typeof candidate !== "string" || candidate.length === 0) return false;
@@ -56,4 +69,28 @@ export async function writeCaptionSidecars(
 		written.push(target);
 	}
 	return written;
+}
+
+const CLIPBOARD_FILE_PREFIXES = ["screenmint-clipboard-", "screenmint-export-v2-"];
+const CLIPBOARD_FILE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Startup cleanup. Renders waiting for a save location belong to an editor session, so after a
+ * restart they are all stale. Clipboard copies are file references the user may still paste, so
+ * those are kept for a day.
+ */
+export async function sweepStaleExportTempFiles(tempRoot: string, now = Date.now()) {
+	await fs.rm(getExportTempDir(tempRoot), { recursive: true, force: true }).catch(() => undefined);
+	const names = await fs.readdir(tempRoot).catch(() => [] as string[]);
+	await Promise.all(
+		names
+			.filter((name) => CLIPBOARD_FILE_PREFIXES.some((prefix) => name.startsWith(prefix)))
+			.map(async (name) => {
+				const filePath = path.join(tempRoot, name);
+				const stat = await fs.stat(filePath).catch(() => null);
+				if (stat?.isFile() && now - stat.mtimeMs > CLIPBOARD_FILE_MAX_AGE_MS) {
+					await fs.rm(filePath, { force: true }).catch(() => undefined);
+				}
+			}),
+	);
 }

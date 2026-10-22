@@ -122,15 +122,3 @@ export function buildAudioMixTracksFromRegions(audioRegions: AudioRegion[]): Aud
 		})),
 	];
 }
-
-export function resolveAudioTrackGain(track: AudioMixTrack, options: { speechActive: boolean }) {
-	if (track.muted) return 0;
-	const duckingMultiplier =
-		track.duckUnderSpeech && options.speechActive ? 1 - track.duckingAmount : 1;
-	return clamp(track.volume * duckingMultiplier, 0, 2, 1);
-}
-
-export function filterAudibleTracks(tracks: AudioMixTrack[]) {
-	const soloed = tracks.filter((track) => track.solo && !track.muted);
-	return soloed.length > 0 ? soloed : tracks.filter((track) => !track.muted);
-}

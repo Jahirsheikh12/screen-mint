@@ -558,12 +558,10 @@ let service = RecorderService()
 service.start(configJSON: CommandLine.arguments[1])
 
 DispatchQueue.global(qos: .utility).async {
-	while let input = readLine(strippingNewline: true)?.lowercased() {
-		if input == "stop" {
-			service.stop()
-			break
-		}
-	}
+	// Stop on "stop", or when stdin closes because the app quit or crashed, so the
+	// recording is finalized instead of the helper capturing forever.
+	while let input = readLine(strippingNewline: true)?.lowercased(), input != "stop" {}
+	service.stop()
 }
 
 service.waitUntilFinished()

@@ -4,9 +4,6 @@
 		"selectRegion": "Zoombereich zum Anpassen wählen",
 		"deleteZoom": "Zoom löschen"
 	},
-	"trim": {
-		"deleteRegion": "Schnittbereich löschen"
-	},
 	"speed": {
 		"playbackSpeed": "Wiedergabegeschwindigkeit",
 		"selectRegion": "Geschwindigkeitsbereich zum Anpassen wählen",
@@ -519,8 +516,6 @@
 		"chooseMagnificationLevelFor": "Vergrößerungsstufe für Zoombereiche wählen",
 		"zoomDepth": "Zoomtiefe",
 		"selectHowMuchTo": "Wähle, wie stark der Bereich vergrößert wird",
-		"trimRegion": "Schnittbereich",
-		"removeTheSelectedTrim": "Entfernt den ausgewählten Schnittbereich aus der Timeline",
 		"adjustPlaybackSpeedFor": "Wiedergabegeschwindigkeit für ausgewählte Bereiche anpassen",
 		"speedPresets": "Geschwindigkeitsvorgaben",
 		"chooseASpeedMultiplier": "Wähle einen Geschwindigkeitsfaktor für den ausgewählten Bereich",

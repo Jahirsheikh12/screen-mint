@@ -519,8 +519,6 @@ export function registerMobileCaptureIpcHandlers() {
 		return successState();
 	});
 
-	ipcMain.handle(IPC_CHANNELS.mobileCapture.getPairingState, () => successState());
-
 	ipcMain.handle(
 		IPC_CHANNELS.mobileCapture.setDesktopOffer,
 		(_, sessionId: string, offer: MobileCaptureSignalPayload) => {

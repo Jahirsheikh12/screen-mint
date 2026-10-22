@@ -6,7 +6,6 @@ type IdentifiedRegion = {
 
 type UseTimelineSelectionPruningOptions<
 	TZoom extends IdentifiedRegion,
-	TTrim extends IdentifiedRegion,
 	TAnnotation extends IdentifiedRegion,
 	TSpeed extends IdentifiedRegion,
 	TAudio extends IdentifiedRegion,
@@ -14,9 +13,6 @@ type UseTimelineSelectionPruningOptions<
 	selectedZoomId: string | null;
 	setSelectedZoomId: Dispatch<SetStateAction<string | null>>;
 	zoomRegions: TZoom[];
-	selectedTrimId: string | null;
-	setSelectedTrimId: Dispatch<SetStateAction<string | null>>;
-	trimRegions: TTrim[];
 	selectedAnnotationId: string | null;
 	setSelectedAnnotationId: Dispatch<SetStateAction<string | null>>;
 	annotationRegions: TAnnotation[];
@@ -30,7 +26,6 @@ type UseTimelineSelectionPruningOptions<
 
 export function useTimelineSelectionPruning<
 	TZoom extends IdentifiedRegion,
-	TTrim extends IdentifiedRegion,
 	TAnnotation extends IdentifiedRegion,
 	TSpeed extends IdentifiedRegion,
 	TAudio extends IdentifiedRegion,
@@ -38,9 +33,6 @@ export function useTimelineSelectionPruning<
 	selectedZoomId,
 	setSelectedZoomId,
 	zoomRegions,
-	selectedTrimId,
-	setSelectedTrimId,
-	trimRegions,
 	selectedAnnotationId,
 	setSelectedAnnotationId,
 	annotationRegions,
@@ -50,18 +42,12 @@ export function useTimelineSelectionPruning<
 	selectedAudioId,
 	setSelectedAudioId,
 	audioRegions,
-}: UseTimelineSelectionPruningOptions<TZoom, TTrim, TAnnotation, TSpeed, TAudio>) {
+}: UseTimelineSelectionPruningOptions<TZoom, TAnnotation, TSpeed, TAudio>) {
 	useEffect(() => {
 		if (selectedZoomId && !zoomRegions.some((region) => region.id === selectedZoomId)) {
 			setSelectedZoomId(null);
 		}
 	}, [selectedZoomId, setSelectedZoomId, zoomRegions]);
-
-	useEffect(() => {
-		if (selectedTrimId && !trimRegions.some((region) => region.id === selectedTrimId)) {
-			setSelectedTrimId(null);
-		}
-	}, [selectedTrimId, setSelectedTrimId, trimRegions]);
 
 	useEffect(() => {
 		if (

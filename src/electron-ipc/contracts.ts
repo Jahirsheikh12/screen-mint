@@ -1,10 +1,3 @@
-import type { WebcamSessionMetadata } from "@/components/video-editor/types";
-import type {
-	ExportV2Progress,
-	ExportV2StartRequest,
-	ExportV2StartResult,
-} from "@/lib/exporter/exportV2";
-import type { LayerCaptureSource, LayeredRecordingManifest } from "@/lib/recording/layeredCapture";
 import type { SelectedArea } from "@/lib/recording/session";
 
 export type IpcSelectedSource = {
@@ -37,7 +30,6 @@ export const IPC_CHANNELS = {
 	},
 	screenshot: {
 		capture: "screenshot:capture",
-		copyToClipboard: "screenshot:copy-to-clipboard",
 	},
 	windows: {
 		openSourceSelector: "open-source-selector",
@@ -47,10 +39,6 @@ export const IPC_CHANNELS = {
 	recording: {
 		startNative: "start-native-screen-recording",
 		stopNative: "stop-native-screen-recording",
-		startFfmpeg: "start-ffmpeg-recording",
-		stopFfmpeg: "stop-ffmpeg-recording",
-		storeVideo: "store-recorded-video",
-		getRecordedVideoPath: "get-recorded-video-path",
 		startChunkSession: "start-media-recorder-chunk-session",
 		appendChunk: "append-media-recorder-chunk",
 		finishChunkSession: "finish-media-recorder-chunk-session",
@@ -63,38 +51,22 @@ export const IPC_CHANNELS = {
 		isWgcAvailable: "is-wgc-available",
 		muxWgcRecording: "mux-wgc-recording",
 	},
-	layeredCapture: {
-		setSources: "layered-capture:set-sources",
-		getSources: "layered-capture:get-sources",
-		clearSources: "layered-capture:clear-sources",
-		start: "layered-capture:start",
-		stop: "layered-capture:stop",
-		status: "layered-capture:status",
-	},
-	hostValidation: {
-		getReport: "host-validation:get-report",
-	},
 	telemetry: {
-		setCursorScale: "set-cursor-scale",
 		getCursor: "get-cursor-telemetry",
 		getKeyboard: "get-keyboard-telemetry",
 		getSystemCursorAssets: "get-system-cursor-assets",
 	},
 	permissions: {
-		getAccessibilityStatus: "get-accessibility-permission-status",
 		requestAccessibility: "request-accessibility-permission",
 		getCaptureState: "get-capture-permission-state",
 		requestMicrophone: "request-microphone-access",
-		getScreenRecordingStatus: "get-screen-recording-permission-status",
 		openScreenRecordingPreferences: "open-screen-recording-preferences",
 		openAccessibilityPreferences: "open-accessibility-preferences",
-		probeCaptureSources: "probe-capture-sources",
 		getCaptureDiagnostics: "get-capture-diagnostics",
 	},
 	exportV2: {
 		probe: "exportV2:probe",
 		start: "exportV2:start",
-		createWorker: "exportV2:createWorker",
 		cancel: "exportV2:cancel",
 		streamStart: "exportV2:streamStart",
 		streamAppend: "exportV2:streamAppend",
@@ -109,7 +81,6 @@ export const IPC_CHANNELS = {
 	},
 	exportFiles: {
 		showSaveDialog: "show-export-save-dialog",
-		saveVideo: "save-exported-video",
 		writeVideoToPath: "write-exported-video-to-path",
 		saveVideoToRecordings: "save-exported-video-to-recordings",
 		finalizeTemp: "finalize-exported-temp",
@@ -142,7 +113,6 @@ export const IPC_CHANNELS = {
 	currentMedia: {
 		setVideoPath: "set-current-video-path",
 		getVideoPath: "get-current-video-path",
-		clearVideoPath: "clear-current-video-path",
 		setWebcamPath: "set-current-webcam-path",
 		getWebcamPath: "get-current-webcam-path",
 		clearWebcamPath: "clear-current-webcam-path",
@@ -167,7 +137,6 @@ export const IPC_CHANNELS = {
 	},
 	system: {
 		getPlatform: "get-platform",
-		getAppVersion: "get-app-version",
 		hideCursor: "hide-cursor",
 		getDisplayInfo: "get-display-info",
 		hideDesktopIcons: "hide-desktop-icons",
@@ -177,10 +146,8 @@ export const IPC_CHANNELS = {
 	},
 	updater: {
 		getState: "get-updater-state",
-		checkForUpdates: "check-for-updates",
 		downloadUpdate: "download-update",
 		installAndRestart: "install-update-and-restart",
-		dismissUpdate: "dismiss-update",
 		updateLaterForSession: "update-later-for-session",
 		dismissWhatsNew: "dismiss-whats-new",
 		setBusyState: "set-updater-busy-state",
@@ -203,7 +170,6 @@ export const IPC_CHANNELS = {
 		setSettings: "set-hud-settings",
 	},
 	hudOverlay: {
-		getCaptureProtection: "get-hud-overlay-capture-protection",
 		setCaptureProtection: "set-hud-overlay-capture-protection",
 	},
 	hudWindow: {
@@ -219,7 +185,6 @@ export const IPC_CHANNELS = {
 	mobileCapture: {
 		startPairing: "mobile-capture:start-pairing",
 		stopPairing: "mobile-capture:stop-pairing",
-		getPairingState: "mobile-capture:get-pairing-state",
 		setDesktopOffer: "mobile-capture:set-desktop-offer",
 		addDesktopIceCandidate: "mobile-capture:add-desktop-ice-candidate",
 		getPhoneAnswer: "mobile-capture:get-phone-answer",
@@ -234,13 +199,8 @@ export const IPC_CHANNELS = {
 		create: "create-area-overlay",
 		close: "close-area-overlay",
 		lock: "lock-area-overlay",
-		unlock: "unlock-area-overlay",
 	},
 } as const;
-
-export type IpcChannelGroup = keyof typeof IPC_CHANNELS;
-export type IpcChannelName =
-	(typeof IPC_CHANNELS)[IpcChannelGroup][keyof (typeof IPC_CHANNELS)[IpcChannelGroup]];
 
 export type IpcSuccessResult<T extends object = Record<string, never>> = T & {
 	success: true;
@@ -261,11 +221,6 @@ export type CaptureSourceRequest = {
 	thumbnailSize?: { width: number; height: number };
 	fetchWindowIcons?: boolean;
 };
-
-export type CaptureSourceResult = IpcResult<{
-	sources?: IpcSelectedSource[];
-	source?: IpcSelectedSource | null;
-}>;
 
 export type ScreenshotCaptureRequest = {
 	source?: IpcSelectedSource | null;
@@ -288,44 +243,6 @@ export type ScreenshotCaptureResult = IpcResult<{
 	screenshot?: ScreenshotCaptureMetadata;
 	pngData?: Uint8Array;
 }>;
-
-export type RecordingSegment = {
-	path: string;
-	durationMs: number;
-};
-
-export type RecordingFinalizeRequest = {
-	videoSegments: RecordingSegment[];
-	webcamSegments?: RecordingSegment[];
-	microphoneSegments?: RecordingSegment[];
-	selectedArea?: SelectedArea | null;
-	webcamSessionMetadata?: WebcamSessionMetadata | null;
-};
-
-export type RecordingFinalizeResult = IpcResult<{
-	path?: string;
-	webcamPath?: string | null;
-	webcamSessionMetadata?: WebcamSessionMetadata | null;
-	microphonePath?: string | null;
-}>;
-
-export type LayeredCaptureStartRequest = {
-	sources: LayerCaptureSource[];
-};
-
-export type LayeredCaptureResult = IpcResult<{
-	manifest?: LayeredRecordingManifest | null;
-}>;
-
-export type HostValidationReport = {
-	generatedAt: string;
-	platform: NodeJS.Platform;
-	arch: string;
-	osRelease: string;
-	helpers: Record<string, boolean>;
-	checklist: Array<{ name: string; status: "PENDING" | "PASS" | "FAIL" | "N/A"; notes: string }>;
-	knownLimitations: string[];
-};
 
 export type MobileCaptureStatus =
 	| "idle"
@@ -361,10 +278,3 @@ export type MobileCaptureIceCandidatePayload = {
 export type MobileCapturePairingResult = IpcResult<{
 	state: MobileCapturePairingState;
 }>;
-
-export type ExportV2Bridge = {
-	start: (request: ExportV2StartRequest) => Promise<ExportV2StartResult>;
-	cancel: (jobId: string) => Promise<{ success: boolean }>;
-	workerProgress: (progress: ExportV2Progress) => Promise<{ success: boolean }>;
-	workerComplete: (result: ExportV2StartResult) => Promise<{ success: boolean }>;
-};

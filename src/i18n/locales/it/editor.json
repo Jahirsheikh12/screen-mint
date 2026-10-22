@@ -294,55 +294,10 @@
 	},
 	"sidebar": {
 		"edit": "Modifica",
-		"layers": "Livelli",
 		"polish": "Rifinitura"
 	},
 	"slider": {
 		"resetToDefault": "Ripristina predefinito"
-	},
-	"layerPanel": {
-		"layers": "Livelli",
-		"noVideoLayerLoaded": "Nessun livello video caricato",
-		"loadOrRecordA": "Carica o registra un video per creare il livello principale modificabile.",
-		"pendingCapturedMedia": "Contenuto acquisito in attesa",
-		"layerSettings": "Impostazioni del livello",
-		"transformAndVisibilityControls": "Trasformazione e visibilità",
-		"layerName": "Nome del livello",
-		"hideLayer": "Nascondi livello",
-		"showLayer": "Mostra livello",
-		"unlockLayer": "Sblocca livello",
-		"lockLayer": "Blocca livello",
-		"thisLayerIsPlanned": "Questo livello è previsto ma non ha ancora contenuti acquisiti.",
-		"transform": "Trasformazione",
-		"xPosition": "Posizione X",
-		"yPosition": "Posizione Y",
-		"scale": "Scala",
-		"opacity": "Opacità",
-		"startMs": "Inizio (ms)",
-		"endMs": "Fine (ms)",
-		"crop": "Ritaglio",
-		"moveLayerForward": "Porta il livello avanti",
-		"moveLayerBackward": "Porta il livello indietro",
-		"editableLayersOne": "1 livello modificabile",
-		"editableLayersMany": "{{count}} livelli modificabili",
-		"primaryRecording": "Registrazione principale",
-		"delete": "Elimina",
-		"cropFields": {
-			"x": "X",
-			"y": "Y",
-			"width": "Larghezza",
-			"height": "Altezza"
-		},
-		"layerKinds": {
-			"video": "Video",
-			"window": "Finestra",
-			"screenshot": "Screenshot",
-			"webcam": "Webcam",
-			"audio": "Audio",
-			"annotation": "Annotazione",
-			"caption": "Sottotitolo",
-			"scene-3d": "3D"
-		}
 	},
 	"annotationPanel": {
 		"customFonts": "Caratteri personalizzati",
@@ -368,23 +323,6 @@
 		"noArrowData": "Nessun dato della freccia"
 	},
 	"polishPanel": {
-		"environmentLensAndLighting": "Impostazioni di ambiente, obiettivo e illuminazione",
-		"enable3dRendering": "Attiva il rendering 3D",
-		"preset": "Preset",
-		"device": "Dispositivo",
-		"environment": "Ambiente",
-		"fallback": "Riserva",
-		"lens": "Obiettivo",
-		"lighting": "Illuminazione",
-		"audioMix": "Mix audio",
-		"trackVolumeAndDucking": "Volume delle tracce e regole di attenuazione",
-		"masterVolume": "Volume generale",
-		"mute": "Muto",
-		"solo": "Solo",
-		"duck": "Attenua",
-		"vol": "Vol.",
-		"fadeIn": "Dissolvenza in entrata",
-		"fadeOut": "Dissolvenza in uscita",
 		"autoPolish": "Rifinitura automatica",
 		"oneClickStudioTemplates": "Modelli studio con un clic"
 	},

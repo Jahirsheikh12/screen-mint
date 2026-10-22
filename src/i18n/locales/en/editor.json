@@ -294,55 +294,10 @@
 	},
 	"sidebar": {
 		"edit": "Edit",
-		"layers": "Layers",
 		"polish": "Polish"
 	},
 	"slider": {
 		"resetToDefault": "Reset to default"
-	},
-	"layerPanel": {
-		"layers": "Layers",
-		"noVideoLayerLoaded": "No video layer loaded",
-		"loadOrRecordA": "Load or record a video to create the primary editable layer.",
-		"pendingCapturedMedia": "Pending captured media",
-		"layerSettings": "Layer Settings",
-		"transformAndVisibilityControls": "Transform and visibility controls",
-		"layerName": "Layer name",
-		"hideLayer": "Hide layer",
-		"showLayer": "Show layer",
-		"unlockLayer": "Unlock layer",
-		"lockLayer": "Lock layer",
-		"thisLayerIsPlanned": "This layer is planned but does not have captured media yet.",
-		"transform": "Transform",
-		"xPosition": "X Position",
-		"yPosition": "Y Position",
-		"scale": "Scale",
-		"opacity": "Opacity",
-		"startMs": "Start ms",
-		"endMs": "End ms",
-		"crop": "Crop",
-		"moveLayerForward": "Move layer forward",
-		"moveLayerBackward": "Move layer backward",
-		"editableLayersOne": "1 editable layer",
-		"editableLayersMany": "{{count}} editable layers",
-		"primaryRecording": "Primary recording",
-		"delete": "Delete",
-		"cropFields": {
-			"x": "X",
-			"y": "Y",
-			"width": "Width",
-			"height": "Height"
-		},
-		"layerKinds": {
-			"video": "Video",
-			"window": "Window",
-			"screenshot": "Screenshot",
-			"webcam": "Cam",
-			"audio": "Audio",
-			"annotation": "Annotation",
-			"caption": "Caption",
-			"scene-3d": "3D"
-		}
 	},
 	"annotationPanel": {
 		"customFonts": "Custom Fonts",
@@ -368,23 +323,6 @@
 		"noArrowData": "No arrow data"
 	},
 	"polishPanel": {
-		"environmentLensAndLighting": "Environment, lens, and lighting configuration",
-		"enable3dRendering": "Enable 3D Rendering",
-		"preset": "Preset",
-		"device": "Device",
-		"environment": "Environment",
-		"fallback": "Fallback",
-		"lens": "Lens",
-		"lighting": "Lighting",
-		"audioMix": "Audio Mix",
-		"trackVolumeAndDucking": "Track volume and ducking rules",
-		"masterVolume": "Master Volume",
-		"mute": "Mute",
-		"solo": "Solo",
-		"duck": "Duck",
-		"vol": "Vol",
-		"fadeIn": "Fade In",
-		"fadeOut": "Fade Out",
 		"autoPolish": "Auto Polish",
 		"oneClickStudioTemplates": "One-click studio templates"
 	},

@@ -15,7 +15,6 @@ import {
 	createSpeakerNotesWindow,
 	getCountdownWindow,
 	lockAreaOverlayWindow,
-	unlockAreaOverlayWindow,
 	updateSpeakerNotesWindow,
 } from "../windows";
 
@@ -55,9 +54,11 @@ async function isFinderDesktopVisible(): Promise<boolean> {
 	}
 }
 
+type CountdownResult = { success: boolean; cancelled?: boolean };
+
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
-let countdownCancelled = false;
-let countdownInProgress = false;
+// Set while a countdown runs; every way it can end (finish, cancel, window closed) goes through it.
+let finishCountdown: ((result: CountdownResult) => void) | null = null;
 
 function getScreen() {
 	return nodeRequire("electron").screen as typeof import("electron").screen;
@@ -68,16 +69,8 @@ export function registerSystemSettingsIpcHandlers() {
 		return process.platform;
 	});
 
-	ipcMain.handle(IPC_CHANNELS.system.getAppVersion, () => {
-		return getScreenMintUpdater().getAppVersion();
-	});
-
 	ipcMain.handle(IPC_CHANNELS.updater.getState, () => {
 		return getScreenMintUpdater().getState();
-	});
-
-	ipcMain.handle(IPC_CHANNELS.updater.checkForUpdates, async () => {
-		return await getScreenMintUpdater().checkForUpdates("manual");
 	});
 
 	ipcMain.handle(IPC_CHANNELS.updater.downloadUpdate, async () => {
@@ -86,10 +79,6 @@ export function registerSystemSettingsIpcHandlers() {
 
 	ipcMain.handle(IPC_CHANNELS.updater.installAndRestart, async () => {
 		return await getScreenMintUpdater().installUpdateAndRestart();
-	});
-
-	ipcMain.handle(IPC_CHANNELS.updater.dismissUpdate, async () => {
-		return await getScreenMintUpdater().dismissUpdate();
 	});
 
 	ipcMain.handle(IPC_CHANNELS.updater.updateLaterForSession, async () => {
@@ -160,67 +149,49 @@ export function registerSystemSettingsIpcHandlers() {
 	});
 
 	ipcMain.handle(IPC_CHANNELS.countdown.start, async (_, seconds: number, displayId?: number) => {
-		if (countdownInProgress) {
+		if (finishCountdown) {
 			return { success: false, error: "Countdown already in progress" };
 		}
 
-		countdownInProgress = true;
-		countdownCancelled = false;
+		return new Promise<CountdownResult>((resolve) => {
+			const countdownWin = createCountdownWindow(
+				typeof displayId === "number" && Number.isFinite(displayId) ? displayId : undefined,
+			);
 
-		const countdownWin = createCountdownWindow(
-			typeof displayId === "number" && Number.isFinite(displayId) ? displayId : undefined,
-		);
+			finishCountdown = (result) => {
+				finishCountdown = null;
+				if (countdownTimer) {
+					clearInterval(countdownTimer);
+					countdownTimer = null;
+				}
+				closeCountdownWindow();
+				resolve(result);
+			};
 
-		await new Promise<void>((resolve) => {
-			countdownWin.webContents.once("did-finish-load", () => resolve());
-		});
+			countdownWin.once("closed", () => finishCountdown?.({ success: false, cancelled: true }));
+			countdownWin.webContents.once("did-finish-load", () => {
+				if (!finishCountdown) return;
+				let remaining = seconds;
+				countdownWin.webContents.send("countdown-tick", remaining);
 
-		return new Promise<{ success: boolean; cancelled?: boolean }>((resolve) => {
-			let remaining = seconds;
-
-			countdownWin.webContents.send("countdown-tick", remaining);
-
-			countdownTimer = setInterval(() => {
-				if (countdownCancelled) {
-					if (countdownTimer) {
-						clearInterval(countdownTimer);
-						countdownTimer = null;
+				countdownTimer = setInterval(() => {
+					remaining--;
+					if (remaining <= 0) {
+						finishCountdown?.({ success: true });
+						return;
 					}
-					closeCountdownWindow();
-					countdownInProgress = false;
-					resolve({ success: false, cancelled: true });
-					return;
-				}
 
-				remaining--;
-
-				if (remaining <= 0) {
-					if (countdownTimer) {
-						clearInterval(countdownTimer);
-						countdownTimer = null;
+					const win = getCountdownWindow();
+					if (win && !win.isDestroyed()) {
+						win.webContents.send("countdown-tick", remaining);
 					}
-					closeCountdownWindow();
-					countdownInProgress = false;
-					resolve({ success: true });
-					return;
-				}
-
-				const win = getCountdownWindow();
-				if (win && !win.isDestroyed()) {
-					win.webContents.send("countdown-tick", remaining);
-				}
-			}, 1000);
+				}, 1000);
+			});
 		});
 	});
 
 	ipcMain.handle(IPC_CHANNELS.countdown.cancel, () => {
-		countdownCancelled = true;
-		countdownInProgress = false;
-		if (countdownTimer) {
-			clearInterval(countdownTimer);
-			countdownTimer = null;
-		}
-		closeCountdownWindow();
+		finishCountdown?.({ success: false, cancelled: true });
 		return { success: true };
 	});
 
@@ -350,11 +321,6 @@ export function registerSystemSettingsIpcHandlers() {
 
 	ipcMain.handle(IPC_CHANNELS.areaOverlay.lock, () => {
 		lockAreaOverlayWindow();
-		return { success: true };
-	});
-
-	ipcMain.handle(IPC_CHANNELS.areaOverlay.unlock, () => {
-		unlockAreaOverlayWindow();
 		return { success: true };
 	});
 }

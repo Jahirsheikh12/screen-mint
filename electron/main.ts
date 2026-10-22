@@ -13,11 +13,13 @@ import {
 	shell,
 	Tray,
 } from "electron";
+import { sweepStaleExportTempFiles } from "./exportTemp";
 import {
 	adoptRecoveredRecording,
 	getSelectedSourceId,
 	killWgcCaptureProcess,
 	registerIpcHandlers,
+	stopNativeCaptureOnQuit,
 } from "./ipc/handlers";
 import { takeInterruptedRecordings } from "./recordingRecovery";
 import { getScreenMintUpdater } from "./updater";
@@ -434,26 +436,34 @@ function createEditorWindowWrapper() {
 			closeEditorWindowBypassingUnsavedPrompt(outgoing);
 		}
 	}
-	mainWindow = null;
-	mainWindow = createEditorWindow();
+	const editorWindow = createEditorWindow();
+	mainWindow = editorWindow;
 	editorHasUnsavedChanges = false;
 
-	mainWindow.on("closed", () => {
-		if (mainWindow?.isDestroyed()) {
-			mainWindow = null;
-		}
+	editorWindow.on("closed", () => {
 		isForceClosing = false;
+		// A replaced editor closes after its successor opened; leave the new window's state alone.
+		if (mainWindow !== editorWindow) return;
+		mainWindow = null;
 		editorHasUnsavedChanges = false;
 	});
 
-	mainWindow.on("close", (event) => {
+	// The editor's beforeunload blocks unloads while there are unsaved changes. Once the user
+	// has chosen Save & Close or Discard & Close here, that choice wins.
+	editorWindow.webContents.on("will-prevent-unload", (event) => {
+		if (isForceClosing) {
+			event.preventDefault();
+		}
+	});
+
+	editorWindow.on("close", (event) => {
 		if (isForceClosing || !editorHasUnsavedChanges) {
 			return;
 		}
 
 		event.preventDefault();
 
-		const choice = dialog.showMessageBoxSync(mainWindow!, {
+		const choice = dialog.showMessageBoxSync(editorWindow, {
 			type: "warning",
 			buttons: ["Save & Close", "Discard & Close", "Cancel"],
 			defaultId: 0,
@@ -464,12 +474,16 @@ function createEditorWindowWrapper() {
 		});
 
 		if (choice === 0) {
-			mainWindow!.webContents.send("request-save-before-close");
-			ipcMain.once("save-before-close-done", () => {
-				closeEditorWindowBypassingUnsavedPrompt(mainWindow);
+			// Only one save-and-close can be pending; a repeated close replaces it.
+			ipcMain.removeAllListeners("save-before-close-done");
+			ipcMain.once("save-before-close-done", (_event, saved: boolean) => {
+				if (saved) {
+					closeEditorWindowBypassingUnsavedPrompt(editorWindow);
+				}
 			});
+			editorWindow.webContents.send("request-save-before-close");
 		} else if (choice === 1) {
-			closeEditorWindowBypassingUnsavedPrompt(mainWindow);
+			closeEditorWindowBypassingUnsavedPrompt(editorWindow);
 		}
 	});
 }
@@ -533,6 +547,7 @@ async function promptToMoveAppToApplications() {
 // explicitly with Cmd + Q.
 app.on("before-quit", () => {
 	killWgcCaptureProcess();
+	stopNativeCaptureOnQuit();
 });
 
 app.on("window-all-closed", () => {
@@ -550,6 +565,23 @@ app.on("second-instance", () => {
 });
 
 // Register all IPC handlers when app is ready
+// Windows load only the app's own pages: links that try to open a window go to the system
+// browser, and navigating to another origin is blocked.
+app.on("web-contents-created", (_event, contents) => {
+	contents.setWindowOpenHandler(({ url }) => {
+		if (url.startsWith("https://") || url.startsWith("http://")) {
+			void shell.openExternal(url);
+		}
+		return { action: "deny" };
+	});
+	contents.on("will-navigate", (event, url) => {
+		const current = contents.getURL();
+		if (current && new URL(url).origin !== new URL(current).origin) {
+			event.preventDefault();
+		}
+	});
+});
+
 app.whenReady().then(async () => {
 	const updater = getScreenMintUpdater();
 
@@ -600,6 +632,7 @@ app.whenReady().then(async () => {
 		},
 	);
 	void offerInterruptedRecordingRecovery();
+	void sweepStaleExportTempFiles(app.getPath("temp"));
 
 	// Register the display media handler so that renderer's getDisplayMedia()
 	// calls land on the pre-selected source without showing a system picker.
@@ -613,7 +646,8 @@ app.whenReady().then(async () => {
 		try {
 			const sources = await desktopCapturer.getSources({ types: ["screen", "window"] });
 			const sourceId = getSelectedSourceId();
-			const source = sourceId ? (sources.find((s) => s.id === sourceId) ?? sources[0]) : sources[0];
+			// A picked source that has since closed must fail, not silently record another screen.
+			const source = sourceId ? sources.find((s) => s.id === sourceId) : sources[0];
 			if (source) {
 				callback({
 					video: { id: source.id, name: source.name },

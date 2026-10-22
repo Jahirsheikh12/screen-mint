@@ -294,55 +294,10 @@
 	},
 	"sidebar": {
 		"edit": "Editar",
-		"layers": "Camadas",
 		"polish": "Acabamento"
 	},
 	"slider": {
 		"resetToDefault": "Restaurar padrão"
-	},
-	"layerPanel": {
-		"layers": "Camadas",
-		"noVideoLayerLoaded": "Nenhuma camada de vídeo carregada",
-		"loadOrRecordA": "Carregue ou grave um vídeo para criar a camada principal editável.",
-		"pendingCapturedMedia": "Captura pendente",
-		"layerSettings": "Configurações da camada",
-		"transformAndVisibilityControls": "Transformação e visibilidade",
-		"layerName": "Nome da camada",
-		"hideLayer": "Ocultar camada",
-		"showLayer": "Mostrar camada",
-		"unlockLayer": "Desbloquear camada",
-		"lockLayer": "Bloquear camada",
-		"thisLayerIsPlanned": "Esta camada está planejada, mas ainda não tem conteúdo capturado.",
-		"transform": "Transformação",
-		"xPosition": "Posição X",
-		"yPosition": "Posição Y",
-		"scale": "Escala",
-		"opacity": "Opacidade",
-		"startMs": "Início (ms)",
-		"endMs": "Fim (ms)",
-		"crop": "Cortar",
-		"moveLayerForward": "Trazer a camada para frente",
-		"moveLayerBackward": "Enviar a camada para trás",
-		"editableLayersOne": "1 camada editável",
-		"editableLayersMany": "{{count}} camadas editáveis",
-		"primaryRecording": "Gravação principal",
-		"delete": "Excluir",
-		"cropFields": {
-			"x": "X",
-			"y": "Y",
-			"width": "Largura",
-			"height": "Altura"
-		},
-		"layerKinds": {
-			"video": "Vídeo",
-			"window": "Janela",
-			"screenshot": "Captura",
-			"webcam": "Câmera",
-			"audio": "Áudio",
-			"annotation": "Anotação",
-			"caption": "Legenda",
-			"scene-3d": "3D"
-		}
 	},
 	"annotationPanel": {
 		"customFonts": "Fontes personalizadas",
@@ -368,23 +323,6 @@
 		"noArrowData": "Sem dados de seta"
 	},
 	"polishPanel": {
-		"environmentLensAndLighting": "Configuração de ambiente, lente e iluminação",
-		"enable3dRendering": "Ativar renderização 3D",
-		"preset": "Estilo",
-		"device": "Dispositivo",
-		"environment": "Ambiente",
-		"fallback": "Alternativa",
-		"lens": "Lente",
-		"lighting": "Iluminação",
-		"audioMix": "Mixagem de áudio",
-		"trackVolumeAndDucking": "Volume das faixas e regras de ducking",
-		"masterVolume": "Volume geral",
-		"mute": "Silenciar",
-		"solo": "Solo",
-		"duck": "Abaixar",
-		"vol": "Vol.",
-		"fadeIn": "Entrada suave",
-		"fadeOut": "Saída suave",
 		"autoPolish": "Acabamento automático",
 		"oneClickStudioTemplates": "Modelos de estúdio com um clique"
 	},

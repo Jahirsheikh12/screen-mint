@@ -2,7 +2,10 @@ import { ipcMain } from "electron";
 import { IPC_CHANNELS } from "../../src/electron-ipc/contracts";
 
 type RegisterExportV2StreamIpcHandlersOptions = {
-	startExportV2StreamSession: (filePath: string) => Promise<{ id: string; path: string }>;
+	startExportV2StreamSession: (
+		filePath: string,
+		ownerId: number,
+	) => Promise<{ id: string; path: string }>;
 	appendExportV2StreamSession: (
 		sessionId: string,
 		chunk: ArrayBuffer,
@@ -20,9 +23,9 @@ export function registerExportV2StreamIpcHandlers({
 	finishExportV2StreamSession,
 	discardExportV2StreamSession,
 }: RegisterExportV2StreamIpcHandlersOptions) {
-	ipcMain.handle(IPC_CHANNELS.exportV2.streamStart, async (_, filePath: string) => {
+	ipcMain.handle(IPC_CHANNELS.exportV2.streamStart, async (event, filePath: string) => {
 		try {
-			const session = await startExportV2StreamSession(filePath);
+			const session = await startExportV2StreamSession(filePath, event.sender.id);
 			return { success: true, ...session };
 		} catch (error) {
 			return { success: false, error: String(error) };

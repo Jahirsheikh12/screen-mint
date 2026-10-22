@@ -168,7 +168,6 @@ export interface ExportCompositionPayload {
 	frameBorderOpacity?: number;
 	borderRadius?: number;
 	padding?: PaddingValue;
-	videoPadding?: number;
 	cropRegion: CropRegion;
 	aspectRatio?: AspectRatio;
 	annotationRegions?: AnnotationRegion[];
@@ -254,6 +253,8 @@ export function selectExportV2Engine(signals: ExportV2EngineSignals): ExportV2En
 	if (requiresComposition) {
 		const mayUseNativeComposition =
 			signals.format === "mp4" &&
+			!signals.hasCaptions &&
+			!signals.hasAnnotations &&
 			!signals.hasExternalAudio &&
 			!signals.hasWebcam &&
 			!signals.hasKeyboardCallouts &&

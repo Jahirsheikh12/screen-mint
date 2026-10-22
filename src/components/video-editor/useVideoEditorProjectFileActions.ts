@@ -6,7 +6,7 @@ type UseVideoEditorProjectFileActionsOptions = {
 	hasUnsavedChanges: boolean;
 	isExporting: boolean;
 	isTranscribing: boolean;
-	saveProject: (forceSaveAs: boolean) => Promise<void>;
+	saveProject: (forceSaveAs: boolean) => Promise<boolean>;
 	applyLoadedProject: (candidate: unknown, path?: string | null) => Promise<boolean>;
 };
 
@@ -53,9 +53,7 @@ export function useVideoEditorProjectFileActions({
 	}, []);
 
 	useEffect(() => {
-		const cleanup = window.electronAPI.onRequestSaveBeforeClose(async () => {
-			await saveProject(false);
-		});
+		const cleanup = window.electronAPI.onRequestSaveBeforeClose(() => saveProject(false));
 
 		return () => cleanup?.();
 	}, [saveProject]);

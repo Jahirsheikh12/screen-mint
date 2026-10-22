@@ -22,14 +22,16 @@ import type {
 	ExportV2Progress,
 	ExportV2StartRequest,
 	ExportV2StartResult,
-	ExportV2TrimRegion,
 } from "../../src/lib/exporter/exportV2";
 import {
 	buildGifPaletteFilter,
 	buildGifRawPipeFfmpegArgs,
 	resolveGifFfmpegLoop,
 } from "../../src/lib/exporter/gifFfmpeg";
-import { compileNativeComposedExport } from "../../src/lib/exporter/nativeComposed";
+import {
+	buildTrimFilters,
+	compileNativeComposedExport,
+} from "../../src/lib/exporter/nativeComposed";
 import { isFeatureEnabled } from "../../src/lib/featureFlags";
 import { buildCollisionFileName, ensureFileExtension } from "../../src/lib/fileNames";
 import type { PostRecordingContext } from "../../src/lib/recording/postRecording";
@@ -38,7 +40,7 @@ import type {
 	CursorTelemetrySample as SessionCursorTelemetrySample,
 } from "../../src/lib/recording/session";
 import { buildAreaCropFilter, toDisplaySourceRect } from "../areaCapture";
-import { createExportTempPath } from "../exportTemp";
+import { approveExportPath, createExportTempPath, isApprovedExportPath } from "../exportTemp";
 import { RECORDINGS_DIR } from "../main";
 import { markRecordingStarted, markRecordingStopped } from "../recordingRecovery";
 import { getScreenMintUpdater } from "../updater";
@@ -60,8 +62,6 @@ import {
 } from "./cursorTelemetryUtils";
 import { registerExportFileIpcHandlers } from "./exportFileHandlers";
 import { registerExportV2StreamIpcHandlers } from "./exportV2StreamHandlers";
-import { registerHostValidationIpcHandlers } from "./hostValidationHandlers";
-import { registerLayeredCaptureIpcHandlers } from "./layeredCaptureHandlers";
 import { registerMobileCaptureIpcHandlers } from "./mobileCaptureHandlers";
 import { registerPermissionDiagnosticsIpcHandlers } from "./permissionDiagnosticsHandlers";
 import { registerPostRecordingIpcHandlers } from "./postRecordingHandlers";
@@ -165,10 +165,6 @@ let wgcCaptureStopRequested = false;
 let wgcSystemAudioPath: string | null = null;
 let wgcMicAudioPath: string | null = null;
 let wgcPendingVideoPath: string | null = null;
-let ffmpegScreenRecordingActive = false;
-let ffmpegCaptureProcess: ChildProcessWithoutNullStreams | null = null;
-let ffmpegCaptureOutputBuffer = "";
-let ffmpegCaptureTargetPath: string | null = null;
 const exportV2Jobs = new Map<
 	string,
 	{
@@ -189,6 +185,8 @@ type ExportV2StreamSession = {
 	pending: Promise<void>;
 	bytesWritten: number;
 	closed: boolean;
+	// webContents id of the renderer that opened it, so a dead worker's files can be cleaned up.
+	ownerId: number;
 };
 const exportV2StreamSessions = new Map<string, ExportV2StreamSession>();
 type ExportV2GifPipeSession = {
@@ -316,6 +314,14 @@ export function killWgcCaptureProcess() {
 		wgcMicAudioPath = null;
 		wgcPendingVideoPath = null;
 		currentMicrophoneAudioPath = null;
+	}
+}
+
+export function stopNativeCaptureOnQuit() {
+	// The macOS helper finalizes its file and exits when told to stop or when stdin closes.
+	if (nativeCaptureProcess && !nativeCaptureProcess.stdin.destroyed) {
+		nativeCaptureStopRequested = true;
+		nativeCaptureProcess.stdin.end("stop\n");
 	}
 }
 
@@ -961,10 +967,12 @@ async function findAvailableFilePath(directoryPath: string, fileName: string) {
 }
 
 async function writeBufferToUniqueFile(directoryPath: string, fileName: string, data: Buffer) {
+	// basename keeps a renderer-supplied name like "../x" inside the directory.
+	const safeFileName = path.basename(fileName);
 	for (let collisionIndex = 0; collisionIndex < 1000; collisionIndex += 1) {
 		const candidatePath = path.join(
 			directoryPath,
-			buildCollisionFileName(fileName, collisionIndex),
+			buildCollisionFileName(safeFileName, collisionIndex),
 		);
 
 		try {
@@ -992,35 +1000,15 @@ function normalizeExportV2SourcePath(sourcePath: string) {
 	return sourcePath;
 }
 
-function buildTrimSelectExpression(trimRegions: ExportV2TrimRegion[] = []) {
-	const validTrims = trimRegions
-		.filter((region) => region.endMs > region.startMs)
-		.map((region) => ({
-			startSec: Math.max(0, region.startMs / 1000),
-			endSec: Math.max(0, region.endMs / 1000),
-		}));
-
-	if (validTrims.length === 0) {
-		return null;
-	}
-
-	const removedRanges = validTrims
-		.map((region) => `between(t\\,${region.startSec.toFixed(3)}\\,${region.endSec.toFixed(3)})`)
-		.join("+");
-	return `not(${removedRanges})`;
-}
-
 async function resolveExportV2OutputPath(request: ExportV2StartRequest) {
 	const extension = request.format === "gif" ? "gif" : "mp4";
 	const fileName = ensureFileExtension(request.fileName, extension);
 
-	if (request.outputPath) {
-		return { path: request.outputPath, canceled: false };
-	}
-
 	if (request.destination === "clipboard") {
 		return {
-			path: path.join(app.getPath("temp"), `screenmint-export-v2-${Date.now()}.${extension}`),
+			path: approveExportPath(
+				path.join(app.getPath("temp"), `screenmint-export-v2-${Date.now()}.${extension}`),
+			),
 			canceled: false,
 		};
 	}
@@ -1028,22 +1016,28 @@ async function resolveExportV2OutputPath(request: ExportV2StartRequest) {
 	if (request.destination === "temp") {
 		const tempPath = createExportTempPath(app.getPath("temp"), extension);
 		await fs.mkdir(path.dirname(tempPath), { recursive: true });
-		return { path: tempPath, canceled: false };
+		return { path: approveExportPath(tempPath), canceled: false };
 	}
 
 	if (request.destination === "file") {
 		const result = await dialog.showSaveDialog(getExportSaveDialogOptions(fileName));
-		return { path: result.filePath, canceled: result.canceled || !result.filePath };
+		return {
+			path: approveExportPath(result.filePath),
+			canceled: result.canceled || !result.filePath,
+		};
 	}
 
 	const recordingsDir = await getRecordingsDir();
 	return {
-		path: await findAvailableFilePath(recordingsDir, fileName),
+		path: approveExportPath(await findAvailableFilePath(recordingsDir, fileName)),
 		canceled: false,
 	};
 }
 
-async function startExportV2StreamSession(filePath: string) {
+async function startExportV2StreamSession(filePath: string, ownerId: number) {
+	if (!isApprovedExportPath(filePath)) {
+		throw new Error("Export path was not chosen by ScreenMint.");
+	}
 	await fs.mkdir(path.dirname(filePath), { recursive: true });
 	const id = `export-stream-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 	const handle = await fs.open(filePath, "w");
@@ -1054,6 +1048,7 @@ async function startExportV2StreamSession(filePath: string) {
 		pending: Promise.resolve(),
 		bytesWritten: 0,
 		closed: false,
+		ownerId,
 	};
 	exportV2StreamSessions.set(id, session);
 	return { id, path: filePath };
@@ -1108,9 +1103,40 @@ async function discardExportV2StreamSession(id: string) {
 	await fs.rm(session.path, { force: true }).catch(() => undefined);
 }
 
+async function discardExportV2StreamSessionsForOwner(ownerId: number) {
+	const owned = [...exportV2StreamSessions.values()].filter(
+		(session) => session.ownerId === ownerId,
+	);
+	await Promise.all(owned.map((session) => discardExportV2StreamSession(session.id)));
+}
+
+// Ends a worker job that did not finish on its own (cancel, timeout, worker crash or close):
+// settles it, removes the partial files the worker was writing and closes the worker.
+async function abortExportV2WorkerJob(
+	jobId: string,
+	result: ExportV2StartResult,
+	workerContentsId?: number,
+) {
+	const resolver = exportV2WorkerResolvers.get(jobId);
+	const worker = exportV2WorkerWindows.get(jobId);
+	const contentsId =
+		workerContentsId ?? (worker && !worker.isDestroyed() ? worker.webContents.id : undefined);
+	resolver?.(result);
+	if (contentsId !== undefined) {
+		await discardExportV2StreamSessionsForOwner(contentsId);
+	}
+	await discardExportV2GifPipeSessionsForJob(jobId);
+	if (worker && !worker.isDestroyed()) {
+		worker.close();
+	}
+}
+
 async function startExportV2GifPipeSession(request: ExportV2GifPipeStartRequest) {
 	if (request.width <= 0 || request.height <= 0 || request.frameRate <= 0) {
 		throw new Error("Invalid GIF pipe dimensions or frame rate.");
+	}
+	if (!isApprovedExportPath(request.outputPath)) {
+		throw new Error("Export path was not chosen by ScreenMint.");
 	}
 
 	await fs.mkdir(path.dirname(request.outputPath), { recursive: true });
@@ -1260,17 +1286,17 @@ function buildExportV2VideoArgs(
 	encoder: ExportV2EncoderCandidate,
 ): ExportV2FfmpegAttempt {
 	const filters: string[] = [];
-	const trimExpression = buildTrimSelectExpression(request.trimRegions);
-	if (trimExpression) {
-		filters.push(`select='${trimExpression}',setpts=N/FRAME_RATE/TB`);
+	const trimFilters = buildTrimFilters(request.trimRegions);
+	if (trimFilters) {
+		filters.push(trimFilters.video);
 	}
 	filters.push(`fps=${request.frameRate}`);
 	filters.push(`scale=${request.width}:${request.height}:flags=lanczos`);
 	filters.push("format=yuv420p");
 
 	const audioFilters: string[] = [];
-	if (trimExpression) {
-		audioFilters.push(`aselect='${trimExpression}',asetpts=N/SR/TB`);
+	if (trimFilters) {
+		audioFilters.push(trimFilters.audio);
 	}
 
 	const args = [
@@ -1342,7 +1368,7 @@ function buildExportV2GifArgs(
 	outputPath: string,
 ): ExportV2FfmpegAttempt {
 	const fps = request.frameRate;
-	const trimExpression = buildTrimSelectExpression(request.trimRegions);
+	const trimFilter = buildTrimFilters(request.trimRegions)?.video ?? null;
 	const gifSettings = {
 		colorCount: request.gif?.colorCount ?? 128,
 		ditherMode: request.gif?.ditherMode ?? "bayer",
@@ -1354,7 +1380,7 @@ function buildExportV2GifArgs(
 		width: request.width,
 		height: request.height,
 		frameRate: fps,
-		trimSelectExpression: trimExpression,
+		trimFilter,
 		settings: gifSettings,
 	});
 	const args = [
@@ -1498,6 +1524,7 @@ async function runExportV2WorkerJob(
 ): Promise<ExportV2StartResult> {
 	const jobId = request.jobId ?? `export-v2-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 	const worker = createExportWorkerWindow();
+	const workerContentsId = worker.webContents.id;
 	const workerReady = worker.webContents.isLoading()
 		? new Promise<void>((resolve) => {
 				worker.webContents.once("did-finish-load", () => resolve());
@@ -1509,19 +1536,35 @@ async function runExportV2WorkerJob(
 	return await new Promise<ExportV2StartResult>((resolve) => {
 		const timeout = setTimeout(
 			() => {
-				exportV2WorkerResolvers.delete(jobId);
-				resolve({
-					success: false,
-					fallbackToLegacy: true,
+				void abortExportV2WorkerJob(
 					jobId,
-					error: "Export worker timed out.",
-				});
+					{ success: false, fallbackToLegacy: true, jobId, error: "Export worker timed out." },
+					workerContentsId,
+				);
 			},
 			30 * 60 * 1000,
 		);
+		const onWorkerGone = () => {
+			void abortExportV2WorkerJob(
+				jobId,
+				{
+					success: false,
+					fallbackToLegacy: true,
+					jobId,
+					error: "Export worker stopped unexpectedly.",
+				},
+				workerContentsId,
+			);
+		};
+		worker.once("closed", onWorkerGone);
+		worker.webContents.once("render-process-gone", onWorkerGone);
 
 		exportV2WorkerResolvers.set(jobId, (result) => {
 			clearTimeout(timeout);
+			worker.off("closed", onWorkerGone);
+			if (!worker.isDestroyed()) {
+				worker.webContents.off("render-process-gone", onWorkerGone);
+			}
 			exportV2WorkerResolvers.delete(jobId);
 			exportV2WorkerOwners.delete(jobId);
 			exportV2WorkerWindows.delete(jobId);
@@ -1535,95 +1578,6 @@ async function runExportV2WorkerJob(
 			jobId,
 		});
 	});
-}
-
-function waitForFfmpegCaptureStart(process: ChildProcessWithoutNullStreams) {
-	return new Promise<void>((resolve, reject) => {
-		const onError = (error: Error) => {
-			cleanup();
-			reject(error);
-		};
-
-		const onExit = (code: number | null) => {
-			cleanup();
-			reject(
-				new Error(
-					ffmpegCaptureOutputBuffer.trim() ||
-						`FFmpeg exited before recording started (code ${code ?? "unknown"})`,
-				),
-			);
-		};
-
-		const timer = setTimeout(() => {
-			cleanup();
-			resolve();
-		}, 900);
-
-		const cleanup = () => {
-			clearTimeout(timer);
-			process.off("error", onError);
-			process.off("exit", onExit);
-		};
-
-		process.once("error", onError);
-		process.once("exit", onExit);
-	});
-}
-
-function waitForFfmpegCaptureStop(process: ChildProcessWithoutNullStreams, outputPath: string) {
-	return new Promise<string>((resolve, reject) => {
-		const onClose = async (code: number | null) => {
-			cleanup();
-
-			try {
-				await fs.access(outputPath);
-				if (code === 0 || code === null) {
-					resolve(outputPath);
-					return;
-				}
-
-				if (ffmpegCaptureOutputBuffer.includes("Exiting normally")) {
-					resolve(outputPath);
-					return;
-				}
-			} catch {
-				// handled below
-			}
-
-			reject(
-				new Error(
-					ffmpegCaptureOutputBuffer.trim() || `FFmpeg exited with code ${code ?? "unknown"}`,
-				),
-			);
-		};
-
-		const onError = (error: Error) => {
-			cleanup();
-			reject(error);
-		};
-
-		const cleanup = () => {
-			process.off("close", onClose);
-			process.off("error", onError);
-		};
-
-		process.once("close", onClose);
-		process.once("error", onError);
-	});
-}
-
-function getDisplayBoundsForSource(source: SelectedSource) {
-	const sourceDisplayId = Number(source?.display_id);
-	if (Number.isFinite(sourceDisplayId)) {
-		const matched = getScreen()
-			.getAllDisplays()
-			.find((display) => display.id === sourceDisplayId);
-		if (matched) {
-			return matched.bounds;
-		}
-	}
-
-	return getScreen().getPrimaryDisplay().bounds;
 }
 
 function getSelectedAreaForSource(source?: SelectedSource | null): SelectedArea | null {
@@ -1741,139 +1695,6 @@ if (-not $ok) { exit 3 }
 	} catch {
 		return null;
 	}
-}
-
-function clampCaptureFps(value: number | undefined) {
-	if (!Number.isFinite(value)) {
-		return 30;
-	}
-	return Math.min(60, Math.max(15, Math.round(value ?? 30)));
-}
-
-function buildFfmpegOutputArgs(outputPath: string, options?: NativeMacRecordingOptions) {
-	const outputArgs = [
-		"-an",
-		"-c:v",
-		"libx264",
-		"-preset",
-		"veryfast",
-		...(options?.videoBitsPerSecond ? ["-b:v", String(options.videoBitsPerSecond)] : []),
-		...(options?.recordingWidth && options?.recordingHeight
-			? [
-					"-vf",
-					`scale='min(${options.recordingWidth},iw)':'min(${options.recordingHeight},ih)':force_original_aspect_ratio=decrease:force_divisible_by=2`,
-				]
-			: []),
-		"-pix_fmt",
-		"yuv420p",
-		"-movflags",
-		"+faststart",
-		outputPath,
-	];
-	return outputArgs;
-}
-
-async function buildFfmpegCaptureArgs(
-	source: SelectedSource,
-	outputPath: string,
-	options?: NativeMacRecordingOptions,
-) {
-	const fps = String(clampCaptureFps(options?.recordingFps));
-	const commonOutputArgs = buildFfmpegOutputArgs(outputPath, options);
-
-	if (process.platform === "win32") {
-		if (source?.id?.startsWith("window:")) {
-			const windowTitle =
-				typeof source.windowTitle === "string" ? source.windowTitle.trim() : source.name.trim();
-			if (!windowTitle) {
-				throw new Error("Missing window title for FFmpeg window capture");
-			}
-
-			return [
-				"-y",
-				"-f",
-				"gdigrab",
-				"-framerate",
-				fps,
-				"-draw_mouse",
-				"0",
-				"-i",
-				`title=${windowTitle}`,
-				...commonOutputArgs,
-			];
-		}
-
-		return [
-			"-y",
-			"-f",
-			"gdigrab",
-			"-framerate",
-			fps,
-			"-draw_mouse",
-			"0",
-			"-i",
-			"desktop",
-			...commonOutputArgs,
-		];
-	}
-
-	if (process.platform === "linux") {
-		const displayEnv = process.env.DISPLAY || ":0.0";
-		if (source?.id?.startsWith("window:")) {
-			const bounds = await resolveLinuxWindowBounds(source);
-			if (!bounds) {
-				throw new Error("Unable to resolve Linux window bounds for FFmpeg capture");
-			}
-
-			return [
-				"-y",
-				"-f",
-				"x11grab",
-				"-framerate",
-				fps,
-				"-draw_mouse",
-				"0",
-				"-video_size",
-				`${Math.max(2, bounds.width)}x${Math.max(2, bounds.height)}`,
-				"-i",
-				`${displayEnv}+${Math.round(bounds.x)},${Math.round(bounds.y)}`,
-				...commonOutputArgs,
-			];
-		}
-
-		const bounds = getDisplayBoundsForSource(source);
-		return [
-			"-y",
-			"-f",
-			"x11grab",
-			"-framerate",
-			fps,
-			"-draw_mouse",
-			"0",
-			"-video_size",
-			`${Math.max(2, bounds.width)}x${Math.max(2, bounds.height)}`,
-			"-i",
-			`${displayEnv}+${Math.round(bounds.x)},${Math.round(bounds.y)}`,
-			...commonOutputArgs,
-		];
-	}
-
-	if (process.platform === "darwin") {
-		return [
-			"-y",
-			"-f",
-			"avfoundation",
-			"-capture_cursor",
-			"0",
-			"-framerate",
-			fps,
-			"-i",
-			"1:none",
-			...commonOutputArgs,
-		];
-	}
-
-	throw new Error(`FFmpeg capture is not supported on ${process.platform}`);
 }
 
 function getWgcCaptureExePath() {
@@ -2003,16 +1824,6 @@ function attachWgcCaptureLifecycle(proc: ChildProcessWithoutNullStreams) {
 		wgcScreenRecordingActive = false;
 		wgcCaptureTargetPath = null;
 		wgcCaptureStopRequested = false;
-
-		const sourceName = selectedSource?.name ?? "Screen";
-		BrowserWindow.getAllWindows().forEach((window) => {
-			if (!window.isDestroyed()) {
-				window.webContents.send("recording-state-changed", {
-					recording: false,
-					sourceName,
-				});
-			}
-		});
 
 		emitRecordingInterrupted("capture-stopped", "Recording stopped unexpectedly.");
 	});
@@ -2234,14 +2045,6 @@ function emitRecordingInterrupted(reason: string, message: string) {
 	});
 }
 
-function emitCursorStateChanged(cursorType: CursorVisualType) {
-	BrowserWindow.getAllWindows().forEach((window) => {
-		if (!window.isDestroyed()) {
-			window.webContents.send("cursor-state-changed", { cursorType });
-		}
-	});
-}
-
 function sampleCursorStateChange(cursorType: CursorVisualType) {
 	if (!isCursorCaptureActive) {
 		return;
@@ -2272,16 +2075,6 @@ function attachNativeCaptureLifecycle(process: ChildProcessWithoutNullStreams) {
 		nativeScreenRecordingActive = false;
 		nativeCaptureTargetPath = null;
 		nativeCaptureStopRequested = false;
-
-		const sourceName = selectedSource?.name ?? "Screen";
-		BrowserWindow.getAllWindows().forEach((window) => {
-			if (!window.isDestroyed()) {
-				window.webContents.send("recording-state-changed", {
-					recording: false,
-					sourceName,
-				});
-			}
-		});
 
 		const reason = nativeCaptureOutputBuffer.includes("WINDOW_UNAVAILABLE")
 			? "window-unavailable"
@@ -2317,7 +2110,6 @@ function handleCursorMonitorStdout(chunk: Buffer) {
 			if (currentCursorVisualType !== next) {
 				currentCursorVisualType = next;
 				sampleCursorStateChange(next);
-				emitCursorStateChanged(next);
 			}
 		}
 	}
@@ -4451,8 +4243,6 @@ export function registerIpcHandlers(
 		writeBufferToUniqueFile,
 		isEnabled: () => isFeatureEnabled("screenshots"),
 	});
-	registerLayeredCaptureIpcHandlers();
-	registerHostValidationIpcHandlers();
 	registerPermissionDiagnosticsIpcHandlers({
 		appBundleId: APP_BUNDLE_ID,
 		getAppBundlePath,
@@ -4973,130 +4763,6 @@ export function registerIpcHandlers(
 	});
 
 	ipcMain.handle(
-		IPC_CHANNELS.recording.startFfmpeg,
-		async (_, source: SelectedSource, options?: NativeMacRecordingOptions) => {
-			if (ffmpegCaptureProcess) {
-				return { success: false, message: "An FFmpeg recording is already active." };
-			}
-
-			try {
-				const recordingsDir = await getRecordingsDir();
-				const ffmpegPath = getFfmpegBinaryPath();
-				const outputPath = path.join(recordingsDir, `recording-${Date.now()}.mp4`);
-				const args = await buildFfmpegCaptureArgs(source, outputPath, options);
-				if (source?.id?.startsWith("window:")) {
-					await refreshWindowBoundsForSource(source);
-				}
-
-				ffmpegCaptureOutputBuffer = "";
-				ffmpegCaptureTargetPath = outputPath;
-				ffmpegCaptureProcess = spawn(ffmpegPath, args, {
-					cwd: recordingsDir,
-					stdio: ["pipe", "pipe", "pipe"],
-				});
-
-				ffmpegCaptureProcess.stdout.on("data", (chunk: Buffer) => {
-					ffmpegCaptureOutputBuffer += chunk.toString();
-				});
-				ffmpegCaptureProcess.stderr.on("data", (chunk: Buffer) => {
-					ffmpegCaptureOutputBuffer += chunk.toString();
-				});
-
-				await waitForFfmpegCaptureStart(ffmpegCaptureProcess);
-				ffmpegScreenRecordingActive = true;
-				return { success: true };
-			} catch (error) {
-				console.error("Failed to start FFmpeg recording:", error);
-				ffmpegScreenRecordingActive = false;
-				ffmpegCaptureProcess = null;
-				ffmpegCaptureTargetPath = null;
-				return {
-					success: false,
-					message: "Failed to start FFmpeg recording",
-					error: String(error),
-				};
-			}
-		},
-	);
-
-	ipcMain.handle(IPC_CHANNELS.recording.stopFfmpeg, async () => {
-		if (!ffmpegScreenRecordingActive) {
-			return { success: false, message: "No FFmpeg recording is active." };
-		}
-
-		try {
-			if (!ffmpegCaptureProcess || !ffmpegCaptureTargetPath) {
-				throw new Error("FFmpeg process is not running");
-			}
-
-			const process = ffmpegCaptureProcess;
-			const outputPath = ffmpegCaptureTargetPath;
-			process.stdin.write("q\n");
-			const finalVideoPath = await waitForFfmpegCaptureStop(process, outputPath);
-
-			ffmpegCaptureProcess = null;
-			ffmpegCaptureTargetPath = null;
-			ffmpegScreenRecordingActive = false;
-
-			return await finalizeStoredVideo(finalVideoPath);
-		} catch (error) {
-			console.error("Failed to stop FFmpeg recording:", error);
-			ffmpegCaptureProcess = null;
-			ffmpegCaptureTargetPath = null;
-			ffmpegScreenRecordingActive = false;
-			return {
-				success: false,
-				message: "Failed to stop FFmpeg recording",
-				error: String(error),
-			};
-		}
-	});
-
-	ipcMain.handle(
-		IPC_CHANNELS.recording.storeVideo,
-		async (_, videoData: ArrayBuffer, fileName: string, finalize = true) => {
-			try {
-				const recordingsDir = await getRecordingsDir();
-				const videoPath = path.join(recordingsDir, fileName);
-				await fs.writeFile(videoPath, Buffer.from(videoData));
-				if (!finalize) {
-					await persistCapturedTelemetryForVideo(videoPath);
-					return { success: true, path: videoPath };
-				}
-				currentMicrophoneAudioPath = null;
-				return await finalizeStoredVideo(videoPath);
-			} catch (error) {
-				console.error("Failed to store video:", error);
-				return {
-					success: false,
-					message: "Failed to store video",
-					error: String(error),
-				};
-			}
-		},
-	);
-
-	ipcMain.handle(IPC_CHANNELS.recording.getRecordedVideoPath, async () => {
-		try {
-			const recordingsDir = await getRecordingsDir();
-			const files = await fs.readdir(recordingsDir);
-			const videoFiles = files.filter((file) => /\.(webm|mov|mp4)$/i.test(file));
-
-			if (videoFiles.length === 0) {
-				return { success: false, message: "No recorded video found" };
-			}
-
-			const latestVideo = videoFiles.sort().reverse()[0];
-			const videoPath = path.join(recordingsDir, latestVideo);
-
-			return { success: true, path: videoPath };
-		} catch (error) {
-			console.error("Failed to get video path:", error);
-			return { success: false, message: "Failed to get video path", error: String(error) };
-		}
-	});
-
-	ipcMain.handle(
 		IPC_CHANNELS.recording.finalizeSession,
 		async (
 			_,
@@ -5109,7 +4775,9 @@ export function registerIpcHandlers(
 			},
 		) => {
 			try {
-				return await finalizeRecordingSession(payload);
+				const result = await finalizeRecordingSession(payload);
+				await markRecordingStopped();
+				return result;
 			} catch (error) {
 				console.error("Failed to finalize recording session:", error);
 				return {
@@ -5137,6 +4805,7 @@ export function registerIpcHandlers(
 			pendingFinalizationPromise = (async (): Promise<FinalizeResult> => {
 				try {
 					const result = await finalizeRecordingSession(payload);
+					await markRecordingStopped();
 					const finalized: FinalizeResult = {
 						success: true,
 						path: result.path,
@@ -5191,8 +4860,17 @@ export function registerIpcHandlers(
 				clearCurrentWebcam?: boolean;
 			},
 		) => {
-			await discardRecordingArtifacts(payload.paths);
+			// The renderer may only delete its own recording files.
+			const recordingsDir = await getRecordingsDir();
+			await discardRecordingArtifacts(
+				payload.paths.filter(
+					(filePath) =>
+						typeof filePath === "string" && isPathInsideDirectory(filePath, recordingsDir),
+				),
+			);
 			if (payload.clearCurrentVideo) {
+				// The session was thrown away; nothing is left to recover.
+				await markRecordingStopped();
 				currentVideoPath = null;
 				currentMicrophoneAudioPath = null;
 			}
@@ -5204,10 +4882,10 @@ export function registerIpcHandlers(
 	);
 
 	ipcMain.handle(IPC_CHANNELS.recording.setState, (_, recording: boolean) => {
+		// The recovery marker spans the whole session (pauses included); it is cleared when the
+		// session is finalized or discarded, not here.
 		if (recording) {
 			void getRecordingsDir().then(markRecordingStarted);
-		} else {
-			void markRecordingStopped();
 		}
 		if (recording) {
 			stopCursorCapture();
@@ -5245,14 +4923,6 @@ export function registerIpcHandlers(
 		}
 
 		const source = selectedSource || { name: "Screen" };
-		BrowserWindow.getAllWindows().forEach((window) => {
-			if (!window.isDestroyed()) {
-				window.webContents.send("recording-state-changed", {
-					recording,
-					sourceName: source.name,
-				});
-			}
-		});
 
 		if (onRecordingStateChange) {
 			onRecordingStateChange(recording, source.name);
@@ -5262,15 +4932,6 @@ export function registerIpcHandlers(
 	});
 
 	ipcMain.handle(IPC_CHANNELS.exportV2.probe, async () => getCachedExportV2Capabilities());
-
-	ipcMain.handle(IPC_CHANNELS.exportV2.createWorker, async () => {
-		try {
-			createExportWorkerWindow();
-			return { success: true };
-		} catch (error) {
-			return { success: false, error: String(error) };
-		}
-	});
 
 	ipcMain.handle(IPC_CHANNELS.exportV2.workerProgress, async (_, progress: ExportV2Progress) => {
 		const owner = exportV2WorkerOwners.get(progress.jobId);
@@ -5343,19 +5004,8 @@ export function registerIpcHandlers(
 	ipcMain.handle(IPC_CHANNELS.exportV2.cancel, async (_, jobId: string) => {
 		const job = exportV2Jobs.get(jobId);
 		if (!job) {
-			const resolver = exportV2WorkerResolvers.get(jobId);
-			const worker = exportV2WorkerWindows.get(jobId);
-			if (resolver) {
-				exportV2WorkerResolvers.delete(jobId);
-				exportV2WorkerOwners.delete(jobId);
-				exportV2WorkerWindows.delete(jobId);
-				resolver({ success: false, canceled: true, jobId });
-			}
-			if (worker && !worker.isDestroyed()) {
-				worker.close();
-			}
-			await discardExportV2GifPipeSessionsForJob(jobId);
 			exportV2CanceledJobs.add(jobId);
+			await abortExportV2WorkerJob(jobId, { success: false, canceled: true, jobId });
 			return { success: true };
 		}
 

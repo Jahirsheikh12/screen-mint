@@ -10,6 +10,8 @@ type ChunkSession = {
 	pending: Promise<void>;
 	bytesWritten: number;
 	closed: boolean;
+	// An async stream error (disk full, open failure) lands here instead of crashing main.
+	error: Error | null;
 };
 
 export class MediaRecorderChunkStore {
@@ -32,7 +34,11 @@ export class MediaRecorderChunkStore {
 			pending: Promise.resolve(),
 			bytesWritten: 0,
 			closed: false,
+			error: null,
 		};
+		stream.on("error", (error) => {
+			session.error ??= error;
+		});
 
 		this.sessions.set(id, session);
 		return { id, path: filePath };
@@ -48,6 +54,10 @@ export class MediaRecorderChunkStore {
 		session.pending = session.pending.then(
 			() =>
 				new Promise<void>((resolve, reject) => {
+					if (session.error) {
+						reject(session.error);
+						return;
+					}
 					const onError = (error: Error) => {
 						cleanup();
 						reject(error);
@@ -84,6 +94,10 @@ export class MediaRecorderChunkStore {
 		const session = this.getOpenSession(id);
 		session.closed = true;
 		await session.pending;
+		if (session.error) {
+			this.sessions.delete(id);
+			throw session.error;
+		}
 		await new Promise<void>((resolve, reject) => {
 			session.stream.end((error?: Error | null) => {
 				if (error) {

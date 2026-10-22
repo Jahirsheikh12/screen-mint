@@ -37,12 +37,6 @@ export function registerCurrentMediaIpcHandlers({
 		return currentVideoPath ? { success: true, path: currentVideoPath } : { success: false };
 	});
 
-	ipcMain.handle(IPC_CHANNELS.currentMedia.clearVideoPath, () => {
-		setVideoPath(null);
-		setMicrophoneAudioPath(null);
-		return { success: true };
-	});
-
 	ipcMain.handle(IPC_CHANNELS.currentMedia.setWebcamPath, (_, path: string) => {
 		setWebcamPath(path);
 		return { success: true };

@@ -68,6 +68,8 @@ async function runWorkerExport(request: ExportV2StartRequest) {
 
 		await window.electronAPI.exportV2WorkerComplete({
 			...result,
+			// A failed render in the worker can still succeed on the editor's legacy path.
+			...(result.success ? {} : { fallbackToLegacy: true }),
 			jobId: request.jobId,
 			path: result.path ?? request.outputPath,
 			details: result.details

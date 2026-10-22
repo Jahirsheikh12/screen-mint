@@ -24,9 +24,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	hudOverlayClose: () => {
 		ipcRenderer.send("hud-overlay-close");
 	},
-	getHudOverlayCaptureProtection: () => {
-		return ipcRenderer.invoke(IPC_CHANNELS.hudOverlay.getCaptureProtection);
-	},
 	setHudOverlayCaptureProtection: (enabled: boolean) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.hudOverlay.setCaptureProtection, enabled);
 	},
@@ -78,30 +75,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	captureScreenshot: (request?: unknown) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.screenshot.capture, request);
 	},
-	copyScreenshotToClipboard: (request: { pngData?: Uint8Array; path?: string }) => {
-		return ipcRenderer.invoke(IPC_CHANNELS.screenshot.copyToClipboard, request);
-	},
-	setLayeredCaptureSources: (request: unknown) => {
-		return ipcRenderer.invoke(IPC_CHANNELS.layeredCapture.setSources, request);
-	},
-	getLayeredCaptureSources: () => {
-		return ipcRenderer.invoke(IPC_CHANNELS.layeredCapture.getSources);
-	},
-	clearLayeredCaptureSources: () => {
-		return ipcRenderer.invoke(IPC_CHANNELS.layeredCapture.clearSources);
-	},
-	startLayeredCapture: (request: unknown) => {
-		return ipcRenderer.invoke(IPC_CHANNELS.layeredCapture.start, request);
-	},
-	stopLayeredCapture: () => {
-		return ipcRenderer.invoke(IPC_CHANNELS.layeredCapture.stop);
-	},
-	getLayeredCaptureStatus: () => {
-		return ipcRenderer.invoke(IPC_CHANNELS.layeredCapture.status);
-	},
-	getHostValidationReport: () => {
-		return ipcRenderer.invoke(IPC_CHANNELS.hostValidation.getReport);
-	},
 	startNativeScreenRecording: (
 		source: SelectedCaptureSource,
 		options?: {
@@ -117,26 +90,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	stopNativeScreenRecording: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.recording.stopNative);
 	},
-	startFfmpegRecording: (
-		source: SelectedCaptureSource,
-		options?: {
-			recordingFps?: number;
-			recordingWidth?: number;
-			recordingHeight?: number;
-			videoBitsPerSecond?: number;
-		},
-	) => {
-		return ipcRenderer.invoke(IPC_CHANNELS.recording.startFfmpeg, source, options);
-	},
-	stopFfmpegRecording: () => {
-		return ipcRenderer.invoke(IPC_CHANNELS.recording.stopFfmpeg);
-	},
-	storeRecordedVideo: (videoData: ArrayBuffer, fileName: string) => {
-		return ipcRenderer.invoke(IPC_CHANNELS.recording.storeVideo, videoData, fileName);
-	},
-	storeRecordedVideoSegment: (videoData: ArrayBuffer, fileName: string) => {
-		return ipcRenderer.invoke(IPC_CHANNELS.recording.storeVideo, videoData, fileName, false);
-	},
 	startMediaRecorderChunkSession: (fileName: string) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.recording.startChunkSession, fileName);
 	},
@@ -148,9 +101,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	},
 	discardMediaRecorderChunkSession: (sessionId: string) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.recording.discardChunkSession, sessionId);
-	},
-	getRecordedVideoPath: () => {
-		return ipcRenderer.invoke(IPC_CHANNELS.recording.getRecordedVideoPath);
 	},
 	finalizeRecordingSession: (payload: {
 		videoSegments: Array<{ path: string; durationMs: number }>;
@@ -183,9 +133,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	setRecordingState: (recording: boolean) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.recording.setState, recording);
 	},
-	setCursorScale: (scale: number) => {
-		return ipcRenderer.invoke(IPC_CHANNELS.telemetry.setCursorScale, scale);
-	},
 	getCursorTelemetry: (videoPath?: string) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.telemetry.getCursor, videoPath);
 	},
@@ -200,16 +147,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		ipcRenderer.on("stop-recording-from-tray", listener);
 		return () => ipcRenderer.removeListener("stop-recording-from-tray", listener);
 	},
-	onRecordingStateChanged: (
-		callback: (state: { recording: boolean; sourceName: string }) => void,
-	) => {
-		const listener = (
-			_event: Electron.IpcRendererEvent,
-			payload: { recording: boolean; sourceName: string },
-		) => callback(payload);
-		ipcRenderer.on("recording-state-changed", listener);
-		return () => ipcRenderer.removeListener("recording-state-changed", listener);
-	},
 	onRecordingInterrupted: (callback: (state: { reason: string; message: string }) => void) => {
 		const listener = (
 			_event: Electron.IpcRendererEvent,
@@ -217,16 +154,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		) => callback(payload);
 		ipcRenderer.on("recording-interrupted", listener);
 		return () => ipcRenderer.removeListener("recording-interrupted", listener);
-	},
-	onCursorStateChanged: (
-		callback: (state: { cursorType: CursorTelemetryPoint["cursorType"] }) => void,
-	) => {
-		const listener = (
-			_event: Electron.IpcRendererEvent,
-			payload: { cursorType: CursorTelemetryPoint["cursorType"] },
-		) => callback(payload);
-		ipcRenderer.on("cursor-state-changed", listener);
-		return () => ipcRenderer.removeListener("cursor-state-changed", listener);
 	},
 	onSelectedAreaChanged: (callback: (state: { area: SelectedArea | null }) => void) => {
 		const listener = (_event: Electron.IpcRendererEvent, payload: { area: SelectedArea | null }) =>
@@ -239,9 +166,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	},
 	stopMobileCapturePairing: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.mobileCapture.stopPairing);
-	},
-	getMobileCapturePairingState: () => {
-		return ipcRenderer.invoke(IPC_CHANNELS.mobileCapture.getPairingState);
 	},
 	setMobileCaptureDesktopOffer: (sessionId: string, offer: MobileCaptureSignalPayload) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.mobileCapture.setDesktopOffer, sessionId, offer);
@@ -277,9 +201,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	openExternalUrl: (url: string) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.files.openExternalUrl, url);
 	},
-	getAccessibilityPermissionStatus: () => {
-		return ipcRenderer.invoke(IPC_CHANNELS.permissions.getAccessibilityStatus);
-	},
 	requestAccessibilityPermission: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.permissions.requestAccessibility);
 	},
@@ -289,23 +210,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	requestMicrophoneAccess: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.permissions.requestMicrophone);
 	},
-	getScreenRecordingPermissionStatus: () => {
-		return ipcRenderer.invoke(IPC_CHANNELS.permissions.getScreenRecordingStatus);
-	},
 	openDisplayCapturePreferences: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.permissions.openScreenRecordingPreferences);
 	},
 	openAccessibilityPreferences: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.permissions.openAccessibilityPreferences);
 	},
-	probeCaptureSources: () => {
-		return ipcRenderer.invoke(IPC_CHANNELS.permissions.probeCaptureSources);
-	},
 	getCaptureDiagnostics: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.permissions.getCaptureDiagnostics);
-	},
-	saveExportedVideo: (videoData: ArrayBuffer, fileName: string) => {
-		return ipcRenderer.invoke(IPC_CHANNELS.exportFiles.saveVideo, videoData, fileName);
 	},
 	showExportSaveDialog: (fileName: string) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.exportFiles.showSaveDialog, fileName);
@@ -340,9 +252,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	},
 	exportV2Start: (request: unknown) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.exportV2.start, request);
-	},
-	exportV2CreateWorker: () => {
-		return ipcRenderer.invoke(IPC_CHANNELS.exportV2.createWorker);
 	},
 	exportV2Cancel: (jobId: string) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.exportV2.cancel, jobId);
@@ -404,9 +313,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	},
 	getCurrentVideoPath: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.currentMedia.getVideoPath);
-	},
-	clearCurrentVideoPath: () => {
-		return ipcRenderer.invoke(IPC_CHANNELS.currentMedia.clearVideoPath);
 	},
 	setCurrentWebcamPath: (path: string) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.currentMedia.setWebcamPath, path);
@@ -500,9 +406,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	getPlatform: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.system.getPlatform);
 	},
-	getAppVersion: () => {
-		return ipcRenderer.invoke(IPC_CHANNELS.system.getAppVersion);
-	},
 	setExperimentalUpdates: (enabled: boolean) => {
 		return ipcRenderer.invoke(IPC_CHANNELS.updater.setExperimentalUpdates, enabled);
 	},
@@ -515,17 +418,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	getUpdaterState: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.updater.getState);
 	},
-	checkForUpdates: () => {
-		return ipcRenderer.invoke(IPC_CHANNELS.updater.checkForUpdates);
-	},
 	downloadUpdate: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.updater.downloadUpdate);
 	},
 	installUpdateAndRestart: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.updater.installAndRestart);
-	},
-	dismissUpdate: () => {
-		return ipcRenderer.invoke(IPC_CHANNELS.updater.dismissUpdate);
 	},
 	updateLaterForSession: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.updater.updateLaterForSession);
@@ -586,10 +483,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	setHasUnsavedChanges: (hasChanges: boolean) => {
 		ipcRenderer.send("set-has-unsaved-changes", hasChanges);
 	},
-	onRequestSaveBeforeClose: (callback: () => Promise<void>) => {
+	onRequestSaveBeforeClose: (callback: () => Promise<boolean>) => {
 		const listener = async () => {
-			await callback();
-			ipcRenderer.send("save-before-close-done");
+			let saved = false;
+			try {
+				saved = await callback();
+			} catch (error) {
+				console.error("Save before close failed:", error);
+			}
+			ipcRenderer.send("save-before-close-done", saved);
 		};
 		ipcRenderer.on("request-save-before-close", listener);
 		return () => ipcRenderer.removeListener("request-save-before-close", listener);
@@ -629,7 +531,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		ipcRenderer.invoke(IPC_CHANNELS.areaOverlay.create, displayId),
 	closeAreaOverlay: () => ipcRenderer.invoke(IPC_CHANNELS.areaOverlay.close),
 	lockAreaOverlay: () => ipcRenderer.invoke(IPC_CHANNELS.areaOverlay.lock),
-	unlockAreaOverlay: () => ipcRenderer.invoke(IPC_CHANNELS.areaOverlay.unlock),
 	onAreaOverlayPhase: (callback: (phase: "selecting" | "locked") => void) => {
 		const listener = (_event: Electron.IpcRendererEvent, phase: "selecting" | "locked") =>
 			callback(phase);

@@ -294,55 +294,10 @@
 	},
 	"sidebar": {
 		"edit": "편집",
-		"layers": "레이어",
 		"polish": "다듬기"
 	},
 	"slider": {
 		"resetToDefault": "기본값으로 되돌리기"
-	},
-	"layerPanel": {
-		"layers": "레이어",
-		"noVideoLayerLoaded": "불러온 동영상 레이어 없음",
-		"loadOrRecordA": "동영상을 불러오거나 녹화하면 편집할 기본 레이어가 만들어집니다.",
-		"pendingCapturedMedia": "캡처 대기 중",
-		"layerSettings": "레이어 설정",
-		"transformAndVisibilityControls": "변형 및 표시 설정",
-		"layerName": "레이어 이름",
-		"hideLayer": "레이어 숨기기",
-		"showLayer": "레이어 보이기",
-		"unlockLayer": "레이어 잠금 해제",
-		"lockLayer": "레이어 잠그기",
-		"thisLayerIsPlanned": "이 레이어는 계획되어 있지만 아직 캡처된 내용이 없습니다.",
-		"transform": "변형",
-		"xPosition": "X 위치",
-		"yPosition": "Y 위치",
-		"scale": "크기",
-		"opacity": "불투명도",
-		"startMs": "시작 (ms)",
-		"endMs": "끝 (ms)",
-		"crop": "자르기",
-		"moveLayerForward": "레이어 앞으로",
-		"moveLayerBackward": "레이어 뒤로",
-		"editableLayersOne": "편집 가능한 레이어 1개",
-		"editableLayersMany": "편집 가능한 레이어 {{count}}개",
-		"primaryRecording": "기본 녹화",
-		"delete": "삭제",
-		"cropFields": {
-			"x": "X",
-			"y": "Y",
-			"width": "너비",
-			"height": "높이"
-		},
-		"layerKinds": {
-			"video": "비디오",
-			"window": "창",
-			"screenshot": "스크린샷",
-			"webcam": "카메라",
-			"audio": "오디오",
-			"annotation": "주석",
-			"caption": "자막",
-			"scene-3d": "3D"
-		}
 	},
 	"annotationPanel": {
 		"customFonts": "사용자 글꼴",
@@ -368,23 +323,6 @@
 		"noArrowData": "화살표 데이터 없음"
 	},
 	"polishPanel": {
-		"environmentLensAndLighting": "환경, 렌즈, 조명 설정",
-		"enable3dRendering": "3D 렌더링 사용",
-		"preset": "프리셋",
-		"device": "기기",
-		"environment": "환경",
-		"fallback": "대체",
-		"lens": "렌즈",
-		"lighting": "조명",
-		"audioMix": "오디오 믹스",
-		"trackVolumeAndDucking": "트랙 음량과 덕킹 규칙",
-		"masterVolume": "전체 음량",
-		"mute": "음소거",
-		"solo": "솔로",
-		"duck": "덕킹",
-		"vol": "음량",
-		"fadeIn": "페이드 인",
-		"fadeOut": "페이드 아웃",
 		"autoPolish": "자동 다듬기",
 		"oneClickStudioTemplates": "원클릭 스튜디오 템플릿"
 	},

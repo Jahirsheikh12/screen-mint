@@ -12,7 +12,8 @@ export interface GifPaletteFilterOptions {
 	width?: number;
 	height?: number;
 	frameRate?: number;
-	trimSelectExpression?: string | null;
+	/** Trim filter from buildTrimFilters(); applied before fps/scale. */
+	trimFilter?: string | null;
 	settings: GifFfmpegSettings;
 	rawInput?: boolean;
 }
@@ -64,13 +65,13 @@ export function buildGifPaletteFilter({
 	width,
 	height,
 	frameRate,
-	trimSelectExpression,
+	trimFilter,
 	settings,
 	rawInput = false,
 }: GifPaletteFilterOptions): string {
 	const baseFilters: string[] = [];
-	if (trimSelectExpression) {
-		baseFilters.push(`select='${trimSelectExpression}',setpts=N/FRAME_RATE/TB`);
+	if (trimFilter) {
+		baseFilters.push(trimFilter);
 	}
 	if (!rawInput && frameRate) {
 		baseFilters.push(`fps=${frameRate}`);

@@ -4,9 +4,6 @@
 		"selectRegion": "Selecione um zoom para ajustar",
 		"deleteZoom": "Excluir zoom"
 	},
-	"trim": {
-		"deleteRegion": "Excluir corte"
-	},
 	"speed": {
 		"playbackSpeed": "Velocidade de reprodução",
 		"selectRegion": "Selecione uma região de velocidade para ajustar",
@@ -519,8 +516,6 @@
 		"chooseMagnificationLevelFor": "Escolha o nível de ampliação das regiões de zoom",
 		"zoomDepth": "Profundidade do zoom",
 		"selectHowMuchTo": "Escolha quanto ampliar a área com zoom",
-		"trimRegion": "Região de corte",
-		"removeTheSelectedTrim": "Remove da linha do tempo a região de corte selecionada",
 		"adjustPlaybackSpeedFor": "Ajuste a velocidade de reprodução das regiões selecionadas",
 		"speedPresets": "Velocidades predefinidas",
 		"chooseASpeedMultiplier": "Escolha um multiplicador de velocidade para a região selecionada",
