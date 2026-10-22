@@ -48,6 +48,8 @@ be added unless their source, license/status, and proof note are recorded here.
 | Path | Source | License/status | Proof note |
 | --- | --- | --- | --- |
 | `website/public/images/` | Website previews and demos | Project-owned, generated, or copyright-free media | Maintainer attests website media avoids private user content and is approved for public distribution. |
+| `website/public/images/wallpapers/` | Web-sized WebP copies (max 1600px wide) of six `public/wallpapers/` images; `thumbs/` copied from `public/wallpapers/thumbs/` | Derived redistributable media | Same attestation as `public/wallpapers/`; used by the website's background picker and closing panel. |
+| `website/public/images/og.jpg` | Composite of `website/public/images/preview2.png` on `public/wallpapers/black-liquid.jpg` (ffmpeg) | Derived from project-owned and redistributable media | Link-preview image (1200×630). |
 
 ## Native Helpers
 

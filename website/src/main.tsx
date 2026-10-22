@@ -1,35 +1,25 @@
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import Lenis from "lenis";
+import { MotionConfig } from "motion/react";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./index.css";
+import "./lib/motion";
+import { getFundingPageFromSearch } from "./lib/sponsors";
 
-gsap.registerPlugin(ScrollTrigger);
-
-// Initialize Lenis smooth scroll
-const lenis = new Lenis({
-	duration: 1.2,
-	easing: (t: number) => Math.min(1, 1.001 - 2 ** (-10 * t)),
-	smoothWheel: true,
-	touchMultiplier: 1.5,
-});
-
-// Connect Lenis to GSAP ScrollTrigger
-lenis.on("scroll", ScrollTrigger.update);
-
-gsap.ticker.add((time) => {
-	lenis.raf(time * 1000);
-});
-
-gsap.ticker.lagSmoothing(0);
-
-// Make lenis globally accessible for anchor scrollTo
-(window as unknown as { lenis: Lenis }).lenis = lenis;
-
-ReactDOM.createRoot(document.getElementById("root")!).render(
+const container = document.getElementById("root")!;
+const app = (
 	<React.StrictMode>
-		<App />
-	</React.StrictMode>,
+		<MotionConfig reducedMotion="user">
+			<App />
+		</MotionConfig>
+	</React.StrictMode>
 );
+
+// The landing page is pre-rendered at build time, so hydrate it. Legal pages (?page=…) and the dev
+// server have no matching markup, so they render from scratch.
+if (container.hasChildNodes() && !getFundingPageFromSearch(window.location.search)) {
+	ReactDOM.hydrateRoot(container, app);
+} else {
+	container.textContent = "";
+	ReactDOM.createRoot(container).render(app);
+}

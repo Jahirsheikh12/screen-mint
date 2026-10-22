@@ -8,8 +8,8 @@ const websiteRoot = path.resolve(__dirname, "..");
 const repoRoot = path.resolve(websiteRoot, "..");
 
 const linksFile = readFileSync(path.join(websiteRoot, "src", "lib", "links.ts"), "utf8");
-const quickStartFile = readFileSync(
-	path.join(websiteRoot, "src", "components", "QuickStart.tsx"),
+const downloadFile = readFileSync(
+	path.join(websiteRoot, "src", "components", "Download.tsx"),
 	"utf8",
 );
 const releaseWorkflowFile = readFileSync(
@@ -64,9 +64,10 @@ if (websiteArtifacts.size !== expectedArtifacts.length) {
 	);
 }
 
-for (const command of ["ScreenMint-windows-x64.exe", "ScreenMint-linux-x64.AppImage"]) {
-	if (!quickStartFile.includes(command)) {
-		throw new Error(`Quick Start commands are not using ${command}`);
+// The download section must offer every validated link, so no platform silently drops off the page.
+for (const key of ["macAppleSilicon", "macIntel", "windows", "linux"]) {
+	if (!downloadFile.includes(`DOWNLOAD_LINKS.${key}`)) {
+		throw new Error(`Download section is missing DOWNLOAD_LINKS.${key}`);
 	}
 }
 

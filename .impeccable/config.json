@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "inter",
+        "createdAt": "2026-10-22T09:33:25.550Z",
+        "reason": "Footer is frozen by the user (do not change the footer); Inter stays the body font only so Footer.tsx renders unchanged; DESIGN.md records Inter as a non-canonical footer-only exception"
+      },
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-10-22T09:49:51.679Z",
+        "reason": "User confirmed inter is intentional: it only renders the frozen footer"
+      },
+      {
+        "rule": "overused-font",
+        "value": "geist",
+        "createdAt": "2026-10-22T09:49:51.699Z",
+        "reason": "User confirmed geist is intentional: it is the face of the approved design"
+      }
+    ]
+  }
+}

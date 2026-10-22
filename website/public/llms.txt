@@ -1,0 +1,27 @@
+# ScreenMint
+
+> ScreenMint is a free, open-source (MIT) desktop screen recorder and editor for macOS 12.3+, Windows 10+ and Linux. It turns a raw screen recording into a polished video automatically: zooms that follow your clicks, a smoothed cursor and clean backgrounds. No account, no watermark, and recordings never leave your computer.
+
+## What it does
+
+- Records a full display or a single window, with microphone and system audio where the operating system allows.
+- Auto zoom: notes where you click while recording and turns those moments into smooth zooms (1.25× to 5×) you can move, resize or remove on the timeline.
+- Cursor polish: smoothing, click highlights, motion blur and an optional cursor sway.
+- Styling: wallpaper, gradient, solid color or custom image backgrounds, with adjustable shadow, padding and corner roundness.
+- Annotations on their own timeline track; trim, speed and crop on a non-destructive timeline.
+- Exports MP4 (H.264) or GIF with GPU-accelerated rendering, and saves editable projects as .screenmint files.
+- Native capture: ScreenCaptureKit on macOS and Windows.Graphics.Capture on Windows.
+
+## Pricing and privacy
+
+- Free and open source under the MIT license, with no trials, tiers or paywalls for the app.
+- No account, no telemetry and no uploads: recordings, projects and exports stay on your machine.
+- Development is funded by optional GitHub Sponsors.
+
+## Links
+
+- [Website](https://screen-mint.vercel.app/): overview, download and FAQ
+- [Latest release](https://github.com/Jahirsheikh12/screen-mint/releases/latest): installers for macOS (Apple Silicon and Intel, .dmg), Windows (.exe) and Linux (.AppImage)
+- [Source code](https://github.com/Jahirsheikh12/screen-mint)
+- [License (MIT)](https://github.com/Jahirsheikh12/screen-mint/blob/main/LICENSE)
+- [Sponsor](https://github.com/sponsors/Jahirsheikh12)

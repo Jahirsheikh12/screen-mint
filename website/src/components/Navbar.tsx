@@ -1,281 +1,176 @@
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Heart, Menu, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { prefersReducedMotion } from "../hooks/useGSAP";
+import { Menu, X } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useState } from "react";
 import { REPO_URL } from "../lib/links";
-import { CREEM_ENABLED, GITHUB_SPONSORS_URL } from "../lib/sponsors";
-import { Button } from "./ui/button";
+import { EASE_OUT, lenis } from "../lib/motion";
+import { CREEM_ENABLED } from "../lib/sponsors";
+import { GitHubIcon } from "./BrandIcons";
 
 const NAV_LINKS = [
 	{ label: "Features", href: "#features" },
 	{ label: "How it works", href: "#how-it-works" },
 	{ label: "Sponsor", href: "#sponsor" },
 	...(CREEM_ENABLED ? [{ label: "Support via Card", href: "#sponsor" }] : []),
-	{ label: "Download", href: "#download" },
 	{ label: "FAQ", href: "#faq" },
-	{ label: "GitHub", href: REPO_URL, external: true },
-] as const;
+];
 
-const SECTION_IDS = ["features", "how-it-works", "sponsor", "download", "faq"];
+const SECTION_IDS = ["features", "how-it-works", "download", "sponsor", "faq"];
 
 export function Navbar() {
-	const [scrolled, setScrolled] = useState(false);
-	const [mobileOpen, setMobileOpen] = useState(false);
-	const [activeSection, setActiveSection] = useState("");
-	const navRef = useRef<HTMLElement>(null);
-	const innerRef = useRef<HTMLDivElement>(null);
-	const bgRef = useRef<HTMLDivElement>(null);
-	const mobileMenuRef = useRef<HTMLDivElement>(null);
-	const backdropRef = useRef<HTMLDivElement>(null);
+	const [floating, setFloating] = useState(false);
+	const [open, setOpen] = useState(false);
+	const [active, setActive] = useState("");
 
-	/* ── Scroll detection ── */
 	useEffect(() => {
-		const onScroll = () => setScrolled(window.scrollY > 20);
+		const onScroll = () => {
+			setFloating(window.scrollY > 24);
+			// Back in the hero, no section is current; the observer below never sees the hero.
+			if (window.scrollY < window.innerHeight * 0.5) setActive("");
+		};
+		onScroll();
 		window.addEventListener("scroll", onScroll, { passive: true });
 		return () => window.removeEventListener("scroll", onScroll);
 	}, []);
 
-	/* ── Active section detection via ScrollTrigger ── */
+	// The section crossing the middle of the viewport is the active one.
 	useEffect(() => {
-		const triggers: ScrollTrigger[] = [];
+		const observer = new IntersectionObserver(
+			(entries) => {
+				for (const entry of entries) if (entry.isIntersecting) setActive(entry.target.id);
+			},
+			{ rootMargin: "-45% 0px -50% 0px" },
+		);
 		for (const id of SECTION_IDS) {
 			const el = document.getElementById(id);
-			if (!el) continue;
-			const st = ScrollTrigger.create({
-				trigger: el,
-				start: "top 40%",
-				end: "bottom 40%",
-				onToggle: (self) => {
-					if (self.isActive) setActiveSection(id);
-				},
-			});
-			triggers.push(st);
+			if (el) observer.observe(el);
 		}
-		return () => triggers.forEach((t) => t.kill());
+		return () => observer.disconnect();
 	}, []);
 
-	/* ── GSAP capsule morph ── */
+	// The mobile sheet freezes the page behind it and closes on Escape.
 	useEffect(() => {
-		if (!innerRef.current || !navRef.current || !bgRef.current) return;
-		const dur = prefersReducedMotion() ? 0 : 0.5;
-		const ease = "power3.inOut";
+		if (!open) return;
+		lenis?.stop();
+		document.body.style.overflow = "hidden";
+		const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+		window.addEventListener("keydown", onKey);
+		return () => {
+			lenis?.start();
+			document.body.style.overflow = "";
+			window.removeEventListener("keydown", onKey);
+		};
+	}, [open]);
 
-		if (scrolled) {
-			gsap.to(navRef.current, { paddingTop: 8, duration: dur, ease });
-			gsap.to(innerRef.current, {
-				maxWidth: 800,
-				paddingLeft: 20,
-				paddingRight: 20,
-				height: 50,
-				duration: dur,
-				ease,
-			});
-			gsap.to(bgRef.current, {
-				opacity: 1,
-				borderBottomColor: "rgba(255,255,255,0.06)",
-				duration: dur,
-				ease,
-			});
-		} else {
-			gsap.to(navRef.current, { paddingTop: 16, duration: dur, ease });
-			gsap.to(innerRef.current, {
-				maxWidth: 920,
-				paddingLeft: 28,
-				paddingRight: 28,
-				height: 56,
-				duration: dur,
-				ease,
-			});
-			gsap.to(bgRef.current, {
-				opacity: 1,
-				borderBottomColor: "rgba(255,255,255,0)",
-				duration: dur,
-				ease,
-			});
-		}
-	}, [scrolled]);
-
-	/* ── Mobile menu GSAP animation ── */
-	useEffect(() => {
-		const menu = mobileMenuRef.current;
-		const backdrop = backdropRef.current;
-		if (!menu || !backdrop) return;
-
-		if (mobileOpen) {
-			gsap.set(menu, { display: "block" });
-			gsap.set(backdrop, { display: "block" });
-			gsap.fromTo(backdrop, { opacity: 0 }, { opacity: 1, duration: 0.3 });
-			gsap.fromTo(
-				menu,
-				{ opacity: 0, y: -12, scale: 0.97 },
-				{ opacity: 1, y: 0, scale: 1, duration: 0.35, ease: "power3.out" },
-			);
-			const links = menu.querySelectorAll(".mobile-nav-link");
-			gsap.fromTo(
-				links,
-				{ opacity: 0, x: -12 },
-				{ opacity: 1, x: 0, duration: 0.3, stagger: 0.04, ease: "power2.out", delay: 0.1 },
-			);
-		} else {
-			gsap.to(menu, {
-				opacity: 0,
-				y: -8,
-				duration: 0.2,
-				ease: "power2.in",
-				onComplete: () => {
-					gsap.set(menu, { display: "none" });
-				},
-			});
-			gsap.to(backdrop, {
-				opacity: 0,
-				duration: 0.2,
-				onComplete: () => {
-					gsap.set(backdrop, { display: "none" });
-				},
-			});
-		}
-	}, [mobileOpen]);
-
-	const closeMobile = () => setMobileOpen(false);
+	const bar = floating && !open;
 
 	return (
-		<nav
-			ref={navRef}
-			className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4"
-			style={{ paddingTop: 16 }}
-		>
+		<header className="fixed inset-x-0 top-0 z-50 px-3 font-body text-paper md:px-6">
 			<div
-				ref={innerRef}
-				className="relative w-full flex items-center justify-between"
-				style={{ maxWidth: 920, paddingLeft: 28, paddingRight: 28, height: 56, borderRadius: 999 }}
+				className={`mx-auto transition-[max-width,margin,padding,background-color,box-shadow] duration-500 ease-out ${
+					bar
+						? "mt-3 max-w-[1040px] rounded-[14px] bg-[#1a1a1c]/80 px-3 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_12px_32px_-12px_rgba(0,0,0,0.7)] backdrop-blur-xl md:px-4"
+						: "mt-0 max-w-[1200px] bg-transparent px-2"
+				}`}
 			>
-				{/* Glass background */}
-				<div
-					ref={bgRef}
-					className="absolute inset-0 pointer-events-none"
-					style={{
-						opacity: 1,
-						background: "rgba(18, 18, 18, 0.72)",
-						backdropFilter: "blur(40px) saturate(180%)",
-						WebkitBackdropFilter: "blur(40px) saturate(180%)",
-						border: "1px solid rgba(255, 255, 255, 0.08)",
-						borderRadius: 999,
-					}}
-				/>
-
-				{/* Logo */}
-				<a href="#" className="relative z-10 flex items-center gap-2.5 group">
-					<img
-						src="/images/screenmint-mark.png"
-						alt="ScreenMint mark"
-						className="h-9 w-auto object-contain drop-shadow-[0_6px_16px_rgba(0,108,255,0.28)]"
-						loading="eager"
-					/>
-					<span className="text-[15px] font-semibold tracking-[-0.02em] text-white/90 group-hover:text-white transition-colors">
-						Screen<span className="text-brand-400">Mint</span>
-					</span>
-				</a>
-
-				{/* Desktop nav */}
-				<div className="relative z-10 hidden md:flex items-center gap-0.5">
-					{NAV_LINKS.map((link) => {
-						const sectionId = link.href.replace("#", "");
-						const isActive = activeSection === sectionId;
-						const isExternal = "external" in link && link.external;
-						return (
-							<a
-								key={link.label}
-								href={link.href}
-								{...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-								className={`relative px-3 py-1.5 text-[13px] rounded-full transition-colors duration-300 ${
-									isActive
-										? "text-white bg-white/[0.06]"
-										: "text-white/40 hover:text-white hover:bg-white/[0.04]"
-								}`}
-							>
-								{link.label}
-								{isActive && (
-									<span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-brand-500" />
-								)}
-							</a>
-						);
-					})}
-
-					<Button
-						asChild
-						className="ml-2 h-auto rounded-full bg-brand-500 px-4 py-1.5 text-[13px] font-semibold text-[#121212] shadow-none transition-all duration-200 hover:bg-brand-400 hover:text-[#121212] active:scale-[0.97] [&_svg]:size-3.5"
+				<nav className="grid h-14 grid-cols-[1fr_auto] items-center md:grid-cols-[1fr_auto_1fr]">
+					<a
+						href="#top"
+						className="flex items-center gap-2.5 justify-self-start"
+						aria-label="ScreenMint home"
 					>
-						<a href={GITHUB_SPONSORS_URL} target="_blank" rel="noopener noreferrer">
-							<Heart className="w-3.5 h-3.5" strokeWidth={2.5} />
-							Sponsor
-						</a>
-					</Button>
-				</div>
+						<img
+							src="/images/screenmint-64.png"
+							alt=""
+							width={26}
+							height={26}
+							className="h-[26px] w-[26px]"
+						/>
+						<span className="text-[16px] font-semibold tracking-[-0.01em]">ScreenMint</span>
+					</a>
 
-				{/* Mobile hamburger */}
-				<Button
-					type="button"
-					variant="ghost"
-					size="icon"
-					className="relative z-10 md:hidden h-auto w-auto rounded-none bg-transparent p-2 text-white/50 shadow-none transition-colors hover:bg-transparent hover:text-white focus-visible:ring-0 [&_svg]:size-5"
-					onClick={() => setMobileOpen(!mobileOpen)}
-					aria-label="Toggle menu"
-				>
-					{mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-				</Button>
-			</div>
+					<div className="hidden items-center gap-1 md:flex">
+						{NAV_LINKS.map((link) => {
+							const isActive = active === link.href.slice(1);
+							return (
+								<a
+									key={link.label}
+									href={link.href}
+									aria-current={isActive ? "true" : undefined}
+									className={`rounded-[8px] px-3 py-1.5 text-[14px] transition-colors ${
+										isActive ? "text-white" : "text-white/55 hover:text-white"
+									}`}
+								>
+									{link.label}
+								</a>
+							);
+						})}
+					</div>
 
-			{/* Mobile backdrop */}
-			<div
-				ref={backdropRef}
-				className="md:hidden fixed inset-0 bg-[#121212]/70 z-40"
-				style={{ display: "none" }}
-				onClick={closeMobile}
-			/>
-
-			{/* Mobile menu */}
-			<div
-				ref={mobileMenuRef}
-				className="md:hidden absolute top-20 left-4 right-4 rounded-2xl px-5 py-4 flex flex-col gap-1 z-50"
-				style={{
-					display: "none",
-					background: "rgba(18, 18, 18, 0.94)",
-					backdropFilter: "blur(40px) saturate(180%)",
-					WebkitBackdropFilter: "blur(40px) saturate(180%)",
-					border: "1px solid rgba(255, 255, 255, 0.08)",
-				}}
-			>
-				{NAV_LINKS.map((link) => {
-					const isExternal = "external" in link && link.external;
-					return (
+					<div className="flex items-center gap-1.5 justify-self-end">
 						<a
-							key={link.label}
-							href={link.href}
-							{...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-							onClick={closeMobile}
-							className="mobile-nav-link block px-3 py-2.5 text-sm text-white/50 hover:text-white rounded-lg hover:bg-white/[0.04] transition-colors"
-						>
-							{link.label}
-						</a>
-					);
-				})}
-				<div className="pt-2">
-					<Button
-						asChild
-						className="mobile-nav-link block h-auto w-full rounded-full bg-brand-500 px-4 py-2.5 text-center text-sm font-semibold text-[#121212] shadow-none hover:bg-brand-500 hover:text-[#121212]"
-					>
-						<a
-							href={GITHUB_SPONSORS_URL}
+							href={REPO_URL}
 							target="_blank"
 							rel="noopener noreferrer"
-							onClick={closeMobile}
+							aria-label="ScreenMint on GitHub"
+							className="hidden h-9 w-9 items-center justify-center rounded-[8px] text-white/55 transition-colors hover:bg-white/[0.06] hover:text-white sm:flex"
 						>
-							Sponsor ScreenMint
+							<GitHubIcon className="h-[18px] w-[18px]" />
 						</a>
-					</Button>
-				</div>
+						<a href="#download" className="btn-primary h-9 rounded-[8px] px-3.5 text-[14px]">
+							Download
+						</a>
+						<button
+							type="button"
+							onClick={() => setOpen(!open)}
+							aria-label={open ? "Close menu" : "Open menu"}
+							aria-expanded={open}
+							aria-controls="mobile-nav"
+							className="flex h-9 w-9 items-center justify-center rounded-[8px] text-white/75 hover:text-white md:hidden"
+						>
+							{open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+						</button>
+					</div>
+				</nav>
 			</div>
-		</nav>
+
+			<AnimatePresence>
+				{open ? (
+					<motion.div
+						id="mobile-nav"
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						exit={{ opacity: 0 }}
+						transition={{ duration: 0.2 }}
+						className="fixed inset-0 -z-10 flex flex-col bg-ink px-6 pb-8 pt-24 md:hidden"
+					>
+						<nav className="flex flex-col">
+							{[...NAV_LINKS, { label: "GitHub", href: REPO_URL }].map((link, i) => (
+								<motion.a
+									key={link.label}
+									href={link.href}
+									onClick={() => setOpen(false)}
+									{...(link.href.startsWith("http")
+										? { target: "_blank", rel: "noopener noreferrer" }
+										: {})}
+									initial={{ opacity: 0, y: 12 }}
+									animate={{ opacity: 1, y: 0 }}
+									transition={{ duration: 0.4, delay: 0.04 + i * 0.04, ease: EASE_OUT }}
+									className="border-b border-white/[0.07] py-4 text-[26px] font-semibold tracking-[-0.02em] text-white"
+								>
+									{link.label}
+								</motion.a>
+							))}
+						</nav>
+						<a
+							href="#download"
+							onClick={() => setOpen(false)}
+							className="btn-primary mt-auto h-12 text-[16px]"
+						>
+							Download ScreenMint
+						</a>
+					</motion.div>
+				) : null}
+			</AnimatePresence>
+		</header>
 	);
 }

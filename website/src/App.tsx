@@ -1,27 +1,16 @@
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useEffect } from "react";
-import { CursorTrail } from "./components/CursorTrail";
-import { Download } from "./components/Download";
+import { Chapters, HowItWorks, Specs } from "./components/Chapters";
+import { ClosingCta, Download } from "./components/Download";
 import { FAQ } from "./components/FAQ";
-import { Features } from "./components/Features";
 import { Footer } from "./components/Footer";
 import { Hero } from "./components/Hero";
 import { LegalPage } from "./components/LegalPage";
 import { Navbar } from "./components/Navbar";
-import { ShowreelSection } from "./components/ShowreelSection";
 import { SponsorSection } from "./components/SponsorSection";
-import { WorkflowSection } from "./components/WorkflowSection";
 import { getFundingPageFromSearch } from "./lib/sponsors";
 
 export default function App() {
 	const page =
 		typeof window === "undefined" ? null : getFundingPageFromSearch(window.location.search);
-
-	useEffect(() => {
-		return () => {
-			ScrollTrigger.getAll().forEach((t) => t.kill());
-		};
-	}, []);
 
 	if (page) {
 		return <LegalPage page={page} />;
@@ -29,18 +18,25 @@ export default function App() {
 
 	return (
 		<>
+			<a
+				href="#main"
+				data-skip-link
+				className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-[8px] focus:bg-reel focus:px-4 focus:py-2 focus:font-body focus:text-[14px] focus:font-semibold focus:text-ink"
+			>
+				Skip to content
+			</a>
 			<Navbar />
-			<main>
+			<main id="main" tabIndex={-1} className="site font-body outline-none">
 				<Hero />
-				<Features />
-				<ShowreelSection />
-				<WorkflowSection />
-				<SponsorSection />
+				<Chapters />
+				<HowItWorks />
+				<Specs />
 				<Download />
+				<SponsorSection />
 				<FAQ />
+				<ClosingCta />
 			</main>
 			<Footer />
-			<CursorTrail />
 		</>
 	);
 }

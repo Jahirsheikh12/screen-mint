@@ -18,6 +18,9 @@ module.exports = {
 					900: "#78350f",
 					950: "#451a03",
 				},
+				ink: { DEFAULT: "#121212", 2: "#18181a", 3: "#202023" },
+				paper: "#f4f4f5",
+				reel: "#ffb21a",
 				surface: {
 					0: "#121212",
 					1: "#1a1a1a",
@@ -25,6 +28,10 @@ module.exports = {
 					3: "#242424",
 					4: "#2a2a2a",
 				},
+			},
+			fontFamily: {
+				display: ['"Geist"', "system-ui", "sans-serif"],
+				body: ['"Geist"', "system-ui", "sans-serif"],
 			},
 			backgroundImage: {
 				"brand-gradient": "linear-gradient(135deg, #d97706, #F59E0B)",
