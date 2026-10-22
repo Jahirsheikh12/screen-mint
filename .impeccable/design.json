@@ -1,53 +1,301 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-22T14:00:00Z",
+  "generatedAt": "2026-10-22T18:00:00Z",
   "title": "Design System: ScreenMint",
   "extensions": {
     "colorMeta": {
-      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#121212", "tonalRamp": ["#0a0a0a", "#121212", "#18181a", "#202023", "#2b2b30", "#3f3f46", "#a1a1aa", "#f4f4f5"] },
-      "ink-raised": { "role": "neutral", "displayName": "Raised Ink", "canonical": "#18181a", "tonalRamp": ["#0a0a0a", "#121212", "#18181a", "#202023", "#2b2b30", "#3f3f46", "#a1a1aa", "#f4f4f5"] },
-      "ink-hover": { "role": "neutral", "displayName": "Raised Ink, Pressed", "canonical": "#202023", "tonalRamp": ["#0a0a0a", "#121212", "#18181a", "#202023", "#2b2b30", "#3f3f46", "#a1a1aa", "#f4f4f5"] },
-      "nav-glass": { "role": "neutral", "displayName": "Nav Glass", "canonical": "#1a1a1c", "tonalRamp": ["#0a0a0a", "#121212", "#1a1a1c", "#202023", "#2b2b30", "#3f3f46", "#a1a1aa", "#f4f4f5"] },
-      "app-chrome": { "role": "neutral", "displayName": "App Chrome", "canonical": "#2b2b30", "tonalRamp": ["#0a0a0b", "#151518", "#1f1f23", "#2b2b30", "#3a3a40", "#55555c", "#9a9aa2", "#ececef"] },
-      "paper": { "role": "neutral", "displayName": "Paper", "canonical": "#f4f4f5", "tonalRamp": ["#18181b", "#27272a", "#3f3f46", "#52525b", "#71717a", "#a1a1aa", "#d4d4d8", "#f4f4f5"] },
-      "text-strong": { "role": "neutral", "displayName": "Pure White", "canonical": "#ffffff" },
-      "text-secondary": { "role": "neutral", "displayName": "Secondary Grey", "canonical": "rgba(255, 255, 255, 0.55)" },
-      "text-tertiary": { "role": "neutral", "displayName": "Tertiary Grey", "canonical": "rgba(255, 255, 255, 0.5)" },
-      "hairline": { "role": "neutral", "displayName": "Hairline", "canonical": "rgba(255, 255, 255, 0.07)" },
-      "reel": { "role": "primary", "displayName": "Reel Amber", "canonical": "#ffb21a", "tonalRamp": ["#3d2600", "#664000", "#995f00", "#cc8500", "#ffb21a", "#ffc247", "#ffd88a", "#fff1d6"] },
-      "reel-hover": { "role": "primary", "displayName": "Reel Amber, Lit", "canonical": "#ffc247", "tonalRamp": ["#3d2600", "#664000", "#995f00", "#cc8500", "#ffb21a", "#ffc247", "#ffd88a", "#fff1d6"] }
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#121212",
+        "tonalRamp": [
+          "#0a0a0a",
+          "#121212",
+          "#18181a",
+          "#202023",
+          "#2b2b30",
+          "#3f3f46",
+          "#a1a1aa",
+          "#f4f4f5"
+        ]
+      },
+      "ink-raised": {
+        "role": "neutral",
+        "displayName": "Raised Ink",
+        "canonical": "#18181a",
+        "tonalRamp": [
+          "#0a0a0a",
+          "#121212",
+          "#18181a",
+          "#202023",
+          "#2b2b30",
+          "#3f3f46",
+          "#a1a1aa",
+          "#f4f4f5"
+        ]
+      },
+      "ink-hover": {
+        "role": "neutral",
+        "displayName": "Raised Ink, Pressed",
+        "canonical": "#202023",
+        "tonalRamp": [
+          "#0a0a0a",
+          "#121212",
+          "#18181a",
+          "#202023",
+          "#2b2b30",
+          "#3f3f46",
+          "#a1a1aa",
+          "#f4f4f5"
+        ]
+      },
+      "nav-glass": {
+        "role": "neutral",
+        "displayName": "Nav Glass",
+        "canonical": "#1a1a1c",
+        "tonalRamp": [
+          "#0a0a0a",
+          "#121212",
+          "#1a1a1c",
+          "#202023",
+          "#2b2b30",
+          "#3f3f46",
+          "#a1a1aa",
+          "#f4f4f5"
+        ]
+      },
+      "app-chrome": {
+        "role": "neutral",
+        "displayName": "App Chrome",
+        "canonical": "#2b2b30",
+        "tonalRamp": [
+          "#0a0a0b",
+          "#151518",
+          "#1f1f23",
+          "#2b2b30",
+          "#3a3a40",
+          "#55555c",
+          "#9a9aa2",
+          "#ececef"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "#f4f4f5",
+        "tonalRamp": [
+          "#18181b",
+          "#27272a",
+          "#3f3f46",
+          "#52525b",
+          "#71717a",
+          "#a1a1aa",
+          "#d4d4d8",
+          "#f4f4f5"
+        ]
+      },
+      "text-strong": {
+        "role": "neutral",
+        "displayName": "Pure White",
+        "canonical": "#ffffff"
+      },
+      "text-secondary": {
+        "role": "neutral",
+        "displayName": "Secondary Grey",
+        "canonical": "rgba(255, 255, 255, 0.55)"
+      },
+      "text-tertiary": {
+        "role": "neutral",
+        "displayName": "Tertiary Grey",
+        "canonical": "rgba(255, 255, 255, 0.5)"
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "rgba(255, 255, 255, 0.07)"
+      },
+      "reel": {
+        "role": "primary",
+        "displayName": "Reel Amber",
+        "canonical": "#ffb21a",
+        "tonalRamp": [
+          "#3d2600",
+          "#664000",
+          "#995f00",
+          "#cc8500",
+          "#ffb21a",
+          "#ffc247",
+          "#ffd88a",
+          "#fff1d6"
+        ]
+      },
+      "reel-hover": {
+        "role": "primary",
+        "displayName": "Reel Amber, Lit",
+        "canonical": "#ffc247",
+        "tonalRamp": [
+          "#3d2600",
+          "#664000",
+          "#995f00",
+          "#cc8500",
+          "#ffb21a",
+          "#ffc247",
+          "#ffd88a",
+          "#fff1d6"
+        ]
+      }
     },
     "typographyMeta": {
-      "display": { "displayName": "Display", "purpose": "Hero headline only." },
-      "headline": { "displayName": "Headline", "purpose": "Section titles and the closing statement." },
-      "title": { "displayName": "Title", "purpose": "Feature titles inside a section." },
-      "title-sm": { "displayName": "Title Small", "purpose": "Step names in the How it works track." },
-      "body-lg": { "displayName": "Body Large", "purpose": "The one supporting line under a heading." },
-      "body": { "displayName": "Body", "purpose": "Spec, detail, step and FAQ copy." },
-      "label": { "displayName": "Label", "purpose": "Buttons, item titles, recording-bar items." },
-      "caption": { "displayName": "Caption", "purpose": "Window titles, control labels, timecodes, meta lines." }
+      "display": {
+        "displayName": "Display",
+        "purpose": "Hero headline only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section titles and the closing statement."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Feature titles inside a section."
+      },
+      "title-sm": {
+        "displayName": "Title Small",
+        "purpose": "Step names in the How it works track."
+      },
+      "body-lg": {
+        "displayName": "Body Large",
+        "purpose": "The one supporting line under a heading."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Spec, detail, step and FAQ copy."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Nav links, compact button, recording-bar items, download-card buttons."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Window titles, control labels, timecodes, meta lines."
+      },
+      "label-lg": {
+        "displayName": "Label Large",
+        "purpose": "Full-size button text, the nav wordmark, item titles."
+      },
+      "menu-link": {
+        "displayName": "Menu Link",
+        "purpose": "Mobile menu sheet links only."
+      }
     },
     "shadows": [
-      { "name": "desktop-window", "value": "0 0 0 1px rgba(255,255,255,0.09), inset 0 1px 0 0 rgba(255,255,255,0.06), 0 30px 60px -20px rgba(0,0,0,0.7), 0 80px 140px -60px rgba(0,0,0,0.9)", "purpose": "The window frame around product media." },
-      { "name": "floating-hud", "value": "0 0 0 1px rgba(255,255,255,0.08), 0 18px 40px -12px rgba(0,0,0,0.75)", "purpose": "The rebuilt recording bar." },
-      { "name": "floating-nav", "value": "0 0 0 1px rgba(255,255,255,0.08), 0 12px 32px -12px rgba(0,0,0,0.7)", "purpose": "The scrolled nav pill." },
-      { "name": "screenshot-drop", "value": "drop-shadow(0 30px 40px rgba(0,0,0,0.55))", "purpose": "Filter for bare editor PNGs that carry their own frame." },
-      { "name": "inset-edge", "value": "inset 0 0 0 1px rgba(255,255,255,0.07)", "purpose": "Edge of every raised panel and card." },
-      { "name": "inset-edge-active", "value": "inset 0 0 0 1px rgba(255,178,26,0.55)", "purpose": "Edge of the recommended download card." },
-      { "name": "key-button", "value": "inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.35)", "purpose": "The primary button's bevel." }
+      {
+        "name": "desktop-window",
+        "value": "0 0 0 1px rgba(255,255,255,0.09), inset 0 1px 0 0 rgba(255,255,255,0.06), 0 30px 60px -20px rgba(0,0,0,0.7), 0 80px 140px -60px rgba(0,0,0,0.9)",
+        "purpose": "The window frame around product media."
+      },
+      {
+        "name": "floating-hud",
+        "value": "0 0 0 1px rgba(255,255,255,0.08), 0 18px 40px -12px rgba(0,0,0,0.75)",
+        "purpose": "The rebuilt recording bar."
+      },
+      {
+        "name": "floating-nav",
+        "value": "0 0 0 1px rgba(255,255,255,0.08), 0 12px 32px -12px rgba(0,0,0,0.7)",
+        "purpose": "The scrolled nav pill."
+      },
+      {
+        "name": "stage",
+        "value": "0 0 0 1px rgba(255,255,255,0.08), 0 40px 80px -40px rgba(0,0,0,0.9)",
+        "purpose": "The background picker stage."
+      },
+      {
+        "name": "screenshot-drop",
+        "value": "drop-shadow(0 30px 40px rgba(0,0,0,0.55))",
+        "purpose": "Filter for bare editor PNGs that carry their own frame."
+      },
+      {
+        "name": "stage-screenshot-drop",
+        "value": "drop-shadow(0 24px 32px rgba(0,0,0,0.5))",
+        "purpose": "The editor screenshot sitting on the background picker stage."
+      },
+      {
+        "name": "inset-edge",
+        "value": "inset 0 0 0 1px rgba(255,255,255,0.07)",
+        "purpose": "Edge of every raised panel and card."
+      },
+      {
+        "name": "inset-edge-active",
+        "value": "inset 0 0 0 1px rgba(255,178,26,0.55)",
+        "purpose": "Edge of the recommended download card."
+      },
+      {
+        "name": "key-button",
+        "value": "inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.35)",
+        "purpose": "The primary button's bevel."
+      },
+      {
+        "name": "swatch-active",
+        "value": "0 0 0 2px #121212, 0 0 0 4px #ffb21a",
+        "purpose": "Active wallpaper swatch: ink gap, amber ring."
+      }
     ],
     "motion": [
-      { "name": "ease-out", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Entrances, crossfades, mobile menu stagger." },
-      { "name": "ease-sweep", "value": "cubic-bezier(0.45, 0, 0.2, 1)", "purpose": "Timeline playhead sweep (1.8s)." },
-      { "name": "state", "value": "0.2s ease", "purpose": "Color and background state changes; button press scale 0.98." },
-      { "name": "nav-morph", "value": "500ms ease-out", "purpose": "Transparent bar to floating pill after 24px of scroll." },
-      { "name": "hero-settle", "value": "scale 0.94 -> 1, scroll-linked from start-end to start-20%", "purpose": "The page's one scroll moment on the hero window." },
-      { "name": "smooth-scroll", "value": "Lenis lerp 0.1, 88px anchor offset", "purpose": "Same-page link glide; disabled under reduced motion." }
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Entrances, crossfades, mobile menu stagger."
+      },
+      {
+        "name": "ease-sweep",
+        "value": "cubic-bezier(0.45, 0, 0.2, 1)",
+        "purpose": "Timeline playhead sweep (1.8s)."
+      },
+      {
+        "name": "state",
+        "value": "0.2s ease",
+        "purpose": "Color and background state changes; button press scale 0.98."
+      },
+      {
+        "name": "nav-morph",
+        "value": "500ms ease-out",
+        "purpose": "Transparent bar to floating pill after 24px of scroll."
+      },
+      {
+        "name": "hero-settle",
+        "value": "scale 0.94 -> 1, scroll-linked from start-end to start-20%",
+        "purpose": "The page's one scroll moment on the hero window."
+      },
+      {
+        "name": "smooth-scroll",
+        "value": "Lenis lerp 0.1, 88px anchor offset",
+        "purpose": "Same-page link glide; disabled under reduced motion."
+      },
+      {
+        "name": "wallpaper-crossfade",
+        "value": "opacity 450ms cubic-bezier(0.16, 1, 0.3, 1); 0ms under reduced motion",
+        "purpose": "Switching wallpapers in the background picker."
+      }
     ],
     "breakpoints": [
-      { "name": "sm", "value": "640px" },
-      { "name": "md", "value": "768px" },
-      { "name": "lg", "value": "1024px" }
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ],
+    "materials": [
+      {
+        "name": "bundled-wallpapers",
+        "value": "website/public/images/wallpapers/{black-liquid,red-abstract,purple-folds,geometric-gradients,green-blue-waves,pink-curves}.webp",
+        "purpose": "The app's own wallpapers; only on the background picker stage and the closing panel (under an ink/78% scrim)."
+      }
     ]
   },
   "components": [
@@ -113,11 +361,34 @@
       "description": "One raised panel of three steps joined by a numbered rail.",
       "html": "<ol class=\"ds-track\"><li><div class=\"ds-track-rail\"><span>1</span><i></i></div><div class=\"ds-track-fig\"></div><h3>Record</h3><p>Pick a display and press Record.</p></li><li><div class=\"ds-track-rail\"><span>2</span><i></i></div><div class=\"ds-track-fig\"></div><h3>Polish</h3><p>Zooms are laid out for you.</p></li><li><div class=\"ds-track-rail\"><span>3</span><i></i></div><div class=\"ds-track-fig\"></div><h3>Export</h3><p>MP4 or GIF, no account.</p></li></ol>",
       "css": ".ds-track { display: grid; grid-template-columns: 1fr 1.35fr 1fr; width: 720px; margin: 0; padding: 0; list-style: none; overflow: hidden; border-radius: 24px; background: #18181a; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07); font-family: Geist, system-ui, sans-serif; } .ds-track li { padding: 28px 32px 32px; } .ds-track li + li { border-left: 1px solid rgba(255,255,255,0.07); } .ds-track-rail { display: flex; align-items: center; gap: 12px; } .ds-track-rail span { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 9999px; background: #fff; color: #121212; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; } .ds-track-rail i { flex: 1; height: 1px; background: rgba(255,255,255,0.12); } .ds-track-fig { height: 120px; } .ds-track h3 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; color: #fff; } .ds-track p { margin: 8px 0 0; font-size: 16px; line-height: 1.625; color: rgba(255,255,255,0.55); }"
+    },
+    {
+      "name": "Background Picker",
+      "kind": "custom",
+      "refersTo": "background-stage",
+      "description": "The editor screenshot framed on a bundled wallpaper, with a swatch row to switch it.",
+      "html": "<div class=\"ds-bgpick\"><div class=\"ds-bgpick-stage\"><div class=\"ds-bgpick-wall\"></div><div class=\"ds-bgpick-shot\"></div></div><div class=\"ds-bgpick-row\" role=\"group\" aria-label=\"Background\"><button class=\"ds-swatch is-active\" aria-pressed=\"true\" aria-label=\"Black liquid background\" style=\"background:#1b1b1f\"></button><button class=\"ds-swatch\" aria-pressed=\"false\" aria-label=\"Red abstract background\" style=\"background:#5a1a1a\"></button><button class=\"ds-swatch\" aria-pressed=\"false\" aria-label=\"Purple folds background\" style=\"background:#3a2458\"></button></div></div>",
+      "css": ".ds-bgpick { width: 560px; font-family: Geist, system-ui, sans-serif; } .ds-bgpick-stage { position: relative; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 22px; background: #18181a; box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 40px 80px -40px rgba(0,0,0,0.9); } .ds-bgpick-wall { position: absolute; inset: 0; background: #1b1b1f; transition: opacity 450ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-bgpick-shot { position: absolute; inset: 7%; border-radius: 10px; background: #121212; filter: drop-shadow(0 24px 32px rgba(0,0,0,0.5)); } .ds-bgpick-row { display: flex; justify-content: center; gap: 10px; margin-top: 24px; } .ds-swatch { width: 56px; height: 56px; padding: 0; border: 0; border-radius: 12px; cursor: pointer; box-shadow: 0 0 0 1px rgba(255,255,255,0.12); transition: box-shadow 0.2s, transform 0.2s; } .ds-swatch:hover { box-shadow: 0 0 0 1px rgba(255,255,255,0.35); } .ds-swatch:active { transform: scale(0.95); } .ds-swatch.is-active { box-shadow: 0 0 0 2px #121212, 0 0 0 4px #ffb21a; } .ds-swatch:focus-visible { outline: 2px solid #ffb21a; outline-offset: 3px; }"
+    },
+    {
+      "name": "Closing Panel",
+      "kind": "card",
+      "refersTo": "closing-panel",
+      "description": "Final call to action on the black-liquid wallpaper under an ink scrim.",
+      "html": "<section class=\"ds-close\"><div class=\"ds-close-scrim\"></div><h2>Your next demo, minus the editing.</h2><p>Free and open source on macOS, Windows and Linux.</p></section>",
+      "css": ".ds-close { position: relative; overflow: hidden; width: 640px; padding: 64px 24px; border-radius: 28px; background: #2a2a30; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); text-align: center; font-family: Geist, system-ui, sans-serif; } .ds-close-scrim { position: absolute; inset: 0; background: rgba(18,18,18,0.78); } .ds-close h2, .ds-close p { position: relative; } .ds-close h2 { margin: 0; font-size: 40px; font-weight: 600; line-height: 1.05; letter-spacing: -0.035em; color: #fff; } .ds-close p { margin: 20px auto 0; max-width: 520px; font-size: 18px; line-height: 1.6; color: rgba(255,255,255,0.7); }"
+    },
+    {
+      "name": "Detail List",
+      "kind": "custom",
+      "description": "Three ruled detail items under centered media.",
+      "html": "<dl class=\"ds-details\"><div><dt>Backgrounds</dt><dd>Built-in wallpapers, gradients and colors, or upload your own image.</dd></div><div><dt>Frame</dt><dd>Shadow, padding and roundness, adjusted with sliders.</dd></div><div><dt>Annotations</dt><dd>Call things out on their own track in the timeline.</dd></div></dl>",
+      "css": ".ds-details { display: grid; grid-template-columns: repeat(3, 1fr); column-gap: 48px; width: 720px; margin: 0; font-family: Geist, system-ui, sans-serif; } .ds-details > div { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 20px; } .ds-details dt { font-size: 15px; font-weight: 600; color: #fff; } .ds-details dd { margin: 6px 0 0; font-size: 15px; line-height: 1.625; color: rgba(255,255,255,0.5); }"
     }
   ],
   "narrative": {
     "northStar": "The Product Is the Picture",
-    "overview": "The ScreenMint website follows the category standard for screen-recorder sites, built to the craft level of Screen Studio and Cap. The product's real output leads. A looping export plays inside a desktop window. Editor screenshots sit bare on the ground. Pieces of the app (the recording bar, timeline zoom blocks, the export controls) are rebuilt in HTML, so every claim is shown working rather than illustrated. Nothing on the page is decoration invented for the concept.\n\nThe world is a neutral near-black ground with one raised surface tone and hairline white edges. Type is Geist: large, tight, semibold headings over calm grey body copy. Amber (reel) is scarce: it marks the primary action and the active state, and nothing else. Density is generous. Sections breathe on a 112/160px rhythm. Each section has one heading and one supporting line, and its content is product media or a short spec list, never a grid of equal cards.\n\nConfirmed rejections from the direction: novelty concept worlds, eyebrow and kicker labels above headings, glow and gradient chrome, and grids of equal cards.",
+    "overview": "The ScreenMint website follows the category standard for screen-recorder sites, built to the craft level of Screen Studio and Cap. The product's real output leads. A looping export plays inside a desktop window. Editor screenshots sit bare on the ground. Pieces of the app (the recording bar, timeline zoom blocks, the export controls) are rebuilt in HTML, so every claim is shown working rather than illustrated. Nothing on the page is decoration invented for the concept.\n\nThe world is a neutral near-black ground with one raised surface tone and hairline white edges. Type is Geist: large, tight, semibold headings over calm grey body copy. Amber (reel) is scarce: it marks the primary action and the active state, and nothing else. Density is generous. Sections breathe on a 112/160px rhythm, tightening to 96/112px where a section continues the one before it. Each section has one heading and one supporting line, and its content is product media or a short spec list, never a grid of equal cards.\n\nConfirmed rejections from the direction: novelty concept worlds, eyebrow and kicker labels above headings, glow and gradient chrome, and grids of equal cards.",
     "keyCharacteristics": [
       "Real product media in a desktop-window frame with a long, soft shadow.",
       "App UI rebuilt in HTML instead of icon tiles.",
@@ -127,12 +398,41 @@
       "Motion stays quiet: one scroll-linked moment and one authored moment, and both respect reduced motion."
     ],
     "rules": [
-      { "name": "The One Warm Thing Rule", "body": "Amber marks only the primary action or the current state. If it appears on a heading, an icon tile, a label or a decorative line, it is wrong.", "section": "colors" },
-      { "name": "The White-Alpha Rule", "body": "All secondary text, dividers and quiet fills are white at reduced opacity over ink, never a separately mixed grey. That keeps every grey on the same temperature as the ground.", "section": "colors" },
-      { "name": "The Heading Stands Alone Rule", "body": "A heading carries its own weight with one supporting line under it. Nothing sits above it: no eyebrow, no kicker, no numbered label.", "section": "typography" },
-      { "name": "The Tabular Numbers Rule", "body": "Timecodes, step numbers and sponsor amounts use tabular numerals.", "section": "typography" },
-      { "name": "The Only Windows Float Rule", "body": "A cast shadow means \"this is a window above the desktop.\" Cards and panels never cast shadows; they are edged by an inset hairline.", "section": "elevation" },
-      { "name": "The No Glow Rule", "body": "Shadows are black and directional. Coloured glows and halos are not part of this world.", "section": "elevation" }
+      {
+        "name": "The One Warm Thing Rule",
+        "body": "Amber marks only the primary action or the current state. If it appears on a heading, an icon tile, a label or a decorative line, it is wrong.",
+        "section": "colors"
+      },
+      {
+        "name": "The White-Alpha Rule",
+        "body": "All secondary text, dividers and quiet fills are white at reduced opacity over ink, never a separately mixed grey. That keeps every grey on the same temperature as the ground.",
+        "section": "colors"
+      },
+      {
+        "name": "The Bundled Wallpaper Rule",
+        "body": "ScreenMint's own wallpapers (the six in website/public/images/wallpapers, copied from the app's public/wallpapers) are a sanctioned surface material, and they are used in exactly two places: the background picker stage and the closing panel. They are product output shown as a photograph, not page chrome, so they never stand in for a CSS gradient or a glow. Copy over a wallpaper sits under an ink scrim at 78%, with supporting text raised to 70% white for contrast.",
+        "section": "colors"
+      },
+      {
+        "name": "The Heading Stands Alone Rule",
+        "body": "A heading carries its own weight with one supporting line under it. Nothing sits above it: no eyebrow, no kicker, no numbered label.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Numbers Rule",
+        "body": "Timecodes, step numbers and sponsor amounts use tabular numerals.",
+        "section": "typography"
+      },
+      {
+        "name": "The Only Windows Float Rule",
+        "body": "A cast shadow means \"this is a window above the desktop.\" Cards and panels never cast shadows; they are edged by an inset hairline. The background picker stage is the one non-window that casts, because it stands for ScreenMint's own exported frame.",
+        "section": "elevation"
+      },
+      {
+        "name": "The No Glow Rule",
+        "body": "Shadows are black and directional. Coloured glows and halos are not part of this world.",
+        "section": "elevation"
+      }
     ],
     "dos": [
       "Do lead every claim with real ScreenMint output: an export in the window frame, a bare editor screenshot, or app UI rebuilt in HTML.",
@@ -140,6 +440,7 @@
       "Do separate surfaces with raised ink (#18181a) and a 1px inset hairline at 7% white.",
       "Do give headings Geist 600 with negative tracking (-0.03em to -0.038em) and pair each with one supporting line at 55% white.",
       "Do pair the primary button with a secondary button rather than a second amber action.",
+      "Do keep the bundled wallpapers to the background picker stage and the closing panel, and put copy over a wallpaper only under an ink scrim at 78%.",
       "Do honor prefers-reduced-motion for every animation, the video autoplay and smooth scroll."
     ],
     "donts": [

@@ -77,6 +77,7 @@ export function Hero() {
 							src="/images/demo.mp4"
 							poster="/images/demo-poster.jpg"
 							alt="A ScreenMint export: the view zooms in on each click automatically"
+							priority
 						/>
 					</Window>
 				</motion.div>

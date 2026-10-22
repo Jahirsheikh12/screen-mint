@@ -54,6 +54,16 @@ typography:
     fontSize: "14px"
     fontWeight: 600
     lineHeight: 1.4
+  label-lg:
+    fontFamily: "Geist, system-ui, sans-serif"
+    fontSize: "16px"
+    fontWeight: 600
+    lineHeight: 1.4
+  menu-link:
+    fontFamily: "Geist, system-ui, sans-serif"
+    fontSize: "26px"
+    fontWeight: 600
+    letterSpacing: "-0.02em"
   caption:
     fontFamily: "Geist, system-ui, sans-serif"
     fontSize: "12px"
@@ -65,6 +75,7 @@ rounded:
   md: "12px"
   lg: "14px"
   xl: "16px"
+  stage: "22px"
   2xl: "24px"
   3xl: "28px"
   full: "9999px"
@@ -73,6 +84,8 @@ spacing:
   gutter-md: "32px"
   section: "112px"
   section-md: "160px"
+  section-related: "96px"
+  section-related-md: "112px"
   title-gap: "48px"
   cell: "20px"
   cell-lg: "32px"
@@ -80,7 +93,7 @@ components:
   button-primary:
     backgroundColor: "{colors.reel}"
     textColor: "{colors.ink}"
-    typography: "{typography.label}"
+    typography: "{typography.label-lg}"
     rounded: "{rounded.sm}"
     height: "48px"
     padding: "0 24px"
@@ -95,6 +108,7 @@ components:
   button-secondary:
     backgroundColor: "rgba(255, 255, 255, 0.06)"
     textColor: "{colors.paper}"
+    typography: "{typography.label-lg}"
     rounded: "{rounded.sm}"
     height: "48px"
     padding: "0 24px"
@@ -123,6 +137,19 @@ components:
     backgroundColor: "{colors.ink-raised}"
     rounded: "{rounded.2xl}"
     padding: "28px 32px 32px"
+  background-stage:
+    backgroundColor: "{colors.ink-raised}"
+    rounded: "{rounded.stage}"
+  wallpaper-swatch:
+    rounded: "{rounded.md}"
+    size: "48px"
+  wallpaper-swatch-sm:
+    rounded: "{rounded.md}"
+    size: "56px"
+  closing-panel:
+    backgroundColor: "{colors.ink-raised}"
+    rounded: "{rounded.3xl}"
+    padding: "64px 24px"
 ---
 
 # Design System: ScreenMint
@@ -133,7 +160,7 @@ components:
 
 The ScreenMint website follows the category standard for screen-recorder sites, built to the craft level of Screen Studio and Cap. The product's real output leads. A looping export plays inside a desktop window. Editor screenshots sit bare on the ground. Pieces of the app (the recording bar, timeline zoom blocks, the export controls) are rebuilt in HTML, so every claim is shown working rather than illustrated. Nothing on the page is decoration invented for the concept.
 
-The world is a neutral near-black ground with one raised surface tone and hairline white edges. Type is Geist: large, tight, semibold headings over calm grey body copy. Amber (reel) is scarce: it marks the primary action and the active state, and nothing else. Density is generous. Sections breathe on a 112/160px rhythm. Each section has one heading and one supporting line, and its content is product media or a short spec list, never a grid of equal cards.
+The world is a neutral near-black ground with one raised surface tone and hairline white edges. Type is Geist: large, tight, semibold headings over calm grey body copy. Amber (reel) is scarce: it marks the primary action and the active state, and nothing else. Density is generous. Sections breathe on a 112/160px rhythm, tightening to 96/112px where a section continues the one before it. Each section has one heading and one supporting line, and its content is product media or a short spec list, never a grid of equal cards.
 
 Confirmed rejections from the direction: novelty concept worlds, eyebrow and kicker labels above headings, glow and gradient chrome, and grids of equal cards.
 
@@ -170,6 +197,8 @@ The palette is a near-monochrome dark world with one warm accent used sparingly.
 
 **The White-Alpha Rule.** All secondary text, dividers and quiet fills are white at reduced opacity over ink, never a separately mixed grey. That keeps every grey on the same temperature as the ground.
 
+**The Bundled Wallpaper Rule.** ScreenMint's own wallpapers (the six in website/public/images/wallpapers, copied from the app's public/wallpapers) are a sanctioned surface material, and they are used in exactly two places: the background picker stage and the closing panel. They are product output shown as a photograph, not page chrome, so they never stand in for a CSS gradient or a glow. Copy over a wallpaper sits under an ink scrim at 78%, with supporting text raised to 70% white for contrast.
+
 ## Typography
 
 **Display Font:** Geist (with system-ui, sans-serif)
@@ -185,7 +214,9 @@ The palette is a near-monochrome dark world with one warm accent used sparingly.
 - **Title Small** (600, 20px, -0.02em): step names in the How it works track.
 - **Body Large** (400, 18px, 1.6): the single supporting line under a heading, capped at about 600-760px.
 - **Body** (400, 15-16px, relaxed): spec and detail descriptions, step copy and FAQ answers (FAQ answers are capped at 62ch).
-- **Label** (600, 14-16px): button text, item titles and recording-bar items.
+- **Label Large** (600, 16px, 1.4): button text at full size, the nav wordmark (tracked -0.01em), and item titles in spec lists, tier rows and cursor-take toggles.
+- **Label** (600, 14px): nav links, the compact nav button, recording-bar items and download-card buttons.
+- **Menu Link** (600, 26px, -0.02em): links in the full-screen mobile menu sheet only.
 - **Caption** (500, 12-13.5px): the window title, export-control labels, timeline timecodes (tabular numerals) and the meta line under the hero buttons.
 
 ### Named Rules
@@ -195,28 +226,30 @@ The palette is a near-monochrome dark world with one warm accent used sparingly.
 
 ## Layout
 
-Content sits in a centered 1120px container (1080px for the hero copy, 1000px or 900px for feature screenshots). Side gutters are 20px, widening to 32px from md. Sections open with 112px of top padding, rising to 160px from md. Feature blocks inside a section use the same gap. The space from a section title to its content is 48-64px.
+Content sits in a centered 1120px container (1080px for the hero copy, 1000px or 900px for feature screenshots). Side gutters are 20px, widening to 32px from md. Sections open with 112px of top padding, rising to 160px from md. A section that continues the one before it (Specs after How it works, FAQ after Sponsor) opens with the tighter related gap: 96px, rising to 112px from md. Feature blocks inside a section use the same gap. The space from a section title to its content is 48-64px.
 
 The page alternates three compositions:
 - **Centered media:** a heading, then a wide window or screenshot, then a three-column detail list.
 - **Split 5:7 or 4:7:** a left column holds the heading, controls or a sticky title (the FAQ title sticks at 112px from the top), and the right column holds the content.
 - **One raised panel:** the How it works track or the closing panel.
+- **Stage:** the background picker, a wallpaper stage wide as the feature screenshot (1000px), with its swatch row centered beneath.
 
 Breakpoints are Tailwind defaults (sm 640, md 768, lg 1024). Splits and multi-column lists collapse to one column below lg or sm. The rebuilt recording bar hides below sm. The scroll offset is 88px, which clears the floating nav.
 
 ## Elevation & Depth
 
-The system is mostly tonal. Surfaces separate by stepping from ink to raised ink and by a 1px inset white hairline. Real cast shadows appear only on things that represent physical windows floating above the desktop: the product window, the recording bar, the floating nav, and editor screenshots (which get a drop shadow).
+The system is mostly tonal. Surfaces separate by stepping from ink to raised ink and by a 1px inset white hairline. Real cast shadows appear only on things that represent physical windows floating above the desktop: the product window, the recording bar, the floating nav, the background picker stage (the app's own framed-output canvas), and editor screenshots (which get a drop shadow).
 
 ### Shadow Vocabulary
 - **Desktop Window** (`0 0 0 1px rgba(255,255,255,0.09), inset 0 1px 0 rgba(255,255,255,0.06), 0 30px 60px -20px rgba(0,0,0,0.7), 0 80px 140px -60px rgba(0,0,0,0.9)`): the window frame around product media.
 - **Floating HUD** (`0 0 0 1px rgba(255,255,255,0.08), 0 18px 40px -12px rgba(0,0,0,0.75)`): the recording bar. The nav pill uses a lighter variant (`0 12px 32px -12px`).
+- **Stage** (`0 0 0 1px rgba(255,255,255,0.08), 0 40px 80px -40px rgba(0,0,0,0.9)`): the background picker stage. The editor screenshot on it takes a slightly tighter drop (`drop-shadow(0 24px 32px rgba(0,0,0,0.5))`).
 - **Screenshot Drop** (`drop-shadow(0 30px 40px rgba(0,0,0,0.55))`): bare editor PNGs that already carry their own frame.
 - **Inset Edge** (`inset 0 0 0 1px rgba(255,255,255,0.07)`): every raised panel and card. The amber variant is `inset 0 0 0 1px rgba(255,178,26,0.55)` and marks the recommended card.
 - **Key Button** (`inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.35)`): the primary button's slight physical bevel.
 
 ### Named Rules
-**The Only Windows Float Rule.** A cast shadow means "this is a window above the desktop." Cards and panels never cast shadows; they are edged by an inset hairline.
+**The Only Windows Float Rule.** A cast shadow means "this is a window above the desktop." Cards and panels never cast shadows; they are edged by an inset hairline. The background picker stage is the one non-window that casts, because it stands for ScreenMint's own exported frame.
 
 **The No Glow Rule.** Shadows are black and directional. Coloured glows and halos are not part of this world.
 
@@ -225,9 +258,10 @@ The system is mostly tonal. Surfaces separate by stepping from ink to raised ink
 Corners are soft and follow a macOS-like logic: the bigger the object, the bigger the radius.
 - 8px: compact controls, nav links and timeline blocks.
 - 10px: buttons and the code strip.
-- 12px: the cursor-take toggles.
+- 12px: the cursor-take toggles and wallpaper swatches.
 - 14px: windows, the recording bar, the nav pill and status notes.
 - 16px: download cards.
+- 22px: the background picker stage.
 - 24px: the How it works track.
 - 28px: the closing panel.
 - Full rounding: only for dots, step numbers and the "Your computer" badge.
@@ -255,6 +289,17 @@ A desktop window around product media. A 36px title bar holds three neutral dots
 ### Recording Bar (signature)
 ScreenMint's HUD, rebuilt in HTML. It sits over the top edge of the hero window and appears in compact form in step one. The bar is app chrome at 95% with a blur, a 14px radius and a 48px height (44px compact). It holds semibold 14px items (Display, Record, Open) separated by 15% white vertical rules. The Record icon is the app's own record red, which is product fidelity and not a palette color.
 
+### Background Picker (signature)
+The background feature, working. The ScreenMint editor screenshot sits framed (7% inset padding) on one of six bundled wallpapers. The stage is 4:3 on mobile and 16:10 from sm, with a 22px radius, raised ink beneath the image, and the Stage shadow (a 1px white hairline plus a long black drop). Only the first wallpaper loads up front; the rest load as the section approaches. Choosing a wallpaper crossfades the stage on opacity over 450ms with the standard ease-out, and the switch is instant under reduced motion.
+
+Below the stage is a centered row of square swatches, 48px (56px from sm) at a 12px radius, 10px apart. At rest, a swatch has a 1px ring at 12% white, which rises to 35% white on hover. The active swatch gets a 2px ink gap and a 2px amber ring outside it, and every swatch presses to 0.95. The swatches are buttons with aria-pressed, inside a group labelled "Background". A 13.5px caption at 55% white sits under the row. The share image (og.jpg, 1200×630, used for the Open Graph and Twitter cards) is the same pairing: the editor screenshot on the black-liquid wallpaper.
+
+### Detail List
+A three-column list (one column below sm) under centered media, capped at 1000px, with 48px between columns. Each item sits on a 1px top rule at 8% white with 20px of padding above it. A 15px semibold white title is followed by a 15px relaxed description at 50% white.
+
+### Closing Panel
+One 28px-radius panel of raised ink (64px vertical padding, 96px from md) carrying the black-liquid wallpaper under an ink scrim at 78%. The content is raised above both layers: the 72px app mark, a Headline, one supporting line at 70% white (the scrim exception to the 55% default), and a primary and secondary button pair.
+
 ### How it works Track
 One raised panel (24px radius, inset edge) split 1 : 1.35 : 1 with hairline dividers. Each step starts with a track row: a white 24px numbered circle followed by a 12% white line running to the edge, so the three lines read as one rail. A 260px figure stage holds the rebuilt UI. The step name and copy sit below it. The Polish figure is the page's authored moment: the playhead sweeps over 1.8s and the 2.0× zoom block turns amber when the playhead reaches it.
 
@@ -268,7 +313,7 @@ Support options are one ruled list, not cards. Each row lays out a 22px tabular 
 Choice rows are toggles, such as the cursor takes. Each is a 12px-radius row with a 6px status dot. The active row has a 7% white fill and an amber dot. Inactive rows have a 25% white dot and a 4% fill on hover. Switching takes crossfades the media over 0.25s.
 
 ### Motion
-Motion is quiet and functional. Entrances and crossfades use the standard ease-out curve, cubic-bezier(0.16, 1, 0.3, 1). Colour state changes take 0.2s ease. Smooth scrolling uses Lenis (lerp 0.1), and same-page links glide to an 88px offset. Every animation, including Lenis, autoplay and the timeline sweep, turns off under prefers-reduced-motion.
+Motion is quiet and functional. Entrances and crossfades use the standard ease-out curve, cubic-bezier(0.16, 1, 0.3, 1). Colour state changes take 0.2s ease. Wallpaper switches in the background picker crossfade over 450ms. Smooth scrolling uses Lenis (lerp 0.1), and same-page links glide to an 88px offset. Every animation, including Lenis, autoplay and the timeline sweep, turns off under prefers-reduced-motion.
 
 ## Do's and Don'ts
 
@@ -278,6 +323,7 @@ Motion is quiet and functional. Entrances and crossfades use the standard ease-o
 - **Do** separate surfaces with raised ink (#18181a) and a 1px inset hairline at 7% white.
 - **Do** give headings Geist 600 with negative tracking (-0.03em to -0.038em) and pair each with one supporting line at 55% white.
 - **Do** pair the primary button with a secondary button rather than a second amber action.
+- **Do** keep the bundled wallpapers to the background picker stage and the closing panel, and put copy over a wallpaper only under an ink scrim at 78%.
 - **Do** honor prefers-reduced-motion for every animation, the video autoplay and smooth scroll.
 
 ### Don't:

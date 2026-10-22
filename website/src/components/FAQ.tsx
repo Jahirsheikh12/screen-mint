@@ -53,7 +53,7 @@ const faqs = [
 
 export function FAQ() {
 	return (
-		<section id="faq" className="px-5 pt-28 md:px-8 md:pt-40">
+		<section id="faq" className="px-5 pt-24 md:px-8 md:pt-28">
 			<div className="mx-auto grid max-w-[1120px] gap-10 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-20">
 				<div className="lg:sticky lg:top-28 lg:self-start">
 					<SectionTitle title="Questions and answers" align="left">

@@ -22,7 +22,11 @@ export function Navbar() {
 	const [active, setActive] = useState("");
 
 	useEffect(() => {
-		const onScroll = () => setFloating(window.scrollY > 24);
+		const onScroll = () => {
+			setFloating(window.scrollY > 24);
+			// Back in the hero, no section is current; the observer below never sees the hero.
+			if (window.scrollY < window.innerHeight * 0.5) setActive("");
+		};
 		onScroll();
 		window.addEventListener("scroll", onScroll, { passive: true });
 		return () => window.removeEventListener("scroll", onScroll);

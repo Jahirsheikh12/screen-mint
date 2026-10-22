@@ -164,21 +164,31 @@ export function Download() {
 export function ClosingCta() {
 	return (
 		<section className="px-5 pb-28 pt-28 md:px-8 md:pb-40 md:pt-40">
-			<div className="mx-auto flex max-w-[1120px] flex-col items-center rounded-[28px] bg-ink-2 px-6 py-16 text-center shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] md:py-24">
+			<div className="relative mx-auto flex max-w-[1120px] flex-col items-center overflow-hidden rounded-[28px] bg-ink-2 px-6 py-16 text-center shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] md:py-24">
+				{/* One of ScreenMint's own wallpapers, dimmed so the copy keeps AA contrast */}
+				<img
+					src="/images/wallpapers/black-liquid.webp"
+					alt=""
+					aria-hidden="true"
+					loading="lazy"
+					decoding="async"
+					className="absolute inset-0 h-full w-full object-cover"
+				/>
+				<div aria-hidden="true" className="absolute inset-0 bg-ink/[0.78]" />
 				<img
 					src="/images/screenmint-180.png"
 					alt=""
 					width={72}
 					height={72}
-					className="h-[72px] w-[72px]"
+					className="relative h-[72px] w-[72px]"
 				/>
-				<h2 className="mt-8 text-balance font-display text-[clamp(2.125rem,4.2vw,3.5rem)] font-semibold leading-[1.05] tracking-[-0.035em] text-white">
+				<h2 className="relative mt-8 text-balance font-display text-[clamp(2.125rem,4.2vw,3.5rem)] font-semibold leading-[1.05] tracking-[-0.035em] text-white">
 					Your next demo, minus the editing.
 				</h2>
-				<p className="mt-5 max-w-[520px] text-pretty text-[18px] leading-[1.6] text-white/55">
+				<p className="relative mt-5 max-w-[520px] text-pretty text-[18px] leading-[1.6] text-white/70">
 					Free and open source on macOS, Windows and Linux.
 				</p>
-				<div className="mt-9 flex flex-col gap-3 sm:flex-row">
+				<div className="relative mt-9 flex flex-col gap-3 sm:flex-row">
 					<a href="#download" className="btn-primary h-12 px-6 text-[16px]">
 						<DownloadIcon className="h-[17px] w-[17px]" />
 						Download for free

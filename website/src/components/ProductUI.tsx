@@ -30,7 +30,18 @@ export function Window({
 }
 
 /** Product media: a looping muted video, or a still. */
-export function Media({ src, poster, alt }: { src: string; poster?: string; alt: string }) {
+export function Media({
+	src,
+	poster,
+	alt,
+	priority = false,
+}: {
+	src: string;
+	poster?: string;
+	alt: string;
+	/** The first-viewport video loads right away; others fetch only their metadata until they play. */
+	priority?: boolean;
+}) {
 	const reduceMotion = useReducedMotion();
 
 	if (src.endsWith(".mp4")) {
@@ -43,8 +54,11 @@ export function Media({ src, poster, alt }: { src: string; poster?: string; alt:
 				muted
 				loop
 				playsInline
+				preload={priority ? "auto" : "metadata"}
+				width={1280}
+				height={720}
 				aria-label={alt}
-				className="block aspect-video w-full bg-black object-cover"
+				className="block aspect-video h-auto w-full bg-black object-cover"
 			/>
 		);
 	}
@@ -53,12 +67,25 @@ export function Media({ src, poster, alt }: { src: string; poster?: string; alt:
 }
 
 /** An editor screenshot. The PNGs carry their own window frame, so they sit bare with a shadow. */
-export function Shot({ src, alt }: { src: string; alt: string }) {
+export function Shot({
+	src,
+	alt,
+	width,
+	height,
+}: {
+	src: string;
+	alt: string;
+	width: number;
+	height: number;
+}) {
 	return (
 		<img
 			src={src}
 			alt={alt}
+			width={width}
+			height={height}
 			loading="lazy"
+			decoding="async"
 			className="mx-auto block h-auto w-full [filter:drop-shadow(0_30px_40px_rgba(0,0,0,0.55))]"
 		/>
 	);

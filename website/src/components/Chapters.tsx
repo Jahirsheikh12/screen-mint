@@ -44,14 +44,101 @@ function FeatureTitle({ title, children }: { title: string; children: ReactNode 
 
 function Details({ items }: { items: { title: string; body: string }[] }) {
 	return (
-		<dl className="mx-auto mt-10 grid max-w-[1000px] gap-x-12 gap-y-6 sm:grid-cols-3">
+		<dl className="mx-auto mt-12 grid max-w-[1000px] gap-x-12 gap-y-6 sm:grid-cols-3">
 			{items.map((item) => (
-				<div key={item.title}>
+				<div key={item.title} className="border-t border-white/[0.08] pt-5">
 					<dt className="text-[15px] font-semibold text-white">{item.title}</dt>
 					<dd className="mt-1.5 text-[15px] leading-relaxed text-white/50">{item.body}</dd>
 				</div>
 			))}
 		</dl>
+	);
+}
+
+/** Abstract wallpapers that ship with the app (public/wallpapers), copied at web size. */
+const WALLPAPERS = [
+	{ id: "black-liquid", label: "Black liquid" },
+	{ id: "red-abstract", label: "Red abstract" },
+	{ id: "purple-folds", label: "Purple folds" },
+	{ id: "geometric-gradients", label: "Geometric gradients" },
+	{ id: "green-blue-waves", label: "Green and blue waves" },
+	{ id: "pink-curves", label: "Pink curves" },
+];
+
+/** The background feature, working: pick a built-in wallpaper and the framed recording sits on it. */
+function BackgroundDemo() {
+	const [active, setActive] = useState(0);
+	const ref = useRef<HTMLDivElement>(null);
+	// Only the first wallpaper loads up front; the rest arrive as the section approaches.
+	const near = useInView(ref, { once: true, margin: "400px" });
+	const reduceMotion = useReducedMotion();
+
+	return (
+		<div ref={ref}>
+			<div className="relative aspect-[4/3] overflow-hidden rounded-[22px] bg-ink-2 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_40px_80px_-40px_rgba(0,0,0,0.9)] sm:aspect-[16/10]">
+				{WALLPAPERS.map((w, i) =>
+					near || i === 0 ? (
+						<img
+							key={w.id}
+							src={`/images/wallpapers/${w.id}.webp`}
+							alt=""
+							aria-hidden="true"
+							decoding="async"
+							className="absolute inset-0 h-full w-full object-cover transition-opacity ease-out"
+							style={{
+								opacity: i === active ? 1 : 0,
+								transitionDuration: reduceMotion ? "0ms" : "450ms",
+							}}
+						/>
+					) : null,
+				)}
+				<div className="absolute inset-0 flex items-center justify-center p-[7%]">
+					<img
+						src="/images/preview2.png"
+						alt={`The ScreenMint editor framed on the ${WALLPAPERS[active].label.toLowerCase()} background`}
+						width={1111}
+						height={953}
+						loading="lazy"
+						decoding="async"
+						className="h-full w-auto max-w-full object-contain [filter:drop-shadow(0_24px_32px_rgba(0,0,0,0.5))]"
+					/>
+				</div>
+			</div>
+
+			<div
+				role="group"
+				aria-label="Background"
+				className="mt-6 flex flex-wrap items-center justify-center gap-2.5"
+			>
+				{WALLPAPERS.map((w, i) => (
+					<button
+						key={w.id}
+						type="button"
+						aria-pressed={i === active}
+						aria-label={`${w.label} background`}
+						onClick={() => setActive(i)}
+						className={`h-12 w-12 overflow-hidden rounded-[12px] transition-[box-shadow,transform] duration-200 active:scale-95 sm:h-14 sm:w-14 ${
+							i === active
+								? "shadow-[0_0_0_2px_#121212,0_0_0_4px_#ffb21a]"
+								: "shadow-[0_0_0_1px_rgba(255,255,255,0.12)] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.35)]"
+						}`}
+					>
+						<img
+							src={`/images/wallpapers/thumbs/${w.id}.webp`}
+							alt=""
+							width={56}
+							height={56}
+							loading="lazy"
+							decoding="async"
+							className="h-full w-full object-cover"
+						/>
+					</button>
+				))}
+			</div>
+			<p className="mt-4 text-center text-[13.5px] text-white/55">
+				A few of the backgrounds that come with ScreenMint. Try one.
+			</p>
+		</div>
 	);
 }
 
@@ -147,6 +234,8 @@ export function Chapters() {
 						<Shot
 							src="/images/preview4.png"
 							alt="The ScreenMint editor: a preview above a timeline with a 3.5× zoom block"
+							width={1111}
+							height={951}
 						/>
 					</div>
 					<Details
@@ -178,11 +267,8 @@ export function Chapters() {
 							the shadow, padding and corners.
 						</FeatureTitle>
 					</div>
-					<div className="mx-auto mt-10 max-w-[900px]">
-						<Shot
-							src="/images/preview2.png"
-							alt="ScreenMint's style panel: zoom depth, motion blur, shadow, roundness, padding, backgrounds and export quality"
-						/>
+					<div className="mx-auto mt-10 max-w-[1000px]">
+						<BackgroundDemo />
 					</div>
 					<Details
 						items={[
@@ -376,7 +462,7 @@ const SPECS = [
 
 export function Specs() {
 	return (
-		<section className="px-5 pt-28 md:px-8 md:pt-40">
+		<section className="px-5 pt-24 md:px-8 md:pt-28">
 			<div className="mx-auto grid max-w-[1120px] gap-12 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-20">
 				<SectionTitle title="The details are covered too." align="left">
 					The small things that make a recording tool pleasant to use every day.
