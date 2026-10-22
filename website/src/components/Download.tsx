@@ -125,6 +125,17 @@ export function Download() {
 						);
 					})}
 				</ul>
+				<p className="mt-5 text-center text-[14px] text-white/55">
+					Need an older version or another file?{" "}
+					<a
+						href={`${REPO_URL}/releases`}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="text-white underline decoration-white/25 underline-offset-[5px] transition-colors hover:decoration-reel"
+					>
+						All releases on GitHub
+					</a>
+				</p>
 
 				{platform === "macos" ? (
 					<div className="mt-4 flex flex-col gap-4 rounded-[16px] bg-ink-2 p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] md:flex-row md:items-center md:gap-8">

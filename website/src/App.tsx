@@ -18,8 +18,15 @@ export default function App() {
 
 	return (
 		<>
+			<a
+				href="#main"
+				data-skip-link
+				className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-[8px] focus:bg-reel focus:px-4 focus:py-2 focus:font-body focus:text-[14px] focus:font-semibold focus:text-ink"
+			>
+				Skip to content
+			</a>
 			<Navbar />
-			<main className="site font-body">
+			<main id="main" tabIndex={-1} className="site font-body outline-none">
 				<Hero />
 				<Chapters />
 				<HowItWorks />

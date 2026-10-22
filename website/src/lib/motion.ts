@@ -14,7 +14,8 @@ export const lenis =
 if (lenis) {
 	document.addEventListener("click", (event) => {
 		const link = (event.target as Element | null)?.closest?.("a[href^='#']");
-		if (!link) return;
+		// The skip link must move keyboard focus natively, not just scroll.
+		if (!link || link.hasAttribute("data-skip-link")) return;
 		const hash = link.getAttribute("href") ?? "#";
 		const target = hash === "#" || hash === "#top" ? 0 : document.querySelector(hash);
 		if (target === null) return;

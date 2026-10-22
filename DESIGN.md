@@ -177,7 +177,7 @@ Confirmed rejections from the direction: novelty concept worlds, eyebrow and kic
 The palette is a near-monochrome dark world with one warm accent used sparingly.
 
 ### Primary
-- **Reel Amber** (reel): the primary button fill, the active cursor-take dot, the recommended download card's edge and badge, the timeline zoom block once the playhead reaches it, the keyboard focus ring, text selection (at 32%) and the caret. It lives in the frame's "recording light" register.
+- **Reel Amber** (reel): the primary button fill, the active cursor-take dot, the recommended download card's edge and badge, the timeline zoom block once the playhead reaches it, the keyboard focus ring, text selection (at 32%), the caret, the skip link's fill and the hover underline of inline text links. It lives in the frame's "recording light" register.
 - **Reel Amber, Lit** (reel-hover): the hover fill for the primary button only.
 
 ### Neutral
@@ -234,7 +234,7 @@ The page alternates three compositions:
 - **One raised panel:** the How it works track or the closing panel.
 - **Stage:** the background picker, a wallpaper stage wide as the feature screenshot (1000px), with its swatch row centered beneath.
 
-Breakpoints are Tailwind defaults (sm 640, md 768, lg 1024). Splits and multi-column lists collapse to one column below lg or sm. The rebuilt recording bar hides below sm. The scroll offset is 88px, which clears the floating nav.
+Breakpoints are Tailwind defaults (sm 640, md 768, lg 1024). Splits and multi-column lists collapse to one column below lg or sm. The rebuilt recording bar hides below sm. The scroll offset is 88px, which clears the floating nav. The feature blocks carry deep-link ids (`auto-zoom`, `cursor`, `backgrounds`), so links to them land under the same offset.
 
 ## Elevation & Depth
 
@@ -269,6 +269,8 @@ Corners are soft and follow a macOS-like logic: the bigger the object, the bigge
 Edges are drawn with inset box-shadow hairlines rather than CSS borders, except for list dividers (the tier list and FAQ use 7-8% white rules). Window title bars use three neutral 12px dots at 13% white, never colored traffic lights.
 
 ## Components
+
+The landing page is pre-rendered to static HTML at build time and hydrated on the client, so components must not read `window`, `document` or `navigator` during render, only in effects.
 
 ### Buttons
 Buttons are tactile and plain, like a native key.
@@ -308,6 +310,19 @@ A 1/2/4-column list of raised-ink cards with a 16px radius, 20px padding and an 
 
 ### Tier List
 Support options are one ruled list, not cards. Each row lays out a 22px tabular amount, a 16px semibold name, a description at 55% white and an arrow-up-right icon that turns white on row hover. Rows are 20px tall with 7% white dividers and stack into two lines on small screens.
+
+### FAQ Disclosure
+Questions are native disclosures (`<details name="faq">` with a `<summary>`), so every answer is in the static HTML for search and answer engines, the list works without JavaScript, and the shared name keeps one item open at a time.
+- **Groups:** questions sit under h3 group titles ("Using ScreenMint", "Sponsoring") at 18px semibold, -0.01em, white, with 48px between groups. Each group's list opens 16px below its title on a 1px rule at 8% white.
+- **Row:** a 1px bottom rule at 8% white and 20px of vertical padding. The question is 17px semibold at 85% white, turning white on hover and while open.
+- **Chevron:** 20px at 40% white, rotating 180° when open over 200ms. The native marker is hidden.
+- **Answer:** 16px at 1.65 line height, 55% white, capped at 62ch.
+
+### Inline Links
+Text links inside running copy (the FAQ's "Send an email", the release link under the download cards) are white with an underline at 25% white and a 5px offset. On hover the underline turns amber; the text color does not change. The release link sits centered 20px under the download cards, in a 14px line at 55% white.
+
+### Skip Link
+The first focusable element on the page. It is visually hidden until focused, then pins to the top-left at 16px as an amber pill (8px radius, 16px by 8px padding) with 14px semibold ink text, above the nav. It targets `<main id="main">`, which is focusable (tabindex -1) so focus actually moves. Smooth scrolling skips links marked `data-skip-link`, so the browser handles the jump natively.
 
 ### Choice Rows
 Choice rows are toggles, such as the cursor takes. Each is a 12px-radius row with a 6px status dot. The active row has a 7% white fill and an amber dot. Inactive rows have a 25% white dot and a 4% fill on hover. Switching takes crossfades the media over 0.25s.

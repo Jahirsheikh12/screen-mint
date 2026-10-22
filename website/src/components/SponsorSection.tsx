@@ -1,5 +1,5 @@
 import { ArrowUpRight, Heart } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
 	CREEM_ENABLED,
 	CREEM_PRODUCTS,
@@ -45,10 +45,9 @@ function TierList({
 
 export function SponsorSection() {
 	const [dismissedSupportState, setDismissedSupportState] = useState(false);
-	const supportState = useMemo(() => {
-		if (typeof window === "undefined") return null;
-		return getSupportReturnState(window.location.search);
-	}, []);
+	// Read after mount: the page is pre-rendered without a URL, so render must not depend on it.
+	const [supportState, setSupportState] = useState<ReturnType<typeof getSupportReturnState>>(null);
+	useEffect(() => setSupportState(getSupportReturnState(window.location.search)), []);
 	const supportProduct = getCreemProductById(supportState?.productId ?? null);
 
 	return (

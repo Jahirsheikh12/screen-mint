@@ -1,6 +1,6 @@
 import { CircleDot, Folder, GripVertical, Minus, Monitor, X } from "lucide-react";
 import { useReducedMotion } from "motion/react";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 /** A desktop window around product media: quiet title bar, the media below. */
 export function Window({
@@ -43,14 +43,28 @@ export function Media({
 	priority?: boolean;
 }) {
 	const reduceMotion = useReducedMotion();
+	const videoRef = useRef<HTMLVideoElement>(null);
+	const [reduced, setReduced] = useState(false);
+
+	// Decide playback after mount, so the pre-rendered markup and the first client render match.
+	useEffect(() => {
+		const video = videoRef.current;
+		if (!video) return;
+		setReduced(!!reduceMotion);
+		if (reduceMotion) video.pause();
+		else
+			void video.play().catch(() => {
+				// The browser may refuse autoplay; the poster frame stays up.
+			});
+	}, [reduceMotion]);
 
 	if (src.endsWith(".mp4")) {
 		return (
 			<video
+				ref={videoRef}
 				src={src}
 				poster={poster}
-				autoPlay={!reduceMotion}
-				controls={!!reduceMotion}
+				controls={reduced}
 				muted
 				loop
 				playsInline

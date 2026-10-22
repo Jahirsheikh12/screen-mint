@@ -223,7 +223,7 @@ export function Chapters() {
 					fine-tune any of it afterwards.
 				</SectionTitle>
 
-				<div className="mt-20 md:mt-28">
+				<div id="auto-zoom" className="mt-20 md:mt-28">
 					<div className="mx-auto max-w-[680px] text-center">
 						<FeatureTitle title="Zooms that follow your clicks.">
 							While you record, ScreenMint notes where you click. In the editor, those moments
@@ -256,11 +256,11 @@ export function Chapters() {
 					/>
 				</div>
 
-				<div className="mt-28 md:mt-40">
+				<div id="cursor" className="mt-28 md:mt-40">
 					<CursorFeature />
 				</div>
 
-				<div className="mt-28 md:mt-40">
+				<div id="backgrounds" className="mt-28 md:mt-40">
 					<div className="mx-auto max-w-[680px] text-center">
 						<FeatureTitle title="Make every recording look like yours.">
 							Set your recording on a wallpaper, gradient, solid color or your own image, then tune
