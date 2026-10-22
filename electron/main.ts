@@ -13,6 +13,7 @@ import {
 	shell,
 	Tray,
 } from "electron";
+import { sweepStaleExportTempFiles } from "./exportTemp";
 import {
 	adoptRecoveredRecording,
 	getSelectedSourceId,
@@ -447,6 +448,14 @@ function createEditorWindowWrapper() {
 		editorHasUnsavedChanges = false;
 	});
 
+	// The editor's beforeunload blocks unloads while there are unsaved changes. Once the user
+	// has chosen Save & Close or Discard & Close here, that choice wins.
+	editorWindow.webContents.on("will-prevent-unload", (event) => {
+		if (isForceClosing) {
+			event.preventDefault();
+		}
+	});
+
 	editorWindow.on("close", (event) => {
 		if (isForceClosing || !editorHasUnsavedChanges) {
 			return;
@@ -623,6 +632,7 @@ app.whenReady().then(async () => {
 		},
 	);
 	void offerInterruptedRecordingRecovery();
+	void sweepStaleExportTempFiles(app.getPath("temp"));
 
 	// Register the display media handler so that renderer's getDisplayMedia()
 	// calls land on the pre-selected source without showing a system picker.

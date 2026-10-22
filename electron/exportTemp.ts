@@ -70,3 +70,27 @@ export async function writeCaptionSidecars(
 	}
 	return written;
 }
+
+const CLIPBOARD_FILE_PREFIXES = ["screenmint-clipboard-", "screenmint-export-v2-"];
+const CLIPBOARD_FILE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Startup cleanup. Renders waiting for a save location belong to an editor session, so after a
+ * restart they are all stale. Clipboard copies are file references the user may still paste, so
+ * those are kept for a day.
+ */
+export async function sweepStaleExportTempFiles(tempRoot: string, now = Date.now()) {
+	await fs.rm(getExportTempDir(tempRoot), { recursive: true, force: true }).catch(() => undefined);
+	const names = await fs.readdir(tempRoot).catch(() => [] as string[]);
+	await Promise.all(
+		names
+			.filter((name) => CLIPBOARD_FILE_PREFIXES.some((prefix) => name.startsWith(prefix)))
+			.map(async (name) => {
+				const filePath = path.join(tempRoot, name);
+				const stat = await fs.stat(filePath).catch(() => null);
+				if (stat?.isFile() && now - stat.mtimeMs > CLIPBOARD_FILE_MAX_AGE_MS) {
+					await fs.rm(filePath, { force: true }).catch(() => undefined);
+				}
+			}),
+	);
+}

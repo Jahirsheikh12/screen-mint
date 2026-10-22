@@ -113,7 +113,11 @@ export function useVideoEditorAudioPreview({
 			}
 			audio.volume = Math.max(0, Math.min(1, region.volume));
 		}
+	}, [audioRegions, missingAudioPathsById, resolvedAudioSourceUrls]);
 
+	// Tear down only on unmount; region edits update the elements above without restarting them.
+	useEffect(() => {
+		const existing = audioElementsRef.current;
 		return () => {
 			for (const audio of existing.values()) {
 				audio.pause();
@@ -121,7 +125,7 @@ export function useVideoEditorAudioPreview({
 			}
 			existing.clear();
 		};
-	}, [audioRegions, missingAudioPathsById, resolvedAudioSourceUrls]);
+	}, []);
 
 	useEffect(() => {
 		for (const region of audioRegions) {

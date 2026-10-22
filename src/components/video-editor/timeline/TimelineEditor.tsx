@@ -1204,9 +1204,17 @@ export default function TimelineEditor({
 
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+			const target = e.target as HTMLElement | null;
+			if (
+				target instanceof HTMLInputElement ||
+				target instanceof HTMLTextAreaElement ||
+				target instanceof HTMLSelectElement ||
+				target?.isContentEditable
+			) {
 				return;
 			}
+			// Holding a key must not add a region per auto-repeat.
+			if (e.repeat) return;
 
 			if (e.key === "Escape") {
 				setTrimMode(false);

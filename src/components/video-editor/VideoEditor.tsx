@@ -950,9 +950,10 @@ export default function VideoEditor() {
 			setVideoExportSettings(controls.videoExportSettings);
 			setGifExportSettings(controls.gifExportSettings);
 			setScenePresetId(controls.scenePresetId);
-			setAudioMix(controls.audioMix);
 
 			if (options.includeTimeline) {
+				// Clip volume belongs to this video, like the timeline; presets leave it alone.
+				setAudioMix(controls.audioMix);
 				setZoomRegions(controls.zoomRegions);
 				setTrimRegions(controls.trimRegions);
 				setCutPoints(controls.cutPoints ?? []);
@@ -1034,7 +1035,7 @@ export default function VideoEditor() {
 		[applyEditorControls],
 	);
 
-	const { canUndo, canRedo, handleUndo, handleRedo } = useEditorHistory({
+	const { canUndo, canRedo, handleUndo, handleRedo, resetHistory } = useEditorHistory({
 		buildSnapshot: buildHistorySnapshot,
 		applySnapshot: applyHistorySnapshot,
 	});
@@ -1119,6 +1120,7 @@ export default function VideoEditor() {
 					0,
 				) + 1;
 
+			resetHistory();
 			dispatchSession({
 				type: "set-last-saved-snapshot",
 				snapshot: editorPersistenceService.buildProjectArtifacts({
@@ -1136,10 +1138,13 @@ export default function VideoEditor() {
 			setDraftVideoName,
 			setIsEditingVideoName,
 			setVideoName,
+			resetHistory,
 		],
 	);
 
-	const currentProjectSnapshot = useMemo(() => {
+	// What a save would write right now. The unsaved-changes check compares this same snapshot,
+	// so saving and change detection can't disagree about which fields matter.
+	const currentProjectArtifacts = useMemo(() => {
 		const sourcePath = videoSourcePath ?? (videoPath ? fromFileUrl(videoPath) : null);
 		if (!sourcePath) {
 			return null;
@@ -1147,176 +1152,28 @@ export default function VideoEditor() {
 		return editorPersistenceService.buildProjectArtifacts({
 			sourcePath,
 			videoName,
-			editor: {
-				wallpaper,
-				hideBackground,
-				shadowIntensity,
-				frameShadowSize,
-				frameShadowOpacity,
-				frameShadowBlur,
-				backgroundBlur,
-				zoomMotionBlur,
-				zoomTemporalBlur,
-				connectZooms,
-				zoomTiming,
-				showCursor,
-				loopCursor,
-				cursorSize,
-				cursorSmoothing,
-				cursorMotionBlur,
-				cursorClickBounce,
-				cursorSway,
-				cursorStyle,
-				cursorPack,
-				cursorTypeMode,
-				cursorTilt,
-				hideWhenIdle,
-				idleHideDelayMs,
-				smoothMovementEnabled,
-				cursorMovementStyle,
-				cursorSpring,
-				cameraSpring,
-				highQualitySvgCursors,
-				cursorColor,
-				cursorOpacity,
-				clickEffectsEnabled,
-				clickHighlightColor,
-				clickHighlightSize,
-				clickHighlightOpacity,
-				cursorClickStyle,
-				cursorTrailLength,
-				cursorTrailOpacity,
-				showKeyboardShortcuts,
-				keyboardShortcutPosition,
-				keyboardShortcutTheme,
-				keyboardShortcutScale,
-				keyboardShortcutOpacity,
-				keyboardShortcutDisplayMs,
-				keyboardShortcutMaxVisible,
-				deviceMockup,
-				frameBorderEnabled,
-				frameBorderWidth,
-				frameBorderColor,
-				frameBorderOpacity,
-				borderRadius,
-				padding,
-				paddingSides,
-				cropRegion,
-				zoomRegions,
-				trimRegions,
-				cutPoints,
-				speedRegions,
-				annotationRegions,
-				audioRegions,
-				aspectRatio,
-				webcamPath: webcamPath ?? undefined,
-				webcamRegion,
-				webcamEffects,
-				webcamPreviewMode,
-				showWebcam,
-				mirrorWebcam,
-				cameraSizeDuringZoom,
-				cameraLayouts,
-				captionTrack,
-				captionSettings,
-				captionGenerationOptions,
-				exportFormat,
-				exportDestination,
-				videoExportSettings,
-				gifExportSettings,
-				scenePresetId,
-			},
+			editor: { ...buildCurrentPresetControls(), webcamPath: webcamPath ?? undefined },
 			webcamSessionMetadata: webcamSessionMetadata ?? undefined,
-		}).projectSnapshot;
+		});
 	}, [
+		buildCurrentPresetControls,
 		videoPath,
 		videoSourcePath,
 		videoName,
-		wallpaper,
-		hideBackground,
-		shadowIntensity,
-		frameShadowSize,
-		frameShadowOpacity,
-		frameShadowBlur,
-		backgroundBlur,
-		zoomMotionBlur,
-		zoomTemporalBlur,
-		connectZooms,
-		zoomTiming,
-		showCursor,
-		loopCursor,
-		cursorSize,
-		cursorSmoothing,
-		cursorMotionBlur,
-		cursorClickBounce,
-		cursorSway,
-		cursorStyle,
-		cursorPack,
-		cursorTypeMode,
-		cursorTilt,
-		hideWhenIdle,
-		idleHideDelayMs,
-		smoothMovementEnabled,
-		cursorMovementStyle,
-		cursorSpring,
-		cameraSpring,
-		highQualitySvgCursors,
-		cursorColor,
-		cursorOpacity,
-		clickEffectsEnabled,
-		clickHighlightColor,
-		clickHighlightSize,
-		clickHighlightOpacity,
-		cursorClickStyle,
-		cursorTrailLength,
-		cursorTrailOpacity,
-		showKeyboardShortcuts,
-		keyboardShortcutPosition,
-		keyboardShortcutTheme,
-		keyboardShortcutScale,
-		keyboardShortcutOpacity,
-		keyboardShortcutDisplayMs,
-		keyboardShortcutMaxVisible,
-		deviceMockup,
-		frameBorderEnabled,
-		frameBorderWidth,
-		frameBorderColor,
-		frameBorderOpacity,
-		borderRadius,
-		padding,
-		paddingSides,
-		cropRegion,
-		zoomRegions,
-		trimRegions,
-		cutPoints,
-		speedRegions,
-		audioRegions,
-		annotationRegions,
-		aspectRatio,
 		webcamPath,
-		webcamRegion,
-		webcamEffects,
-		showWebcam,
-		mirrorWebcam,
-		cameraSizeDuringZoom,
-		cameraLayouts,
-		captionTrack,
-		captionSettings,
-		captionGenerationOptions,
-		exportFormat,
-		exportDestination,
-		videoExportSettings,
-		gifExportSettings,
-		scenePresetId,
 		webcamSessionMetadata,
-		webcamPreviewMode,
 	]);
+	const currentProjectSnapshot = currentProjectArtifacts?.projectSnapshot ?? null;
 
-	const hasUnsavedChanges = editorPersistenceService.hasUnsavedChanges({
-		currentProjectPath,
-		currentProjectSnapshot,
-		lastSavedSnapshot,
-	});
+	// A recording never saved as a project has no saved snapshot to compare with; any edit made
+	// since it opened (undo history is reset on load) counts as unsaved work.
+	const hasUnsavedChanges = currentProjectPath
+		? editorPersistenceService.hasUnsavedChanges({
+				currentProjectPath,
+				currentProjectSnapshot,
+				lastSavedSnapshot,
+			})
+		: canUndo;
 
 	useEffect(() => {
 		async function loadInitialData() {
@@ -1360,6 +1217,7 @@ export default function VideoEditor() {
 							);
 							dispatchSession({ type: "set-current-project-path", path: null });
 							dispatchSession({ type: "set-last-saved-snapshot", snapshot: null });
+							resetHistory();
 							// Reset every editor control (and timeline data) to defaults so
 							// a brand-new recording never inherits the previous video's
 							// tweaks. Users restore prior settings via presets.
@@ -1389,6 +1247,7 @@ export default function VideoEditor() {
 							setWebcamSessionMetadata(null);
 							dispatchSession({ type: "set-current-project-path", path: null });
 							dispatchSession({ type: "set-last-saved-snapshot", snapshot: null });
+							resetHistory();
 							applyEditorControls(normalizeProjectEditor({}), {
 								includeTimeline: true,
 							});
@@ -1436,6 +1295,7 @@ export default function VideoEditor() {
 		setDraftVideoName,
 		setIsEditingVideoName,
 		setVideoName,
+		resetHistory,
 	]);
 
 	// Crossfade skeleton → editor when loading finishes
@@ -1511,98 +1371,14 @@ export default function VideoEditor() {
 				return false;
 			}
 
-			const sourcePath = videoSourcePath ?? fromFileUrl(videoPath);
-			if (!sourcePath) {
+			const projectArtifacts = currentProjectArtifacts;
+			if (!projectArtifacts) {
 				toast.error(
 					t("editor.shell.unableToDetermineSource", "Unable to determine source video path"),
 				);
 				return false;
 			}
 
-			const projectArtifacts = editorPersistenceService.buildProjectArtifacts({
-				sourcePath,
-				videoName,
-				editor: {
-					wallpaper,
-					hideBackground,
-					shadowIntensity,
-					frameShadowSize,
-					frameShadowOpacity,
-					frameShadowBlur,
-					backgroundBlur,
-					zoomMotionBlur,
-					zoomTemporalBlur,
-					connectZooms,
-					zoomTiming,
-					showCursor,
-					loopCursor,
-					cursorSize,
-					cursorSmoothing,
-					cursorMotionBlur,
-					cursorClickBounce,
-					cursorSway,
-					cursorStyle,
-					cursorPack,
-					cursorTypeMode,
-					cursorTilt,
-					hideWhenIdle,
-					idleHideDelayMs,
-					smoothMovementEnabled,
-					cursorMovementStyle,
-					cursorSpring,
-					cameraSpring,
-					highQualitySvgCursors,
-					cursorColor,
-					cursorOpacity,
-					clickEffectsEnabled,
-					clickHighlightColor,
-					clickHighlightSize,
-					clickHighlightOpacity,
-					cursorClickStyle,
-					cursorTrailLength,
-					cursorTrailOpacity,
-					showKeyboardShortcuts,
-					keyboardShortcutPosition,
-					keyboardShortcutTheme,
-					keyboardShortcutScale,
-					keyboardShortcutOpacity,
-					keyboardShortcutDisplayMs,
-					keyboardShortcutMaxVisible,
-					deviceMockup,
-					frameBorderEnabled,
-					frameBorderWidth,
-					frameBorderColor,
-					frameBorderOpacity,
-					borderRadius,
-					padding,
-					paddingSides,
-					cropRegion,
-					zoomRegions,
-					trimRegions,
-					cutPoints,
-					speedRegions,
-					annotationRegions,
-					audioRegions,
-					aspectRatio,
-					webcamPath: webcamPath ?? undefined,
-					webcamRegion,
-					webcamEffects,
-					webcamPreviewMode,
-					showWebcam,
-					mirrorWebcam,
-					cameraSizeDuringZoom,
-					cameraLayouts,
-					captionTrack,
-					captionSettings,
-					captionGenerationOptions,
-					exportFormat,
-					exportDestination,
-					videoExportSettings,
-					gifExportSettings,
-					audioMix,
-				},
-				webcamSessionMetadata: webcamSessionMetadata ?? undefined,
-			});
 			const thumbnail = captureProjectThumbnail(videoPlaybackRef.current?.app ?? null);
 			const result = await window.electronAPI.saveProjectFile(
 				thumbnail ? { ...projectArtifacts.projectData, thumbnail } : projectArtifacts.projectData,
@@ -1633,91 +1409,7 @@ export default function VideoEditor() {
 			toast.success(`Project saved to ${result.path}`);
 			return true;
 		},
-		[
-			videoPath,
-			videoSourcePath,
-			videoName,
-			currentProjectPath,
-			wallpaper,
-			hideBackground,
-			shadowIntensity,
-			frameShadowSize,
-			frameShadowOpacity,
-			frameShadowBlur,
-			backgroundBlur,
-			zoomMotionBlur,
-			zoomTemporalBlur,
-			connectZooms,
-			zoomTiming,
-			showCursor,
-			loopCursor,
-			cursorSize,
-			cursorSmoothing,
-			cursorMotionBlur,
-			cursorClickBounce,
-			cursorSway,
-			cursorStyle,
-			cursorPack,
-			cursorTypeMode,
-			cursorTilt,
-			hideWhenIdle,
-			idleHideDelayMs,
-			smoothMovementEnabled,
-			cursorMovementStyle,
-			cursorSpring,
-			cameraSpring,
-			highQualitySvgCursors,
-			cursorColor,
-			cursorOpacity,
-			clickEffectsEnabled,
-			clickHighlightColor,
-			clickHighlightSize,
-			clickHighlightOpacity,
-			cursorClickStyle,
-			cursorTrailLength,
-			cursorTrailOpacity,
-			showKeyboardShortcuts,
-			keyboardShortcutPosition,
-			keyboardShortcutTheme,
-			keyboardShortcutScale,
-			keyboardShortcutOpacity,
-			keyboardShortcutDisplayMs,
-			keyboardShortcutMaxVisible,
-			frameBorderEnabled,
-			frameBorderWidth,
-			frameBorderColor,
-			frameBorderOpacity,
-			deviceMockup,
-			borderRadius,
-			padding,
-			paddingSides,
-			cropRegion,
-			zoomRegions,
-			trimRegions,
-			cutPoints,
-			speedRegions,
-			annotationRegions,
-			audioRegions,
-			aspectRatio,
-			webcamPath,
-			webcamRegion,
-			webcamEffects,
-			webcamPreviewMode,
-			showWebcam,
-			mirrorWebcam,
-			cameraSizeDuringZoom,
-			cameraLayouts,
-			captionTrack,
-			captionSettings,
-			captionGenerationOptions,
-			exportFormat,
-			exportDestination,
-			videoExportSettings,
-			gifExportSettings,
-			audioMix,
-			webcamSessionMetadata,
-			t,
-		],
+		[videoPath, currentProjectArtifacts, currentProjectPath, t],
 	);
 
 	const [projectBrowserOpen, setProjectBrowserOpen] = useState(false);

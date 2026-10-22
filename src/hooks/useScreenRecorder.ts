@@ -246,7 +246,10 @@ export function useScreenRecorder(
 			}
 
 			setMicrophoneEnabledState(true);
-		})();
+		})().catch((error) => {
+			console.error("Failed to enable the microphone:", error);
+			setMicrophoneEnabledState(false);
+		});
 	}, []);
 
 	const resolvedRecordingProfile = resolveRecordingTargetProfile(recordingSettings);
@@ -2094,6 +2097,9 @@ export function useScreenRecorder(
 				if (!result.success || result.cancelled) {
 					return;
 				}
+			} catch (error) {
+				console.error("Countdown failed:", error);
+				return;
 			} finally {
 				setCountdownActive(false);
 			}
