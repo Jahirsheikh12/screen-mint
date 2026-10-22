@@ -1,5 +1,11 @@
-import { Check, MessageSquare, ZoomIn } from "lucide-react";
-import { AnimatePresence, motion, useInView, useReducedMotion } from "motion/react";
+import { Check, MessageSquare, MousePointer2, ZoomIn } from "lucide-react";
+import {
+	AnimatePresence,
+	motion,
+	type Transition,
+	useInView,
+	useReducedMotion,
+} from "motion/react";
 import { type ReactNode, useRef, useState } from "react";
 import { EASE_OUT } from "../lib/motion";
 import { Media, RecordingBar, Shot, Window } from "./ProductUI";
@@ -298,16 +304,108 @@ export function Chapters() {
 	);
 }
 
+/** One shared cycle for the three step figures, so the loops stay in step with each other. */
+const CYCLE = 6;
+const INK = "#121212";
+const MUTED = "rgba(255,255,255,0.5)";
+
+/** Loop only while the figure is on screen, and never for people who asked for reduced motion. */
+function useLoop() {
+	const ref = useRef<HTMLDivElement>(null);
+	const inView = useInView(ref, { margin: "-80px" });
+	const reduceMotion = useReducedMotion();
+	return [ref, inView && !reduceMotion] as const;
+}
+
+/** A keyframe track over the shared cycle; `times` are fractions of it. */
+function loop(
+	playing: boolean,
+	times: number[],
+	ease: Transition["ease"] = "easeInOut",
+): Transition {
+	return playing ? { duration: CYCLE, times, ease, repeat: Infinity } : { duration: 0 };
+}
+
+/** The recording bar: a cursor glides to Record, clicks, and the take starts. */
+function RecordSketch() {
+	const [ref, playing] = useLoop();
+	return (
+		<div ref={ref} className="relative">
+			{/* The "recording" pill that appears once Record is pressed */}
+			<div className="absolute inset-x-0 -top-12 flex justify-center">
+				<motion.span
+					initial={false}
+					animate={
+						playing ? { opacity: [0, 0, 1, 1, 0, 0], y: [6, 6, 0, 0, 0, 6] } : { opacity: 0 }
+					}
+					transition={loop(playing, [0, 0.36, 0.42, 0.82, 0.88, 1])}
+					className="flex items-center gap-1.5 rounded-full bg-[#2b2b30] px-3 py-1 text-[12px] font-semibold tracking-[0.02em] text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_10px_24px_-10px_rgba(0,0,0,0.8)]"
+				>
+					<motion.span
+						animate={playing ? { opacity: [1, 0.25, 1] } : { opacity: 1 }}
+						transition={playing ? { duration: 1, repeat: Infinity } : { duration: 0 }}
+						className="h-1.5 w-1.5 rounded-full bg-[#ff5a4e]"
+					/>
+					REC
+				</motion.span>
+			</div>
+
+			<RecordingBar compact />
+
+			{/* Pointer and click ripple, anchored on the Record button */}
+			<div className="pointer-events-none absolute left-[54%] top-[44%]">
+				<motion.span
+					initial={false}
+					animate={
+						playing ? { opacity: [0, 0.7, 0, 0], scale: [0.3, 0.3, 1.8, 1.8] } : { opacity: 0 }
+					}
+					transition={loop(playing, [0, 0.34, 0.5, 1], "easeOut")}
+					className="absolute -left-4 -top-4 h-8 w-8 rounded-full border-2 border-white/70"
+				/>
+				<motion.span
+					initial={false}
+					animate={
+						playing
+							? {
+									opacity: [0, 1, 1, 1, 1, 0, 0],
+									x: [64, 56, 0, 0, 0, 0, 64],
+									y: [44, 40, 0, 0, 0, 0, 44],
+									scale: [1, 1, 1, 0.8, 1, 1, 1],
+								}
+							: { opacity: 0 }
+					}
+					transition={loop(playing, [0, 0.08, 0.3, 0.34, 0.38, 0.86, 1])}
+					className="absolute left-0 top-0 block"
+				>
+					<MousePointer2 className="h-5 w-5 fill-white text-ink drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" />
+				</motion.span>
+			</div>
+		</div>
+	);
+}
+
 /**
- * A slice of the ScreenMint timeline. The page's authored moment: when it scrolls into view,
- * the playhead sweeps across and the 2.0× zoom block lights up as the playhead reaches it.
+ * A slice of the ScreenMint timeline. The playhead sweeps across on a loop, and the 2.0× zoom
+ * block and the annotation light up exactly while the playhead is over them.
  */
 function TimelineSketch() {
-	const ref = useRef<HTMLDivElement>(null);
-	const inView = useInView(ref, { once: true, margin: "-120px" });
-	const reduceMotion = useReducedMotion();
-	const played = inView || !!reduceMotion;
-	const sweep = { duration: reduceMotion ? 0 : 1.8, ease: [0.45, 0, 0.2, 1] as const };
+	const [ref, playing] = useLoop();
+	// The playhead runs from 3% to 97% over the first 85% of the cycle. A block spanning a..b%
+	// is under it from t = (a - 3) / 94 * 0.85 to t = (b - 3) / 94 * 0.85.
+	const zoomOn = {
+		backgroundColor: "rgba(255,178,26,0.2)",
+		color: "#ffb21a",
+		boxShadow: "inset 0 0 0 1px rgba(255,178,26,0.5)",
+	};
+	const zoomOff = {
+		backgroundColor: "rgba(255,255,255,0.06)",
+		color: "rgba(255,255,255,0.6)",
+		boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.12)",
+	};
+	const frames = (on: Record<string, string>, off: Record<string, string>) =>
+		Object.fromEntries(
+			Object.keys(on).map((k) => [k, [off[k], off[k], on[k], on[k], off[k], off[k]]]),
+		);
 
 	return (
 		<div
@@ -326,20 +424,8 @@ function TimelineSketch() {
 				<div className="h-9 rounded-[8px] bg-white/[0.04]">
 					<motion.div
 						initial={false}
-						animate={
-							played
-								? {
-										backgroundColor: "rgba(255,178,26,0.2)",
-										color: "#ffb21a",
-										boxShadow: "inset 0 0 0 1px rgba(255,178,26,0.5)",
-									}
-								: {
-										backgroundColor: "rgba(255,255,255,0.06)",
-										color: "rgba(255,255,255,0.6)",
-										boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.12)",
-									}
-						}
-						transition={{ duration: reduceMotion ? 0 : 0.35, delay: reduceMotion ? 0 : 0.55 }}
+						animate={playing ? frames(zoomOn, zoomOff) : zoomOn}
+						transition={loop(playing, [0, 0.13, 0.15, 0.54, 0.56, 1], "linear")}
 						className="ml-[18%] flex h-full w-[46%] items-center justify-center gap-1.5 rounded-[8px] text-[12px] font-semibold"
 					>
 						<ZoomIn className="h-3.5 w-3.5" />
@@ -347,15 +433,31 @@ function TimelineSketch() {
 					</motion.div>
 				</div>
 				<div className="h-9 rounded-[8px] bg-white/[0.04]">
-					<div className="ml-[40%] flex h-full w-[42%] items-center justify-center gap-1.5 rounded-[8px] bg-white/[0.09] text-[12px] font-semibold text-white/75 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]">
+					<motion.div
+						initial={false}
+						animate={
+							playing
+								? frames(
+										{ backgroundColor: "rgba(255,255,255,0.16)", color: "rgba(255,255,255,1)" },
+										{ backgroundColor: "rgba(255,255,255,0.09)", color: "rgba(255,255,255,0.75)" },
+									)
+								: { backgroundColor: "rgba(255,255,255,0.09)", color: "rgba(255,255,255,0.75)" }
+						}
+						transition={loop(playing, [0, 0.32, 0.34, 0.7, 0.72, 1], "linear")}
+						className="ml-[40%] flex h-full w-[42%] items-center justify-center gap-1.5 rounded-[8px] text-[12px] font-semibold shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]"
+					>
 						<MessageSquare className="h-3.5 w-3.5" />
 						Annotation
-					</div>
+					</motion.div>
 				</div>
 				<motion.div
 					initial={false}
-					animate={{ left: played ? "38%" : "3%" }}
-					transition={sweep}
+					animate={
+						playing
+							? { left: ["3%", "97%", "97%", "3%", "3%"], opacity: [1, 1, 0, 0, 1] }
+							: { left: "38%", opacity: 1 }
+					}
+					transition={loop(playing, [0, 0.85, 0.9, 0.95, 1], "linear")}
 					className="absolute -top-2 bottom-0 w-px bg-white"
 				>
 					<span className="absolute -left-[4px] -top-1 h-2 w-[9px] rounded-[2px] bg-white" />
@@ -365,19 +467,44 @@ function TimelineSketch() {
 	);
 }
 
-/** The export controls: quality, format and the export button. */
+/** The export controls: Good quality slides in, then Export video runs and saves. */
 function ExportSketch() {
-	const seg = "flex-1 rounded-[7px] py-1.5 text-center text-[12.5px] font-medium";
+	const [ref, playing] = useLoop();
+	const seg = "relative flex-1 py-1.5 text-center text-[12.5px] font-medium";
+	const pick = [0, 0.08, 0.16, 0.92, 1];
+	const overlay = "absolute inset-0 flex items-center justify-center gap-1.5";
 	return (
 		<div
+			ref={ref}
 			role="img"
 			aria-label="Export settings with Good quality, MP4 selected and an Export video button"
 			className="w-full max-w-[300px]"
 		>
 			<p className="text-[12px] font-medium text-white/55">Export quality</p>
-			<div className="mt-2 flex rounded-[9px] bg-white/[0.05] p-1">
-				<span className={`${seg} text-white/50`}>Medium</span>
-				<span className={`${seg} bg-white text-ink`}>Good</span>
+			<div className="relative mt-2 flex rounded-[9px] bg-white/[0.05] p-1">
+				<motion.span
+					aria-hidden="true"
+					initial={false}
+					animate={{ x: playing ? ["0%", "0%", "100%", "100%", "0%"] : "100%" }}
+					transition={loop(playing, pick)}
+					className="absolute bottom-1 left-1 top-1 w-[calc((100%-8px)/3)] rounded-[7px] bg-white"
+				/>
+				<motion.span
+					initial={false}
+					animate={{ color: playing ? [INK, INK, MUTED, MUTED, INK] : MUTED }}
+					transition={loop(playing, pick)}
+					className={seg}
+				>
+					Medium
+				</motion.span>
+				<motion.span
+					initial={false}
+					animate={{ color: playing ? [MUTED, MUTED, INK, INK, MUTED] : INK }}
+					transition={loop(playing, pick)}
+					className={seg}
+				>
+					Good
+				</motion.span>
 				<span className={`${seg} text-white/50`}>Source</span>
 			</div>
 			<p className="mt-4 text-[12px] font-medium text-white/55">Format</p>
@@ -390,7 +517,48 @@ function ExportSketch() {
 					GIF
 				</span>
 			</div>
-			<span className="btn-primary mt-4 h-10 w-full text-[14px]">Export video</span>
+			<motion.div
+				initial={false}
+				animate={{ scale: playing ? [1, 1, 0.96, 1, 1] : 1 }}
+				transition={loop(playing, [0, 0.24, 0.27, 0.3, 1])}
+				className="mt-4"
+			>
+				<span className="btn-primary relative h-10 w-full overflow-hidden text-[14px]">
+					{/* Export progress fills the button, then it reports the save */}
+					<motion.span
+						aria-hidden="true"
+						initial={false}
+						animate={{ scaleX: playing ? [0, 0, 1, 1, 0, 0] : 0 }}
+						transition={loop(playing, [0, 0.3, 0.72, 0.9, 0.93, 1])}
+						className="absolute inset-0 origin-left bg-black/15"
+					/>
+					<motion.span
+						initial={false}
+						animate={{ opacity: playing ? [1, 1, 0, 0, 1, 1] : 1 }}
+						transition={loop(playing, [0, 0.29, 0.31, 0.9, 0.93, 1])}
+						className="relative"
+					>
+						Export video
+					</motion.span>
+					<motion.span
+						initial={false}
+						animate={{ opacity: playing ? [0, 0, 1, 1, 0, 0] : 0 }}
+						transition={loop(playing, [0, 0.29, 0.31, 0.7, 0.73, 1])}
+						className={overlay}
+					>
+						Exporting…
+					</motion.span>
+					<motion.span
+						initial={false}
+						animate={{ opacity: playing ? [0, 0, 1, 1, 0, 0] : 0 }}
+						transition={loop(playing, [0, 0.7, 0.73, 0.9, 0.93, 1])}
+						className={overlay}
+					>
+						<Check className="h-4 w-4" />
+						Saved
+					</motion.span>
+				</span>
+			</motion.div>
 		</div>
 	);
 }
@@ -399,7 +567,7 @@ const STEPS = [
 	{
 		title: "Record",
 		body: "Pick a display or a window and press Record. Your mic and system audio come along where your OS allows.",
-		figure: <RecordingBar compact />,
+		figure: <RecordSketch />,
 	},
 	{
 		title: "Polish",

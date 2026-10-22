@@ -246,9 +246,9 @@
 				"purpose": "Entrances, crossfades, mobile menu stagger."
 			},
 			{
-				"name": "ease-sweep",
-				"value": "cubic-bezier(0.45, 0, 0.2, 1)",
-				"purpose": "Timeline playhead sweep (1.8s)."
+				"name": "how-it-works-loop",
+				"value": "6s shared cycle, keyframed, repeat infinite; paused off screen and under reduced motion",
+				"purpose": "Record click, timeline sweep and export progress in the How it works figures."
 			},
 			{
 				"name": "state",

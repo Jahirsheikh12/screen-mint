@@ -177,7 +177,7 @@ Confirmed rejections from the direction: novelty concept worlds, eyebrow and kic
 The palette is a near-monochrome dark world with one warm accent used sparingly.
 
 ### Primary
-- **Reel Amber** (reel): the primary button fill, the active cursor-take dot, the recommended download card's edge and badge, the timeline zoom block once the playhead reaches it, the keyboard focus ring, text selection (at 32%), the caret, the skip link's fill and the hover underline of inline text links. It lives in the frame's "recording light" register.
+- **Reel Amber** (reel): the primary button fill, the active cursor-take dot, the recommended download card's edge and badge, the timeline zoom block while the playhead crosses it, the keyboard focus ring, text selection (at 32%), the caret, the skip link's fill and the hover underline of inline text links. It lives in the frame's "recording light" register.
 - **Reel Amber, Lit** (reel-hover): the hover fill for the primary button only.
 
 ### Neutral
@@ -303,7 +303,7 @@ A three-column list (one column below sm) under centered media, capped at 1000px
 One 28px-radius panel of raised ink (64px vertical padding, 96px from md) carrying the black-liquid wallpaper under an ink scrim at 78%. The content is raised above both layers: the 72px app mark, a Headline, one supporting line at 70% white (the scrim exception to the 55% default), and a primary and secondary button pair.
 
 ### How it works Track
-One raised panel (24px radius, inset edge) split 1 : 1.35 : 1 with hairline dividers. Each step starts with a track row: a white 24px numbered circle followed by a 12% white line running to the edge, so the three lines read as one rail. A 260px figure stage holds the rebuilt UI. The step name and copy sit below it. The Polish figure is the page's authored moment: the playhead sweeps over 1.8s and the 2.0× zoom block turns amber when the playhead reaches it.
+One raised panel (24px radius, inset edge) split 1 : 1.35 : 1 with hairline dividers. Each step starts with a track row: a white 24px numbered circle followed by a 12% white line running to the edge, so the three lines read as one rail. A 260px figure stage holds the rebuilt UI, and each figure plays its step on a shared 6s loop while it is on screen. Record: a pointer glides to the Record button, clicks with a ripple, and a blinking REC pill appears above the bar. Polish: the playhead sweeps the timeline, and the 2.0× zoom block turns amber, and the annotation brightens, exactly while the playhead is over them. Export: the quality pill slides from Medium to Good, then Export video presses, fills with progress (Exporting…) and reports Saved. The step name and copy sit below the figure.
 
 ### Download Cards
 A 1/2/4-column list of raised-ink cards with a 16px radius, 20px padding and an inset edge. Each card has the OS mark (24px), the name with the chip in a lighter weight, a 14px note, and a full-width 40px button. The card matching the visitor's computer switches to an 8% amber fill, an amber inset edge, a "Your computer" badge and a primary button. The other cards use secondary buttons and hover to ink-hover.
@@ -331,7 +331,7 @@ The first focusable element on the page. It is visually hidden until focused, th
 Choice rows are toggles, such as the cursor takes. Each is a 12px-radius row with a 6px status dot. The active row has a 7% white fill and an amber dot. Inactive rows have a 25% white dot and a 4% fill on hover. Switching takes crossfades the media over 0.25s.
 
 ### Motion
-Motion is quiet and functional. Entrances and crossfades use the standard ease-out curve, cubic-bezier(0.16, 1, 0.3, 1). Colour state changes take 0.2s ease. Wallpaper switches in the background picker crossfade over 450ms. Smooth scrolling uses Lenis (lerp 0.1), and same-page links glide to an 88px offset. Every animation, including Lenis, autoplay and the timeline sweep, turns off under prefers-reduced-motion.
+Motion is quiet and functional. Entrances and crossfades use the standard ease-out curve, cubic-bezier(0.16, 1, 0.3, 1). Colour state changes take 0.2s ease. Wallpaper switches in the background picker crossfade over 450ms. Smooth scrolling uses Lenis (lerp 0.1), and same-page links glide to an 88px offset. The How it works loops pause off screen. Every animation, including Lenis, autoplay and those loops, turns off under prefers-reduced-motion, which shows each figure's still frame instead.
 
 ## Do's and Don'ts
 
