@@ -160,7 +160,7 @@ components:
 
 The ScreenMint website follows the category standard for screen-recorder sites, built to the craft level of Screen Studio and Cap. The product's real output leads. A looping export plays inside a desktop window. Editor screenshots sit bare on the ground. Pieces of the app (the recording bar, timeline zoom blocks, the export controls) are rebuilt in HTML, so every claim is shown working rather than illustrated. Nothing on the page is decoration invented for the concept.
 
-The world is a neutral near-black ground with one raised surface tone and hairline white edges. Type is Geist: large, tight, semibold headings over calm grey body copy. Amber (reel) is scarce: it marks the primary action and the active state, and nothing else. Density is generous. Sections breathe on a 112/160px rhythm, tightening to 96/112px where a section continues the one before it. Each section has one heading and one supporting line, and its content is product media or a short spec list, never a grid of equal cards.
+The world is a neutral near-black ground with one raised surface tone and hairline white edges. Type is Geist: large, tight, semibold headings over calm grey body copy. Amber (reel) is the one accent: it marks the primary action, the active state and the FAQ's quick-answer verdicts. Density is generous. Sections breathe on a 112/160px rhythm, tightening to 96/112px where a section continues the one before it. Each section has one heading and one supporting line, and its content is product media or a short spec list, never a grid of equal cards.
 
 Confirmed rejections from the direction: novelty concept worlds, eyebrow and kicker labels above headings, glow and gradient chrome, and grids of equal cards.
 
@@ -177,7 +177,7 @@ Confirmed rejections from the direction: novelty concept worlds, eyebrow and kic
 The palette is a near-monochrome dark world with one warm accent used sparingly.
 
 ### Primary
-- **Reel Amber** (reel): the primary button fill, the active cursor-take dot, the recommended download card's edge and badge, the timeline zoom block once the playhead reaches it, the keyboard focus ring, text selection (at 32%), the caret, the skip link's fill and the hover underline of inline text links. It lives in the frame's "recording light" register.
+- **Reel Amber** (reel): the primary button fill, the active cursor-take dot, the recommended download card's edge and badge, the timeline zoom block while the playhead crosses it, the keyboard focus ring, text selection (at 32%), the caret, the skip link's fill and the hover underline of inline text links. It lives in the frame's "recording light" register.
 - **Reel Amber, Lit** (reel-hover): the hover fill for the primary button only.
 
 ### Neutral
@@ -190,7 +190,7 @@ The palette is a near-monochrome dark world with one warm accent used sparingly.
 - **Pure White** (text-strong): headings, item titles and active nav links.
 - **Secondary Grey** (text-secondary): supporting paragraphs, inactive nav links, captions and meta lines.
 - **Tertiary Grey** (text-tertiary): descriptions under spec and detail titles.
-- **Hairline** (hairline): dividers inside the track, tier list rules and inset card edges. The range runs from 6% to 8% white, depending on context.
+- **Hairline** (hairline): dividers inside the track, sponsor price list rules and inset card edges. The range runs from 6% to 8% white, depending on context.
 
 ### Named Rules
 **The One Warm Thing Rule.** Amber marks only the primary action or the current state. If it appears on a heading, an icon tile, a label or a decorative line, it is wrong.
@@ -230,7 +230,7 @@ Content sits in a centered 1120px container (1080px for the hero copy, 1000px or
 
 The page alternates three compositions:
 - **Centered media:** a heading, then a wide window or screenshot, then a three-column detail list.
-- **Split 5:7 or 4:7:** a left column holds the heading, controls or a sticky title (the FAQ title sticks at 112px from the top), and the right column holds the content.
+- **Split 5:7 or 4:7:** a left column holds the heading, controls or a sticky title, and the right column holds the content.
 - **One raised panel:** the How it works track or the closing panel.
 - **Stage:** the background picker, a wallpaper stage wide as the feature screenshot (1000px), with its swatch row centered beneath.
 
@@ -266,7 +266,7 @@ Corners are soft and follow a macOS-like logic: the bigger the object, the bigge
 - 28px: the closing panel.
 - Full rounding: only for dots, step numbers and the "Your computer" badge.
 
-Edges are drawn with inset box-shadow hairlines rather than CSS borders, except for list dividers (the tier list and FAQ use 7-8% white rules). Window title bars use three neutral 12px dots at 13% white, never colored traffic lights.
+Edges are drawn with inset box-shadow hairlines rather than CSS borders, except for list dividers (the sponsor price list and FAQ use 7-8% white rules). Window title bars use three neutral 12px dots at 13% white, never colored traffic lights.
 
 ## Components
 
@@ -303,19 +303,22 @@ A three-column list (one column below sm) under centered media, capped at 1000px
 One 28px-radius panel of raised ink (64px vertical padding, 96px from md) carrying the black-liquid wallpaper under an ink scrim at 78%. The content is raised above both layers: the 72px app mark, a Headline, one supporting line at 70% white (the scrim exception to the 55% default), and a primary and secondary button pair.
 
 ### How it works Track
-One raised panel (24px radius, inset edge) split 1 : 1.35 : 1 with hairline dividers. Each step starts with a track row: a white 24px numbered circle followed by a 12% white line running to the edge, so the three lines read as one rail. A 260px figure stage holds the rebuilt UI. The step name and copy sit below it. The Polish figure is the page's authored moment: the playhead sweeps over 1.8s and the 2.0× zoom block turns amber when the playhead reaches it.
+One raised panel (24px radius, inset edge) split 1 : 1.35 : 1 with hairline dividers. Each step starts with a track row: a white 24px numbered circle followed by a 12% white line running to the edge, so the three lines read as one rail. A 260px figure stage holds the rebuilt UI, and each figure plays its step on a shared 6s loop while it is on screen. Record: a pointer glides to the Record button, clicks with a ripple, and a blinking REC pill appears above the bar. Polish: the playhead sweeps the timeline, and the 2.0× zoom block turns amber, and the annotation brightens, exactly while the playhead is over them. Export: the quality pill slides from Medium to Good, then Export video presses, fills with progress (Exporting…) and reports Saved. The step name and copy sit below the figure.
 
 ### Download Cards
 A 1/2/4-column list of raised-ink cards with a 16px radius, 20px padding and an inset edge. Each card has the OS mark (24px), the name with the chip in a lighter weight, a 14px note, and a full-width 40px button. The card matching the visitor's computer switches to an 8% amber fill, an amber inset edge, a "Your computer" badge and a primary button. The other cards use secondary buttons and hover to ink-hover.
 
-### Tier List
-Support options are one ruled list, not cards. Each row lays out a 22px tabular amount, a 16px semibold name, a description at 55% white and an arrow-up-right icon that turns white on row hover. Rows are 20px tall with 7% white dividers and stack into two lines on small screens.
+### Sponsor Panel
+One way to pay, one button. A raised-ink panel (22px radius, inset edge, max 1000px) splits 5:7. The left column holds a 20px semibold title ("Sponsor monthly on GitHub"), one line on how billing works, and the single "Sponsor on GitHub" secondary button pinned to the bottom with a 14px note under it. The right column is the tier list: a price list, not links, because every tier opens the same GitHub page. Each row is a 26px tabular amount with a 14px "/month" at 45% white, then a 16px semibold name over a 15px description at 55% white, on 7% white dividers. Below the panel come a four-up "help another way" link strip (one inset-edged block with hairline dividers, each link a 15px semibold label with a 16px icon and an arrow that turns white on hover, over a 14px line at 50% white), and the sponsoring questions shown open as a Detail List.
 
-### FAQ Disclosure
-Questions are native disclosures (`<details name="faq">` with a `<summary>`), so every answer is in the static HTML for search and answer engines, the list works without JavaScript, and the shared name keeps one item open at a time.
-- **Groups:** questions sit under h3 group titles ("Using ScreenMint", "Sponsoring") at 18px semibold, -0.01em, white, with 48px between groups. Each group's list opens 16px below its title on a 1px rule at 8% white.
-- **Row:** a 1px bottom rule at 8% white and 20px of vertical padding. The question is 17px semibold at 85% white, turning white on hover and while open.
-- **Chevron:** 20px at 40% white, rotating 180° when open over 200ms. The native marker is hidden.
+### FAQ
+The FAQ opens with quick answers, then topic tabs. Every answer is in the static HTML for search and answer engines: all tab panels are rendered, with the inactive ones `hidden`.
+- **Title:** the section title is centered, with the "Send an email" link as its supporting line.
+- **Quick answers:** one raised-ink panel (22px radius, inset edge at 7% white) split into four cells by 7% white hairlines: four columns from lg, two from sm, one below. Each cell holds the question (15px semibold at 70% white, two lines tall from sm so the verdicts align), a one-word verdict ("Yes" or "No", 40px semibold, -0.035em, amber) and the answer (15px at 55% white).
+- **Topic tabs:** a tablist (Recording, Editing & export, Install & more) on a 1px rule at 8% white, 820px wide. Tabs are 16px semibold (15px below sm), white/50 when inactive and white when selected, with a 2px amber underline and an amber tabular count (counts hide below sm). Arrow keys, Home and End move between tabs.
+- **Panel:** each tab shows one raised-ink panel (22px radius, inset edge) of native disclosures, with a separate `name` per panel so one question stays open at a time.
+- **Row:** a 7% white divider and 20px of vertical padding. The question is 17px semibold at 85% white, turning white on hover and while open.
+- **Toggle:** a 28px amber circle at 12% fill holding an amber plus, which becomes a minus when open. The native marker is hidden.
 - **Answer:** 16px at 1.65 line height, 55% white, capped at 62ch.
 
 ### Inline Links
@@ -328,7 +331,7 @@ The first focusable element on the page. It is visually hidden until focused, th
 Choice rows are toggles, such as the cursor takes. Each is a 12px-radius row with a 6px status dot. The active row has a 7% white fill and an amber dot. Inactive rows have a 25% white dot and a 4% fill on hover. Switching takes crossfades the media over 0.25s.
 
 ### Motion
-Motion is quiet and functional. Entrances and crossfades use the standard ease-out curve, cubic-bezier(0.16, 1, 0.3, 1). Colour state changes take 0.2s ease. Wallpaper switches in the background picker crossfade over 450ms. Smooth scrolling uses Lenis (lerp 0.1), and same-page links glide to an 88px offset. Every animation, including Lenis, autoplay and the timeline sweep, turns off under prefers-reduced-motion.
+Motion is quiet and functional. Entrances and crossfades use the standard ease-out curve, cubic-bezier(0.16, 1, 0.3, 1). Colour state changes take 0.2s ease. Wallpaper switches in the background picker crossfade over 450ms. Smooth scrolling uses Lenis (lerp 0.1), and same-page links glide to an 88px offset. The How it works loops pause off screen. Every animation, including Lenis, autoplay and those loops, turns off under prefers-reduced-motion, which shows each figure's still frame instead.
 
 ## Do's and Don'ts
 

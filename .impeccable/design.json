@@ -246,9 +246,9 @@
 				"purpose": "Entrances, crossfades, mobile menu stagger."
 			},
 			{
-				"name": "ease-sweep",
-				"value": "cubic-bezier(0.45, 0, 0.2, 1)",
-				"purpose": "Timeline playhead sweep (1.8s)."
+				"name": "how-it-works-loop",
+				"value": "6s shared cycle, keyframed, repeat infinite; paused off screen and under reduced motion",
+				"purpose": "Record click, timeline sweep and export progress in the How it works figures."
 			},
 			{
 				"name": "state",
@@ -274,11 +274,6 @@
 				"name": "wallpaper-crossfade",
 				"value": "opacity 450ms cubic-bezier(0.16, 1, 0.3, 1); 0ms under reduced motion",
 				"purpose": "Switching wallpapers in the background picker."
-			},
-			{
-				"name": "disclosure-chevron",
-				"value": "transform 200ms, rotate 180deg when open",
-				"purpose": "FAQ chevron on open and close."
 			}
 		],
 		"breakpoints": [
@@ -353,11 +348,11 @@
 			"css": ".ds-dl { display: flex; flex-direction: column; width: 240px; padding: 20px; border-radius: 16px; background: #18181a; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07); color: #fff; text-decoration: none; font-family: Geist, system-ui, sans-serif; transition: background-color 0.2s ease; } .ds-dl:hover { background: #202023; } .ds-dl:focus-visible { outline: 2px solid #ffb21a; outline-offset: 3px; } .ds-dl.is-recommended, .ds-dl.is-recommended:hover { background: rgba(255,178,26,0.08); box-shadow: inset 0 0 0 1px rgba(255,178,26,0.55); } .ds-dl-top { display: flex; justify-content: space-between; align-items: center; font-size: 13px; } .ds-dl-badge { padding: 4px 10px; border-radius: 9999px; background: rgba(255,178,26,0.15); color: #ffb21a; font-size: 12px; font-weight: 500; } .ds-dl-name { margin-top: 24px; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; } .ds-dl-name span { font-weight: 400; color: rgba(255,255,255,0.5); } .ds-dl-note { margin-top: 4px; font-size: 14px; color: rgba(255,255,255,0.55); } .ds-dl-btn { margin-top: 24px; display: flex; align-items: center; justify-content: center; height: 40px; border-radius: 10px; font-size: 14px; font-weight: 600; background: rgba(255,255,255,0.06); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1); } .ds-dl.is-recommended .ds-dl-btn { background: #ffb21a; color: #121212; box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 1px 2px rgba(0,0,0,0.35); }"
 		},
 		{
-			"name": "Tier List",
+			"name": "Sponsor Panel",
 			"kind": "custom",
-			"description": "Support options as one ruled list: amount, name, what it funds.",
-			"html": "<ul class=\"ds-tiers\"><li><a href=\"#\" class=\"ds-tier\"><span class=\"ds-tier-amt\">$5</span><span class=\"ds-tier-name\">Supporter</span><span class=\"ds-tier-body\">Keeps the builds coming.</span><span class=\"ds-tier-arrow\">&#8599;</span></a></li><li><a href=\"#\" class=\"ds-tier\"><span class=\"ds-tier-amt\">$25</span><span class=\"ds-tier-name\">Backer</span><span class=\"ds-tier-body\">Funds signing and CI time.</span><span class=\"ds-tier-arrow\">&#8599;</span></a></li></ul>",
-			"css": ".ds-tiers { list-style: none; margin: 0; padding: 0; width: 640px; border-top: 1px solid rgba(255,255,255,0.07); border-bottom: 1px solid rgba(255,255,255,0.07); font-family: Geist, system-ui, sans-serif; } .ds-tiers li + li { border-top: 1px solid rgba(255,255,255,0.07); } .ds-tier { display: grid; grid-template-columns: 5.5rem 9rem 1fr auto; align-items: baseline; column-gap: 20px; padding: 20px 0; color: #fff; text-decoration: none; } .ds-tier:focus-visible { outline: 2px solid #ffb21a; outline-offset: 3px; } .ds-tier-amt { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; } .ds-tier-name { font-size: 16px; font-weight: 600; } .ds-tier-body { font-size: 15px; line-height: 1.625; color: rgba(255,255,255,0.55); } .ds-tier-arrow { color: rgba(255,255,255,0.4); transition: color 0.2s ease; } .ds-tier:hover .ds-tier-arrow { color: #fff; }"
+			"description": "Raised panel: one GitHub Sponsors button on the left, the monthly tiers as a non-link price list on the right.",
+			"html": "<div class=\"ds-tiers\"><div class=\"ds-tier\"><span class=\"ds-tier-amt\">$5<small>/month</small></span><span><span class=\"ds-tier-name\">Supporter</span><span class=\"ds-tier-body\">Keeps the builds coming.</span></span></div><div class=\"ds-tier\"><span class=\"ds-tier-amt\">$12<small>/month</small></span><span><span class=\"ds-tier-name\">Backer</span><span class=\"ds-tier-body\">Funds release QA.</span></span></div></div>",
+			"css": ".ds-tiers { width: 560px; padding: 0 40px; background: #18181a; border-radius: 22px; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07); font-family: Geist, system-ui, sans-serif; } .ds-tier + .ds-tier { border-top: 1px solid rgba(255,255,255,0.07); } .ds-tier { display: grid; grid-template-columns: 7rem 1fr; column-gap: 20px; padding: 20px 0; color: #fff; } .ds-tier-amt { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; white-space: nowrap; } .ds-tier-amt small { margin-left: 4px; font-size: 14px; font-weight: 400; color: rgba(255,255,255,0.45); } .ds-tier-name { display: block; font-size: 16px; font-weight: 600; } .ds-tier-body { display: block; margin-top: 4px; font-size: 15px; line-height: 1.625; color: rgba(255,255,255,0.55); }"
 		},
 		{
 			"name": "How it works Track",
@@ -391,11 +386,11 @@
 			"css": ".ds-details { display: grid; grid-template-columns: repeat(3, 1fr); column-gap: 48px; width: 720px; margin: 0; font-family: Geist, system-ui, sans-serif; } .ds-details > div { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 20px; } .ds-details dt { font-size: 15px; font-weight: 600; color: #fff; } .ds-details dd { margin: 6px 0 0; font-size: 15px; line-height: 1.625; color: rgba(255,255,255,0.5); }"
 		},
 		{
-			"name": "FAQ Disclosure",
+			"name": "FAQ",
 			"kind": "custom",
-			"description": "Native details/summary questions under a group title; one open at a time.",
-			"html": "<div class=\"ds-faq\"><h3>Using ScreenMint</h3><div class=\"ds-faq-list\"><details name=\"ds-faq\" class=\"ds-faq-item\" open><summary>Is ScreenMint free?<svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m6 9 6 6 6-6\"/></svg></summary><p>Yes. It is free and open source on macOS, Windows and Linux, with no account.</p></details><details name=\"ds-faq\" class=\"ds-faq-item\"><summary>Does it add a watermark?<svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m6 9 6 6 6-6\"/></svg></summary><p>No.</p></details></div></div>",
-			"css": ".ds-faq { width: 640px; font-family: Geist, system-ui, sans-serif; } .ds-faq h3 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; color: #fff; } .ds-faq-list { margin-top: 16px; border-top: 1px solid rgba(255,255,255,0.08); } .ds-faq-item { border-bottom: 1px solid rgba(255,255,255,0.08); } .ds-faq-item summary { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 20px 0; list-style: none; cursor: pointer; font-size: 17px; font-weight: 600; color: rgba(255,255,255,0.85); transition: color 0.2s ease; } .ds-faq-item summary::-webkit-details-marker { display: none; } .ds-faq-item summary:hover, .ds-faq-item[open] summary { color: #fff; } .ds-faq-item summary:focus-visible { outline: 2px solid #ffb21a; outline-offset: 3px; } .ds-faq-item svg { flex-shrink: 0; color: rgba(255,255,255,0.4); transition: transform 200ms; } .ds-faq-item[open] svg { transform: rotate(180deg); } .ds-faq-item p { max-width: 62ch; margin: 0; padding: 0 32px 24px 0; font-size: 16px; line-height: 1.65; color: rgba(255,255,255,0.55); }"
+			"description": "Quick answers with amber verdicts, then topic tabs over raised panels of native disclosures; every panel server-rendered.",
+			"html": "<div class=\"ds-faq\"><div class=\"ds-quick\"><div><h3>Is ScreenMint free?</h3><p class=\"v\">Yes</p><p>Free and open source under MIT.</p></div><div><h3>Do I need an account?</h3><p class=\"v\">No</p><p>Download it and start recording.</p></div></div><div class=\"ds-tabs\" role=\"tablist\"><button role=\"tab\" aria-selected=\"true\">Recording <span>3</span></button><button role=\"tab\" aria-selected=\"false\">Install &amp; more <span>3</span></button></div><div class=\"ds-panel\"><details name=\"ds-faq\" open><summary>Can I edit a recording later?<i>&minus;</i></summary><p>Yes. Projects save as .screenmint files.</p></details><details name=\"ds-faq\"><summary>What export formats are available?<i>+</i></summary><p>MP4 or GIF.</p></details></div></div>",
+			"css": ".ds-faq { width: 640px; font-family: Geist, system-ui, sans-serif; color: #fff; } .ds-quick { display: grid; grid-template-columns: 1fr 1fr; background: #18181a; border-radius: 22px; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07); overflow: hidden; } .ds-quick > div { padding: 24px; } .ds-quick > div + div { border-left: 1px solid rgba(255,255,255,0.07); } .ds-quick h3 { margin: 0; font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.7); } .ds-quick .v { margin: 16px 0 0; font-size: 40px; font-weight: 600; line-height: 1; letter-spacing: -0.035em; color: #ffb21a; } .ds-quick p { margin: 16px 0 0; font-size: 15px; line-height: 1.625; color: rgba(255,255,255,0.55); } .ds-tabs { display: flex; margin-top: 48px; border-bottom: 1px solid rgba(255,255,255,0.08); } .ds-tabs button { position: relative; padding: 8px 16px 14px; background: none; border: 0; font: 600 16px Geist, system-ui, sans-serif; color: rgba(255,255,255,0.5); cursor: pointer; } .ds-tabs button[aria-selected=\"true\"] { color: #fff; } .ds-tabs button[aria-selected=\"true\"]::after { content: \"\"; position: absolute; left: 16px; right: 16px; bottom: 0; height: 2px; border-radius: 9999px; background: #ffb21a; } .ds-tabs span { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.35); } .ds-tabs button[aria-selected=\"true\"] span { color: #ffb21a; } .ds-tabs button:focus-visible { outline: 2px solid #ffb21a; outline-offset: 3px; } .ds-panel { margin-top: 24px; padding: 0 32px; background: #18181a; border-radius: 22px; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07); } .ds-panel details + details { border-top: 1px solid rgba(255,255,255,0.07); } .ds-panel summary { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 20px 0; list-style: none; cursor: pointer; font-size: 17px; font-weight: 600; color: rgba(255,255,255,0.85); } .ds-panel summary::-webkit-details-marker { display: none; } .ds-panel details[open] summary, .ds-panel summary:hover { color: #fff; } .ds-panel summary:focus-visible { outline: 2px solid #ffb21a; outline-offset: 3px; } .ds-panel i { display: flex; width: 28px; height: 28px; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 9999px; background: rgba(255,178,26,0.12); color: #ffb21a; font-style: normal; } .ds-panel p { max-width: 62ch; margin: 0; padding: 0 32px 24px 0; font-size: 16px; line-height: 1.65; color: rgba(255,255,255,0.55); }"
 		},
 		{
 			"name": "Inline Link",
