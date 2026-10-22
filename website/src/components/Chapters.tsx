@@ -42,9 +42,15 @@ function FeatureTitle({ title, children }: { title: string; children: ReactNode 
 	);
 }
 
-function Details({ items }: { items: { title: string; body: string }[] }) {
+export function Details({
+	items,
+	className = "mt-12",
+}: {
+	items: { title: string; body: string }[];
+	className?: string;
+}) {
 	return (
-		<dl className="mx-auto mt-12 grid max-w-[1000px] gap-x-12 gap-y-6 sm:grid-cols-3">
+		<dl className={`mx-auto grid ${className} max-w-[1000px] gap-x-12 gap-y-6 sm:grid-cols-3`}>
 			{items.map((item) => (
 				<div key={item.title} className="border-t border-white/[0.08] pt-5">
 					<dt className="text-[15px] font-semibold text-white">{item.title}</dt>

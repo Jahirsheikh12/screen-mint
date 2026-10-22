@@ -1,7 +1,7 @@
 import { MotionConfig } from "motion/react";
 import { renderToString } from "react-dom/server";
 import App from "./App";
-import { FAQ_GROUPS } from "./lib/faq";
+import { ALL_FAQS } from "./lib/faq";
 import { LICENSE_URL, REPO_URL } from "./lib/links";
 
 const SITE_URL = "https://screen-mint.vercel.app/";
@@ -38,13 +38,11 @@ export function structuredData() {
 			},
 			{
 				"@type": "FAQPage",
-				mainEntity: FAQ_GROUPS.flatMap((group) =>
-					group.items.map((faq) => ({
-						"@type": "Question",
-						name: faq.question,
-						acceptedAnswer: { "@type": "Answer", text: faq.answer },
-					})),
-				),
+				mainEntity: ALL_FAQS.map((faq) => ({
+					"@type": "Question",
+					name: faq.question,
+					acceptedAnswer: { "@type": "Answer", text: faq.answer },
+				})),
 			},
 		],
 	};

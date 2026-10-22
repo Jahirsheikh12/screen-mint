@@ -190,7 +190,7 @@ The palette is a near-monochrome dark world with one warm accent used sparingly.
 - **Pure White** (text-strong): headings, item titles and active nav links.
 - **Secondary Grey** (text-secondary): supporting paragraphs, inactive nav links, captions and meta lines.
 - **Tertiary Grey** (text-tertiary): descriptions under spec and detail titles.
-- **Hairline** (hairline): dividers inside the track, tier list rules and inset card edges. The range runs from 6% to 8% white, depending on context.
+- **Hairline** (hairline): dividers inside the track, sponsor price list rules and inset card edges. The range runs from 6% to 8% white, depending on context.
 
 ### Named Rules
 **The One Warm Thing Rule.** Amber marks only the primary action or the current state. If it appears on a heading, an icon tile, a label or a decorative line, it is wrong.
@@ -266,7 +266,7 @@ Corners are soft and follow a macOS-like logic: the bigger the object, the bigge
 - 28px: the closing panel.
 - Full rounding: only for dots, step numbers and the "Your computer" badge.
 
-Edges are drawn with inset box-shadow hairlines rather than CSS borders, except for list dividers (the tier list and FAQ use 7-8% white rules). Window title bars use three neutral 12px dots at 13% white, never colored traffic lights.
+Edges are drawn with inset box-shadow hairlines rather than CSS borders, except for list dividers (the sponsor price list and FAQ use 7-8% white rules). Window title bars use three neutral 12px dots at 13% white, never colored traffic lights.
 
 ## Components
 
@@ -308,12 +308,12 @@ One raised panel (24px radius, inset edge) split 1 : 1.35 : 1 with hairline divi
 ### Download Cards
 A 1/2/4-column list of raised-ink cards with a 16px radius, 20px padding and an inset edge. Each card has the OS mark (24px), the name with the chip in a lighter weight, a 14px note, and a full-width 40px button. The card matching the visitor's computer switches to an 8% amber fill, an amber inset edge, a "Your computer" badge and a primary button. The other cards use secondary buttons and hover to ink-hover.
 
-### Tier List
-Support options are one ruled list, not cards. Each row lays out a 22px tabular amount, a 16px semibold name, a description at 55% white and an arrow-up-right icon that turns white on row hover. Rows are 20px tall with 7% white dividers and stack into two lines on small screens.
+### Sponsor Panel
+One way to pay, one button. A raised-ink panel (22px radius, inset edge, max 1000px) splits 5:7. The left column holds a 20px semibold title ("Sponsor monthly on GitHub"), one line on how billing works, and the single "Sponsor on GitHub" secondary button pinned to the bottom with a 14px note under it. The right column is the tier list: a price list, not links, because every tier opens the same GitHub page. Each row is a 26px tabular amount with a 14px "/month" at 45% white, then a 16px semibold name over a 15px description at 55% white, on 7% white dividers. Below the panel come a four-up "help another way" link strip (one inset-edged block with hairline dividers, each link a 15px semibold label with a 16px icon and an arrow that turns white on hover, over a 14px line at 50% white), and the sponsoring questions shown open as a Detail List.
 
 ### FAQ Disclosure
 Questions are native disclosures (`<details name="faq">` with a `<summary>`), so every answer is in the static HTML for search and answer engines, the list works without JavaScript, and the shared name keeps one item open at a time.
-- **Groups:** questions sit under h3 group titles ("Using ScreenMint", "Sponsoring") at 18px semibold, -0.01em, white, with 48px between groups. Each group's list opens 16px below its title on a 1px rule at 8% white.
+- **Groups:** product questions only (sponsoring questions live in the sponsor section), in short themed groups ("The basics", "Recording and editing", "Privacy, install and contributing"). Each h3 group title is 20px semibold, -0.02em, white, with 56px between groups, and its list opens 16px below on a 1px rule at 8% white. On large screens the sticky title column lists the groups as ruled jump links (15px at 55% white, with a tabular count at 35%).
 - **Row:** a 1px bottom rule at 8% white and 20px of vertical padding. The question is 17px semibold at 85% white, turning white on hover and while open.
 - **Chevron:** 20px at 40% white, rotating 180° when open over 200ms. The native marker is hidden.
 - **Answer:** 16px at 1.65 line height, 55% white, capped at 62ch.

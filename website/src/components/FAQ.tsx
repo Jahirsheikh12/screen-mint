@@ -22,12 +22,27 @@ export function FAQ() {
 						</a>
 						.
 					</SectionTitle>
+					<nav aria-label="Question topics" className="mt-8 hidden lg:block">
+						<ul className="border-t border-white/[0.08]">
+							{FAQ_GROUPS.map((group) => (
+								<li key={group.id} className="border-b border-white/[0.08]">
+									<a
+										href={`#${group.id}`}
+										className="flex items-center justify-between py-3 text-[15px] text-white/55 transition-colors hover:text-white"
+									>
+										{group.title}
+										<span className="tabular-nums text-white/35">{group.items.length}</span>
+									</a>
+								</li>
+							))}
+						</ul>
+					</nav>
 				</div>
 
-				<div className="flex flex-col gap-12">
+				<div className="flex flex-col gap-14">
 					{FAQ_GROUPS.map((group) => (
-						<div key={group.title}>
-							<h3 className="text-[18px] font-semibold tracking-[-0.01em] text-white">
+						<div key={group.id} id={group.id}>
+							<h3 className="text-[20px] font-semibold tracking-[-0.02em] text-white">
 								{group.title}
 							</h3>
 							<div className="mt-4 border-t border-white/[0.08]">
