@@ -40,7 +40,7 @@ import type {
 	CursorTelemetrySample as SessionCursorTelemetrySample,
 } from "../../src/lib/recording/session";
 import { buildAreaCropFilter, toDisplaySourceRect } from "../areaCapture";
-import { createExportTempPath } from "../exportTemp";
+import { approveExportPath, createExportTempPath, isApprovedExportPath } from "../exportTemp";
 import { RECORDINGS_DIR } from "../main";
 import { markRecordingStarted, markRecordingStopped } from "../recordingRecovery";
 import { getScreenMintUpdater } from "../updater";
@@ -967,10 +967,12 @@ async function findAvailableFilePath(directoryPath: string, fileName: string) {
 }
 
 async function writeBufferToUniqueFile(directoryPath: string, fileName: string, data: Buffer) {
+	// basename keeps a renderer-supplied name like "../x" inside the directory.
+	const safeFileName = path.basename(fileName);
 	for (let collisionIndex = 0; collisionIndex < 1000; collisionIndex += 1) {
 		const candidatePath = path.join(
 			directoryPath,
-			buildCollisionFileName(fileName, collisionIndex),
+			buildCollisionFileName(safeFileName, collisionIndex),
 		);
 
 		try {
@@ -1002,13 +1004,11 @@ async function resolveExportV2OutputPath(request: ExportV2StartRequest) {
 	const extension = request.format === "gif" ? "gif" : "mp4";
 	const fileName = ensureFileExtension(request.fileName, extension);
 
-	if (request.outputPath) {
-		return { path: request.outputPath, canceled: false };
-	}
-
 	if (request.destination === "clipboard") {
 		return {
-			path: path.join(app.getPath("temp"), `screenmint-export-v2-${Date.now()}.${extension}`),
+			path: approveExportPath(
+				path.join(app.getPath("temp"), `screenmint-export-v2-${Date.now()}.${extension}`),
+			),
 			canceled: false,
 		};
 	}
@@ -1016,22 +1016,28 @@ async function resolveExportV2OutputPath(request: ExportV2StartRequest) {
 	if (request.destination === "temp") {
 		const tempPath = createExportTempPath(app.getPath("temp"), extension);
 		await fs.mkdir(path.dirname(tempPath), { recursive: true });
-		return { path: tempPath, canceled: false };
+		return { path: approveExportPath(tempPath), canceled: false };
 	}
 
 	if (request.destination === "file") {
 		const result = await dialog.showSaveDialog(getExportSaveDialogOptions(fileName));
-		return { path: result.filePath, canceled: result.canceled || !result.filePath };
+		return {
+			path: approveExportPath(result.filePath),
+			canceled: result.canceled || !result.filePath,
+		};
 	}
 
 	const recordingsDir = await getRecordingsDir();
 	return {
-		path: await findAvailableFilePath(recordingsDir, fileName),
+		path: approveExportPath(await findAvailableFilePath(recordingsDir, fileName)),
 		canceled: false,
 	};
 }
 
 async function startExportV2StreamSession(filePath: string, ownerId: number) {
+	if (!isApprovedExportPath(filePath)) {
+		throw new Error("Export path was not chosen by ScreenMint.");
+	}
 	await fs.mkdir(path.dirname(filePath), { recursive: true });
 	const id = `export-stream-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 	const handle = await fs.open(filePath, "w");
@@ -1128,6 +1134,9 @@ async function abortExportV2WorkerJob(
 async function startExportV2GifPipeSession(request: ExportV2GifPipeStartRequest) {
 	if (request.width <= 0 || request.height <= 0 || request.frameRate <= 0) {
 		throw new Error("Invalid GIF pipe dimensions or frame rate.");
+	}
+	if (!isApprovedExportPath(request.outputPath)) {
+		throw new Error("Export path was not chosen by ScreenMint.");
 	}
 
 	await fs.mkdir(path.dirname(request.outputPath), { recursive: true });
@@ -4851,7 +4860,14 @@ export function registerIpcHandlers(
 				clearCurrentWebcam?: boolean;
 			},
 		) => {
-			await discardRecordingArtifacts(payload.paths);
+			// The renderer may only delete its own recording files.
+			const recordingsDir = await getRecordingsDir();
+			await discardRecordingArtifacts(
+				payload.paths.filter(
+					(filePath) =>
+						typeof filePath === "string" && isPathInsideDirectory(filePath, recordingsDir),
+				),
+			);
 			if (payload.clearCurrentVideo) {
 				// The session was thrown away; nothing is left to recover.
 				await markRecordingStopped();

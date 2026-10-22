@@ -3,8 +3,10 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+	approveExportPath,
 	createExportTempPath,
 	getExportTempDir,
+	isApprovedExportPath,
 	isExportTempPath,
 	moveFile,
 	writeCaptionSidecars,
@@ -48,5 +50,20 @@ describe("moveFile and sidecars", () => {
 		const written = await writeCaptionSidecars(target, { srt: "1\n", vtt: "WEBVTT\n" });
 		expect(written).toEqual([path.join(dir, "My Video.srt"), path.join(dir, "My Video.vtt")]);
 		expect(await writeCaptionSidecars(target, undefined)).toEqual([]);
+	});
+});
+
+describe("approved export paths", () => {
+	it("accepts only paths main approved, however they are spelled", () => {
+		const chosen = path.join(os.tmpdir(), "approved", "My Video.mp4");
+		approveExportPath(chosen);
+
+		expect(isApprovedExportPath(chosen)).toBe(true);
+		expect(
+			isApprovedExportPath(path.join(os.tmpdir(), "approved", "x", "..", "My Video.mp4")),
+		).toBe(true);
+		expect(isApprovedExportPath(path.join(os.tmpdir(), "approved", "..", "evil.mp4"))).toBe(false);
+		expect(isApprovedExportPath("/etc/passwd")).toBe(false);
+		expect(isApprovedExportPath(undefined)).toBe(false);
 	});
 });

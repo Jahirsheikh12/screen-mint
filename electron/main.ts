@@ -556,6 +556,23 @@ app.on("second-instance", () => {
 });
 
 // Register all IPC handlers when app is ready
+// Windows load only the app's own pages: links that try to open a window go to the system
+// browser, and navigating to another origin is blocked.
+app.on("web-contents-created", (_event, contents) => {
+	contents.setWindowOpenHandler(({ url }) => {
+		if (url.startsWith("https://") || url.startsWith("http://")) {
+			void shell.openExternal(url);
+		}
+		return { action: "deny" };
+	});
+	contents.on("will-navigate", (event, url) => {
+		const current = contents.getURL();
+		if (current && new URL(url).origin !== new URL(current).origin) {
+			event.preventDefault();
+		}
+	});
+});
+
 app.whenReady().then(async () => {
 	const updater = getScreenMintUpdater();
 

@@ -18,6 +18,19 @@ export function createExportTempPath(tempRoot: string, extension: "mp4" | "gif")
 	return path.join(getExportTempDir(tempRoot), `export-${id}.${extension}`);
 }
 
+// Output paths main itself chose (save dialogs, resolved export targets). Paths the renderer asks
+// to write must be one of these, so a compromised renderer cannot write anywhere on disk.
+const approvedExportPaths = new Set<string>();
+
+export function approveExportPath<T extends string | undefined>(filePath: T): T {
+	if (filePath) approvedExportPaths.add(path.resolve(filePath));
+	return filePath;
+}
+
+export function isApprovedExportPath(candidate: unknown): candidate is string {
+	return typeof candidate === "string" && approvedExportPaths.has(path.resolve(candidate));
+}
+
 /** Only files the app itself rendered into its export temp folder may be moved or deleted. */
 export function isExportTempPath(tempRoot: string, candidate: unknown): candidate is string {
 	if (typeof candidate !== "string" || candidate.length === 0) return false;

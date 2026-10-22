@@ -4,7 +4,9 @@ import { app, clipboard, dialog, ipcMain, type SaveDialogOptions, shell } from "
 import { IPC_CHANNELS } from "../../src/electron-ipc/contracts";
 import { ensureFileExtension } from "../../src/lib/fileNames";
 import {
+	approveExportPath,
 	type CaptionSidecarFiles,
+	isApprovedExportPath,
 	isExportTempPath,
 	moveFile,
 	writeCaptionSidecars,
@@ -37,7 +39,7 @@ export function registerExportFileIpcHandlers({
 
 			return {
 				success: true,
-				path: result.filePath,
+				path: approveExportPath(result.filePath),
 			};
 		} catch (error) {
 			console.error("Failed to show export save dialog:", error);
@@ -53,6 +55,9 @@ export function registerExportFileIpcHandlers({
 		IPC_CHANNELS.exportFiles.writeVideoToPath,
 		async (_, videoData: ArrayBuffer, filePath: string, captionSidecar?: CaptionSidecarFiles) => {
 			try {
+				if (!isApprovedExportPath(filePath)) {
+					throw new Error("Export path was not chosen in a save dialog.");
+				}
 				await fs.writeFile(filePath, Buffer.from(videoData));
 				await writeCaptionSidecars(filePath, captionSidecar);
 

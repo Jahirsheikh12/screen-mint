@@ -40,6 +40,11 @@ export function registerAppShellIpcHandlers({
 
 	ipcMain.handle(IPC_CHANNELS.files.openExternalUrl, async (_, url: string) => {
 		try {
+			// Only web and mail links; never file:, custom app schemes, etc.
+			const protocol = new URL(url).protocol;
+			if (protocol !== "https:" && protocol !== "http:" && protocol !== "mailto:") {
+				throw new Error(`Refusing to open ${protocol} URL`);
+			}
 			await shell.openExternal(url);
 			return { success: true };
 		} catch (error) {
