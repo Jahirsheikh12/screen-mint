@@ -1,13 +1,11 @@
-import { motion } from "motion/react";
 import {
 	Accordion,
 	AccordionContent,
 	AccordionItem,
 	AccordionTrigger,
 } from "../components/ui/accordion";
-import { reveal } from "../lib/motion";
 import { SPONSOR_FAQS, SUPPORT_EMAIL_HREF } from "../lib/sponsors";
-import { Slate } from "./Chapters";
+import { SectionTitle } from "./Chapters";
 
 const faqs = [
 	{
@@ -55,53 +53,37 @@ const faqs = [
 
 export function FAQ() {
 	return (
-		<section id="faq" className="px-5 py-20 md:px-8 md:py-28">
-			<div className="mx-auto max-w-[1240px]">
-				<motion.div {...reveal}>
-					<Slate label="FAQ" timecode={`${faqs.length} questions`} />
-				</motion.div>
-
-				<div className="mt-10 grid gap-10 lg:mt-14 lg:grid-cols-12 lg:gap-14">
-					<motion.div {...reveal} className="lg:sticky lg:top-28 lg:col-span-4 lg:self-start">
-						<h2 className="font-display text-[clamp(2.5rem,4.6vw,4.25rem)] font-normal leading-[0.98] tracking-[-0.02em] text-paper">
-							Before you <em className="whitespace-nowrap text-reel">hit record.</em>
-						</h2>
-						<p className="mt-6 text-[17px] leading-[1.6] text-paper/60">
-							Still stuck?{" "}
-							<a
-								href={SUPPORT_EMAIL_HREF}
-								className="text-paper underline decoration-paper/25 underline-offset-[5px] hover:decoration-reel"
-							>
-								Send an email
-							</a>
-							.
-						</p>
-					</motion.div>
-
-					<motion.div {...reveal} className="lg:col-span-8">
-						<Accordion type="single" collapsible className="border-t border-paper/15">
-							{faqs.map((faq, i) => (
-								<AccordionItem
-									key={faq.question}
-									value={faq.question}
-									className="border-b border-paper/10"
-								>
-									<AccordionTrigger className="gap-6 py-5 text-left text-[17px] font-medium text-paper/85 hover:text-paper hover:no-underline data-[state=open]:text-paper md:text-[18px] [&>svg]:h-5 [&>svg]:w-5 [&>svg]:text-paper/40 [&[data-state=open]>svg]:text-reel">
-										<span className="flex gap-5">
-											<span className="w-7 shrink-0 pt-[5px] font-mono text-[12px] tabular-nums text-paper/40">
-												{String(i + 1).padStart(2, "0")}
-											</span>
-											{faq.question}
-										</span>
-									</AccordionTrigger>
-									<AccordionContent className="pb-6 pl-12 pr-10 text-[16px] leading-[1.65] text-paper/60">
-										{faq.answer}
-									</AccordionContent>
-								</AccordionItem>
-							))}
-						</Accordion>
-					</motion.div>
+		<section id="faq" className="px-5 pt-28 md:px-8 md:pt-40">
+			<div className="mx-auto grid max-w-[1120px] gap-10 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-20">
+				<div className="lg:sticky lg:top-28 lg:self-start">
+					<SectionTitle title="Questions and answers" align="left">
+						Something else on your mind?{" "}
+						<a
+							href={SUPPORT_EMAIL_HREF}
+							className="text-white underline decoration-white/25 underline-offset-[5px] transition-colors hover:decoration-reel"
+						>
+							Send an email
+						</a>
+						.
+					</SectionTitle>
 				</div>
+
+				<Accordion type="single" collapsible className="border-t border-white/[0.08]">
+					{faqs.map((faq) => (
+						<AccordionItem
+							key={faq.question}
+							value={faq.question}
+							className="border-b border-white/[0.08]"
+						>
+							<AccordionTrigger className="gap-6 py-5 text-left text-[17px] font-semibold text-white/85 transition-colors hover:text-white hover:no-underline data-[state=open]:text-white [&>svg]:h-5 [&>svg]:w-5 [&>svg]:text-white/40">
+								{faq.question}
+							</AccordionTrigger>
+							<AccordionContent className="max-w-[62ch] pb-6 pr-8 text-[16px] leading-[1.65] text-white/55">
+								{faq.answer}
+							</AccordionContent>
+						</AccordionItem>
+					))}
+				</Accordion>
 			</div>
 		</section>
 	);

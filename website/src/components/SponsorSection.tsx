@@ -1,7 +1,5 @@
-import { Heart } from "lucide-react";
-import { motion } from "motion/react";
+import { ArrowUpRight, Heart } from "lucide-react";
 import { useMemo, useState } from "react";
-import { reveal } from "../lib/motion";
 import {
 	CREEM_ENABLED,
 	CREEM_PRODUCTS,
@@ -12,35 +10,36 @@ import {
 	SPONSOR_TIERS,
 	SUPPORT_EMAIL_HREF,
 } from "../lib/sponsors";
-import { Slate } from "./Chapters";
+import { SectionTitle } from "./Chapters";
 
-/** One line of end credits: role, dotted leader, amount. */
-function CreditLine({
-	href,
-	role,
-	amount,
-	note,
+/** Support options as one list: amount, name and what it funds, one row each. */
+function TierList({
+	items,
 }: {
-	href: string;
-	role: string;
-	amount: string;
-	note: string;
+	items: { key: string; amount: string; name: string; body: string; href: string }[];
 }) {
 	return (
-		<li>
-			<a href={href} target="_blank" rel="noopener noreferrer" className="group block py-5">
-				<span className="flex items-baseline gap-3">
-					<span className="font-display text-[28px] leading-none text-paper transition-colors group-hover:text-reel">
-						{role}
-					</span>
-					<span className="mb-1 flex-1 border-b border-dotted border-paper/25" />
-					<span className="font-mono text-[15px] tabular-nums text-paper/80">{amount}</span>
-				</span>
-				<span className="mt-2 block max-w-[34rem] text-[15px] leading-relaxed text-paper/50">
-					{note}
-				</span>
-			</a>
-		</li>
+		<ul className="mx-auto max-w-[820px] divide-y divide-white/[0.07] border-y border-white/[0.07]">
+			{items.map((item) => (
+				<li key={item.key}>
+					<a
+						href={item.href}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="group grid grid-cols-[4.5rem_1fr_auto] items-baseline gap-x-5 py-5 transition-colors sm:grid-cols-[5.5rem_9rem_1fr_auto]"
+					>
+						<span className="text-[22px] font-semibold tabular-nums tracking-[-0.02em] text-white">
+							{item.amount}
+						</span>
+						<span className="text-[16px] font-semibold text-white">{item.name}</span>
+						<span className="col-span-2 col-start-2 row-start-2 mt-1 text-[15px] leading-relaxed text-white/55 sm:col-span-1 sm:col-start-3 sm:row-start-1 sm:mt-0">
+							{item.body}
+						</span>
+						<ArrowUpRight className="col-start-3 row-start-1 h-4 w-4 self-center text-white/40 transition-colors group-hover:text-white sm:col-start-4" />
+					</a>
+				</li>
+			))}
+		</ul>
 	);
 }
 
@@ -53,26 +52,26 @@ export function SponsorSection() {
 	const supportProduct = getCreemProductById(supportState?.productId ?? null);
 
 	return (
-		<section id="sponsor" className="px-5 py-20 md:px-8 md:py-28">
-			<div className="mx-auto max-w-[1240px]">
+		<section id="sponsor" className="px-5 pt-28 md:px-8 md:pt-40">
+			<div className="mx-auto max-w-[1120px]">
 				{supportState && !dismissedSupportState ? (
 					<div
 						role="status"
-						className={`mb-12 flex flex-col gap-3 rounded-[4px] border px-5 py-4 sm:flex-row sm:items-center ${
+						className={`mb-12 flex flex-col gap-3 rounded-[14px] px-5 py-4 sm:flex-row sm:items-center ${
 							supportState.status === "success"
-								? "border-reel/30 bg-reel/[0.08]"
-								: "border-paper/15 bg-paper/[0.04]"
+								? "bg-reel/[0.08] shadow-[inset_0_0_0_1px_rgba(255,178,26,0.35)]"
+								: "bg-white/[0.04] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]"
 						}`}
 					>
 						<div className="flex-1">
-							<p className="text-[15px] font-medium text-paper">
+							<p className="text-[15px] font-semibold text-white">
 								{supportState.status === "success"
 									? `Thank you for supporting ScreenMint${supportProduct ? ` with ${supportProduct.name}` : ""}.`
 									: "Checkout cancelled. No worries."}
 							</p>
 							<a
 								href={SUPPORT_EMAIL_HREF}
-								className="text-[13px] text-paper/55 underline-offset-4 hover:text-paper hover:underline"
+								className="text-[14px] text-white/55 underline-offset-4 hover:text-white hover:underline"
 							>
 								{supportState.status === "success"
 									? "Need billing help?"
@@ -82,75 +81,61 @@ export function SponsorSection() {
 						<button
 							type="button"
 							onClick={() => setDismissedSupportState(true)}
-							className="self-start font-mono text-[12px] uppercase tracking-[0.06em] text-paper/50 hover:text-paper sm:self-center"
+							className="btn-secondary h-9 self-start px-4 text-[14px] sm:self-center"
 						>
 							Dismiss
 						</button>
 					</div>
 				) : null}
 
-				<motion.div {...reveal}>
-					<Slate label="Sponsor" timecode="Credits" />
-				</motion.div>
+				<SectionTitle title="Free, because people chip in.">
+					{SPONSOR_MISSION} No paywalls, no accounts, no telemetry.
+				</SectionTitle>
 
-				<div className="mt-10 grid gap-12 lg:mt-14 lg:grid-cols-12 lg:gap-14">
-					<motion.div {...reveal} className="lg:col-span-5">
-						<h2 className="font-display text-[clamp(2.5rem,4.6vw,4.25rem)] font-normal leading-[0.98] tracking-[-0.02em] text-paper">
-							Fund the <em className="whitespace-nowrap text-reel">next cut.</em>
-						</h2>
-						<p className="mt-6 max-w-[28rem] text-[17px] leading-[1.6] text-paper/60">
-							{SPONSOR_MISSION}{" "}
-							<span className="text-paper">No paywalls, no accounts, no telemetry.</span>
-						</p>
-						<a
-							href={GITHUB_SPONSORS_URL}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="mt-9 inline-flex h-12 items-center gap-2.5 rounded-[4px] bg-reel px-5 text-[16px] font-semibold text-ink transition-colors hover:bg-[#ffc54d]"
-						>
-							<Heart className="h-[17px] w-[17px]" strokeWidth={2.25} />
-							Sponsor on GitHub
-						</a>
-					</motion.div>
+				<div className="mt-12">
+					<TierList
+						items={SPONSOR_TIERS.map((tier) => {
+							const [amount, ...name] = tier.name.split(" ");
+							return {
+								key: tier.name,
+								amount,
+								name: name.join(" "),
+								body: tier.description,
+								href: GITHUB_SPONSORS_URL,
+							};
+						})}
+					/>
+				</div>
 
-					<motion.div {...reveal} className="lg:col-span-7">
-						<p className="font-mono text-[11px] uppercase tracking-[0.08em] text-paper/40">
-							On GitHub Sponsors
-						</p>
-						<ul className="mt-1 divide-y divide-paper/10">
-							{SPONSOR_TIERS.map((tier) => {
-								const [amount, ...role] = tier.name.split(" ");
-								return (
-									<CreditLine
-										key={tier.name}
-										href={GITHUB_SPONSORS_URL}
-										role={role.join(" ")}
-										amount={amount}
-										note={tier.description}
-									/>
-								);
-							})}
-						</ul>
+				{CREEM_ENABLED ? (
+					<div className="mt-10">
+						<h3 className="text-center text-[18px] font-semibold text-white">
+							Prefer a one-time card payment?
+						</h3>
+						<div className="mt-5">
+							<TierList
+								items={CREEM_PRODUCTS.map((product) => ({
+									key: product.id,
+									amount: product.price,
+									name: product.name.replace("ScreenMint ", ""),
+									body: product.description,
+									href: product.checkoutUrl,
+								}))}
+							/>
+						</div>
+					</div>
+				) : null}
 
-						{CREEM_ENABLED ? (
-							<>
-								<p className="mt-10 font-mono text-[11px] uppercase tracking-[0.08em] text-paper/40">
-									One time, by card
-								</p>
-								<ul className="mt-1 divide-y divide-paper/10">
-									{CREEM_PRODUCTS.map((product) => (
-										<CreditLine
-											key={product.id}
-											href={product.checkoutUrl}
-											role={product.name.replace("ScreenMint ", "")}
-											amount={product.price}
-											note={product.description}
-										/>
-									))}
-								</ul>
-							</>
-						) : null}
-					</motion.div>
+				<div className="mt-10 flex justify-center">
+					<a
+						href={GITHUB_SPONSORS_URL}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="btn-secondary h-12 px-6 text-[16px]"
+					>
+						<Heart className="h-[17px] w-[17px]" />
+						Sponsor on GitHub
+					</a>
 				</div>
 			</div>
 		</section>

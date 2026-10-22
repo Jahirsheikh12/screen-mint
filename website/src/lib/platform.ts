@@ -10,6 +10,8 @@ export const PLATFORM_LABELS: Record<Platform, string> = {
 
 export function detectPlatform(): Platform {
 	const ua = navigator.userAgent.toLowerCase();
+	// Phones and tablets cannot run the desktop builds; iOS UAs say "Mac OS X" and Android says "Linux".
+	if (/iphone|ipad|ipod|android/.test(ua)) return "unknown";
 	if (ua.includes("mac")) return "macos";
 	if (ua.includes("win")) return "windows";
 	if (ua.includes("linux")) return "linux";

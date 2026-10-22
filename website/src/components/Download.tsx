@@ -1,30 +1,30 @@
-import { ArrowDown, Check, Copy } from "lucide-react";
-import { motion } from "motion/react";
+import { Check, Copy, Download as DownloadIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { DOWNLOAD_LINKS } from "../lib/links";
-import { reveal } from "../lib/motion";
+import { DOWNLOAD_LINKS, REPO_URL } from "../lib/links";
 import {
 	detectMacArchitecture,
 	detectPlatform,
 	type MacArchitecture,
 	type Platform,
 } from "../lib/platform";
-import { AppleIcon, LinuxIcon, WindowsIcon } from "./BrandIcons";
-import { Slate } from "./Chapters";
+import { AppleIcon, GitHubIcon, LinuxIcon, WindowsIcon } from "./BrandIcons";
+import { SectionTitle } from "./Chapters";
 
 const XATTR_COMMAND = "xattr -rd com.apple.quarantine /Applications/ScreenMint.app";
 
 const allPlatforms = [
 	{
 		id: "mac-arm",
-		name: "macOS, Apple Silicon",
+		name: "macOS",
+		chip: "Apple Silicon",
 		href: DOWNLOAD_LINKS.macAppleSilicon,
-		note: "M1 and newer · .dmg",
+		note: "M1 or newer · .dmg",
 		Icon: AppleIcon,
 	},
 	{
 		id: "mac-intel",
-		name: "macOS, Intel",
+		name: "macOS",
+		chip: "Intel",
 		href: DOWNLOAD_LINKS.macIntel,
 		note: "macOS 12.3+ · .dmg",
 		Icon: AppleIcon,
@@ -32,6 +32,7 @@ const allPlatforms = [
 	{
 		id: "windows",
 		name: "Windows",
+		chip: "x64",
 		href: DOWNLOAD_LINKS.windows,
 		note: "Windows 10+ · .exe",
 		Icon: WindowsIcon,
@@ -39,8 +40,9 @@ const allPlatforms = [
 	{
 		id: "linux",
 		name: "Linux",
+		chip: "x64",
 		href: DOWNLOAD_LINKS.linux,
-		note: "x64 · .AppImage",
+		note: "Modern distros · .AppImage",
 		Icon: LinuxIcon,
 	},
 ];
@@ -78,103 +80,118 @@ export function Download() {
 	};
 
 	const recommendedId = getRecommendedId(platform, macArch);
-	const queue = [...allPlatforms].sort(
-		(a, b) => Number(b.id === recommendedId) - Number(a.id === recommendedId),
-	);
 
 	return (
-		<section id="download" className="px-5 py-20 md:px-8 md:py-28">
-			<div className="mx-auto max-w-[1240px]">
-				<motion.div {...reveal}>
-					<Slate label="Download" timecode="Latest release" />
-				</motion.div>
+		<section id="download" className="px-5 pt-28 md:px-8 md:pt-40">
+			<div className="mx-auto max-w-[1120px]">
+				<SectionTitle title="Download ScreenMint">
+					The full app, free on every platform. Builds come straight from the latest GitHub release,
+					and there is nothing to sign up for.
+				</SectionTitle>
 
-				<div className="mt-10 grid gap-12 lg:mt-14 lg:grid-cols-12 lg:gap-14">
-					<motion.div {...reveal} className="lg:col-span-5">
-						<h2 className="font-display text-[clamp(2.5rem,4.6vw,4.25rem)] font-normal leading-[0.98] tracking-[-0.02em] text-paper">
-							Grab the <em className="whitespace-nowrap text-reel">final cut.</em>
-						</h2>
-						<p className="mt-6 max-w-[28rem] text-[17px] leading-[1.6] text-paper/60">
-							Every build is the full app, straight from the latest GitHub release. Nothing to sign
-							up for.
-						</p>
-
-						{platform === "macos" ? (
-							<div className="mt-10 max-w-[30rem]">
-								<p className="text-[15px] font-medium text-paper">
-									macOS says the app can&apos;t be opened?
-								</p>
-								<p className="mt-1 text-[14px] leading-relaxed text-paper/55">
-									Move ScreenMint to /Applications, then run this once in Terminal.
-								</p>
-								<div className="mt-3 flex items-stretch overflow-hidden rounded-[4px] border border-paper/[0.12] bg-black/40">
-									<code className="min-w-0 flex-1 break-all px-4 py-3 leading-relaxed font-mono text-[12.5px] text-paper/85">
-										<span className="mr-2 select-none text-reel">$</span>
-										{XATTR_COMMAND}
-									</code>
-									<button
-										type="button"
-										onClick={handleCopyXattr}
-										aria-label="Copy command"
-										className="flex w-11 shrink-0 items-center justify-center border-l border-paper/[0.12] text-paper/55 transition-colors hover:text-paper"
+				<ul className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+					{allPlatforms.map((p) => {
+						const isRecommended = p.id === recommendedId;
+						return (
+							<li key={p.id}>
+								<a
+									href={p.href}
+									className={`group flex h-full flex-col rounded-[16px] p-5 transition-colors ${
+										isRecommended
+											? "bg-reel/[0.08] shadow-[inset_0_0_0_1px_rgba(255,178,26,0.55)]"
+											: "bg-ink-2 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-ink-3"
+									}`}
+								>
+									<span className="flex items-center justify-between">
+										<p.Icon className="h-6 w-6 text-white" />
+										{isRecommended ? (
+											<span className="rounded-full bg-reel/15 px-2.5 py-1 text-[12px] font-medium text-reel">
+												Your computer
+											</span>
+										) : null}
+									</span>
+									<span className="mt-6 text-[18px] font-semibold tracking-[-0.01em] text-white">
+										{p.name} <span className="font-normal text-white/50">{p.chip}</span>
+									</span>
+									<span className="mt-1 text-[14px] text-white/55">{p.note}</span>
+									<span
+										className={`mt-6 h-10 text-[14px] ${isRecommended ? "btn-primary" : "btn-secondary"}`}
 									>
-										{xattrCopied ? (
-											<Check className="h-4 w-4 text-reel" />
-										) : (
-											<Copy className="h-4 w-4" />
-										)}
-									</button>
-								</div>
-							</div>
-						) : null}
-					</motion.div>
+										<DownloadIcon className="h-4 w-4" />
+										Download
+									</span>
+								</a>
+							</li>
+						);
+					})}
+				</ul>
 
-					<motion.div {...reveal} className="lg:col-span-7">
-						<div className="grid grid-cols-[1fr_auto] border-b border-paper/15 pb-3 font-mono text-[11px] uppercase tracking-[0.08em] text-paper/40">
-							<span>Build</span>
-							<span>Get</span>
+				{platform === "macos" ? (
+					<div className="mt-4 flex flex-col gap-4 rounded-[16px] bg-ink-2 p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] md:flex-row md:items-center md:gap-8">
+						<div className="md:w-[320px] md:shrink-0">
+							<p className="text-[15px] font-semibold text-white">
+								macOS says the app can&apos;t be opened?
+							</p>
+							<p className="mt-1 text-[14px] leading-relaxed text-white/50">
+								Move ScreenMint to Applications, then run this once in Terminal.
+							</p>
 						</div>
-						<ul>
-							{queue.map((p) => {
-								const isRecommended = p.id === recommendedId;
-								return (
-									<li key={p.id}>
-										<a
-											href={p.href}
-											className={`group grid grid-cols-[auto_1fr_auto] items-center gap-4 border-b border-paper/10 py-5 pl-4 pr-1 transition-colors hover:bg-paper/[0.03] ${
-												isRecommended ? "bg-reel/[0.07]" : ""
-											}`}
-										>
-											<p.Icon className="h-5 w-5 text-paper/70" />
-											<span>
-												<span className="block text-[17px] font-medium text-paper">
-													{p.name}
-													{isRecommended ? (
-														<span className="ml-3 font-mono text-[11px] uppercase tracking-[0.08em] text-reel">
-															This computer
-														</span>
-													) : null}
-												</span>
-												<span className="mt-0.5 block font-mono text-[12px] text-paper/45">
-													{p.note}
-												</span>
-											</span>
-											<span
-												className={`flex h-10 w-10 items-center justify-center rounded-[4px] transition-colors ${
-													isRecommended
-														? "bg-reel text-ink"
-														: "border border-paper/15 text-paper/60 group-hover:border-reel group-hover:text-reel"
-												}`}
-											>
-												<ArrowDown className="h-[18px] w-[18px]" />
-												<span className="sr-only">Download {p.name}</span>
-											</span>
-										</a>
-									</li>
-								);
-							})}
-						</ul>
-					</motion.div>
+						<div className="flex min-w-0 flex-1 items-stretch overflow-hidden rounded-[10px] bg-black/40 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]">
+							<code className="min-w-0 flex-1 px-4 py-3 font-mono text-[13px] leading-relaxed text-white/85">
+								{XATTR_COMMAND}
+							</code>
+							<button
+								type="button"
+								onClick={handleCopyXattr}
+								aria-label={xattrCopied ? "Command copied" : "Copy command"}
+								className="flex w-12 shrink-0 items-center justify-center border-l border-white/[0.08] text-white/55 transition-colors hover:text-white"
+							>
+								{xattrCopied ? (
+									<Check className="h-4 w-4 text-white" />
+								) : (
+									<Copy className="h-4 w-4" />
+								)}
+							</button>
+						</div>
+					</div>
+				) : null}
+			</div>
+		</section>
+	);
+}
+
+/** The page's last word before the footer: one clear way to start. */
+export function ClosingCta() {
+	return (
+		<section className="px-5 pb-28 pt-28 md:px-8 md:pb-40 md:pt-40">
+			<div className="mx-auto flex max-w-[1120px] flex-col items-center rounded-[28px] bg-ink-2 px-6 py-16 text-center shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] md:py-24">
+				<img
+					src="/images/screenmint-180.png"
+					alt=""
+					width={72}
+					height={72}
+					className="h-[72px] w-[72px]"
+				/>
+				<h2 className="mt-8 text-balance font-display text-[clamp(2.125rem,4.2vw,3.5rem)] font-semibold leading-[1.05] tracking-[-0.035em] text-white">
+					Your next demo, minus the editing.
+				</h2>
+				<p className="mt-5 max-w-[520px] text-pretty text-[18px] leading-[1.6] text-white/55">
+					Free and open source on macOS, Windows and Linux.
+				</p>
+				<div className="mt-9 flex flex-col gap-3 sm:flex-row">
+					<a href="#download" className="btn-primary h-12 px-6 text-[16px]">
+						<DownloadIcon className="h-[17px] w-[17px]" />
+						Download for free
+					</a>
+					<a
+						href={REPO_URL}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="btn-secondary h-12 px-6 text-[16px]"
+					>
+						<GitHubIcon className="h-[17px] w-[17px]" />
+						View source
+					</a>
 				</div>
 			</div>
 		</section>

@@ -1,276 +1,399 @@
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useState } from "react";
-import { EASE_OUT, reveal } from "../lib/motion";
-import { Viewer } from "./Viewer";
+import { Check, MessageSquare, ZoomIn } from "lucide-react";
+import { AnimatePresence, motion, useInView, useReducedMotion } from "motion/react";
+import { type ReactNode, useRef, useState } from "react";
+import { EASE_OUT } from "../lib/motion";
+import { Media, RecordingBar, Shot, Window } from "./ProductUI";
 
-/** Mono slate line: label, a stretch of ruler, and a timecode. */
-export function Slate({ label, timecode }: { label: string; timecode: string }) {
+/** Section heading: the heading carries its own weight, with one supporting line. */
+export function SectionTitle({
+	title,
+	children,
+	align = "center",
+}: {
+	title: string;
+	children?: ReactNode;
+	align?: "center" | "left";
+}) {
+	const centered = align === "center";
 	return (
-		<div className="flex items-end gap-4 font-mono text-[12px] uppercase tracking-[0.06em] text-paper/50">
-			<span className="shrink-0 text-paper/80">{label}</span>
-			<span className="ruler mb-[3px] h-[10px] flex-1 opacity-60" />
-			<span className="shrink-0 tabular-nums">{timecode}</span>
+		<div className={centered ? "mx-auto max-w-[760px] text-center" : "max-w-[560px]"}>
+			<h2 className="text-balance font-display text-[clamp(2.125rem,4.2vw,3.5rem)] font-semibold leading-[1.05] tracking-[-0.035em] text-white">
+				{title}
+			</h2>
+			{children ? (
+				<p
+					className={`mt-5 text-pretty text-[18px] leading-[1.6] text-white/55 ${centered ? "mx-auto max-w-[600px]" : ""}`}
+				>
+					{children}
+				</p>
+			) : null}
 		</div>
 	);
 }
 
-type Take = { label: string; src: string; poster?: string; alt: string; viewer: string };
+function FeatureTitle({ title, children }: { title: string; children: ReactNode }) {
+	return (
+		<>
+			<h3 className="text-balance font-display text-[clamp(1.75rem,3vw,2.375rem)] font-semibold leading-[1.1] tracking-[-0.03em] text-white">
+				{title}
+			</h3>
+			<p className="mt-4 text-pretty text-[17px] leading-[1.6] text-white/55">{children}</p>
+		</>
+	);
+}
 
-type Scene = {
-	slate: string;
-	timecode: string;
-	title: string;
-	titleEm: string;
-	body: string;
-	takes: Take[];
-	shots: { title: string; body: string }[];
-};
+function Details({ items }: { items: { title: string; body: string }[] }) {
+	return (
+		<dl className="mx-auto mt-10 grid max-w-[1000px] gap-x-12 gap-y-6 sm:grid-cols-3">
+			{items.map((item) => (
+				<div key={item.title}>
+					<dt className="text-[15px] font-semibold text-white">{item.title}</dt>
+					<dd className="mt-1.5 text-[15px] leading-relaxed text-white/50">{item.body}</dd>
+				</div>
+			))}
+		</dl>
+	);
+}
 
-const SCENES: Scene[] = [
+const CURSOR_TAKES = [
 	{
-		slate: "Sc. 01 · Auto zoom",
-		timecode: "00:00:12:00",
-		title: "Follow every",
-		titleEm: "click.",
-		body: "While you record, ScreenMint notes where you click. Afterwards it zooms in on those moments and eases back out, so people can actually read what you did.",
-		takes: [
-			{
-				label: "Timeline",
-				src: "/images/preview4.png",
-				viewer: "Timeline",
-				alt: "A 3.5× zoom block on the ScreenMint timeline, under the preview",
-			},
-		],
-		shots: [
-			{
-				title: "Yours to adjust",
-				body: "Every zoom lands on the timeline as a block you can move, stretch or delete.",
-			},
-			{ title: "Pick the depth", body: "Anywhere from a gentle 1.25× to a close-up 5×." },
-			{ title: "Motion blur", body: "Fast pans pick up a soft blur, like a real camera move." },
-		],
+		label: "Smooth cursor",
+		body: "Shaky movement is evened out after you record, and each click gets a highlight.",
+		src: "/images/CursorLoop.mp4",
+		poster: "/images/CursorLoop-poster.jpg",
+		alt: "A smoothed cursor gliding across a browser window",
 	},
 	{
-		slate: "Sc. 02 · Cursor",
-		timecode: "00:00:31:08",
-		title: "A pointer you can",
-		titleEm: "follow.",
-		body: "Raw captures make the cursor jitter and jump. ScreenMint smooths its path after the fact and makes every click easy to spot.",
-		takes: [
-			{
-				label: "Smooth cursor",
-				src: "/images/CursorLoop.mp4",
-				poster: "/images/CursorLoop-poster.jpg",
-				viewer: "Take 1",
-				alt: "A smoothed cursor gliding across a browser window",
-			},
-			{
-				label: "Cursor sway",
-				src: "/images/CursorSwayDemo.mp4",
-				poster: "/images/CursorSwayDemo-poster.jpg",
-				viewer: "Take 2",
-				alt: "A cursor with a light sway moving over a terminal window",
-			},
-		],
-		shots: [
-			{ title: "Steady path", body: "Small wobbles are filtered out; the moves you meant stay." },
-			{ title: "Visible clicks", body: "A highlight marks exactly when and where you pressed." },
-			{ title: "Natural sway", body: "A little weight in the motion, as if a hand is behind it." },
-		],
-	},
-	{
-		slate: "Sc. 03 · Style & export",
-		timecode: "00:00:47:16",
-		title: "Make it look",
-		titleEm: "like yours.",
-		body: "Put the recording on a wallpaper, gradient, solid color or your own image, frame it, then export. No watermark, no upload, no account.",
-		takes: [
-			{
-				label: "Inspector",
-				src: "/images/preview2.png",
-				viewer: "Inspector",
-				alt: "Background, shadow, roundness, padding and export quality controls in the editor",
-			},
-		],
-		shots: [
-			{ title: "Frame it", body: "Tune shadow, padding and corner roundness until it sits right." },
-			{ title: "Mark it up", body: "Annotations get their own track for pointing things out." },
-			{
-				title: "Ship it",
-				body: "MP4 for players, GIF for docs and chat. It stays on your machine.",
-			},
-		],
+		label: "Cursor sway",
+		body: "A light sway as the pointer travels, so it moves like a hand is behind it.",
+		src: "/images/CursorSwayDemo.mp4",
+		poster: "/images/CursorSwayDemo-poster.jpg",
+		alt: "A cursor with a light sway moving over a terminal window",
 	},
 ];
 
-function SceneBlock({ scene, index }: { scene: Scene; index: number }) {
+function CursorFeature() {
 	const [active, setActive] = useState(0);
-	const take = scene.takes[active];
-	const flip = index % 2 === 1;
+	const take = CURSOR_TAKES[active];
 
 	return (
-		<article className="mx-auto max-w-[1240px] py-20 md:py-28">
-			<motion.div {...reveal}>
-				<Slate label={scene.slate} timecode={scene.timecode} />
-			</motion.div>
+		<div className="grid items-center gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
+			<div>
+				<FeatureTitle title="A cursor people can actually follow.">
+					Raw recordings make the pointer jitter and jump. ScreenMint cleans up its path so viewers
+					never lose it.
+				</FeatureTitle>
+				<div className="mt-8 flex flex-col gap-2" role="group" aria-label="Cursor examples">
+					{CURSOR_TAKES.map((t, i) => (
+						<button
+							key={t.label}
+							type="button"
+							aria-pressed={i === active}
+							onClick={() => setActive(i)}
+							className={`rounded-[12px] px-5 py-4 text-left transition-colors ${
+								i === active ? "bg-white/[0.07]" : "hover:bg-white/[0.04]"
+							}`}
+						>
+							<span className="flex items-center gap-2.5 text-[16px] font-semibold text-white">
+								<span
+									className={`h-1.5 w-1.5 rounded-full transition-colors ${i === active ? "bg-reel" : "bg-white/25"}`}
+								/>
+								{t.label}
+							</span>
+							<span className="mt-1 block pl-4 text-[15px] leading-relaxed text-white/50">
+								{t.body}
+							</span>
+						</button>
+					))}
+				</div>
+			</div>
 
-			<div className="mt-10 grid gap-10 lg:mt-14 lg:grid-cols-12 lg:gap-14">
-				<motion.div
-					{...reveal}
-					className={`lg:col-span-4 lg:self-start lg:sticky lg:top-28 ${flip ? "lg:order-2" : ""}`}
-				>
-					<h2 className="font-display text-[clamp(2.5rem,4.6vw,4.25rem)] font-normal leading-[0.98] tracking-[-0.02em] text-paper">
-						{scene.title} <em className="whitespace-nowrap text-reel">{scene.titleEm}</em>
-					</h2>
-					<p className="mt-6 text-[17px] leading-[1.6] text-paper/60">{scene.body}</p>
-
-					<ol className="mt-9 border-t border-paper/10">
-						{scene.shots.map((shot, i) => (
-							<li
-								key={shot.title}
-								className="grid grid-cols-[2.25rem_1fr] border-b border-paper/10 py-4"
-							>
-								<span className="pt-[3px] font-mono text-[12px] text-reel">0{i + 1}</span>
-								<span>
-									<span className="block text-[16px] font-medium text-paper">{shot.title}</span>
-									<span className="mt-1 block text-[15px] leading-relaxed text-paper/55">
-										{shot.body}
-									</span>
-								</span>
-							</li>
-						))}
-					</ol>
-				</motion.div>
-
-				<motion.div {...reveal} className={`lg:col-span-8 ${flip ? "lg:order-1" : ""}`}>
-					{scene.takes.length > 1 ? (
-						<div className="mb-4 flex gap-6 border-b border-paper/10">
-							{scene.takes.map((t, i) => (
-								<button
-									key={t.label}
-									type="button"
-									aria-pressed={i === active}
-									onClick={() => setActive(i)}
-									className={`-mb-px border-b pb-3 font-mono text-[12px] uppercase tracking-[0.06em] transition-colors ${
-										i === active
-											? "border-reel text-reel"
-											: "border-transparent text-paper/50 hover:text-paper"
-									}`}
-								>
-									Take {i + 1} · {t.label}
-								</button>
-							))}
-						</div>
-					) : null}
-
+			<div>
+				<Window title={`ScreenMint export · ${take.label}`}>
 					<AnimatePresence mode="wait" initial={false}>
 						<motion.div
 							key={take.src}
 							initial={{ opacity: 0 }}
 							animate={{ opacity: 1 }}
 							exit={{ opacity: 0 }}
-							transition={{ duration: 0.2 }}
+							transition={{ duration: 0.25, ease: EASE_OUT }}
 						>
-							<Viewer src={take.src} poster={take.poster} label={take.viewer} alt={take.alt} />
+							<Media src={take.src} poster={take.poster} alt={take.alt} />
 						</motion.div>
 					</AnimatePresence>
-				</motion.div>
+				</Window>
 			</div>
-		</article>
+		</div>
 	);
 }
 
 export function Chapters() {
 	return (
-		<section id="features" className="px-5 md:px-8">
-			{SCENES.map((scene, i) => (
-				<SceneBlock key={scene.slate} scene={scene} index={i} />
-			))}
+		<section id="features" className="px-5 pt-28 md:px-8 md:pt-40">
+			<div className="mx-auto max-w-[1120px]">
+				<SectionTitle title="Everything a good demo needs, done for you.">
+					Record once. ScreenMint takes care of the zooms, the cursor and the framing, and you can
+					fine-tune any of it afterwards.
+				</SectionTitle>
+
+				<div className="mt-20 md:mt-28">
+					<div className="mx-auto max-w-[680px] text-center">
+						<FeatureTitle title="Zooms that follow your clicks.">
+							While you record, ScreenMint notes where you click. In the editor, those moments
+							become smooth zooms you can move, resize or remove.
+						</FeatureTitle>
+					</div>
+					<div className="mx-auto mt-10 max-w-[1000px]">
+						<Shot
+							src="/images/preview4.png"
+							alt="The ScreenMint editor: a preview above a timeline with a 3.5× zoom block"
+						/>
+					</div>
+					<Details
+						items={[
+							{
+								title: "Made from your clicks",
+								body: "No keyframes to set. Zooms land where the action happened.",
+							},
+							{
+								title: "1.25× to 5×",
+								body: "Choose how close each zoom goes, from a gentle push to a close-up.",
+							},
+							{
+								title: "Motion blur",
+								body: "Fast pans get a soft blur, so moves look smooth instead of jumpy.",
+							},
+						]}
+					/>
+				</div>
+
+				<div className="mt-28 md:mt-40">
+					<CursorFeature />
+				</div>
+
+				<div className="mt-28 md:mt-40">
+					<div className="mx-auto max-w-[680px] text-center">
+						<FeatureTitle title="Make every recording look like yours.">
+							Set your recording on a wallpaper, gradient, solid color or your own image, then tune
+							the shadow, padding and corners.
+						</FeatureTitle>
+					</div>
+					<div className="mx-auto mt-10 max-w-[900px]">
+						<Shot
+							src="/images/preview2.png"
+							alt="ScreenMint's style panel: zoom depth, motion blur, shadow, roundness, padding, backgrounds and export quality"
+						/>
+					</div>
+					<Details
+						items={[
+							{
+								title: "Backgrounds",
+								body: "Built-in wallpapers, gradients and colors, or upload your own image.",
+							},
+							{
+								title: "Frame",
+								body: "Shadow, padding and roundness, adjusted with sliders.",
+							},
+							{
+								title: "Annotations",
+								body: "Call things out on their own track in the timeline.",
+							},
+						]}
+					/>
+				</div>
+			</div>
 		</section>
 	);
 }
 
-const CLIPS = [
+/**
+ * A slice of the ScreenMint timeline. The page's authored moment: when it scrolls into view,
+ * the playhead sweeps across and the 2.0× zoom block lights up as the playhead reaches it.
+ */
+function TimelineSketch() {
+	const ref = useRef<HTMLDivElement>(null);
+	const inView = useInView(ref, { once: true, margin: "-120px" });
+	const reduceMotion = useReducedMotion();
+	const played = inView || !!reduceMotion;
+	const sweep = { duration: reduceMotion ? 0 : 1.8, ease: [0.45, 0, 0.2, 1] as const };
+
+	return (
+		<div
+			ref={ref}
+			role="img"
+			aria-label="A timeline with a 2× zoom block and an annotation"
+			className="w-full max-w-[340px]"
+		>
+			<div className="flex justify-between text-[11px] tabular-nums text-white/55">
+				<span>0:00</span>
+				<span>0:01</span>
+				<span>0:02</span>
+				<span>0:03</span>
+			</div>
+			<div className="relative mt-2 space-y-2">
+				<div className="h-9 rounded-[8px] bg-white/[0.04]">
+					<motion.div
+						initial={false}
+						animate={
+							played
+								? {
+										backgroundColor: "rgba(255,178,26,0.2)",
+										color: "#ffb21a",
+										boxShadow: "inset 0 0 0 1px rgba(255,178,26,0.5)",
+									}
+								: {
+										backgroundColor: "rgba(255,255,255,0.06)",
+										color: "rgba(255,255,255,0.6)",
+										boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.12)",
+									}
+						}
+						transition={{ duration: reduceMotion ? 0 : 0.35, delay: reduceMotion ? 0 : 0.55 }}
+						className="ml-[18%] flex h-full w-[46%] items-center justify-center gap-1.5 rounded-[8px] text-[12px] font-semibold"
+					>
+						<ZoomIn className="h-3.5 w-3.5" />
+						2.0×
+					</motion.div>
+				</div>
+				<div className="h-9 rounded-[8px] bg-white/[0.04]">
+					<div className="ml-[40%] flex h-full w-[42%] items-center justify-center gap-1.5 rounded-[8px] bg-white/[0.09] text-[12px] font-semibold text-white/75 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]">
+						<MessageSquare className="h-3.5 w-3.5" />
+						Annotation
+					</div>
+				</div>
+				<motion.div
+					initial={false}
+					animate={{ left: played ? "38%" : "3%" }}
+					transition={sweep}
+					className="absolute -top-2 bottom-0 w-px bg-white"
+				>
+					<span className="absolute -left-[4px] -top-1 h-2 w-[9px] rounded-[2px] bg-white" />
+				</motion.div>
+			</div>
+		</div>
+	);
+}
+
+/** The export controls: quality, format and the export button. */
+function ExportSketch() {
+	const seg = "flex-1 rounded-[7px] py-1.5 text-center text-[12.5px] font-medium";
+	return (
+		<div
+			role="img"
+			aria-label="Export settings with Good quality, MP4 selected and an Export video button"
+			className="w-full max-w-[300px]"
+		>
+			<p className="text-[12px] font-medium text-white/55">Export quality</p>
+			<div className="mt-2 flex rounded-[9px] bg-white/[0.05] p-1">
+				<span className={`${seg} text-white/50`}>Medium</span>
+				<span className={`${seg} bg-white text-ink`}>Good</span>
+				<span className={`${seg} text-white/50`}>Source</span>
+			</div>
+			<p className="mt-4 text-[12px] font-medium text-white/55">Format</p>
+			<div className="mt-2 flex gap-2">
+				<span className="flex flex-1 items-center justify-center gap-1.5 rounded-[9px] bg-white/[0.08] py-2 text-[13px] font-semibold text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]">
+					<Check className="h-3.5 w-3.5 text-white" />
+					MP4
+				</span>
+				<span className="flex flex-1 items-center justify-center rounded-[9px] bg-white/[0.03] py-2 text-[13px] font-semibold text-white/55">
+					GIF
+				</span>
+			</div>
+			<span className="btn-primary mt-4 h-10 w-full text-[14px]">Export video</span>
+		</div>
+	);
+}
+
+const STEPS = [
 	{
-		code: "Rec",
 		title: "Record",
-		body: "Pick a display or a window and hit record. Mic and system audio come along where your OS allows.",
-		width: "lg:w-[30%]",
-		tone: "border-reel/50 bg-reel/[0.12]",
+		body: "Pick a display or a window and press Record. Your mic and system audio come along where your OS allows.",
+		figure: <RecordingBar compact />,
 	},
 	{
-		code: "Edit",
 		title: "Polish",
-		body: "Zooms are laid out from your clicks and the cursor is smoothed for you. Change anything on the timeline.",
-		width: "lg:w-[44%]",
-		tone: "border-paper/25 bg-paper/[0.06]",
+		body: "Zooms and cursor smoothing are laid out for you. Move, trim or add anything on the timeline.",
+		figure: <TimelineSketch />,
 	},
 	{
-		code: "Out",
 		title: "Export",
-		body: "Save an MP4 or GIF to your machine.",
-		width: "lg:w-[26%]",
-		tone: "border-paper/15 bg-ink-3",
+		body: "Save an MP4 or GIF to your computer. No account, no watermark, no upload.",
+		figure: <ExportSketch />,
 	},
 ];
 
 export function HowItWorks() {
-	const reduceMotion = useReducedMotion();
-
 	return (
-		<section id="how-it-works" className="px-5 pt-24 md:px-8 md:pt-36">
-			<div className="mx-auto max-w-[1240px]">
-				<motion.div {...reveal} className="max-w-2xl">
-					<p className="font-mono text-[12px] uppercase tracking-[0.06em] text-paper/50">
-						How it works
-					</p>
-					<h2 className="mt-4 font-display text-[clamp(2.5rem,4.6vw,4.25rem)] font-normal leading-[0.98] tracking-[-0.02em] text-paper">
-						One take, <em className="whitespace-nowrap text-reel">three passes.</em>
-					</h2>
-				</motion.div>
-
-				<motion.div {...reveal} className="mt-12">
-					<div className="flex items-end gap-3 font-mono text-[11px] text-paper/40">
-						<span className="w-8 shrink-0">V1</span>
-						<div className="ruler h-[14px] flex-1" />
-					</div>
-					<div className="relative mt-2 flex flex-col gap-2 lg:flex-row lg:gap-1 lg:pl-11">
-						{CLIPS.map((clip, i) => (
-							<div
-								key={clip.title}
-								className={`relative rounded-[4px] border px-5 py-5 lg:min-h-[13rem] ${clip.width} ${clip.tone}`}
-							>
-								<span className="absolute inset-y-2 left-1 w-[3px] rounded-full bg-paper/20" />
-								<span className="absolute inset-y-2 right-1 w-[3px] rounded-full bg-paper/20" />
-								<p className="font-mono text-[11px] uppercase tracking-[0.08em] text-paper/50">
-									0{i + 1} · {clip.code}
-								</p>
-								<h3 className="mt-3 font-display text-[30px] leading-none text-paper">
-									{clip.title}
-								</h3>
-								<p className="mt-3 max-w-[26rem] text-[15px] leading-relaxed text-paper/60">
-									{clip.body}
-								</p>
+		<section id="how-it-works" className="px-5 pt-28 md:px-8 md:pt-40">
+			<div className="mx-auto max-w-[1120px]">
+				<SectionTitle title="From take to finished video in three steps." />
+				<ol className="mt-14 grid overflow-hidden rounded-[24px] bg-ink-2 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] md:mt-16 md:grid-cols-[1fr_1.35fr_1fr]">
+					{STEPS.map((step, i) => (
+						<li
+							key={step.title}
+							className={`relative min-w-0 px-6 pb-8 pt-7 md:px-8 ${
+								i > 0 ? "border-t border-white/[0.07] md:border-l md:border-t-0" : ""
+							}`}
+						>
+							{/* The track that runs through all three steps */}
+							<div className="flex items-center gap-3">
+								<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-[12px] font-semibold tabular-nums text-ink">
+									{i + 1}
+								</span>
+								<span className="h-px flex-1 bg-white/[0.12]" />
 							</div>
-						))}
+							<div className="flex h-[260px] items-center justify-center">{step.figure}</div>
+							<h3 className="text-[20px] font-semibold tracking-[-0.02em] text-white">
+								{step.title}
+							</h3>
+							<p className="mt-2 text-[16px] leading-relaxed text-white/55">{step.body}</p>
+						</li>
+					))}
+				</ol>
+			</div>
+		</section>
+	);
+}
 
-						{reduceMotion ? null : (
-							<motion.div
-								aria-hidden="true"
-								initial={{ left: "2.75rem" }}
-								whileInView={{ left: "100%" }}
-								viewport={{ once: true, margin: "-120px" }}
-								transition={{ duration: 5, ease: EASE_OUT, delay: 0.3 }}
-								className="pointer-events-none absolute -top-5 bottom-0 hidden w-px bg-reel lg:block"
-							>
-								<span className="absolute -left-[5px] top-0 h-2.5 w-[11px] rounded-[2px] bg-reel" />
-							</motion.div>
-						)}
-					</div>
-					<p className="mt-4 text-[14px] text-paper/45 lg:pl-11">
-						No account, no watermark, no upload.
-					</p>
-				</motion.div>
+const SPECS = [
+	{ title: "Display or window", body: "Record a whole display or just one window." },
+	{
+		title: "Mic and system audio",
+		body: "Capture your voice and your computer's sound, where your OS allows.",
+	},
+	{ title: "Trim, speed and crop", body: "Cut the slow parts and tidy the frame on the timeline." },
+	{ title: "Annotations", body: "Point things out on their own timeline track." },
+	{ title: "MP4 or GIF", body: "GPU-accelerated export for players, docs and chat." },
+	{ title: "Reopen any project", body: "Projects save as .screenmint files you can edit later." },
+	{
+		title: "Native capture",
+		body: "ScreenCaptureKit on macOS, Windows.Graphics.Capture on Windows.",
+	},
+	{
+		title: "Private by default",
+		body: "No account, no upload, no telemetry. Everything stays on your machine.",
+	},
+];
+
+export function Specs() {
+	return (
+		<section className="px-5 pt-28 md:px-8 md:pt-40">
+			<div className="mx-auto grid max-w-[1120px] gap-12 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-20">
+				<SectionTitle title="The details are covered too." align="left">
+					The small things that make a recording tool pleasant to use every day.
+				</SectionTitle>
+				<ul className="grid gap-x-10 gap-y-7 sm:grid-cols-2">
+					{SPECS.map((spec) => (
+						<li key={spec.title} className="flex gap-3.5">
+							<Check className="mt-1 h-4 w-4 shrink-0 text-white/55" strokeWidth={2.5} />
+							<span>
+								<span className="block text-[16px] font-semibold text-white">{spec.title}</span>
+								<span className="mt-1 block text-[15px] leading-relaxed text-white/50">
+									{spec.body}
+								</span>
+							</span>
+						</li>
+					))}
+				</ul>
 			</div>
 		</section>
 	);

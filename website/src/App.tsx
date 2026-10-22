@@ -1,5 +1,5 @@
-import { Chapters, HowItWorks } from "./components/Chapters";
-import { Download } from "./components/Download";
+import { Chapters, HowItWorks, Specs } from "./components/Chapters";
+import { ClosingCta, Download } from "./components/Download";
 import { FAQ } from "./components/FAQ";
 import { Footer } from "./components/Footer";
 import { Hero } from "./components/Hero";
@@ -19,13 +19,15 @@ export default function App() {
 	return (
 		<>
 			<Navbar />
-			<main className="film font-body">
+			<main className="site font-body">
 				<Hero />
-				<HowItWorks />
 				<Chapters />
+				<HowItWorks />
+				<Specs />
 				<Download />
 				<SponsorSection />
 				<FAQ />
+				<ClosingCta />
 			</main>
 			<Footer />
 		</>

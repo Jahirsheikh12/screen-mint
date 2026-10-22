@@ -1,9 +1,28 @@
+import Lenis from "lenis";
+
 export const EASE_OUT = [0.16, 1, 0.3, 1] as const;
 
-/** Fade-up once when a block scrolls into view. Spread onto any `motion.*` element. */
-export const reveal = {
-	initial: { opacity: 0, y: 16 },
-	whileInView: { opacity: 1, y: 0 },
-	viewport: { once: true, margin: "-60px" },
-	transition: { duration: 0.6, ease: EASE_OUT },
-} as const;
+const NAV_OFFSET = -88;
+
+/** Smooth scrolling for everyone except people who asked for reduced motion. */
+export const lenis =
+	typeof window !== "undefined" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+		? new Lenis({ autoRaf: true, lerp: 0.1 })
+		: null;
+
+// Same-page #links glide instead of jumping (navbar, hero, footer alike).
+if (lenis) {
+	document.addEventListener("click", (event) => {
+		const link = (event.target as Element | null)?.closest?.("a[href^='#']");
+		if (!link) return;
+		const hash = link.getAttribute("href") ?? "#";
+		const target = hash === "#" || hash === "#top" ? 0 : document.querySelector(hash);
+		if (target === null) return;
+		event.preventDefault();
+		// A link in the mobile menu fires while the menu has Lenis stopped; restart it first so
+		// the menu closing (which also restarts it) does not cancel this scroll.
+		lenis.start();
+		lenis.scrollTo(target as HTMLElement | number, { offset: target === 0 ? 0 : NAV_OFFSET });
+		history.replaceState(null, "", hash === "#" ? location.pathname + location.search : hash);
+	});
+}
