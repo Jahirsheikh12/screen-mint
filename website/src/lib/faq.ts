@@ -2,36 +2,38 @@ import { SPONSOR_FAQS } from "./sponsors";
 
 export type Faq = { question: string; answer: string };
 
-/** Product questions in themed groups, shown in the FAQ section. */
-export const FAQ_GROUPS: { id: string; title: string; items: Faq[] }[] = [
+/** The questions almost everyone asks, answered up front with a one-word verdict. */
+export const QUICK_ANSWERS: (Faq & { verdict: string })[] = [
 	{
-		id: "faq-basics",
-		title: "The basics",
-		items: [
-			{
-				question: "Is ScreenMint really free?",
-				answer:
-					"Yes. ScreenMint is free and open source under the MIT license. Every feature is included, with no trial, no watermark and no hidden fees.",
-			},
-			{
-				question: "Does ScreenMint add a watermark?",
-				answer: "No. Exports are clean in every format, with no ScreenMint logo or watermark.",
-			},
-			{
-				question: "Do I need an account?",
-				answer:
-					"No. Download the app and start recording. There is nothing to sign up for and nothing to log in to.",
-			},
-			{
-				question: "What platforms are supported?",
-				answer:
-					"macOS 12.3 or later, Windows 10 or later, and Linux. On each one, ScreenMint records with the operating system's own screen capture.",
-			},
-		],
+		question: "Is ScreenMint really free?",
+		verdict: "Yes",
+		answer:
+			"ScreenMint is free and open source under the MIT license. Every feature is included, with no trial, no watermark and no hidden fees.",
 	},
 	{
-		id: "faq-recording",
-		title: "Recording and editing",
+		question: "Does ScreenMint add a watermark?",
+		verdict: "No",
+		answer: "Exports are clean in every format, with no ScreenMint logo or watermark.",
+	},
+	{
+		question: "Do I need an account?",
+		verdict: "No",
+		answer:
+			"Download the app and start recording. There is nothing to sign up for and nothing to log in to.",
+	},
+	{
+		question: "Is my data sent anywhere?",
+		verdict: "No",
+		answer:
+			"ScreenMint runs entirely on your computer, and your recordings, projects and exports never leave it. There is no account, no telemetry and no analytics.",
+	},
+];
+
+/** The rest of the product questions, one tab per topic. */
+export const FAQ_GROUPS: { id: string; title: string; items: Faq[] }[] = [
+	{
+		id: "recording",
+		title: "Recording",
 		items: [
 			{
 				question: "Can ScreenMint record system audio and my microphone?",
@@ -48,6 +50,12 @@ export const FAQ_GROUPS: { id: string; title: string; items: Faq[] }[] = [
 				answer:
 					"Yes. You can turn on smooth cursor movement, click highlights, motion blur and a natural sway.",
 			},
+		],
+	},
+	{
+		id: "editing",
+		title: "Editing & export",
+		items: [
 			{
 				question: "Can I edit a recording later?",
 				answer:
@@ -61,13 +69,13 @@ export const FAQ_GROUPS: { id: string; title: string; items: Faq[] }[] = [
 		],
 	},
 	{
-		id: "faq-privacy",
-		title: "Privacy, install and contributing",
+		id: "install",
+		title: "Install & more",
 		items: [
 			{
-				question: "Is my data sent anywhere?",
+				question: "What platforms are supported?",
 				answer:
-					"No. ScreenMint runs entirely on your computer, and your recordings, projects and exports never leave it. There is no account, no telemetry and no analytics.",
+					"macOS 12.3 or later, Windows 10 or later, and Linux. On each one, ScreenMint records with the operating system's own screen capture.",
 			},
 			{
 				question: "macOS says the app can't be opened?",
@@ -85,6 +93,10 @@ export const FAQ_GROUPS: { id: string; title: string; items: Faq[] }[] = [
 
 /** Every question on the page (the sponsoring ones sit in the sponsor section), for FAQPage data. */
 export const ALL_FAQS: readonly Faq[] = [
+	...QUICK_ANSWERS.map(({ question, verdict, answer }) => ({
+		question,
+		answer: `${verdict}. ${answer}`,
+	})),
 	...FAQ_GROUPS.flatMap((group) => group.items),
 	...SPONSOR_FAQS,
 ];

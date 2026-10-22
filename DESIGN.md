@@ -160,7 +160,7 @@ components:
 
 The ScreenMint website follows the category standard for screen-recorder sites, built to the craft level of Screen Studio and Cap. The product's real output leads. A looping export plays inside a desktop window. Editor screenshots sit bare on the ground. Pieces of the app (the recording bar, timeline zoom blocks, the export controls) are rebuilt in HTML, so every claim is shown working rather than illustrated. Nothing on the page is decoration invented for the concept.
 
-The world is a neutral near-black ground with one raised surface tone and hairline white edges. Type is Geist: large, tight, semibold headings over calm grey body copy. Amber (reel) is scarce: it marks the primary action and the active state, and nothing else. Density is generous. Sections breathe on a 112/160px rhythm, tightening to 96/112px where a section continues the one before it. Each section has one heading and one supporting line, and its content is product media or a short spec list, never a grid of equal cards.
+The world is a neutral near-black ground with one raised surface tone and hairline white edges. Type is Geist: large, tight, semibold headings over calm grey body copy. Amber (reel) is the one accent: it marks the primary action, the active state and the FAQ's quick-answer verdicts. Density is generous. Sections breathe on a 112/160px rhythm, tightening to 96/112px where a section continues the one before it. Each section has one heading and one supporting line, and its content is product media or a short spec list, never a grid of equal cards.
 
 Confirmed rejections from the direction: novelty concept worlds, eyebrow and kicker labels above headings, glow and gradient chrome, and grids of equal cards.
 
@@ -230,7 +230,7 @@ Content sits in a centered 1120px container (1080px for the hero copy, 1000px or
 
 The page alternates three compositions:
 - **Centered media:** a heading, then a wide window or screenshot, then a three-column detail list.
-- **Split 5:7 or 4:7:** a left column holds the heading, controls or a sticky title (the FAQ title sticks at 112px from the top), and the right column holds the content.
+- **Split 5:7 or 4:7:** a left column holds the heading, controls or a sticky title, and the right column holds the content.
 - **One raised panel:** the How it works track or the closing panel.
 - **Stage:** the background picker, a wallpaper stage wide as the feature screenshot (1000px), with its swatch row centered beneath.
 
@@ -311,11 +311,14 @@ A 1/2/4-column list of raised-ink cards with a 16px radius, 20px padding and an 
 ### Sponsor Panel
 One way to pay, one button. A raised-ink panel (22px radius, inset edge, max 1000px) splits 5:7. The left column holds a 20px semibold title ("Sponsor monthly on GitHub"), one line on how billing works, and the single "Sponsor on GitHub" secondary button pinned to the bottom with a 14px note under it. The right column is the tier list: a price list, not links, because every tier opens the same GitHub page. Each row is a 26px tabular amount with a 14px "/month" at 45% white, then a 16px semibold name over a 15px description at 55% white, on 7% white dividers. Below the panel come a four-up "help another way" link strip (one inset-edged block with hairline dividers, each link a 15px semibold label with a 16px icon and an arrow that turns white on hover, over a 14px line at 50% white), and the sponsoring questions shown open as a Detail List.
 
-### FAQ Disclosure
-Questions are native disclosures (`<details name="faq">` with a `<summary>`), so every answer is in the static HTML for search and answer engines, the list works without JavaScript, and the shared name keeps one item open at a time.
-- **Groups:** product questions only (sponsoring questions live in the sponsor section), in short themed groups ("The basics", "Recording and editing", "Privacy, install and contributing"). Each h3 group title is 20px semibold, -0.02em, white, with 56px between groups, and its list opens 16px below on a 1px rule at 8% white. On large screens the sticky title column lists the groups as ruled jump links (15px at 55% white, with a tabular count at 35%).
-- **Row:** a 1px bottom rule at 8% white and 20px of vertical padding. The question is 17px semibold at 85% white, turning white on hover and while open.
-- **Chevron:** 20px at 40% white, rotating 180° when open over 200ms. The native marker is hidden.
+### FAQ
+The FAQ opens with quick answers, then topic tabs. Every answer is in the static HTML for search and answer engines: all tab panels are rendered, with the inactive ones `hidden`.
+- **Title:** the section title is centered, with the "Send an email" link as its supporting line.
+- **Quick answers:** one raised-ink panel (22px radius, inset edge at 7% white) split into four cells by 7% white hairlines: four columns from lg, two from sm, one below. Each cell holds the question (15px semibold at 70% white, two lines tall from sm so the verdicts align), a one-word verdict ("Yes" or "No", 40px semibold, -0.035em, amber) and the answer (15px at 55% white).
+- **Topic tabs:** a tablist (Recording, Editing & export, Install & more) on a 1px rule at 8% white, 820px wide. Tabs are 16px semibold (15px below sm), white/50 when inactive and white when selected, with a 2px amber underline and an amber tabular count (counts hide below sm). Arrow keys, Home and End move between tabs.
+- **Panel:** each tab shows one raised-ink panel (22px radius, inset edge) of native disclosures, with a separate `name` per panel so one question stays open at a time.
+- **Row:** a 7% white divider and 20px of vertical padding. The question is 17px semibold at 85% white, turning white on hover and while open.
+- **Toggle:** a 28px amber circle at 12% fill holding an amber plus, which becomes a minus when open. The native marker is hidden.
 - **Answer:** 16px at 1.65 line height, 55% white, capped at 62ch.
 
 ### Inline Links
