@@ -41,6 +41,7 @@ import type {
 } from "../../src/lib/recording/session";
 import { buildAreaCropFilter, toDisplaySourceRect } from "../areaCapture";
 import { approveExportPath, createExportTempPath, isApprovedExportPath } from "../exportTemp";
+import { parseFfmpegProgressSeconds, summarizeFfmpegError } from "../ffmpegOutput";
 import { RECORDINGS_DIR } from "../main";
 import { markRecordingStarted, markRecordingStopped } from "../recordingRecovery";
 import { getScreenMintUpdater } from "../updater";
@@ -1087,7 +1088,47 @@ async function finishExportV2StreamSession(id: string) {
 	await session.pending;
 	await session.handle.close();
 	exportV2StreamSessions.delete(id);
-	return { path: session.path, bytesWritten: session.bytesWritten };
+	if (session.path.toLowerCase().endsWith(".mp4")) {
+		await moveMp4IndexToFront(session.path);
+	}
+	const { size } = await fs.stat(session.path);
+	return { path: session.path, bytesWritten: size };
+}
+
+/**
+ * A streamed MP4 is written with its index (moov) at the end, so players and upload sites must
+ * download the whole file before it can start. A stream-copy remux moves the index to the front.
+ * If the remux fails, the original (still valid) file is kept.
+ */
+async function moveMp4IndexToFront(filePath: string) {
+	const remuxedPath = `${filePath}.faststart.mp4`;
+	try {
+		await execFileAsync(
+			getFfmpegBinaryPath(),
+			[
+				"-y",
+				"-v",
+				"error",
+				"-i",
+				filePath,
+				"-map",
+				"0",
+				"-c",
+				"copy",
+				"-movflags",
+				"+faststart",
+				remuxedPath,
+			],
+			{ timeout: 10 * 60 * 1000, maxBuffer: 10 * 1024 * 1024 },
+		);
+		await fs.rename(remuxedPath, filePath);
+	} catch (error) {
+		console.warn(
+			"[export] Could not move the MP4 index to the front; keeping the file as is:",
+			error,
+		);
+		await fs.rm(remuxedPath, { force: true }).catch(() => undefined);
+	}
 }
 
 async function discardExportV2StreamSession(id: string) {
@@ -1418,30 +1459,6 @@ function getExportV2AttemptPath(outputPath: string, attemptIndex: number) {
 	const extension = path.extname(outputPath);
 	const base = extension ? outputPath.slice(0, -extension.length) : outputPath;
 	return `${base}.attempt-${attemptIndex + 1}${extension || ".tmp"}`;
-}
-
-function parseFfmpegProgressSeconds(output: string) {
-	const outTimeMsMatches = [...output.matchAll(/out_time_ms=(\d+)/g)];
-	const latestOutTimeMs = outTimeMsMatches[outTimeMsMatches.length - 1];
-	if (latestOutTimeMs) {
-		return Number(latestOutTimeMs[1]) / 1_000_000;
-	}
-
-	const outTimeMatches = [...output.matchAll(/out_time=(\d+):(\d+):(\d+(?:\.\d+)?)/g)];
-	const latestOutTime = outTimeMatches[outTimeMatches.length - 1];
-	if (latestOutTime) {
-		return (
-			Number(latestOutTime[1]) * 3600 + Number(latestOutTime[2]) * 60 + Number(latestOutTime[3])
-		);
-	}
-
-	const timeMatches = [...output.matchAll(/time=(\d+):(\d+):(\d+(?:\.\d+)?)/g)];
-	const latest = timeMatches[timeMatches.length - 1];
-	if (!latest) {
-		return 0;
-	}
-
-	return Number(latest[1]) * 3600 + Number(latest[2]) * 60 + Number(latest[3]);
 }
 
 function writeExportV2ClipboardPath(filePath: string) {
@@ -5264,7 +5281,9 @@ export function registerIpcHandlers(
 					error?: string;
 				}>((resolve) => {
 					let settled = false;
+					// Only a capped tail is kept for the error message; progress is parsed per chunk.
 					let stderr = "";
+					let encodedSec = 0;
 					const child = spawn(ffmpegPath, attempt.args, {
 						windowsHide: true,
 					});
@@ -5276,9 +5295,11 @@ export function registerIpcHandlers(
 					});
 
 					child.stderr.on("data", (chunk: Buffer) => {
-						stderr += chunk.toString();
-						const elapsedSec = parseFfmpegProgressSeconds(stderr);
-						const currentFrame = Math.min(totalFrames, Math.round(elapsedSec * request.frameRate));
+						const text = chunk.toString();
+						stderr = `${stderr}${text}`.slice(-16 * 1024);
+						// max(): a line split across chunks can parse as a smaller time.
+						encodedSec = Math.max(encodedSec, parseFfmpegProgressSeconds(text));
+						const currentFrame = Math.min(totalFrames, Math.round(encodedSec * request.frameRate));
 						const elapsedMs = Math.max(Date.now() - attemptStartedAtMs, 1);
 						const throughputFps = currentFrame > 0 ? (currentFrame / elapsedMs) * 1000 : 0;
 						const remainingFrames = Math.max(totalFrames - currentFrame, 0);
@@ -5317,12 +5338,7 @@ export function registerIpcHandlers(
 						}
 
 						if (code !== 0) {
-							resolve({
-								success: false,
-								error:
-									stderr.split("\n").slice(-8).join("\n").trim() ||
-									`FFmpeg export failed with code ${code ?? "unknown"}`,
-							});
+							resolve({ success: false, error: summarizeFfmpegError(stderr, code) });
 							return;
 						}
 

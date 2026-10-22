@@ -85,7 +85,7 @@ import { AutoPolishPanel } from "./AutoPolishPanel";
 import { type AudioMixSettings, DEFAULT_AUDIO_MIX_SETTINGS } from "./audioMix";
 import { loadAudioSelectionDurationMs } from "./audioRegionUtils";
 import { type AutoPolishContentType, buildAutoPolishResult } from "./autoPolish";
-import { buildCaptionSidecar } from "./captionSidecar";
+import { buildCaptionSidecar, mapSourceTimeToOutput } from "./captionSidecar";
 import { ConfirmActionDialog, MissingCursorDataDialog, PresetNameDialog } from "./EditorDialogs";
 import { ExportSettingsDialog } from "./ExportSettingsDialog";
 import {
@@ -3389,7 +3389,10 @@ export default function VideoEditor() {
 							width: gifPlan.width,
 							height: gifPlan.height,
 							frameRate: gifPlan.frameRate,
-							durationMs: Math.round(duration * 1000),
+							// Output length (trims and speed applied): FFmpeg progress counts frames against it.
+							durationMs: Math.round(
+								mapSourceTimeToOutput(duration * 1000, trimRegions, speedRegions),
+							),
 							trimRegions,
 							speedRegions,
 							compositionPayload,
@@ -3546,14 +3549,17 @@ export default function VideoEditor() {
 							bitrate: videoPlan.bitrate,
 							bitrateMode: videoPlan.bitrateMode,
 							keyframeIntervalSeconds: videoPlan.keyframeIntervalSeconds,
-							durationMs: Math.round(duration * 1000),
+							// Output length (trims and speed applied): FFmpeg progress counts frames against it.
+							durationMs: Math.round(
+								mapSourceTimeToOutput(duration * 1000, trimRegions, speedRegions),
+							),
 							trimRegions,
 							speedRegions,
 							compositionPayload,
 							audioPlan: {
 								mode:
 									audioRegions.length > 0 || speedRegions.length > 0 ? "timeline-mix" : "source",
-								expectAudio: true,
+								expectAudio: videoHasAudio || audioRegions.length > 0,
 								sourcePath: videoPath,
 								audioRegionCount: audioRegions.length,
 								hasSpeedRegions: speedRegions.length > 0,
@@ -3802,6 +3808,7 @@ export default function VideoEditor() {
 			duration,
 			sourceFrameRate,
 			t,
+			videoHasAudio,
 		],
 	);
 

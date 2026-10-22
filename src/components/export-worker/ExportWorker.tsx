@@ -4,6 +4,7 @@ import {
 	type ExportV2StartRequest,
 	GifExporter,
 	isValidGifFrameRate,
+	VALID_GIF_FRAME_RATES,
 	VideoExporter,
 } from "@/lib/exporter";
 
@@ -34,7 +35,12 @@ async function runWorkerExport(request: ExportV2StartRequest) {
 				engine: "composited-hardware",
 			});
 		};
-		const gifFrameRate = isValidGifFrameRate(request.frameRate) ? request.frameRate : 15;
+		// Same defaults as the FFmpeg GIF path, so either encoder gives the same result.
+		const gifFrameRate = isValidGifFrameRate(request.frameRate)
+			? request.frameRate
+			: VALID_GIF_FRAME_RATES.reduce((best, rate) =>
+					Math.abs(rate - request.frameRate) < Math.abs(best - request.frameRate) ? rate : best,
+				);
 
 		const result =
 			request.format === "gif"
@@ -46,7 +52,7 @@ async function runWorkerExport(request: ExportV2StartRequest) {
 						loop: request.gif?.loop ?? true,
 						preset: "quality",
 						dedupeFrames: request.gif?.dedupeFrames ?? true,
-						colorCount: request.gif?.colorCount ?? 256,
+						colorCount: request.gif?.colorCount ?? 128,
 						ditherMode: request.gif?.ditherMode ?? "bayer",
 						motionSensitivity: request.gif?.motionSensitivity ?? "balanced",
 						outputPath: request.outputPath,

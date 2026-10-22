@@ -60,10 +60,30 @@ type OnFrameCallback = (
  * Frames in trimmed regions are decoded (needed for P/B-frame state) but discarded.
  * Kept frames are resampled to the target frame rate in a streaming pass.
  */
+/**
+ * Output frames per segment. Each segment's share is taken from the rounded running total, so
+ * the frames add up to the exact output length; rounding each segment up on its own added up to
+ * one extra frame per trim/speed segment and pulled video ahead of the audio.
+ */
+export function computeSegmentFrameCounts(
+	segments: ReadonlyArray<{ startSec: number; endSec: number; speed: number }>,
+	frameRate: number,
+): number[] {
+	let elapsedSec = 0;
+	return segments.map((segment) => {
+		const startFrame = Math.round(elapsedSec * frameRate);
+		elapsedSec += (segment.endSec - segment.startSec) / segment.speed;
+		return Math.round(elapsedSec * frameRate) - startFrame;
+	});
+}
+
 export class StreamingVideoDecoder {
 	private demuxer: WebDemuxer | null = null;
 	private decoder: VideoDecoder | null = null;
 	private cancelled = false;
+	// Set while decodeAll runs: ends its pending demuxer read and wakes the frame consumer, so a
+	// cancel or destroy can't leave it waiting on a demuxer worker that no longer answers.
+	private abortDecode: (() => void) | null = null;
 	private metadata: DecodedVideoInfo | null = null;
 	private readonly decodeQueueLimit =
 		typeof navigator !== "undefined"
@@ -206,9 +226,7 @@ export class StreamingVideoDecoder {
 			this.computeSegments(this.metadata.duration, trimRegions),
 			speedRegions,
 		);
-		const segmentOutputFrameCounts = segments.map((segment) =>
-			Math.ceil(((segment.endSec - segment.startSec) / segment.speed) * targetFrameRate),
-		);
+		const segmentOutputFrameCounts = computeSegmentFrameCounts(segments, targetFrameRate);
 		const expectedOutputFrames = segmentOutputFrameCounts.reduce((sum, count) => sum + count, 0);
 		const frameDurationUs = 1_000_000 / targetFrameRate;
 		const epsilonSec = 0.001;
@@ -218,6 +236,19 @@ export class StreamingVideoDecoder {
 		let frameResolve: ((frame: VideoFrame | null) => void) | null = null;
 		let decodeError: Error | null = null;
 		let decodeDone = false;
+		let stopFeed: () => void = () => undefined;
+		const feedStopped = new Promise<null>((resolve) => {
+			stopFeed = () => resolve(null);
+		});
+		this.abortDecode = () => {
+			stopFeed();
+			decodeDone = true;
+			if (frameResolve) {
+				const resolve = frameResolve;
+				frameResolve = null;
+				resolve(null);
+			}
+		};
 
 		this.decoder = new VideoDecoder({
 			output: (frame: VideoFrame) => {
@@ -273,8 +304,9 @@ export class StreamingVideoDecoder {
 		const feedPromise = (async () => {
 			try {
 				while (!this.cancelled) {
-					const { done, value: chunk } = await reader.read();
-					if (done || !chunk) break;
+					const next = await Promise.race([reader.read(), feedStopped]);
+					if (!next || next.done || !next.value) break;
+					const chunk = next.value;
 
 					// Backpressure on both decode queue and decoded frame backlog.
 					while (
@@ -447,6 +479,7 @@ export class StreamingVideoDecoder {
 		} finally {
 			// Also runs when onFrame or the decoder throws, so no frame or decoder outlives the call.
 			// close() on an already-closed VideoFrame is a no-op.
+			this.abortDecode = null;
 			heldFrame?.close();
 			lastFrame?.close();
 			try {
@@ -546,6 +579,7 @@ export class StreamingVideoDecoder {
 
 	cancel(): void {
 		this.cancelled = true;
+		this.abortDecode?.();
 	}
 
 	getDemuxer() {
@@ -554,6 +588,7 @@ export class StreamingVideoDecoder {
 
 	destroy(): void {
 		this.cancelled = true;
+		this.abortDecode?.();
 
 		if (this.decoder) {
 			try {

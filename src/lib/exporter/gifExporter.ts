@@ -225,6 +225,94 @@ export class GifExporter {
 		this.config = config;
 	}
 
+	private async createRenderer(videoInfo: { width: number; height: number }) {
+		const renderer = new FrameRenderer({
+			width: this.config.width,
+			height: this.config.height,
+			wallpaper: this.config.wallpaper,
+			zoomRegions: this.config.zoomRegions,
+			showShadow: this.config.showShadow,
+			shadowIntensity: this.config.shadowIntensity,
+			frameShadowSize: this.config.frameShadowSize,
+			frameShadowOpacity: this.config.frameShadowOpacity,
+			frameShadowBlur: this.config.frameShadowBlur,
+			backgroundBlur: this.config.backgroundBlur,
+			hideBackground: this.config.hideBackground,
+			zoomMotionBlur: this.config.zoomMotionBlur,
+			zoomTemporalBlur: this.config.zoomTemporalBlur,
+			connectZooms: this.config.connectZooms,
+			zoomTiming: this.config.zoomTiming,
+			deviceMockup: this.config.deviceMockup,
+			frameBorderEnabled: this.config.frameBorderEnabled,
+			frameBorderWidth: this.config.frameBorderWidth,
+			frameBorderColor: this.config.frameBorderColor,
+			frameBorderOpacity: this.config.frameBorderOpacity,
+			borderRadius: this.config.borderRadius,
+			padding: this.config.padding,
+			cropRegion: this.config.cropRegion,
+			aspectRatio: this.config.aspectRatio,
+			videoWidth: videoInfo.width,
+			videoHeight: videoInfo.height,
+			annotationRegions: this.config.annotationRegions,
+			speedRegions: this.config.speedRegions,
+			previewWidth: this.config.previewWidth,
+			previewHeight: this.config.previewHeight,
+			cursorTelemetry: this.config.cursorTelemetry,
+			keyboardShortcutCallouts: this.config.keyboardShortcutCallouts,
+			showKeyboardShortcuts: this.config.showKeyboardShortcuts,
+			keyboardShortcutPosition: this.config.keyboardShortcutPosition,
+			keyboardShortcutTheme: this.config.keyboardShortcutTheme,
+			keyboardShortcutScale: this.config.keyboardShortcutScale,
+			keyboardShortcutOpacity: this.config.keyboardShortcutOpacity,
+			keyboardShortcutMaxVisible: this.config.keyboardShortcutMaxVisible,
+			showCursor: this.config.showCursor,
+			cursorSize: this.config.cursorSize,
+			cursorSmoothing: this.config.cursorSmoothing,
+			cursorMotionBlur: this.config.cursorMotionBlur,
+			cursorClickBounce: this.config.cursorClickBounce,
+			cursorSway: this.config.cursorSway,
+			cursorStyle: this.config.cursorStyle,
+			cursorPack: this.config.cursorPack,
+			cursorColor: this.config.cursorColor,
+			cursorOpacity: this.config.cursorOpacity,
+			clickEffectsEnabled: this.config.clickEffectsEnabled,
+			clickHighlightColor: this.config.clickHighlightColor,
+			clickHighlightSize: this.config.clickHighlightSize,
+			clickHighlightOpacity: this.config.clickHighlightOpacity,
+			cursorClickStyle: this.config.cursorClickStyle,
+			cursorTrailLength: this.config.cursorTrailLength,
+			cursorTrailOpacity: this.config.cursorTrailOpacity,
+			cursorTypeMode: this.config.cursorTypeMode,
+			cursorTilt: this.config.cursorTilt,
+			hideWhenIdle: this.config.hideWhenIdle,
+			idleHideDelayMs: this.config.idleHideDelayMs,
+			smoothMovementEnabled: this.config.smoothMovementEnabled,
+			cursorMovementStyle: this.config.cursorMovementStyle,
+			cursorSpring: this.config.cursorSpring,
+			highQualitySvgCursors: this.config.highQualitySvgCursors,
+			cameraSpring: this.config.cameraSpring,
+			webcamPath: this.config.webcamPath,
+			webcamRegion: this.config.webcamRegion,
+			webcamEffects: this.config.webcamEffects,
+			showWebcam: this.config.showWebcam,
+			mirrorWebcam: this.config.mirrorWebcam,
+			cameraSizeDuringZoom: this.config.cameraSizeDuringZoom,
+			cameraLayouts: this.config.cameraLayouts,
+			captionRegions: this.config.captionRegions,
+			captionSettings: this.config.captionSettings,
+		});
+		await renderer.initialize();
+		return renderer;
+	}
+
+	private getCanvasContext(renderer: FrameRenderer) {
+		const canvasCtx = renderer.getCanvas().getContext("2d", { willReadFrequently: true });
+		if (!canvasCtx) {
+			throw new Error("Failed to read rendered GIF frames");
+		}
+		return canvasCtx;
+	}
+
 	async export(): Promise<ExportResult> {
 		try {
 			this.cleanup();
@@ -235,82 +323,7 @@ export class GifExporter {
 			this.streamingDecoder = new StreamingVideoDecoder();
 			const videoInfo = await this.streamingDecoder.loadMetadata(this.config.videoUrl);
 
-			this.renderer = new FrameRenderer({
-				width: this.config.width,
-				height: this.config.height,
-				wallpaper: this.config.wallpaper,
-				zoomRegions: this.config.zoomRegions,
-				showShadow: this.config.showShadow,
-				shadowIntensity: this.config.shadowIntensity,
-				frameShadowSize: this.config.frameShadowSize,
-				frameShadowOpacity: this.config.frameShadowOpacity,
-				frameShadowBlur: this.config.frameShadowBlur,
-				backgroundBlur: this.config.backgroundBlur,
-				hideBackground: this.config.hideBackground,
-				zoomMotionBlur: this.config.zoomMotionBlur,
-				zoomTemporalBlur: this.config.zoomTemporalBlur,
-				connectZooms: this.config.connectZooms,
-				zoomTiming: this.config.zoomTiming,
-				deviceMockup: this.config.deviceMockup,
-				frameBorderEnabled: this.config.frameBorderEnabled,
-				frameBorderWidth: this.config.frameBorderWidth,
-				frameBorderColor: this.config.frameBorderColor,
-				frameBorderOpacity: this.config.frameBorderOpacity,
-				borderRadius: this.config.borderRadius,
-				padding: this.config.padding,
-				cropRegion: this.config.cropRegion,
-				aspectRatio: this.config.aspectRatio,
-				videoWidth: videoInfo.width,
-				videoHeight: videoInfo.height,
-				annotationRegions: this.config.annotationRegions,
-				speedRegions: this.config.speedRegions,
-				previewWidth: this.config.previewWidth,
-				previewHeight: this.config.previewHeight,
-				cursorTelemetry: this.config.cursorTelemetry,
-				keyboardShortcutCallouts: this.config.keyboardShortcutCallouts,
-				showKeyboardShortcuts: this.config.showKeyboardShortcuts,
-				keyboardShortcutPosition: this.config.keyboardShortcutPosition,
-				keyboardShortcutTheme: this.config.keyboardShortcutTheme,
-				keyboardShortcutScale: this.config.keyboardShortcutScale,
-				keyboardShortcutOpacity: this.config.keyboardShortcutOpacity,
-				keyboardShortcutMaxVisible: this.config.keyboardShortcutMaxVisible,
-				showCursor: this.config.showCursor,
-				cursorSize: this.config.cursorSize,
-				cursorSmoothing: this.config.cursorSmoothing,
-				cursorMotionBlur: this.config.cursorMotionBlur,
-				cursorClickBounce: this.config.cursorClickBounce,
-				cursorSway: this.config.cursorSway,
-				cursorStyle: this.config.cursorStyle,
-				cursorPack: this.config.cursorPack,
-				cursorColor: this.config.cursorColor,
-				cursorOpacity: this.config.cursorOpacity,
-				clickEffectsEnabled: this.config.clickEffectsEnabled,
-				clickHighlightColor: this.config.clickHighlightColor,
-				clickHighlightSize: this.config.clickHighlightSize,
-				clickHighlightOpacity: this.config.clickHighlightOpacity,
-				cursorClickStyle: this.config.cursorClickStyle,
-				cursorTrailLength: this.config.cursorTrailLength,
-				cursorTrailOpacity: this.config.cursorTrailOpacity,
-				cursorTypeMode: this.config.cursorTypeMode,
-				cursorTilt: this.config.cursorTilt,
-				hideWhenIdle: this.config.hideWhenIdle,
-				idleHideDelayMs: this.config.idleHideDelayMs,
-				smoothMovementEnabled: this.config.smoothMovementEnabled,
-				cursorMovementStyle: this.config.cursorMovementStyle,
-				cursorSpring: this.config.cursorSpring,
-				highQualitySvgCursors: this.config.highQualitySvgCursors,
-				cameraSpring: this.config.cameraSpring,
-				webcamPath: this.config.webcamPath,
-				webcamRegion: this.config.webcamRegion,
-				webcamEffects: this.config.webcamEffects,
-				showWebcam: this.config.showWebcam,
-				mirrorWebcam: this.config.mirrorWebcam,
-				cameraSizeDuringZoom: this.config.cameraSizeDuringZoom,
-				cameraLayouts: this.config.cameraLayouts,
-				captionRegions: this.config.captionRegions,
-				captionSettings: this.config.captionSettings,
-			});
-			await this.renderer.initialize();
+			this.renderer = await this.createRenderer(videoInfo);
 
 			const effectiveDuration = this.streamingDecoder.getEffectiveDuration(
 				this.config.trimRegions,
@@ -325,11 +338,7 @@ export class GifExporter {
 			].filter((warning): warning is string => Boolean(warning));
 
 			this.reportProgress(0, totalFrames, "decoding", undefined, warnings);
-			const canvas = this.renderer.getCanvas();
-			const canvasCtx = canvas.getContext("2d", { willReadFrequently: true });
-			if (!canvasCtx) {
-				throw new Error("Failed to read rendered GIF frames");
-			}
+			let canvasCtx = this.getCanvasContext(this.renderer);
 
 			if (this.config.outputPath) {
 				try {
@@ -350,6 +359,11 @@ export class GifExporter {
 					this.streamingDecoder?.destroy();
 					this.streamingDecoder = new StreamingVideoDecoder();
 					await this.streamingDecoder.loadMetadata(this.config.videoUrl);
+					// The failed pass advanced the renderer's camera, spring and motion-blur state;
+					// start the fallback from a fresh one so it renders like a first pass.
+					this.renderer.destroy();
+					this.renderer = await this.createRenderer(videoInfo);
+					canvasCtx = this.getCanvasContext(this.renderer);
 					this.reportProgress(0, totalFrames, "rendering", undefined, [
 						...warnings,
 						"FFmpeg GIF encoder failed; using slower fallback encoder.",
@@ -610,7 +624,6 @@ export class GifExporter {
 				encoder: "ffmpeg-palette",
 				hardwareAcceleration: "software",
 				throughputFps: totalFrames > 0 ? (totalFrames / Math.max(elapsedMs, 1)) * 1000 : undefined,
-				dedupedFrames: frameIndex,
 				paletteMode: "ffmpeg",
 				warnings,
 			};
