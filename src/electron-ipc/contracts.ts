@@ -1,5 +1,3 @@
-import type { SelectedArea } from "@/lib/recording/session";
-
 export type IpcSelectedSource = {
 	id?: string;
 	name: string;
@@ -27,9 +25,6 @@ export const IPC_CHANNELS = {
 		beginAreaEdit: "begin-area-edit",
 		cancelAreaEdit: "cancel-area-edit",
 		autoSelectCursorDisplay: "auto-select-cursor-display",
-	},
-	screenshot: {
-		capture: "screenshot:capture",
 	},
 	windows: {
 		openSourceSelector: "open-source-selector",
@@ -221,28 +216,6 @@ export type CaptureSourceRequest = {
 	thumbnailSize?: { width: number; height: number };
 	fetchWindowIcons?: boolean;
 };
-
-export type ScreenshotCaptureRequest = {
-	source?: IpcSelectedSource | null;
-	selectedArea?: SelectedArea | null;
-	saveToRecordings?: boolean;
-	copyToClipboard?: boolean;
-	fileName?: string;
-};
-
-export type ScreenshotCaptureMetadata = {
-	path?: string;
-	width: number;
-	height: number;
-	capturedAt: string;
-	source: IpcSelectedSource | null;
-	selectedArea?: SelectedArea | null;
-};
-
-export type ScreenshotCaptureResult = IpcResult<{
-	screenshot?: ScreenshotCaptureMetadata;
-	pngData?: Uint8Array;
-}>;
 
 export type MobileCaptureStatus =
 	| "idle"

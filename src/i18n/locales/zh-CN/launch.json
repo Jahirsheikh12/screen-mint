@@ -7,9 +7,6 @@
 		"countdownDelay": "倒计时延迟",
 		"noDelay": "无延迟",
 		"record": "录制",
-		"captureScreenshot": "截取屏幕截图",
-		"screenshotSaved": "截图已保存并复制",
-		"screenshotFailed": "截图失败",
 		"startRecording": "开始录制",
 		"pauseRecording": "暂停",
 		"resumeRecording": "继续",
@@ -19,8 +16,6 @@
 		"recordingFolder": "录制文件夹：{{path}}",
 		"chooseRecordingsFolder": "选择录制文件夹",
 		"folderPath": "路径：/{{name}}/",
-		"openVideoFile": "打开视频文件",
-		"openProject": "打开项目",
 		"hideHudFromVideo": "在录制中隐藏 HUD",
 		"showHudInVideo": "在录制中显示 HUD",
 		"hideHud": "隐藏 HUD",
@@ -63,8 +58,7 @@
 		"cornerBottomRight": "右下角",
 		"previewShape": "预览形状",
 		"shapeRoundedRect": "圆角矩形",
-		"shapeCircle": "圆形",
-		"showScreenshot": "查看"
+		"shapeCircle": "圆形"
 	},
 	"tabs": {
 		"display": "显示器",
@@ -131,7 +125,6 @@
 		"afterRecording": "录制后",
 		"createProject": "创建项目",
 		"exportClipboard": "导出并复制到剪贴板",
-		"exportShareLink": "导出并创建分享链接",
 		"exportSaveFile": "导出并保存到文件",
 		"autoCreateZooms": "自动创建缩放"
 	},

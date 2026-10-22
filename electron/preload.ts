@@ -72,9 +72,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	cancelAreaEdit: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.capture.cancelAreaEdit);
 	},
-	captureScreenshot: (request?: unknown) => {
-		return ipcRenderer.invoke(IPC_CHANNELS.screenshot.capture, request);
-	},
 	startNativeScreenRecording: (
 		source: SelectedCaptureSource,
 		options?: {

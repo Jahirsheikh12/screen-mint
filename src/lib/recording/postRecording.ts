@@ -1,10 +1,6 @@
 import type { WebcamSessionMetadata } from "@/components/video-editor/types";
 
-export type AfterRecordingAction =
-	| "create-project"
-	| "export-clipboard"
-	| "export-share-link"
-	| "export-save-file";
+export type AfterRecordingAction = "create-project" | "export-clipboard" | "export-save-file";
 
 export interface PostRecordingContext {
 	action: AfterRecordingAction;

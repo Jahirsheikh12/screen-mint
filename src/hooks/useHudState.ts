@@ -50,7 +50,6 @@ export const DEFAULT_HUD_SETTINGS: HudSettings = {
 const VALID_AFTER_RECORDING_ACTIONS: AfterRecordingAction[] = [
 	"create-project",
 	"export-clipboard",
-	"export-share-link",
 	"export-save-file",
 ];
 const VALID_COUNTDOWN_DELAYS = new Set([0, 3, 5, 10]);

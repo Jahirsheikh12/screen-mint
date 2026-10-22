@@ -32,7 +32,6 @@ import {
 	buildTrimFilters,
 	compileNativeComposedExport,
 } from "../../src/lib/exporter/nativeComposed";
-import { isFeatureEnabled } from "../../src/lib/featureFlags";
 import { buildCollisionFileName, ensureFileExtension } from "../../src/lib/fileNames";
 import type { PostRecordingContext } from "../../src/lib/recording/postRecording";
 import type {
@@ -67,7 +66,6 @@ import { registerMobileCaptureIpcHandlers } from "./mobileCaptureHandlers";
 import { registerPermissionDiagnosticsIpcHandlers } from "./permissionDiagnosticsHandlers";
 import { registerPostRecordingIpcHandlers } from "./postRecordingHandlers";
 import { registerProjectFileIpcHandlers } from "./projectFileHandlers";
-import { registerScreenshotIpcHandlers } from "./screenshotHandlers";
 import { registerSystemSettingsIpcHandlers } from "./systemSettingsHandlers";
 import { registerTelemetryReadIpcHandlers } from "./telemetryReadHandlers";
 
@@ -4269,14 +4267,7 @@ export function registerIpcHandlers(
 			void flashSelectedSourceHighlight(source);
 		},
 	});
-	registerScreenshotIpcHandlers({
-		getRecordingsDir,
-		getSelectedSource: () => selectedSource,
-		getSelectedArea: () => selectedArea,
-		getScreen,
-		writeBufferToUniqueFile,
-		isEnabled: () => isFeatureEnabled("screenshots"),
-	});
+
 	registerPermissionDiagnosticsIpcHandlers({
 		appBundleId: APP_BUNDLE_ID,
 		getAppBundlePath,

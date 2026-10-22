@@ -90,15 +90,7 @@ export default defineConfig({
 	},
 	optimizeDeps: {
 		entries: ["index.html"],
-		exclude: [
-			"lucide-react",
-			"react-icons/bs",
-			"react-icons/fa",
-			"react-icons/fa6",
-			"react-icons/fi",
-			"react-icons/md",
-			"react-icons/rx",
-		],
+		exclude: ["lucide-react"],
 	},
 	test: {
 		include: ["src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}", "electron/**/*.test.ts"],

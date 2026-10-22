@@ -26,9 +26,6 @@
 		"countdownDelay": "Countdown delay",
 		"noDelay": "No delay",
 		"record": "Record",
-		"captureScreenshot": "Capture screenshot",
-		"screenshotSaved": "Screenshot saved and copied",
-		"screenshotFailed": "Failed to capture screenshot",
 		"startRecording": "Start recording",
 		"pauseRecording": "Pause",
 		"resumeRecording": "Resume",
@@ -38,8 +35,6 @@
 		"recordingFolder": "Recording folder: {{path}}",
 		"chooseRecordingsFolder": "Choose recordings folder",
 		"folderPath": "Path: /{{name}}/",
-		"openVideoFile": "Open video file",
-		"openProject": "Open project",
 		"hideHudFromVideo": "Hide HUD from recording",
 		"showHudInVideo": "Show HUD in recording",
 		"hideHud": "Hide HUD",
@@ -63,8 +58,7 @@
 		"cornerBottomRight": "Bottom right",
 		"previewShape": "Preview shape",
 		"shapeRoundedRect": "Rounded rectangle",
-		"shapeCircle": "Circle",
-		"showScreenshot": "Show"
+		"shapeCircle": "Circle"
 	},
 	"tabs": {
 		"display": "Display",
@@ -131,7 +125,6 @@
 		"afterRecording": "After recording",
 		"createProject": "Create project",
 		"exportClipboard": "Export and copy to clipboard",
-		"exportShareLink": "Export and create shareable link",
 		"exportSaveFile": "Export and save to file",
 		"autoCreateZooms": "Automatically create zooms"
 	},

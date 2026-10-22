@@ -26,9 +26,6 @@
 		"countdownDelay": "Aftellen",
 		"noDelay": "Geen vertraging",
 		"record": "Opnemen",
-		"captureScreenshot": "Schermafbeelding maken",
-		"screenshotSaved": "Schermafbeelding opgeslagen en gekopieerd",
-		"screenshotFailed": "Schermafbeelding maken mislukt",
 		"startRecording": "Opname starten",
 		"pauseRecording": "Pauzeren",
 		"resumeRecording": "Hervatten",
@@ -38,8 +35,6 @@
 		"recordingFolder": "Opnamemap: {{path}}",
 		"chooseRecordingsFolder": "Opnamemap kiezen",
 		"folderPath": "Pad: /{{name}}/",
-		"openVideoFile": "Videobestand openen",
-		"openProject": "Project openen",
 		"hideHudFromVideo": "HUD verbergen in opname",
 		"showHudInVideo": "HUD tonen in opname",
 		"hideHud": "HUD verbergen",
@@ -63,8 +58,7 @@
 		"cornerBottomRight": "Rechtsonder",
 		"previewShape": "Voorbeeldvorm",
 		"shapeRoundedRect": "Afgeronde rechthoek",
-		"shapeCircle": "Cirkel",
-		"showScreenshot": "Tonen"
+		"shapeCircle": "Cirkel"
 	},
 	"tabs": {
 		"display": "Scherm",
@@ -131,7 +125,6 @@
 		"afterRecording": "Na de opname",
 		"createProject": "Project maken",
 		"exportClipboard": "Exporteren en naar klembord kopiëren",
-		"exportShareLink": "Exporteren en deellink maken",
 		"exportSaveFile": "Exporteren en als bestand opslaan",
 		"autoCreateZooms": "Zooms automatisch maken"
 	},

@@ -26,9 +26,6 @@
 		"countdownDelay": "Retraso de cuenta regresiva",
 		"noDelay": "Sin retraso",
 		"record": "Grabar",
-		"captureScreenshot": "Capturar pantalla",
-		"screenshotSaved": "Captura guardada y copiada",
-		"screenshotFailed": "No se pudo capturar la pantalla",
 		"startRecording": "Iniciar grabación",
 		"pauseRecording": "Pausar",
 		"resumeRecording": "Reanudar",
@@ -38,8 +35,6 @@
 		"recordingFolder": "Carpeta de grabaciones: {{path}}",
 		"chooseRecordingsFolder": "Elegir carpeta de grabaciones",
 		"folderPath": "Ruta: /{{name}}/",
-		"openVideoFile": "Abrir archivo de video",
-		"openProject": "Abrir proyecto",
 		"hideHudFromVideo": "Ocultar HUD en la grabación",
 		"showHudInVideo": "Mostrar HUD en la grabación",
 		"hideHud": "Ocultar HUD",
@@ -63,8 +58,7 @@
 		"cornerBottomRight": "Abajo a la derecha",
 		"previewShape": "Forma de la vista previa",
 		"shapeRoundedRect": "Rectángulo redondeado",
-		"shapeCircle": "Círculo",
-		"showScreenshot": "Mostrar"
+		"shapeCircle": "Círculo"
 	},
 	"tabs": {
 		"display": "Pantalla",
@@ -131,7 +125,6 @@
 		"afterRecording": "Después de grabar",
 		"createProject": "Crear proyecto",
 		"exportClipboard": "Exportar y copiar al portapapeles",
-		"exportShareLink": "Exportar y crear enlace para compartir",
 		"exportSaveFile": "Exportar y guardar en archivo",
 		"autoCreateZooms": "Crear zooms automáticamente"
 	},

@@ -1,5 +1,5 @@
+import { Scan } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { MdCropFree } from "react-icons/md";
 import { CaptureAccessNotice } from "@/components/launch/CaptureAccessNotice";
 import { useScopedT } from "@/contexts/I18nContext";
 import { useCaptureSourceAccess } from "@/hooks/useCaptureSourceAccess";
@@ -139,7 +139,7 @@ export function AreaTab({ disabled, hasArea, onPermissionDenied }: AreaTabProps)
 						: "bg-fill-hover text-fg-muted hover:bg-fill-pressed cursor-pointer border border-line-strong"
 				}`}
 			>
-				<MdCropFree size={18} />
+				<Scan size={18} />
 				{hasArea ? t("area.adjustArea", "Adjust area") : t("area.selectArea")}
 			</button>
 			{hasArea ? (

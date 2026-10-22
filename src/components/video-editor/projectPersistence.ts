@@ -1721,10 +1721,8 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		audioRegions: normalizedAudioRegions,
 		aspectRatio: normalizedAspectRatio,
 		exportFormat: editor.exportFormat === "gif" ? "gif" : "mp4",
-		exportDestination:
-			editor.exportDestination === "clipboard" || editor.exportDestination === "link"
-				? editor.exportDestination
-				: "file",
+		// Anything else, including the removed "link" placeholder, falls back to a file.
+		exportDestination: editor.exportDestination === "clipboard" ? "clipboard" : "file",
 		videoExportSettings: normalizedVideoExportSettings,
 		gifExportSettings: normalizedGifExportSettings,
 		webcamPath: typeof editor.webcamPath === "string" ? editor.webcamPath : undefined,

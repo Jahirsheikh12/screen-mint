@@ -1,5 +1,5 @@
+import { Monitor } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { MdMonitor } from "react-icons/md";
 import { CaptureAccessNotice } from "@/components/launch/CaptureAccessNotice";
 import { useScopedT } from "@/contexts/I18nContext";
 import { useCaptureSourceAccess } from "@/hooks/useCaptureSourceAccess";
@@ -87,7 +87,7 @@ export function WindowTab({
 		return (
 			<div className="flex flex-col items-center gap-4 py-12">
 				<div className="w-12 h-12 rounded-lg bg-fill-subtle border border-line-strong flex items-center justify-center">
-					<MdMonitor size={24} className="text-fg-disabled" />
+					<Monitor size={24} className="text-fg-disabled" />
 				</div>
 				<span className="text-fg-subtle text-label font-medium">
 					{t("window.noWindows", "No available windows found")}
@@ -140,7 +140,7 @@ export function WindowTab({
 										{source.appIcon ? (
 											<img src={source.appIcon} alt="" className="w-8 h-8 opacity-40 grayscale" />
 										) : (
-											<MdMonitor size={20} className="text-fg-disabled" />
+											<Monitor size={20} className="text-fg-disabled" />
 										)}
 									</div>
 								)}

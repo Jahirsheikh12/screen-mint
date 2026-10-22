@@ -85,7 +85,7 @@ export type ExportQuality = "medium" | "good" | "high" | "source";
 
 // GIF Export Types
 export type ExportFormat = "mp4" | "gif";
-export type ExportDestination = "file" | "clipboard" | "link";
+export type ExportDestination = "file" | "clipboard";
 export type ExportEngine =
 	| "direct-native"
 	| "native-composed"

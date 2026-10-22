@@ -1,22 +1,27 @@
-import { Camera, Languages, Smartphone } from "lucide-react";
-import { useEffect, useState } from "react";
-import { BsRecordCircle } from "react-icons/bs";
-import { FaPause, FaPlay, FaRegStopCircle } from "react-icons/fa";
-// import { FaFolderOpen } from "react-icons/fa6"; // re-enable when file options are restored
-import { FiMinus, FiRotateCcw, FiTrash2, FiX } from "react-icons/fi";
 import {
-	MdCropFree,
-	MdDevices,
-	MdMic,
-	MdMicOff,
-	MdMonitor,
-	MdVideocam,
-	MdVideocamOff,
-	// MdVideoFile, // re-enable when file options are restored
-	MdVolumeOff,
-	MdVolumeUp,
-	MdWindow,
-} from "react-icons/md";
+	AppWindow,
+	CircleDot,
+	CircleStop,
+	Languages,
+	type LucideIcon,
+	Mic,
+	MicOff,
+	Minus,
+	Monitor,
+	MonitorSmartphone,
+	Pause,
+	Play,
+	RotateCcw,
+	Scan,
+	Smartphone,
+	Trash2,
+	Video,
+	VideoOff,
+	Volume2,
+	VolumeX,
+	X,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import { useI18n, useScopedT } from "@/contexts/I18nContext";
 import type { MobileCapturePairingState } from "@/electron-ipc/contracts";
 import type { CameraDeviceOption, HudMode, HudSettings } from "@/hooks/useHudState";
@@ -86,8 +91,6 @@ type HudToolbarProps = {
 	selectedMicDeviceId: string;
 	setSelectedMicDeviceId: (id: string) => void;
 	audioLevel: number;
-	onOpenVideoFile: () => void;
-	onOpenProject: () => void;
 	onHide: () => void;
 	onClose: () => void;
 	hudSettings: HudSettings;
@@ -99,17 +102,13 @@ type HudToolbarProps = {
 	showQuickRecord: boolean;
 	quickRecordDisabled: boolean;
 	onQuickRecord: () => void;
-	screenshotDisabled: boolean;
-	screenshotBusy: boolean;
-	onCaptureScreenshot: () => void;
-	showScreenshot?: boolean;
 };
 
-const MODE_ICONS: Record<HudMode, React.ComponentType<{ size?: number; className?: string }>> = {
-	display: MdMonitor,
-	window: MdWindow,
-	area: MdCropFree,
-	device: MdDevices,
+const MODE_ICONS: Record<HudMode, LucideIcon> = {
+	display: Monitor,
+	window: AppWindow,
+	area: Scan,
+	device: MonitorSmartphone,
 };
 
 const DROPDOWN_CLASSES =
@@ -153,8 +152,6 @@ export function HudToolbar({
 	selectedMicDeviceId,
 	setSelectedMicDeviceId,
 	audioLevel,
-	// onOpenVideoFile, // re-enable when file options are restored
-	// onOpenProject, // re-enable when file options are restored
 	onHide,
 	onClose,
 	hudSettings,
@@ -166,10 +163,6 @@ export function HudToolbar({
 	showQuickRecord,
 	quickRecordDisabled,
 	onQuickRecord,
-	screenshotDisabled,
-	screenshotBusy,
-	onCaptureScreenshot,
-	showScreenshot = false,
 }: HudToolbarProps) {
 	const { locale, setLocale } = useI18n();
 	const t = useScopedT("launch");
@@ -288,7 +281,11 @@ export function HudToolbar({
 									: "bg-fill-subtle text-fg-subtle hover:bg-fill-hover hover:text-fg-muted"
 							} ${compactBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
 						>
-							{paused ? <FaPlay size={10} /> : <FaPause size={10} />}
+							{paused ? (
+								<Play size={10} fill="currentColor" />
+							) : (
+								<Pause size={10} fill="currentColor" />
+							)}
 						</button>
 					</Tooltip>
 
@@ -301,7 +298,7 @@ export function HudToolbar({
 							aria-label={t("recording.retakeRecording")}
 							className={`flex items-center justify-center rounded-lg w-7 h-7 text-fg-muted transition-all hover:bg-fill-hover hover:text-fg ${compactBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
 						>
-							<FiRotateCcw size={12} strokeWidth={2.75} />
+							<RotateCcw size={12} strokeWidth={2.75} />
 						</button>
 					</Tooltip>
 
@@ -314,7 +311,7 @@ export function HudToolbar({
 							aria-label={t("recording.deleteRecording")}
 							className={`flex items-center justify-center rounded-lg w-7 h-7 text-fg transition-all hover:bg-danger/[0.12] hover:text-danger-fg ${compactBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
 						>
-							<FiTrash2 size={12} strokeWidth={2.75} />
+							<Trash2 size={12} strokeWidth={2.75} />
 						</button>
 					</Tooltip>
 				</div>
@@ -339,7 +336,7 @@ export function HudToolbar({
 							aria-hidden="true"
 						/>
 					) : (
-						<FaRegStopCircle size={10} />
+						<CircleStop size={10} />
 					)}
 					<span className="max-w-[120px] truncate">
 						{compactBusy ? t("recording.finalizing") : t("recording.stopRecording")}
@@ -354,7 +351,7 @@ export function HudToolbar({
 						aria-label={t("recording.hideHud")}
 						className={`${ND} flex items-center justify-center rounded-lg w-7 h-7 text-fg-subtle transition-colors hover:bg-fill-hover hover:text-fg cursor-pointer ml-0.5`}
 					>
-						<FiMinus size={12} strokeWidth={3} />
+						<Minus size={12} strokeWidth={3} />
 					</button>
 				</Tooltip>
 			</div>
@@ -383,7 +380,7 @@ export function HudToolbar({
 					aria-label={t("recording.closeApp")}
 					className={`${ND} flex items-center justify-center rounded-lg p-2 text-fg-subtle hover:text-danger-fg hover:bg-fill-hover transition-colors cursor-pointer`}
 				>
-					<FiX size={14} strokeWidth={2.75} />
+					<X size={14} strokeWidth={2.75} />
 				</button>
 			</Tooltip>
 
@@ -427,7 +424,7 @@ export function HudToolbar({
 								: "cursor-pointer bg-danger text-on-danger hover:bg-danger/90"
 						}`}
 					>
-						<BsRecordCircle size={12} className="shrink-0" />
+						<CircleDot size={12} className="shrink-0" />
 						<span className="max-w-[88px] truncate">{t("recording.record")}</span>
 					</button>
 
@@ -452,7 +449,7 @@ export function HudToolbar({
 									: "text-fg-muted hover:text-fg hover:bg-fill-hover"
 							}`}
 						>
-							{webcamEnabled ? <MdVideocam size={15} /> : <MdVideocamOff size={15} />}
+							{webcamEnabled ? <Video size={15} /> : <VideoOff size={15} />}
 						</button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent
@@ -654,7 +651,7 @@ export function HudToolbar({
 									: "text-fg-muted hover:text-fg hover:bg-fill-hover"
 							}`}
 						>
-							{microphoneEnabled ? <MdMic size={15} /> : <MdMicOff size={15} />}
+							{microphoneEnabled ? <Mic size={15} /> : <MicOff size={15} />}
 						</button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent
@@ -725,7 +722,7 @@ export function HudToolbar({
 								: "text-fg-muted hover:text-fg hover:bg-fill-hover"
 						}`}
 					>
-						{systemAudioEnabled ? <MdVolumeUp size={15} /> : <MdVolumeOff size={15} />}
+						{systemAudioEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
 					</button>
 				</Tooltip>
 			</div>
@@ -734,51 +731,6 @@ export function HudToolbar({
 
 			{/* Right utilities */}
 			<div className={`${ND} flex shrink-0 items-center`}>
-				{showScreenshot ? (
-					<Tooltip content={t("recording.captureScreenshot")} side="top">
-						<button
-							type="button"
-							onClick={onCaptureScreenshot}
-							disabled={screenshotDisabled || screenshotBusy}
-							aria-label={t("recording.captureScreenshot")}
-							className={`flex items-center justify-center rounded-lg w-8 h-8 transition-colors ${
-								screenshotDisabled || screenshotBusy
-									? "cursor-not-allowed text-fg-disabled"
-									: "cursor-pointer text-fg-muted hover:text-fg hover:bg-fill-hover"
-							}`}
-						>
-							{screenshotBusy ? (
-								<span
-									className="h-[13px] w-[13px] rounded-full border-[1.5px] border-line-strong border-t-fg animate-spin"
-									aria-hidden="true"
-								/>
-							) : (
-								<Camera size={14} strokeWidth={2.5} />
-							)}
-						</button>
-					</Tooltip>
-				) : null}
-
-				{/* File options temporarily hidden — keep wired for future re-enable */}
-				{/*
-				<button
-					type="button"
-					onClick={onOpenVideoFile}
-					title={t("recording.openVideoFile")}
-					className="flex items-center justify-center rounded-lg w-8 h-8 text-fg-disabled hover:text-fg-subtle hover:bg-fill-subtle transition-colors cursor-pointer"
-				>
-					<MdVideoFile size={14} />
-				</button>
-				<button
-					type="button"
-					onClick={onOpenProject}
-					title={t("recording.openProject")}
-					className="flex items-center justify-center rounded-lg w-8 h-8 text-fg-disabled hover:text-fg-subtle hover:bg-fill-subtle transition-colors cursor-pointer"
-				>
-					<FaFolderOpen size={12} />
-				</button>
-				*/}
-
 				{/* Language selector */}
 				<DropdownMenu onOpenChange={notifyHudDropdownToggle}>
 					<DropdownMenuTrigger asChild>
@@ -819,7 +771,7 @@ export function HudToolbar({
 						aria-label={t("recording.hideHud")}
 						className="flex items-center justify-center rounded-lg w-8 h-8 text-fg-subtle hover:text-fg hover:bg-fill-hover transition-colors cursor-pointer"
 					>
-						<FiMinus size={14} strokeWidth={3} />
+						<Minus size={14} strokeWidth={3} />
 					</button>
 				</Tooltip>
 			</div>

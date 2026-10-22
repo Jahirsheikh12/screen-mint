@@ -1,5 +1,5 @@
+import { Check, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FiCheck, FiX } from "react-icons/fi";
 import { useScopedT } from "@/contexts/I18nContext";
 import { normalizeSelectedArea } from "@/lib/recording/session";
 
@@ -971,7 +971,7 @@ export function AreaSelectionOverlay() {
 							onClick={closeOverlay}
 							className="flex items-center gap-1.5 rounded-md border border-transparent bg-fill-hover px-3 py-1 text-fg-muted transition-colors hover:bg-fill-hover hover:text-fg"
 						>
-							<FiX size={13} />
+							<X size={13} />
 							<span className="font-medium">{t("area.cancelSelection")}</span>
 						</button>
 						<button
@@ -979,7 +979,7 @@ export function AreaSelectionOverlay() {
 							onClick={confirmSelection}
 							className="flex items-center gap-1.5 rounded-md border border-transparent bg-accent px-3.5 py-1 font-semibold text-on-accent shadow-sm transition-colors hover:bg-accent-hover"
 						>
-							<FiCheck size={13} />
+							<Check size={13} />
 							<span>{t("area.confirmSelection")}</span>
 						</button>
 					</div>
