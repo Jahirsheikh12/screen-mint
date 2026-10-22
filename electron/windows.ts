@@ -531,7 +531,11 @@ export function createSourceSelectorWindow(): BrowserWindow {
 	return win;
 }
 
+// Latest notes text, re-sent when the window (re)loads so updates made before load aren't lost.
+let speakerNotesText = "";
+
 export function createSpeakerNotesWindow(text: string): BrowserWindow {
+	speakerNotesText = text;
 	const primaryDisplay = getScreen().getPrimaryDisplay();
 	const { workArea } = primaryDisplay;
 
@@ -580,7 +584,7 @@ export function createSpeakerNotesWindow(text: string): BrowserWindow {
 
 	win.webContents.on("did-finish-load", () => {
 		if (!win.isDestroyed()) {
-			win.webContents.send("speaker-notes-updated", { text });
+			win.webContents.send("speaker-notes-updated", { text: speakerNotesText });
 			win.show();
 		}
 	});
@@ -597,6 +601,7 @@ export function createSpeakerNotesWindow(text: string): BrowserWindow {
 }
 
 export function updateSpeakerNotesWindow(text: string): void {
+	speakerNotesText = text;
 	if (speakerNotesWindow && !speakerNotesWindow.isDestroyed()) {
 		speakerNotesWindow.webContents.send("speaker-notes-updated", { text });
 	}

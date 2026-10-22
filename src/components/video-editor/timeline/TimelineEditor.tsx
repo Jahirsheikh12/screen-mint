@@ -1204,111 +1204,91 @@ export default function TimelineEditor({
 		[videoDuration, totalMs, currentTimeMs, onCaptionAdded, defaultRegionDurationMs],
 	);
 
+	// The handler reads a lot of per-frame state (current time, selections); keep the latest one in
+	// a ref and subscribe once instead of re-subscribing on every playback frame.
+	const handleKeyDownRef = useRef<(e: KeyboardEvent) => void>(() => undefined);
+	handleKeyDownRef.current = (e: KeyboardEvent) => {
+		const target = e.target as HTMLElement | null;
+		if (
+			target instanceof HTMLInputElement ||
+			target instanceof HTMLTextAreaElement ||
+			target instanceof HTMLSelectElement ||
+			target?.isContentEditable
+		) {
+			return;
+		}
+		// Holding a key must not add a region per auto-repeat.
+		if (e.repeat) return;
+
+		if (e.key === "Escape") {
+			setTrimMode(false);
+		}
+		if (matchesShortcut(e, keyShortcuts.addKeyframe, isMac)) {
+			addKeyframe();
+		}
+		if (matchesShortcut(e, keyShortcuts.addZoom, isMac)) {
+			handleAddZoom();
+		}
+		if (matchesShortcut(e, keyShortcuts.addTrim, isMac)) {
+			setTrimMode((prev) => !prev);
+		}
+		if (matchesShortcut(e, keyShortcuts.addAnnotation, isMac)) {
+			handleAddAnnotation();
+		}
+		if (matchesShortcut(e, keyShortcuts.addSpeed, isMac)) {
+			handleAddSpeed();
+		}
+
+		// Tab: Cycle through overlapping annotations at current time
+		if (e.key === "Tab" && annotationRegions.length > 0) {
+			const currentTimeMs = Math.round(currentTime * 1000);
+			const overlapping = annotationRegions
+				.filter((a) => currentTimeMs >= a.startMs && currentTimeMs <= a.endMs)
+				.sort((a, b) => a.zIndex - b.zIndex); // Sort by z-index
+
+			if (overlapping.length > 0) {
+				e.preventDefault();
+
+				if (!selectedAnnotationId || !overlapping.some((a) => a.id === selectedAnnotationId)) {
+					onSelectAnnotation?.(overlapping[0].id);
+				} else {
+					// Cycle to next annotation
+					const currentIndex = overlapping.findIndex((a) => a.id === selectedAnnotationId);
+					const nextIndex = e.shiftKey
+						? (currentIndex - 1 + overlapping.length) % overlapping.length // Shift+Tab = backward
+						: (currentIndex + 1) % overlapping.length; // Tab = forward
+					onSelectAnnotation?.(overlapping[nextIndex].id);
+				}
+			}
+		}
+		// Delete key or Ctrl+D / Cmd+D
+		if (
+			e.key === "Delete" ||
+			e.key === "Backspace" ||
+			matchesShortcut(e, keyShortcuts.deleteSelected, isMac)
+		) {
+			if (selectedKeyframeId) {
+				deleteSelectedKeyframe();
+			} else if (selectedZoomId) {
+				deleteSelectedZoom();
+			} else if (selectedAnnotationId) {
+				deleteSelectedAnnotation();
+			} else if (selectedCameraLayoutId) {
+				deleteSelectedCameraLayout();
+			} else if (selectedSpeedId) {
+				deleteSelectedSpeed();
+			} else if (selectedAudioId) {
+				deleteSelectedAudio();
+			} else if (selectedCaptionId) {
+				deleteSelectedCaption();
+			}
+		}
+	};
 	useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			const target = e.target as HTMLElement | null;
-			if (
-				target instanceof HTMLInputElement ||
-				target instanceof HTMLTextAreaElement ||
-				target instanceof HTMLSelectElement ||
-				target?.isContentEditable
-			) {
-				return;
-			}
-			// Holding a key must not add a region per auto-repeat.
-			if (e.repeat) return;
-
-			if (e.key === "Escape") {
-				setTrimMode(false);
-			}
-			if (matchesShortcut(e, keyShortcuts.addKeyframe, isMac)) {
-				addKeyframe();
-			}
-			if (matchesShortcut(e, keyShortcuts.addZoom, isMac)) {
-				handleAddZoom();
-			}
-			if (matchesShortcut(e, keyShortcuts.addTrim, isMac)) {
-				setTrimMode((prev) => !prev);
-			}
-			if (matchesShortcut(e, keyShortcuts.addAnnotation, isMac)) {
-				handleAddAnnotation();
-			}
-			if (matchesShortcut(e, keyShortcuts.addSpeed, isMac)) {
-				handleAddSpeed();
-			}
-
-			// Tab: Cycle through overlapping annotations at current time
-			if (e.key === "Tab" && annotationRegions.length > 0) {
-				const currentTimeMs = Math.round(currentTime * 1000);
-				const overlapping = annotationRegions
-					.filter((a) => currentTimeMs >= a.startMs && currentTimeMs <= a.endMs)
-					.sort((a, b) => a.zIndex - b.zIndex); // Sort by z-index
-
-				if (overlapping.length > 0) {
-					e.preventDefault();
-
-					if (!selectedAnnotationId || !overlapping.some((a) => a.id === selectedAnnotationId)) {
-						onSelectAnnotation?.(overlapping[0].id);
-					} else {
-						// Cycle to next annotation
-						const currentIndex = overlapping.findIndex((a) => a.id === selectedAnnotationId);
-						const nextIndex = e.shiftKey
-							? (currentIndex - 1 + overlapping.length) % overlapping.length // Shift+Tab = backward
-							: (currentIndex + 1) % overlapping.length; // Tab = forward
-						onSelectAnnotation?.(overlapping[nextIndex].id);
-					}
-				}
-			}
-			// Delete key or Ctrl+D / Cmd+D
-			if (
-				e.key === "Delete" ||
-				e.key === "Backspace" ||
-				matchesShortcut(e, keyShortcuts.deleteSelected, isMac)
-			) {
-				if (selectedKeyframeId) {
-					deleteSelectedKeyframe();
-				} else if (selectedZoomId) {
-					deleteSelectedZoom();
-				} else if (selectedAnnotationId) {
-					deleteSelectedAnnotation();
-				} else if (selectedCameraLayoutId) {
-					deleteSelectedCameraLayout();
-				} else if (selectedSpeedId) {
-					deleteSelectedSpeed();
-				} else if (selectedAudioId) {
-					deleteSelectedAudio();
-				} else if (selectedCaptionId) {
-					deleteSelectedCaption();
-				}
-			}
-		};
+		const handleKeyDown = (e: KeyboardEvent) => handleKeyDownRef.current(e);
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [
-		addKeyframe,
-		handleAddZoom,
-		handleAddAnnotation,
-		handleAddSpeed,
-		deleteSelectedKeyframe,
-		deleteSelectedZoom,
-		deleteSelectedAnnotation,
-		deleteSelectedCameraLayout,
-		deleteSelectedSpeed,
-		deleteSelectedAudio,
-		deleteSelectedCaption,
-		selectedKeyframeId,
-		selectedZoomId,
-		selectedAnnotationId,
-		selectedCameraLayoutId,
-		selectedCaptionId,
-		selectedSpeedId,
-		selectedAudioId,
-		annotationRegions,
-		currentTime,
-		onSelectAnnotation,
-		keyShortcuts,
-		isMac,
-	]);
+	}, []);
 
 	const clampedRange = useMemo<Range>(() => {
 		if (displayTotalMs === 0) {
