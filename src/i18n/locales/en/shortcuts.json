@@ -11,6 +11,15 @@
 		"cycleBackward": "Cycle Annotations Backward",
 		"deleteSelectedAlt": "Delete Selected (alt)",
 		"panTimeline": "Pan Timeline",
-		"zoomTimeline": "Zoom Timeline"
+		"zoomTimeline": "Zoom Timeline",
+		"undo": "Undo",
+		"redo": "Redo",
+		"export": "Export",
+		"exitTrimMode": "Exit Trim Mode"
+	},
+	"keys": {
+		"space": "Space",
+		"tab": "Tab",
+		"scroll": "Scroll"
 	}
 }

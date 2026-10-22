@@ -74,11 +74,7 @@
 	"keyboardShortcuts": {
 		"title": "键盘快捷键",
 		"customizeTooltip": "自定义快捷键",
-		"customize": "自定义",
-		"panTimeline": "平移时间线",
-		"zoomTimeline": "缩放时间线",
-		"cycleAnnotations": "循环切换注释",
-		"tab": "Tab"
+		"customize": "自定义"
 	},
 	"openRecordingsFolder": "打开录制文件夹",
 	"captions": {
@@ -233,7 +229,9 @@
 		"black": "特粗",
 		"captionText": "字幕文字...",
 		"split": "拆分",
-		"mergeNext": "与下一段合并"
+		"mergeNext": "与下一段合并",
+		"systemFont": "系统",
+		"uppercase": "全部大写"
 	},
 	"preview": {
 		"initFailed": "无法启动预览渲染器"
@@ -287,7 +285,22 @@
 		"noSavedPresets": "没有已保存的预设",
 		"toggleLayout": "切换布局",
 		"projects": "项目",
-		"openProjectBrowser": "打开项目浏览器"
+		"openProjectBrowser": "打开项目浏览器",
+		"failedToLoadProject": "无法载入项目",
+		"invalidProjectFile": "项目文件格式无效",
+		"projectLoadedFrom": "已从 {{path}} 载入项目",
+		"failedToOpenProject": "无法打开项目",
+		"projectSavedTo": "项目已保存到 {{path}}",
+		"presetApplied": "已应用预设“{{name}}”。",
+		"presetSaved": "已保存预设“{{name}}”。",
+		"presetDeleted": "已删除预设“{{name}}”。",
+		"projectDeleteFailed": "无法删除项目。",
+		"filesDeleted": "已删除文件：{{count}} 个。",
+		"externalFilesKept": "保留的外部文件：{{count}} 个。",
+		"recordingRemovedFromEditor": "已从编辑器中移除此录制。",
+		"projectRemoved": "项目已移除。",
+		"webcamSourceMissing": "缺少摄像头来源。请重新关联或将其从项目中移除。",
+		"zoomRegionsCreated": "已创建缩放区域：{{count}} 个"
 	},
 	"header": {
 		"presets": "预设"
@@ -324,7 +337,10 @@
 	},
 	"polishPanel": {
 		"autoPolish": "自动润色",
-		"oneClickStudioTemplates": "一键工作室模板"
+		"oneClickStudioTemplates": "一键工作室模板",
+		"landingPage": "落地页",
+		"pitchDeck": "融资演示文稿",
+		"apply": "应用"
 	},
 	"theme": {
 		"appearance": "外观",

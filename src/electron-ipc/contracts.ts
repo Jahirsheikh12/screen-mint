@@ -138,6 +138,7 @@ export const IPC_CHANNELS = {
 		showDesktopIcons: "show-desktop-icons",
 		hideDockIcon: "hide-dock-icon",
 		showDockIcon: "show-dock-icon",
+		setLocale: "system:set-locale",
 	},
 	updater: {
 		getState: "get-updater-state",

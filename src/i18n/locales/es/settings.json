@@ -96,7 +96,8 @@
 		"uploadErrorDescription": "Formatos compatibles: JPG, JPEG, PNG, WEBP.",
 		"video": "Vídeo",
 		"uploadVideo": "Elegir vídeo",
-		"videoHint": "Se reproduce en bucle y sin sonido detrás de tu grabación. MP4, MOV o WebM."
+		"videoHint": "Se reproduce en bucle y sin sonido detrás de tu grabación. MP4, MOV o WebM.",
+		"gradientPreset": "Degradado predefinido {{index}}"
 	},
 	"cursor": {
 		"title": "Cursor",
@@ -474,6 +475,43 @@
 			"bottom": "Abajo",
 			"left": "Izquierda",
 			"right": "Derecha"
+		},
+		"presets": {
+			"classic-circle": "Círculo clásico",
+			"presenter-soft": "Presentador suave",
+			"floating-card": "Tarjeta flotante",
+			"spotlight": "Foco",
+			"fullscreen-commentary": "Comentario a pantalla completa"
+		},
+		"status": {
+			"segmentation-unavailable": {
+				"title": "Tratamiento del fondo no disponible",
+				"description": "La segmentación no está disponible ahora, así que la vista previa muestra la imagen sin procesar de la cámara web."
+			},
+			"raw-webcam-only": {
+				"title": "La vista previa usa la cámara web sin procesar",
+				"description": "El rendimiento de la vista previa es demasiado bajo para el tratamiento avanzado, así que el editor muestra temporalmente la imagen sin procesar."
+			},
+			"replacement-disabled": {
+				"title": "Reemplazo por imagen reducido",
+				"description": "El fondo personalizado está en pausa en la vista previa. El desenfoque y el color sólido pueden seguir activos."
+			},
+			"reduced-background-sampling": {
+				"title": "Tratamiento del fondo simplificado",
+				"description": "La vista previa sigue aplicando el tratamiento, pero reduce el muestreo del fondo para que la reproducción sea fluida."
+			},
+			"reduced-segmentation-rate": {
+				"title": "El tratamiento está activo",
+				"description": "La segmentación se actualiza con menos frecuencia, así que la vista previa puede responder un poco más lento."
+			},
+			"raw": {
+				"title": "Cámara web sin procesar",
+				"description": "La cámara web se muestra sin separar a la persona del fondo."
+			},
+			"active": {
+				"title": "Tratamiento del fondo activo",
+				"description": "La vista previa y la exportación usan el tratamiento activo de la cámara web."
+			}
 		}
 	},
 	"audioTab": {
@@ -549,7 +587,14 @@
 		"chipHook": "Gancho",
 		"chipSharp": "Nítido",
 		"chipTeam": "Equipo",
-		"chipCustom": "Personalizado"
+		"chipCustom": "Personalizado",
+		"presets": {
+			"saas-launch": "Vídeo de lanzamiento",
+			"product-demo": "Demostración guiada",
+			"tutorial": "Modo lección",
+			"social-vertical": "Gancho vertical",
+			"bug-report-clean": "Entrega limpia"
+		}
 	},
 	"backgroundTab": {
 		"setTheBackdropBehind": "Define el fondo detrás del lienzo de tu grabación",

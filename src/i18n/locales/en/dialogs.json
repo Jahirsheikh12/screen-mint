@@ -82,7 +82,8 @@
 		"projects": "Projects",
 		"recentProjectsAndProjects": "Recent projects and projects saved in your recordings folder.",
 		"loadingProjects": "Loading projects…",
-		"noSavedProjectsYet": "No saved projects yet"
+		"noSavedProjectsYet": "No saved projects yet",
+		"showProjectInFolder": "Show {{name}} in folder"
 	},
 	"editor": {
 		"savePreset": "Save Preset",
@@ -92,7 +93,13 @@
 		"cancel": "Cancel",
 		"savePreset2": "Save preset",
 		"confirmAction": "Confirm action",
-		"continue": "Continue"
+		"continue": "Continue",
+		"deletePresetTitle": "Delete preset?",
+		"deletePresetDescription": "Delete the preset \"{{name}}\"?",
+		"deletePresetConfirm": "Delete preset",
+		"deleteProjectTitle": "Delete project?",
+		"deleteProjectDescription": "Delete this ScreenMint project and any managed recording media?\n\nImported files outside the ScreenMint recordings folder will be kept.",
+		"deleteProjectConfirm": "Delete project"
 	},
 	"quickShare": {
 		"quickShare": "Quick Share",

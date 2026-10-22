@@ -1,5 +1,6 @@
 import { type RefObject, useCallback } from "react";
 import { toast } from "sonner";
+import { useI18n } from "@/contexts/I18nContext";
 import {
 	type ExportDestination,
 	type ExportFormat,
@@ -33,10 +34,11 @@ export function useDefaultExportSettings({
 	videoExportSettings,
 	gifExportSettings,
 }: UseDefaultExportSettingsOptions) {
+	const { t } = useI18n();
 	return useCallback((): ExportSettings | null => {
 		const video = videoPlaybackRef.current?.video;
 		if (!video) {
-			toast.error("Video not ready");
+			toast.error(t("dialogs.export.videoNotReady", "The video isn't ready yet"));
 			return null;
 		}
 
@@ -76,5 +78,6 @@ export function useDefaultExportSettings({
 		sourceFrameRate,
 		videoExportSettings,
 		videoPlaybackRef,
+		t,
 	]);
 }

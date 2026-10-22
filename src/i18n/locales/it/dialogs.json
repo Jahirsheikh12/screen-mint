@@ -82,7 +82,8 @@
 		"projects": "Progetti",
 		"recentProjectsAndProjects": "Progetti recenti e progetti salvati nella cartella delle registrazioni.",
 		"loadingProjects": "Caricamento dei progetti…",
-		"noSavedProjectsYet": "Ancora nessun progetto salvato"
+		"noSavedProjectsYet": "Ancora nessun progetto salvato",
+		"showProjectInFolder": "Mostra {{name}} nella cartella"
 	},
 	"editor": {
 		"savePreset": "Salva preset",
@@ -92,7 +93,13 @@
 		"cancel": "Annulla",
 		"savePreset2": "Salva preset",
 		"confirmAction": "Conferma azione",
-		"continue": "Continua"
+		"continue": "Continua",
+		"deletePresetTitle": "Eliminare il preset?",
+		"deletePresetDescription": "Eliminare il preset «{{name}}»?",
+		"deletePresetConfirm": "Elimina preset",
+		"deleteProjectTitle": "Eliminare il progetto?",
+		"deleteProjectDescription": "Eliminare questo progetto ScreenMint e i file di registrazione gestiti?\n\nI file importati al di fuori della cartella delle registrazioni di ScreenMint verranno mantenuti.",
+		"deleteProjectConfirm": "Elimina progetto"
 	},
 	"quickShare": {
 		"quickShare": "Condivisione rapida",

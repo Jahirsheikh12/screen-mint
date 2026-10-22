@@ -13,7 +13,9 @@ import {
 	shell,
 	Tray,
 } from "electron";
+import { IPC_CHANNELS } from "../src/electron-ipc/contracts";
 import { sweepStaleExportTempFiles } from "./exportTemp";
+import { loadStoredLocale, saveLocale, setMainLocale, tMain } from "./i18n";
 import {
 	adoptRecoveredRecording,
 	getSelectedSourceId,
@@ -182,37 +184,42 @@ function getUpdateStatusDetail() {
 
 	switch (state.status) {
 		case "checking":
-			return "Checking for updates…";
+			return tMain("about.status.checking");
 		case "available":
-			return `Version ${latestVersion} is available. Use Check for Updates to open the update window.`;
+			return tMain("about.status.available", { version: latestVersion });
 		case "downloading":
-			return `Downloading version ${latestVersion}${typeof state.progress === "number" ? ` (${Math.round(state.progress)}%)` : ""}.`;
+			return typeof state.progress === "number"
+				? tMain("about.status.downloadingProgress", {
+						version: latestVersion,
+						percent: Math.round(state.progress),
+					})
+				: tMain("about.status.downloading", { version: latestVersion });
 		case "downloaded":
 			return state.installMode === "external-installer"
-				? `Version ${latestVersion} has been downloaded. Open the update window to continue.`
-				: `Version ${latestVersion} has been downloaded and is ready to install from the update window.`;
+				? tMain("about.status.downloadedInstaller", { version: latestVersion })
+				: tMain("about.status.downloadedReady", { version: latestVersion });
 		case "no-update":
-			return `You’re up to date on version ${state.currentVersion}.`;
+			return tMain("about.status.upToDate", { version: state.currentVersion });
 		case "manual-download-required":
-			return `Version ${latestVersion} is available to download manually from GitHub Releases.`;
+			return tMain("about.status.manual", { version: latestVersion });
 		case "error":
-			return state.error ?? "Unable to check for updates right now.";
+			return state.error ?? tMain("about.status.error");
 		default:
-			return "Automatic updates are available in packaged builds.";
+			return tMain("about.status.unsupported");
 	}
 }
 
 async function showAboutScreenMintDialog() {
 	const updater = getScreenMintUpdater();
-	const buttons = ["Close", "Check for Updates…"];
+	const buttons = [tMain("about.close"), tMain("menu.checkForUpdates")];
 
 	const targetWindow = BrowserWindow.getFocusedWindow() ?? mainWindow;
 	const dialogOptions: Electron.MessageBoxOptions = {
 		type: "info",
 		buttons,
-		defaultId: buttons.length - 1,
-		cancelId: buttons.indexOf("Close"),
-		title: "About ScreenMint",
+		defaultId: 1,
+		cancelId: 0,
+		title: tMain("menu.about"),
 		message: `ScreenMint ${app.getVersion()}`,
 		detail: getUpdateStatusDetail(),
 		noLink: true,
@@ -221,8 +228,7 @@ async function showAboutScreenMintDialog() {
 		? await dialog.showMessageBox(targetWindow, dialogOptions)
 		: await dialog.showMessageBox(dialogOptions);
 
-	const selectedButton = buttons[response.response];
-	if (selectedButton === "Check for Updates…") {
+	if (response.response === 1) {
 		void updater.checkForUpdates("manual");
 	}
 }
@@ -250,20 +256,20 @@ function setupApplicationMenu() {
 
 	template.push(
 		{
-			label: "File",
+			label: tMain("menu.file"),
 			submenu: [
 				{
-					label: "Load Project…",
+					label: tMain("menu.loadProject"),
 					accelerator: "CmdOrCtrl+O",
 					click: () => sendEditorMenuAction("menu-load-project"),
 				},
 				{
-					label: "Save Project…",
+					label: tMain("menu.saveProject"),
 					accelerator: "CmdOrCtrl+S",
 					click: () => sendEditorMenuAction("menu-save-project"),
 				},
 				{
-					label: "Save Project As…",
+					label: tMain("menu.saveProjectAs"),
 					accelerator: "CmdOrCtrl+Shift+S",
 					click: () => sendEditorMenuAction("menu-save-project-as"),
 				},
@@ -271,7 +277,7 @@ function setupApplicationMenu() {
 			],
 		},
 		{
-			label: "Edit",
+			label: tMain("menu.edit"),
 			submenu: [
 				{ role: "undo" },
 				{ role: "redo" },
@@ -283,7 +289,7 @@ function setupApplicationMenu() {
 			],
 		},
 		{
-			label: "View",
+			label: tMain("menu.view"),
 			submenu: [
 				{ role: "reload" },
 				{ role: "forceReload" },
@@ -297,29 +303,29 @@ function setupApplicationMenu() {
 			],
 		},
 		{
-			label: "Window",
+			label: tMain("menu.window"),
 			submenu: isMac
 				? [{ role: "minimize" }, { role: "zoom" }, { type: "separator" }, { role: "front" }]
 				: [{ role: "minimize" }, { role: "close" }],
 		},
 		{
-			label: "Help",
+			label: tMain("menu.help"),
 			submenu: [
 				{
-					label: "About ScreenMint",
+					label: tMain("menu.about"),
 					click: () => {
 						void showAboutScreenMintDialog();
 					},
 				},
 				{
-					label: "Check for Updates…",
+					label: tMain("menu.checkForUpdates"),
 					click: () => {
 						void getScreenMintUpdater().checkForUpdates("manual");
 					},
 				},
 				{ type: "separator" },
 				{
-					label: "Report an Issue…",
+					label: tMain("menu.reportIssue"),
 					click: () => {
 						void shell.openExternal("https://github.com/Jahirsheikh12/screen-mint/issues/new");
 					},
@@ -364,14 +370,19 @@ function syncDockIcon() {
 	}
 }
 
-function updateTrayMenu(recording: boolean = false) {
+let trayShowsRecording = false;
+
+function updateTrayMenu(recording: boolean = trayShowsRecording) {
+	trayShowsRecording = recording;
 	if (!tray) return;
 	const trayIcon = recording ? recordingTrayIcon : defaultTrayIcon;
-	const trayToolTip = recording ? `Recording: ${selectedSourceName}` : "ScreenMint";
+	const trayToolTip = recording
+		? tMain("tray.recording", { source: selectedSourceName })
+		: "ScreenMint";
 	const menuTemplate = recording
 		? [
 				{
-					label: "Stop Recording",
+					label: tMain("tray.stopRecording"),
 					click: () => {
 						if (mainWindow && !mainWindow.isDestroyed()) {
 							mainWindow.webContents.send("stop-recording-from-tray");
@@ -381,7 +392,7 @@ function updateTrayMenu(recording: boolean = false) {
 			]
 		: [
 				{
-					label: "Open",
+					label: tMain("tray.open"),
 					click: () => {
 						if (mainWindow && !mainWindow.isDestroyed()) {
 							if (mainWindow.isMinimized()) mainWindow.restore();
@@ -394,7 +405,7 @@ function updateTrayMenu(recording: boolean = false) {
 					},
 				},
 				{
-					label: "Quit",
+					label: tMain("tray.quit"),
 					click: () => {
 						app.quit();
 					},
@@ -411,11 +422,15 @@ async function offerInterruptedRecordingRecovery() {
 	if (files.length === 0) return;
 	const { response } = await dialog.showMessageBox({
 		type: "warning",
-		buttons: ["Open in Editor", "Show in Folder", "Not Now"],
+		buttons: [
+			tMain("recovery.openInEditor"),
+			tMain("recovery.showInFolder"),
+			tMain("recovery.notNow"),
+		],
 		defaultId: 0,
 		cancelId: 2,
-		message: "ScreenMint closed while recording",
-		detail: `Your last recording stopped unexpectedly. The part that was saved is here:\n${files[0]}`,
+		message: tMain("recovery.message"),
+		detail: tMain("recovery.detail", { path: files[0] }),
 	});
 	if (response === 0) {
 		adoptRecoveredRecording(files[0]);
@@ -465,12 +480,16 @@ function createEditorWindowWrapper() {
 
 		const choice = dialog.showMessageBoxSync(editorWindow, {
 			type: "warning",
-			buttons: ["Save & Close", "Discard & Close", "Cancel"],
+			buttons: [
+				tMain("unsavedChanges.saveAndClose"),
+				tMain("unsavedChanges.discardAndClose"),
+				tMain("unsavedChanges.cancel"),
+			],
 			defaultId: 0,
 			cancelId: 2,
-			title: "Unsaved Changes",
-			message: "You have unsaved changes.",
-			detail: "Do you want to save your project before closing?",
+			title: tMain("unsavedChanges.title"),
+			message: tMain("unsavedChanges.message"),
+			detail: tMain("unsavedChanges.detail"),
 		});
 
 		if (choice === 0) {
@@ -510,14 +529,13 @@ async function promptToMoveAppToApplications() {
 
 	const response = await dialog.showMessageBox({
 		type: "warning",
-		buttons: ["Move to Applications", "Keep Current Location"],
+		buttons: [tMain("moveToApplications.move"), tMain("moveToApplications.keep")],
 		defaultId: 0,
 		cancelId: 1,
 		noLink: true,
-		title: "Move ScreenMint to Applications",
-		message: "Move ScreenMint to /Applications for more stable macOS capture permissions.",
-		detail:
-			"Unsigned macOS builds keep Screen Recording permissions more reliably when ScreenMint stays installed at /Applications/ScreenMint.app. Running from Downloads, Desktop, or a mounted DMG can cause repeated prompts and blank source lists.",
+		title: tMain("moveToApplications.title"),
+		message: tMain("moveToApplications.message"),
+		detail: tMain("moveToApplications.detail"),
 	});
 
 	if (response.response !== 0) {
@@ -529,13 +547,12 @@ async function promptToMoveAppToApplications() {
 		if (!moved) {
 			await dialog.showMessageBox({
 				type: "info",
-				buttons: ["OK"],
+				buttons: [tMain("moveToApplications.ok")],
 				defaultId: 0,
 				noLink: true,
-				title: "Move ScreenMint Manually",
-				message: "Move ScreenMint to /Applications before using screen capture.",
-				detail:
-					"macOS did not move the app automatically. Drag ScreenMint.app into /Applications, then relaunch it from there.",
+				title: tMain("moveToApplications.manualTitle"),
+				message: tMain("moveToApplications.manualMessage"),
+				detail: tMain("moveToApplications.manualDetail"),
 			});
 		}
 	} catch (error) {
@@ -586,6 +603,14 @@ app.whenReady().then(async () => {
 	// A second launch only hands focus to the running app (see "second-instance"); quit() is
 	// asynchronous, so stop here before it builds a tray, windows or dialogs of its own.
 	if (!hasSingleInstanceLock) return;
+	loadStoredLocale(app.getPath("userData"));
+	// The renderer owns the language choice; menus, tray and dialogs follow it.
+	ipcMain.on(IPC_CHANNELS.system.setLocale, (_event, locale: unknown) => {
+		if (!setMainLocale(locale)) return;
+		saveLocale(app.getPath("userData"));
+		setupApplicationMenu();
+		updateTrayMenu();
+	});
 	const updater = getScreenMintUpdater();
 
 	session.defaultSession.setPermissionCheckHandler((_webContents, permission) => {

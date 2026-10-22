@@ -48,7 +48,7 @@ import {
 import { Tooltip } from "@/components/ui/tooltip";
 import { useI18n } from "@/contexts/I18nContext";
 import { useShortcuts } from "@/contexts/ShortcutsContext";
-import { formatBinding, matchesShortcut } from "@/lib/shortcuts";
+import { formatBinding, keyLabelTranslationKey, matchesShortcut } from "@/lib/shortcuts";
 import { cn } from "@/lib/utils";
 import { useWaveformData } from "@/lib/waveform/extractWaveform";
 import {
@@ -1024,7 +1024,9 @@ export default function TimelineEditor({
 		}
 
 		toast.success(
-			`Added ${addedCount} interaction-based zoom suggestion${addedCount === 1 ? "" : "s"}`,
+			t("timeline.zoom.addedSuggestions", "Added {{count}} interaction-based zoom suggestion(s)", {
+				count: addedCount,
+			}),
 		);
 	}, [videoDuration, totalMs, zoomRegions, onZoomSuggested, cursorTelemetry, t]);
 
@@ -1360,7 +1362,9 @@ export default function TimelineEditor({
 			id: seg.id,
 			rowId: CLIP_ROW_ID,
 			span: { start: sourceToDisplay(seg.startMs), end: sourceToDisplay(seg.endMs) },
-			label: hasSplits ? `Part ${index + 1}` : t("timeline.editor.clip", "Clip"),
+			label: hasSplits
+				? t("timeline.editor.part", "Part {{index}}", { index: index + 1 })
+				: t("timeline.editor.clip", "Clip"),
 			variant: "clip",
 			clipDuration: hasSplits ? undefined : clipDurationLabel,
 			clipSpeed: hasSplits ? undefined : `${playbackSpeed}x`,
@@ -1376,7 +1380,7 @@ export default function TimelineEditor({
 					start: sourceToDisplay(region.startMs),
 					end: sourceToDisplay(region.endMs),
 				},
-				label: `Zoom ${index + 1}`,
+				label: t("timeline.zoom.label", "Zoom {{index}}", { index: index + 1 }),
 				zoomDepth: region.depth,
 				variant: "zoom" as const,
 			}))
@@ -1436,7 +1440,7 @@ export default function TimelineEditor({
 					start: sourceToDisplay(region.startMs),
 					end: sourceToDisplay(region.endMs),
 				},
-				label: `Speed ${index + 1}`,
+				label: t("timeline.speed.indexedLabel", "Speed {{index}}", { index: index + 1 }),
 				speedValue: region.speed,
 				variant: "speed" as const,
 			}))
@@ -1741,7 +1745,7 @@ export default function TimelineEditor({
 										<Plus className="w-3 h-3 text-fg-subtle" />
 									)}
 									<opt.icon className="w-3.5 h-3.5" />
-									{opt.label}
+									{t(opt.labelKey, opt.label)}
 								</DropdownMenuItem>
 							))}
 						</DropdownMenuContent>
@@ -1779,7 +1783,12 @@ export default function TimelineEditor({
 								)}
 							</Button>
 						</Tooltip>
-						<Tooltip content={`Volume: ${Math.round(clipVolume * 100)}%`} side="bottom">
+						<Tooltip
+							content={t("timeline.editor.volumeTooltip", "Volume: {{percent}}%", {
+								percent: Math.round(clipVolume * 100),
+							})}
+							side="bottom"
+						>
 							<input
 								type="range"
 								min="0"
@@ -1840,7 +1849,9 @@ export default function TimelineEditor({
 							content={
 								isPlaying ? t("timeline.editor.pause", "Pause") : t("timeline.editor.play", "Play")
 							}
-							shortcut={formatBinding(keyShortcuts.playPause, isMac)}
+							shortcut={formatBinding(keyShortcuts.playPause, isMac, (key, fallback) =>
+								t(`shortcuts.${keyLabelTranslationKey(key)}`, fallback),
+							)}
 							side="bottom"
 						>
 							<Button
@@ -1897,7 +1908,9 @@ export default function TimelineEditor({
 								? t("timeline.editor.disableTrimMode", "Disable Trim Mode")
 								: t("timeline.editor.trimMode", "Trim Mode")
 						}
-						shortcut={formatBinding(keyShortcuts.addTrim, isMac)}
+						shortcut={formatBinding(keyShortcuts.addTrim, isMac, (key, fallback) =>
+							t(`shortcuts.${keyLabelTranslationKey(key)}`, fallback),
+						)}
 						side="bottom"
 					>
 						<Button

@@ -58,7 +58,14 @@
 		"cornerBottomRight": "Abajo a la derecha",
 		"previewShape": "Forma de la vista previa",
 		"shapeRoundedRect": "Rectángulo redondeado",
-		"shapeCircle": "Círculo"
+		"shapeCircle": "Círculo",
+		"cameraDisconnected": "Cámara desconectada. La grabación de pantalla continuará sin cámara web.",
+		"mobilePairingStartFailed": "No se pudo iniciar el emparejamiento de la cámara del móvil.",
+		"cameraUnavailable": "No se puede acceder a la cámara seleccionada. La grabación continuará sin cámara web.",
+		"windowUnavailable": "La ventana que estabas grabando ya no está disponible. Elige otra fuente.",
+		"wgcUnavailable": "La captura nativa de Windows (WGC) no está disponible. Se usará la captura del navegador.",
+		"wgcCheckFailed": "No se pudo comprobar la captura nativa de Windows (WGC). Se usará la captura del navegador.",
+		"wgcStartFailed": "No se pudo iniciar la captura nativa de Windows. Se usará la captura del navegador."
 	},
 	"tabs": {
 		"display": "Pantalla",
@@ -179,7 +186,8 @@
 		"microphoneDenied": "Se denegó el acceso al micrófono. La grabación continuará sin audio del micrófono.",
 		"failedToStart": "Error al iniciar la grabación: {{error}}",
 		"failedToStartGeneric": "Error al iniciar la grabación",
-		"diagnostics": "Diagnóstico"
+		"diagnostics": "Diagnóstico",
+		"selectArea": "Selecciona un área para grabar"
 	},
 	"speakerNotes": {
 		"title": "Notas del orador",

@@ -96,7 +96,8 @@
 		"uploadErrorDescription": "支援格式：JPG、JPEG、PNG、WEBP。",
 		"video": "影片",
 		"uploadVideo": "選擇影片",
-		"videoHint": "在錄影畫面後方靜音循環播放。支援 MP4、MOV 或 WebM。"
+		"videoHint": "在錄影畫面後方靜音循環播放。支援 MP4、MOV 或 WebM。",
+		"gradientPreset": "漸層預設 {{index}}"
 	},
 	"cursor": {
 		"title": "游標",
@@ -474,6 +475,43 @@
 			"bottom": "下",
 			"left": "左",
 			"right": "右"
+		},
+		"presets": {
+			"classic-circle": "經典圓形",
+			"presenter-soft": "柔和主講",
+			"floating-card": "浮動卡片",
+			"spotlight": "聚光燈",
+			"fullscreen-commentary": "全螢幕解說"
+		},
+		"status": {
+			"segmentation-unavailable": {
+				"title": "無法使用背景處理",
+				"description": "目前無法進行人像分割，因此預覽顯示的是原始網路攝影機畫面。"
+			},
+			"raw-webcam-only": {
+				"title": "預覽使用原始網路攝影機畫面",
+				"description": "預覽效能不足以進行進階處理，編輯器暫時顯示原始攝影機畫面。"
+			},
+			"replacement-disabled": {
+				"title": "影像替換已降級",
+				"description": "預覽中已暫停自訂背景替換。模糊與純色處理仍可維持啟用。"
+			},
+			"reduced-background-sampling": {
+				"title": "背景處理已簡化",
+				"description": "預覽仍在套用網路攝影機處理，但降低了背景取樣以維持播放流暢。"
+			},
+			"reduced-segmentation-rate": {
+				"title": "處理已啟用",
+				"description": "人像分割的更新頻率已降低，因此預覽反應可能稍慢。"
+			},
+			"raw": {
+				"title": "原始網路攝影機畫面",
+				"description": "網路攝影機畫面未進行人像分離。"
+			},
+			"active": {
+				"title": "背景處理已啟用",
+				"description": "預覽和匯出皆使用目前的網路攝影機處理。"
+			}
 		}
 	},
 	"audioTab": {
@@ -549,7 +587,14 @@
 		"chipHook": "吸睛",
 		"chipSharp": "清晰",
 		"chipTeam": "團隊",
-		"chipCustom": "自訂"
+		"chipCustom": "自訂",
+		"presets": {
+			"saas-launch": "發表影片",
+			"product-demo": "導覽示範",
+			"tutorial": "課程模式",
+			"social-vertical": "直式開場",
+			"bug-report-clean": "清楚交接"
+		}
 	},
 	"backgroundTab": {
 		"setTheBackdropBehind": "設定錄影畫布後方的背景",

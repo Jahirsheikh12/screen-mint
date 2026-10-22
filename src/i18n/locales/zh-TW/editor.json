@@ -74,11 +74,7 @@
 	"keyboardShortcuts": {
 		"title": "鍵盤快速鍵",
 		"customizeTooltip": "自訂快速鍵",
-		"customize": "自訂",
-		"panTimeline": "平移時間軸",
-		"zoomTimeline": "縮放時間軸",
-		"cycleAnnotations": "切換註解",
-		"tab": "Tab"
+		"customize": "自訂"
 	},
 	"openRecordingsFolder": "開啟錄影資料夾",
 	"captions": {
@@ -233,7 +229,9 @@
 		"black": "特粗",
 		"captionText": "字幕文字...",
 		"split": "分割",
-		"mergeNext": "與下一段合併"
+		"mergeNext": "與下一段合併",
+		"systemFont": "系統",
+		"uppercase": "全部大寫"
 	},
 	"preview": {
 		"initFailed": "無法啟動預覽算繪器"
@@ -287,7 +285,22 @@
 		"noSavedPresets": "沒有已儲存的預設",
 		"toggleLayout": "切換版面",
 		"projects": "專案",
-		"openProjectBrowser": "開啟專案瀏覽器"
+		"openProjectBrowser": "開啟專案瀏覽器",
+		"failedToLoadProject": "無法載入專案",
+		"invalidProjectFile": "專案檔案格式無效",
+		"projectLoadedFrom": "已從 {{path}} 載入專案",
+		"failedToOpenProject": "無法開啟專案",
+		"projectSavedTo": "專案已儲存至 {{path}}",
+		"presetApplied": "已套用預設「{{name}}」。",
+		"presetSaved": "已儲存預設「{{name}}」。",
+		"presetDeleted": "已刪除預設「{{name}}」。",
+		"projectDeleteFailed": "無法刪除專案。",
+		"filesDeleted": "已刪除檔案：{{count}} 個。",
+		"externalFilesKept": "保留的外部檔案：{{count}} 個。",
+		"recordingRemovedFromEditor": "已從編輯器中移除此錄製內容。",
+		"projectRemoved": "專案已移除。",
+		"webcamSourceMissing": "找不到網路攝影機來源。請重新連結，或將其從專案中移除。",
+		"zoomRegionsCreated": "已建立縮放區域：{{count}} 個"
 	},
 	"header": {
 		"presets": "預設"
@@ -324,7 +337,10 @@
 	},
 	"polishPanel": {
 		"autoPolish": "自動潤飾",
-		"oneClickStudioTemplates": "一鍵工作室範本"
+		"oneClickStudioTemplates": "一鍵工作室範本",
+		"landingPage": "到達頁面",
+		"pitchDeck": "募資簡報",
+		"apply": "套用"
 	},
 	"theme": {
 		"appearance": "外觀",

@@ -25,7 +25,8 @@
 	"speed": {
 		"cannotPlace": "無法在此放置速度",
 		"existsOrNoSpace": "此處已有速度區段，或空間不足。",
-		"label": "速度"
+		"label": "速度",
+		"indexedLabel": "速度 {{index}}"
 	},
 	"annotation": {
 		"label": "註解",
@@ -105,7 +106,10 @@
 		"custom": "自訂",
 		"customAspectWidth": "自訂寬度",
 		"customAspectHeight": "自訂高度",
-		"set": "套用"
+		"set": "套用",
+		"part": "第 {{index}} 部分",
+		"volumeTooltip": "音量：{{percent}}%",
+		"keyframeTitle": "關鍵影格 @ {{ms}} 毫秒（拖移可移動，按 Delete/Backspace 可移除）"
 	},
 	"toolbar": {
 		"visibleOne": "1 條可見時間軸",

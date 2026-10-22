@@ -58,7 +58,14 @@
 		"cornerBottomRight": "Inferior direito",
 		"previewShape": "Formato da prévia",
 		"shapeRoundedRect": "Retângulo arredondado",
-		"shapeCircle": "Círculo"
+		"shapeCircle": "Círculo",
+		"cameraDisconnected": "Câmera desconectada. A gravação de tela continuará sem webcam.",
+		"mobilePairingStartFailed": "Não foi possível iniciar o pareamento da câmera do celular.",
+		"cameraUnavailable": "Não foi possível acessar a câmera selecionada. A gravação continuará sem webcam.",
+		"windowUnavailable": "A janela que você estava gravando não está mais disponível. Escolha outra fonte.",
+		"wgcUnavailable": "A captura nativa do Windows (WGC) não está disponível. Usando a captura do navegador.",
+		"wgcCheckFailed": "Não foi possível verificar a captura nativa do Windows (WGC). Usando a captura do navegador.",
+		"wgcStartFailed": "Não foi possível iniciar a captura nativa do Windows. Usando a captura do navegador."
 	},
 	"tabs": {
 		"display": "Tela",
@@ -179,7 +186,8 @@
 		"microphoneDenied": "O acesso ao microfone foi negado. A gravação continuará sem o áudio do microfone.",
 		"failedToStart": "Falha ao iniciar a gravação: {{error}}",
 		"failedToStartGeneric": "Falha ao iniciar a gravação",
-		"diagnostics": "Diagnóstico"
+		"diagnostics": "Diagnóstico",
+		"selectArea": "Selecione uma área para gravar"
 	},
 	"speakerNotes": {
 		"title": "Notas do apresentador",

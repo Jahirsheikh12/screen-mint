@@ -58,7 +58,14 @@
 		"cornerBottomRight": "Unten rechts",
 		"previewShape": "Vorschauform",
 		"shapeRoundedRect": "Abgerundetes Rechteck",
-		"shapeCircle": "Kreis"
+		"shapeCircle": "Kreis",
+		"cameraDisconnected": "Kamera getrennt. Die Bildschirmaufnahme läuft ohne Webcam weiter.",
+		"mobilePairingStartFailed": "Die Kopplung mit der Handy-Kamera konnte nicht gestartet werden.",
+		"cameraUnavailable": "Auf die ausgewählte Kamera kann nicht zugegriffen werden. Die Aufnahme läuft ohne Webcam weiter.",
+		"windowUnavailable": "Das aufgenommene Fenster ist nicht mehr verfügbar. Wählen Sie eine andere Quelle.",
+		"wgcUnavailable": "Die native Windows-Aufnahme (WGC) ist nicht verfügbar. Es wird die Browser-Aufnahme verwendet.",
+		"wgcCheckFailed": "Die native Windows-Aufnahme (WGC) konnte nicht geprüft werden. Es wird die Browser-Aufnahme verwendet.",
+		"wgcStartFailed": "Die native Windows-Aufnahme konnte nicht starten. Es wird die Browser-Aufnahme verwendet."
 	},
 	"tabs": {
 		"display": "Bildschirm",
@@ -179,7 +186,8 @@
 		"microphoneDenied": "Der Mikrofonzugriff wurde verweigert. Die Aufnahme läuft ohne Mikrofonton weiter.",
 		"failedToStart": "Aufnahme konnte nicht gestartet werden: {{error}}",
 		"failedToStartGeneric": "Aufnahme konnte nicht gestartet werden",
-		"diagnostics": "Diagnose"
+		"diagnostics": "Diagnose",
+		"selectArea": "Bitte wählen Sie einen Bereich für die Aufnahme"
 	},
 	"speakerNotes": {
 		"title": "Sprechernotizen",

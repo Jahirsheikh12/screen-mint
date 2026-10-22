@@ -96,7 +96,8 @@
 		"uploadErrorDescription": "지원 형식: JPG, JPEG, PNG, WEBP.",
 		"video": "동영상",
 		"uploadVideo": "동영상 선택",
-		"videoHint": "녹화 화면 뒤에서 소리 없이 반복 재생됩니다. MP4, MOV, WebM을 지원합니다."
+		"videoHint": "녹화 화면 뒤에서 소리 없이 반복 재생됩니다. MP4, MOV, WebM을 지원합니다.",
+		"gradientPreset": "그라데이션 프리셋 {{index}}"
 	},
 	"cursor": {
 		"title": "커서",
@@ -474,6 +475,43 @@
 			"bottom": "아래",
 			"left": "왼쪽",
 			"right": "오른쪽"
+		},
+		"presets": {
+			"classic-circle": "클래식 원형",
+			"presenter-soft": "부드러운 발표자",
+			"floating-card": "떠 있는 카드",
+			"spotlight": "스포트라이트",
+			"fullscreen-commentary": "전체 화면 해설"
+		},
+		"status": {
+			"segmentation-unavailable": {
+				"title": "배경 처리를 사용할 수 없음",
+				"description": "지금은 피사체 분리를 사용할 수 없어 미리보기에 원본 웹캠 화면이 표시됩니다."
+			},
+			"raw-webcam-only": {
+				"title": "미리보기에 원본 웹캠 사용 중",
+				"description": "미리보기 성능이 고급 처리를 하기에 부족해 편집기가 잠시 원본 카메라 화면을 표시합니다."
+			},
+			"replacement-disabled": {
+				"title": "이미지 교체 기능 축소",
+				"description": "미리보기에서 사용자 지정 배경 교체가 일시 중지되었습니다. 흐림과 단색 처리는 계속 사용할 수 있습니다."
+			},
+			"reduced-background-sampling": {
+				"title": "배경 처리 단순화",
+				"description": "미리보기에서 웹캠 처리는 계속되지만 재생을 부드럽게 하려고 배경 샘플링을 줄였습니다."
+			},
+			"reduced-segmentation-rate": {
+				"title": "처리 사용 중",
+				"description": "피사체 분리가 낮은 빈도로 갱신되어 미리보기 반응이 조금 느릴 수 있습니다."
+			},
+			"raw": {
+				"title": "원본 웹캠",
+				"description": "웹캠을 피사체 분리 없이 표시합니다."
+			},
+			"active": {
+				"title": "배경 처리 사용 중",
+				"description": "미리보기와 내보내기에서 현재 웹캠 처리를 사용합니다."
+			}
 		}
 	},
 	"audioTab": {
@@ -549,7 +587,14 @@
 		"chipHook": "훅",
 		"chipSharp": "선명",
 		"chipTeam": "팀",
-		"chipCustom": "사용자 지정"
+		"chipCustom": "사용자 지정",
+		"presets": {
+			"saas-launch": "출시 영상",
+			"product-demo": "가이드 데모",
+			"tutorial": "강의 모드",
+			"social-vertical": "세로형 훅",
+			"bug-report-clean": "깔끔한 전달"
+		}
 	},
 	"backgroundTab": {
 		"setTheBackdropBehind": "녹화 캔버스 뒤에 깔릴 배경을 설정합니다",

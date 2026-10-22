@@ -1,0 +1,79 @@
+{
+	"menu": {
+		"file": "File",
+		"loadProject": "Load Project…",
+		"saveProject": "Save Project…",
+		"saveProjectAs": "Save Project As…",
+		"edit": "Edit",
+		"view": "View",
+		"window": "Window",
+		"help": "Help",
+		"about": "About ScreenMint",
+		"checkForUpdates": "Check for Updates…",
+		"reportIssue": "Report an Issue…"
+	},
+	"tray": {
+		"open": "Open",
+		"quit": "Quit",
+		"stopRecording": "Stop Recording",
+		"recording": "Recording: {{source}}"
+	},
+	"about": {
+		"close": "Close",
+		"status": {
+			"checking": "Checking for updates…",
+			"available": "Version {{version}} is available. Use Check for Updates to open the update window.",
+			"downloading": "Downloading version {{version}}.",
+			"downloadingProgress": "Downloading version {{version}} ({{percent}}%).",
+			"downloadedInstaller": "Version {{version}} has been downloaded. Open the update window to continue.",
+			"downloadedReady": "Version {{version}} has been downloaded and is ready to install from the update window.",
+			"upToDate": "You’re up to date on version {{version}}.",
+			"manual": "Version {{version}} is available to download manually from GitHub Releases.",
+			"error": "Unable to check for updates right now.",
+			"unsupported": "Automatic updates are available in packaged builds."
+		}
+	},
+	"unsavedChanges": {
+		"title": "Unsaved Changes",
+		"message": "You have unsaved changes.",
+		"detail": "Do you want to save your project before closing?",
+		"saveAndClose": "Save & Close",
+		"discardAndClose": "Discard & Close",
+		"cancel": "Cancel"
+	},
+	"recovery": {
+		"message": "ScreenMint closed while recording",
+		"detail": "Your last recording stopped unexpectedly. The part that was saved is here:\n{{path}}",
+		"openInEditor": "Open in Editor",
+		"showInFolder": "Show in Folder",
+		"notNow": "Not Now"
+	},
+	"moveToApplications": {
+		"title": "Move ScreenMint to Applications",
+		"message": "Move ScreenMint to /Applications for more stable macOS capture permissions.",
+		"detail": "Unsigned macOS builds keep Screen Recording permissions more reliably when ScreenMint stays installed at /Applications/ScreenMint.app. Running from Downloads, Desktop, or a mounted DMG can cause repeated prompts and blank source lists.",
+		"move": "Move to Applications",
+		"keep": "Keep Current Location",
+		"manualTitle": "Move ScreenMint Manually",
+		"manualMessage": "Move ScreenMint to /Applications before using screen capture.",
+		"manualDetail": "macOS did not move the app automatically. Drag ScreenMint.app into /Applications, then relaunch it from there.",
+		"ok": "OK"
+	},
+	"captions": {
+		"extractingMicrophone": "Extracting microphone audio…",
+		"extractingMixed": "Extracting mixed audio…",
+		"runningWhisper": "Running local Whisper transcription…",
+		"retryingSmallerModel": "Retrying with the smaller {{model}} model…",
+		"buildingSegments": "Building transcript segments…",
+		"ready": "Transcript ready",
+		"downloadingModel": "Downloading Whisper {{model}} model…",
+		"downloadingModelProgress": "Downloading Whisper {{model}} model… {{percent}}%",
+		"downloadingVad": "Downloading speech detection helper…",
+		"preparingRuntime": "Preparing local Whisper runtime…",
+		"buildingCli": "Building Whisper CLI…",
+		"preparingAppleMicrophone": "Preparing microphone audio for Apple Speech…",
+		"preparingAppleMixed": "Preparing mixed audio for Apple Speech…",
+		"runningApple": "Running Apple Speech transcription…",
+		"appleFallback": "Apple Speech was unavailable. Falling back to Whisper…"
+	}
+}

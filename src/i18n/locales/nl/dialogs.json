@@ -82,7 +82,8 @@
 		"projects": "Projecten",
 		"recentProjectsAndProjects": "Recente projecten en projecten in je opnamemap.",
 		"loadingProjects": "Projecten laden…",
-		"noSavedProjectsYet": "Nog geen opgeslagen projecten"
+		"noSavedProjectsYet": "Nog geen opgeslagen projecten",
+		"showProjectInFolder": "{{name}} tonen in map"
 	},
 	"editor": {
 		"savePreset": "Preset opslaan",
@@ -92,7 +93,13 @@
 		"cancel": "Annuleren",
 		"savePreset2": "Preset opslaan",
 		"confirmAction": "Actie bevestigen",
-		"continue": "Doorgaan"
+		"continue": "Doorgaan",
+		"deletePresetTitle": "Preset verwijderen?",
+		"deletePresetDescription": "Preset ‘{{name}}’ verwijderen?",
+		"deletePresetConfirm": "Preset verwijderen",
+		"deleteProjectTitle": "Project verwijderen?",
+		"deleteProjectDescription": "Dit ScreenMint-project en de beheerde opnamebestanden verwijderen?\n\nGeïmporteerde bestanden buiten de opnamemap van ScreenMint blijven behouden.",
+		"deleteProjectConfirm": "Project verwijderen"
 	},
 	"quickShare": {
 		"quickShare": "Snel delen",

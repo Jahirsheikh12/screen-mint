@@ -11,6 +11,15 @@
 		"cycleBackward": "Vorige annotatie",
 		"deleteSelectedAlt": "Selectie verwijderen (alt)",
 		"panTimeline": "Tijdlijn verschuiven",
-		"zoomTimeline": "Tijdlijn zoomen"
+		"zoomTimeline": "Tijdlijn zoomen",
+		"undo": "Ongedaan maken",
+		"redo": "Opnieuw",
+		"export": "Exporteren",
+		"exitTrimMode": "Inkortmodus verlaten"
+	},
+	"keys": {
+		"space": "Spatie",
+		"tab": "Tab",
+		"scroll": "Scrollen"
 	}
 }

@@ -25,7 +25,8 @@
 	"speed": {
 		"cannotPlace": "Cannot place speed here",
 		"existsOrNoSpace": "Speed region already exists at this location or not enough space available.",
-		"label": "Speed"
+		"label": "Speed",
+		"indexedLabel": "Speed {{index}}"
 	},
 	"annotation": {
 		"label": "Annotation",
@@ -105,7 +106,10 @@
 		"custom": "Custom",
 		"customAspectWidth": "Custom aspect width",
 		"customAspectHeight": "Custom aspect height",
-		"set": "Set"
+		"set": "Set",
+		"part": "Part {{index}}",
+		"volumeTooltip": "Volume: {{percent}}%",
+		"keyframeTitle": "Keyframe @ {{ms}}ms (drag to move, Delete/Backspace to remove)"
 	},
 	"toolbar": {
 		"visibleOne": "1 visible timeline",

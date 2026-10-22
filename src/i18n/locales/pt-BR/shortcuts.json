@@ -11,6 +11,15 @@
 		"cycleBackward": "Anotação anterior",
 		"deleteSelectedAlt": "Excluir seleção (alt)",
 		"panTimeline": "Rolar linha do tempo",
-		"zoomTimeline": "Zoom na linha do tempo"
+		"zoomTimeline": "Zoom na linha do tempo",
+		"undo": "Desfazer",
+		"redo": "Refazer",
+		"export": "Exportar",
+		"exitTrimMode": "Sair do modo de corte"
+	},
+	"keys": {
+		"space": "Espaço",
+		"tab": "Tab",
+		"scroll": "Rolar"
 	}
 }

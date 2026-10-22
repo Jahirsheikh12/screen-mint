@@ -28,6 +28,7 @@ import {
 	normalizeCaptionLanguage,
 	VAD_MODEL_FILE_NAME,
 } from "../../src/lib/captions/transcriptionConfig";
+import { tMain } from "../i18n";
 import { buildCaptionSegmentsFromWords } from "./captionSegmentation";
 import { findSystemWhisperCli, resolveCustomWhisperFiles } from "./customWhisper";
 
@@ -124,7 +125,11 @@ export async function generateCaptions(
 		onProgress({
 			stage: "audio",
 			percentage: 25,
-			message: `Extracting ${sourceAudio.kind === "microphone" ? "microphone" : "mixed"} audio...`,
+			message: tMain(
+				sourceAudio.kind === "microphone"
+					? "captions.extractingMicrophone"
+					: "captions.extractingMixed",
+			),
 		});
 		throwIfCancelled();
 
@@ -134,7 +139,7 @@ export async function generateCaptions(
 		onProgress({
 			stage: "transcribe",
 			percentage: 45,
-			message: "Running local Whisper transcription...",
+			message: tMain("captions.runningWhisper"),
 		});
 
 		let resolvedModel = request.model;
@@ -164,7 +169,7 @@ export async function generateCaptions(
 			onProgress({
 				stage: "model",
 				percentage: 32,
-				message: `Retrying with the smaller ${fallbackModel} model...`,
+				message: tMain("captions.retryingSmallerModel", { model: fallbackModel }),
 			});
 			resolvedModel = fallbackModel;
 			const fallbackModelPath = await ensureModelFile(captionsDir, resolvedModel, onProgress);
@@ -184,7 +189,7 @@ export async function generateCaptions(
 		onProgress({
 			stage: "align",
 			percentage: 85,
-			message: "Building transcript segments...",
+			message: tMain("captions.buildingSegments"),
 		});
 
 		const jsonPath = `${outputBasePath}.json`;
@@ -196,7 +201,7 @@ export async function generateCaptions(
 		onProgress({
 			stage: "complete",
 			percentage: 100,
-			message: "Transcript ready",
+			message: tMain("captions.ready"),
 		});
 
 		return {
@@ -287,7 +292,7 @@ async function ensureModelFile(
 	onProgress({
 		stage: "model",
 		percentage: 8,
-		message: `Downloading Whisper ${model} model...`,
+		message: tMain("captions.downloadingModel", { model }),
 	});
 
 	const response = await fetch(`${WHISPER_MODEL_BASE_URL}/${fileName}?download=true`);
@@ -299,7 +304,10 @@ async function ensureModelFile(
 		onProgress({
 			stage: "model",
 			percentage: 8 + Math.round(fraction * 8),
-			message: `Downloading Whisper ${model} model... ${Math.round(fraction * 100)}%`,
+			message: tMain("captions.downloadingModelProgress", {
+				model,
+				percent: Math.round(fraction * 100),
+			}),
 		}),
 	);
 	return targetPath;
@@ -365,7 +373,7 @@ async function ensureVadModelFile(captionsDir: string, onProgress: CaptionProgre
 	onProgress({
 		stage: "model",
 		percentage: 16,
-		message: "Downloading speech detection helper...",
+		message: tMain("captions.downloadingVad"),
 	});
 
 	const response = await fetch(`${WHISPER_VAD_MODEL_BASE_URL}/${VAD_MODEL_FILE_NAME}`);
@@ -388,7 +396,7 @@ async function ensureWhisperCli(captionsDir: string, onProgress: CaptionProgress
 	onProgress({
 		stage: "bootstrap",
 		percentage: 2,
-		message: "Preparing local Whisper runtime...",
+		message: tMain("captions.preparingRuntime"),
 	});
 
 	try {
@@ -405,7 +413,7 @@ async function ensureWhisperCli(captionsDir: string, onProgress: CaptionProgress
 		onProgress({
 			stage: "bootstrap",
 			percentage: 5,
-			message: "Building Whisper CLI...",
+			message: tMain("captions.buildingCli"),
 		});
 
 		await buildWhisperCli(sourceDir);

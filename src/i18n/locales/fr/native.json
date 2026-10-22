@@ -1,0 +1,79 @@
+{
+	"menu": {
+		"file": "Fichier",
+		"loadProject": "Ouvrir un projet…",
+		"saveProject": "Enregistrer le projet…",
+		"saveProjectAs": "Enregistrer le projet sous…",
+		"edit": "Édition",
+		"view": "Présentation",
+		"window": "Fenêtre",
+		"help": "Aide",
+		"about": "À propos de ScreenMint",
+		"checkForUpdates": "Rechercher des mises à jour…",
+		"reportIssue": "Signaler un problème…"
+	},
+	"tray": {
+		"open": "Ouvrir",
+		"quit": "Quitter",
+		"stopRecording": "Arrêter l’enregistrement",
+		"recording": "Enregistrement : {{source}}"
+	},
+	"about": {
+		"close": "Fermer",
+		"status": {
+			"checking": "Recherche de mises à jour…",
+			"available": "La version {{version}} est disponible. Utilisez Rechercher des mises à jour pour ouvrir la fenêtre de mise à jour.",
+			"downloading": "Téléchargement de la version {{version}}.",
+			"downloadingProgress": "Téléchargement de la version {{version}} ({{percent}} %).",
+			"downloadedInstaller": "La version {{version}} a été téléchargée. Ouvrez la fenêtre de mise à jour pour continuer.",
+			"downloadedReady": "La version {{version}} a été téléchargée et peut être installée depuis la fenêtre de mise à jour.",
+			"upToDate": "Vous utilisez la dernière version ({{version}}).",
+			"manual": "La version {{version}} peut être téléchargée manuellement depuis GitHub Releases.",
+			"error": "Impossible de rechercher des mises à jour pour le moment.",
+			"unsupported": "Les mises à jour automatiques ne sont disponibles que dans les versions installées."
+		}
+	},
+	"unsavedChanges": {
+		"title": "Modifications non enregistrées",
+		"message": "Vous avez des modifications non enregistrées.",
+		"detail": "Voulez-vous enregistrer votre projet avant de fermer ?",
+		"saveAndClose": "Enregistrer et fermer",
+		"discardAndClose": "Ignorer et fermer",
+		"cancel": "Annuler"
+	},
+	"recovery": {
+		"message": "ScreenMint s’est fermé pendant un enregistrement",
+		"detail": "Votre dernier enregistrement s’est arrêté de manière inattendue. La partie enregistrée se trouve ici :\n{{path}}",
+		"openInEditor": "Ouvrir dans l’éditeur",
+		"showInFolder": "Afficher dans le dossier",
+		"notNow": "Plus tard"
+	},
+	"moveToApplications": {
+		"title": "Déplacer ScreenMint dans Applications",
+		"message": "Déplacez ScreenMint dans /Applications pour des autorisations de capture macOS plus stables.",
+		"detail": "Les versions macOS non signées conservent mieux l’autorisation d’enregistrement de l’écran lorsque ScreenMint est installé dans /Applications/ScreenMint.app. Le lancer depuis Téléchargements, le Bureau ou un DMG monté peut provoquer des demandes répétées et des listes de sources vides.",
+		"move": "Déplacer dans Applications",
+		"keep": "Conserver l’emplacement actuel",
+		"manualTitle": "Déplacer ScreenMint manuellement",
+		"manualMessage": "Déplacez ScreenMint dans /Applications avant d’utiliser la capture d’écran.",
+		"manualDetail": "macOS n’a pas déplacé l’app automatiquement. Faites glisser ScreenMint.app dans /Applications, puis relancez-la depuis cet emplacement.",
+		"ok": "OK"
+	},
+	"captions": {
+		"extractingMicrophone": "Extraction de l’audio du micro…",
+		"extractingMixed": "Extraction de l’audio mixé…",
+		"runningWhisper": "Transcription Whisper locale en cours…",
+		"retryingSmallerModel": "Nouvel essai avec le modèle plus petit {{model}}…",
+		"buildingSegments": "Création des segments de transcription…",
+		"ready": "Transcription prête",
+		"downloadingModel": "Téléchargement du modèle Whisper {{model}}…",
+		"downloadingModelProgress": "Téléchargement du modèle Whisper {{model}}… {{percent}} %",
+		"downloadingVad": "Téléchargement de l’outil de détection de la voix…",
+		"preparingRuntime": "Préparation de l’environnement Whisper local…",
+		"buildingCli": "Compilation de la CLI Whisper…",
+		"preparingAppleMicrophone": "Préparation de l’audio du micro pour Apple Speech…",
+		"preparingAppleMixed": "Préparation de l’audio mixé pour Apple Speech…",
+		"runningApple": "Transcription Apple Speech en cours…",
+		"appleFallback": "Apple Speech n’était pas disponible. Passage à Whisper…"
+	}
+}

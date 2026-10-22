@@ -9,7 +9,8 @@
 		"cancel": "Annuleren",
 		"save": "Opslaan",
 		"delete": "Verwijderen",
-		"done": "Klaar"
+		"done": "Klaar",
+		"close": "Sluiten"
 	},
 	"updates": {
 		"available": "Versie {{version}} is beschikbaar.",

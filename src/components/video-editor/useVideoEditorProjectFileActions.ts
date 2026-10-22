@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from "react";
 import { toast } from "sonner";
+import { useI18n } from "@/contexts/I18nContext";
 import { editorPreferencesService } from "./editorPreferencesService";
 
 type UseVideoEditorProjectFileActionsOptions = {
@@ -17,6 +18,7 @@ export function useVideoEditorProjectFileActions({
 	saveProject,
 	applyLoadedProject,
 }: UseVideoEditorProjectFileActionsOptions) {
+	const { t } = useI18n();
 	useEffect(() => {
 		const handleBeforeUnload = (event: BeforeUnloadEvent) => {
 			editorPreferencesService.flush();
@@ -74,34 +76,42 @@ export function useVideoEditorProjectFileActions({
 		}
 
 		if (!result.success) {
-			toast.error(result.message || "Failed to load project");
+			toast.error(t("editor.shell.failedToLoadProject", "Failed to load project"), {
+				description: result.message,
+			});
 			return;
 		}
 
 		const restored = await applyLoadedProject(result.project, result.path ?? null);
 		if (!restored) {
-			toast.error("Invalid project file format");
+			toast.error(t("editor.shell.invalidProjectFile", "Invalid project file format"));
 			return;
 		}
 
-		toast.success(`Project loaded from ${result.path}`);
-	}, [applyLoadedProject]);
+		toast.success(
+			t("editor.shell.projectLoadedFrom", "Project loaded from {{path}}", {
+				path: result.path ?? "",
+			}),
+		);
+	}, [applyLoadedProject, t]);
 
 	const handleOpenProjectAtPath = useCallback(
 		async (filePath: string) => {
 			const result = await window.electronAPI.openProjectFileAtPath(filePath);
 			if (!result.success) {
-				toast.error(result.message || "Failed to open project");
+				toast.error(t("editor.shell.failedToOpenProject", "Failed to open project"), {
+					description: result.message,
+				});
 				return false;
 			}
 			const restored = await applyLoadedProject(result.project, result.path ?? null);
 			if (!restored) {
-				toast.error("Invalid project file format");
+				toast.error(t("editor.shell.invalidProjectFile", "Invalid project file format"));
 				return false;
 			}
 			return true;
 		},
-		[applyLoadedProject],
+		[applyLoadedProject, t],
 	);
 
 	useEffect(() => {

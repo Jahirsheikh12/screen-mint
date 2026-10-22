@@ -303,6 +303,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
 	useEffect(() => {
 		document.documentElement.lang = locale;
+		// Menus, tray and native dialogs are drawn by the main process; keep them in this language.
+		window.electronAPI?.setAppLocale?.(locale);
 	}, [locale]);
 
 	const t = useCallback(

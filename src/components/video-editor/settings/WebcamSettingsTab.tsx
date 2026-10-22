@@ -144,6 +144,12 @@ export function WebcamSettingsTab({
 			}),
 		[resolvedWebcamEffects, webcamHealthMetrics],
 	);
+	const webcamStatusKey =
+		webcamEffectCapability.fallbackState !== "none"
+			? webcamEffectCapability.fallbackState
+			: resolvedWebcamEffects.backgroundMode === "none"
+				? "raw"
+				: "active";
 	const exactPreviewNeedsWarning =
 		webcamPreviewMode === "exact" &&
 		((webcamHealthMetrics?.effectFallbackState ?? "none") !== "none" ||
@@ -612,7 +618,7 @@ export function WebcamSettingsTab({
 											: "border-line bg-sunken text-fg-muted hover:bg-fill-hover",
 									)}
 								>
-									{preset.label}
+									{tSettings(`webcamTab.presets.${preset.id}`, preset.label)}
 								</Button>
 							))}
 						</div>
@@ -641,7 +647,10 @@ export function WebcamSettingsTab({
 							)}
 						>
 							<div className={cn("text-caption font-semibold", webcamTreatmentStatusClasses.title)}>
-								{webcamEffectCapability.statusTitle}
+								{tSettings(
+									`webcamTab.status.${webcamStatusKey}.title`,
+									webcamEffectCapability.statusTitle,
+								)}
 							</div>
 							<div
 								className={cn(
@@ -649,7 +658,10 @@ export function WebcamSettingsTab({
 									webcamTreatmentStatusClasses.body,
 								)}
 							>
-								{webcamEffectCapability.statusDescription}
+								{tSettings(
+									`webcamTab.status.${webcamStatusKey}.description`,
+									webcamEffectCapability.statusDescription,
+								)}
 							</div>
 							{webcamEffectCapability.configuredBackgroundMode !==
 							webcamEffectCapability.appliedBackgroundMode ? (

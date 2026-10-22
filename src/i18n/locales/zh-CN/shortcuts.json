@@ -11,6 +11,15 @@
 		"cycleBackward": "向后循环切换注释",
 		"deleteSelectedAlt": "删除选中（替代）",
 		"panTimeline": "平移时间线",
-		"zoomTimeline": "缩放时间线"
+		"zoomTimeline": "缩放时间线",
+		"undo": "撤销",
+		"redo": "重做",
+		"export": "导出",
+		"exitTrimMode": "退出修剪模式"
+	},
+	"keys": {
+		"space": "空格",
+		"tab": "Tab",
+		"scroll": "滚动"
 	}
 }

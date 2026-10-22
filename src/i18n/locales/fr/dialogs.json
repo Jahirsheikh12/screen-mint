@@ -82,7 +82,8 @@
 		"projects": "Projets",
 		"recentProjectsAndProjects": "Projets récents et projets enregistrés dans votre dossier d’enregistrements.",
 		"loadingProjects": "Chargement des projets…",
-		"noSavedProjectsYet": "Aucun projet enregistré pour l’instant"
+		"noSavedProjectsYet": "Aucun projet enregistré pour l’instant",
+		"showProjectInFolder": "Afficher {{name}} dans le dossier"
 	},
 	"editor": {
 		"savePreset": "Enregistrer le style",
@@ -92,7 +93,13 @@
 		"cancel": "Annuler",
 		"savePreset2": "Enregistrer le style",
 		"confirmAction": "Confirmer l’action",
-		"continue": "Continuer"
+		"continue": "Continuer",
+		"deletePresetTitle": "Supprimer le style ?",
+		"deletePresetDescription": "Supprimer le style « {{name}} » ?",
+		"deletePresetConfirm": "Supprimer le style",
+		"deleteProjectTitle": "Supprimer le projet ?",
+		"deleteProjectDescription": "Supprimer ce projet ScreenMint et les fichiers d’enregistrement qu’il gère ?\n\nLes fichiers importés situés hors du dossier d’enregistrements de ScreenMint seront conservés.",
+		"deleteProjectConfirm": "Supprimer le projet"
 	},
 	"quickShare": {
 		"quickShare": "Partage rapide",

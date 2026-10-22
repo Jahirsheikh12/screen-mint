@@ -58,7 +58,14 @@
 		"cornerBottomRight": "In basso a destra",
 		"previewShape": "Forma anteprima",
 		"shapeRoundedRect": "Rettangolo arrotondato",
-		"shapeCircle": "Cerchio"
+		"shapeCircle": "Cerchio",
+		"cameraDisconnected": "Videocamera scollegata. La registrazione dello schermo continuerà senza webcam.",
+		"mobilePairingStartFailed": "Impossibile avviare l’associazione della fotocamera del telefono.",
+		"cameraUnavailable": "Impossibile accedere alla videocamera selezionata. La registrazione continuerà senza webcam.",
+		"windowUnavailable": "La finestra che stavi registrando non è più disponibile. Scegli un’altra sorgente.",
+		"wgcUnavailable": "L’acquisizione nativa di Windows (WGC) non è disponibile. Verrà usata l’acquisizione del browser.",
+		"wgcCheckFailed": "Impossibile verificare l’acquisizione nativa di Windows (WGC). Verrà usata l’acquisizione del browser.",
+		"wgcStartFailed": "Impossibile avviare l’acquisizione nativa di Windows. Verrà usata l’acquisizione del browser."
 	},
 	"tabs": {
 		"display": "Schermo",
@@ -179,7 +186,8 @@
 		"microphoneDenied": "L'accesso al microfono è stato negato. La registrazione continuerà senza audio del microfono.",
 		"failedToStart": "Impossibile avviare la registrazione: {{error}}",
 		"failedToStartGeneric": "Impossibile avviare la registrazione",
-		"diagnostics": "Diagnostica"
+		"diagnostics": "Diagnostica",
+		"selectArea": "Seleziona un’area da registrare"
 	},
 	"speakerNotes": {
 		"title": "Note del relatore",

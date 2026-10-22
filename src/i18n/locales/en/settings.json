@@ -96,7 +96,8 @@
 		"uploadErrorDescription": "Supported formats: JPG, JPEG, PNG, WEBP.",
 		"video": "Video",
 		"uploadVideo": "Choose video",
-		"videoHint": "Loops silently behind your recording. MP4, MOV or WebM."
+		"videoHint": "Loops silently behind your recording. MP4, MOV or WebM.",
+		"gradientPreset": "Gradient preset {{index}}"
 	},
 	"cursor": {
 		"title": "Cursor",
@@ -474,6 +475,43 @@
 			"bottom": "Bottom",
 			"left": "Left",
 			"right": "Right"
+		},
+		"presets": {
+			"classic-circle": "Classic Circle",
+			"presenter-soft": "Presenter Soft",
+			"floating-card": "Floating Card",
+			"spotlight": "Spotlight",
+			"fullscreen-commentary": "Fullscreen Commentary"
+		},
+		"status": {
+			"segmentation-unavailable": {
+				"title": "Background treatment unavailable",
+				"description": "Segmentation is unavailable right now, so preview is showing the raw webcam feed."
+			},
+			"raw-webcam-only": {
+				"title": "Preview is using raw webcam",
+				"description": "Preview performance is too low for premium treatment, so the editor is temporarily showing the raw camera feed."
+			},
+			"replacement-disabled": {
+				"title": "Image replacement downgraded",
+				"description": "Custom background replacement is paused in preview. Blur and solid treatments can still stay active."
+			},
+			"reduced-background-sampling": {
+				"title": "Background treatment simplified",
+				"description": "Preview is still applying webcam treatment, but background sampling is reduced to keep playback smooth."
+			},
+			"reduced-segmentation-rate": {
+				"title": "Treatment is active",
+				"description": "Segmentation is updating at a reduced cadence, so preview treatment can feel slightly less responsive."
+			},
+			"raw": {
+				"title": "Raw webcam",
+				"description": "The webcam is rendering without subject separation."
+			},
+			"active": {
+				"title": "Background treatment active",
+				"description": "Preview and export are using the active webcam treatment."
+			}
 		}
 	},
 	"audioTab": {
@@ -549,7 +587,14 @@
 		"chipHook": "Hook",
 		"chipSharp": "Sharp",
 		"chipTeam": "Team",
-		"chipCustom": "Custom"
+		"chipCustom": "Custom",
+		"presets": {
+			"saas-launch": "Launch Film",
+			"product-demo": "Guided Demo",
+			"tutorial": "Lesson Mode",
+			"social-vertical": "Vertical Hook",
+			"bug-report-clean": "Clean Handoff"
+		}
 	},
 	"backgroundTab": {
 		"setTheBackdropBehind": "Set the backdrop behind your recording canvas",

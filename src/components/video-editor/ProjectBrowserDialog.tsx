@@ -94,7 +94,13 @@ export function ProjectBrowserDialog({
 								<div className="flex justify-end px-1.5 pb-1.5">
 									<button
 										type="button"
-										aria-label={`Show ${project.name} in folder`}
+										aria-label={t(
+											"dialogs.projectBrowser.showProjectInFolder",
+											"Show {{name}} in folder",
+											{
+												name: project.name,
+											},
+										)}
 										onClick={() => void window.electronAPI.revealInFolder(project.path)}
 										className="rounded-md p-1.5 text-fg-subtle hover:bg-fill-hover hover:text-fg"
 									>

@@ -25,7 +25,8 @@
 	"speed": {
 		"cannotPlace": "Não é possível colocar uma velocidade aqui",
 		"existsOrNoSpace": "Já existe uma região de velocidade neste ponto ou não há espaço suficiente.",
-		"label": "Velocidade"
+		"label": "Velocidade",
+		"indexedLabel": "Velocidade {{index}}"
 	},
 	"annotation": {
 		"label": "Anotação",
@@ -105,7 +106,10 @@
 		"custom": "Personalizado",
 		"customAspectWidth": "Largura personalizada",
 		"customAspectHeight": "Altura personalizada",
-		"set": "Aplicar"
+		"set": "Aplicar",
+		"part": "Parte {{index}}",
+		"volumeTooltip": "Volume: {{percent}}%",
+		"keyframeTitle": "Quadro-chave em {{ms}} ms (arraste para mover, Delete/Backspace para remover)"
 	},
 	"toolbar": {
 		"visibleOne": "1 linha do tempo visível",

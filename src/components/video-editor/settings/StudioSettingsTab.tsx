@@ -248,7 +248,7 @@ export function StudioSettingsTab({
 									<div className="min-w-0 flex-1">
 										<div className="flex items-center justify-between gap-2">
 											<div className="truncate text-label font-semibold text-fg">
-												{preset.label}
+												{tSettings(`studioTab.presets.${preset.id}`, preset.label)}
 											</div>
 											{isActive && (
 												<span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-on-accent">

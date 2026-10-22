@@ -58,7 +58,14 @@
 		"cornerBottomRight": "右下角",
 		"previewShape": "预览形状",
 		"shapeRoundedRect": "圆角矩形",
-		"shapeCircle": "圆形"
+		"shapeCircle": "圆形",
+		"cameraDisconnected": "摄像头已断开。屏幕录制将在没有摄像头的情况下继续。",
+		"mobilePairingStartFailed": "无法开始手机摄像头配对。",
+		"cameraUnavailable": "无法访问所选摄像头。录制将在没有摄像头的情况下继续。",
+		"windowUnavailable": "正在录制的窗口已不可用。请选择其他来源。",
+		"wgcUnavailable": "Windows 原生捕获（WGC）不可用，改用浏览器捕获。",
+		"wgcCheckFailed": "无法检查 Windows 原生捕获（WGC），改用浏览器捕获。",
+		"wgcStartFailed": "Windows 原生捕获未能启动，改用浏览器捕获。"
 	},
 	"tabs": {
 		"display": "显示器",
@@ -179,7 +186,8 @@
 		"microphoneDenied": "麦克风访问被拒绝。将继续录制但不包含麦克风音频。",
 		"failedToStart": "录制启动失败：{{error}}",
 		"failedToStartGeneric": "录制启动失败",
-		"diagnostics": "诊断信息"
+		"diagnostics": "诊断信息",
+		"selectArea": "请选择要录制的区域"
 	},
 	"speakerNotes": {
 		"title": "演讲者备注",

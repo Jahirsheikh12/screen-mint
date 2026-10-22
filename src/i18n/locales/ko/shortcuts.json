@@ -11,6 +11,15 @@
 		"cycleBackward": "이전 주석",
 		"deleteSelectedAlt": "선택 항목 삭제 (대체)",
 		"panTimeline": "타임라인 이동",
-		"zoomTimeline": "타임라인 확대/축소"
+		"zoomTimeline": "타임라인 확대/축소",
+		"undo": "실행 취소",
+		"redo": "다시 실행",
+		"export": "내보내기",
+		"exitTrimMode": "자르기 모드 종료"
+	},
+	"keys": {
+		"space": "스페이스",
+		"tab": "Tab",
+		"scroll": "스크롤"
 	}
 }

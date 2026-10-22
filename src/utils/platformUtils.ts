@@ -43,18 +43,3 @@ export const getModifierKey = async (): Promise<string> => {
 export const getShiftKey = async (): Promise<string> => {
 	return (await isMac()) ? "⇧" : "Shift";
 };
-
-/**
- * Formats a keyboard shortcut for display based on the platform
- * @param keys Array of key combinations (e.g., ['mod', 'D'] or ['shift', 'mod', 'Scroll'])
- */
-export const formatShortcut = async (keys: string[]): Promise<string> => {
-	const isMacPlatform = await isMac();
-	return keys
-		.map((key) => {
-			if (key.toLowerCase() === "mod") return isMacPlatform ? "⌘" : "Ctrl";
-			if (key.toLowerCase() === "shift") return isMacPlatform ? "⇧" : "Shift";
-			return key;
-		})
-		.join(" + ");
-};

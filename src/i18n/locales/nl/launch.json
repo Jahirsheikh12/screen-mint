@@ -58,7 +58,14 @@
 		"cornerBottomRight": "Rechtsonder",
 		"previewShape": "Voorbeeldvorm",
 		"shapeRoundedRect": "Afgeronde rechthoek",
-		"shapeCircle": "Cirkel"
+		"shapeCircle": "Cirkel",
+		"cameraDisconnected": "Camera losgekoppeld. De schermopname gaat verder zonder webcam.",
+		"mobilePairingStartFailed": "Kan het koppelen van de telefooncamera niet starten.",
+		"cameraUnavailable": "Kan de geselecteerde camera niet gebruiken. De opname gaat verder zonder webcam.",
+		"windowUnavailable": "Het venster dat je opnam is niet meer beschikbaar. Kies een andere bron.",
+		"wgcUnavailable": "Native Windows-opname (WGC) is niet beschikbaar. Er wordt browseropname gebruikt.",
+		"wgcCheckFailed": "Kan native Windows-opname (WGC) niet controleren. Er wordt browseropname gebruikt.",
+		"wgcStartFailed": "Native Windows-opname kon niet starten. Er wordt browseropname gebruikt."
 	},
 	"tabs": {
 		"display": "Scherm",
@@ -179,7 +186,8 @@
 		"microphoneDenied": "Toegang tot de microfoon is geweigerd. De opname gaat verder zonder microfoongeluid.",
 		"failedToStart": "Opname starten mislukt: {{error}}",
 		"failedToStartGeneric": "Opname starten mislukt",
-		"diagnostics": "Diagnose"
+		"diagnostics": "Diagnose",
+		"selectArea": "Selecteer een gebied om op te nemen"
 	},
 	"speakerNotes": {
 		"title": "Sprekersnotities",

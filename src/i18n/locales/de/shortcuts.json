@@ -11,6 +11,15 @@
 		"cycleBackward": "Vorherige Anmerkung",
 		"deleteSelectedAlt": "Auswahl löschen (alt)",
 		"panTimeline": "Timeline verschieben",
-		"zoomTimeline": "Timeline zoomen"
+		"zoomTimeline": "Timeline zoomen",
+		"undo": "Widerrufen",
+		"redo": "Wiederholen",
+		"export": "Exportieren",
+		"exitTrimMode": "Kürzmodus beenden"
+	},
+	"keys": {
+		"space": "Leertaste",
+		"tab": "Tab",
+		"scroll": "Scrollen"
 	}
 }

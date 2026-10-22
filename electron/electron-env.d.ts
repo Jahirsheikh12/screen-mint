@@ -495,6 +495,7 @@ declare global {
 			}>;
 			/** Hide the OS cursor before browser capture starts. */
 			hideOsCursor: () => Promise<{ success: boolean }>;
+			setAppLocale: (locale: string) => void;
 			/** Countdown timer before recording */
 			getCountdownDelay: () => Promise<{ success: boolean; delay: number }>;
 			setCountdownDelay: (delay: number) => Promise<{ success: boolean; error?: string }>;

@@ -74,11 +74,7 @@
 	"keyboardShortcuts": {
 		"title": "Raccourcis clavier",
 		"customizeTooltip": "Personnaliser les raccourcis",
-		"customize": "Personnaliser",
-		"panTimeline": "Faire défiler la timeline",
-		"zoomTimeline": "Zoomer la timeline",
-		"cycleAnnotations": "Parcourir les annotations",
-		"tab": "Tab"
+		"customize": "Personnaliser"
 	},
 	"openRecordingsFolder": "Ouvrir le dossier des enregistrements",
 	"captions": {
@@ -233,7 +229,9 @@
 		"black": "Black",
 		"captionText": "Texte du sous-titre...",
 		"split": "Scinder",
-		"mergeNext": "Fusionner avec le suivant"
+		"mergeNext": "Fusionner avec le suivant",
+		"systemFont": "Système",
+		"uppercase": "MAJUSCULES"
 	},
 	"preview": {
 		"initFailed": "Impossible de démarrer le moteur de rendu de l’aperçu"
@@ -287,7 +285,22 @@
 		"noSavedPresets": "Aucun style enregistré",
 		"toggleLayout": "Changer de disposition",
 		"projects": "Projets",
-		"openProjectBrowser": "Ouvrir l’explorateur de projets"
+		"openProjectBrowser": "Ouvrir l’explorateur de projets",
+		"failedToLoadProject": "Impossible de charger le projet",
+		"invalidProjectFile": "Format de fichier de projet non valide",
+		"projectLoadedFrom": "Projet chargé depuis {{path}}",
+		"failedToOpenProject": "Impossible d’ouvrir le projet",
+		"projectSavedTo": "Projet enregistré dans {{path}}",
+		"presetApplied": "Style « {{name}} » appliqué.",
+		"presetSaved": "Style « {{name}} » enregistré.",
+		"presetDeleted": "Style « {{name}} » supprimé.",
+		"projectDeleteFailed": "Impossible de supprimer le projet.",
+		"filesDeleted": "Fichiers supprimés : {{count}}.",
+		"externalFilesKept": "Fichiers externes conservés : {{count}}.",
+		"recordingRemovedFromEditor": "Cet enregistrement a été retiré de l’éditeur.",
+		"projectRemoved": "Projet supprimé.",
+		"webcamSourceMissing": "La source webcam est introuvable. Reliez-la ou retirez-la du projet.",
+		"zoomRegionsCreated": "Zones de zoom créées : {{count}}"
 	},
 	"header": {
 		"presets": "Styles"
@@ -324,7 +337,10 @@
 	},
 	"polishPanel": {
 		"autoPolish": "Finition automatique",
-		"oneClickStudioTemplates": "Modèles studio en un clic"
+		"oneClickStudioTemplates": "Modèles studio en un clic",
+		"landingPage": "Page d’accueil",
+		"pitchDeck": "Présentation investisseurs",
+		"apply": "Appliquer"
 	},
 	"theme": {
 		"appearance": "Apparence",

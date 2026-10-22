@@ -1,0 +1,79 @@
+{
+	"menu": {
+		"file": "파일",
+		"loadProject": "프로젝트 불러오기…",
+		"saveProject": "프로젝트 저장…",
+		"saveProjectAs": "다른 이름으로 프로젝트 저장…",
+		"edit": "편집",
+		"view": "보기",
+		"window": "윈도우",
+		"help": "도움말",
+		"about": "ScreenMint에 관하여",
+		"checkForUpdates": "업데이트 확인…",
+		"reportIssue": "문제 신고…"
+	},
+	"tray": {
+		"open": "열기",
+		"quit": "종료",
+		"stopRecording": "녹화 중지",
+		"recording": "녹화 중: {{source}}"
+	},
+	"about": {
+		"close": "닫기",
+		"status": {
+			"checking": "업데이트 확인 중…",
+			"available": "버전 {{version}}을(를) 사용할 수 있습니다. 업데이트 확인을 눌러 업데이트 창을 여세요.",
+			"downloading": "버전 {{version}} 다운로드 중.",
+			"downloadingProgress": "버전 {{version}} 다운로드 중({{percent}}%).",
+			"downloadedInstaller": "버전 {{version}}을(를) 다운로드했습니다. 계속하려면 업데이트 창을 여세요.",
+			"downloadedReady": "버전 {{version}}을(를) 다운로드했으며 업데이트 창에서 설치할 수 있습니다.",
+			"upToDate": "최신 버전({{version}})을 사용 중입니다.",
+			"manual": "버전 {{version}}을(를) GitHub Releases에서 직접 다운로드할 수 있습니다.",
+			"error": "지금은 업데이트를 확인할 수 없습니다.",
+			"unsupported": "자동 업데이트는 설치된 빌드에서만 사용할 수 있습니다."
+		}
+	},
+	"unsavedChanges": {
+		"title": "저장되지 않은 변경 사항",
+		"message": "저장되지 않은 변경 사항이 있습니다.",
+		"detail": "닫기 전에 프로젝트를 저장할까요?",
+		"saveAndClose": "저장 후 닫기",
+		"discardAndClose": "저장하지 않고 닫기",
+		"cancel": "취소"
+	},
+	"recovery": {
+		"message": "녹화 중에 ScreenMint가 종료되었습니다",
+		"detail": "마지막 녹화가 예기치 않게 중지되었습니다. 저장된 부분은 다음 위치에 있습니다:\n{{path}}",
+		"openInEditor": "편집기에서 열기",
+		"showInFolder": "폴더에서 보기",
+		"notNow": "나중에"
+	},
+	"moveToApplications": {
+		"title": "ScreenMint를 응용 프로그램으로 이동",
+		"message": "macOS 캡처 권한을 안정적으로 유지하려면 ScreenMint를 /Applications로 이동하세요.",
+		"detail": "서명되지 않은 macOS 빌드는 ScreenMint가 /Applications/ScreenMint.app에 설치되어 있을 때 화면 기록 권한을 더 안정적으로 유지합니다. 다운로드, 데스크탑 또는 마운트된 DMG에서 실행하면 권한 요청이 반복되거나 소스 목록이 비어 보일 수 있습니다.",
+		"move": "응용 프로그램으로 이동",
+		"keep": "현재 위치 유지",
+		"manualTitle": "ScreenMint를 직접 이동하세요",
+		"manualMessage": "화면 캡처를 사용하기 전에 ScreenMint를 /Applications로 이동하세요.",
+		"manualDetail": "macOS가 앱을 자동으로 이동하지 못했습니다. ScreenMint.app을 /Applications로 드래그한 다음 그곳에서 다시 실행하세요.",
+		"ok": "확인"
+	},
+	"captions": {
+		"extractingMicrophone": "마이크 오디오 추출 중…",
+		"extractingMixed": "믹스된 오디오 추출 중…",
+		"runningWhisper": "로컬 Whisper 전사 실행 중…",
+		"retryingSmallerModel": "더 작은 {{model}} 모델로 다시 시도하는 중…",
+		"buildingSegments": "전사 구간 생성 중…",
+		"ready": "전사 완료",
+		"downloadingModel": "Whisper {{model}} 모델 다운로드 중…",
+		"downloadingModelProgress": "Whisper {{model}} 모델 다운로드 중… {{percent}}%",
+		"downloadingVad": "음성 감지 도우미 다운로드 중…",
+		"preparingRuntime": "로컬 Whisper 런타임 준비 중…",
+		"buildingCli": "Whisper CLI 빌드 중…",
+		"preparingAppleMicrophone": "Apple Speech용 마이크 오디오 준비 중…",
+		"preparingAppleMixed": "Apple Speech용 믹스된 오디오 준비 중…",
+		"runningApple": "Apple Speech 전사 실행 중…",
+		"appleFallback": "Apple Speech를 사용할 수 없어 Whisper로 전환합니다…"
+	}
+}

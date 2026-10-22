@@ -58,7 +58,14 @@
 		"cornerBottomRight": "右下角",
 		"previewShape": "預覽形狀",
 		"shapeRoundedRect": "圓角矩形",
-		"shapeCircle": "圓形"
+		"shapeCircle": "圓形",
+		"cameraDisconnected": "攝影機已中斷連線。螢幕錄製會在沒有網路攝影機的情況下繼續。",
+		"mobilePairingStartFailed": "無法開始手機相機配對。",
+		"cameraUnavailable": "無法存取所選的攝影機。錄製會在沒有網路攝影機的情況下繼續。",
+		"windowUnavailable": "正在錄製的視窗已無法使用。請選擇其他來源。",
+		"wgcUnavailable": "Windows 原生擷取（WGC）無法使用，改用瀏覽器擷取。",
+		"wgcCheckFailed": "無法檢查 Windows 原生擷取（WGC），改用瀏覽器擷取。",
+		"wgcStartFailed": "Windows 原生擷取無法啟動，改用瀏覽器擷取。"
 	},
 	"tabs": {
 		"display": "顯示器",
@@ -179,7 +186,8 @@
 		"microphoneDenied": "麥克風存取遭拒。錄製會在沒有麥克風音訊的情況下繼續。",
 		"failedToStart": "無法開始錄製：{{error}}",
 		"failedToStartGeneric": "無法開始錄製",
-		"diagnostics": "診斷資訊"
+		"diagnostics": "診斷資訊",
+		"selectArea": "請選擇要錄製的區域"
 	},
 	"speakerNotes": {
 		"title": "講者備忘稿",

@@ -506,9 +506,9 @@ export function useVideoEditorCaptions({
 			}
 
 			if (!result.success) {
-				toast.error(
-					result.message || t("editor.captions.exportFailed", "Failed to export transcript."),
-				);
+				toast.error(t("editor.captions.exportFailed", "Failed to export transcript."), {
+					description: result.message,
+				});
 				return;
 			}
 

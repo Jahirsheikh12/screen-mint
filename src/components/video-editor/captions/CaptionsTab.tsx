@@ -1068,7 +1068,9 @@ function StyleControls({
 					>
 						{FONT_FAMILIES.map((font) => (
 							<option key={font.label} value={font.value}>
-								{font.label}
+								{font.label === "System"
+									? t("editor.captionsTab.systemFont", "System")
+									: font.label}
 							</option>
 						))}
 					</select>
@@ -1142,7 +1144,7 @@ function StyleControls({
 							: "border-line bg-fill-subtle text-fg-muted hover:border-line-strong",
 					)}
 				>
-					UPPERCASE
+					{t("editor.captionsTab.uppercase", "UPPERCASE")}
 				</button>
 			</StyleCard>
 

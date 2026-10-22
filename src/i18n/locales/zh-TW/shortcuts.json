@@ -11,6 +11,15 @@
 		"cycleBackward": "上一個註解",
 		"deleteSelectedAlt": "刪除所選項目（替代）",
 		"panTimeline": "平移時間軸",
-		"zoomTimeline": "縮放時間軸"
+		"zoomTimeline": "縮放時間軸",
+		"undo": "還原",
+		"redo": "重做",
+		"export": "匯出",
+		"exitTrimMode": "結束修剪模式"
+	},
+	"keys": {
+		"space": "空白鍵",
+		"tab": "Tab",
+		"scroll": "捲動"
 	}
 }

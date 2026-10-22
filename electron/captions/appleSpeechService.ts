@@ -11,6 +11,7 @@ import type {
 	CaptionWord,
 } from "../../src/components/video-editor/types";
 import { normalizeCaptionLanguage } from "../../src/lib/captions/transcriptionConfig";
+import { tMain } from "../i18n";
 import { buildCaptionSegmentsFromWords } from "./captionSegmentation";
 import type { GenerateCaptionsRequest } from "./whisperService";
 import {
@@ -106,7 +107,11 @@ export async function generateCaptionsWithAppleSpeech(
 		onProgress({
 			stage: "audio",
 			percentage: 25,
-			message: `Preparing ${sourceAudio.kind === "microphone" ? "microphone" : "mixed"} audio for Apple Speech...`,
+			message: tMain(
+				sourceAudio.kind === "microphone"
+					? "captions.preparingAppleMicrophone"
+					: "captions.preparingAppleMixed",
+			),
 		});
 
 		await extractSpeechFriendlyAudio(request.ffmpegPath, sourceAudio.path, audioInputPath);
@@ -114,7 +119,7 @@ export async function generateCaptionsWithAppleSpeech(
 		onProgress({
 			stage: "transcribe",
 			percentage: 50,
-			message: "Running Apple Speech transcription...",
+			message: tMain("captions.runningApple"),
 		});
 
 		await fs.writeFile(
@@ -139,7 +144,7 @@ export async function generateCaptionsWithAppleSpeech(
 		onProgress({
 			stage: "align",
 			percentage: 85,
-			message: "Building transcript segments...",
+			message: tMain("captions.buildingSegments"),
 		});
 
 		return {

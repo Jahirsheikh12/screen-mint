@@ -25,7 +25,8 @@
 	"speed": {
 		"cannotPlace": "无法在此处放置变速",
 		"existsOrNoSpace": "此位置已存在变速区域或空间不足。",
-		"label": "变速"
+		"label": "变速",
+		"indexedLabel": "速度 {{index}}"
 	},
 	"annotation": {
 		"label": "注释",
@@ -105,7 +106,10 @@
 		"custom": "自定义",
 		"customAspectWidth": "自定义宽度",
 		"customAspectHeight": "自定义高度",
-		"set": "应用"
+		"set": "应用",
+		"part": "第 {{index}} 部分",
+		"volumeTooltip": "音量：{{percent}}%",
+		"keyframeTitle": "关键帧 @ {{ms}} 毫秒（拖动可移动，按 Delete/Backspace 可移除）"
 	},
 	"toolbar": {
 		"visibleOne": "1 条可见时间轴",

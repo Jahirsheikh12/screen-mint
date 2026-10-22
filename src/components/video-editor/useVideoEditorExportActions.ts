@@ -44,7 +44,9 @@ export function useVideoEditorExportActions({
 								toast.error(errorMessage);
 							}
 						} catch (err) {
-							toast.error(`Error revealing in folder: ${String(err)}`);
+							toast.error(t("export.revealFailed", "Failed to show the file in its folder."), {
+								description: String(err),
+							});
 						}
 					},
 				},
@@ -104,10 +106,11 @@ export function useVideoEditorExportActions({
 
 		dispatchSession({ type: "set-export-error", error: null });
 		dispatchSession({ type: "set-export-status", status: "awaiting-save-path" });
-		const fail = (message: string) => {
+		// The message is translated; detail is the raw (English, technical) reason, shown under it.
+		const fail = (message: string, detail?: string) => {
 			dispatchSession({ type: "set-export-error", error: message });
 			dispatchSession({ type: "set-export-status", status: "failed" });
-			toast.error(message);
+			toast.error(message, { description: detail });
 		};
 		try {
 			let result: { success: boolean; path?: string; canceled?: boolean; message?: string };
@@ -155,9 +158,12 @@ export function useVideoEditorExportActions({
 				return;
 			}
 
-			fail(result.message || t("export.saveFailed", "Failed to save the export"));
+			fail(t("export.saveFailed", "Failed to save the export"), result.message);
 		} catch (error) {
-			fail(error instanceof Error ? error.message : String(error));
+			fail(
+				t("export.saveFailed", "Failed to save the export"),
+				error instanceof Error ? error.message : String(error),
+			);
 		}
 	}, [dispatchSession, pendingExportSaveRef, showExportSuccessToast, t]);
 

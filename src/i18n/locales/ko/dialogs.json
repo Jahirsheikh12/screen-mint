@@ -82,7 +82,8 @@
 		"projects": "프로젝트",
 		"recentProjectsAndProjects": "최근 프로젝트와 녹화 폴더에 저장된 프로젝트입니다.",
 		"loadingProjects": "프로젝트를 불러오는 중…",
-		"noSavedProjectsYet": "아직 저장된 프로젝트가 없습니다"
+		"noSavedProjectsYet": "아직 저장된 프로젝트가 없습니다",
+		"showProjectInFolder": "폴더에서 {{name}} 보기"
 	},
 	"editor": {
 		"savePreset": "프리셋 저장",
@@ -92,7 +93,13 @@
 		"cancel": "취소",
 		"savePreset2": "프리셋 저장",
 		"confirmAction": "작업 확인",
-		"continue": "계속"
+		"continue": "계속",
+		"deletePresetTitle": "프리셋을 삭제할까요?",
+		"deletePresetDescription": "‘{{name}}’ 프리셋을 삭제할까요?",
+		"deletePresetConfirm": "프리셋 삭제",
+		"deleteProjectTitle": "프로젝트를 삭제할까요?",
+		"deleteProjectDescription": "이 ScreenMint 프로젝트와 관리 중인 녹화 미디어를 삭제할까요?\n\nScreenMint 녹화 폴더 밖에서 가져온 파일은 유지됩니다.",
+		"deleteProjectConfirm": "프로젝트 삭제"
 	},
 	"quickShare": {
 		"quickShare": "빠른 공유",

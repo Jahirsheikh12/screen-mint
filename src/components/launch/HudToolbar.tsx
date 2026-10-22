@@ -521,7 +521,7 @@ export function HudToolbar({
 													: mobileCaptureState.status === "phone-opened"
 														? t("recording.mobilePhoneOpened")
 														: mobileCaptureState.status === "error"
-															? (mobileCaptureState.error ?? t("recording.mobilePairingError"))
+															? t("recording.mobilePairingError")
 															: t("recording.mobileWaiting")}
 											</div>
 										</div>

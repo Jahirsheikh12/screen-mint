@@ -74,11 +74,7 @@
 	"keyboardShortcuts": {
 		"title": "Scorciatoie da tastiera",
 		"customizeTooltip": "Personalizza le scorciatoie",
-		"customize": "Personalizza",
-		"panTimeline": "Scorri la timeline",
-		"zoomTimeline": "Zoom della timeline",
-		"cycleAnnotations": "Scorri le annotazioni",
-		"tab": "Tab"
+		"customize": "Personalizza"
 	},
 	"openRecordingsFolder": "Apri la cartella delle registrazioni",
 	"captions": {
@@ -233,7 +229,9 @@
 		"black": "Black",
 		"captionText": "Testo del sottotitolo...",
 		"split": "Dividi",
-		"mergeNext": "Unisci al successivo"
+		"mergeNext": "Unisci al successivo",
+		"systemFont": "Sistema",
+		"uppercase": "MAIUSCOLO"
 	},
 	"preview": {
 		"initFailed": "Impossibile avviare il motore di anteprima"
@@ -287,7 +285,22 @@
 		"noSavedPresets": "Nessun preset salvato",
 		"toggleLayout": "Cambia layout",
 		"projects": "Progetti",
-		"openProjectBrowser": "Apri l’elenco progetti"
+		"openProjectBrowser": "Apri l’elenco progetti",
+		"failedToLoadProject": "Impossibile caricare il progetto",
+		"invalidProjectFile": "Formato del file di progetto non valido",
+		"projectLoadedFrom": "Progetto caricato da {{path}}",
+		"failedToOpenProject": "Impossibile aprire il progetto",
+		"projectSavedTo": "Progetto salvato in {{path}}",
+		"presetApplied": "Preset «{{name}}» applicato.",
+		"presetSaved": "Preset «{{name}}» salvato.",
+		"presetDeleted": "Preset «{{name}}» eliminato.",
+		"projectDeleteFailed": "Impossibile eliminare il progetto.",
+		"filesDeleted": "File eliminati: {{count}}.",
+		"externalFilesKept": "File esterni mantenuti: {{count}}.",
+		"recordingRemovedFromEditor": "Questa registrazione è stata rimossa dall’editor.",
+		"projectRemoved": "Progetto rimosso.",
+		"webcamSourceMissing": "La sorgente della webcam manca. Ricollegala o rimuovila dal progetto.",
+		"zoomRegionsCreated": "Aree di zoom create: {{count}}"
 	},
 	"header": {
 		"presets": "Preset"
@@ -324,7 +337,10 @@
 	},
 	"polishPanel": {
 		"autoPolish": "Rifinitura automatica",
-		"oneClickStudioTemplates": "Modelli studio con un clic"
+		"oneClickStudioTemplates": "Modelli studio con un clic",
+		"landingPage": "Landing page",
+		"pitchDeck": "Pitch deck",
+		"apply": "Applica"
 	},
 	"theme": {
 		"appearance": "Aspetto",

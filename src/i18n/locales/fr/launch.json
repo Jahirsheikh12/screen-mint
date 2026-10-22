@@ -58,7 +58,14 @@
 		"cornerBottomRight": "En bas à droite",
 		"previewShape": "Forme de l'aperçu",
 		"shapeRoundedRect": "Rectangle arrondi",
-		"shapeCircle": "Cercle"
+		"shapeCircle": "Cercle",
+		"cameraDisconnected": "Caméra déconnectée. L’enregistrement de l’écran continue sans webcam.",
+		"mobilePairingStartFailed": "Impossible de lancer l’appairage de la caméra du téléphone.",
+		"cameraUnavailable": "Impossible d’accéder à la caméra sélectionnée. L’enregistrement continue sans webcam.",
+		"windowUnavailable": "La fenêtre que vous enregistriez n’est plus disponible. Choisissez une autre source.",
+		"wgcUnavailable": "La capture native de Windows (WGC) n’est pas disponible. Passage à la capture du navigateur.",
+		"wgcCheckFailed": "Impossible de vérifier la capture native de Windows (WGC). Passage à la capture du navigateur.",
+		"wgcStartFailed": "La capture native de Windows n’a pas pu démarrer. Passage à la capture du navigateur."
 	},
 	"tabs": {
 		"display": "Écran",
@@ -179,7 +186,8 @@
 		"microphoneDenied": "L'accès au micro a été refusé. L'enregistrement continuera sans audio du micro.",
 		"failedToStart": "Impossible de démarrer l'enregistrement : {{error}}",
 		"failedToStartGeneric": "Impossible de démarrer l'enregistrement",
-		"diagnostics": "Diagnostic"
+		"diagnostics": "Diagnostic",
+		"selectArea": "Veuillez sélectionner une zone à enregistrer"
 	},
 	"speakerNotes": {
 		"title": "Notes de présentation",

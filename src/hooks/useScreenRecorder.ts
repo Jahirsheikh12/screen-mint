@@ -4,6 +4,7 @@ import {
 	type CameraSessionState,
 	WEBCAM_RENDER_PIPELINE_VERSION,
 } from "@/components/video-editor/types";
+import { useScopedT } from "@/contexts/I18nContext";
 import type { MobileCapturePairingState } from "@/electron-ipc/contracts";
 import { loadCameraPreferences, saveCameraPreferences } from "@/hooks/cameraPreferences";
 import { playAppAudioCue, preloadAppAudioCues } from "@/lib/appAudio";
@@ -114,6 +115,7 @@ function createIdleMobileCaptureState(): MobileCapturePairingState {
 export function useScreenRecorder(
 	recordingSettings?: ScreenRecorderOptions,
 ): UseScreenRecorderReturn {
+	const t = useScopedT("launch");
 	const initialCameraPreferences = loadCameraPreferences();
 	const [starting, setStarting] = useState(false);
 	const [countdownActive, setCountdownActive] = useState(false);
@@ -187,70 +189,76 @@ export function useScreenRecorder(
 		preloadAppAudioCues();
 	}, []);
 
-	const preparePermissions = useCallback(async (options: { startup?: boolean } = {}) => {
-		const platform = await window.electronAPI.getPlatform();
-		if (platform !== "darwin") {
-			return true;
-		}
-
-		const capturePermission = await window.electronAPI.getCapturePermissionState();
-		if (!capturePermission.success) {
-			return false;
-		}
-
-		const screenAccess = resolveCaptureSourceAccessState(capturePermission.state);
-		if (!screenAccess.canProbeSources) {
-			await window.electronAPI.openDisplayCapturePreferences();
-			alert(
-				options.startup
-					? "ScreenMint needs Screen Recording permission before you start. System Settings has been opened. After enabling it, quit and reopen ScreenMint."
-					: "Screen Recording permission is still missing. System Settings has been opened again. Enable it, then quit and reopen ScreenMint before recording.",
-			);
-			return false;
-		}
-
-		if (capturePermission.state.accessibilityTrusted) {
-			return true;
-		}
-
-		const requestedAccessibility = await window.electronAPI.requestAccessibilityPermission();
-		if (requestedAccessibility.success && requestedAccessibility.trusted) {
-			return true;
-		}
-
-		await window.electronAPI.openAccessibilityPreferences();
-		alert(
-			options.startup
-				? "ScreenMint also needs Accessibility permission for cursor tracking. System Settings has been opened. After enabling it, quit and reopen ScreenMint."
-				: "Accessibility permission is still missing. System Settings has been opened again. Enable it, then quit and reopen ScreenMint before recording.",
-		);
-
-		return false;
-	}, []);
-
-	const setMicrophoneEnabled = useCallback((enabled: boolean) => {
-		void (async () => {
-			if (!enabled) {
-				setMicrophoneEnabledState(false);
-				return;
+	const preparePermissions = useCallback(
+		async (options: { startup?: boolean } = {}) => {
+			const platform = await window.electronAPI.getPlatform();
+			if (platform !== "darwin") {
+				return true;
 			}
 
-			const platform = await window.electronAPI.getPlatform();
-			if (platform === "darwin") {
-				const microphoneAccess = await window.electronAPI.requestMicrophoneAccess();
-				if (!microphoneAccess.success || !microphoneAccess.granted) {
-					alert("Microphone access was denied. Recording will continue without microphone audio.");
+			const capturePermission = await window.electronAPI.getCapturePermissionState();
+			if (!capturePermission.success) {
+				return false;
+			}
+
+			const screenAccess = resolveCaptureSourceAccessState(capturePermission.state);
+			if (!screenAccess.canProbeSources) {
+				await window.electronAPI.openDisplayCapturePreferences();
+				alert(
+					options.startup
+						? t("permissions.screenRecordingNeeded")
+						: t("permissions.screenRecordingMissing"),
+				);
+				return false;
+			}
+
+			if (capturePermission.state.accessibilityTrusted) {
+				return true;
+			}
+
+			const requestedAccessibility = await window.electronAPI.requestAccessibilityPermission();
+			if (requestedAccessibility.success && requestedAccessibility.trusted) {
+				return true;
+			}
+
+			await window.electronAPI.openAccessibilityPreferences();
+			alert(
+				options.startup
+					? t("permissions.accessibilityNeeded")
+					: t("permissions.accessibilityMissing"),
+			);
+
+			return false;
+		},
+		[t],
+	);
+
+	const setMicrophoneEnabled = useCallback(
+		(enabled: boolean) => {
+			void (async () => {
+				if (!enabled) {
 					setMicrophoneEnabledState(false);
 					return;
 				}
-			}
 
-			setMicrophoneEnabledState(true);
-		})().catch((error) => {
-			console.error("Failed to enable the microphone:", error);
-			setMicrophoneEnabledState(false);
-		});
-	}, []);
+				const platform = await window.electronAPI.getPlatform();
+				if (platform === "darwin") {
+					const microphoneAccess = await window.electronAPI.requestMicrophoneAccess();
+					if (!microphoneAccess.success || !microphoneAccess.granted) {
+						alert(t("permissions.microphoneDenied"));
+						setMicrophoneEnabledState(false);
+						return;
+					}
+				}
+
+				setMicrophoneEnabledState(true);
+			})().catch((error) => {
+				console.error("Failed to enable the microphone:", error);
+				setMicrophoneEnabledState(false);
+			});
+		},
+		[t],
+	);
 
 	const resolvedRecordingProfile = resolveRecordingTargetProfile(recordingSettings);
 
@@ -349,7 +357,7 @@ export function useScreenRecorder(
 
 		if (!hasShownCameraDisconnectToast.current) {
 			hasShownCameraDisconnectToast.current = true;
-			toast.warning("Camera disconnected. Screen recording will continue without webcam.");
+			toast.warning(t("recording.cameraDisconnected"));
 		}
 
 		void window.electronAPI.clearCurrentWebcamPath();
@@ -372,7 +380,7 @@ export function useScreenRecorder(
 			enabled: false,
 			resolvedCaptureProfile: undefined,
 		}));
-	}, [cameraSession.enabled, releaseWebcamStream]);
+	}, [cameraSession.enabled, releaseWebcamStream, t]);
 
 	const attachWebcamTrackLifecycle = useCallback(
 		(camStream: MediaStream) => {
@@ -549,10 +557,10 @@ export function useScreenRecorder(
 					status: "error",
 					error: error instanceof Error ? error.message : String(error),
 				});
-				toast.error("Unable to start mobile camera pairing.");
+				toast.error(t("recording.mobilePairingStartFailed"));
 			});
 		},
-		[handleUnexpectedWebcamEnd, releaseWebcamStream],
+		[handleUnexpectedWebcamEnd, releaseWebcamStream, t],
 	);
 
 	const setCameraPreviewVisible = useCallback((visible: boolean) => {
@@ -820,7 +828,7 @@ export function useScreenRecorder(
 				resolvedCaptureProfile: undefined,
 			}));
 			setCameraPreviewStream(null);
-			toast.error("Unable to access the selected camera. Recording will continue without webcam.");
+			toast.error(t("recording.cameraUnavailable"));
 		}
 	}, [
 		discardChunkWriter,
@@ -829,6 +837,7 @@ export function useScreenRecorder(
 		queueChunkWrite,
 		resolvedRecordingProfile.preferHardwareEncoding,
 		startChunkWriter,
+		t,
 	]);
 
 	const stopWebcamRecording = useCallback(async () => {
@@ -1183,7 +1192,7 @@ export function useScreenRecorder(
 						!hasPromptedForReselect.current
 					) {
 						hasPromptedForReselect.current = true;
-						alert(state.message);
+						alert(t("recording.windowUnavailable"));
 						void window.electronAPI.openSourceSelector();
 					}
 				})().catch((error) => console.error("Failed to end interrupted recording:", error));
@@ -1208,7 +1217,7 @@ export function useScreenRecorder(
 
 			cleanupCapturedMedia();
 		};
-	}, [cleanupCapturedMedia]);
+	}, [cleanupCapturedMedia, t]);
 
 	const startRecording = useCallback(async () => {
 		if (startInFlight.current) {
@@ -1222,14 +1231,14 @@ export function useScreenRecorder(
 		try {
 			const selectedSource = await window.electronAPI.getSelectedSource();
 			if (!selectedSource) {
-				alert("Please select a source to record");
+				alert(t("permissions.selectSource"));
 				return;
 			}
 			const selectedArea = await getSelectedArea();
 			const effectiveSelectedArea = selectedSource.id?.startsWith("screen:") ? selectedArea : null;
 			const captureMode = getCaptureMode(selectedSource, effectiveSelectedArea);
 			if (captureMode === "area" && !effectiveSelectedArea) {
-				alert("Please select an area to record");
+				alert(t("permissions.selectArea"));
 				return;
 			}
 			const isResumingNative = sessionRef.current.phase === "paused";
@@ -1266,17 +1275,13 @@ export function useScreenRecorder(
 					useWgcCapture = wgcResult.available;
 					if (!useWgcCapture && !hasShownWgcFallbackToast.current) {
 						hasShownWgcFallbackToast.current = true;
-						toast.info(
-							"Native Windows capture (WGC) is unavailable. Falling back to browser capture.",
-						);
+						toast.info(t("recording.wgcUnavailable"));
 					}
 				} catch {
 					useWgcCapture = false;
 					if (!hasShownWgcFallbackToast.current) {
 						hasShownWgcFallbackToast.current = true;
-						toast.info(
-							"Unable to check native Windows capture (WGC). Falling back to browser capture.",
-						);
+						toast.info(t("recording.wgcCheckFailed"));
 					}
 				}
 			}
@@ -1327,9 +1332,7 @@ export function useScreenRecorder(
 						);
 						if (!hasShownWgcFallbackToast.current) {
 							hasShownWgcFallbackToast.current = true;
-							toast.warning(
-								"Native Windows capture failed to start. Falling back to browser capture.",
-							);
+							toast.warning(t("recording.wgcStartFailed"));
 						}
 					} else {
 						throw new Error(
@@ -1421,9 +1424,7 @@ export function useScreenRecorder(
 						});
 					} catch (audioError) {
 						console.warn("System audio capture failed, falling back to video-only:", audioError);
-						alert(
-							"System audio is not available for this source. Recording will continue without system audio.",
-						);
+						alert(t("permissions.systemAudioUnavailable"));
 						screenMediaStream = await mediaDevices.getUserMedia({
 							audio: false,
 							video: videoConstraints,
@@ -1473,9 +1474,7 @@ export function useScreenRecorder(
 						}
 					} catch (audioError) {
 						console.warn("Failed to get microphone access:", audioError);
-						alert(
-							"Microphone access was denied. Recording will continue without microphone audio.",
-						);
+						alert(t("permissions.microphoneDenied"));
 						setMicrophoneEnabledState(false);
 					}
 				}
@@ -1713,8 +1712,8 @@ export function useScreenRecorder(
 			console.error("Failed to start recording:", error);
 			alert(
 				error instanceof Error
-					? `Failed to start recording: ${error.message}`
-					: "Failed to start recording",
+					? t("permissions.failedToStart", undefined, { error: error.message })
+					: t("permissions.failedToStartGeneric"),
 			);
 			await discardChunkWriter(
 				screenChunkSessionId,
@@ -1760,6 +1759,7 @@ export function useScreenRecorder(
 		startWebcamRecording,
 		systemAudioEnabled,
 		webcamEnabled,
+		t,
 	]);
 
 	const finalizeSession = useCallback(
