@@ -583,6 +583,9 @@ app.on("web-contents-created", (_event, contents) => {
 });
 
 app.whenReady().then(async () => {
+	// A second launch only hands focus to the running app (see "second-instance"); quit() is
+	// asynchronous, so stop here before it builds a tray, windows or dialogs of its own.
+	if (!hasSingleInstanceLock) return;
 	const updater = getScreenMintUpdater();
 
 	session.defaultSession.setPermissionCheckHandler((_webContents, permission) => {

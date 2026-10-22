@@ -1,5 +1,9 @@
+import { createHash } from "node:crypto";
+import { createReadStream, createWriteStream } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 import { app, BrowserWindow, shell } from "electron";
 import { autoUpdater, type ProgressInfo, type UpdateInfo } from "electron-updater";
 import type {
@@ -184,6 +188,21 @@ function createMacInstallerDownloadUrl(version: string): string {
 	return `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/download/v${version}/ScreenMint-${arch}.dmg`;
 }
 
+type ReleaseFile = { url: string; sha512?: string; size?: number };
+
+/** The DMG entry for this architecture from the release metadata (latest-mac.yml). */
+export function findMacInstallerFile(files: readonly ReleaseFile[], arch: string) {
+	const name = `ScreenMint-${arch}.dmg`;
+	return files.find((file) => file.url === name || file.url.endsWith(`/${name}`)) ?? null;
+}
+
+/** Base64 sha512, the format electron-builder writes into latest-mac.yml. */
+export async function sha512OfFile(filePath: string): Promise<string> {
+	const hash = createHash("sha512");
+	await pipeline(createReadStream(filePath), hash);
+	return hash.digest("base64");
+}
+
 export function isUpdateCheckSupported(
 	platform: NodeJS.Platform,
 	options: { isPackaged: boolean; env: NodeJS.ProcessEnv },
@@ -227,6 +246,8 @@ export class ScreenMintUpdater {
 	private periodicCheckTimer: ReturnType<typeof setInterval> | null = null;
 	private pendingRestartToast = false;
 	private sessionDeferredVersion: string | null = null;
+	// Files listed in the latest release metadata; their sha512 verifies the macOS download.
+	private latestReleaseFiles: ReleaseFile[] = [];
 
 	constructor(options: UpdaterOptions = {}) {
 		this.appAdapter = options.appAdapter ?? {
@@ -423,6 +444,7 @@ export class ScreenMintUpdater {
 			const releaseName =
 				typeof updateInfo.releaseName === "string" ? updateInfo.releaseName : null;
 			const releaseNotes = normalizeReleaseNotes(updateInfo.releaseNotes);
+			this.latestReleaseFiles = Array.isArray(updateInfo.files) ? updateInfo.files : [];
 
 			if (this.shouldUseManualDownloadFlow()) {
 				this.setState({
@@ -767,22 +789,35 @@ export class ScreenMintUpdater {
 		const installerPath = path.join(this.updatesDirectory, `ScreenMint-${version}-${arch}.dmg`);
 		const partialInstallerPath = `${installerPath}.download`;
 
+		// Only an installer whose sha512 matches the release metadata is ever offered to open.
+		const expectedSha512 = findMacInstallerFile(this.latestReleaseFiles, arch)?.sha512;
+		if (!expectedSha512) {
+			return this.setState({
+				status: "manual-download-required",
+				error: "This release does not list a checksum for the macOS installer.",
+				message: "Download the latest version manually.",
+				manualDownloadUrl: createReleaseUrl(version),
+				installMode: "none",
+			});
+		}
+
 		try {
 			await fs.mkdir(this.updatesDirectory, { recursive: true });
-			await fs.access(installerPath);
-
-			return this.setState({
-				status: "downloaded",
-				progress: 100,
-				message: "Update downloaded. Open Installer to finish updating.",
-				canInstall: !isUpdaterBusy(this.busyState),
-				downloadedAt: new Date(this.now()).toISOString(),
-				downloadedFilePath: installerPath,
-				manualDownloadUrl: installerUrl,
-				installMode: "external-installer",
-			});
+			if ((await sha512OfFile(installerPath)) === expectedSha512) {
+				return this.setState({
+					status: "downloaded",
+					progress: 100,
+					message: "Update downloaded. Open Installer to finish updating.",
+					canInstall: !isUpdaterBusy(this.busyState),
+					downloadedAt: new Date(this.now()).toISOString(),
+					downloadedFilePath: installerPath,
+					manualDownloadUrl: installerUrl,
+					installMode: "external-installer",
+				});
+			}
+			await fs.rm(installerPath, { force: true });
 		} catch {
-			// Continue to download when the cached installer is unavailable.
+			// No cached installer yet; download it.
 		}
 
 		try {
@@ -800,12 +835,37 @@ export class ScreenMintUpdater {
 			});
 
 			const response = await fetch(installerUrl);
-			if (!response.ok) {
+			if (!response.ok || !response.body) {
 				throw new Error(`Failed to download macOS installer (${response.status})`);
 			}
 
-			const installerBuffer = Buffer.from(await response.arrayBuffer());
-			await fs.writeFile(partialInstallerPath, installerBuffer);
+			const totalBytes =
+				Number(response.headers.get("content-length")) ||
+				findMacInstallerFile(this.latestReleaseFiles, arch)?.size ||
+				0;
+			const hash = createHash("sha512");
+			let receivedBytes = 0;
+			let lastProgressAt = 0;
+			const reportProgress = (progress: number) => this.setState({ progress });
+			await pipeline(
+				Readable.fromWeb(response.body as import("node:stream/web").ReadableStream),
+				async function* (source: AsyncIterable<Buffer>) {
+					for await (const chunk of source) {
+						hash.update(chunk);
+						receivedBytes += chunk.length;
+						const now = Date.now();
+						if (totalBytes > 0 && now - lastProgressAt > 250) {
+							lastProgressAt = now;
+							reportProgress(Math.min(99, Math.round((receivedBytes / totalBytes) * 100)));
+						}
+						yield chunk;
+					}
+				},
+				createWriteStream(partialInstallerPath),
+			);
+			if (hash.digest("base64") !== expectedSha512) {
+				throw new Error("The downloaded installer failed its checksum check.");
+			}
 			await fs.rename(partialInstallerPath, installerPath);
 
 			return this.setState({

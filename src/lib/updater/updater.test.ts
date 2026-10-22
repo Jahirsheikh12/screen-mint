@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { EventEmitter } from "node:events";
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -227,11 +228,73 @@ describe("ScreenMintUpdater", () => {
 		expect(updater.getState().sessionDeferredVersion).toBeNull();
 	});
 
+	const macArch = process.arch === "arm64" ? "arm64" : "x64";
+	const sha512Base64 = (text: string) => createHash("sha512").update(text).digest("base64");
+	const macRelease = (sha512?: string) => ({
+		version: "1.2.0",
+		files: [{ url: `ScreenMint-${macArch}.dmg`, sha512, size: 8 }],
+	});
+
+	it("refuses a macOS installer whose checksum does not match", async () => {
+		const backend = new FakeUpdaterBackend();
+		backend.checkForUpdates.mockImplementation(async () => {
+			backend.emit("update-available", macRelease(sha512Base64("other-bytes")));
+		});
+		vi.mocked(fetch).mockResolvedValue(new Response("fake-dmg", { status: 200 }));
+
+		const { updater } = createUpdater("darwin", backend);
+		await updater.init();
+		await updater.checkForUpdates("manual");
+		await updater.downloadUpdate("manual");
+		await waitFor(() => updater.getState().status === "manual-download-required");
+
+		expect(updater.getState().error).toContain("checksum");
+		expect(updater.getState().downloadedFilePath).toBeNull();
+		await expect(fs.readdir(path.join(tempDir, "updates"))).resolves.not.toContain(
+			`ScreenMint-1.2.0-${macArch}.dmg`,
+		);
+	});
+
+	it("replaces a cached macOS installer that fails its checksum", async () => {
+		const backend = new FakeUpdaterBackend();
+		backend.checkForUpdates.mockImplementation(async () => {
+			backend.emit("update-available", macRelease(sha512Base64("fake-dmg")));
+		});
+		vi.mocked(fetch).mockResolvedValue(new Response("fake-dmg", { status: 200 }));
+		const cachedPath = path.join(tempDir, "updates", `ScreenMint-1.2.0-${macArch}.dmg`);
+		await fs.mkdir(path.dirname(cachedPath), { recursive: true });
+		await fs.writeFile(cachedPath, "tampered");
+
+		const { updater } = createUpdater("darwin", backend);
+		await updater.init();
+		await updater.checkForUpdates("manual");
+		await updater.downloadUpdate("manual");
+		await waitFor(() => updater.getState().status === "downloaded");
+
+		expect(fetch).toHaveBeenCalled();
+		await expect(fs.readFile(cachedPath, "utf8")).resolves.toBe("fake-dmg");
+	});
+
+	it("refuses a macOS update whose release lists no checksum", async () => {
+		const backend = new FakeUpdaterBackend();
+		backend.checkForUpdates.mockImplementation(async () => {
+			backend.emit("update-available", macRelease(undefined));
+		});
+
+		const { updater } = createUpdater("darwin", backend);
+		await updater.init();
+		await updater.checkForUpdates("manual");
+		await updater.downloadUpdate("manual");
+
+		expect(updater.getState().status).toBe("manual-download-required");
+		expect(fetch).not.toHaveBeenCalled();
+	});
+
 	it("downloads a macOS installer artifact for unsigned builds", async () => {
 		const backend = new FakeUpdaterBackend();
 		backend.checkForUpdates.mockImplementation(async () => {
 			backend.emit("checking-for-update");
-			backend.emit("update-available", { version: "1.2.0" });
+			backend.emit("update-available", macRelease(sha512Base64("fake-dmg")));
 		});
 		vi.mocked(fetch).mockResolvedValue(
 			new Response("fake-dmg", {

@@ -1777,6 +1777,9 @@ function waitForWgcCaptureStart(proc: ChildProcessWithoutNullStreams) {
 	});
 }
 
+// Generous: finalizing a long recording's file can take a while.
+const CAPTURE_STOP_TIMEOUT_MS = 30_000;
+
 function waitForWgcCaptureStop(proc: ChildProcessWithoutNullStreams) {
 	return new Promise<string>((resolve, reject) => {
 		const onClose = (code: number | null) => {
@@ -1802,7 +1805,14 @@ function waitForWgcCaptureStop(proc: ChildProcessWithoutNullStreams) {
 			reject(error);
 		};
 
+		// A helper that never exits must not leave the stop call hanging forever.
+		const timer = setTimeout(() => {
+			cleanup();
+			reject(new Error("WGC capture did not stop within 30 seconds."));
+		}, CAPTURE_STOP_TIMEOUT_MS);
+
 		const cleanup = () => {
+			clearTimeout(timer);
 			proc.off("close", onClose);
 			proc.off("error", onError);
 		};
@@ -1994,7 +2004,14 @@ function waitForNativeCaptureStop(process: ChildProcessWithoutNullStreams) {
 			reject(error);
 		};
 
+		// A helper that never exits must not leave the stop call hanging forever.
+		const timer = setTimeout(() => {
+			cleanup();
+			reject(new Error("Native capture helper did not stop within 30 seconds."));
+		}, CAPTURE_STOP_TIMEOUT_MS);
+
 		const cleanup = () => {
+			clearTimeout(timer);
 			process.off("close", onClose);
 			process.off("error", onError);
 		};
@@ -4597,6 +4614,10 @@ export function registerIpcHandlers(
 	ipcMain.handle(IPC_CHANNELS.recording.stopNative, async () => {
 		// Windows WGC stop path
 		if (process.platform === "win32" && wgcScreenRecordingActive) {
+			// Captured before any state is cleared, so the catch can still find the recording.
+			const procAtStop = wgcCaptureProcess;
+			const targetAtStop = wgcCaptureTargetPath;
+			let stoppedPath: string | null = null;
 			try {
 				if (!wgcCaptureProcess) {
 					throw new Error("WGC capture process is not running");
@@ -4607,6 +4628,7 @@ export function registerIpcHandlers(
 				wgcCaptureStopRequested = true;
 				proc.stdin.write("stop\n");
 				const tempVideoPath = await waitForWgcCaptureStop(proc);
+				stoppedPath = tempVideoPath;
 				wgcCaptureProcess = null;
 				wgcScreenRecordingActive = false;
 				nativeScreenRecordingActive = false;
@@ -4622,7 +4644,7 @@ export function registerIpcHandlers(
 				return { success: true, path: finalVideoPath };
 			} catch (error) {
 				console.error("Failed to stop WGC capture:", error);
-				const fallbackPath = wgcCaptureTargetPath;
+				procAtStop?.kill();
 				wgcScreenRecordingActive = false;
 				nativeScreenRecordingActive = false;
 				wgcCaptureProcess = null;
@@ -4632,7 +4654,8 @@ export function registerIpcHandlers(
 				wgcMicAudioPath = null;
 				wgcPendingVideoPath = null;
 
-				if (fallbackPath) {
+				for (const fallbackPath of [targetAtStop, stoppedPath]) {
+					if (!fallbackPath) continue;
 					try {
 						await fs.access(fallbackPath);
 						wgcPendingVideoPath = fallbackPath;
@@ -4658,6 +4681,10 @@ export function registerIpcHandlers(
 			return { success: false, message: "No native screen recording is active." };
 		}
 
+		// Captured before any state is cleared, so the catch can still find the recording.
+		const procAtStop = nativeCaptureProcess;
+		const targetAtStop = nativeCaptureTargetPath;
+		let stoppedPath: string | null = null;
 		try {
 			if (!nativeCaptureProcess) {
 				throw new Error("Native capture helper process is not running");
@@ -4669,6 +4696,7 @@ export function registerIpcHandlers(
 			nativeCaptureStopRequested = true;
 			process.stdin.write("stop\n");
 			const tempVideoPath = await waitForNativeCaptureStop(process);
+			stoppedPath = tempVideoPath;
 			nativeCaptureProcess = null;
 			nativeScreenRecordingActive = false;
 			nativeCaptureTargetPath = null;
@@ -4697,15 +4725,16 @@ export function registerIpcHandlers(
 			};
 		} catch (error) {
 			console.error("Failed to stop native ScreenCaptureKit recording:", error);
-			const fallbackPath = nativeCaptureTargetPath;
+			procAtStop?.kill();
 			nativeScreenRecordingActive = false;
 			nativeCaptureProcess = null;
 			nativeCaptureTargetPath = null;
 			nativeCaptureMicrophonePath = null;
 			nativeCaptureStopRequested = false;
 
-			// Try to recover: if the target file exists on disk, finalize with it
-			if (fallbackPath) {
+			// Try to recover: if the recording exists on disk, finalize with it
+			for (const fallbackPath of [targetAtStop, stoppedPath]) {
+				if (!fallbackPath) continue;
 				try {
 					await fs.access(fallbackPath);
 					console.log(
