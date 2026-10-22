@@ -40,6 +40,13 @@ describe("export v2 engine selection", () => {
 		expect(shouldUseDirectNativeExport(selection)).toBe(false);
 	});
 
+	it("renders captions and annotations on the composited hardware path", () => {
+		for (const signal of ["hasCaptions", "hasAnnotations"] as const) {
+			const selection = selectExportV2Engine({ ...baseSignals, [signal]: true });
+			expect(selection.engine).toBe("composited-hardware");
+		}
+	});
+
 	it("keeps complex composed timelines on the composited hardware path", () => {
 		const selection = selectExportV2Engine({
 			...baseSignals,

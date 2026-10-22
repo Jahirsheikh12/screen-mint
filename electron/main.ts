@@ -619,7 +619,8 @@ app.whenReady().then(async () => {
 		try {
 			const sources = await desktopCapturer.getSources({ types: ["screen", "window"] });
 			const sourceId = getSelectedSourceId();
-			const source = sourceId ? (sources.find((s) => s.id === sourceId) ?? sources[0]) : sources[0];
+			// A picked source that has since closed must fail, not silently record another screen.
+			const source = sourceId ? sources.find((s) => s.id === sourceId) : sources[0];
 			if (source) {
 				callback({
 					video: { id: source.id, name: source.name },

@@ -1,9 +1,4 @@
-import type {
-	AnnotationRegion,
-	CaptionRegion,
-	CaptionSettings,
-	PaddingValue,
-} from "@/components/video-editor/types";
+import type { PaddingValue } from "@/components/video-editor/types";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import type { ExportV2EncoderCandidate, ExportV2StartRequest } from "./exportV2";
 import { resolvePaddedArea } from "./paddedArea";
@@ -95,37 +90,23 @@ export function compileNativeComposedExport(
 		return unsupported(zoom.reason, featureReport);
 	}
 
-	const overlayFilters = [
-		...compileCaptionFilters(
-			composition.captionRegions ?? [],
-			composition.captionSettings,
-			request.width,
-			request.height,
-			featureReport,
-		),
-		...compileAnnotationFilters(
-			composition.annotationRegions ?? [],
-			request.width,
-			request.height,
-			featureReport,
-		),
-	];
-	if (overlayFilters.some((filter) => filter.startsWith("unsupported:"))) {
-		return unsupported(
-			overlayFilters.find((filter) => filter.startsWith("unsupported:"))!.slice(12),
-			featureReport,
-		);
+	// drawtext can't match the renderer's caption/annotation timing, scaling and layout.
+	const hasCaptions = Boolean(
+		composition.captionSettings?.enabled && composition.captionRegions?.length,
+	);
+	if (hasCaptions || composition.annotationRegions?.length) {
+		return unsupported("Captions and annotations require the renderer path.", featureReport);
 	}
 
-	const trimExpression = buildTrimSelectExpression(request.trimRegions);
+	const trimFilters = buildTrimFilters(request.trimRegions);
 	const sourceFilters: string[] = [];
-	if (trimExpression) {
-		sourceFilters.push(`select='${trimExpression}'`, "setpts=N/FRAME_RATE/TB");
+	if (trimFilters) {
+		sourceFilters.push(trimFilters.video);
 		featureReport.push("trim");
 	}
 	const crop = layout.cropPixels;
 	sourceFilters.push(
-		`crop=${even(crop.width)}:${even(crop.height)}:${even(crop.x)}:${even(crop.y)}`,
+		`crop=${even(crop.width)}:${even(crop.height)}:${evenOffset(crop.x)}:${evenOffset(crop.y)}`,
 	);
 	featureReport.push("crop");
 	sourceFilters.push("setsar=1");
@@ -140,11 +121,11 @@ export function compileNativeComposedExport(
 	const overlayX = `${layout.maskRect.x}-(${layout.maskRect.width}*(${zoomExpr}-1)*${zoom.focusX})`;
 	const overlayY = `${layout.maskRect.y}-(${layout.maskRect.height}*(${zoomExpr}-1)*${zoom.focusY})`;
 	const videoFilter = `[0:v]${sourceFilters.join(",")}[nativev];[bg][nativev]overlay=x='${overlayX}':y='${overlayY}':eval=frame:shortest=1`;
-	const filterComplex = `${bg};${videoFilter}${overlayFilters.length > 0 ? `,${overlayFilters.join(",")}` : ""},format=yuv420p[outv]`;
+	const filterComplex = `${bg};${videoFilter},format=yuv420p[outv]`;
 
 	const audioFilters: string[] = [];
-	if (trimExpression) {
-		audioFilters.push(`aselect='${trimExpression}'`, "asetpts=N/SR/TB");
+	if (trimFilters) {
+		audioFilters.push(trimFilters.audio);
 	}
 
 	const args = [
@@ -275,113 +256,27 @@ function resolveZoomExpression(
 	return { supported: true as const, expression: "1", focusX: 0.5, focusY: 0.5 };
 }
 
-function compileCaptionFilters(
-	captions: CaptionRegion[],
-	settings: CaptionSettings | undefined,
-	width: number,
-	height: number,
-	featureReport: string[],
-) {
-	if (!settings?.enabled || captions.length === 0) return [];
-	if (settings.animationMode !== "static") {
-		return ["unsupported:Animated captions require the renderer path."];
-	}
-	const style = settings.style;
-	if (
-		style.fontWeight !== "normal" ||
-		style.fontStyle !== "normal" ||
-		style.borderRadius > 0 ||
-		style.shadowBlur > 0 ||
-		style.shadowOffsetY !== 0 ||
-		style.letterSpacing !== 0 ||
-		style.textTransform !== "none"
-	) {
-		return ["unsupported:Styled captions require the renderer path."];
-	}
-	const y =
-		settings.position === "top"
-			? Math.round(height * (settings.safeAreaInset / 100))
-			: settings.position === "center"
-				? "(h-text_h)/2"
-				: `h-text_h-${Math.round(height * (settings.safeAreaInset / 100))}`;
-	const x = settings.positionOverride
-		? Math.round((settings.positionOverride.xPercent / 100) * width)
-		: "(w-text_w)/2";
-	const yExpr = settings.positionOverride
-		? Math.round((settings.positionOverride.yPercent / 100) * height)
-		: y;
-	featureReport.push("captions");
-	return captions.map((caption) =>
-		[
-			"drawtext",
-			`text='${escapeDrawtext(caption.text)}'`,
-			`enable='between(t\\,${(caption.startMs / 1000).toFixed(3)}\\,${(caption.endMs / 1000).toFixed(3)})'`,
-			`x=${x}`,
-			`y=${yExpr}`,
-			`fontsize=${Math.max(8, Math.round(style.fontSize))}`,
-			`fontcolor=${escapeColor(style.color)}`,
-			`box=${style.backgroundOpacity > 0 ? 1 : 0}`,
-			`boxcolor=${escapeColor(style.backgroundColor)}@${clamp01(style.backgroundOpacity).toFixed(3)}`,
-			`borderw=${Math.max(0, Math.round(style.outlineWidth))}`,
-			`bordercolor=${escapeColor(style.outlineColor)}`,
-		].join(":"),
-	);
-}
-
-function compileAnnotationFilters(
-	annotations: AnnotationRegion[],
-	width: number,
-	height: number,
-	featureReport: string[],
-) {
-	if (annotations.length === 0) return [];
-	const filters: string[] = [];
-	for (const annotation of annotations) {
-		if (annotation.type !== "text") {
-			return ["unsupported:Image, figure, and blur annotations require the renderer path."];
-		}
-		if (annotation.style.textDecoration !== "none") {
-			return ["unsupported:Underlined text annotations require the renderer path."];
-		}
-		if (
-			annotation.style.fontWeight !== "normal" ||
-			annotation.style.fontStyle !== "normal" ||
-			annotation.style.textAlign !== "left"
-		) {
-			return ["unsupported:Styled text annotations require the renderer path."];
-		}
-		const x = Math.round((annotation.position.x / 100) * width);
-		const y = Math.round((annotation.position.y / 100) * height);
-		filters.push(
-			[
-				"drawtext",
-				`text='${escapeDrawtext(annotation.textContent || annotation.content)}'`,
-				`enable='between(t\\,${(annotation.startMs / 1000).toFixed(3)}\\,${(annotation.endMs / 1000).toFixed(3)})'`,
-				`x=${x}`,
-				`y=${y}`,
-				`fontsize=${Math.max(8, Math.round(annotation.style.fontSize))}`,
-				`fontcolor=${escapeColor(annotation.style.color)}`,
-				`box=${annotation.style.backgroundColor !== "transparent" ? 1 : 0}`,
-				`boxcolor=${escapeColor(annotation.style.backgroundColor)}@1`,
-			].join(":"),
-		);
-	}
-	featureReport.push("text-annotations");
-	return filters;
-}
-
-function buildTrimSelectExpression(trimRegions: ExportV2StartRequest["trimRegions"] = []) {
-	const validTrims = trimRegions
+/**
+ * FFmpeg filters that drop trimmed ranges. Kept frames are shifted back by the trimmed time
+ * before them, which keeps real timestamps: retiming by frame count (N/FRAME_RATE) drifts on
+ * variable-frame-rate screen recordings and pulls video out of sync with audio.
+ */
+export function buildTrimFilters(trimRegions: ExportV2StartRequest["trimRegions"] = []) {
+	const trims = trimRegions
 		.filter((region) => region.endMs > region.startMs)
 		.map((region) => ({
-			startSec: Math.max(0, region.startMs / 1000),
-			endSec: Math.max(0, region.endMs / 1000),
+			start: Math.max(0, region.startMs / 1000).toFixed(3),
+			end: Math.max(0, region.endMs / 1000).toFixed(3),
+			length: (Math.max(0, region.endMs - region.startMs) / 1000).toFixed(3),
 		}));
-	if (validTrims.length === 0) return null;
-	const removedRanges = validTrims
-		.map((region) => `between(t\\,${region.startSec.toFixed(3)}\\,${region.endSec.toFixed(3)})`)
-		.join("+");
-	return `not(${removedRanges})`;
+	if (trims.length === 0) return null;
+	const keep = `not(${trims.map((t) => `between(t\\,${t.start}\\,${t.end})`).join("+")})`;
+	const removedBefore = trims.map((t) => `gte(T\\,${t.end})*${t.length}`).join("+");
+	const pts = `PTS-(${removedBefore})/TB`;
+	return {
+		video: `select='${keep}',setpts='${pts}'`,
+		audio: `aselect='${keep}',asetpts='${pts}'`,
+	};
 }
 
 function resolveNativeLayout(params: {
@@ -415,8 +310,8 @@ function resolveNativeLayout(params: {
 	maskRect.y += frameRect.y;
 	return {
 		maskRect: {
-			x: even(maskRect.x),
-			y: even(maskRect.y),
+			x: evenOffset(maskRect.x),
+			y: evenOffset(maskRect.y),
 			width: even(maskRect.width),
 			height: even(maskRect.height),
 		},
@@ -465,8 +360,14 @@ function centerRect(
 	return { x: (containerWidth - width) / 2, y: (containerHeight - height) / 2, width, height };
 }
 
+// Even values keep yuv420 chroma aligned. Sizes need at least 2px; offsets may be 0.
 function even(value: number) {
 	const rounded = Math.max(2, Math.round(value));
+	return rounded % 2 === 0 ? rounded : rounded - 1;
+}
+
+function evenOffset(value: number) {
+	const rounded = Math.max(0, Math.round(value));
 	return rounded % 2 === 0 ? rounded : rounded - 1;
 }
 
@@ -476,19 +377,4 @@ function clamp01(value: number) {
 
 function clamp(value: number, min: number, max: number) {
 	return Math.min(max, Math.max(min, value));
-}
-
-function escapeDrawtext(value: string) {
-	return value
-		.replace(/\\/g, "\\\\")
-		.replace(/:/g, "\\:")
-		.replace(/'/g, "\\'")
-		.replace(/\[/g, "\\[")
-		.replace(/\]/g, "\\]")
-		.replace(/\n/g, "\\n");
-}
-
-function escapeColor(color: string) {
-	if (!color || color === "transparent") return "black";
-	return color.replace("#", "0x");
 }

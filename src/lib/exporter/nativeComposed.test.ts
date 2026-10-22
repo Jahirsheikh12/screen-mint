@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ExportV2StartRequest } from "./exportV2";
-import { compileNativeComposedExport } from "./nativeComposed";
+import { buildTrimFilters, compileNativeComposedExport } from "./nativeComposed";
 
 const encoder = {
 	name: "libx264",
@@ -52,6 +52,24 @@ describe("native composed compiler", () => {
 		expect(result.featureReport).toEqual(expect.arrayContaining(["crop", "native-filtergraph"]));
 	});
 
+	it("keeps a frame that touches the top-left edge at offset 0", () => {
+		const result = compileNativeComposedExport(
+			makeRequest({
+				compositionPayload: {
+					...makeRequest().compositionPayload!,
+					cropRegion: { x: 0, y: 0, width: 1, height: 1 },
+					padding: 0,
+				},
+			}),
+			"/tmp/out.mp4",
+			encoder,
+		);
+		const args = result.ffmpegArgs?.join(" ") ?? "";
+
+		expect(args).toContain("crop=1920:1080:0:0");
+		expect(args).toContain("overlay=x='0-");
+	});
+
 	it("falls back to the renderer for zoom regions so transitions match preview", () => {
 		const result = compileNativeComposedExport(
 			makeRequest({
@@ -93,7 +111,7 @@ describe("native composed compiler", () => {
 		expect(result.fallbackReason).toContain("Cursor");
 	});
 
-	it("falls back instead of approximating styled captions", () => {
+	it("falls back for captions instead of approximating them", () => {
 		const result = compileNativeComposedExport(
 			makeRequest({
 				compositionPayload: {
@@ -136,6 +154,21 @@ describe("native composed compiler", () => {
 		);
 
 		expect(result.supported).toBe(false);
-		expect(result.fallbackReason).toContain("Styled captions");
+		expect(result.fallbackReason).toContain("Captions and annotations");
+	});
+
+	it("shifts kept frames by the trimmed time instead of renumbering them", () => {
+		const filters = buildTrimFilters([
+			{ startMs: 1000, endMs: 2500 },
+			{ startMs: 4000, endMs: 5000 },
+		]);
+		const keep = "not(between(t\\,1.000\\,2.500)+between(t\\,4.000\\,5.000))";
+		const pts = "PTS-(gte(T\\,2.500)*1.500+gte(T\\,5.000)*1.000)/TB";
+
+		expect(filters).toEqual({
+			video: `select='${keep}',setpts='${pts}'`,
+			audio: `aselect='${keep}',asetpts='${pts}'`,
+		});
+		expect(buildTrimFilters([])).toBeNull();
 	});
 });

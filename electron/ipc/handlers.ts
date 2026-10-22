@@ -22,14 +22,16 @@ import type {
 	ExportV2Progress,
 	ExportV2StartRequest,
 	ExportV2StartResult,
-	ExportV2TrimRegion,
 } from "../../src/lib/exporter/exportV2";
 import {
 	buildGifPaletteFilter,
 	buildGifRawPipeFfmpegArgs,
 	resolveGifFfmpegLoop,
 } from "../../src/lib/exporter/gifFfmpeg";
-import { compileNativeComposedExport } from "../../src/lib/exporter/nativeComposed";
+import {
+	buildTrimFilters,
+	compileNativeComposedExport,
+} from "../../src/lib/exporter/nativeComposed";
 import { isFeatureEnabled } from "../../src/lib/featureFlags";
 import { buildCollisionFileName, ensureFileExtension } from "../../src/lib/fileNames";
 import type { PostRecordingContext } from "../../src/lib/recording/postRecording";
@@ -996,24 +998,6 @@ function normalizeExportV2SourcePath(sourcePath: string) {
 	return sourcePath;
 }
 
-function buildTrimSelectExpression(trimRegions: ExportV2TrimRegion[] = []) {
-	const validTrims = trimRegions
-		.filter((region) => region.endMs > region.startMs)
-		.map((region) => ({
-			startSec: Math.max(0, region.startMs / 1000),
-			endSec: Math.max(0, region.endMs / 1000),
-		}));
-
-	if (validTrims.length === 0) {
-		return null;
-	}
-
-	const removedRanges = validTrims
-		.map((region) => `between(t\\,${region.startSec.toFixed(3)}\\,${region.endSec.toFixed(3)})`)
-		.join("+");
-	return `not(${removedRanges})`;
-}
-
 async function resolveExportV2OutputPath(request: ExportV2StartRequest) {
 	const extension = request.format === "gif" ? "gif" : "mp4";
 	const fileName = ensureFileExtension(request.fileName, extension);
@@ -1293,17 +1277,17 @@ function buildExportV2VideoArgs(
 	encoder: ExportV2EncoderCandidate,
 ): ExportV2FfmpegAttempt {
 	const filters: string[] = [];
-	const trimExpression = buildTrimSelectExpression(request.trimRegions);
-	if (trimExpression) {
-		filters.push(`select='${trimExpression}',setpts=N/FRAME_RATE/TB`);
+	const trimFilters = buildTrimFilters(request.trimRegions);
+	if (trimFilters) {
+		filters.push(trimFilters.video);
 	}
 	filters.push(`fps=${request.frameRate}`);
 	filters.push(`scale=${request.width}:${request.height}:flags=lanczos`);
 	filters.push("format=yuv420p");
 
 	const audioFilters: string[] = [];
-	if (trimExpression) {
-		audioFilters.push(`aselect='${trimExpression}',asetpts=N/SR/TB`);
+	if (trimFilters) {
+		audioFilters.push(trimFilters.audio);
 	}
 
 	const args = [
@@ -1375,7 +1359,7 @@ function buildExportV2GifArgs(
 	outputPath: string,
 ): ExportV2FfmpegAttempt {
 	const fps = request.frameRate;
-	const trimExpression = buildTrimSelectExpression(request.trimRegions);
+	const trimFilter = buildTrimFilters(request.trimRegions)?.video ?? null;
 	const gifSettings = {
 		colorCount: request.gif?.colorCount ?? 128,
 		ditherMode: request.gif?.ditherMode ?? "bayer",
@@ -1387,7 +1371,7 @@ function buildExportV2GifArgs(
 		width: request.width,
 		height: request.height,
 		frameRate: fps,
-		trimSelectExpression: trimExpression,
+		trimFilter,
 		settings: gifSettings,
 	});
 	const args = [
