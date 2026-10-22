@@ -5,7 +5,6 @@ export type EditorHistorySnapshot = ProjectEditorState & {
 	selectedCameraLayoutId: string | null;
 	webcamSelected: boolean;
 	selectedZoomId: string | null;
-	selectedTrimId: string | null;
 	selectedSpeedId: string | null;
 	selectedAnnotationId: string | null;
 	selectedAudioId: string | null;

@@ -53,11 +53,6 @@ export interface TimelineEditorProps {
 	cutPoints?: number[];
 	onSplitClip?: (timeMs: number) => void;
 	onDeleteSegment?: (startMs: number, endMs: number) => void;
-	onTrimAdded?: (span: Span) => void;
-	onTrimSpanChange?: (id: string, span: Span) => void;
-	onTrimDelete?: (id: string) => void;
-	selectedTrimId?: string | null;
-	onSelectTrim?: (id: string | null) => void;
 	annotationRegions?: AnnotationRegion[];
 	onAnnotationAdded?: (span: Span) => void;
 	onAnnotationSpanChange?: (id: string, span: Span) => void;
@@ -125,7 +120,6 @@ export interface TimelineProps {
 	currentTimeMs: number;
 	onSeek?: (time: number) => void;
 	onSelectZoom?: (id: string | null) => void;
-	onSelectTrim?: (id: string | null) => void;
 	onSelectAnnotation?: (id: string | null) => void;
 	onSelectCameraLayout?: (id: string | null) => void;
 	onSelectSpeed?: (id: string | null) => void;

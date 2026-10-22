@@ -294,55 +294,10 @@
 	},
 	"sidebar": {
 		"edit": "編輯",
-		"layers": "圖層",
 		"polish": "潤飾"
 	},
 	"slider": {
 		"resetToDefault": "恢復預設值"
-	},
-	"layerPanel": {
-		"layers": "圖層",
-		"noVideoLayerLoaded": "尚未載入影片圖層",
-		"loadOrRecordA": "載入或錄製影片以建立主要編輯圖層。",
-		"pendingCapturedMedia": "等待錄製內容",
-		"layerSettings": "圖層設定",
-		"transformAndVisibilityControls": "變形與顯示設定",
-		"layerName": "圖層名稱",
-		"hideLayer": "隱藏圖層",
-		"showLayer": "顯示圖層",
-		"unlockLayer": "解除鎖定圖層",
-		"lockLayer": "鎖定圖層",
-		"thisLayerIsPlanned": "此圖層已規劃，但還沒有錄製內容。",
-		"transform": "變形",
-		"xPosition": "X 位置",
-		"yPosition": "Y 位置",
-		"scale": "縮放",
-		"opacity": "不透明度",
-		"startMs": "開始（毫秒）",
-		"endMs": "結束（毫秒）",
-		"crop": "裁切",
-		"moveLayerForward": "圖層上移",
-		"moveLayerBackward": "圖層下移",
-		"editableLayersOne": "1 個可編輯圖層",
-		"editableLayersMany": "{{count}} 個可編輯圖層",
-		"primaryRecording": "主要錄製",
-		"delete": "刪除",
-		"cropFields": {
-			"x": "X",
-			"y": "Y",
-			"width": "寬度",
-			"height": "高度"
-		},
-		"layerKinds": {
-			"video": "影片",
-			"window": "視窗",
-			"screenshot": "截圖",
-			"webcam": "攝影機",
-			"audio": "音訊",
-			"annotation": "註解",
-			"caption": "字幕",
-			"scene-3d": "3D"
-		}
 	},
 	"annotationPanel": {
 		"customFonts": "自訂字型",
@@ -368,23 +323,6 @@
 		"noArrowData": "沒有箭頭資料"
 	},
 	"polishPanel": {
-		"environmentLensAndLighting": "環境、鏡頭與光線設定",
-		"enable3dRendering": "啟用 3D 算繪",
-		"preset": "預設",
-		"device": "裝置",
-		"environment": "環境",
-		"fallback": "備援",
-		"lens": "鏡頭",
-		"lighting": "光線",
-		"audioMix": "音訊混音",
-		"trackVolumeAndDucking": "音軌音量與迴避規則",
-		"masterVolume": "總音量",
-		"mute": "靜音",
-		"solo": "獨奏",
-		"duck": "迴避",
-		"vol": "音量",
-		"fadeIn": "淡入",
-		"fadeOut": "淡出",
 		"autoPolish": "自動潤飾",
 		"oneClickStudioTemplates": "一鍵工作室範本"
 	},

@@ -6,7 +6,6 @@ import {
 	FolderOpen,
 	Keyboard,
 	Languages,
-	Layers,
 	Pencil,
 	Redo2,
 	Save,
@@ -50,7 +49,6 @@ import { useShortcuts } from "@/contexts/ShortcutsContext";
 import { type AppLocale, LOCALE_LABELS, SUPPORTED_LOCALES } from "@/i18n/config";
 import { getBackgroundMusicAssetById } from "@/lib/backgroundMusic";
 import {
-	buildLayeredExportComposition,
 	type ExportDestination,
 	type ExportDetails,
 	type ExportFormat,
@@ -83,6 +81,7 @@ import {
 } from "@/lib/fileNames";
 import { type AspectRatio, getAspectRatioValue } from "@/utils/aspectRatioUtils";
 import { AppearanceSwitcher } from "./AppearanceSwitcher";
+import { AutoPolishPanel } from "./AutoPolishPanel";
 import { type AudioMixSettings, DEFAULT_AUDIO_MIX_SETTINGS } from "./audioMix";
 import { loadAudioSelectionDurationMs } from "./audioRegionUtils";
 import { type AutoPolishContentType, buildAutoPolishResult } from "./autoPolish";
@@ -113,8 +112,6 @@ import {
 import { FeedbackDialog } from "./FeedbackDialog";
 import { getLegacyShadowIntensityFromFrameShadow } from "./frameEffects";
 import { deriveKeyboardShortcutCallouts } from "./keyboardShortcuts";
-import { LayerPanel } from "./LayerPanel";
-import { type EditorLayer, ensurePrimaryVideoLayer } from "./layerModel";
 import { ProjectBrowserDialog } from "./ProjectBrowserDialog";
 import {
 	type PostRecordingAutoZoomBootstrapState,
@@ -132,13 +129,7 @@ import {
 } from "./projectPersistence";
 import { captureProjectThumbnail } from "./projectThumbnail";
 import { QuickShareDialog } from "./QuickShareDialog";
-import { SceneAudioPolishPanel } from "./SceneAudioPolishPanel";
 import SettingsPanel from "./SettingsPanel";
-import {
-	DEFAULT_SCENE_3D_SETTINGS,
-	normalizeScene3DSettings,
-	type Scene3DSettings,
-} from "./scene3d";
 import {
 	applyAutoBeautify,
 	applyScenePreset,
@@ -308,12 +299,8 @@ export default function VideoEditor() {
 	);
 	const [videoPath, setVideoPath] = useState<string | null>(null);
 	const [videoSourcePath, setVideoSourcePath] = useState<string | null>(null);
-	const [editorLayers, setEditorLayers] = useState<EditorLayer[]>([]);
-	const [scene3D, setScene3D] = useState<Scene3DSettings>(DEFAULT_SCENE_3D_SETTINGS);
 	const [audioMix, setAudioMix] = useState<AudioMixSettings>(DEFAULT_AUDIO_MIX_SETTINGS);
-	const [rightSidebarSection, setRightSidebarSection] = useState<"edit" | "layers" | "polish">(
-		"edit",
-	);
+	const [rightSidebarSection, setRightSidebarSection] = useState<"edit" | "polish">("edit");
 	const {
 		videoName,
 		setVideoName,
@@ -505,7 +492,6 @@ export default function VideoEditor() {
 		useState<KeyboardPlatform>("win32");
 	const [selectedZoomId, setSelectedZoomId] = useState<string | null>(null);
 	const [trimRegions, setTrimRegions] = useState<TrimRegion[]>([]);
-	const [selectedTrimId, setSelectedTrimId] = useState<string | null>(null);
 	const [cutPoints, setCutPoints] = useState<number[]>([]);
 	const [speedRegions, setSpeedRegions] = useState<SpeedRegion[]>([]);
 	const [selectedSpeedId, setSelectedSpeedId] = useState<string | null>(null);
@@ -805,8 +791,6 @@ export default function VideoEditor() {
 				videoExportSettings,
 				gifExportSettings,
 				scenePresetId,
-				layers: editorLayers,
-				scene3D,
 				audioMix,
 			}),
 		[
@@ -886,8 +870,6 @@ export default function VideoEditor() {
 			videoExportSettings,
 			gifExportSettings,
 			scenePresetId,
-			editorLayers,
-			scene3D,
 			audioMix,
 		],
 	);
@@ -968,8 +950,6 @@ export default function VideoEditor() {
 			setVideoExportSettings(controls.videoExportSettings);
 			setGifExportSettings(controls.gifExportSettings);
 			setScenePresetId(controls.scenePresetId);
-			setEditorLayers(controls.layers);
-			setScene3D(normalizeScene3DSettings(controls.scene3D));
 			setAudioMix(controls.audioMix);
 
 			if (options.includeTimeline) {
@@ -992,7 +972,6 @@ export default function VideoEditor() {
 			selectedCameraLayoutId,
 			webcamSelected,
 			selectedZoomId,
-			selectedTrimId,
 			selectedSpeedId,
 			selectedAnnotationId,
 			selectedAudioId,
@@ -1003,7 +982,6 @@ export default function VideoEditor() {
 		selectedCameraLayoutId,
 		webcamSelected,
 		selectedZoomId,
-		selectedTrimId,
 		selectedSpeedId,
 		selectedAnnotationId,
 		selectedAudioId,
@@ -1017,7 +995,6 @@ export default function VideoEditor() {
 			setSelectedCameraLayoutId(cloned.selectedCameraLayoutId);
 			setWebcamSelected(cloned.webcamSelected);
 			setSelectedZoomId(cloned.selectedZoomId);
-			setSelectedTrimId(cloned.selectedTrimId);
 			setSelectedSpeedId(cloned.selectedSpeedId);
 			setSelectedAnnotationId(cloned.selectedAnnotationId);
 			setSelectedAudioId(cloned.selectedAudioId);
@@ -1075,7 +1052,6 @@ export default function VideoEditor() {
 			);
 			const normalizedEditor = normalizeProjectEditor(
 				withLegacyZoomTiming(project.version, project.editor),
-				{ fallbackVideoPath: sourcePath },
 			);
 			const normalizedWebcamSessionMetadata =
 				normalizeWebcamSessionMetadata(project.webcamSessionMetadata) ?? null;
@@ -1102,7 +1078,6 @@ export default function VideoEditor() {
 			await syncWebcamAvailability(normalizedEditor.webcamPath ?? null, { quiet: false });
 
 			setSelectedZoomId(null);
-			setSelectedTrimId(null);
 			setSelectedSpeedId(null);
 			setSelectedAnnotationId(null);
 			setSelectedAudioId(null);
@@ -1388,25 +1363,7 @@ export default function VideoEditor() {
 							// Reset every editor control (and timeline data) to defaults so
 							// a brand-new recording never inherits the previous video's
 							// tweaks. Users restore prior settings via presets.
-							let newRecordingEditor = normalizeProjectEditor(
-								{},
-								{ fallbackVideoPath: sourcePath },
-							);
-							try {
-								const layeredResult = await window.electronAPI.getLayeredCaptureSources();
-								if (layeredResult.success && layeredResult.manifest?.layers.length) {
-									newRecordingEditor = normalizeProjectEditor(
-										{
-											...newRecordingEditor,
-											layers: ensurePrimaryVideoLayer(layeredResult.manifest.layers, sourcePath),
-										},
-										{ fallbackVideoPath: sourcePath },
-									);
-									await window.electronAPI.clearLayeredCaptureSources();
-								}
-							} catch {
-								// Layer planning is optional; the primary recording layer remains usable.
-							}
+							const newRecordingEditor = normalizeProjectEditor({});
 							applyEditorControls(newRecordingEditor, { includeTimeline: true });
 							setAspectRatio("native");
 							setPadding(DEFAULT_VIDEO_PREVIEW_PADDING);
@@ -1432,7 +1389,7 @@ export default function VideoEditor() {
 							setWebcamSessionMetadata(null);
 							dispatchSession({ type: "set-current-project-path", path: null });
 							dispatchSession({ type: "set-last-saved-snapshot", snapshot: null });
-							applyEditorControls(normalizeProjectEditor({}, { fallbackVideoPath: sourcePath }), {
+							applyEditorControls(normalizeProjectEditor({}), {
 								includeTimeline: true,
 							});
 							setAspectRatio("native");
@@ -1642,8 +1599,6 @@ export default function VideoEditor() {
 					exportDestination,
 					videoExportSettings,
 					gifExportSettings,
-					layers: editorLayers,
-					scene3D,
 					audioMix,
 				},
 				webcamSessionMetadata: webcamSessionMetadata ?? undefined,
@@ -1758,8 +1713,6 @@ export default function VideoEditor() {
 			exportDestination,
 			videoExportSettings,
 			gifExportSettings,
-			editorLayers,
-			scene3D,
 			audioMix,
 			webcamSessionMetadata,
 			t,
@@ -1952,42 +1905,6 @@ export default function VideoEditor() {
 		[cropRegion, legacyCaptureCorrectionCrop],
 	);
 
-	const activeLayeredComposition = useMemo(
-		() =>
-			buildLayeredExportComposition({
-				layers: editorLayers,
-				scene3D,
-				audioMix,
-				width: sourceVideoWidth || 1920,
-				height: sourceVideoHeight || 1080,
-				durationMs: Math.max(0, Math.round(duration * 1000)),
-				primaryVideoPath: videoSourcePath,
-			}),
-		[
-			audioMix,
-			duration,
-			editorLayers,
-			scene3D,
-			sourceVideoHeight,
-			sourceVideoWidth,
-			videoSourcePath,
-		],
-	);
-
-	const activePrimaryVideoLayer = useMemo(
-		() =>
-			activeLayeredComposition.layers.find((layer) => layer.type === "video" && layer.isPrimary) ??
-			null,
-		[activeLayeredComposition.layers],
-	);
-	const effectiveLayerCropRegion = useMemo(
-		() =>
-			activePrimaryVideoLayer?.transform.crop
-				? composeCropRegions(effectiveCropRegion, activePrimaryVideoLayer.transform.crop)
-				: effectiveCropRegion,
-		[activePrimaryVideoLayer, effectiveCropRegion],
-	);
-
 	const cursorSimulationPath = useMemo(
 		() =>
 			buildCursorSimulationPath(
@@ -2116,8 +2033,6 @@ export default function VideoEditor() {
 				captionTrack,
 				contentType,
 			});
-			setScene3D(result.scene3D);
-			setAudioMix(result.audioMix);
 			if (result.zoomRegions.length > 0) {
 				setZoomRegions(result.zoomRegions);
 				nextZoomIdRef.current = deriveNextId(
@@ -2253,19 +2168,6 @@ export default function VideoEditor() {
 	const handleSelectZoom = useCallback((id: string | null) => {
 		setSelectedZoomId(id);
 		if (id) {
-			setSelectedTrimId(null);
-			setSelectedSpeedId(null);
-			setSelectedCameraLayoutId(null);
-			setWebcamSelected(false);
-			setSelectedAnnotationId(null);
-			setSelectedAudioId(null);
-		}
-	}, []);
-
-	const handleSelectTrim = useCallback((id: string | null) => {
-		setSelectedTrimId(id);
-		if (id) {
-			setSelectedZoomId(null);
 			setSelectedSpeedId(null);
 			setSelectedCameraLayoutId(null);
 			setWebcamSelected(false);
@@ -2278,7 +2180,6 @@ export default function VideoEditor() {
 		setSelectedAnnotationId(id);
 		if (id) {
 			setSelectedZoomId(null);
-			setSelectedTrimId(null);
 			setSelectedSpeedId(null);
 			setSelectedCameraLayoutId(null);
 			setWebcamSelected(false);
@@ -2290,7 +2191,6 @@ export default function VideoEditor() {
 		setWebcamSelected(true);
 		setSelectedCameraLayoutId(null);
 		setSelectedZoomId(null);
-		setSelectedTrimId(null);
 		setSelectedSpeedId(null);
 		setSelectedAnnotationId(null);
 		setSelectedAudioId(null);
@@ -2301,7 +2201,6 @@ export default function VideoEditor() {
 		if (id) {
 			setWebcamSelected(false);
 			setSelectedZoomId(null);
-			setSelectedTrimId(null);
 			setSelectedSpeedId(null);
 			setSelectedAnnotationId(null);
 			setSelectedAudioId(null);
@@ -2321,7 +2220,6 @@ export default function VideoEditor() {
 		};
 		setZoomRegions((prev) => [...prev, newRegion]);
 		setSelectedZoomId(id);
-		setSelectedTrimId(null);
 		setSelectedSpeedId(null);
 		setSelectedCameraLayoutId(null);
 		setWebcamSelected(false);
@@ -2341,7 +2239,6 @@ export default function VideoEditor() {
 		};
 		setZoomRegions((prev) => [...prev, newRegion]);
 		setSelectedZoomId(id);
-		setSelectedTrimId(null);
 		setSelectedSpeedId(null);
 		setSelectedCameraLayoutId(null);
 		setWebcamSelected(false);
@@ -2391,22 +2288,6 @@ export default function VideoEditor() {
 		[currentTime, cursorSimulationPath, selectedZoomId],
 	);
 
-	const handleTrimAdded = useCallback((span: Span) => {
-		const id = `trim-${nextTrimIdRef.current++}`;
-		const newRegion: TrimRegion = {
-			id,
-			startMs: Math.round(span.start),
-			endMs: Math.round(span.end),
-		};
-		setTrimRegions((prev) => [...prev, newRegion]);
-		setSelectedTrimId(id);
-		setSelectedZoomId(null);
-		setSelectedSpeedId(null);
-		setSelectedCameraLayoutId(null);
-		setWebcamSelected(false);
-		setSelectedAnnotationId(null);
-	}, []);
-
 	const handleSplitClip = useCallback(
 		(timeMs: number) => {
 			const t = Math.round(timeMs);
@@ -2443,25 +2324,10 @@ export default function VideoEditor() {
 		});
 		// Remove cut points that are now inside trim regions
 		setCutPoints((prev) => prev.filter((cp) => cp <= startMs || cp >= endMs));
-		setSelectedTrimId(null);
 	}, []);
 
 	const handleZoomSpanChange = useCallback((id: string, span: Span) => {
 		setZoomRegions((prev) =>
-			prev.map((region) =>
-				region.id === id
-					? {
-							...region,
-							startMs: Math.round(span.start),
-							endMs: Math.round(span.end),
-						}
-					: region,
-			),
-		);
-	}, []);
-
-	const handleTrimSpanChange = useCallback((id: string, span: Span) => {
-		setTrimRegions((prev) =>
 			prev.map((region) =>
 				region.id === id
 					? {
@@ -2515,21 +2381,10 @@ export default function VideoEditor() {
 		[selectedZoomId],
 	);
 
-	const handleTrimDelete = useCallback(
-		(id: string) => {
-			setTrimRegions((prev) => prev.filter((region) => region.id !== id));
-			if (selectedTrimId === id) {
-				setSelectedTrimId(null);
-			}
-		},
-		[selectedTrimId],
-	);
-
 	const handleSelectSpeed = useCallback((id: string | null) => {
 		setSelectedSpeedId(id);
 		if (id) {
 			setSelectedZoomId(null);
-			setSelectedTrimId(null);
 			setSelectedCameraLayoutId(null);
 			setWebcamSelected(false);
 			setSelectedAnnotationId(null);
@@ -2548,7 +2403,6 @@ export default function VideoEditor() {
 		setSpeedRegions((prev) => [...prev, newRegion]);
 		setSelectedSpeedId(id);
 		setSelectedZoomId(null);
-		setSelectedTrimId(null);
 		setSelectedCameraLayoutId(null);
 		setWebcamSelected(false);
 		setSelectedAnnotationId(null);
@@ -2582,7 +2436,6 @@ export default function VideoEditor() {
 		setSelectedAudioId(id);
 		if (id) {
 			setSelectedZoomId(null);
-			setSelectedTrimId(null);
 			setSelectedAnnotationId(null);
 			setSelectedSpeedId(null);
 			setSelectedCameraLayoutId(null);
@@ -2669,7 +2522,6 @@ export default function VideoEditor() {
 			setAudioRegions((prev) => [...prev, newRegion]);
 			setSelectedAudioId(id);
 			setSelectedZoomId(null);
-			setSelectedTrimId(null);
 			setSelectedAnnotationId(null);
 			setSelectedSpeedId(null);
 			setSelectedCameraLayoutId(null);
@@ -2945,7 +2797,6 @@ export default function VideoEditor() {
 			setAnnotationRegions((prev) => [...prev, newRegion]);
 			setSelectedAnnotationId(id);
 			setSelectedZoomId(null);
-			setSelectedTrimId(null);
 			setSelectedSpeedId(null);
 			setSelectedCameraLayoutId(null);
 			setWebcamSelected(false);
@@ -3327,9 +3178,6 @@ export default function VideoEditor() {
 		selectedZoomId,
 		setSelectedZoomId,
 		zoomRegions,
-		selectedTrimId,
-		setSelectedTrimId,
-		trimRegions,
 		selectedAnnotationId,
 		setSelectedAnnotationId,
 		annotationRegions,
@@ -3344,11 +3192,6 @@ export default function VideoEditor() {
 	useEffect(() => {
 		void syncAudioAvailability(audioRegions);
 	}, [audioRegions, syncAudioAvailability]);
-
-	useEffect(() => {
-		if (!videoSourcePath) return;
-		setEditorLayers((prev) => ensurePrimaryVideoLayer(prev, videoSourcePath, duration * 1000));
-	}, [duration, videoSourcePath]);
 
 	useVideoEditorAudioPreview({
 		audioRegions,
@@ -3604,10 +3447,10 @@ export default function VideoEditor() {
 				const previewHeight = containerElement?.clientHeight || 1080;
 
 				const isDefaultCropRegion =
-					Math.abs(effectiveLayerCropRegion.x - DEFAULT_CROP_REGION.x) < 0.0001 &&
-					Math.abs(effectiveLayerCropRegion.y - DEFAULT_CROP_REGION.y) < 0.0001 &&
-					Math.abs(effectiveLayerCropRegion.width - DEFAULT_CROP_REGION.width) < 0.0001 &&
-					Math.abs(effectiveLayerCropRegion.height - DEFAULT_CROP_REGION.height) < 0.0001;
+					Math.abs(effectiveCropRegion.x - DEFAULT_CROP_REGION.x) < 0.0001 &&
+					Math.abs(effectiveCropRegion.y - DEFAULT_CROP_REGION.y) < 0.0001 &&
+					Math.abs(effectiveCropRegion.width - DEFAULT_CROP_REGION.width) < 0.0001 &&
+					Math.abs(effectiveCropRegion.height - DEFAULT_CROP_REGION.height) < 0.0001;
 				const hasFrameShadow =
 					frameShadowOpacity > 0 && (frameShadowSize > 0 || frameShadowBlur > 0);
 				const hasCaptionExport =
@@ -3669,8 +3512,7 @@ export default function VideoEditor() {
 					frameBorderOpacity,
 					borderRadius,
 					padding: effectivePadding,
-					videoPadding: padding,
-					cropRegion: effectiveLayerCropRegion,
+					cropRegion: effectiveCropRegion,
 					aspectRatio,
 					annotationRegions,
 					zoomRegions: effectiveZoomRegions,
@@ -3917,8 +3759,7 @@ export default function VideoEditor() {
 							frameBorderOpacity,
 							borderRadius,
 							padding: effectivePadding,
-							videoPadding: padding,
-							cropRegion: effectiveLayerCropRegion,
+							cropRegion: effectiveCropRegion,
 							aspectRatio,
 							annotationRegions,
 							zoomRegions: effectiveZoomRegions,
@@ -4070,7 +3911,7 @@ export default function VideoEditor() {
 							frameBorderOpacity,
 							borderRadius,
 							padding: effectivePadding,
-							cropRegion: effectiveLayerCropRegion,
+							cropRegion: effectiveCropRegion,
 							aspectRatio,
 							annotationRegions,
 							zoomRegions: effectiveZoomRegions,
@@ -4250,7 +4091,7 @@ export default function VideoEditor() {
 			effectivePadding,
 			clipVolume,
 			paddingSides,
-			effectiveLayerCropRegion,
+			effectiveCropRegion,
 			annotationRegions,
 			isPlaying,
 			aspectRatio,
@@ -4882,7 +4723,7 @@ export default function VideoEditor() {
 											deviceMockup={deviceMockup}
 											borderRadius={borderRadius}
 											padding={effectivePadding}
-											cropRegion={effectiveLayerCropRegion}
+											cropRegion={effectiveCropRegion}
 											trimRegions={trimRegions}
 											speedRegions={speedRegions}
 											annotationRegions={annotationRegions}
@@ -4958,7 +4799,7 @@ export default function VideoEditor() {
 									className="flex flex-col min-w-0 h-full gap-2 relative"
 								>
 									<div className="shrink-0 flex items-center justify-center z-10">
-										<div className="grid w-full max-w-sm grid-cols-3 gap-0.5 rounded-lg bg-fill-hover p-0.5">
+										<div className="grid w-full max-w-sm grid-cols-2 gap-0.5 rounded-lg bg-fill-hover p-0.5">
 											<button
 												type="button"
 												onClick={() => setRightSidebarSection("edit")}
@@ -4970,18 +4811,6 @@ export default function VideoEditor() {
 											>
 												<SlidersHorizontal className="h-3.5 w-3.5 shrink-0" />
 												<span className="truncate">{t("editor.sidebar.edit", "Edit")}</span>
-											</button>
-											<button
-												type="button"
-												onClick={() => setRightSidebarSection("layers")}
-												className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-label font-medium transition-colors duration-fast ${
-													rightSidebarSection === "layers"
-														? "bg-control text-fg shadow-sm"
-														: "text-fg-muted hover:text-fg"
-												}`}
-											>
-												<Layers className="h-3.5 w-3.5 shrink-0" />
-												<span className="truncate">{t("editor.sidebar.layers", "Layers")}</span>
 											</button>
 											<button
 												type="button"
@@ -4998,21 +4827,8 @@ export default function VideoEditor() {
 										</div>
 									</div>
 									<div className="min-h-0 flex-1">
-										{rightSidebarSection === "layers" ? (
-											<LayerPanel
-												embedded
-												layers={activeLayeredComposition.layers}
-												onLayersChange={setEditorLayers}
-											/>
-										) : rightSidebarSection === "polish" ? (
-											<SceneAudioPolishPanel
-												embedded
-												scene3D={scene3D}
-												audioMix={audioMix}
-												onScene3DChange={setScene3D}
-												onAudioMixChange={setAudioMix}
-												onAutoPolish={handleAutoPolish}
-											/>
+										{rightSidebarSection === "polish" ? (
+											<AutoPolishPanel embedded onAutoPolish={handleAutoPolish} />
 										) : (
 											<SettingsPanel
 												selected={wallpaper}
@@ -5036,8 +4852,6 @@ export default function VideoEditor() {
 												onZoomModeChange={handleZoomModeChange}
 												selectedZoomId={selectedZoomId}
 												onZoomDelete={handleZoomDelete}
-												selectedTrimId={selectedTrimId}
-												onTrimDelete={handleTrimDelete}
 												frameShadowSize={frameShadowSize}
 												onFrameShadowSizeChange={setFrameShadowSize}
 												frameShadowOpacity={frameShadowOpacity}
@@ -5062,14 +4876,10 @@ export default function VideoEditor() {
 												onLoopCursorChange={setLoopCursor}
 												cursorSize={cursorSize}
 												onCursorSizeChange={setCursorSize}
-												cursorSmoothing={cursorSmoothing}
-												onCursorSmoothingChange={setCursorSmoothing}
 												cursorMotionBlur={cursorMotionBlur}
 												onCursorMotionBlurChange={setCursorMotionBlur}
 												cursorClickBounce={cursorClickBounce}
 												onCursorClickBounceChange={setCursorClickBounce}
-												cursorSway={cursorSway}
-												onCursorSwayChange={setCursorSway}
 												cursorPack={cursorPack}
 												onCursorPackChange={setCursorPack}
 												cursorTypeMode={cursorTypeMode}
@@ -5124,8 +4934,6 @@ export default function VideoEditor() {
 												onKeyboardShortcutDisplayMsChange={setKeyboardShortcutDisplayMs}
 												keyboardShortcutMaxVisible={keyboardShortcutMaxVisible}
 												onKeyboardShortcutMaxVisibleChange={setKeyboardShortcutMaxVisible}
-												deviceMockup={deviceMockup}
-												onDeviceMockupChange={setDeviceMockup}
 												frameBorderEnabled={frameBorderEnabled}
 												onFrameBorderEnabledChange={setFrameBorderEnabled}
 												frameBorderWidth={frameBorderWidth}
@@ -5144,7 +4952,6 @@ export default function VideoEditor() {
 												baseCropRegion={legacyCaptureCorrectionCrop}
 												onCropChange={setCropRegion}
 												aspectRatio={aspectRatio}
-												onAspectRatioChange={setAspectRatio}
 												videoElement={videoPlaybackRef.current?.video || null}
 												selectedAnnotationId={selectedAnnotationId}
 												annotationRegions={annotationRegions}
@@ -5268,11 +5075,6 @@ export default function VideoEditor() {
 									cutPoints={cutPoints}
 									onSplitClip={handleSplitClip}
 									onDeleteSegment={handleDeleteSegment}
-									onTrimAdded={handleTrimAdded}
-									onTrimSpanChange={handleTrimSpanChange}
-									onTrimDelete={handleTrimDelete}
-									selectedTrimId={selectedTrimId}
-									onSelectTrim={handleSelectTrim}
 									speedRegions={speedRegions}
 									onSpeedAdded={handleSpeedAdded}
 									onSpeedSpanChange={handleSpeedSpanChange}

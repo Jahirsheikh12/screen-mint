@@ -206,18 +206,6 @@ async function getCaptureDiagnostics(
 }
 
 export function registerPermissionDiagnosticsIpcHandlers(options: PermissionDiagnosticsOptions) {
-	ipcMain.handle(IPC_CHANNELS.permissions.getAccessibilityStatus, () => {
-		if (process.platform !== "darwin") {
-			return { success: true, trusted: true, prompted: false };
-		}
-
-		return {
-			success: true,
-			trusted: systemPreferences.isTrustedAccessibilityClient(false),
-			prompted: false,
-		};
-	});
-
 	ipcMain.handle(IPC_CHANNELS.permissions.requestAccessibility, () => {
 		if (process.platform !== "darwin") {
 			return { success: true, trusted: true, prompted: false };
@@ -259,22 +247,6 @@ export function registerPermissionDiagnosticsIpcHandlers(options: PermissionDiag
 		}
 	});
 
-	ipcMain.handle(IPC_CHANNELS.permissions.getScreenRecordingStatus, () => {
-		if (process.platform !== "darwin") {
-			return { success: true, status: "granted" };
-		}
-
-		try {
-			return {
-				success: true,
-				status: getScreenRecordingStatus(),
-			};
-		} catch (error) {
-			console.error("Failed to get screen recording permission status:", error);
-			return { success: false, status: "unknown", error: String(error) };
-		}
-	});
-
 	ipcMain.handle(IPC_CHANNELS.permissions.openScreenRecordingPreferences, async () => {
 		if (process.platform !== "darwin") {
 			return { success: true };
@@ -300,26 +272,6 @@ export function registerPermissionDiagnosticsIpcHandlers(options: PermissionDiag
 		} catch (error) {
 			console.error("Failed to open Accessibility preferences:", error);
 			return { success: false, error: String(error) };
-		}
-	});
-
-	ipcMain.handle(IPC_CHANNELS.permissions.probeCaptureSources, async () => {
-		try {
-			return {
-				success: true,
-				probe: await probeCaptureSources(options),
-			};
-		} catch (error) {
-			return {
-				success: false,
-				probe: {
-					success: false,
-					screenCount: 0,
-					windowCount: 0,
-					nativeWindowCount: 0,
-				},
-				error: String(error),
-			};
 		}
 	});
 

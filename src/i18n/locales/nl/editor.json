@@ -294,55 +294,10 @@
 	},
 	"sidebar": {
 		"edit": "Bewerken",
-		"layers": "Lagen",
 		"polish": "Afwerking"
 	},
 	"slider": {
 		"resetToDefault": "Standaardwaarde herstellen"
-	},
-	"layerPanel": {
-		"layers": "Lagen",
-		"noVideoLayerLoaded": "Geen videolaag geladen",
-		"loadOrRecordA": "Laad of neem een video op om de bewerkbare hoofdlaag te maken.",
-		"pendingCapturedMedia": "Opname nog niet beschikbaar",
-		"layerSettings": "Laaginstellingen",
-		"transformAndVisibilityControls": "Transformatie en zichtbaarheid",
-		"layerName": "Laagnaam",
-		"hideLayer": "Laag verbergen",
-		"showLayer": "Laag tonen",
-		"unlockLayer": "Laag ontgrendelen",
-		"lockLayer": "Laag vergrendelen",
-		"thisLayerIsPlanned": "Deze laag is gepland maar heeft nog geen opname.",
-		"transform": "Transformatie",
-		"xPosition": "X-positie",
-		"yPosition": "Y-positie",
-		"scale": "Schaal",
-		"opacity": "Dekking",
-		"startMs": "Start (ms)",
-		"endMs": "Einde (ms)",
-		"crop": "Bijsnijden",
-		"moveLayerForward": "Laag naar voren",
-		"moveLayerBackward": "Laag naar achteren",
-		"editableLayersOne": "1 bewerkbare laag",
-		"editableLayersMany": "{{count}} bewerkbare lagen",
-		"primaryRecording": "Hoofdopname",
-		"delete": "Verwijderen",
-		"cropFields": {
-			"x": "X",
-			"y": "Y",
-			"width": "Breedte",
-			"height": "Hoogte"
-		},
-		"layerKinds": {
-			"video": "Video",
-			"window": "Venster",
-			"screenshot": "Screenshot",
-			"webcam": "Webcam",
-			"audio": "Audio",
-			"annotation": "Annotatie",
-			"caption": "Ondertitel",
-			"scene-3d": "3D"
-		}
 	},
 	"annotationPanel": {
 		"customFonts": "Eigen lettertypen",
@@ -368,23 +323,6 @@
 		"noArrowData": "Geen pijlgegevens"
 	},
 	"polishPanel": {
-		"environmentLensAndLighting": "Omgeving, lens en belichting instellen",
-		"enable3dRendering": "3D-weergave inschakelen",
-		"preset": "Preset",
-		"device": "Apparaat",
-		"environment": "Omgeving",
-		"fallback": "Reserve",
-		"lens": "Lens",
-		"lighting": "Belichting",
-		"audioMix": "Audiomix",
-		"trackVolumeAndDucking": "Spoorvolume en dempingsregels",
-		"masterVolume": "Hoofdvolume",
-		"mute": "Dempen",
-		"solo": "Solo",
-		"duck": "Duiken",
-		"vol": "Vol.",
-		"fadeIn": "Infaden",
-		"fadeOut": "Uitfaden",
 		"autoPolish": "Automatisch afwerken",
 		"oneClickStudioTemplates": "Studiosjablonen met één klik"
 	},

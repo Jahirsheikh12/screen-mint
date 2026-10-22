@@ -12,9 +12,6 @@ import type {
 	MobileCaptureSignalPayload,
 	ScreenshotCaptureRequest,
 	ScreenshotCaptureResult,
-	HostValidationReport,
-	LayeredCaptureResult,
-	LayeredCaptureStartRequest,
 } from "../src/electron-ipc/contracts";
 import type { PostRecordingContext } from "../src/lib/recording/postRecording";
 import type {
@@ -82,19 +79,6 @@ declare global {
 				callback: (state: { area: SelectedArea | null }) => void,
 			) => () => void;
 			captureScreenshot: (request?: ScreenshotCaptureRequest) => Promise<ScreenshotCaptureResult>;
-			copyScreenshotToClipboard: (request: {
-				pngData?: Uint8Array;
-				path?: string;
-			}) => Promise<{ success: boolean; message?: string; error?: string }>;
-			setLayeredCaptureSources: (
-				request: LayeredCaptureStartRequest,
-			) => Promise<LayeredCaptureResult>;
-			getLayeredCaptureSources: () => Promise<LayeredCaptureResult>;
-			clearLayeredCaptureSources: () => Promise<LayeredCaptureResult>;
-			startLayeredCapture: (request: LayeredCaptureStartRequest) => Promise<LayeredCaptureResult>;
-			stopLayeredCapture: () => Promise<LayeredCaptureResult>;
-			getLayeredCaptureStatus: () => Promise<LayeredCaptureResult>;
-			getHostValidationReport: () => Promise<HostValidationReport>;
 			startNativeScreenRecording: (
 				source: SelectedCaptureSource,
 				options?: {
@@ -123,29 +107,6 @@ declare global {
 				error?: string;
 				microphonePath?: string;
 			}>;
-			startFfmpegRecording: (
-				source: SelectedCaptureSource,
-				options?: {
-					recordingFps?: number;
-					recordingWidth?: number;
-					recordingHeight?: number;
-					videoBitsPerSecond?: number;
-				},
-			) => Promise<{ success: boolean; path?: string; message?: string; error?: string }>;
-			stopFfmpegRecording: () => Promise<{
-				success: boolean;
-				path?: string;
-				message?: string;
-				error?: string;
-			}>;
-			storeRecordedVideo: (
-				videoData: ArrayBuffer,
-				fileName: string,
-			) => Promise<{ success: boolean; path?: string; message?: string }>;
-			storeRecordedVideoSegment: (
-				videoData: ArrayBuffer,
-				fileName: string,
-			) => Promise<{ success: boolean; path?: string; message?: string }>;
 			startMediaRecorderChunkSession: (
 				fileName: string,
 			) => Promise<{ success: boolean; id?: string; path?: string; error?: string }>;
@@ -162,7 +123,6 @@ declare global {
 			discardMediaRecorderChunkSession: (
 				sessionId: string,
 			) => Promise<{ success: boolean; error?: string }>;
-			getRecordedVideoPath: () => Promise<{ success: boolean; path?: string; message?: string }>;
 			finalizeRecordingSession: (payload: {
 				videoSegments: Array<{ path: string; durationMs: number }>;
 				webcamSegments?: Array<{ path: string; durationMs: number }>;
@@ -222,18 +182,11 @@ declare global {
 				error?: string;
 			}>;
 			onStopRecordingFromTray: (callback: () => void) => () => void;
-			onRecordingStateChanged: (
-				callback: (state: { recording: boolean; sourceName: string }) => void,
-			) => () => void;
 			onRecordingInterrupted: (
 				callback: (state: { reason: string; message: string }) => void,
 			) => () => void;
-			onCursorStateChanged: (
-				callback: (state: { cursorType: CursorTelemetryPoint["cursorType"] }) => void,
-			) => () => void;
 			startMobileCapturePairing: () => Promise<MobileCapturePairingResult>;
 			stopMobileCapturePairing: () => Promise<MobileCapturePairingResult>;
-			getMobileCapturePairingState: () => Promise<MobileCapturePairingResult>;
 			setMobileCaptureDesktopOffer: (
 				sessionId: string,
 				offer: MobileCaptureSignalPayload,
@@ -270,12 +223,6 @@ declare global {
 			>;
 			dismissAnnouncement: (id: string) => Promise<void>;
 			openExternalUrl: (url: string) => Promise<{ success: boolean; error?: string }>;
-			getAccessibilityPermissionStatus: () => Promise<{
-				success: boolean;
-				trusted: boolean;
-				prompted: boolean;
-				error?: string;
-			}>;
 			requestAccessibilityPermission: () => Promise<{
 				success: boolean;
 				trusted: boolean;
@@ -293,32 +240,12 @@ declare global {
 				status: string;
 				error?: string;
 			}>;
-			getScreenRecordingPermissionStatus: () => Promise<{
-				success: boolean;
-				status: string;
-				error?: string;
-			}>;
 			openDisplayCapturePreferences: () => Promise<{ success: boolean; error?: string }>;
 			openAccessibilityPreferences: () => Promise<{ success: boolean; error?: string }>;
-			probeCaptureSources: () => Promise<{
-				success: boolean;
-				probe: CaptureSourceProbeResult;
-				error?: string;
-			}>;
 			getCaptureDiagnostics: () => Promise<{
 				success: boolean;
 				diagnostics?: CaptureDiagnostics;
 				error?: string;
-			}>;
-			saveExportedVideo: (
-				videoData: ArrayBuffer,
-				fileName: string,
-			) => Promise<{
-				success: boolean;
-				path?: string;
-				message?: string;
-				error?: string;
-				canceled?: boolean;
 			}>;
 			showExportSaveDialog: (fileName: string) => Promise<{
 				success: boolean;
@@ -350,7 +277,6 @@ declare global {
 			) => Promise<{ success: boolean; path?: string; message?: string; error?: string }>;
 			exportV2Probe: () => Promise<ExportV2Capabilities>;
 			exportV2Start: (request: ExportV2StartRequest) => Promise<ExportV2StartResult>;
-			exportV2CreateWorker: () => Promise<{ success: boolean; error?: string }>;
 			exportV2Cancel: (jobId: string) => Promise<{ success: boolean; error?: string }>;
 			exportV2StreamStart: (
 				filePath: string,
@@ -394,7 +320,6 @@ declare global {
 			}>;
 			setCurrentVideoPath: (path: string) => Promise<{ success: boolean }>;
 			getCurrentVideoPath: () => Promise<{ success: boolean; path?: string }>;
-			clearCurrentVideoPath: () => Promise<{ success: boolean }>;
 			setCurrentWebcamPath: (path: string) => Promise<{ success: boolean }>;
 			getCurrentWebcamPath: () => Promise<{ success: boolean; path?: string }>;
 			clearCurrentWebcamPath: () => Promise<{ success: boolean }>;
@@ -495,16 +420,13 @@ declare global {
 			onMenuSaveProject: (callback: () => void) => () => void;
 			onMenuSaveProjectAs: (callback: () => void) => () => void;
 			getPlatform: () => Promise<string>;
-			getAppVersion: () => Promise<string>;
 			getUpdaterState: () => Promise<UpdaterState>;
 			setExperimentalUpdates: (enabled: boolean) => Promise<UpdaterState>;
 			skipUpdateVersion: () => Promise<UpdaterState>;
 			/** Fits the update toast window to its card (bottom edge stays put). */
 			resizeUpdateToast: (height: number) => void;
-			checkForUpdates: () => Promise<UpdaterState>;
 			downloadUpdate: () => Promise<UpdaterState>;
 			installUpdateAndRestart: () => Promise<{ success: boolean; reason?: string }>;
-			dismissUpdate: () => Promise<UpdaterState>;
 			updateLaterForSession: () => Promise<UpdaterState>;
 			dismissWhatsNew: () => Promise<UpdaterState>;
 			setUpdaterBusyState: (update: {
@@ -561,7 +483,6 @@ declare global {
 			saveShortcuts: (shortcuts: unknown) => Promise<{ success: boolean; error?: string }>;
 			hudOverlayHide: () => void;
 			hudOverlayClose: () => void;
-			getHudOverlayCaptureProtection: () => Promise<{ success: boolean; enabled: boolean }>;
 			setHudOverlayCaptureProtection: (
 				enabled: boolean,
 			) => Promise<{ success: boolean; enabled: boolean }>;
@@ -619,7 +540,6 @@ declare global {
 			createAreaOverlay: (displayId?: number) => Promise<{ success: boolean }>;
 			closeAreaOverlay: () => Promise<{ success: boolean }>;
 			lockAreaOverlay: () => Promise<{ success: boolean }>;
-			unlockAreaOverlay: () => Promise<{ success: boolean }>;
 			onAreaOverlayPhase: (callback: (phase: "selecting" | "locked") => void) => () => void;
 			/** Desktop icons (macOS) */
 			hideDesktopIcons: () => Promise<{ success: boolean; error?: string }>;

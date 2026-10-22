@@ -4,9 +4,6 @@
 		"selectRegion": "Selecteer een zoomgebied om aan te passen",
 		"deleteZoom": "Zoom verwijderen"
 	},
-	"trim": {
-		"deleteRegion": "Knipgebied verwijderen"
-	},
 	"speed": {
 		"playbackSpeed": "Afspeelsnelheid",
 		"selectRegion": "Selecteer een snelheidsgebied om aan te passen",
@@ -519,8 +516,6 @@
 		"chooseMagnificationLevelFor": "Kies het vergrotingsniveau van zoomgebieden",
 		"zoomDepth": "Zoomdiepte",
 		"selectHowMuchTo": "Kies hoeveel het gezoomde gebied wordt vergroot",
-		"trimRegion": "Knipgebied",
-		"removeTheSelectedTrim": "Verwijdert het geselecteerde knipgebied uit de tijdlijn",
 		"adjustPlaybackSpeedFor": "Pas de afspeelsnelheid van geselecteerde gebieden aan",
 		"speedPresets": "Snelheidspresets",
 		"chooseASpeedMultiplier": "Kies een snelheidsfactor voor het geselecteerde gebied",

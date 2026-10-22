@@ -73,38 +73,6 @@ export function registerExportFileIpcHandlers({
 	);
 
 	ipcMain.handle(
-		IPC_CHANNELS.exportFiles.saveVideo,
-		async (_, videoData: ArrayBuffer, fileName: string) => {
-			try {
-				const result = await dialog.showSaveDialog(getExportSaveDialogOptions(fileName));
-
-				if (result.canceled || !result.filePath) {
-					return {
-						success: false,
-						canceled: true,
-						message: "Export canceled",
-					};
-				}
-
-				await fs.writeFile(result.filePath, Buffer.from(videoData));
-
-				return {
-					success: true,
-					path: result.filePath,
-					message: "Video exported successfully",
-				};
-			} catch (error) {
-				console.error("Failed to save exported video:", error);
-				return {
-					success: false,
-					message: "Failed to save exported video",
-					error: String(error),
-				};
-			}
-		},
-	);
-
-	ipcMain.handle(
 		IPC_CHANNELS.exportFiles.finalizeTemp,
 		async (
 			_,

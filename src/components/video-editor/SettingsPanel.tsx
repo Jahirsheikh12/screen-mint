@@ -139,8 +139,6 @@ interface SettingsPanelProps {
 	onZoomModeChange?: (mode: ZoomMode) => void;
 	selectedZoomId?: string | null;
 	onZoomDelete?: (id: string) => void;
-	selectedTrimId?: string | null;
-	onTrimDelete?: (id: string) => void;
 	frameShadowSize?: number;
 	onFrameShadowSizeChange?: (size: number) => void;
 	frameShadowOpacity?: number;
@@ -165,14 +163,10 @@ interface SettingsPanelProps {
 	onLoopCursorChange?: (enabled: boolean) => void;
 	cursorSize?: number;
 	onCursorSizeChange?: (size: number) => void;
-	cursorSmoothing?: number;
-	onCursorSmoothingChange?: (smoothing: number) => void;
 	cursorMotionBlur?: number;
 	onCursorMotionBlurChange?: (amount: number) => void;
 	cursorClickBounce?: number;
 	onCursorClickBounceChange?: (amount: number) => void;
-	cursorSway?: number;
-	onCursorSwayChange?: (amount: number) => void;
 	cursorPack?: CursorPack;
 	onCursorPackChange?: (pack: CursorPack) => void;
 	cursorTypeMode?: CursorTypeMode;
@@ -227,8 +221,6 @@ interface SettingsPanelProps {
 	onKeyboardShortcutDisplayMsChange?: (durationMs: number) => void;
 	keyboardShortcutMaxVisible?: number;
 	onKeyboardShortcutMaxVisibleChange?: (count: number) => void;
-	deviceMockup?: import("./types").DeviceMockup;
-	onDeviceMockupChange?: (mockup: import("./types").DeviceMockup) => void;
 	frameBorderEnabled?: boolean;
 	onFrameBorderEnabledChange?: (enabled: boolean) => void;
 	frameBorderWidth?: number;
@@ -247,7 +239,6 @@ interface SettingsPanelProps {
 	baseCropRegion?: CropRegion;
 	onCropChange?: (region: CropRegion) => void;
 	aspectRatio: AspectRatio;
-	onAspectRatioChange?: (ratio: AspectRatio) => void;
 	videoElement?: HTMLVideoElement | null;
 	selectedAnnotationId?: string | null;
 	annotationRegions?: AnnotationRegion[];
@@ -335,20 +326,6 @@ interface SettingsPanelProps {
 	onRegenerateSmartZooms?: () => void;
 }
 
-// function MockupPreviewCanvas({ mockup }: { mockup: import("./types").DeviceMockup }) {
-// 	const canvasRef = useRef<HTMLCanvasElement>(null);
-//
-// 	useEffect(() => {
-// 		const canvas = canvasRef.current;
-// 		if (!canvas) return;
-// 		canvas.width = 120;
-// 		canvas.height = 90;
-// 		renderMockupPreview(canvas, mockup);
-// 	}, [mockup]);
-//
-// 	return <canvas ref={canvasRef} className="w-full h-full" />;
-// }
-
 export default function SettingsPanel({
 	selected,
 	onWallpaperChange,
@@ -360,8 +337,6 @@ export default function SettingsPanel({
 	onZoomModeChange,
 	selectedZoomId,
 	onZoomDelete,
-	selectedTrimId,
-	onTrimDelete,
 	frameShadowSize = DEFAULT_FRAME_SHADOW_SIZE,
 	onFrameShadowSizeChange,
 	frameShadowOpacity = DEFAULT_FRAME_SHADOW_OPACITY,
@@ -675,17 +650,10 @@ export default function SettingsPanel({
 	}, []);
 
 	const zoomEnabled = Boolean(selectedZoomDepth);
-	const trimEnabled = Boolean(selectedTrimId);
 
 	const handleDeleteClick = () => {
 		if (selectedZoomId && onZoomDelete) {
 			onZoomDelete(selectedZoomId);
-		}
-	};
-
-	const handleTrimDeleteClick = () => {
-		if (selectedTrimId && onTrimDelete) {
-			onTrimDelete(selectedTrimId);
 		}
 	};
 
@@ -1152,9 +1120,7 @@ export default function SettingsPanel({
 						onZoomDepthChange={onZoomDepthChange}
 						onZoomModeChange={onZoomModeChange}
 						zoomEnabled={zoomEnabled}
-						trimEnabled={trimEnabled}
 						onZoomDelete={handleDeleteClick}
-						onTrimDelete={handleTrimDeleteClick}
 					/>
 				)}
 

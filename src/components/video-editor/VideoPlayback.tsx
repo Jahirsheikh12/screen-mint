@@ -313,7 +313,6 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const [previewGeometry, setPreviewGeometry] = useState<PreviewGeometry | null>(null);
 		const [isPreviewQualitySwitching, setIsPreviewQualitySwitching] = useState(false);
 		const [isPreviewRecoveryActive, setIsPreviewRecoveryActive] = useState(false);
-		// const mockupCanvasRef = useRef<HTMLCanvasElement | null>(null);
 		const overlayRef = useRef<HTMLDivElement | null>(null);
 		const focusIndicatorRef = useRef<HTMLDivElement | null>(null);
 		const frameBorderRef = useRef<HTMLDivElement | null>(null);

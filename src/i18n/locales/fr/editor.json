@@ -294,55 +294,10 @@
 	},
 	"sidebar": {
 		"edit": "Montage",
-		"layers": "Calques",
 		"polish": "Finition"
 	},
 	"slider": {
 		"resetToDefault": "Valeur par défaut"
-	},
-	"layerPanel": {
-		"layers": "Calques",
-		"noVideoLayerLoaded": "Aucun calque vidéo chargé",
-		"loadOrRecordA": "Chargez ou enregistrez une vidéo pour créer le calque principal modifiable.",
-		"pendingCapturedMedia": "Contenu capturé en attente",
-		"layerSettings": "Réglages du calque",
-		"transformAndVisibilityControls": "Transformation et visibilité",
-		"layerName": "Nom du calque",
-		"hideLayer": "Masquer le calque",
-		"showLayer": "Afficher le calque",
-		"unlockLayer": "Déverrouiller le calque",
-		"lockLayer": "Verrouiller le calque",
-		"thisLayerIsPlanned": "Ce calque est prévu mais n’a pas encore de contenu capturé.",
-		"transform": "Transformation",
-		"xPosition": "Position X",
-		"yPosition": "Position Y",
-		"scale": "Échelle",
-		"opacity": "Opacité",
-		"startMs": "Début (ms)",
-		"endMs": "Fin (ms)",
-		"crop": "Recadrage",
-		"moveLayerForward": "Avancer le calque",
-		"moveLayerBackward": "Reculer le calque",
-		"editableLayersOne": "1 calque modifiable",
-		"editableLayersMany": "{{count}} calques modifiables",
-		"primaryRecording": "Enregistrement principal",
-		"delete": "Supprimer",
-		"cropFields": {
-			"x": "X",
-			"y": "Y",
-			"width": "Largeur",
-			"height": "Hauteur"
-		},
-		"layerKinds": {
-			"video": "Vidéo",
-			"window": "Fenêtre",
-			"screenshot": "Capture",
-			"webcam": "Caméra",
-			"audio": "Audio",
-			"annotation": "Annotation",
-			"caption": "Sous-titre",
-			"scene-3d": "3D"
-		}
 	},
 	"annotationPanel": {
 		"customFonts": "Polices personnalisées",
@@ -368,23 +323,6 @@
 		"noArrowData": "Aucune donnée de flèche"
 	},
 	"polishPanel": {
-		"environmentLensAndLighting": "Réglages de l’environnement, de l’objectif et de l’éclairage",
-		"enable3dRendering": "Activer le rendu 3D",
-		"preset": "Style",
-		"device": "Appareil",
-		"environment": "Environnement",
-		"fallback": "Secours",
-		"lens": "Objectif",
-		"lighting": "Éclairage",
-		"audioMix": "Mixage audio",
-		"trackVolumeAndDucking": "Volume des pistes et règles d’atténuation",
-		"masterVolume": "Volume général",
-		"mute": "Muet",
-		"solo": "Solo",
-		"duck": "Atténuer",
-		"vol": "Vol.",
-		"fadeIn": "Fondu d’entrée",
-		"fadeOut": "Fondu de sortie",
 		"autoPolish": "Finition automatique",
 		"oneClickStudioTemplates": "Modèles studio en un clic"
 	},

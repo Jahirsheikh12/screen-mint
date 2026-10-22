@@ -76,7 +76,6 @@ interface GifExporterConfig {
 	frameBorderOpacity?: number;
 	borderRadius?: number;
 	padding?: PaddingValue;
-	videoPadding?: number;
 	cropRegion: CropRegion;
 	aspectRatio?: AspectRatio;
 	annotationRegions?: AnnotationRegion[];

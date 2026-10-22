@@ -5,7 +5,6 @@ describe("screenshot IPC contracts", () => {
 	it("declares stable screenshot channels", () => {
 		expect(IPC_CHANNELS.screenshot).toEqual({
 			capture: "screenshot:capture",
-			copyToClipboard: "screenshot:copy-to-clipboard",
 		});
 	});
 

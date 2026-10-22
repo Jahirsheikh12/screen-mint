@@ -35,12 +35,6 @@ import {
 	getLegacyShadowIntensityFromFrameShadow,
 	normalizeHexColor,
 } from "./frameEffects";
-import { type EditorLayer, normalizeEditorLayers, sortEditorLayersForRender } from "./layerModel";
-import {
-	DEFAULT_SCENE_3D_SETTINGS,
-	normalizeScene3DSettings,
-	type Scene3DSettings,
-} from "./scene3d";
 import {
 	type AnnotationRegion,
 	type AudioRegion,
@@ -144,6 +138,7 @@ import {
 	type ZoomTransitionEasing,
 } from "./types";
 import { normalizeCursorSpring, resolveCursorV2Fields } from "./videoPlayback/cursorV2";
+import { composeCropRegions } from "./videoPlayback/layoutUtils";
 import { normalizeWebcamEffects, normalizeWebcamSourceCrop } from "./webcamEffects";
 import { normalizeWebcamRegion } from "./webcamRegionUtils";
 
@@ -244,8 +239,6 @@ export interface ProjectEditorState {
 	videoExportSettings: VideoExportSettings;
 	gifExportSettings: GifExportConfig;
 	scenePresetId?: ScenePresetId;
-	layers: EditorLayer[];
-	scene3D: Scene3DSettings;
 	audioMix: AudioMixSettings;
 }
 
@@ -1099,10 +1092,32 @@ function normalizeCursorFollowTracking(candidate: unknown) {
 	};
 }
 
-export function normalizeProjectEditor(
-	editor: Partial<ProjectEditorState>,
-	options: { fallbackVideoPath?: string | null } = {},
-): ProjectEditorState {
+// Projects saved before the Layers panel was removed may carry a crop on the primary
+// video layer; fold it into the main crop so they keep their look.
+function foldLegacyLayerCrop(cropRegion: CropRegion, layers: unknown): CropRegion {
+	if (!Array.isArray(layers)) return cropRegion;
+	const primary = layers.find(
+		(layer) => layer && typeof layer === "object" && layer.type === "video" && layer.isPrimary,
+	) as { transform?: { crop?: Partial<CropRegion> } } | undefined;
+	const crop = primary?.transform?.crop;
+	if (
+		!crop ||
+		!isFiniteNumber(crop.x) ||
+		!isFiniteNumber(crop.y) ||
+		!isFiniteNumber(crop.width) ||
+		!isFiniteNumber(crop.height)
+	) {
+		return cropRegion;
+	}
+	return composeCropRegions(cropRegion, {
+		x: crop.x,
+		y: crop.y,
+		width: crop.width,
+		height: crop.height,
+	});
+}
+
+export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): ProjectEditorState {
 	const exportEditor = editor as Partial<ProjectEditorState> & {
 		exportQuality?: ExportQuality;
 		gifFrameRate?: GifFrameRate;
@@ -1476,88 +1491,11 @@ export function normalizeProjectEditor(
 		(editor as Partial<ProjectEditorState> & { captionTrack?: CaptionTrack | null }).captionTrack,
 		legacyCaptionRegions,
 	);
-	const normalizedScene3D = normalizeScene3DSettings(
-		(editor as Partial<ProjectEditorState>).scene3D ?? DEFAULT_SCENE_3D_SETTINGS,
-	);
 	const normalizedAudioMix = normalizeAudioMixSettings(
 		(editor as Partial<ProjectEditorState>).audioMix ?? {
 			tracks: buildAudioMixTracksFromRegions(normalizedAudioRegions),
 		},
 	);
-	const normalizedLayers = normalizeEditorLayers(
-		(editor as Partial<ProjectEditorState>).layers,
-		options.fallbackVideoPath,
-	);
-	const migratedLayers =
-		normalizedLayers.length > 0 &&
-		Array.isArray((editor as Partial<ProjectEditorState>).layers) &&
-		((editor as Partial<ProjectEditorState>).layers as unknown[]).length > 0
-			? normalizedLayers
-			: sortEditorLayersForRender([
-					...normalizedLayers,
-					...(typeof editor.webcamPath === "string" && editor.webcamPath.trim().length > 0
-						? [
-								{
-									id: "layer-webcam",
-									type: "webcam" as const,
-									name: "Webcam",
-									visible: typeof editor.showWebcam === "boolean" ? editor.showWebcam : true,
-									locked: false,
-									zIndex: 20,
-									startMs: 0,
-									endMs: null,
-									opacity: 1,
-									transform: { x: 0, y: 0, scale: 1, rotation: 0 },
-									sourcePath: editor.webcamPath,
-								},
-							]
-						: []),
-					...normalizedAudioRegions.map((region) => ({
-						id: `layer-${region.id}`,
-						type: "audio" as const,
-						name: region.assetId ?? region.audioPath?.split(/[\\/]/).pop() ?? "Audio",
-						visible: true,
-						locked: false,
-						zIndex: 0,
-						startMs: region.startMs,
-						endMs: region.endMs,
-						opacity: 1,
-						transform: { x: 0, y: 0, scale: 1, rotation: 0 },
-						audioPath: region.audioPath,
-						assetId: region.assetId,
-						volume: region.volume,
-					})),
-					...normalizedAnnotationRegions.map((region) => ({
-						id: `layer-${region.id}`,
-						type: "annotation" as const,
-						name: "Annotation",
-						visible: true,
-						locked: false,
-						zIndex: 40 + region.zIndex,
-						startMs: region.startMs,
-						endMs: region.endMs,
-						opacity: 1,
-						transform: { x: 0, y: 0, scale: 1, rotation: 0 },
-						annotationId: region.id,
-					})),
-					...(normalizedCaptionTrack?.segments.length
-						? [
-								{
-									id: "layer-captions",
-									type: "caption" as const,
-									name: "Captions",
-									visible: true,
-									locked: false,
-									zIndex: 60,
-									startMs: 0,
-									endMs: null,
-									opacity: 1,
-									transform: { x: 0, y: 0, scale: 1, rotation: 0 },
-								},
-							]
-						: []),
-				]);
-
 	const rawCropX = isFiniteNumber(editor.cropRegion?.x)
 		? editor.cropRegion.x
 		: DEFAULT_CROP_REGION.x;
@@ -1771,12 +1709,10 @@ export function normalizeProjectEditor(
 		borderRadius: typeof editor.borderRadius === "number" ? editor.borderRadius : 12.5,
 		padding: normalizedPadding,
 		paddingSides: normalizePaddingSides(editor.paddingSides),
-		cropRegion: {
-			x: cropX,
-			y: cropY,
-			width: cropWidth,
-			height: cropHeight,
-		},
+		cropRegion: foldLegacyLayerCrop(
+			{ x: cropX, y: cropY, width: cropWidth, height: cropHeight },
+			(editor as { layers?: unknown }).layers,
+		),
 		zoomRegions: normalizedZoomRegions,
 		trimRegions: normalizedTrimRegions,
 		cutPoints: normalizedCutPoints,
@@ -1834,8 +1770,6 @@ export function normalizeProjectEditor(
 			SCENE_PRESET_IDS.includes(editor.scenePresetId as ScenePresetId)
 				? (editor.scenePresetId as ScenePresetId)
 				: undefined,
-		layers: migratedLayers,
-		scene3D: normalizedScene3D,
 		audioMix: normalizedAudioMix,
 	};
 }
@@ -1846,7 +1780,7 @@ export function createProjectData(
 	webcamSessionMetadata?: WebcamSessionMetadata,
 	videoName?: string,
 ): EditorProjectData {
-	const normalizedEditor = normalizeProjectEditor(editor, { fallbackVideoPath: videoPath });
+	const normalizedEditor = normalizeProjectEditor(editor);
 	return {
 		version: PROJECT_VERSION,
 		videoPath,

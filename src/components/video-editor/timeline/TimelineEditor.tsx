@@ -101,7 +101,6 @@ function Timeline({
 	currentTimeMs,
 	onSeek,
 	onSelectZoom,
-	onSelectTrim,
 	onSelectAnnotation,
 	onSelectCameraLayout,
 	onSelectSpeed,
@@ -186,7 +185,6 @@ function Timeline({
 			}
 
 			onSelectZoom?.(null);
-			onSelectTrim?.(null);
 			onSelectAnnotation?.(null);
 			onSelectCameraLayout?.(null);
 			onSelectCaption?.(null);
@@ -203,7 +201,6 @@ function Timeline({
 			onSplitClip,
 			trimMode,
 			onSelectZoom,
-			onSelectTrim,
 			onSelectAnnotation,
 			onSelectCameraLayout,
 			onSelectCaption,
@@ -495,7 +492,6 @@ export default function TimelineEditor({
 	cutPoints = [],
 	onSplitClip,
 	onDeleteSegment,
-	onSelectTrim,
 	annotationRegions = [],
 	onAnnotationAdded,
 	onAnnotationSpanChange,
@@ -2091,7 +2087,6 @@ export default function TimelineEditor({
 						currentTimeMs={displayCurrentTimeMs}
 						onSeek={wrappedOnSeek}
 						onSelectZoom={onSelectZoom}
-						onSelectTrim={onSelectTrim}
 						onSelectAnnotation={onSelectAnnotation}
 						onSelectCameraLayout={onSelectCameraLayout}
 						onSelectSpeed={onSelectSpeed}

@@ -60,8 +60,6 @@ import {
 } from "./cursorTelemetryUtils";
 import { registerExportFileIpcHandlers } from "./exportFileHandlers";
 import { registerExportV2StreamIpcHandlers } from "./exportV2StreamHandlers";
-import { registerHostValidationIpcHandlers } from "./hostValidationHandlers";
-import { registerLayeredCaptureIpcHandlers } from "./layeredCaptureHandlers";
 import { registerMobileCaptureIpcHandlers } from "./mobileCaptureHandlers";
 import { registerPermissionDiagnosticsIpcHandlers } from "./permissionDiagnosticsHandlers";
 import { registerPostRecordingIpcHandlers } from "./postRecordingHandlers";
@@ -165,10 +163,6 @@ let wgcCaptureStopRequested = false;
 let wgcSystemAudioPath: string | null = null;
 let wgcMicAudioPath: string | null = null;
 let wgcPendingVideoPath: string | null = null;
-let ffmpegScreenRecordingActive = false;
-let ffmpegCaptureProcess: ChildProcessWithoutNullStreams | null = null;
-let ffmpegCaptureOutputBuffer = "";
-let ffmpegCaptureTargetPath: string | null = null;
 const exportV2Jobs = new Map<
 	string,
 	{
@@ -1537,95 +1531,6 @@ async function runExportV2WorkerJob(
 	});
 }
 
-function waitForFfmpegCaptureStart(process: ChildProcessWithoutNullStreams) {
-	return new Promise<void>((resolve, reject) => {
-		const onError = (error: Error) => {
-			cleanup();
-			reject(error);
-		};
-
-		const onExit = (code: number | null) => {
-			cleanup();
-			reject(
-				new Error(
-					ffmpegCaptureOutputBuffer.trim() ||
-						`FFmpeg exited before recording started (code ${code ?? "unknown"})`,
-				),
-			);
-		};
-
-		const timer = setTimeout(() => {
-			cleanup();
-			resolve();
-		}, 900);
-
-		const cleanup = () => {
-			clearTimeout(timer);
-			process.off("error", onError);
-			process.off("exit", onExit);
-		};
-
-		process.once("error", onError);
-		process.once("exit", onExit);
-	});
-}
-
-function waitForFfmpegCaptureStop(process: ChildProcessWithoutNullStreams, outputPath: string) {
-	return new Promise<string>((resolve, reject) => {
-		const onClose = async (code: number | null) => {
-			cleanup();
-
-			try {
-				await fs.access(outputPath);
-				if (code === 0 || code === null) {
-					resolve(outputPath);
-					return;
-				}
-
-				if (ffmpegCaptureOutputBuffer.includes("Exiting normally")) {
-					resolve(outputPath);
-					return;
-				}
-			} catch {
-				// handled below
-			}
-
-			reject(
-				new Error(
-					ffmpegCaptureOutputBuffer.trim() || `FFmpeg exited with code ${code ?? "unknown"}`,
-				),
-			);
-		};
-
-		const onError = (error: Error) => {
-			cleanup();
-			reject(error);
-		};
-
-		const cleanup = () => {
-			process.off("close", onClose);
-			process.off("error", onError);
-		};
-
-		process.once("close", onClose);
-		process.once("error", onError);
-	});
-}
-
-function getDisplayBoundsForSource(source: SelectedSource) {
-	const sourceDisplayId = Number(source?.display_id);
-	if (Number.isFinite(sourceDisplayId)) {
-		const matched = getScreen()
-			.getAllDisplays()
-			.find((display) => display.id === sourceDisplayId);
-		if (matched) {
-			return matched.bounds;
-		}
-	}
-
-	return getScreen().getPrimaryDisplay().bounds;
-}
-
 function getSelectedAreaForSource(source?: SelectedSource | null): SelectedArea | null {
 	if (!source?.id?.startsWith("screen:") || !selectedArea) {
 		return null;
@@ -1741,139 +1646,6 @@ if (-not $ok) { exit 3 }
 	} catch {
 		return null;
 	}
-}
-
-function clampCaptureFps(value: number | undefined) {
-	if (!Number.isFinite(value)) {
-		return 30;
-	}
-	return Math.min(60, Math.max(15, Math.round(value ?? 30)));
-}
-
-function buildFfmpegOutputArgs(outputPath: string, options?: NativeMacRecordingOptions) {
-	const outputArgs = [
-		"-an",
-		"-c:v",
-		"libx264",
-		"-preset",
-		"veryfast",
-		...(options?.videoBitsPerSecond ? ["-b:v", String(options.videoBitsPerSecond)] : []),
-		...(options?.recordingWidth && options?.recordingHeight
-			? [
-					"-vf",
-					`scale='min(${options.recordingWidth},iw)':'min(${options.recordingHeight},ih)':force_original_aspect_ratio=decrease:force_divisible_by=2`,
-				]
-			: []),
-		"-pix_fmt",
-		"yuv420p",
-		"-movflags",
-		"+faststart",
-		outputPath,
-	];
-	return outputArgs;
-}
-
-async function buildFfmpegCaptureArgs(
-	source: SelectedSource,
-	outputPath: string,
-	options?: NativeMacRecordingOptions,
-) {
-	const fps = String(clampCaptureFps(options?.recordingFps));
-	const commonOutputArgs = buildFfmpegOutputArgs(outputPath, options);
-
-	if (process.platform === "win32") {
-		if (source?.id?.startsWith("window:")) {
-			const windowTitle =
-				typeof source.windowTitle === "string" ? source.windowTitle.trim() : source.name.trim();
-			if (!windowTitle) {
-				throw new Error("Missing window title for FFmpeg window capture");
-			}
-
-			return [
-				"-y",
-				"-f",
-				"gdigrab",
-				"-framerate",
-				fps,
-				"-draw_mouse",
-				"0",
-				"-i",
-				`title=${windowTitle}`,
-				...commonOutputArgs,
-			];
-		}
-
-		return [
-			"-y",
-			"-f",
-			"gdigrab",
-			"-framerate",
-			fps,
-			"-draw_mouse",
-			"0",
-			"-i",
-			"desktop",
-			...commonOutputArgs,
-		];
-	}
-
-	if (process.platform === "linux") {
-		const displayEnv = process.env.DISPLAY || ":0.0";
-		if (source?.id?.startsWith("window:")) {
-			const bounds = await resolveLinuxWindowBounds(source);
-			if (!bounds) {
-				throw new Error("Unable to resolve Linux window bounds for FFmpeg capture");
-			}
-
-			return [
-				"-y",
-				"-f",
-				"x11grab",
-				"-framerate",
-				fps,
-				"-draw_mouse",
-				"0",
-				"-video_size",
-				`${Math.max(2, bounds.width)}x${Math.max(2, bounds.height)}`,
-				"-i",
-				`${displayEnv}+${Math.round(bounds.x)},${Math.round(bounds.y)}`,
-				...commonOutputArgs,
-			];
-		}
-
-		const bounds = getDisplayBoundsForSource(source);
-		return [
-			"-y",
-			"-f",
-			"x11grab",
-			"-framerate",
-			fps,
-			"-draw_mouse",
-			"0",
-			"-video_size",
-			`${Math.max(2, bounds.width)}x${Math.max(2, bounds.height)}`,
-			"-i",
-			`${displayEnv}+${Math.round(bounds.x)},${Math.round(bounds.y)}`,
-			...commonOutputArgs,
-		];
-	}
-
-	if (process.platform === "darwin") {
-		return [
-			"-y",
-			"-f",
-			"avfoundation",
-			"-capture_cursor",
-			"0",
-			"-framerate",
-			fps,
-			"-i",
-			"1:none",
-			...commonOutputArgs,
-		];
-	}
-
-	throw new Error(`FFmpeg capture is not supported on ${process.platform}`);
 }
 
 function getWgcCaptureExePath() {
@@ -2003,16 +1775,6 @@ function attachWgcCaptureLifecycle(proc: ChildProcessWithoutNullStreams) {
 		wgcScreenRecordingActive = false;
 		wgcCaptureTargetPath = null;
 		wgcCaptureStopRequested = false;
-
-		const sourceName = selectedSource?.name ?? "Screen";
-		BrowserWindow.getAllWindows().forEach((window) => {
-			if (!window.isDestroyed()) {
-				window.webContents.send("recording-state-changed", {
-					recording: false,
-					sourceName,
-				});
-			}
-		});
 
 		emitRecordingInterrupted("capture-stopped", "Recording stopped unexpectedly.");
 	});
@@ -2234,14 +1996,6 @@ function emitRecordingInterrupted(reason: string, message: string) {
 	});
 }
 
-function emitCursorStateChanged(cursorType: CursorVisualType) {
-	BrowserWindow.getAllWindows().forEach((window) => {
-		if (!window.isDestroyed()) {
-			window.webContents.send("cursor-state-changed", { cursorType });
-		}
-	});
-}
-
 function sampleCursorStateChange(cursorType: CursorVisualType) {
 	if (!isCursorCaptureActive) {
 		return;
@@ -2272,16 +2026,6 @@ function attachNativeCaptureLifecycle(process: ChildProcessWithoutNullStreams) {
 		nativeScreenRecordingActive = false;
 		nativeCaptureTargetPath = null;
 		nativeCaptureStopRequested = false;
-
-		const sourceName = selectedSource?.name ?? "Screen";
-		BrowserWindow.getAllWindows().forEach((window) => {
-			if (!window.isDestroyed()) {
-				window.webContents.send("recording-state-changed", {
-					recording: false,
-					sourceName,
-				});
-			}
-		});
 
 		const reason = nativeCaptureOutputBuffer.includes("WINDOW_UNAVAILABLE")
 			? "window-unavailable"
@@ -2317,7 +2061,6 @@ function handleCursorMonitorStdout(chunk: Buffer) {
 			if (currentCursorVisualType !== next) {
 				currentCursorVisualType = next;
 				sampleCursorStateChange(next);
-				emitCursorStateChanged(next);
 			}
 		}
 	}
@@ -4451,8 +4194,6 @@ export function registerIpcHandlers(
 		writeBufferToUniqueFile,
 		isEnabled: () => isFeatureEnabled("screenshots"),
 	});
-	registerLayeredCaptureIpcHandlers();
-	registerHostValidationIpcHandlers();
 	registerPermissionDiagnosticsIpcHandlers({
 		appBundleId: APP_BUNDLE_ID,
 		getAppBundlePath,
@@ -4973,130 +4714,6 @@ export function registerIpcHandlers(
 	});
 
 	ipcMain.handle(
-		IPC_CHANNELS.recording.startFfmpeg,
-		async (_, source: SelectedSource, options?: NativeMacRecordingOptions) => {
-			if (ffmpegCaptureProcess) {
-				return { success: false, message: "An FFmpeg recording is already active." };
-			}
-
-			try {
-				const recordingsDir = await getRecordingsDir();
-				const ffmpegPath = getFfmpegBinaryPath();
-				const outputPath = path.join(recordingsDir, `recording-${Date.now()}.mp4`);
-				const args = await buildFfmpegCaptureArgs(source, outputPath, options);
-				if (source?.id?.startsWith("window:")) {
-					await refreshWindowBoundsForSource(source);
-				}
-
-				ffmpegCaptureOutputBuffer = "";
-				ffmpegCaptureTargetPath = outputPath;
-				ffmpegCaptureProcess = spawn(ffmpegPath, args, {
-					cwd: recordingsDir,
-					stdio: ["pipe", "pipe", "pipe"],
-				});
-
-				ffmpegCaptureProcess.stdout.on("data", (chunk: Buffer) => {
-					ffmpegCaptureOutputBuffer += chunk.toString();
-				});
-				ffmpegCaptureProcess.stderr.on("data", (chunk: Buffer) => {
-					ffmpegCaptureOutputBuffer += chunk.toString();
-				});
-
-				await waitForFfmpegCaptureStart(ffmpegCaptureProcess);
-				ffmpegScreenRecordingActive = true;
-				return { success: true };
-			} catch (error) {
-				console.error("Failed to start FFmpeg recording:", error);
-				ffmpegScreenRecordingActive = false;
-				ffmpegCaptureProcess = null;
-				ffmpegCaptureTargetPath = null;
-				return {
-					success: false,
-					message: "Failed to start FFmpeg recording",
-					error: String(error),
-				};
-			}
-		},
-	);
-
-	ipcMain.handle(IPC_CHANNELS.recording.stopFfmpeg, async () => {
-		if (!ffmpegScreenRecordingActive) {
-			return { success: false, message: "No FFmpeg recording is active." };
-		}
-
-		try {
-			if (!ffmpegCaptureProcess || !ffmpegCaptureTargetPath) {
-				throw new Error("FFmpeg process is not running");
-			}
-
-			const process = ffmpegCaptureProcess;
-			const outputPath = ffmpegCaptureTargetPath;
-			process.stdin.write("q\n");
-			const finalVideoPath = await waitForFfmpegCaptureStop(process, outputPath);
-
-			ffmpegCaptureProcess = null;
-			ffmpegCaptureTargetPath = null;
-			ffmpegScreenRecordingActive = false;
-
-			return await finalizeStoredVideo(finalVideoPath);
-		} catch (error) {
-			console.error("Failed to stop FFmpeg recording:", error);
-			ffmpegCaptureProcess = null;
-			ffmpegCaptureTargetPath = null;
-			ffmpegScreenRecordingActive = false;
-			return {
-				success: false,
-				message: "Failed to stop FFmpeg recording",
-				error: String(error),
-			};
-		}
-	});
-
-	ipcMain.handle(
-		IPC_CHANNELS.recording.storeVideo,
-		async (_, videoData: ArrayBuffer, fileName: string, finalize = true) => {
-			try {
-				const recordingsDir = await getRecordingsDir();
-				const videoPath = path.join(recordingsDir, fileName);
-				await fs.writeFile(videoPath, Buffer.from(videoData));
-				if (!finalize) {
-					await persistCapturedTelemetryForVideo(videoPath);
-					return { success: true, path: videoPath };
-				}
-				currentMicrophoneAudioPath = null;
-				return await finalizeStoredVideo(videoPath);
-			} catch (error) {
-				console.error("Failed to store video:", error);
-				return {
-					success: false,
-					message: "Failed to store video",
-					error: String(error),
-				};
-			}
-		},
-	);
-
-	ipcMain.handle(IPC_CHANNELS.recording.getRecordedVideoPath, async () => {
-		try {
-			const recordingsDir = await getRecordingsDir();
-			const files = await fs.readdir(recordingsDir);
-			const videoFiles = files.filter((file) => /\.(webm|mov|mp4)$/i.test(file));
-
-			if (videoFiles.length === 0) {
-				return { success: false, message: "No recorded video found" };
-			}
-
-			const latestVideo = videoFiles.sort().reverse()[0];
-			const videoPath = path.join(recordingsDir, latestVideo);
-
-			return { success: true, path: videoPath };
-		} catch (error) {
-			console.error("Failed to get video path:", error);
-			return { success: false, message: "Failed to get video path", error: String(error) };
-		}
-	});
-
-	ipcMain.handle(
 		IPC_CHANNELS.recording.finalizeSession,
 		async (
 			_,
@@ -5245,14 +4862,6 @@ export function registerIpcHandlers(
 		}
 
 		const source = selectedSource || { name: "Screen" };
-		BrowserWindow.getAllWindows().forEach((window) => {
-			if (!window.isDestroyed()) {
-				window.webContents.send("recording-state-changed", {
-					recording,
-					sourceName: source.name,
-				});
-			}
-		});
 
 		if (onRecordingStateChange) {
 			onRecordingStateChange(recording, source.name);
@@ -5262,15 +4871,6 @@ export function registerIpcHandlers(
 	});
 
 	ipcMain.handle(IPC_CHANNELS.exportV2.probe, async () => getCachedExportV2Capabilities());
-
-	ipcMain.handle(IPC_CHANNELS.exportV2.createWorker, async () => {
-		try {
-			createExportWorkerWindow();
-			return { success: true };
-		} catch (error) {
-			return { success: false, error: String(error) };
-		}
-	});
 
 	ipcMain.handle(IPC_CHANNELS.exportV2.workerProgress, async (_, progress: ExportV2Progress) => {
 		const owner = exportV2WorkerOwners.get(progress.jobId);

@@ -4,9 +4,6 @@
 		"selectRegion": "조정할 확대 구간을 선택하세요",
 		"deleteZoom": "확대 삭제"
 	},
-	"trim": {
-		"deleteRegion": "자르기 구간 삭제"
-	},
 	"speed": {
 		"playbackSpeed": "재생 속도",
 		"selectRegion": "조정할 속도 구간을 선택하세요",
@@ -519,8 +516,6 @@
 		"chooseMagnificationLevelFor": "확대 구간의 배율을 고릅니다",
 		"zoomDepth": "확대 깊이",
 		"selectHowMuchTo": "확대할 영역을 얼마나 키울지 고릅니다",
-		"trimRegion": "잘라내기 구간",
-		"removeTheSelectedTrim": "선택한 잘라내기 구간을 타임라인에서 제거합니다",
 		"adjustPlaybackSpeedFor": "선택한 구간의 재생 속도를 조정합니다",
 		"speedPresets": "속도 프리셋",
 		"chooseASpeedMultiplier": "선택한 구간의 속도 배수를 고릅니다",

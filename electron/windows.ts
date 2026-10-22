@@ -253,15 +253,6 @@ ipcMain.on("hud-overlay-hide", () => {
 	}, 16);
 });
 
-ipcMain.handle(IPC_CHANNELS.hudOverlay.getCaptureProtection, () => {
-	const enabled = loadHudOverlayCaptureProtectionSetting();
-
-	return {
-		success: true,
-		enabled,
-	};
-});
-
 ipcMain.handle(IPC_CHANNELS.hudOverlay.setCaptureProtection, (_event, enabled: boolean) => {
 	loadHudOverlayCaptureProtectionSetting();
 	hudOverlayHiddenFromCapture = Boolean(enabled);
@@ -361,10 +352,6 @@ export function createHudOverlayWindow(): BrowserWindow {
 		}, 16);
 	});
 
-	win.webContents.on("did-finish-load", () => {
-		win?.webContents.send("main-process-message", new Date().toLocaleString());
-	});
-
 	hudOverlayWindow = win;
 
 	win.on("restore", () => {
@@ -445,10 +432,6 @@ export function createEditorWindow(): BrowserWindow {
 		}, 16);
 	});
 
-	win.webContents.on("did-finish-load", () => {
-		win?.webContents.send("main-process-message", new Date().toLocaleString());
-	});
-
 	if (VITE_DEV_SERVER_URL) {
 		win.loadURL(VITE_DEV_SERVER_URL + "?windowType=editor");
 	} else {
@@ -499,13 +482,6 @@ export function createExportWorkerWindow(): BrowserWindow {
 	}
 
 	return win;
-}
-
-export function closeExportWorkerWindow(): void {
-	if (exportWorkerWindow && !exportWorkerWindow.isDestroyed()) {
-		exportWorkerWindow.close();
-	}
-	exportWorkerWindow = null;
 }
 
 export function createSourceSelectorWindow(): BrowserWindow {
@@ -704,10 +680,6 @@ export function closeCountdownWindow(): void {
 	}
 }
 
-export function getHudOverlayWindow(): BrowserWindow | null {
-	return hudOverlayWindow;
-}
-
 export function fadeOutAndDestroyWindow(win: BrowserWindow | null, duration = 160): Promise<void> {
 	return new Promise((resolve) => {
 		if (!win || win.isDestroyed()) {
@@ -839,7 +811,7 @@ export function lockAreaOverlayWindow(): void {
 	areaOverlayWindow.webContents.send("area-overlay-phase", "locked");
 }
 
-export function unlockAreaOverlayWindow(): void {
+function unlockAreaOverlayWindow(): void {
 	if (!areaOverlayWindow || areaOverlayWindow.isDestroyed()) return;
 	areaOverlayWindow.setIgnoreMouseEvents(false);
 	areaOverlayWindow.setFocusable(true);

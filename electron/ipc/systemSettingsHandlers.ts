@@ -15,7 +15,6 @@ import {
 	createSpeakerNotesWindow,
 	getCountdownWindow,
 	lockAreaOverlayWindow,
-	unlockAreaOverlayWindow,
 	updateSpeakerNotesWindow,
 } from "../windows";
 
@@ -68,16 +67,8 @@ export function registerSystemSettingsIpcHandlers() {
 		return process.platform;
 	});
 
-	ipcMain.handle(IPC_CHANNELS.system.getAppVersion, () => {
-		return getScreenMintUpdater().getAppVersion();
-	});
-
 	ipcMain.handle(IPC_CHANNELS.updater.getState, () => {
 		return getScreenMintUpdater().getState();
-	});
-
-	ipcMain.handle(IPC_CHANNELS.updater.checkForUpdates, async () => {
-		return await getScreenMintUpdater().checkForUpdates("manual");
 	});
 
 	ipcMain.handle(IPC_CHANNELS.updater.downloadUpdate, async () => {
@@ -86,10 +77,6 @@ export function registerSystemSettingsIpcHandlers() {
 
 	ipcMain.handle(IPC_CHANNELS.updater.installAndRestart, async () => {
 		return await getScreenMintUpdater().installUpdateAndRestart();
-	});
-
-	ipcMain.handle(IPC_CHANNELS.updater.dismissUpdate, async () => {
-		return await getScreenMintUpdater().dismissUpdate();
 	});
 
 	ipcMain.handle(IPC_CHANNELS.updater.updateLaterForSession, async () => {
@@ -350,11 +337,6 @@ export function registerSystemSettingsIpcHandlers() {
 
 	ipcMain.handle(IPC_CHANNELS.areaOverlay.lock, () => {
 		lockAreaOverlayWindow();
-		return { success: true };
-	});
-
-	ipcMain.handle(IPC_CHANNELS.areaOverlay.unlock, () => {
-		unlockAreaOverlayWindow();
 		return { success: true };
 	});
 }

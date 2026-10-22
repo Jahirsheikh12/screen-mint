@@ -294,55 +294,10 @@
 	},
 	"sidebar": {
 		"edit": "Bearbeiten",
-		"layers": "Ebenen",
 		"polish": "Feinschliff"
 	},
 	"slider": {
 		"resetToDefault": "Auf Standard zurücksetzen"
-	},
-	"layerPanel": {
-		"layers": "Ebenen",
-		"noVideoLayerLoaded": "Keine Videoebene geladen",
-		"loadOrRecordA": "Lade oder nimm ein Video auf, um die bearbeitbare Hauptebene zu erstellen.",
-		"pendingCapturedMedia": "Aufnahme ausstehend",
-		"layerSettings": "Ebeneneinstellungen",
-		"transformAndVisibilityControls": "Transformation und Sichtbarkeit",
-		"layerName": "Ebenenname",
-		"hideLayer": "Ebene ausblenden",
-		"showLayer": "Ebene einblenden",
-		"unlockLayer": "Ebene entsperren",
-		"lockLayer": "Ebene sperren",
-		"thisLayerIsPlanned": "Diese Ebene ist geplant, enthält aber noch keine Aufnahme.",
-		"transform": "Transformation",
-		"xPosition": "X-Position",
-		"yPosition": "Y-Position",
-		"scale": "Skalierung",
-		"opacity": "Deckkraft",
-		"startMs": "Start (ms)",
-		"endMs": "Ende (ms)",
-		"crop": "Zuschnitt",
-		"moveLayerForward": "Ebene nach vorne",
-		"moveLayerBackward": "Ebene nach hinten",
-		"editableLayersOne": "1 bearbeitbare Ebene",
-		"editableLayersMany": "{{count}} bearbeitbare Ebenen",
-		"primaryRecording": "Hauptaufnahme",
-		"delete": "Löschen",
-		"cropFields": {
-			"x": "X",
-			"y": "Y",
-			"width": "Breite",
-			"height": "Höhe"
-		},
-		"layerKinds": {
-			"video": "Video",
-			"window": "Fenster",
-			"screenshot": "Screenshot",
-			"webcam": "Kamera",
-			"audio": "Audio",
-			"annotation": "Anmerkung",
-			"caption": "Untertitel",
-			"scene-3d": "3D"
-		}
 	},
 	"annotationPanel": {
 		"customFonts": "Eigene Schriften",
@@ -368,23 +323,6 @@
 		"noArrowData": "Keine Pfeildaten"
 	},
 	"polishPanel": {
-		"environmentLensAndLighting": "Umgebung, Objektiv und Beleuchtung einstellen",
-		"enable3dRendering": "3D-Rendering aktivieren",
-		"preset": "Vorgabe",
-		"device": "Gerät",
-		"environment": "Umgebung",
-		"fallback": "Ersatz",
-		"lens": "Objektiv",
-		"lighting": "Beleuchtung",
-		"audioMix": "Audiomix",
-		"trackVolumeAndDucking": "Spurlautstärke und Absenkregeln",
-		"masterVolume": "Gesamtlautstärke",
-		"mute": "Stumm",
-		"solo": "Solo",
-		"duck": "Absenken",
-		"vol": "Vol.",
-		"fadeIn": "Einblenden",
-		"fadeOut": "Ausblenden",
 		"autoPolish": "Automatisch veredeln",
 		"oneClickStudioTemplates": "Studio-Vorlagen mit einem Klick"
 	},
