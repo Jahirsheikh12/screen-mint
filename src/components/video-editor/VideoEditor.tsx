@@ -85,7 +85,7 @@ import { AutoPolishPanel } from "./AutoPolishPanel";
 import { type AudioMixSettings, DEFAULT_AUDIO_MIX_SETTINGS } from "./audioMix";
 import { loadAudioSelectionDurationMs } from "./audioRegionUtils";
 import { type AutoPolishContentType, buildAutoPolishResult } from "./autoPolish";
-import { buildCaptionSidecar } from "./captionSidecar";
+import { buildCaptionSidecar, mapSourceTimeToOutput } from "./captionSidecar";
 import { ConfirmActionDialog, MissingCursorDataDialog, PresetNameDialog } from "./EditorDialogs";
 import { ExportSettingsDialog } from "./ExportSettingsDialog";
 import {
@@ -1392,9 +1392,9 @@ export default function VideoEditor() {
 			}
 
 			if (!result.success) {
-				toast.error(
-					result.message || t("editor.shell.failedToSaveProject", "Failed to save project"),
-				);
+				toast.error(t("editor.shell.failedToSaveProject", "Failed to save project"), {
+					description: result.message,
+				});
 				return false;
 			}
 
@@ -1406,7 +1406,9 @@ export default function VideoEditor() {
 				snapshot: projectArtifacts.projectSnapshot,
 			});
 
-			toast.success(`Project saved to ${result.path}`);
+			toast.success(
+				t("editor.shell.projectSavedTo", "Project saved to {{path}}", { path: result.path ?? "" }),
+			);
 			return true;
 		},
 		[videoPath, currentProjectArtifacts, currentProjectPath, t],
@@ -1766,9 +1768,9 @@ export default function VideoEditor() {
 			nextZoomRegions.map((region) => region.id),
 		);
 		toast.success(t("editor.shell.smartZoomsRegenerated", "Smart zooms regenerated"), {
-			description: `Created ${nextZoomRegions.length} zoom region${
-				nextZoomRegions.length === 1 ? "" : "s"
-			}.`,
+			description: t("editor.shell.zoomRegionsCreated", "Zoom regions created: {{count}}", {
+				count: nextZoomRegions.length,
+			}),
 		});
 	}, [buildBeautifyContext, t]);
 
@@ -2996,13 +2998,12 @@ export default function VideoEditor() {
 
 					dispatchSession({
 						type: "set-export-error",
-						error:
-							copyResult.error || tDialogs("export.copyFailed", "Could not copy to the clipboard"),
+						error: tDialogs("export.copyFailed", "Could not copy to the clipboard"),
 					});
 					dispatchSession({ type: "set-export-status", status: "failed" });
-					toast.error(
-						copyResult.error || tDialogs("export.copyFailed", "Could not copy to the clipboard"),
-					);
+					toast.error(tDialogs("export.copyFailed", "Could not copy to the clipboard"), {
+						description: copyResult.error,
+					});
 					return true;
 				}
 
@@ -3025,12 +3026,11 @@ export default function VideoEditor() {
 						return false;
 					}
 
-					const errorMessage =
-						saveResult.message || tDialogs("export.saveFailed", "Failed to save the export");
+					const errorMessage = tDialogs("export.saveFailed", "Failed to save the export");
 					setPendingSave({ blob, fileName });
 					dispatchSession({ type: "set-export-error", error: errorMessage });
 					dispatchSession({ type: "set-export-status", status: "failed" });
-					toast.error(errorMessage);
+					toast.error(errorMessage, { description: saveResult.message });
 					return true;
 				}
 
@@ -3073,12 +3073,11 @@ export default function VideoEditor() {
 					return false;
 				}
 
-				const errorMessage =
-					writeResult.message || tDialogs("export.saveFailed", "Failed to save the export");
+				const errorMessage = tDialogs("export.saveFailed", "Failed to save the export");
 				setPendingSave({ blob, fileName });
 				dispatchSession({ type: "set-export-error", error: errorMessage });
 				dispatchSession({ type: "set-export-status", status: "failed" });
-				toast.error(errorMessage);
+				toast.error(errorMessage, { description: writeResult.message });
 				return true;
 			};
 
@@ -3318,10 +3317,10 @@ export default function VideoEditor() {
 						}
 
 						if (!result.success || !result.path || !result.details) {
-							const errorMessage = result.error || tDialogs("export.failed", "Export failed");
+							const errorMessage = tDialogs("export.failed", "Export failed");
 							dispatchSession({ type: "set-export-error", error: errorMessage });
 							dispatchSession({ type: "set-export-status", status: "failed" });
-							toast.error(errorMessage);
+							toast.error(errorMessage, { description: result.error });
 							return { handled: true, keepDialogOpen: true };
 						}
 
@@ -3389,7 +3388,10 @@ export default function VideoEditor() {
 							width: gifPlan.width,
 							height: gifPlan.height,
 							frameRate: gifPlan.frameRate,
-							durationMs: Math.round(duration * 1000),
+							// Output length (trims and speed applied): FFmpeg progress counts frames against it.
+							durationMs: Math.round(
+								mapSourceTimeToOutput(duration * 1000, trimRegions, speedRegions),
+							),
 							trimRegions,
 							speedRegions,
 							compositionPayload,
@@ -3520,10 +3522,12 @@ export default function VideoEditor() {
 						} else {
 							dispatchSession({
 								type: "set-export-error",
-								error: result.error || tDialogs("export.failed", "Export failed"),
+								error: tDialogs("export.failed", "Export failed"),
 							});
 							dispatchSession({ type: "set-export-status", status: "failed" });
-							toast.error(result.error || tDialogs("export.failed", "Export failed"));
+							toast.error(tDialogs("export.failed", "Export failed"), {
+								description: result.error,
+							});
 						}
 					}
 				} else {
@@ -3546,14 +3550,17 @@ export default function VideoEditor() {
 							bitrate: videoPlan.bitrate,
 							bitrateMode: videoPlan.bitrateMode,
 							keyframeIntervalSeconds: videoPlan.keyframeIntervalSeconds,
-							durationMs: Math.round(duration * 1000),
+							// Output length (trims and speed applied): FFmpeg progress counts frames against it.
+							durationMs: Math.round(
+								mapSourceTimeToOutput(duration * 1000, trimRegions, speedRegions),
+							),
 							trimRegions,
 							speedRegions,
 							compositionPayload,
 							audioPlan: {
 								mode:
 									audioRegions.length > 0 || speedRegions.length > 0 ? "timeline-mix" : "source",
-								expectAudio: true,
+								expectAudio: videoHasAudio || audioRegions.length > 0,
 								sourcePath: videoPath,
 								audioRegionCount: audioRegions.length,
 								hasSpeedRegions: speedRegions.length > 0,
@@ -3675,10 +3682,12 @@ export default function VideoEditor() {
 						} else {
 							dispatchSession({
 								type: "set-export-error",
-								error: result.error || tDialogs("export.failed", "Export failed"),
+								error: tDialogs("export.failed", "Export failed"),
 							});
 							dispatchSession({ type: "set-export-status", status: "failed" });
-							toast.error(result.error || tDialogs("export.failed", "Export failed"));
+							toast.error(tDialogs("export.failed", "Export failed"), {
+								description: result.error,
+							});
 						}
 					}
 				}
@@ -3802,6 +3811,7 @@ export default function VideoEditor() {
 			duration,
 			sourceFrameRate,
 			t,
+			videoHasAudio,
 		],
 	);
 

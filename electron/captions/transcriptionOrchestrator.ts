@@ -4,6 +4,7 @@ import type {
 	CaptionTrack,
 } from "../../src/components/video-editor/types";
 import { resolveCaptionBackend } from "../../src/lib/captions/backendSelection";
+import { tMain } from "../i18n";
 import {
 	cancelAppleSpeechGeneration,
 	generateCaptionsWithAppleSpeech,
@@ -69,7 +70,7 @@ export async function generateCaptions(
 			onProgress({
 				stage: "bootstrap",
 				percentage: 18,
-				message: "Apple Speech was unavailable. Falling back to Whisper...",
+				message: tMain("captions.appleFallback"),
 			});
 		}
 	}

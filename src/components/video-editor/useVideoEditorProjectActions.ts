@@ -1,5 +1,6 @@
 import { type Dispatch, type SetStateAction, useCallback } from "react";
 import { toast } from "sonner";
+import { useI18n } from "@/contexts/I18nContext";
 import type { EditorPreset, EditorWorkspaceLayout } from "./editorPreferences";
 import type { ConfirmDialogState, EditorSessionAction, EditorSessionState } from "./editorSession";
 import { normalizeProjectEditor } from "./projectPersistence";
@@ -31,6 +32,7 @@ export function useVideoEditorProjectActions({
 	applyEditorControls,
 	handleOpenExportDialog,
 }: UseVideoEditorProjectActionsOptions) {
+	const { t } = useI18n();
 	const handleQuickShareSave = useCallback(() => {
 		dispatchSession({ type: "set-quick-share-open", value: false });
 		handleOpenExportDialog();
@@ -51,14 +53,19 @@ export function useVideoEditorProjectActions({
 	const applyPreset = useCallback(
 		(preset: EditorPreset) => {
 			applyEditorControls(normalizeProjectEditor(preset.controls));
-			toast.success(`Applied ${preset.name} preset.`);
+			toast.success(
+				t("editor.shell.presetApplied", "Applied {{name}} preset.", { name: preset.name }),
+			);
 		},
-		[applyEditorControls],
+		[applyEditorControls, t],
 	);
 
 	const handleSavePreset = useCallback(() => {
-		dispatchSession({ type: "open-preset-dialog", name: "My preset" });
-	}, [dispatchSession]);
+		dispatchSession({
+			type: "open-preset-dialog",
+			name: t("dialogs.editor.myPreset", "My preset"),
+		});
+	}, [dispatchSession, t]);
 
 	const handleConfirmSavePreset = useCallback(() => {
 		const name = sessionState.modals.presetDialog.name.trim();
@@ -74,12 +81,13 @@ export function useVideoEditorProjectActions({
 
 		setCustomPresets((prev) => [...prev, preset]);
 		dispatchSession({ type: "close-preset-dialog" });
-		toast.success(`Saved ${name} preset.`);
+		toast.success(t("editor.shell.presetSaved", "Saved {{name}} preset.", { name }));
 	}, [
 		buildCurrentPresetControls,
 		dispatchSession,
 		sessionState.modals.presetDialog.name,
 		setCustomPresets,
+		t,
 	]);
 
 	const handleDeletePreset = useCallback(
@@ -93,31 +101,36 @@ export function useVideoEditorProjectActions({
 				type: "open-confirm-dialog",
 				dialog: {
 					kind: "delete-preset",
-					title: "Delete preset?",
-					description: `Delete the preset "${target.name}"?`,
-					confirmLabel: "Delete preset",
+					title: t("dialogs.editor.deletePresetTitle", "Delete preset?"),
+					description: t(
+						"dialogs.editor.deletePresetDescription",
+						'Delete the preset "{{name}}"?',
+						{
+							name: target.name,
+						},
+					),
+					confirmLabel: t("dialogs.editor.deletePresetConfirm", "Delete preset"),
 					payload: presetId,
 					tone: "danger",
 				},
 			});
 		},
-		[customPresets, dispatchSession],
+		[customPresets, dispatchSession, t],
 	);
 
 	const handleDeleteProject = useCallback(async () => {
 		const dialog: ConfirmDialogState = {
 			kind: "delete-project",
-			title: "Delete project?",
-			description: [
-				"Delete this ScreenMint project and any managed recording media?",
-				"",
-				"Imported files outside the ScreenMint recordings folder will be kept.",
-			].join("\n"),
-			confirmLabel: "Delete project",
+			title: t("dialogs.editor.deleteProjectTitle", "Delete project?"),
+			description: t(
+				"dialogs.editor.deleteProjectDescription",
+				"Delete this ScreenMint project and any managed recording media?\n\nImported files outside the ScreenMint recordings folder will be kept.",
+			),
+			confirmLabel: t("dialogs.editor.deleteProjectConfirm", "Delete project"),
 			tone: "danger",
 		};
 		dispatchSession({ type: "open-confirm-dialog", dialog });
-	}, [dispatchSession]);
+	}, [dispatchSession, t]);
 
 	const confirmDeleteProject = useCallback(async () => {
 		dispatchSession({ type: "close-confirm-dialog" });
@@ -129,28 +142,35 @@ export function useVideoEditorProjectActions({
 		});
 
 		if (!result.success) {
-			toast.error(result.message || result.error || "Failed to delete the project.");
+			toast.error(t("editor.shell.projectDeleteFailed", "Failed to delete the project."), {
+				description: result.message || result.error,
+			});
 			return;
 		}
 
 		const deletedCount = result.deletedPaths?.length ?? 0;
 		const skippedCount = result.skippedPaths?.length ?? 0;
+		const keptMessage =
+			skippedCount > 0
+				? t("editor.shell.externalFilesKept", "External files kept: {{count}}.", {
+						count: skippedCount,
+					})
+				: "";
 		toast.success(
 			deletedCount > 0
-				? `Deleted ${deletedCount} item${deletedCount === 1 ? "" : "s"}.${
-						skippedCount > 0
-							? ` Kept ${skippedCount} external file${skippedCount === 1 ? "" : "s"}.`
-							: ""
-					}`
+				? [
+						t("editor.shell.filesDeleted", "Files deleted: {{count}}.", { count: deletedCount }),
+						keptMessage,
+					]
+						.filter(Boolean)
+						.join(" ")
 				: skippedCount > 0
-					? `Removed this recording from the editor. Kept ${skippedCount} external file${
-							skippedCount === 1 ? "" : "s"
-						}.`
-					: "Project removed.",
+					? `${t("editor.shell.recordingRemovedFromEditor", "Removed this recording from the editor.")} ${keptMessage}`
+					: t("editor.shell.projectRemoved", "Project removed."),
 		);
 
 		await window.electronAPI.switchToHud();
-	}, [currentProjectPath, dispatchSession, videoSourcePath, webcamPath]);
+	}, [currentProjectPath, dispatchSession, videoSourcePath, webcamPath, t]);
 
 	const handleConfirmDialogAction = useCallback(async () => {
 		const dialog = sessionState.modals.confirmDialog;
@@ -163,7 +183,9 @@ export function useVideoEditorProjectActions({
 			setCustomPresets((prev) => prev.filter((preset) => preset.id !== dialog.payload));
 			dispatchSession({ type: "close-confirm-dialog" });
 			if (target) {
-				toast.success(`Deleted ${target.name} preset.`);
+				toast.success(
+					t("editor.shell.presetDeleted", "Deleted {{name}} preset.", { name: target.name }),
+				);
 			}
 			return;
 		}
@@ -177,6 +199,7 @@ export function useVideoEditorProjectActions({
 		dispatchSession,
 		sessionState.modals.confirmDialog,
 		setCustomPresets,
+		t,
 	]);
 
 	return {

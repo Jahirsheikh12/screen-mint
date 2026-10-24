@@ -26,9 +26,6 @@
 		"countdownDelay": "Countdown delay",
 		"noDelay": "No delay",
 		"record": "Record",
-		"captureScreenshot": "Capture screenshot",
-		"screenshotSaved": "Screenshot saved and copied",
-		"screenshotFailed": "Failed to capture screenshot",
 		"startRecording": "Start recording",
 		"pauseRecording": "Pause",
 		"resumeRecording": "Resume",
@@ -38,8 +35,6 @@
 		"recordingFolder": "Recording folder: {{path}}",
 		"chooseRecordingsFolder": "Choose recordings folder",
 		"folderPath": "Path: /{{name}}/",
-		"openVideoFile": "Open video file",
-		"openProject": "Open project",
 		"hideHudFromVideo": "Hide HUD from recording",
 		"showHudInVideo": "Show HUD in recording",
 		"hideHud": "Hide HUD",
@@ -64,7 +59,13 @@
 		"previewShape": "Preview shape",
 		"shapeRoundedRect": "Rounded rectangle",
 		"shapeCircle": "Circle",
-		"showScreenshot": "Show"
+		"cameraDisconnected": "Camera disconnected. Screen recording will continue without webcam.",
+		"mobilePairingStartFailed": "Unable to start mobile camera pairing.",
+		"cameraUnavailable": "Unable to access the selected camera. Recording will continue without webcam.",
+		"windowUnavailable": "The window you were recording is no longer available. Choose another source.",
+		"wgcUnavailable": "Native Windows capture (WGC) is unavailable. Falling back to browser capture.",
+		"wgcCheckFailed": "Unable to check native Windows capture (WGC). Falling back to browser capture.",
+		"wgcStartFailed": "Native Windows capture failed to start. Falling back to browser capture."
 	},
 	"tabs": {
 		"display": "Display",
@@ -131,7 +132,6 @@
 		"afterRecording": "After recording",
 		"createProject": "Create project",
 		"exportClipboard": "Export and copy to clipboard",
-		"exportShareLink": "Export and create shareable link",
 		"exportSaveFile": "Export and save to file",
 		"autoCreateZooms": "Automatically create zooms"
 	},
@@ -186,7 +186,8 @@
 		"microphoneDenied": "Microphone access was denied. Recording will continue without microphone audio.",
 		"failedToStart": "Failed to start recording: {{error}}",
 		"failedToStartGeneric": "Failed to start recording",
-		"diagnostics": "Diagnostics"
+		"diagnostics": "Diagnostics",
+		"selectArea": "Please select an area to record"
 	},
 	"speakerNotes": {
 		"title": "Speaker notes",

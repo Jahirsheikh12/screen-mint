@@ -11,6 +11,15 @@
 		"cycleBackward": "Annotation précédente",
 		"deleteSelectedAlt": "Supprimer la sélection (alt)",
 		"panTimeline": "Faire défiler la timeline",
-		"zoomTimeline": "Zoomer la timeline"
+		"zoomTimeline": "Zoomer la timeline",
+		"undo": "Annuler",
+		"redo": "Rétablir",
+		"export": "Exporter",
+		"exitTrimMode": "Quitter le mode découpe"
+	},
+	"keys": {
+		"space": "Espace",
+		"tab": "Tab",
+		"scroll": "Défilement"
 	}
 }

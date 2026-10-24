@@ -72,9 +72,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	cancelAreaEdit: () => {
 		return ipcRenderer.invoke(IPC_CHANNELS.capture.cancelAreaEdit);
 	},
-	captureScreenshot: (request?: unknown) => {
-		return ipcRenderer.invoke(IPC_CHANNELS.screenshot.capture, request);
-	},
 	startNativeScreenRecording: (
 		source: SelectedCaptureSource,
 		options?: {
@@ -499,6 +496,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	isWgcAvailable: () => ipcRenderer.invoke(IPC_CHANNELS.recording.isWgcAvailable),
 	muxWgcRecording: () => ipcRenderer.invoke(IPC_CHANNELS.recording.muxWgcRecording),
 	hideOsCursor: () => ipcRenderer.invoke(IPC_CHANNELS.system.hideCursor),
+	setAppLocale: (locale: string) => ipcRenderer.send(IPC_CHANNELS.system.setLocale, locale),
 	getCountdownDelay: () => ipcRenderer.invoke(IPC_CHANNELS.countdown.getDelay),
 	setCountdownDelay: (delay: number) => ipcRenderer.invoke(IPC_CHANNELS.countdown.setDelay, delay),
 	startCountdown: (seconds: number, displayId?: number) =>

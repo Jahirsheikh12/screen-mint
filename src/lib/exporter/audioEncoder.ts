@@ -9,6 +9,7 @@ import type { AudioRegion, SpeedRegion, TrimRegion } from "@/components/video-ed
 import type { VideoMuxer } from "./muxer";
 
 const AUDIO_BITRATE = 192_000;
+const MIX_TICK_MS = 10;
 const DECODE_BACKPRESSURE_LIMIT = 20;
 const MIN_SPEED_REGION_DELTA_MS = 0.0001;
 
@@ -123,10 +124,48 @@ export class AudioProcessor {
 			return null;
 		}
 
-		const decodedFrames: AudioData[] = [];
+		const sampleRate = audioConfig.sampleRate || 48_000;
+		const channels = audioConfig.numberOfChannels || 2;
+		const encodeConfig: AudioEncoderConfig = {
+			codec: "mp4a.40.2",
+			sampleRate,
+			numberOfChannels: channels,
+			bitrate: AUDIO_BITRATE,
+		};
+		const encodeSupport = await AudioEncoder.isConfigSupported(encodeConfig);
+		if (!encodeSupport.supported) {
+			console.warn("[AudioProcessor] AAC encoding not supported, skipping audio");
+			return null;
+		}
 
+		const encodedChunks: { chunk: EncodedAudioChunk; meta?: EncodedAudioChunkMetadata }[] = [];
+		const encoder = new AudioEncoder({
+			output: (chunk: EncodedAudioChunk, meta?: EncodedAudioChunkMetadata) => {
+				encodedChunks.push({ chunk, meta });
+			},
+			error: (error: DOMException) => console.error("[AudioProcessor] Encode error:", error),
+		});
+		encoder.configure(encodeConfig);
+
+		// Each decoded block is re-timed and encoded straight away, so raw PCM never piles up in
+		// memory (a full clip of it is about 11 MB per minute).
+		let decodedCount = 0;
 		const decoder = new AudioDecoder({
-			output: (data: AudioData) => decodedFrames.push(data),
+			output: (audioData: AudioData) => {
+				if (this.cancelled || encoder.state !== "configured") {
+					audioData.close();
+					return;
+				}
+				const trimOffsetMs = this.computeTrimOffset(audioData.timestamp / 1000, sortedTrims);
+				const adjusted = this.cloneWithTimestamp(
+					audioData,
+					Math.max(0, audioData.timestamp - trimOffsetMs * 1000),
+				);
+				audioData.close();
+				encoder.encode(adjusted);
+				adjusted.close();
+				decodedCount++;
+			},
 			error: (error: DOMException) => console.error("[AudioProcessor] Decode error:", error),
 		});
 		decoder.configure(audioConfig);
@@ -144,7 +183,11 @@ export class AudioProcessor {
 
 			decoder.decode(chunk);
 
-			while (decoder.decodeQueueSize > DECODE_BACKPRESSURE_LIMIT && !this.cancelled) {
+			while (
+				(decoder.decodeQueueSize > DECODE_BACKPRESSURE_LIMIT ||
+					encoder.encodeQueueSize > DECODE_BACKPRESSURE_LIMIT) &&
+				!this.cancelled
+			) {
 				await new Promise((resolve) => setTimeout(resolve, 1));
 			}
 		}
@@ -153,58 +196,16 @@ export class AudioProcessor {
 			await decoder.flush();
 			decoder.close();
 		}
-
-		if (this.cancelled || decodedFrames.length === 0) {
-			for (const frame of decodedFrames) frame.close();
-			return null;
-		}
-
-		const encodedChunks: { chunk: EncodedAudioChunk; meta?: EncodedAudioChunkMetadata }[] = [];
-		const encoder = new AudioEncoder({
-			output: (chunk: EncodedAudioChunk, meta?: EncodedAudioChunkMetadata) => {
-				encodedChunks.push({ chunk, meta });
-			},
-			error: (error: DOMException) => console.error("[AudioProcessor] Encode error:", error),
-		});
-
-		const sampleRate = audioConfig.sampleRate || 48_000;
-		const channels = audioConfig.numberOfChannels || 2;
-		const encodeConfig: AudioEncoderConfig = {
-			codec: "mp4a.40.2",
-			sampleRate,
-			numberOfChannels: channels,
-			bitrate: AUDIO_BITRATE,
-		};
-
-		const encodeSupport = await AudioEncoder.isConfigSupported(encodeConfig);
-		if (!encodeSupport.supported) {
-			console.warn("[AudioProcessor] AAC encoding not supported, skipping audio");
-			for (const frame of decodedFrames) frame.close();
-			return null;
-		}
-
-		encoder.configure(encodeConfig);
-
-		for (const audioData of decodedFrames) {
-			if (this.cancelled) {
-				audioData.close();
-				continue;
-			}
-
-			const timestampMs = audioData.timestamp / 1000;
-			const trimOffsetMs = this.computeTrimOffset(timestampMs, sortedTrims);
-			const adjustedTimestampUs = audioData.timestamp - trimOffsetMs * 1000;
-
-			const adjusted = this.cloneWithTimestamp(audioData, Math.max(0, adjustedTimestampUs));
-			audioData.close();
-
-			encoder.encode(adjusted);
-			adjusted.close();
-		}
-
 		if (encoder.state === "configured") {
+			if (this.cancelled || decodedCount === 0) {
+				encoder.close();
+				return null;
+			}
 			await encoder.flush();
 			encoder.close();
+		}
+		if (this.cancelled || decodedCount === 0) {
+			return null;
 		}
 
 		return {
@@ -298,7 +299,10 @@ export class AudioProcessor {
 		}
 
 		const { recorder, recordedBlobPromise } = this.startAudioRecording(destinationNode.stream);
-		let rafId: number | null = null;
+		// ponytail: real-time mix on a timer; trims/speed land within one tick (10ms) and the mix
+		// takes as long as the clip. An OfflineAudioContext render would make it exact and fast.
+		// A timer, not requestAnimationFrame, because this runs in the hidden export window.
+		let tickTimer: ReturnType<typeof setTimeout> | null = null;
 
 		try {
 			if (audioContext.state === "suspended") {
@@ -310,9 +314,9 @@ export class AudioProcessor {
 
 			await new Promise<void>((resolve, reject) => {
 				const cleanup = () => {
-					if (rafId !== null) {
-						cancelAnimationFrame(rafId);
-						rafId = null;
+					if (tickTimer !== null) {
+						clearTimeout(tickTimer);
+						tickTimer = null;
 					}
 					media.removeEventListener("error", onError);
 					media.removeEventListener("ended", onEnded);
@@ -389,7 +393,7 @@ export class AudioProcessor {
 					}
 
 					if (!media.paused && !media.ended) {
-						rafId = requestAnimationFrame(tick);
+						tickTimer = setTimeout(tick, MIX_TICK_MS);
 					} else {
 						cleanup();
 						resolve();
@@ -398,11 +402,11 @@ export class AudioProcessor {
 
 				media.addEventListener("error", onError, { once: true });
 				media.addEventListener("ended", onEnded, { once: true });
-				rafId = requestAnimationFrame(tick);
+				tickTimer = setTimeout(tick, MIX_TICK_MS);
 			});
 		} finally {
-			if (rafId !== null) {
-				cancelAnimationFrame(rafId);
+			if (tickTimer !== null) {
+				clearTimeout(tickTimer);
 			}
 			media.pause();
 			for (const entry of audioRegionElements) {

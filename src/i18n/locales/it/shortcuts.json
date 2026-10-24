@@ -11,6 +11,15 @@
 		"cycleBackward": "Annotazione precedente",
 		"deleteSelectedAlt": "Elimina selezione (alt)",
 		"panTimeline": "Scorri la timeline",
-		"zoomTimeline": "Zoom della timeline"
+		"zoomTimeline": "Zoom della timeline",
+		"undo": "Annulla",
+		"redo": "Ripeti",
+		"export": "Esporta",
+		"exitTrimMode": "Esci dalla modalità taglio"
+	},
+	"keys": {
+		"space": "Spazio",
+		"tab": "Tab",
+		"scroll": "Scorri"
 	}
 }

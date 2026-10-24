@@ -53,7 +53,7 @@ export function UpdaterDialogs({ windowType }: UpdaterDialogsProps) {
 		}
 
 		if (state.status === "error" && state.checkSource === "manual") {
-			toast.error(state.error ?? t("updates.error"));
+			toast.error(t("updates.error"), { description: state.error ?? undefined });
 		}
 	}, [canRenderDialogs, state, t]);
 

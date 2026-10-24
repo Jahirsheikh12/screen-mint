@@ -1,5 +1,6 @@
 import { useTimelineContext } from "dnd-timeline";
 import React, { useEffect, useState } from "react";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface Keyframe {
 	id: string;
@@ -23,6 +24,7 @@ const KeyframeMarkers: React.FC<KeyframeMarkersProps> = ({
 	videoDurationMs,
 	timelineRef,
 }) => {
+	const { t } = useI18n();
 	const { sidebarWidth, range, valueToPixels, pixelsToValue } = useTimelineContext();
 	const [draggingKeyframeId, setDraggingKeyframeId] = useState<string | null>(null);
 
@@ -91,7 +93,11 @@ const KeyframeMarkers: React.FC<KeyframeMarkersProps> = ({
 							e.stopPropagation();
 							setSelectedKeyframeId(kf.id);
 						}}
-						title={`Keyframe @ ${Math.round(kf.time)}ms (drag to move, Delete/Backspace to remove)`}
+						title={t(
+							"timeline.editor.keyframeTitle",
+							"Keyframe @ {{ms}}ms (drag to move, Delete/Backspace to remove)",
+							{ ms: Math.round(kf.time) },
+						)}
 					>
 						<div
 							style={{

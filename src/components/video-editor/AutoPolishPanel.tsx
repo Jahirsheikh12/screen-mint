@@ -5,11 +5,12 @@ import { cn } from "@/lib/utils";
 import type { AutoPolishContentType } from "./autoPolish";
 import { SettingsSection } from "./settingsPanelLayout";
 
-const CONTENT_TYPES: Array<{ value: AutoPolishContentType; label: string }> = [
+// Product Hunt and App Store are brand names and stay as they are in every language.
+const CONTENT_TYPES: Array<{ value: AutoPolishContentType; label: string; key?: string }> = [
 	{ value: "product-hunt", label: "Product Hunt" },
-	{ value: "landing-page", label: "Landing page" },
+	{ value: "landing-page", label: "Landing page", key: "editor.polishPanel.landingPage" },
 	{ value: "app-store", label: "App Store" },
-	{ value: "pitch-deck", label: "Pitch deck" },
+	{ value: "pitch-deck", label: "Pitch deck", key: "editor.polishPanel.pitchDeck" },
 ];
 
 interface AutoPolishPanelProps {
@@ -45,7 +46,7 @@ export function AutoPolishPanel({ onAutoPolish, embedded = false }: AutoPolishPa
 							>
 								{CONTENT_TYPES.map((type) => (
 									<option key={type.value} value={type.value} className="bg-surface">
-										{type.label}
+										{type.key ? t(type.key, type.label) : type.label}
 									</option>
 								))}
 							</select>
@@ -53,10 +54,10 @@ export function AutoPolishPanel({ onAutoPolish, embedded = false }: AutoPolishPa
 						</div>
 						<button
 							type="button"
-							className="h-8 px-4 rounded-lg bg-gradient-to-r from-accent to-accent text-fg text-caption font-bold tracking-wider shadow-sm hover:from-accent hover:to-accent transition-all duration-300"
+							className="h-8 px-4 rounded-lg bg-gradient-to-r from-accent to-accent text-fg text-caption font-bold uppercase tracking-wider shadow-sm hover:from-accent hover:to-accent transition-all duration-300"
 							onClick={() => onAutoPolish(contentType)}
 						>
-							APPLY
+							{t("editor.polishPanel.apply", "Apply")}
 						</button>
 					</div>
 				</SettingsSection>

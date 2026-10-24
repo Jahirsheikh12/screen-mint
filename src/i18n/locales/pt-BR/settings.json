@@ -96,7 +96,8 @@
 		"uploadErrorDescription": "Formatos aceitos: JPG, JPEG, PNG, WEBP.",
 		"video": "Vídeo",
 		"uploadVideo": "Escolher vídeo",
-		"videoHint": "Repete sem som atrás da sua gravação. MP4, MOV ou WebM."
+		"videoHint": "Repete sem som atrás da sua gravação. MP4, MOV ou WebM.",
+		"gradientPreset": "Gradiente predefinido {{index}}"
 	},
 	"cursor": {
 		"title": "Cursor",
@@ -304,9 +305,6 @@
 		"destFileHint": "Escolher uma pasta",
 		"destClipboard": "Área de transferência",
 		"destClipboardHint": "Copiar referência do arquivo",
-		"destLink": "Link",
-		"destLinkHint": "Compartilhar na nuvem",
-		"soon": "Em breve",
 		"profile": "Perfil de qualidade",
 		"profileHint": "Os perfis aplicam valores recomendados. Qualquer mudança manual vira Personalizado.",
 		"output": "Saída",
@@ -343,7 +341,6 @@
 		"modePreset": "Predefinição",
 		"back": "Voltar ao editor",
 		"copyExport": "Copiar exportação",
-		"createLink": "Criar link",
 		"ready": "{{format}} pronto",
 		"title": "Configurações de exportação",
 		"subtitle": "Escolha o formato, o destino e a qualidade antes de renderizar.",
@@ -478,6 +475,43 @@
 			"bottom": "Inferior",
 			"left": "Esquerda",
 			"right": "Direita"
+		},
+		"presets": {
+			"classic-circle": "Círculo clássico",
+			"presenter-soft": "Apresentador suave",
+			"floating-card": "Cartão flutuante",
+			"spotlight": "Destaque",
+			"fullscreen-commentary": "Comentário em tela cheia"
+		},
+		"status": {
+			"segmentation-unavailable": {
+				"title": "Tratamento do fundo indisponível",
+				"description": "A segmentação não está disponível agora, então a prévia mostra a imagem original da webcam."
+			},
+			"raw-webcam-only": {
+				"title": "A prévia está usando a webcam original",
+				"description": "O desempenho da prévia está baixo demais para o tratamento avançado, então o editor mostra temporariamente a imagem original da câmera."
+			},
+			"replacement-disabled": {
+				"title": "Substituição por imagem reduzida",
+				"description": "A substituição do fundo personalizado está pausada na prévia. Desfoque e cor sólida continuam ativos."
+			},
+			"reduced-background-sampling": {
+				"title": "Tratamento do fundo simplificado",
+				"description": "A prévia continua aplicando o tratamento da webcam, mas reduz a amostragem do fundo para manter a reprodução fluida."
+			},
+			"reduced-segmentation-rate": {
+				"title": "O tratamento está ativo",
+				"description": "A segmentação é atualizada com menos frequência, então a prévia pode responder um pouco mais devagar."
+			},
+			"raw": {
+				"title": "Webcam original",
+				"description": "A webcam é exibida sem separar o assunto do fundo."
+			},
+			"active": {
+				"title": "Tratamento do fundo ativo",
+				"description": "A prévia e a exportação usam o tratamento ativo da webcam."
+			}
 		}
 	},
 	"audioTab": {
@@ -553,7 +587,14 @@
 		"chipHook": "Gancho",
 		"chipSharp": "Nítido",
 		"chipTeam": "Equipe",
-		"chipCustom": "Personalizado"
+		"chipCustom": "Personalizado",
+		"presets": {
+			"saas-launch": "Vídeo de lançamento",
+			"product-demo": "Demonstração guiada",
+			"tutorial": "Modo aula",
+			"social-vertical": "Gancho vertical",
+			"bug-report-clean": "Entrega limpa"
+		}
 	},
 	"backgroundTab": {
 		"setTheBackdropBehind": "Defina o fundo atrás da tela da gravação",

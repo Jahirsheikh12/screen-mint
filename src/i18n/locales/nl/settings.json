@@ -96,7 +96,8 @@
 		"uploadErrorDescription": "Ondersteunde formaten: JPG, JPEG, PNG, WEBP.",
 		"video": "Video",
 		"uploadVideo": "Video kiezen",
-		"videoHint": "Speelt geluidloos in een lus achter je opname. MP4, MOV of WebM."
+		"videoHint": "Speelt geluidloos in een lus achter je opname. MP4, MOV of WebM.",
+		"gradientPreset": "Kleurverloop {{index}}"
 	},
 	"cursor": {
 		"title": "Cursor",
@@ -304,9 +305,6 @@
 		"destFileHint": "Kies een map",
 		"destClipboard": "Klembord",
 		"destClipboardHint": "Bestandsverwijzing kopiëren",
-		"destLink": "Link",
-		"destLinkHint": "Online delen",
-		"soon": "Binnenkort",
 		"profile": "Kwaliteitsprofiel",
 		"profileHint": "Profielen zetten verstandige standaarden. Elke handmatige wijziging wordt Aangepast.",
 		"output": "Uitvoer",
@@ -343,7 +341,6 @@
 		"modePreset": "Voorinstelling",
 		"back": "Terug naar editor",
 		"copyExport": "Export kopiëren",
-		"createLink": "Link maken",
 		"ready": "{{format}} klaar",
 		"title": "Exportinstellingen",
 		"subtitle": "Kies formaat, bestemming en kwaliteit voordat je rendert.",
@@ -478,6 +475,43 @@
 			"bottom": "Onder",
 			"left": "Links",
 			"right": "Rechts"
+		},
+		"presets": {
+			"classic-circle": "Klassieke cirkel",
+			"presenter-soft": "Zachte presentator",
+			"floating-card": "Zwevende kaart",
+			"spotlight": "Spotlight",
+			"fullscreen-commentary": "Commentaar op volledig scherm"
+		},
+		"status": {
+			"segmentation-unavailable": {
+				"title": "Achtergrondbehandeling niet beschikbaar",
+				"description": "Segmentatie is nu niet beschikbaar, dus het voorbeeld toont het onbewerkte webcambeeld."
+			},
+			"raw-webcam-only": {
+				"title": "Voorbeeld gebruikt onbewerkte webcam",
+				"description": "De voorbeeldprestaties zijn te laag voor de geavanceerde behandeling, dus de editor toont tijdelijk het onbewerkte camerabeeld."
+			},
+			"replacement-disabled": {
+				"title": "Afbeeldingsvervanging beperkt",
+				"description": "Vervanging door een eigen achtergrond is gepauzeerd in het voorbeeld. Vervaging en effen kleur blijven actief."
+			},
+			"reduced-background-sampling": {
+				"title": "Achtergrondbehandeling vereenvoudigd",
+				"description": "Het voorbeeld past de webcambehandeling nog toe, maar bemonstert de achtergrond minder vaak om het afspelen soepel te houden."
+			},
+			"reduced-segmentation-rate": {
+				"title": "Behandeling is actief",
+				"description": "Segmentatie wordt minder vaak bijgewerkt, dus het voorbeeld kan iets trager reageren."
+			},
+			"raw": {
+				"title": "Onbewerkte webcam",
+				"description": "De webcam wordt weergegeven zonder onderwerpscheiding."
+			},
+			"active": {
+				"title": "Achtergrondbehandeling actief",
+				"description": "Voorbeeld en export gebruiken de actieve webcambehandeling."
+			}
 		}
 	},
 	"audioTab": {
@@ -553,7 +587,14 @@
 		"chipHook": "Pakkend",
 		"chipSharp": "Scherp",
 		"chipTeam": "Team",
-		"chipCustom": "Aangepast"
+		"chipCustom": "Aangepast",
+		"presets": {
+			"saas-launch": "Lanceringsfilm",
+			"product-demo": "Begeleide demo",
+			"tutorial": "Lesmodus",
+			"social-vertical": "Verticale hook",
+			"bug-report-clean": "Nette overdracht"
+		}
 	},
 	"backgroundTab": {
 		"setTheBackdropBehind": "Stel de achtergrond achter het opnamecanvas in",

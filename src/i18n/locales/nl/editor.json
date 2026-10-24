@@ -74,11 +74,7 @@
 	"keyboardShortcuts": {
 		"title": "Sneltoetsen",
 		"customizeTooltip": "Sneltoetsen aanpassen",
-		"customize": "Aanpassen",
-		"panTimeline": "Tijdlijn verschuiven",
-		"zoomTimeline": "Tijdlijn zoomen",
-		"cycleAnnotations": "Door annotaties bladeren",
-		"tab": "Tab"
+		"customize": "Aanpassen"
 	},
 	"openRecordingsFolder": "Opnamemap openen",
 	"captions": {
@@ -233,7 +229,9 @@
 		"black": "Black",
 		"captionText": "Ondertiteltekst...",
 		"split": "Splitsen",
-		"mergeNext": "Samenvoegen met volgende"
+		"mergeNext": "Samenvoegen met volgende",
+		"systemFont": "Systeem",
+		"uppercase": "HOOFDLETTERS"
 	},
 	"preview": {
 		"initFailed": "Kan de voorbeeldweergave niet starten"
@@ -287,7 +285,22 @@
 		"noSavedPresets": "Geen opgeslagen presets",
 		"toggleLayout": "Indeling wisselen",
 		"projects": "Projecten",
-		"openProjectBrowser": "Projectbrowser openen"
+		"openProjectBrowser": "Projectbrowser openen",
+		"failedToLoadProject": "Project laden mislukt",
+		"invalidProjectFile": "Ongeldige projectbestandsindeling",
+		"projectLoadedFrom": "Project geladen uit {{path}}",
+		"failedToOpenProject": "Project openen mislukt",
+		"projectSavedTo": "Project opgeslagen in {{path}}",
+		"presetApplied": "Preset ‘{{name}}’ toegepast.",
+		"presetSaved": "Preset ‘{{name}}’ opgeslagen.",
+		"presetDeleted": "Preset ‘{{name}}’ verwijderd.",
+		"projectDeleteFailed": "Kan het project niet verwijderen.",
+		"filesDeleted": "Verwijderde bestanden: {{count}}.",
+		"externalFilesKept": "Behouden externe bestanden: {{count}}.",
+		"recordingRemovedFromEditor": "Deze opname is uit de editor verwijderd.",
+		"projectRemoved": "Project verwijderd.",
+		"webcamSourceMissing": "De webcambron ontbreekt. Koppel hem opnieuw of verwijder hem uit het project.",
+		"zoomRegionsCreated": "Gemaakte zoomgebieden: {{count}}"
 	},
 	"header": {
 		"presets": "Presets"
@@ -324,7 +337,10 @@
 	},
 	"polishPanel": {
 		"autoPolish": "Automatisch afwerken",
-		"oneClickStudioTemplates": "Studiosjablonen met één klik"
+		"oneClickStudioTemplates": "Studiosjablonen met één klik",
+		"landingPage": "Landingspagina",
+		"pitchDeck": "Pitchdeck",
+		"apply": "Toepassen"
 	},
 	"theme": {
 		"appearance": "Weergave",

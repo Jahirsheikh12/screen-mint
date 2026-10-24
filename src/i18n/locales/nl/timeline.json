@@ -25,7 +25,8 @@
 	"speed": {
 		"cannotPlace": "Hier kan geen snelheid worden geplaatst",
 		"existsOrNoSpace": "Er is hier al een snelheidsgebied of er is niet genoeg ruimte.",
-		"label": "Snelheid"
+		"label": "Snelheid",
+		"indexedLabel": "Snelheid {{index}}"
 	},
 	"annotation": {
 		"label": "Annotatie",
@@ -105,7 +106,10 @@
 		"custom": "Aangepast",
 		"customAspectWidth": "Aangepaste breedte",
 		"customAspectHeight": "Aangepaste hoogte",
-		"set": "Toepassen"
+		"set": "Toepassen",
+		"part": "Deel {{index}}",
+		"volumeTooltip": "Volume: {{percent}}%",
+		"keyframeTitle": "Keyframe op {{ms}} ms (sleep om te verplaatsen, Delete/Backspace om te verwijderen)"
 	},
 	"toolbar": {
 		"visibleOne": "1 zichtbare tijdlijn",

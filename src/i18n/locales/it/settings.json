@@ -96,7 +96,8 @@
 		"uploadErrorDescription": "Formati supportati: JPG, JPEG, PNG, WEBP.",
 		"video": "Video",
 		"uploadVideo": "Scegli video",
-		"videoHint": "Scorre in loop, senza audio, dietro la registrazione. MP4, MOV o WebM."
+		"videoHint": "Scorre in loop, senza audio, dietro la registrazione. MP4, MOV o WebM.",
+		"gradientPreset": "Sfumatura predefinita {{index}}"
 	},
 	"cursor": {
 		"title": "Cursore",
@@ -304,9 +305,6 @@
 		"destFileHint": "Scegli una cartella",
 		"destClipboard": "Appunti",
 		"destClipboardHint": "Copia il riferimento al file",
-		"destLink": "Link",
-		"destLinkHint": "Condivisione online",
-		"soon": "Presto",
 		"profile": "Profilo di qualità",
 		"profileHint": "I profili impostano valori consigliati. Ogni modifica manuale diventa Personalizzato.",
 		"output": "Uscita",
@@ -343,7 +341,6 @@
 		"modePreset": "Preset",
 		"back": "Torna all’editor",
 		"copyExport": "Copia esportazione",
-		"createLink": "Crea link",
 		"ready": "{{format}} pronto",
 		"title": "Impostazioni di esportazione",
 		"subtitle": "Scegli formato, destinazione e qualità prima del rendering.",
@@ -478,6 +475,43 @@
 			"bottom": "Basso",
 			"left": "Sinistra",
 			"right": "Destra"
+		},
+		"presets": {
+			"classic-circle": "Cerchio classico",
+			"presenter-soft": "Presentatore morbido",
+			"floating-card": "Scheda fluttuante",
+			"spotlight": "Riflettore",
+			"fullscreen-commentary": "Commento a schermo intero"
+		},
+		"status": {
+			"segmentation-unavailable": {
+				"title": "Trattamento dello sfondo non disponibile",
+				"description": "La segmentazione non è disponibile al momento, quindi l’anteprima mostra l’immagine originale della webcam."
+			},
+			"raw-webcam-only": {
+				"title": "L’anteprima usa la webcam originale",
+				"description": "Le prestazioni dell’anteprima sono troppo basse per il trattamento avanzato, quindi l’editor mostra temporaneamente l’immagine originale."
+			},
+			"replacement-disabled": {
+				"title": "Sostituzione con immagine ridotta",
+				"description": "La sostituzione dello sfondo personalizzato è in pausa nell’anteprima. Sfocatura e tinta unita possono restare attive."
+			},
+			"reduced-background-sampling": {
+				"title": "Trattamento dello sfondo semplificato",
+				"description": "L’anteprima applica ancora il trattamento della webcam, ma riduce il campionamento dello sfondo per mantenere fluida la riproduzione."
+			},
+			"reduced-segmentation-rate": {
+				"title": "Il trattamento è attivo",
+				"description": "La segmentazione si aggiorna meno spesso, quindi l’anteprima può risultare un po’ meno reattiva."
+			},
+			"raw": {
+				"title": "Webcam originale",
+				"description": "La webcam viene mostrata senza separare il soggetto."
+			},
+			"active": {
+				"title": "Trattamento dello sfondo attivo",
+				"description": "Anteprima ed esportazione usano il trattamento attivo della webcam."
+			}
 		}
 	},
 	"audioTab": {
@@ -553,7 +587,14 @@
 		"chipHook": "Gancio",
 		"chipSharp": "Nitido",
 		"chipTeam": "Team",
-		"chipCustom": "Personalizzato"
+		"chipCustom": "Personalizzato",
+		"presets": {
+			"saas-launch": "Video di lancio",
+			"product-demo": "Demo guidata",
+			"tutorial": "Modalità lezione",
+			"social-vertical": "Hook verticale",
+			"bug-report-clean": "Consegna pulita"
+		}
 	},
 	"backgroundTab": {
 		"setTheBackdropBehind": "Imposta lo sfondo dietro l’area della registrazione",

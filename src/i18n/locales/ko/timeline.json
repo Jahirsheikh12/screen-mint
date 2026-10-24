@@ -25,7 +25,8 @@
 	"speed": {
 		"cannotPlace": "여기에 속도를 넣을 수 없습니다",
 		"existsOrNoSpace": "이 위치에 이미 속도 구간이 있거나 공간이 부족합니다.",
-		"label": "속도"
+		"label": "속도",
+		"indexedLabel": "속도 {{index}}"
 	},
 	"annotation": {
 		"label": "주석",
@@ -105,7 +106,10 @@
 		"custom": "사용자 지정",
 		"customAspectWidth": "사용자 지정 너비",
 		"customAspectHeight": "사용자 지정 높이",
-		"set": "설정"
+		"set": "설정",
+		"part": "파트 {{index}}",
+		"volumeTooltip": "볼륨: {{percent}}%",
+		"keyframeTitle": "{{ms}}ms 키프레임 (드래그하여 이동, Delete/Backspace로 제거)"
 	},
 	"toolbar": {
 		"visibleOne": "보이는 타임라인 1개",

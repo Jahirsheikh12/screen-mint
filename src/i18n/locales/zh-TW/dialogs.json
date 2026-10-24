@@ -82,7 +82,8 @@
 		"projects": "專案",
 		"recentProjectsAndProjects": "最近的專案和儲存在錄影資料夾中的專案。",
 		"loadingProjects": "正在載入專案…",
-		"noSavedProjectsYet": "還沒有已儲存的專案"
+		"noSavedProjectsYet": "還沒有已儲存的專案",
+		"showProjectInFolder": "在資料夾中顯示 {{name}}"
 	},
 	"editor": {
 		"savePreset": "儲存預設",
@@ -92,7 +93,13 @@
 		"cancel": "取消",
 		"savePreset2": "儲存預設",
 		"confirmAction": "確認動作",
-		"continue": "繼續"
+		"continue": "繼續",
+		"deletePresetTitle": "刪除預設？",
+		"deletePresetDescription": "刪除預設「{{name}}」？",
+		"deletePresetConfirm": "刪除預設",
+		"deleteProjectTitle": "刪除專案？",
+		"deleteProjectDescription": "刪除此 ScreenMint 專案及其管理的錄製媒體？\n\nScreenMint 錄製資料夾以外匯入的檔案將會保留。",
+		"deleteProjectConfirm": "刪除專案"
 	},
 	"quickShare": {
 		"quickShare": "快速分享",

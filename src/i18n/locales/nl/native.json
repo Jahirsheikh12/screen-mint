@@ -1,0 +1,79 @@
+{
+	"menu": {
+		"file": "Archief",
+		"loadProject": "Project laden…",
+		"saveProject": "Project opslaan…",
+		"saveProjectAs": "Project opslaan als…",
+		"edit": "Wijzig",
+		"view": "Weergave",
+		"window": "Venster",
+		"help": "Help",
+		"about": "Over ScreenMint",
+		"checkForUpdates": "Zoek naar updates…",
+		"reportIssue": "Probleem melden…"
+	},
+	"tray": {
+		"open": "Openen",
+		"quit": "Stoppen",
+		"stopRecording": "Opname stoppen",
+		"recording": "Opname: {{source}}"
+	},
+	"about": {
+		"close": "Sluiten",
+		"status": {
+			"checking": "Zoeken naar updates…",
+			"available": "Versie {{version}} is beschikbaar. Gebruik Zoek naar updates om het updatevenster te openen.",
+			"downloading": "Versie {{version}} wordt gedownload.",
+			"downloadingProgress": "Versie {{version}} wordt gedownload ({{percent}}%).",
+			"downloadedInstaller": "Versie {{version}} is gedownload. Open het updatevenster om verder te gaan.",
+			"downloadedReady": "Versie {{version}} is gedownload en kan worden geïnstalleerd vanuit het updatevenster.",
+			"upToDate": "Je gebruikt de nieuwste versie ({{version}}).",
+			"manual": "Versie {{version}} kan handmatig worden gedownload via GitHub Releases.",
+			"error": "Kan nu niet naar updates zoeken.",
+			"unsupported": "Automatische updates zijn alleen beschikbaar in geïnstalleerde versies."
+		}
+	},
+	"unsavedChanges": {
+		"title": "Niet-opgeslagen wijzigingen",
+		"message": "Je hebt niet-opgeslagen wijzigingen.",
+		"detail": "Wil je je project opslaan voordat je sluit?",
+		"saveAndClose": "Opslaan en sluiten",
+		"discardAndClose": "Verwerpen en sluiten",
+		"cancel": "Annuleren"
+	},
+	"recovery": {
+		"message": "ScreenMint is gesloten tijdens een opname",
+		"detail": "Je laatste opname is onverwacht gestopt. Het opgeslagen deel staat hier:\n{{path}}",
+		"openInEditor": "Openen in editor",
+		"showInFolder": "Toon in map",
+		"notNow": "Niet nu"
+	},
+	"moveToApplications": {
+		"title": "ScreenMint naar Apps verplaatsen",
+		"message": "Verplaats ScreenMint naar /Applications voor stabielere macOS-opnamerechten.",
+		"detail": "Niet-ondertekende macOS-versies houden de toestemming voor schermopname beter vast als ScreenMint in /Applications/ScreenMint.app staat. Starten vanuit Downloads, het bureaublad of een gekoppelde DMG kan herhaalde vragen en lege bronlijsten veroorzaken.",
+		"move": "Verplaats naar Apps",
+		"keep": "Huidige locatie behouden",
+		"manualTitle": "ScreenMint handmatig verplaatsen",
+		"manualMessage": "Verplaats ScreenMint naar /Applications voordat je schermopname gebruikt.",
+		"manualDetail": "macOS heeft de app niet automatisch verplaatst. Sleep ScreenMint.app naar /Applications en start de app daar opnieuw.",
+		"ok": "OK"
+	},
+	"captions": {
+		"extractingMicrophone": "Microfoonaudio wordt geëxtraheerd…",
+		"extractingMixed": "Gemixte audio wordt geëxtraheerd…",
+		"runningWhisper": "Lokale Whisper-transcriptie wordt uitgevoerd…",
+		"retryingSmallerModel": "Nieuwe poging met het kleinere {{model}}-model…",
+		"buildingSegments": "Transcriptiesegmenten worden gemaakt…",
+		"ready": "Transcriptie klaar",
+		"downloadingModel": "Whisper-model {{model}} wordt gedownload…",
+		"downloadingModelProgress": "Whisper-model {{model}} wordt gedownload… {{percent}}%",
+		"downloadingVad": "Hulpprogramma voor spraakdetectie wordt gedownload…",
+		"preparingRuntime": "Lokale Whisper-omgeving wordt voorbereid…",
+		"buildingCli": "Whisper-CLI wordt gebouwd…",
+		"preparingAppleMicrophone": "Microfoonaudio wordt voorbereid voor Apple Speech…",
+		"preparingAppleMixed": "Gemixte audio wordt voorbereid voor Apple Speech…",
+		"runningApple": "Apple Speech-transcriptie wordt uitgevoerd…",
+		"appleFallback": "Apple Speech was niet beschikbaar. Er wordt overgeschakeld naar Whisper…"
+	}
+}

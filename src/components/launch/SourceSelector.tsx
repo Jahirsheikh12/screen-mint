@@ -1,5 +1,5 @@
+import { Check, Monitor, Search, Square, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FiCheck, FiMonitor, FiSearch, FiSquare, FiX } from "react-icons/fi";
 import { CaptureAccessNotice } from "@/components/launch/CaptureAccessNotice";
 import { useScopedT } from "../../contexts/I18nContext";
 import { useCaptureSourceAccess } from "../../hooks/useCaptureSourceAccess";
@@ -136,12 +136,12 @@ function DisplayCard({
 						/>
 					) : (
 						<div className={styles.displayThumbPlaceholder}>
-							<FiMonitor size={28} />
+							<Monitor size={28} />
 						</div>
 					)}
 				</div>
 				<div className={styles.displayCheck}>
-					<FiCheck size={13} strokeWidth={3.5} />
+					<Check size={13} strokeWidth={3.5} />
 				</div>
 			</div>
 			<div className={styles.displayStand} />
@@ -201,12 +201,12 @@ function WindowCard({
 				) : (
 					<div className={styles.windowThumbPlaceholder}>
 						<div className={styles.windowPlaceholderIcon}>
-							{source.appIcon ? <img src={source.appIcon} alt="" /> : <FiSquare size={20} />}
+							{source.appIcon ? <img src={source.appIcon} alt="" /> : <Square size={20} />}
 						</div>
 					</div>
 				)}
 				<div className={styles.windowCheck}>
-					<FiCheck size={12} strokeWidth={3.5} />
+					<Check size={12} strokeWidth={3.5} />
 				</div>
 			</div>
 			<div className={styles.windowMeta}>
@@ -214,7 +214,7 @@ function WindowCard({
 					<img src={source.appIcon} alt="" className={styles.windowAppIcon} />
 				) : (
 					<div className={styles.windowAppIconFallback}>
-						<FiSquare size={11} />
+						<Square size={11} />
 					</div>
 				)}
 				<div className={styles.windowTextBlock}>
@@ -466,7 +466,7 @@ export function SourceSelector() {
 					onClick={handleCancel}
 					aria-label={t("sourceSelector.cancel", "Cancel")}
 				>
-					<FiX size={15} />
+					<X size={15} />
 				</button>
 			</div>
 
@@ -480,7 +480,7 @@ export function SourceSelector() {
 						onClick={() => setActiveTab("screens")}
 					>
 						<span className={styles.tabIcon}>
-							<FiMonitor size={15} />
+							<Monitor size={15} />
 						</span>
 						{t("sourceSelector.screens", "Screens")}
 						<span className={styles.tabCount}>{filteredScreens.length}</span>
@@ -496,7 +496,7 @@ export function SourceSelector() {
 						onClick={() => setActiveTab("windows")}
 					>
 						<span className={styles.tabIcon}>
-							<FiSquare size={14} />
+							<Square size={14} />
 						</span>
 						{t("sourceSelector.windows", "Windows")}
 						<span className={styles.tabCount}>{filteredWindows.length}</span>
@@ -506,7 +506,7 @@ export function SourceSelector() {
 					</button>
 				</div>
 				<div className={styles.searchWrap}>
-					<FiSearch className={styles.searchIcon} size={14} />
+					<Search className={styles.searchIcon} size={14} />
 					<input
 						type="text"
 						value={search}
@@ -521,7 +521,7 @@ export function SourceSelector() {
 							onClick={() => setSearch("")}
 							aria-label={t("sourceSelector.clearSearch", "Clear search")}
 						>
-							<FiX size={11} strokeWidth={3} />
+							<X size={11} strokeWidth={3} />
 						</button>
 					)}
 				</div>
@@ -538,7 +538,7 @@ export function SourceSelector() {
 				{!loading && visibleSources.length === 0 && (
 					<div className={styles.emptyState}>
 						<div className={styles.emptyIcon}>
-							{activeTab === "screens" ? <FiMonitor size={26} /> : <FiSquare size={24} />}
+							{activeTab === "screens" ? <Monitor size={26} /> : <Square size={24} />}
 						</div>
 						<div className={styles.emptyTitle}>
 							{search
@@ -626,7 +626,7 @@ export function SourceSelector() {
 						onClick={() => void handleShare()}
 						disabled={!selectedId}
 					>
-						<FiCheck size={14} strokeWidth={3.5} />
+						<Check size={14} strokeWidth={3.5} />
 						{t("sourceSelector.share", "Share")}
 					</button>
 				</div>

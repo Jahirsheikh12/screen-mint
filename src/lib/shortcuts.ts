@@ -24,46 +24,48 @@ export interface FixedShortcut {
 	/** Translation key under shortcuts.actions. */
 	key: string;
 	label: string;
-	display: string;
 	bindings: ShortcutBinding[];
+	/** Extra bindings that apply off macOS only (Ctrl+Y redo). */
+	nonMacBindings?: ShortcutBinding[];
 }
 
+/** Built into the editor and timeline; not rebindable, so custom shortcuts can't take them. */
 export const FIXED_SHORTCUTS: FixedShortcut[] = [
+	{ key: "undo", label: "Undo", bindings: [{ key: "z", ctrl: true }] },
 	{
-		key: "cycleForward",
-		label: "Cycle Annotations Forward",
-		display: "Tab",
-		bindings: [{ key: "tab" }],
+		key: "redo",
+		label: "Redo",
+		bindings: [{ key: "z", ctrl: true, shift: true }],
+		nonMacBindings: [{ key: "y", ctrl: true }],
 	},
+	{ key: "export", label: "Export", bindings: [{ key: "e", ctrl: true }] },
+	{ key: "exitTrimMode", label: "Exit Trim Mode", bindings: [{ key: "escape" }] },
+	{ key: "cycleForward", label: "Cycle Annotations Forward", bindings: [{ key: "tab" }] },
 	{
 		key: "cycleBackward",
 		label: "Cycle Annotations Backward",
-		display: "Shift + Tab",
 		bindings: [{ key: "tab", shift: true }],
 	},
 	{
 		key: "deleteSelectedAlt",
 		label: "Delete Selected (alt)",
-		display: "Del / ⌫",
 		bindings: [{ key: "delete" }, { key: "backspace" }],
 	},
-	{ key: "panTimeline", label: "Pan Timeline", display: "Shift + Ctrl + Scroll", bindings: [] },
-	{ key: "zoomTimeline", label: "Zoom Timeline", display: "Ctrl + Scroll", bindings: [] },
+	{
+		key: "panTimeline",
+		label: "Pan Timeline",
+		bindings: [{ key: "scroll", ctrl: true, shift: true }],
+	},
+	{ key: "zoomTimeline", label: "Zoom Timeline", bindings: [{ key: "scroll", ctrl: true }] },
 ];
 
-// Built into the editor (undo, redo, export, leave trim mode); not rebindable, so a custom
-// shortcut must not take them over.
-const RESERVED_BINDINGS: Array<{ label: string; binding: ShortcutBinding }> = [
-	{ label: "Undo", binding: { key: "z", ctrl: true } },
-	{ label: "Redo", binding: { key: "z", ctrl: true, shift: true } },
-	{ label: "Redo", binding: { key: "y", ctrl: true } },
-	{ label: "Export", binding: { key: "e", ctrl: true } },
-	{ label: "Exit Trim Mode", binding: { key: "escape" } },
-];
+export function getFixedBindings(fixed: FixedShortcut, isMac: boolean): ShortcutBinding[] {
+	return isMac ? fixed.bindings : [...fixed.bindings, ...(fixed.nonMacBindings ?? [])];
+}
 
 export type ShortcutConflict =
 	| { type: "configurable"; action: ShortcutAction }
-	| { type: "fixed"; label: string };
+	| { type: "fixed"; key: string; label: string };
 
 export function bindingsEqual(a: ShortcutBinding, b: ShortcutBinding): boolean {
 	return (
@@ -78,15 +80,11 @@ export function findConflict(
 	binding: ShortcutBinding,
 	forAction: ShortcutAction,
 	config: ShortcutsConfig,
+	isMac = false,
 ): ShortcutConflict | null {
 	for (const fixed of FIXED_SHORTCUTS) {
-		if (fixed.bindings.some((b) => bindingsEqual(b, binding))) {
-			return { type: "fixed", label: fixed.label };
-		}
-	}
-	for (const reserved of RESERVED_BINDINGS) {
-		if (bindingsEqual(reserved.binding, binding)) {
-			return { type: "fixed", label: reserved.label };
+		if (getFixedBindings(fixed, isMac).some((b) => bindingsEqual(b, binding))) {
+			return { type: "fixed", key: fixed.key, label: fixed.label };
 		}
 	}
 	for (const action of SHORTCUT_ACTIONS) {
@@ -134,8 +132,11 @@ export function matchesShortcut(
 	return true;
 }
 
+// Word labels (Space, Tab, Scroll) can be translated through formatBinding's keyLabel argument.
 const KEY_LABELS: Record<string, string> = {
 	" ": "Space",
+	tab: "Tab",
+	scroll: "Scroll",
 	delete: "Del",
 	backspace: "⌫",
 	escape: "Esc",
@@ -145,13 +146,33 @@ const KEY_LABELS: Record<string, string> = {
 	arrowright: "→",
 };
 
-export function formatBinding(binding: ShortcutBinding, isMac: boolean): string {
+export function formatBinding(
+	binding: ShortcutBinding,
+	isMac: boolean,
+	keyLabel: (key: string, fallback: string) => string = (_key, fallback) => fallback,
+): string {
 	const parts: string[] = [];
 	if (binding.ctrl) parts.push(isMac ? "⌘" : "Ctrl");
 	if (binding.shift) parts.push(isMac ? "⇧" : "Shift");
 	if (binding.alt) parts.push(isMac ? "⌥" : "Alt");
-	parts.push(KEY_LABELS[binding.key] ?? binding.key.toUpperCase());
+	const label = KEY_LABELS[binding.key];
+	parts.push(label ? keyLabel(binding.key, label) : binding.key.toUpperCase());
 	return parts.join(" + ");
+}
+
+/** shortcuts-namespace key for a key's word label (Space, Tab, Scroll). */
+export function keyLabelTranslationKey(key: string): string {
+	return `keys.${key === " " ? "space" : key}`;
+}
+
+export function formatFixedShortcut(
+	fixed: FixedShortcut,
+	isMac: boolean,
+	keyLabel?: (key: string, fallback: string) => string,
+): string {
+	return getFixedBindings(fixed, isMac)
+		.map((binding) => formatBinding(binding, isMac, keyLabel))
+		.join(" / ");
 }
 
 export function mergeWithDefaults(partial: Partial<ShortcutsConfig>): ShortcutsConfig {

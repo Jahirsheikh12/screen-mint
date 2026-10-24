@@ -26,9 +26,6 @@
 		"countdownDelay": "Retraso de cuenta regresiva",
 		"noDelay": "Sin retraso",
 		"record": "Grabar",
-		"captureScreenshot": "Capturar pantalla",
-		"screenshotSaved": "Captura guardada y copiada",
-		"screenshotFailed": "No se pudo capturar la pantalla",
 		"startRecording": "Iniciar grabación",
 		"pauseRecording": "Pausar",
 		"resumeRecording": "Reanudar",
@@ -38,8 +35,6 @@
 		"recordingFolder": "Carpeta de grabaciones: {{path}}",
 		"chooseRecordingsFolder": "Elegir carpeta de grabaciones",
 		"folderPath": "Ruta: /{{name}}/",
-		"openVideoFile": "Abrir archivo de video",
-		"openProject": "Abrir proyecto",
 		"hideHudFromVideo": "Ocultar HUD en la grabación",
 		"showHudInVideo": "Mostrar HUD en la grabación",
 		"hideHud": "Ocultar HUD",
@@ -64,7 +59,13 @@
 		"previewShape": "Forma de la vista previa",
 		"shapeRoundedRect": "Rectángulo redondeado",
 		"shapeCircle": "Círculo",
-		"showScreenshot": "Mostrar"
+		"cameraDisconnected": "Cámara desconectada. La grabación de pantalla continuará sin cámara web.",
+		"mobilePairingStartFailed": "No se pudo iniciar el emparejamiento de la cámara del móvil.",
+		"cameraUnavailable": "No se puede acceder a la cámara seleccionada. La grabación continuará sin cámara web.",
+		"windowUnavailable": "La ventana que estabas grabando ya no está disponible. Elige otra fuente.",
+		"wgcUnavailable": "La captura nativa de Windows (WGC) no está disponible. Se usará la captura del navegador.",
+		"wgcCheckFailed": "No se pudo comprobar la captura nativa de Windows (WGC). Se usará la captura del navegador.",
+		"wgcStartFailed": "No se pudo iniciar la captura nativa de Windows. Se usará la captura del navegador."
 	},
 	"tabs": {
 		"display": "Pantalla",
@@ -131,7 +132,6 @@
 		"afterRecording": "Después de grabar",
 		"createProject": "Crear proyecto",
 		"exportClipboard": "Exportar y copiar al portapapeles",
-		"exportShareLink": "Exportar y crear enlace para compartir",
 		"exportSaveFile": "Exportar y guardar en archivo",
 		"autoCreateZooms": "Crear zooms automáticamente"
 	},
@@ -186,7 +186,8 @@
 		"microphoneDenied": "Se denegó el acceso al micrófono. La grabación continuará sin audio del micrófono.",
 		"failedToStart": "Error al iniciar la grabación: {{error}}",
 		"failedToStartGeneric": "Error al iniciar la grabación",
-		"diagnostics": "Diagnóstico"
+		"diagnostics": "Diagnóstico",
+		"selectArea": "Selecciona un área para grabar"
 	},
 	"speakerNotes": {
 		"title": "Notas del orador",

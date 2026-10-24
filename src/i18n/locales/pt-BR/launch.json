@@ -26,9 +26,6 @@
 		"countdownDelay": "Contagem regressiva",
 		"noDelay": "Sem atraso",
 		"record": "Gravar",
-		"captureScreenshot": "Capturar tela",
-		"screenshotSaved": "Captura salva e copiada",
-		"screenshotFailed": "Falha ao capturar a tela",
 		"startRecording": "Iniciar gravação",
 		"pauseRecording": "Pausar",
 		"resumeRecording": "Retomar",
@@ -38,8 +35,6 @@
 		"recordingFolder": "Pasta de gravação: {{path}}",
 		"chooseRecordingsFolder": "Escolher pasta de gravações",
 		"folderPath": "Caminho: /{{name}}/",
-		"openVideoFile": "Abrir arquivo de vídeo",
-		"openProject": "Abrir projeto",
 		"hideHudFromVideo": "Ocultar HUD na gravação",
 		"showHudInVideo": "Mostrar HUD na gravação",
 		"hideHud": "Ocultar HUD",
@@ -64,7 +59,13 @@
 		"previewShape": "Formato da prévia",
 		"shapeRoundedRect": "Retângulo arredondado",
 		"shapeCircle": "Círculo",
-		"showScreenshot": "Mostrar"
+		"cameraDisconnected": "Câmera desconectada. A gravação de tela continuará sem webcam.",
+		"mobilePairingStartFailed": "Não foi possível iniciar o pareamento da câmera do celular.",
+		"cameraUnavailable": "Não foi possível acessar a câmera selecionada. A gravação continuará sem webcam.",
+		"windowUnavailable": "A janela que você estava gravando não está mais disponível. Escolha outra fonte.",
+		"wgcUnavailable": "A captura nativa do Windows (WGC) não está disponível. Usando a captura do navegador.",
+		"wgcCheckFailed": "Não foi possível verificar a captura nativa do Windows (WGC). Usando a captura do navegador.",
+		"wgcStartFailed": "Não foi possível iniciar a captura nativa do Windows. Usando a captura do navegador."
 	},
 	"tabs": {
 		"display": "Tela",
@@ -131,7 +132,6 @@
 		"afterRecording": "Após a gravação",
 		"createProject": "Criar projeto",
 		"exportClipboard": "Exportar e copiar para a área de transferência",
-		"exportShareLink": "Exportar e criar link de compartilhamento",
 		"exportSaveFile": "Exportar e salvar em arquivo",
 		"autoCreateZooms": "Criar zooms automaticamente"
 	},
@@ -186,7 +186,8 @@
 		"microphoneDenied": "O acesso ao microfone foi negado. A gravação continuará sem o áudio do microfone.",
 		"failedToStart": "Falha ao iniciar a gravação: {{error}}",
 		"failedToStartGeneric": "Falha ao iniciar a gravação",
-		"diagnostics": "Diagnóstico"
+		"diagnostics": "Diagnóstico",
+		"selectArea": "Selecione uma área para gravar"
 	},
 	"speakerNotes": {
 		"title": "Notas do apresentador",

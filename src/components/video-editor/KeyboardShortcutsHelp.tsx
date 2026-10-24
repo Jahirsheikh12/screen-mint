@@ -1,32 +1,30 @@
 import { HelpCircle, Settings2 } from "lucide-react";
-import { useEffect, useState } from "react";
 import { useScopedT } from "@/contexts/I18nContext";
 import { useShortcuts } from "@/contexts/ShortcutsContext";
-import { formatBinding, SHORTCUT_ACTIONS, SHORTCUT_LABELS } from "@/lib/shortcuts";
-import { formatShortcut } from "@/utils/platformUtils";
+import {
+	FIXED_SHORTCUTS,
+	formatBinding,
+	formatFixedShortcut,
+	keyLabelTranslationKey,
+	SHORTCUT_ACTIONS,
+	SHORTCUT_LABELS,
+} from "@/lib/shortcuts";
+
+const KBD_CLASS =
+	"shrink-0 px-1 py-0.5 bg-fill-subtle border border-line-strong rounded text-accent-fg font-mono";
 
 export function KeyboardShortcutsHelp() {
 	const { shortcuts, isMac, openConfig } = useShortcuts();
 	const t = useScopedT("editor");
 	const tShortcuts = useScopedT("shortcuts");
-
-	const [scrollLabels, setScrollLabels] = useState({
-		pan: "Shift + Ctrl + Scroll",
-		zoom: "Ctrl + Scroll",
-	});
-
-	useEffect(() => {
-		Promise.all([
-			formatShortcut(["shift", "mod", "Scroll"]),
-			formatShortcut(["mod", "Scroll"]),
-		]).then(([pan, zoom]) => setScrollLabels({ pan, zoom }));
-	}, []);
+	const keyLabel = (key: string, fallback: string) =>
+		tShortcuts(keyLabelTranslationKey(key), fallback);
 
 	return (
 		<div className="relative group">
 			<HelpCircle className="w-4 h-4 text-fg-subtle hover:text-accent-fg transition-colors cursor-help" />
 
-			<div className="absolute right-0 top-full mt-2 w-64 bg-raised shadow-popover rounded-lg p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 shadow-xl z-50">
+			<div className="absolute right-0 top-full mt-2 w-72 bg-raised shadow-popover rounded-lg p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 shadow-xl z-50">
 				<div className="flex items-center justify-between mb-2">
 					<span className="text-label font-semibold text-fg">{t("keyboardShortcuts.title")}</span>
 					<button
@@ -42,35 +40,23 @@ export function KeyboardShortcutsHelp() {
 
 				<div className="space-y-1.5 text-micro">
 					{SHORTCUT_ACTIONS.map((action) => (
-						<div key={action} className="flex items-center justify-between">
+						<div key={action} className="flex items-center justify-between gap-2">
 							<span className="text-fg-muted">
 								{tShortcuts(`actions.${action}`, SHORTCUT_LABELS[action])}
 							</span>
-							<kbd className="px-1 py-0.5 bg-fill-subtle border border-line-strong rounded text-accent-fg font-mono">
-								{formatBinding(shortcuts[action], isMac)}
-							</kbd>
+							<kbd className={KBD_CLASS}>{formatBinding(shortcuts[action], isMac, keyLabel)}</kbd>
 						</div>
 					))}
 
-					<div className="pt-1 border-t border-line mt-1">
-						<div className="flex items-center justify-between">
-							<span className="text-fg-muted">{t("keyboardShortcuts.panTimeline")}</span>
-							<kbd className="px-1 py-0.5 bg-fill-subtle border border-line-strong rounded text-accent-fg font-mono">
-								{scrollLabels.pan}
-							</kbd>
-						</div>
-						<div className="flex items-center justify-between mt-1.5">
-							<span className="text-fg-muted">{t("keyboardShortcuts.zoomTimeline")}</span>
-							<kbd className="px-1 py-0.5 bg-fill-subtle border border-line-strong rounded text-accent-fg font-mono">
-								{scrollLabels.zoom}
-							</kbd>
-						</div>
-						<div className="flex items-center justify-between mt-1.5">
-							<span className="text-fg-muted">{t("keyboardShortcuts.cycleAnnotations")}</span>
-							<kbd className="px-1 py-0.5 bg-fill-subtle border border-line-strong rounded text-accent-fg font-mono">
-								{t("keyboardShortcuts.tab")}
-							</kbd>
-						</div>
+					<div className="pt-1 border-t border-line mt-1 space-y-1.5">
+						{FIXED_SHORTCUTS.map((fixed) => (
+							<div key={fixed.key} className="flex items-center justify-between gap-2">
+								<span className="text-fg-muted">
+									{tShortcuts(`actions.${fixed.key}`, fixed.label)}
+								</span>
+								<kbd className={KBD_CLASS}>{formatFixedShortcut(fixed, isMac, keyLabel)}</kbd>
+							</div>
+						))}
 					</div>
 				</div>
 			</div>

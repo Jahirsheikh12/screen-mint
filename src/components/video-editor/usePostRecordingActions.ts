@@ -1,5 +1,4 @@
 import { type Dispatch, useEffect, useRef } from "react";
-import { toast } from "sonner";
 import type { PostRecordingContext } from "@/lib/recording/postRecording";
 import type { EditorSessionAction } from "./editorSession";
 import {
@@ -63,10 +62,6 @@ export function usePostRecordingActions({
 					break;
 				case "export-clipboard":
 					await handleExportToClipboard();
-					break;
-				case "export-share-link":
-					dispatchSession({ type: "set-quick-share-open", value: true });
-					toast.info("Share links are not available yet. Opening Quick Share instead.");
 					break;
 				case "create-project":
 				default:

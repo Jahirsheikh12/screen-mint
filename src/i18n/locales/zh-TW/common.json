@@ -9,7 +9,8 @@
 		"cancel": "取消",
 		"save": "儲存",
 		"delete": "刪除",
-		"done": "完成"
+		"done": "完成",
+		"close": "關閉"
 	},
 	"updates": {
 		"available": "已有版本 {{version}} 可用。",

@@ -82,7 +82,8 @@
 		"projects": "Projekte",
 		"recentProjectsAndProjects": "Zuletzt verwendete und im Aufnahmeordner gespeicherte Projekte.",
 		"loadingProjects": "Projekte werden geladen…",
-		"noSavedProjectsYet": "Noch keine gespeicherten Projekte"
+		"noSavedProjectsYet": "Noch keine gespeicherten Projekte",
+		"showProjectInFolder": "{{name}} im Ordner zeigen"
 	},
 	"editor": {
 		"savePreset": "Vorgabe speichern",
@@ -92,7 +93,13 @@
 		"cancel": "Abbrechen",
 		"savePreset2": "Vorgabe speichern",
 		"confirmAction": "Aktion bestätigen",
-		"continue": "Weiter"
+		"continue": "Weiter",
+		"deletePresetTitle": "Vorgabe löschen?",
+		"deletePresetDescription": "Die Vorgabe „{{name}}“ löschen?",
+		"deletePresetConfirm": "Vorgabe löschen",
+		"deleteProjectTitle": "Projekt löschen?",
+		"deleteProjectDescription": "Dieses ScreenMint-Projekt und alle verwalteten Aufnahmedateien löschen?\n\nImportierte Dateien außerhalb des ScreenMint-Aufnahmeordners bleiben erhalten.",
+		"deleteProjectConfirm": "Projekt löschen"
 	},
 	"quickShare": {
 		"quickShare": "Schnell teilen",

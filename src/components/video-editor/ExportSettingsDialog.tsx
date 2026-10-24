@@ -4,7 +4,6 @@ import {
 	Clipboard,
 	FileText,
 	Film,
-	Link,
 	Monitor,
 	Settings2,
 	SlidersHorizontal,
@@ -192,22 +191,17 @@ function DestinationButton({
 	label,
 	description,
 	selected,
-	disabled,
-	badge,
 	onClick,
 }: {
 	icon: ReactNode;
 	label: string;
 	description: string;
 	selected: boolean;
-	disabled?: boolean;
-	badge?: string;
 	onClick: () => void;
 }) {
 	return (
 		<ChoiceButton
 			selected={selected}
-			disabled={disabled}
 			description={description}
 			selectionLabel={label}
 			onClick={onClick}
@@ -216,11 +210,6 @@ function DestinationButton({
 			<span className="flex items-center gap-2">
 				<span className={selected ? "text-accent-fg" : "text-fg-subtle"}>{icon}</span>
 				<span>{label}</span>
-				{badge ? (
-					<span className="rounded-full border border-line px-1.5 py-0.5 text-micro font-medium text-fg-subtle">
-						{badge}
-					</span>
-				) : null}
 			</span>
 		</ChoiceButton>
 	);
@@ -398,9 +387,7 @@ export function ExportSettingsDialog({
 	const exportLabel =
 		exportDestination === "clipboard"
 			? t("exportAdvanced.copyExport", "Copy Export")
-			: exportDestination === "link"
-				? t("exportAdvanced.createLink", "Create Link")
-				: t("export.exportVideo", "Export {{format}}", { format: isGif ? "GIF" : "MP4" });
+			: t("export.exportVideo", "Export {{format}}", { format: isGif ? "GIF" : "MP4" });
 
 	const setCustomVideoSettings = (patch: Partial<VideoExportSettings>) => {
 		onVideoExportSettingsChange({
@@ -449,9 +436,6 @@ export function ExportSettingsDialog({
 	};
 
 	const handleExportClick = () => {
-		if (exportDestination === "link") {
-			return;
-		}
 		onExport(exportDestination);
 		onClose();
 	};
@@ -538,7 +522,7 @@ export function ExportSettingsDialog({
 											"Save a file or copy the rendered export as a temporary file.",
 										)}
 									/>
-									<div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+									<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
 										<DestinationButton
 											icon={<FileText className="h-4 w-4" />}
 											label={t("exportAdvanced.destFile", "File")}
@@ -552,15 +536,6 @@ export function ExportSettingsDialog({
 											description={t("exportAdvanced.destClipboardHint", "Copy file reference")}
 											selected={exportDestination === "clipboard"}
 											onClick={() => onExportDestinationChange("clipboard")}
-										/>
-										<DestinationButton
-											icon={<Link className="h-4 w-4" />}
-											label={t("exportAdvanced.destLink", "Link")}
-											description={t("exportAdvanced.destLinkHint", "Cloud share")}
-											selected={exportDestination === "link"}
-											disabled
-											badge={t("exportAdvanced.soon", "Soon")}
-											onClick={() => undefined}
 										/>
 									</div>
 								</section>
@@ -955,9 +930,7 @@ export function ExportSettingsDialog({
 										<span className="text-right text-fg-muted">
 											{exportDestination === "clipboard"
 												? t("exportAdvanced.destClipboard", "Clipboard")
-												: exportDestination === "link"
-													? t("exportAdvanced.destLink", "Link")
-													: t("exportAdvanced.destFile", "File")}
+												: t("exportAdvanced.destFile", "File")}
 										</span>
 									</div>
 									<div className="flex justify-between gap-4">
@@ -983,7 +956,6 @@ export function ExportSettingsDialog({
 						</button>
 						<button
 							type="button"
-							disabled={exportDestination === "link"}
 							onClick={handleExportClick}
 							className={cn(
 								"flex h-11 min-w-[180px] items-center justify-center gap-2 rounded-lg bg-accent px-5 text-body font-bold text-on-accent transition-all",

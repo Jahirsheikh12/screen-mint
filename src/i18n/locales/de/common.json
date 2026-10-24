@@ -9,7 +9,8 @@
 		"cancel": "Abbrechen",
 		"save": "Speichern",
 		"delete": "Löschen",
-		"done": "Fertig"
+		"done": "Fertig",
+		"close": "Schließen"
 	},
 	"updates": {
 		"available": "Version {{version}} ist verfügbar.",

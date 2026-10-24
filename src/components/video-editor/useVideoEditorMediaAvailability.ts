@@ -1,5 +1,6 @@
 import { type Dispatch, type SetStateAction, useCallback, useRef } from "react";
 import { toast } from "sonner";
+import { useI18n } from "@/contexts/I18nContext";
 import { isFileAudioSource } from "./audioRegionUtils";
 import type { EditorPreferences } from "./editorPreferences";
 import {
@@ -49,6 +50,7 @@ export function useVideoEditorMediaAvailability({
 	setWebcamSelected,
 	setMissingAudioPathsById,
 }: UseVideoEditorMediaAvailabilityOptions) {
+	const { t } = useI18n();
 	const webcamAvailabilityRequestRef = useRef(0);
 	const notifiedMissingWebcamPathRef = useRef<string | null>(null);
 	const audioAvailabilityRequestRef = useRef(0);
@@ -109,12 +111,17 @@ export function useVideoEditorMediaAvailability({
 			setMissingWebcamPath(candidatePath);
 			if (!options.quiet && notifiedMissingWebcamPathRef.current !== candidatePath) {
 				notifiedMissingWebcamPathRef.current = candidatePath;
-				toast.warning("Webcam source is missing. Relink it or remove it from the project.");
+				toast.warning(
+					t(
+						"editor.shell.webcamSourceMissing",
+						"Webcam source is missing. Relink it or remove it from the project.",
+					),
+				);
 			}
 
 			return false;
 		},
-		[setMissingWebcamPath],
+		[setMissingWebcamPath, t],
 	);
 
 	const syncAudioAvailability = useCallback(

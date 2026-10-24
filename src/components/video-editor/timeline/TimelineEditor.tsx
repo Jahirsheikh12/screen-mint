@@ -48,7 +48,7 @@ import {
 import { Tooltip } from "@/components/ui/tooltip";
 import { useI18n } from "@/contexts/I18nContext";
 import { useShortcuts } from "@/contexts/ShortcutsContext";
-import { formatBinding, matchesShortcut } from "@/lib/shortcuts";
+import { formatBinding, keyLabelTranslationKey, matchesShortcut } from "@/lib/shortcuts";
 import { cn } from "@/lib/utils";
 import { useWaveformData } from "@/lib/waveform/extractWaveform";
 import {
@@ -1024,7 +1024,9 @@ export default function TimelineEditor({
 		}
 
 		toast.success(
-			`Added ${addedCount} interaction-based zoom suggestion${addedCount === 1 ? "" : "s"}`,
+			t("timeline.zoom.addedSuggestions", "Added {{count}} interaction-based zoom suggestion(s)", {
+				count: addedCount,
+			}),
 		);
 	}, [videoDuration, totalMs, zoomRegions, onZoomSuggested, cursorTelemetry, t]);
 
@@ -1202,111 +1204,91 @@ export default function TimelineEditor({
 		[videoDuration, totalMs, currentTimeMs, onCaptionAdded, defaultRegionDurationMs],
 	);
 
+	// The handler reads a lot of per-frame state (current time, selections); keep the latest one in
+	// a ref and subscribe once instead of re-subscribing on every playback frame.
+	const handleKeyDownRef = useRef<(e: KeyboardEvent) => void>(() => undefined);
+	handleKeyDownRef.current = (e: KeyboardEvent) => {
+		const target = e.target as HTMLElement | null;
+		if (
+			target instanceof HTMLInputElement ||
+			target instanceof HTMLTextAreaElement ||
+			target instanceof HTMLSelectElement ||
+			target?.isContentEditable
+		) {
+			return;
+		}
+		// Holding a key must not add a region per auto-repeat.
+		if (e.repeat) return;
+
+		if (e.key === "Escape") {
+			setTrimMode(false);
+		}
+		if (matchesShortcut(e, keyShortcuts.addKeyframe, isMac)) {
+			addKeyframe();
+		}
+		if (matchesShortcut(e, keyShortcuts.addZoom, isMac)) {
+			handleAddZoom();
+		}
+		if (matchesShortcut(e, keyShortcuts.addTrim, isMac)) {
+			setTrimMode((prev) => !prev);
+		}
+		if (matchesShortcut(e, keyShortcuts.addAnnotation, isMac)) {
+			handleAddAnnotation();
+		}
+		if (matchesShortcut(e, keyShortcuts.addSpeed, isMac)) {
+			handleAddSpeed();
+		}
+
+		// Tab: Cycle through overlapping annotations at current time
+		if (e.key === "Tab" && annotationRegions.length > 0) {
+			const currentTimeMs = Math.round(currentTime * 1000);
+			const overlapping = annotationRegions
+				.filter((a) => currentTimeMs >= a.startMs && currentTimeMs <= a.endMs)
+				.sort((a, b) => a.zIndex - b.zIndex); // Sort by z-index
+
+			if (overlapping.length > 0) {
+				e.preventDefault();
+
+				if (!selectedAnnotationId || !overlapping.some((a) => a.id === selectedAnnotationId)) {
+					onSelectAnnotation?.(overlapping[0].id);
+				} else {
+					// Cycle to next annotation
+					const currentIndex = overlapping.findIndex((a) => a.id === selectedAnnotationId);
+					const nextIndex = e.shiftKey
+						? (currentIndex - 1 + overlapping.length) % overlapping.length // Shift+Tab = backward
+						: (currentIndex + 1) % overlapping.length; // Tab = forward
+					onSelectAnnotation?.(overlapping[nextIndex].id);
+				}
+			}
+		}
+		// Delete key or Ctrl+D / Cmd+D
+		if (
+			e.key === "Delete" ||
+			e.key === "Backspace" ||
+			matchesShortcut(e, keyShortcuts.deleteSelected, isMac)
+		) {
+			if (selectedKeyframeId) {
+				deleteSelectedKeyframe();
+			} else if (selectedZoomId) {
+				deleteSelectedZoom();
+			} else if (selectedAnnotationId) {
+				deleteSelectedAnnotation();
+			} else if (selectedCameraLayoutId) {
+				deleteSelectedCameraLayout();
+			} else if (selectedSpeedId) {
+				deleteSelectedSpeed();
+			} else if (selectedAudioId) {
+				deleteSelectedAudio();
+			} else if (selectedCaptionId) {
+				deleteSelectedCaption();
+			}
+		}
+	};
 	useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			const target = e.target as HTMLElement | null;
-			if (
-				target instanceof HTMLInputElement ||
-				target instanceof HTMLTextAreaElement ||
-				target instanceof HTMLSelectElement ||
-				target?.isContentEditable
-			) {
-				return;
-			}
-			// Holding a key must not add a region per auto-repeat.
-			if (e.repeat) return;
-
-			if (e.key === "Escape") {
-				setTrimMode(false);
-			}
-			if (matchesShortcut(e, keyShortcuts.addKeyframe, isMac)) {
-				addKeyframe();
-			}
-			if (matchesShortcut(e, keyShortcuts.addZoom, isMac)) {
-				handleAddZoom();
-			}
-			if (matchesShortcut(e, keyShortcuts.addTrim, isMac)) {
-				setTrimMode((prev) => !prev);
-			}
-			if (matchesShortcut(e, keyShortcuts.addAnnotation, isMac)) {
-				handleAddAnnotation();
-			}
-			if (matchesShortcut(e, keyShortcuts.addSpeed, isMac)) {
-				handleAddSpeed();
-			}
-
-			// Tab: Cycle through overlapping annotations at current time
-			if (e.key === "Tab" && annotationRegions.length > 0) {
-				const currentTimeMs = Math.round(currentTime * 1000);
-				const overlapping = annotationRegions
-					.filter((a) => currentTimeMs >= a.startMs && currentTimeMs <= a.endMs)
-					.sort((a, b) => a.zIndex - b.zIndex); // Sort by z-index
-
-				if (overlapping.length > 0) {
-					e.preventDefault();
-
-					if (!selectedAnnotationId || !overlapping.some((a) => a.id === selectedAnnotationId)) {
-						onSelectAnnotation?.(overlapping[0].id);
-					} else {
-						// Cycle to next annotation
-						const currentIndex = overlapping.findIndex((a) => a.id === selectedAnnotationId);
-						const nextIndex = e.shiftKey
-							? (currentIndex - 1 + overlapping.length) % overlapping.length // Shift+Tab = backward
-							: (currentIndex + 1) % overlapping.length; // Tab = forward
-						onSelectAnnotation?.(overlapping[nextIndex].id);
-					}
-				}
-			}
-			// Delete key or Ctrl+D / Cmd+D
-			if (
-				e.key === "Delete" ||
-				e.key === "Backspace" ||
-				matchesShortcut(e, keyShortcuts.deleteSelected, isMac)
-			) {
-				if (selectedKeyframeId) {
-					deleteSelectedKeyframe();
-				} else if (selectedZoomId) {
-					deleteSelectedZoom();
-				} else if (selectedAnnotationId) {
-					deleteSelectedAnnotation();
-				} else if (selectedCameraLayoutId) {
-					deleteSelectedCameraLayout();
-				} else if (selectedSpeedId) {
-					deleteSelectedSpeed();
-				} else if (selectedAudioId) {
-					deleteSelectedAudio();
-				} else if (selectedCaptionId) {
-					deleteSelectedCaption();
-				}
-			}
-		};
+		const handleKeyDown = (e: KeyboardEvent) => handleKeyDownRef.current(e);
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [
-		addKeyframe,
-		handleAddZoom,
-		handleAddAnnotation,
-		handleAddSpeed,
-		deleteSelectedKeyframe,
-		deleteSelectedZoom,
-		deleteSelectedAnnotation,
-		deleteSelectedCameraLayout,
-		deleteSelectedSpeed,
-		deleteSelectedAudio,
-		deleteSelectedCaption,
-		selectedKeyframeId,
-		selectedZoomId,
-		selectedAnnotationId,
-		selectedCameraLayoutId,
-		selectedCaptionId,
-		selectedSpeedId,
-		selectedAudioId,
-		annotationRegions,
-		currentTime,
-		onSelectAnnotation,
-		keyShortcuts,
-		isMac,
-	]);
+	}, []);
 
 	const clampedRange = useMemo<Range>(() => {
 		if (displayTotalMs === 0) {
@@ -1360,7 +1342,9 @@ export default function TimelineEditor({
 			id: seg.id,
 			rowId: CLIP_ROW_ID,
 			span: { start: sourceToDisplay(seg.startMs), end: sourceToDisplay(seg.endMs) },
-			label: hasSplits ? `Part ${index + 1}` : t("timeline.editor.clip", "Clip"),
+			label: hasSplits
+				? t("timeline.editor.part", "Part {{index}}", { index: index + 1 })
+				: t("timeline.editor.clip", "Clip"),
 			variant: "clip",
 			clipDuration: hasSplits ? undefined : clipDurationLabel,
 			clipSpeed: hasSplits ? undefined : `${playbackSpeed}x`,
@@ -1376,7 +1360,7 @@ export default function TimelineEditor({
 					start: sourceToDisplay(region.startMs),
 					end: sourceToDisplay(region.endMs),
 				},
-				label: `Zoom ${index + 1}`,
+				label: t("timeline.zoom.label", "Zoom {{index}}", { index: index + 1 }),
 				zoomDepth: region.depth,
 				variant: "zoom" as const,
 			}))
@@ -1436,7 +1420,7 @@ export default function TimelineEditor({
 					start: sourceToDisplay(region.startMs),
 					end: sourceToDisplay(region.endMs),
 				},
-				label: `Speed ${index + 1}`,
+				label: t("timeline.speed.indexedLabel", "Speed {{index}}", { index: index + 1 }),
 				speedValue: region.speed,
 				variant: "speed" as const,
 			}))
@@ -1741,7 +1725,7 @@ export default function TimelineEditor({
 										<Plus className="w-3 h-3 text-fg-subtle" />
 									)}
 									<opt.icon className="w-3.5 h-3.5" />
-									{opt.label}
+									{t(opt.labelKey, opt.label)}
 								</DropdownMenuItem>
 							))}
 						</DropdownMenuContent>
@@ -1779,7 +1763,12 @@ export default function TimelineEditor({
 								)}
 							</Button>
 						</Tooltip>
-						<Tooltip content={`Volume: ${Math.round(clipVolume * 100)}%`} side="bottom">
+						<Tooltip
+							content={t("timeline.editor.volumeTooltip", "Volume: {{percent}}%", {
+								percent: Math.round(clipVolume * 100),
+							})}
+							side="bottom"
+						>
 							<input
 								type="range"
 								min="0"
@@ -1840,7 +1829,9 @@ export default function TimelineEditor({
 							content={
 								isPlaying ? t("timeline.editor.pause", "Pause") : t("timeline.editor.play", "Play")
 							}
-							shortcut={formatBinding(keyShortcuts.playPause, isMac)}
+							shortcut={formatBinding(keyShortcuts.playPause, isMac, (key, fallback) =>
+								t(`shortcuts.${keyLabelTranslationKey(key)}`, fallback),
+							)}
 							side="bottom"
 						>
 							<Button
@@ -1897,7 +1888,9 @@ export default function TimelineEditor({
 								? t("timeline.editor.disableTrimMode", "Disable Trim Mode")
 								: t("timeline.editor.trimMode", "Trim Mode")
 						}
-						shortcut={formatBinding(keyShortcuts.addTrim, isMac)}
+						shortcut={formatBinding(keyShortcuts.addTrim, isMac, (key, fallback) =>
+							t(`shortcuts.${keyLabelTranslationKey(key)}`, fallback),
+						)}
 						side="bottom"
 					>
 						<Button

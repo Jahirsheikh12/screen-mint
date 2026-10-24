@@ -26,9 +26,6 @@
 		"countdownDelay": "Conto alla rovescia",
 		"noDelay": "Nessun ritardo",
 		"record": "Registra",
-		"captureScreenshot": "Cattura schermata",
-		"screenshotSaved": "Schermata salvata e copiata",
-		"screenshotFailed": "Impossibile catturare la schermata",
 		"startRecording": "Avvia registrazione",
 		"pauseRecording": "Pausa",
 		"resumeRecording": "Riprendi",
@@ -38,8 +35,6 @@
 		"recordingFolder": "Cartella di registrazione: {{path}}",
 		"chooseRecordingsFolder": "Scegli la cartella delle registrazioni",
 		"folderPath": "Percorso: /{{name}}/",
-		"openVideoFile": "Apri file video",
-		"openProject": "Apri progetto",
 		"hideHudFromVideo": "Nascondi HUD dalla registrazione",
 		"showHudInVideo": "Mostra HUD nella registrazione",
 		"hideHud": "Nascondi HUD",
@@ -64,7 +59,13 @@
 		"previewShape": "Forma anteprima",
 		"shapeRoundedRect": "Rettangolo arrotondato",
 		"shapeCircle": "Cerchio",
-		"showScreenshot": "Mostra"
+		"cameraDisconnected": "Videocamera scollegata. La registrazione dello schermo continuerà senza webcam.",
+		"mobilePairingStartFailed": "Impossibile avviare l’associazione della fotocamera del telefono.",
+		"cameraUnavailable": "Impossibile accedere alla videocamera selezionata. La registrazione continuerà senza webcam.",
+		"windowUnavailable": "La finestra che stavi registrando non è più disponibile. Scegli un’altra sorgente.",
+		"wgcUnavailable": "L’acquisizione nativa di Windows (WGC) non è disponibile. Verrà usata l’acquisizione del browser.",
+		"wgcCheckFailed": "Impossibile verificare l’acquisizione nativa di Windows (WGC). Verrà usata l’acquisizione del browser.",
+		"wgcStartFailed": "Impossibile avviare l’acquisizione nativa di Windows. Verrà usata l’acquisizione del browser."
 	},
 	"tabs": {
 		"display": "Schermo",
@@ -131,7 +132,6 @@
 		"afterRecording": "Dopo la registrazione",
 		"createProject": "Crea progetto",
 		"exportClipboard": "Esporta e copia negli appunti",
-		"exportShareLink": "Esporta e crea un link da condividere",
 		"exportSaveFile": "Esporta e salva su file",
 		"autoCreateZooms": "Crea gli zoom automaticamente"
 	},
@@ -186,7 +186,8 @@
 		"microphoneDenied": "L'accesso al microfono è stato negato. La registrazione continuerà senza audio del microfono.",
 		"failedToStart": "Impossibile avviare la registrazione: {{error}}",
 		"failedToStartGeneric": "Impossibile avviare la registrazione",
-		"diagnostics": "Diagnostica"
+		"diagnostics": "Diagnostica",
+		"selectArea": "Seleziona un’area da registrare"
 	},
 	"speakerNotes": {
 		"title": "Note del relatore",

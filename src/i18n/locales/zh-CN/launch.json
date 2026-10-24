@@ -7,9 +7,6 @@
 		"countdownDelay": "倒计时延迟",
 		"noDelay": "无延迟",
 		"record": "录制",
-		"captureScreenshot": "截取屏幕截图",
-		"screenshotSaved": "截图已保存并复制",
-		"screenshotFailed": "截图失败",
 		"startRecording": "开始录制",
 		"pauseRecording": "暂停",
 		"resumeRecording": "继续",
@@ -19,8 +16,6 @@
 		"recordingFolder": "录制文件夹：{{path}}",
 		"chooseRecordingsFolder": "选择录制文件夹",
 		"folderPath": "路径：/{{name}}/",
-		"openVideoFile": "打开视频文件",
-		"openProject": "打开项目",
 		"hideHudFromVideo": "在录制中隐藏 HUD",
 		"showHudInVideo": "在录制中显示 HUD",
 		"hideHud": "隐藏 HUD",
@@ -64,7 +59,13 @@
 		"previewShape": "预览形状",
 		"shapeRoundedRect": "圆角矩形",
 		"shapeCircle": "圆形",
-		"showScreenshot": "查看"
+		"cameraDisconnected": "摄像头已断开。屏幕录制将在没有摄像头的情况下继续。",
+		"mobilePairingStartFailed": "无法开始手机摄像头配对。",
+		"cameraUnavailable": "无法访问所选摄像头。录制将在没有摄像头的情况下继续。",
+		"windowUnavailable": "正在录制的窗口已不可用。请选择其他来源。",
+		"wgcUnavailable": "Windows 原生捕获（WGC）不可用，改用浏览器捕获。",
+		"wgcCheckFailed": "无法检查 Windows 原生捕获（WGC），改用浏览器捕获。",
+		"wgcStartFailed": "Windows 原生捕获未能启动，改用浏览器捕获。"
 	},
 	"tabs": {
 		"display": "显示器",
@@ -131,7 +132,6 @@
 		"afterRecording": "录制后",
 		"createProject": "创建项目",
 		"exportClipboard": "导出并复制到剪贴板",
-		"exportShareLink": "导出并创建分享链接",
 		"exportSaveFile": "导出并保存到文件",
 		"autoCreateZooms": "自动创建缩放"
 	},
@@ -186,7 +186,8 @@
 		"microphoneDenied": "麦克风访问被拒绝。将继续录制但不包含麦克风音频。",
 		"failedToStart": "录制启动失败：{{error}}",
 		"failedToStartGeneric": "录制启动失败",
-		"diagnostics": "诊断信息"
+		"diagnostics": "诊断信息",
+		"selectArea": "请选择要录制的区域"
 	},
 	"speakerNotes": {
 		"title": "演讲者备注",

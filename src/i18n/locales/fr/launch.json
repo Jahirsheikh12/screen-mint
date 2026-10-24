@@ -26,9 +26,6 @@
 		"countdownDelay": "Compte à rebours",
 		"noDelay": "Aucun délai",
 		"record": "Enregistrer",
-		"captureScreenshot": "Capture d'écran",
-		"screenshotSaved": "Capture enregistrée et copiée",
-		"screenshotFailed": "Échec de la capture d'écran",
 		"startRecording": "Démarrer l'enregistrement",
 		"pauseRecording": "Pause",
 		"resumeRecording": "Reprendre",
@@ -38,8 +35,6 @@
 		"recordingFolder": "Dossier d'enregistrement : {{path}}",
 		"chooseRecordingsFolder": "Choisir le dossier des enregistrements",
 		"folderPath": "Chemin : /{{name}}/",
-		"openVideoFile": "Ouvrir une vidéo",
-		"openProject": "Ouvrir un projet",
 		"hideHudFromVideo": "Masquer le HUD dans l'enregistrement",
 		"showHudInVideo": "Afficher le HUD dans l'enregistrement",
 		"hideHud": "Masquer le HUD",
@@ -64,7 +59,13 @@
 		"previewShape": "Forme de l'aperçu",
 		"shapeRoundedRect": "Rectangle arrondi",
 		"shapeCircle": "Cercle",
-		"showScreenshot": "Afficher"
+		"cameraDisconnected": "Caméra déconnectée. L’enregistrement de l’écran continue sans webcam.",
+		"mobilePairingStartFailed": "Impossible de lancer l’appairage de la caméra du téléphone.",
+		"cameraUnavailable": "Impossible d’accéder à la caméra sélectionnée. L’enregistrement continue sans webcam.",
+		"windowUnavailable": "La fenêtre que vous enregistriez n’est plus disponible. Choisissez une autre source.",
+		"wgcUnavailable": "La capture native de Windows (WGC) n’est pas disponible. Passage à la capture du navigateur.",
+		"wgcCheckFailed": "Impossible de vérifier la capture native de Windows (WGC). Passage à la capture du navigateur.",
+		"wgcStartFailed": "La capture native de Windows n’a pas pu démarrer. Passage à la capture du navigateur."
 	},
 	"tabs": {
 		"display": "Écran",
@@ -131,7 +132,6 @@
 		"afterRecording": "Après l'enregistrement",
 		"createProject": "Créer un projet",
 		"exportClipboard": "Exporter et copier dans le presse-papiers",
-		"exportShareLink": "Exporter et créer un lien de partage",
 		"exportSaveFile": "Exporter et enregistrer dans un fichier",
 		"autoCreateZooms": "Créer les zooms automatiquement"
 	},
@@ -186,7 +186,8 @@
 		"microphoneDenied": "L'accès au micro a été refusé. L'enregistrement continuera sans audio du micro.",
 		"failedToStart": "Impossible de démarrer l'enregistrement : {{error}}",
 		"failedToStartGeneric": "Impossible de démarrer l'enregistrement",
-		"diagnostics": "Diagnostic"
+		"diagnostics": "Diagnostic",
+		"selectArea": "Veuillez sélectionner une zone à enregistrer"
 	},
 	"speakerNotes": {
 		"title": "Notes de présentation",

@@ -15,6 +15,8 @@ import {
 	FIXED_SHORTCUTS,
 	findConflict,
 	formatBinding,
+	formatFixedShortcut,
+	keyLabelTranslationKey,
 	SHORTCUT_ACTIONS,
 	SHORTCUT_LABELS,
 	type ShortcutAction,
@@ -31,6 +33,8 @@ export function ShortcutsConfigDialog() {
 	const tShortcuts = useScopedT("shortcuts");
 	const { shortcuts, isMac, isConfigOpen, closeConfig, setShortcuts, persistShortcuts } =
 		useShortcuts();
+	const keyLabel = (key: string, fallback: string) =>
+		tShortcuts(keyLabelTranslationKey(key), fallback);
 
 	const [draft, setDraft] = useState<ShortcutsConfig>(shortcuts);
 	const [captureFor, setCaptureFor] = useState<ShortcutAction | null>(null);
@@ -69,11 +73,15 @@ export function ShortcutsConfigDialog() {
 				...(e.altKey ? { alt: true } : {}),
 			};
 
-			const found = findConflict(binding, captureFor, draft);
+			const found = findConflict(binding, captureFor, draft, isMac);
 			setCaptureFor(null);
 
 			if (found?.type === "fixed") {
-				toast.error(t("shortcutsConfig.reserved", undefined, { label: found.label }));
+				toast.error(
+					t("shortcutsConfig.reserved", undefined, {
+						label: tShortcuts(`actions.${found.key}`, found.label),
+					}),
+				);
 				return;
 			}
 
@@ -87,7 +95,7 @@ export function ShortcutsConfigDialog() {
 
 		window.addEventListener("keydown", handleCapture, { capture: true });
 		return () => window.removeEventListener("keydown", handleCapture, { capture: true });
-	}, [captureFor, draft, t]);
+	}, [captureFor, draft, t, isMac, tShortcuts]);
 
 	const handleSwap = useCallback(() => {
 		if (!conflict || conflict.conflictWith.type !== "configurable") return;
@@ -170,7 +178,7 @@ export function ShortcutsConfigDialog() {
 									>
 										{isCapturing
 											? t("shortcutsConfig.pressAKey")
-											: formatBinding(draft[action], isMac)}
+											: formatBinding(draft[action], isMac, keyLabel)}
 									</button>
 								</div>
 								{hasConflict && conflict?.conflictWith.type === "configurable" && (
@@ -207,16 +215,16 @@ export function ShortcutsConfigDialog() {
 					<p className="text-micro text-fg-subtle mb-2 uppercase tracking-wide font-semibold">
 						{t("shortcutsConfig.fixed")}
 					</p>
-					{FIXED_SHORTCUTS.map(({ label, display, key }) => (
+					{FIXED_SHORTCUTS.map((fixed) => (
 						<div
-							key={label}
+							key={fixed.key}
 							className="flex items-center justify-between gap-3 py-1.5 px-1 border-b border-line last:border-0"
 						>
 							<span className="min-w-0 break-words text-body text-fg-muted">
-								{tShortcuts(`actions.${key}`, label)}
+								{tShortcuts(`actions.${fixed.key}`, fixed.label)}
 							</span>
 							<kbd className="shrink-0 px-2 py-1 bg-fill-subtle border border-line-strong rounded text-label font-mono text-fg-muted min-w-[90px] text-center">
-								{display}
+								{formatFixedShortcut(fixed, isMac, keyLabel)}
 							</kbd>
 						</div>
 					))}

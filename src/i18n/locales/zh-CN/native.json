@@ -1,0 +1,79 @@
+{
+	"menu": {
+		"file": "文件",
+		"loadProject": "载入项目…",
+		"saveProject": "保存项目…",
+		"saveProjectAs": "项目另存为…",
+		"edit": "编辑",
+		"view": "显示",
+		"window": "窗口",
+		"help": "帮助",
+		"about": "关于 ScreenMint",
+		"checkForUpdates": "检查更新…",
+		"reportIssue": "报告问题…"
+	},
+	"tray": {
+		"open": "打开",
+		"quit": "退出",
+		"stopRecording": "停止录制",
+		"recording": "正在录制：{{source}}"
+	},
+	"about": {
+		"close": "关闭",
+		"status": {
+			"checking": "正在检查更新…",
+			"available": "版本 {{version}} 现已推出。使用“检查更新”打开更新窗口。",
+			"downloading": "正在下载版本 {{version}}。",
+			"downloadingProgress": "正在下载版本 {{version}}（{{percent}}%）。",
+			"downloadedInstaller": "版本 {{version}} 已下载。打开更新窗口以继续。",
+			"downloadedReady": "版本 {{version}} 已下载，可在更新窗口中安装。",
+			"upToDate": "你使用的已是最新版本（{{version}}）。",
+			"manual": "版本 {{version}} 可从 GitHub Releases 手动下载。",
+			"error": "目前无法检查更新。",
+			"unsupported": "自动更新仅适用于已安装的版本。"
+		}
+	},
+	"unsavedChanges": {
+		"title": "未保存的更改",
+		"message": "你有未保存的更改。",
+		"detail": "关闭前要保存项目吗？",
+		"saveAndClose": "保存并关闭",
+		"discardAndClose": "放弃并关闭",
+		"cancel": "取消"
+	},
+	"recovery": {
+		"message": "ScreenMint 在录制时关闭了",
+		"detail": "上次录制意外停止。已保存的部分位于：\n{{path}}",
+		"openInEditor": "在编辑器中打开",
+		"showInFolder": "在文件夹中显示",
+		"notNow": "以后再说"
+	},
+	"moveToApplications": {
+		"title": "将 ScreenMint 移到“应用程序”",
+		"message": "将 ScreenMint 移到 /Applications，使 macOS 录制权限更稳定。",
+		"detail": "未签名的 macOS 版本安装在 /Applications/ScreenMint.app 时，屏幕录制权限更可靠。从“下载”、桌面或已装载的 DMG 运行可能会导致反复请求权限和来源列表为空。",
+		"move": "移到“应用程序”",
+		"keep": "保留当前位置",
+		"manualTitle": "请手动移动 ScreenMint",
+		"manualMessage": "使用屏幕录制前，请将 ScreenMint 移到 /Applications。",
+		"manualDetail": "macOS 未能自动移动该 App。请将 ScreenMint.app 拖到 /Applications，然后从那里重新打开。",
+		"ok": "好"
+	},
+	"captions": {
+		"extractingMicrophone": "正在提取麦克风音频…",
+		"extractingMixed": "正在提取混合音频…",
+		"runningWhisper": "正在运行本地 Whisper 转写…",
+		"retryingSmallerModel": "正在用较小的 {{model}} 模型重试…",
+		"buildingSegments": "正在生成转写片段…",
+		"ready": "转写完成",
+		"downloadingModel": "正在下载 Whisper {{model}} 模型…",
+		"downloadingModelProgress": "正在下载 Whisper {{model}} 模型… {{percent}}%",
+		"downloadingVad": "正在下载语音检测组件…",
+		"preparingRuntime": "正在准备本地 Whisper 运行环境…",
+		"buildingCli": "正在构建 Whisper CLI…",
+		"preparingAppleMicrophone": "正在为 Apple Speech 准备麦克风音频…",
+		"preparingAppleMixed": "正在为 Apple Speech 准备混合音频…",
+		"runningApple": "正在运行 Apple Speech 转写…",
+		"appleFallback": "Apple Speech 不可用，改用 Whisper…"
+	}
+}

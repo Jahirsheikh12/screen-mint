@@ -16,8 +16,14 @@ describe("shortcuts", () => {
 	it("refuses bindings that take over undo, redo or export", () => {
 		expect(findConflict({ key: "z", ctrl: true }, "addZoom", DEFAULT_SHORTCUTS)).toEqual({
 			type: "fixed",
+			key: "undo",
 			label: "Undo",
 		});
+		// Ctrl+Y is redo only off macOS.
+		expect(findConflict({ key: "y", ctrl: true }, "addZoom", DEFAULT_SHORTCUTS, false)?.type).toBe(
+			"fixed",
+		);
+		expect(findConflict({ key: "y", ctrl: true }, "addZoom", DEFAULT_SHORTCUTS, true)).toBeNull();
 		expect(findConflict({ key: "e", ctrl: true }, "addZoom", DEFAULT_SHORTCUTS)?.type).toBe(
 			"fixed",
 		);

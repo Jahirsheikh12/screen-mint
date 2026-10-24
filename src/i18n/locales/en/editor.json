@@ -74,11 +74,7 @@
 	"keyboardShortcuts": {
 		"title": "Keyboard Shortcuts",
 		"customizeTooltip": "Customize shortcuts",
-		"customize": "Customize",
-		"panTimeline": "Pan Timeline",
-		"zoomTimeline": "Zoom Timeline",
-		"cycleAnnotations": "Cycle Annotations",
-		"tab": "Tab"
+		"customize": "Customize"
 	},
 	"openRecordingsFolder": "Open recordings folder",
 	"captions": {
@@ -233,7 +229,9 @@
 		"black": "Black",
 		"captionText": "Caption text...",
 		"split": "Split",
-		"mergeNext": "Merge next"
+		"mergeNext": "Merge next",
+		"systemFont": "System",
+		"uppercase": "UPPERCASE"
 	},
 	"preview": {
 		"initFailed": "Failed to initialize preview renderer"
@@ -287,7 +285,22 @@
 		"noSavedPresets": "No saved presets",
 		"toggleLayout": "Toggle Layout",
 		"projects": "Projects",
-		"openProjectBrowser": "Open project browser"
+		"openProjectBrowser": "Open project browser",
+		"failedToLoadProject": "Failed to load project",
+		"invalidProjectFile": "Invalid project file format",
+		"projectLoadedFrom": "Project loaded from {{path}}",
+		"failedToOpenProject": "Failed to open project",
+		"projectSavedTo": "Project saved to {{path}}",
+		"presetApplied": "Applied {{name}} preset.",
+		"presetSaved": "Saved {{name}} preset.",
+		"presetDeleted": "Deleted {{name}} preset.",
+		"projectDeleteFailed": "Failed to delete the project.",
+		"filesDeleted": "Files deleted: {{count}}.",
+		"externalFilesKept": "External files kept: {{count}}.",
+		"recordingRemovedFromEditor": "Removed this recording from the editor.",
+		"projectRemoved": "Project removed.",
+		"webcamSourceMissing": "Webcam source is missing. Relink it or remove it from the project.",
+		"zoomRegionsCreated": "Zoom regions created: {{count}}"
 	},
 	"header": {
 		"presets": "Presets"
@@ -324,7 +337,10 @@
 	},
 	"polishPanel": {
 		"autoPolish": "Auto Polish",
-		"oneClickStudioTemplates": "One-click studio templates"
+		"oneClickStudioTemplates": "One-click studio templates",
+		"landingPage": "Landing page",
+		"pitchDeck": "Pitch deck",
+		"apply": "Apply"
 	},
 	"theme": {
 		"appearance": "Appearance",

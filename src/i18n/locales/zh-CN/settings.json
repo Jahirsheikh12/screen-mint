@@ -96,7 +96,8 @@
 		"uploadErrorDescription": "支持格式：JPG、JPEG、PNG、WEBP。",
 		"video": "视频",
 		"uploadVideo": "选择视频",
-		"videoHint": "在录制画面后方静音循环播放。支持 MP4、MOV 或 WebM。"
+		"videoHint": "在录制画面后方静音循环播放。支持 MP4、MOV 或 WebM。",
+		"gradientPreset": "渐变预设 {{index}}"
 	},
 	"cursor": {
 		"title": "光标",
@@ -304,9 +305,6 @@
 		"destFileHint": "选择文件夹",
 		"destClipboard": "剪贴板",
 		"destClipboardHint": "复制文件引用",
-		"destLink": "链接",
-		"destLinkHint": "云端分享",
-		"soon": "即将推出",
 		"profile": "画质方案",
 		"profileHint": "方案会应用推荐值。任何手动调整都会变为自定义。",
 		"output": "输出",
@@ -343,7 +341,6 @@
 		"modePreset": "预设",
 		"back": "返回编辑器",
 		"copyExport": "复制导出文件",
-		"createLink": "创建链接",
 		"ready": "{{format}} 已就绪",
 		"title": "导出设置",
 		"subtitle": "渲染前请选择格式、保存位置和画质。",
@@ -478,6 +475,43 @@
 			"bottom": "下",
 			"left": "左",
 			"right": "右"
+		},
+		"presets": {
+			"classic-circle": "经典圆形",
+			"presenter-soft": "柔和主讲",
+			"floating-card": "悬浮卡片",
+			"spotlight": "聚光灯",
+			"fullscreen-commentary": "全屏解说"
+		},
+		"status": {
+			"segmentation-unavailable": {
+				"title": "背景处理不可用",
+				"description": "当前无法进行人像分割，因此预览显示的是原始摄像头画面。"
+			},
+			"raw-webcam-only": {
+				"title": "预览使用原始摄像头画面",
+				"description": "预览性能不足以进行高级处理，编辑器暂时显示原始摄像头画面。"
+			},
+			"replacement-disabled": {
+				"title": "图像替换已降级",
+				"description": "预览中已暂停自定义背景替换。模糊和纯色处理仍可保持启用。"
+			},
+			"reduced-background-sampling": {
+				"title": "背景处理已简化",
+				"description": "预览仍在应用摄像头处理，但降低了背景采样以保持播放流畅。"
+			},
+			"reduced-segmentation-rate": {
+				"title": "处理已启用",
+				"description": "人像分割的更新频率已降低，因此预览响应可能稍慢。"
+			},
+			"raw": {
+				"title": "原始摄像头画面",
+				"description": "摄像头画面未进行人像分离。"
+			},
+			"active": {
+				"title": "背景处理已启用",
+				"description": "预览和导出均使用当前的摄像头处理。"
+			}
 		}
 	},
 	"audioTab": {
@@ -553,7 +587,14 @@
 		"chipHook": "吸睛",
 		"chipSharp": "清晰",
 		"chipTeam": "团队",
-		"chipCustom": "自定义"
+		"chipCustom": "自定义",
+		"presets": {
+			"saas-launch": "发布影片",
+			"product-demo": "引导演示",
+			"tutorial": "课程模式",
+			"social-vertical": "竖屏开场",
+			"bug-report-clean": "清晰交接"
+		}
 	},
 	"backgroundTab": {
 		"setTheBackdropBehind": "设置录制画布后面的背景",

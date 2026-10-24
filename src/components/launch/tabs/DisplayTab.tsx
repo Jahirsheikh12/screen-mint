@@ -1,5 +1,5 @@
+import { Monitor } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MdMonitor } from "react-icons/md";
 import { CaptureAccessNotice } from "@/components/launch/CaptureAccessNotice";
 import { useScopedT } from "@/contexts/I18nContext";
 import { useCaptureSourceAccess } from "@/hooks/useCaptureSourceAccess";
@@ -139,7 +139,7 @@ export function DisplayTab({ disabled, onSelectSource, onPermissionDenied }: Dis
 									/>
 								) : (
 									<div className="flex h-full w-full items-center justify-center">
-										<MdMonitor size={24} className="text-fg-disabled" />
+										<Monitor size={24} className="text-fg-disabled" />
 									</div>
 								)}
 							</div>

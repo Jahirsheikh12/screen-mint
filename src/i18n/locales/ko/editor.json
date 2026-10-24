@@ -74,11 +74,7 @@
 	"keyboardShortcuts": {
 		"title": "키보드 단축키",
 		"customizeTooltip": "단축키 사용자 지정",
-		"customize": "사용자 지정",
-		"panTimeline": "타임라인 이동",
-		"zoomTimeline": "타임라인 확대/축소",
-		"cycleAnnotations": "주석 순환",
-		"tab": "Tab"
+		"customize": "사용자 지정"
 	},
 	"openRecordingsFolder": "녹화 폴더 열기",
 	"captions": {
@@ -233,7 +229,9 @@
 		"black": "아주 굵게",
 		"captionText": "자막 텍스트...",
 		"split": "나누기",
-		"mergeNext": "다음과 합치기"
+		"mergeNext": "다음과 합치기",
+		"systemFont": "시스템",
+		"uppercase": "대문자"
 	},
 	"preview": {
 		"initFailed": "미리보기 렌더러를 시작하지 못했습니다"
@@ -287,7 +285,22 @@
 		"noSavedPresets": "저장된 프리셋 없음",
 		"toggleLayout": "레이아웃 전환",
 		"projects": "프로젝트",
-		"openProjectBrowser": "프로젝트 목록 열기"
+		"openProjectBrowser": "프로젝트 목록 열기",
+		"failedToLoadProject": "프로젝트를 불러오지 못했습니다",
+		"invalidProjectFile": "잘못된 프로젝트 파일 형식입니다",
+		"projectLoadedFrom": "{{path}}에서 프로젝트를 불러왔습니다",
+		"failedToOpenProject": "프로젝트를 열지 못했습니다",
+		"projectSavedTo": "{{path}}에 프로젝트를 저장했습니다",
+		"presetApplied": "‘{{name}}’ 프리셋을 적용했습니다.",
+		"presetSaved": "‘{{name}}’ 프리셋을 저장했습니다.",
+		"presetDeleted": "‘{{name}}’ 프리셋을 삭제했습니다.",
+		"projectDeleteFailed": "프로젝트를 삭제하지 못했습니다.",
+		"filesDeleted": "삭제한 파일: {{count}}개.",
+		"externalFilesKept": "유지한 외부 파일: {{count}}개.",
+		"recordingRemovedFromEditor": "이 녹화를 편집기에서 제거했습니다.",
+		"projectRemoved": "프로젝트를 제거했습니다.",
+		"webcamSourceMissing": "웹캠 소스가 없습니다. 다시 연결하거나 프로젝트에서 제거하세요.",
+		"zoomRegionsCreated": "생성한 확대 구간: {{count}}개"
 	},
 	"header": {
 		"presets": "프리셋"
@@ -324,7 +337,10 @@
 	},
 	"polishPanel": {
 		"autoPolish": "자동 다듬기",
-		"oneClickStudioTemplates": "원클릭 스튜디오 템플릿"
+		"oneClickStudioTemplates": "원클릭 스튜디오 템플릿",
+		"landingPage": "랜딩 페이지",
+		"pitchDeck": "피치덱",
+		"apply": "적용"
 	},
 	"theme": {
 		"appearance": "모양",

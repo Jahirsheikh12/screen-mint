@@ -96,7 +96,8 @@
 		"uploadErrorDescription": "Formats acceptés : JPG, JPEG, PNG, WEBP.",
 		"video": "Vidéo",
 		"uploadVideo": "Choisir une vidéo",
-		"videoHint": "Tourne en boucle, sans son, derrière votre enregistrement. MP4, MOV ou WebM."
+		"videoHint": "Tourne en boucle, sans son, derrière votre enregistrement. MP4, MOV ou WebM.",
+		"gradientPreset": "Dégradé prédéfini {{index}}"
 	},
 	"cursor": {
 		"title": "Curseur",
@@ -304,9 +305,6 @@
 		"destFileHint": "Choisir un dossier",
 		"destClipboard": "Presse-papiers",
 		"destClipboardHint": "Copier la référence du fichier",
-		"destLink": "Lien",
-		"destLinkHint": "Partage en ligne",
-		"soon": "Bientôt",
 		"profile": "Profil de qualité",
 		"profileHint": "Les profils appliquent des valeurs conseillées. Tout réglage manuel passe en Personnalisé.",
 		"output": "Sortie",
@@ -343,7 +341,6 @@
 		"modePreset": "Préréglage",
 		"back": "Retour à l’éditeur",
 		"copyExport": "Copier l’export",
-		"createLink": "Créer un lien",
 		"ready": "{{format}} prêt",
 		"title": "Réglages d’export",
 		"subtitle": "Choisissez le format, la destination et la qualité avant le rendu.",
@@ -478,6 +475,43 @@
 			"bottom": "Bas",
 			"left": "Gauche",
 			"right": "Droite"
+		},
+		"presets": {
+			"classic-circle": "Cercle classique",
+			"presenter-soft": "Présentateur doux",
+			"floating-card": "Carte flottante",
+			"spotlight": "Projecteur",
+			"fullscreen-commentary": "Commentaire plein écran"
+		},
+		"status": {
+			"segmentation-unavailable": {
+				"title": "Traitement de l’arrière-plan indisponible",
+				"description": "La segmentation n’est pas disponible pour le moment ; l’aperçu affiche donc l’image brute de la webcam."
+			},
+			"raw-webcam-only": {
+				"title": "L’aperçu utilise la webcam brute",
+				"description": "Les performances de l’aperçu sont trop faibles pour le traitement avancé ; l’éditeur affiche donc temporairement l’image brute de la caméra."
+			},
+			"replacement-disabled": {
+				"title": "Remplacement par image réduit",
+				"description": "Le remplacement de l’arrière-plan personnalisé est suspendu dans l’aperçu. Le flou et la couleur unie restent actifs."
+			},
+			"reduced-background-sampling": {
+				"title": "Traitement de l’arrière-plan simplifié",
+				"description": "L’aperçu applique toujours le traitement de la webcam, mais échantillonne moins l’arrière-plan pour garder une lecture fluide."
+			},
+			"reduced-segmentation-rate": {
+				"title": "Le traitement est actif",
+				"description": "La segmentation est mise à jour moins souvent ; l’aperçu peut donc sembler un peu moins réactif."
+			},
+			"raw": {
+				"title": "Webcam brute",
+				"description": "La webcam s’affiche sans séparation du sujet."
+			},
+			"active": {
+				"title": "Traitement de l’arrière-plan actif",
+				"description": "L’aperçu et l’exportation utilisent le traitement de la webcam actif."
+			}
 		}
 	},
 	"audioTab": {
@@ -553,7 +587,14 @@
 		"chipHook": "Accroche",
 		"chipSharp": "Net",
 		"chipTeam": "Équipe",
-		"chipCustom": "Personnalisé"
+		"chipCustom": "Personnalisé",
+		"presets": {
+			"saas-launch": "Film de lancement",
+			"product-demo": "Démo guidée",
+			"tutorial": "Mode leçon",
+			"social-vertical": "Accroche verticale",
+			"bug-report-clean": "Transmission claire"
+		}
 	},
 	"backgroundTab": {
 		"setTheBackdropBehind": "Définissez le fond derrière le canevas de l’enregistrement",

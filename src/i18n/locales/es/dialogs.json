@@ -82,7 +82,8 @@
 		"projects": "Proyectos",
 		"recentProjectsAndProjects": "Proyectos recientes y proyectos guardados en tu carpeta de grabaciones.",
 		"loadingProjects": "Cargando proyectos…",
-		"noSavedProjectsYet": "Aún no hay proyectos guardados"
+		"noSavedProjectsYet": "Aún no hay proyectos guardados",
+		"showProjectInFolder": "Mostrar {{name}} en la carpeta"
 	},
 	"editor": {
 		"savePreset": "Guardar estilo",
@@ -92,7 +93,13 @@
 		"cancel": "Cancelar",
 		"savePreset2": "Guardar estilo",
 		"confirmAction": "Confirmar acción",
-		"continue": "Continuar"
+		"continue": "Continuar",
+		"deletePresetTitle": "¿Eliminar estilo?",
+		"deletePresetDescription": "¿Eliminar el estilo «{{name}}»?",
+		"deletePresetConfirm": "Eliminar estilo",
+		"deleteProjectTitle": "¿Eliminar proyecto?",
+		"deleteProjectDescription": "¿Eliminar este proyecto de ScreenMint y los archivos de grabación que administra?\n\nLos archivos importados fuera de la carpeta de grabaciones de ScreenMint se conservarán.",
+		"deleteProjectConfirm": "Eliminar proyecto"
 	},
 	"quickShare": {
 		"quickShare": "Compartir rápido",

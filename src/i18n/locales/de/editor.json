@@ -74,11 +74,7 @@
 	"keyboardShortcuts": {
 		"title": "Tastaturkürzel",
 		"customizeTooltip": "Kürzel anpassen",
-		"customize": "Anpassen",
-		"panTimeline": "Timeline verschieben",
-		"zoomTimeline": "Timeline zoomen",
-		"cycleAnnotations": "Anmerkungen durchlaufen",
-		"tab": "Tab"
+		"customize": "Anpassen"
 	},
 	"openRecordingsFolder": "Aufnahmeordner öffnen",
 	"captions": {
@@ -233,7 +229,9 @@
 		"black": "Black",
 		"captionText": "Untertiteltext...",
 		"split": "Teilen",
-		"mergeNext": "Mit nächstem zusammenführen"
+		"mergeNext": "Mit nächstem zusammenführen",
+		"systemFont": "System",
+		"uppercase": "GROSSBUCHSTABEN"
 	},
 	"preview": {
 		"initFailed": "Die Vorschau konnte nicht gestartet werden"
@@ -287,7 +285,22 @@
 		"noSavedPresets": "Keine gespeicherten Vorgaben",
 		"toggleLayout": "Layout wechseln",
 		"projects": "Projekte",
-		"openProjectBrowser": "Projektübersicht öffnen"
+		"openProjectBrowser": "Projektübersicht öffnen",
+		"failedToLoadProject": "Projekt konnte nicht geladen werden",
+		"invalidProjectFile": "Ungültiges Projektdateiformat",
+		"projectLoadedFrom": "Projekt geladen aus {{path}}",
+		"failedToOpenProject": "Projekt konnte nicht geöffnet werden",
+		"projectSavedTo": "Projekt gespeichert unter {{path}}",
+		"presetApplied": "Vorgabe „{{name}}“ angewendet.",
+		"presetSaved": "Vorgabe „{{name}}“ gespeichert.",
+		"presetDeleted": "Vorgabe „{{name}}“ gelöscht.",
+		"projectDeleteFailed": "Das Projekt konnte nicht gelöscht werden.",
+		"filesDeleted": "Gelöschte Dateien: {{count}}.",
+		"externalFilesKept": "Behaltene externe Dateien: {{count}}.",
+		"recordingRemovedFromEditor": "Diese Aufnahme wurde aus dem Editor entfernt.",
+		"projectRemoved": "Projekt entfernt.",
+		"webcamSourceMissing": "Die Webcam-Quelle fehlt. Verknüpfen Sie sie neu oder entfernen Sie sie aus dem Projekt.",
+		"zoomRegionsCreated": "Erstellte Zoombereiche: {{count}}"
 	},
 	"header": {
 		"presets": "Vorgaben"
@@ -324,7 +337,10 @@
 	},
 	"polishPanel": {
 		"autoPolish": "Automatisch veredeln",
-		"oneClickStudioTemplates": "Studio-Vorlagen mit einem Klick"
+		"oneClickStudioTemplates": "Studio-Vorlagen mit einem Klick",
+		"landingPage": "Landingpage",
+		"pitchDeck": "Pitch-Deck",
+		"apply": "Anwenden"
 	},
 	"theme": {
 		"appearance": "Darstellung",

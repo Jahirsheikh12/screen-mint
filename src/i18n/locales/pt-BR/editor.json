@@ -74,11 +74,7 @@
 	"keyboardShortcuts": {
 		"title": "Atalhos de teclado",
 		"customizeTooltip": "Personalizar atalhos",
-		"customize": "Personalizar",
-		"panTimeline": "Rolar linha do tempo",
-		"zoomTimeline": "Zoom na linha do tempo",
-		"cycleAnnotations": "Alternar anotações",
-		"tab": "Tab"
+		"customize": "Personalizar"
 	},
 	"openRecordingsFolder": "Abrir pasta de gravações",
 	"captions": {
@@ -233,7 +229,9 @@
 		"black": "Black",
 		"captionText": "Texto da legenda...",
 		"split": "Dividir",
-		"mergeNext": "Juntar com a próxima"
+		"mergeNext": "Juntar com a próxima",
+		"systemFont": "Sistema",
+		"uppercase": "MAIÚSCULAS"
 	},
 	"preview": {
 		"initFailed": "Não foi possível iniciar o renderizador da prévia"
@@ -287,7 +285,22 @@
 		"noSavedPresets": "Nenhum estilo salvo",
 		"toggleLayout": "Alternar layout",
 		"projects": "Projetos",
-		"openProjectBrowser": "Abrir o navegador de projetos"
+		"openProjectBrowser": "Abrir o navegador de projetos",
+		"failedToLoadProject": "Não foi possível carregar o projeto",
+		"invalidProjectFile": "Formato de arquivo de projeto inválido",
+		"projectLoadedFrom": "Projeto carregado de {{path}}",
+		"failedToOpenProject": "Não foi possível abrir o projeto",
+		"projectSavedTo": "Projeto salvo em {{path}}",
+		"presetApplied": "Estilo “{{name}}” aplicado.",
+		"presetSaved": "Estilo “{{name}}” salvo.",
+		"presetDeleted": "Estilo “{{name}}” excluído.",
+		"projectDeleteFailed": "Não foi possível excluir o projeto.",
+		"filesDeleted": "Arquivos excluídos: {{count}}.",
+		"externalFilesKept": "Arquivos externos mantidos: {{count}}.",
+		"recordingRemovedFromEditor": "Esta gravação foi removida do editor.",
+		"projectRemoved": "Projeto removido.",
+		"webcamSourceMissing": "A fonte da webcam está ausente. Vincule-a novamente ou remova-a do projeto.",
+		"zoomRegionsCreated": "Regiões de zoom criadas: {{count}}"
 	},
 	"header": {
 		"presets": "Estilos"
@@ -324,7 +337,10 @@
 	},
 	"polishPanel": {
 		"autoPolish": "Acabamento automático",
-		"oneClickStudioTemplates": "Modelos de estúdio com um clique"
+		"oneClickStudioTemplates": "Modelos de estúdio com um clique",
+		"landingPage": "Página de destino",
+		"pitchDeck": "Apresentação para investidores",
+		"apply": "Aplicar"
 	},
 	"theme": {
 		"appearance": "Aparência",

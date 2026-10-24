@@ -25,7 +25,8 @@
 	"speed": {
 		"cannotPlace": "Geschwindigkeit kann hier nicht platziert werden",
 		"existsOrNoSpace": "An dieser Stelle gibt es bereits einen Geschwindigkeitsbereich oder es ist nicht genug Platz.",
-		"label": "Geschwindigkeit"
+		"label": "Geschwindigkeit",
+		"indexedLabel": "Tempo {{index}}"
 	},
 	"annotation": {
 		"label": "Anmerkung",
@@ -105,7 +106,10 @@
 		"custom": "Eigenes",
 		"customAspectWidth": "Eigene Breite",
 		"customAspectHeight": "Eigene Höhe",
-		"set": "Übernehmen"
+		"set": "Übernehmen",
+		"part": "Teil {{index}}",
+		"volumeTooltip": "Lautstärke: {{percent}} %",
+		"keyframeTitle": "Keyframe bei {{ms}} ms (ziehen zum Verschieben, Entf/Rücktaste zum Entfernen)"
 	},
 	"toolbar": {
 		"visibleOne": "1 sichtbare Spur",

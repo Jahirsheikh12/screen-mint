@@ -1,0 +1,79 @@
+{
+	"menu": {
+		"file": "Ablage",
+		"loadProject": "Projekt laden…",
+		"saveProject": "Projekt speichern…",
+		"saveProjectAs": "Projekt speichern unter…",
+		"edit": "Bearbeiten",
+		"view": "Darstellung",
+		"window": "Fenster",
+		"help": "Hilfe",
+		"about": "Über ScreenMint",
+		"checkForUpdates": "Nach Updates suchen…",
+		"reportIssue": "Problem melden…"
+	},
+	"tray": {
+		"open": "Öffnen",
+		"quit": "Beenden",
+		"stopRecording": "Aufnahme beenden",
+		"recording": "Aufnahme: {{source}}"
+	},
+	"about": {
+		"close": "Schließen",
+		"status": {
+			"checking": "Suche nach Updates…",
+			"available": "Version {{version}} ist verfügbar. Öffnen Sie mit „Nach Updates suchen“ das Update-Fenster.",
+			"downloading": "Version {{version}} wird geladen.",
+			"downloadingProgress": "Version {{version}} wird geladen ({{percent}} %).",
+			"downloadedInstaller": "Version {{version}} wurde geladen. Öffnen Sie das Update-Fenster, um fortzufahren.",
+			"downloadedReady": "Version {{version}} wurde geladen und kann im Update-Fenster installiert werden.",
+			"upToDate": "Sie sind auf dem neuesten Stand (Version {{version}}).",
+			"manual": "Version {{version}} kann manuell von GitHub Releases geladen werden.",
+			"error": "Updates können gerade nicht gesucht werden.",
+			"unsupported": "Automatische Updates gibt es nur in installierten Builds."
+		}
+	},
+	"unsavedChanges": {
+		"title": "Nicht gespeicherte Änderungen",
+		"message": "Sie haben nicht gespeicherte Änderungen.",
+		"detail": "Möchten Sie Ihr Projekt vor dem Schließen speichern?",
+		"saveAndClose": "Speichern und schließen",
+		"discardAndClose": "Verwerfen und schließen",
+		"cancel": "Abbrechen"
+	},
+	"recovery": {
+		"message": "ScreenMint wurde während einer Aufnahme beendet",
+		"detail": "Ihre letzte Aufnahme wurde unerwartet beendet. Der gespeicherte Teil befindet sich hier:\n{{path}}",
+		"openInEditor": "Im Editor öffnen",
+		"showInFolder": "Im Ordner zeigen",
+		"notNow": "Nicht jetzt"
+	},
+	"moveToApplications": {
+		"title": "ScreenMint in „Programme“ bewegen",
+		"message": "Bewegen Sie ScreenMint nach /Applications, damit die Bildschirmaufnahme-Berechtigungen von macOS zuverlässig bleiben.",
+		"detail": "Nicht signierte macOS-Builds behalten die Berechtigung zur Bildschirmaufnahme zuverlässiger, wenn ScreenMint unter /Applications/ScreenMint.app installiert ist. Ein Start aus „Downloads“, vom Schreibtisch oder aus einem geöffneten DMG kann wiederholte Abfragen und leere Quellenlisten verursachen.",
+		"move": "In „Programme“ bewegen",
+		"keep": "Aktuellen Ort behalten",
+		"manualTitle": "ScreenMint manuell bewegen",
+		"manualMessage": "Bewegen Sie ScreenMint nach /Applications, bevor Sie die Bildschirmaufnahme verwenden.",
+		"manualDetail": "macOS hat die App nicht automatisch bewegt. Ziehen Sie ScreenMint.app nach /Applications und starten Sie sie von dort neu.",
+		"ok": "OK"
+	},
+	"captions": {
+		"extractingMicrophone": "Mikrofon-Audio wird extrahiert…",
+		"extractingMixed": "Gemischtes Audio wird extrahiert…",
+		"runningWhisper": "Lokale Whisper-Transkription läuft…",
+		"retryingSmallerModel": "Neuer Versuch mit dem kleineren Modell {{model}}…",
+		"buildingSegments": "Transkriptsegmente werden erstellt…",
+		"ready": "Transkript fertig",
+		"downloadingModel": "Whisper-Modell {{model}} wird geladen…",
+		"downloadingModelProgress": "Whisper-Modell {{model}} wird geladen… {{percent}} %",
+		"downloadingVad": "Hilfsprogramm zur Spracherkennung wird geladen…",
+		"preparingRuntime": "Lokale Whisper-Umgebung wird vorbereitet…",
+		"buildingCli": "Whisper-CLI wird erstellt…",
+		"preparingAppleMicrophone": "Mikrofon-Audio wird für Apple Speech vorbereitet…",
+		"preparingAppleMixed": "Gemischtes Audio wird für Apple Speech vorbereitet…",
+		"runningApple": "Apple-Speech-Transkription läuft…",
+		"appleFallback": "Apple Speech war nicht verfügbar. Whisper wird verwendet…"
+	}
+}

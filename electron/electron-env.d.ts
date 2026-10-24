@@ -10,8 +10,6 @@ import type {
 	MobileCapturePairingResult,
 	MobileCapturePairingState,
 	MobileCaptureSignalPayload,
-	ScreenshotCaptureRequest,
-	ScreenshotCaptureResult,
 } from "../src/electron-ipc/contracts";
 import type { PostRecordingContext } from "../src/lib/recording/postRecording";
 import type {
@@ -78,7 +76,6 @@ declare global {
 			onSelectedAreaChanged: (
 				callback: (state: { area: SelectedArea | null }) => void,
 			) => () => void;
-			captureScreenshot: (request?: ScreenshotCaptureRequest) => Promise<ScreenshotCaptureResult>;
 			startNativeScreenRecording: (
 				source: SelectedCaptureSource,
 				options?: {
@@ -498,6 +495,7 @@ declare global {
 			}>;
 			/** Hide the OS cursor before browser capture starts. */
 			hideOsCursor: () => Promise<{ success: boolean }>;
+			setAppLocale: (locale: string) => void;
 			/** Countdown timer before recording */
 			getCountdownDelay: () => Promise<{ success: boolean; delay: number }>;
 			setCountdownDelay: (delay: number) => Promise<{ success: boolean; error?: string }>;

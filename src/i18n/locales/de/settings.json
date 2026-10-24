@@ -96,7 +96,8 @@
 		"uploadErrorDescription": "Unterstützte Formate: JPG, JPEG, PNG, WEBP.",
 		"video": "Video",
 		"uploadVideo": "Video auswählen",
-		"videoHint": "Läuft stumm in Schleife hinter Ihrer Aufnahme. MP4, MOV oder WebM."
+		"videoHint": "Läuft stumm in Schleife hinter Ihrer Aufnahme. MP4, MOV oder WebM.",
+		"gradientPreset": "Verlaufsvorgabe {{index}}"
 	},
 	"cursor": {
 		"title": "Cursor",
@@ -304,9 +305,6 @@
 		"destFileHint": "Ordner wählen",
 		"destClipboard": "Zwischenablage",
 		"destClipboardHint": "Dateiverweis kopieren",
-		"destLink": "Link",
-		"destLinkHint": "Online teilen",
-		"soon": "Bald",
 		"profile": "Qualitätsprofil",
 		"profileHint": "Profile setzen sinnvolle Werte. Jede manuelle Änderung wird zu „Benutzerdefiniert“.",
 		"output": "Ausgabe",
@@ -343,7 +341,6 @@
 		"modePreset": "Vorgabe",
 		"back": "Zurück zum Editor",
 		"copyExport": "Export kopieren",
-		"createLink": "Link erstellen",
 		"ready": "{{format}} bereit",
 		"title": "Export-Einstellungen",
 		"subtitle": "Wähle Format, Ziel und Qualität vor dem Rendern.",
@@ -478,6 +475,43 @@
 			"bottom": "Unten",
 			"left": "Links",
 			"right": "Rechts"
+		},
+		"presets": {
+			"classic-circle": "Klassischer Kreis",
+			"presenter-soft": "Sanfter Moderator",
+			"floating-card": "Schwebende Karte",
+			"spotlight": "Spotlight",
+			"fullscreen-commentary": "Vollbild-Kommentar"
+		},
+		"status": {
+			"segmentation-unavailable": {
+				"title": "Hintergrundbehandlung nicht verfügbar",
+				"description": "Die Segmentierung ist gerade nicht verfügbar, daher zeigt die Vorschau das unbearbeitete Webcam-Bild."
+			},
+			"raw-webcam-only": {
+				"title": "Vorschau nutzt unbearbeitete Webcam",
+				"description": "Die Vorschauleistung reicht für die Premium-Behandlung nicht aus, daher zeigt der Editor vorübergehend das unbearbeitete Kamerabild."
+			},
+			"replacement-disabled": {
+				"title": "Bildersetzung reduziert",
+				"description": "Der eigene Hintergrund ist in der Vorschau pausiert. Weichzeichner und Volltonfarbe bleiben aktiv."
+			},
+			"reduced-background-sampling": {
+				"title": "Hintergrundbehandlung vereinfacht",
+				"description": "Die Vorschau wendet die Webcam-Behandlung weiter an, tastet den Hintergrund aber seltener ab, damit die Wiedergabe flüssig bleibt."
+			},
+			"reduced-segmentation-rate": {
+				"title": "Behandlung ist aktiv",
+				"description": "Die Segmentierung wird seltener aktualisiert, daher kann die Vorschau etwas träger wirken."
+			},
+			"raw": {
+				"title": "Unbearbeitete Webcam",
+				"description": "Die Webcam wird ohne Freistellung dargestellt."
+			},
+			"active": {
+				"title": "Hintergrundbehandlung aktiv",
+				"description": "Vorschau und Export verwenden die aktive Webcam-Behandlung."
+			}
 		}
 	},
 	"audioTab": {
@@ -553,7 +587,14 @@
 		"chipHook": "Aufhänger",
 		"chipSharp": "Scharf",
 		"chipTeam": "Team",
-		"chipCustom": "Benutzerdefiniert"
+		"chipCustom": "Benutzerdefiniert",
+		"presets": {
+			"saas-launch": "Launch-Film",
+			"product-demo": "Geführte Demo",
+			"tutorial": "Lernmodus",
+			"social-vertical": "Vertikaler Hook",
+			"bug-report-clean": "Saubere Übergabe"
+		}
 	},
 	"backgroundTab": {
 		"setTheBackdropBehind": "Lege den Hintergrund hinter der Arbeitsfläche fest",

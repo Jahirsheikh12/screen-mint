@@ -1,13 +1,10 @@
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, CircleDot } from "lucide-react";
 import type { PointerEvent } from "react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { BsRecordCircle } from "react-icons/bs";
-import { toast } from "sonner";
 import { resolveHudWebcamPreviewLayout } from "@/components/video-editor/webcamRenderPlan";
 import { useScopedT } from "@/contexts/I18nContext";
 import type { AfterRecordingAction, HudMode } from "@/hooks/useHudState";
 import { useHudState } from "@/hooks/useHudState";
-import { isFeatureEnabled } from "@/lib/featureFlags";
 import {
 	DropdownMenu,
 	DropdownMenuCheckboxItem,
@@ -53,8 +50,6 @@ export function LaunchWindow() {
 	const [recordingStart, setRecordingStart] = useState<number | null>(null);
 	const [elapsed, setElapsed] = useState(0);
 	const [hudDropdownOpen, setHudDropdownOpen] = useState(false);
-	const [screenshotBusy, setScreenshotBusy] = useState(false);
-	const screenshotsEnabled = isFeatureEnabled("screenshots");
 	const pausedAtRef = useRef<number | null>(null);
 	const totalPausedRef = useRef(0);
 	const compactHudRef = useRef<HTMLDivElement | null>(null);
@@ -143,26 +138,6 @@ export function LaunchWindow() {
 			hud.resizeHudWindow(false);
 		}
 	}, [hud.recording, hud.countdownActive, hud.resizeHudWindow]);
-
-	const openVideoFile = useCallback(async () => {
-		const result = await window.electronAPI.openVideoFilePicker();
-		if (result.canceled) return;
-
-		if (result.success && result.path) {
-			hud.setCameraDeviceId(undefined);
-			await window.electronAPI.clearCurrentWebcamPath();
-			await window.electronAPI.setCurrentVideoPath(result.path);
-			await window.electronAPI.switchToEditor();
-		}
-	}, [hud.setCameraDeviceId]);
-
-	const openProjectFile = useCallback(async () => {
-		const result = await window.electronAPI.loadProjectFile();
-		if (result.canceled || !result.success) return;
-		hud.setCameraDeviceId(undefined);
-		await window.electronAPI.clearCurrentWebcamPath();
-		await window.electronAPI.switchToEditor();
-	}, [hud.setCameraDeviceId]);
 
 	const sendHudOverlayHide = useCallback(() => {
 		window.electronAPI?.hudOverlayHide?.();
@@ -317,58 +292,7 @@ export function LaunchWindow() {
 		hud.recordingBusy ||
 		!hud.hasSelectedSource ||
 		(hud.mode === "area" && !hud.hasSelectedArea);
-	const screenshotDisabled =
-		!screenshotsEnabled ||
-		hud.recording ||
-		hud.countdownActive ||
-		hud.recordingBusy ||
-		!hud.hasSelectedSource ||
-		(hud.mode === "area" && !hud.hasSelectedArea);
 	const hudWebcamPreviewLayout = resolveHudWebcamPreviewLayout(hud.cameraSession);
-
-	const handleCaptureScreenshot = useCallback(async () => {
-		if (screenshotDisabled || screenshotBusy) {
-			return;
-		}
-
-		setScreenshotBusy(true);
-		try {
-			const selectedArea =
-				hud.mode === "area" ? ((await window.electronAPI.getSelectedArea()).area ?? null) : null;
-			const result = await window.electronAPI.captureScreenshot({
-				selectedArea,
-				saveToRecordings: true,
-				copyToClipboard: true,
-			});
-
-			if (!result.success || !result.screenshot) {
-				toast.error(
-					!result.success
-						? (result.message ?? t("recording.screenshotFailed"))
-						: t("recording.screenshotFailed"),
-				);
-				return;
-			}
-
-			toast.success(t("recording.screenshotSaved"), {
-				description: result.screenshot.path,
-				action: result.screenshot.path
-					? {
-							label: t("recording.showScreenshot"),
-							onClick: () => {
-								void window.electronAPI.revealInFolder(result.screenshot?.path ?? "");
-							},
-						}
-					: undefined,
-			});
-		} catch (error) {
-			toast.error(t("recording.screenshotFailed"), {
-				description: error instanceof Error ? error.message : String(error),
-			});
-		} finally {
-			setScreenshotBusy(false);
-		}
-	}, [hud.mode, screenshotBusy, screenshotDisabled, t]);
 
 	useEffect(() => subscribeHudDropdownOpen(setHudDropdownOpen), []);
 
@@ -555,7 +479,7 @@ export function LaunchWindow() {
 													: "bg-danger text-on-danger hover:bg-danger/90 cursor-pointer"
 											}`}
 										>
-											<BsRecordCircle size={13} />
+											<CircleDot size={13} />
 											<span>{t("recording.startRecording")}</span>
 											<div
 												className={`h-4 w-px ml-1 ${isRecordDisabled ? "bg-fill-hover" : "bg-fill-pressed"}`}
@@ -574,7 +498,7 @@ export function LaunchWindow() {
 											onSelect={() => hud.toggleRecording()}
 											className="text-label font-semibold"
 										>
-											<BsRecordCircle size={12} className="mr-2 text-danger-fg" />
+											<CircleDot size={12} className="mr-2 text-danger-fg" />
 											{t("recording.startRecording")}
 										</DropdownMenuItem>
 										<DropdownMenuSeparator className="bg-fill-hover" />
@@ -591,9 +515,6 @@ export function LaunchWindow() {
 											</DropdownMenuRadioItem>
 											<DropdownMenuRadioItem value="export-clipboard" className="text-label">
 												{t("afterRecording.exportClipboard")}
-											</DropdownMenuRadioItem>
-											<DropdownMenuRadioItem value="export-share-link" className="text-label">
-												{t("afterRecording.exportShareLink")}
 											</DropdownMenuRadioItem>
 											<DropdownMenuRadioItem value="export-save-file" className="text-label">
 												{t("afterRecording.exportSaveFile")}
@@ -725,8 +646,6 @@ export function LaunchWindow() {
 							selectedMicDeviceId={hud.selectedMicDeviceId}
 							setSelectedMicDeviceId={hud.setSelectedMicDeviceId}
 							audioLevel={hud.audioLevel}
-							onOpenVideoFile={openVideoFile}
-							onOpenProject={openProjectFile}
 							onHide={sendHudOverlayHide}
 							onClose={sendHudOverlayClose}
 							hudSettings={hud.hudSettings}
@@ -738,10 +657,6 @@ export function LaunchWindow() {
 							showQuickRecord={showAreaQuickRecord}
 							quickRecordDisabled={isRecordDisabled}
 							onQuickRecord={hud.toggleRecording}
-							screenshotDisabled={screenshotDisabled}
-							screenshotBusy={screenshotBusy}
-							onCaptureScreenshot={handleCaptureScreenshot}
-							showScreenshot={screenshotsEnabled}
 						/>
 					</div>
 				</div>

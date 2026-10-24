@@ -110,6 +110,8 @@ export default function Item({
 			window.removeEventListener("mousedown", handleClick);
 			window.removeEventListener("keydown", handleKey);
 			window.removeEventListener("scroll", closeMenu, true);
+			// Also when the item is deleted with its menu open, which skips closeMenu.
+			document.body.removeAttribute("data-context-menu-open");
 		};
 	}, [contextMenu, closeMenu]);
 

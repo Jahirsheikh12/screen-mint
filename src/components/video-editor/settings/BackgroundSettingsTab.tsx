@@ -14,7 +14,11 @@ import {
 } from "../settingsPanelBackground";
 import { DisabledSettingsGroup, TabContent, TabHeader } from "../settingsPanelLayout";
 
-type SettingsTranslator = (key: string, fallback?: string) => string;
+type SettingsTranslator = (
+	key: string,
+	fallback?: string,
+	vars?: Record<string, string | number>,
+) => string;
 type GradientState = {
 	from: string;
 	to: string;
@@ -515,7 +519,13 @@ export function BackgroundSettingsTab({
 															: "border-line-strong hover:border-accent/40 opacity-80 hover:opacity-100",
 													)}
 													style={{ background: css }}
-													aria-label={`Gradient preset ${idx + 1}`}
+													aria-label={tSettings(
+														"background.gradientPreset",
+														"Gradient preset {{index}}",
+														{
+															index: idx + 1,
+														},
+													)}
 													onClick={() => {
 														onGradientFromColorChange(preset.from);
 														onGradientToColorChange(preset.to);

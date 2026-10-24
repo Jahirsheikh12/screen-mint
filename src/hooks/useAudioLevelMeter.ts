@@ -56,10 +56,12 @@ export function useAudioLevelMeter(options: AudioLevelMeterOptions) {
 				streamRef.current = stream;
 
 				const audioContext = new AudioContext();
+				// Stored before awaiting so an unmount during resume() still closes it in cleanup.
+				audioContextRef.current = audioContext;
 				if (audioContext.state === "suspended") {
 					await audioContext.resume();
 				}
-				audioContextRef.current = audioContext;
+				if (!mounted) return;
 
 				const analyser = audioContext.createAnalyser();
 				analyser.fftSize = 256;

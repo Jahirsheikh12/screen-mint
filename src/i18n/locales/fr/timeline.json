@@ -25,7 +25,8 @@
 	"speed": {
 		"cannotPlace": "Impossible de placer une vitesse ici",
 		"existsOrNoSpace": "Une zone de vitesse existe déjà à cet endroit ou l'espace est insuffisant.",
-		"label": "Vitesse"
+		"label": "Vitesse",
+		"indexedLabel": "Vitesse {{index}}"
 	},
 	"annotation": {
 		"label": "Annotation",
@@ -105,7 +106,10 @@
 		"custom": "Personnalisé",
 		"customAspectWidth": "Largeur personnalisée",
 		"customAspectHeight": "Hauteur personnalisée",
-		"set": "Appliquer"
+		"set": "Appliquer",
+		"part": "Partie {{index}}",
+		"volumeTooltip": "Volume : {{percent}} %",
+		"keyframeTitle": "Image clé à {{ms}} ms (faites glisser pour déplacer, Suppr/Retour arrière pour retirer)"
 	},
 	"toolbar": {
 		"visibleOne": "1 piste visible",

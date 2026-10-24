@@ -32,7 +32,6 @@ import {
 	buildTrimFilters,
 	compileNativeComposedExport,
 } from "../../src/lib/exporter/nativeComposed";
-import { isFeatureEnabled } from "../../src/lib/featureFlags";
 import { buildCollisionFileName, ensureFileExtension } from "../../src/lib/fileNames";
 import type { PostRecordingContext } from "../../src/lib/recording/postRecording";
 import type {
@@ -41,6 +40,7 @@ import type {
 } from "../../src/lib/recording/session";
 import { buildAreaCropFilter, toDisplaySourceRect } from "../areaCapture";
 import { approveExportPath, createExportTempPath, isApprovedExportPath } from "../exportTemp";
+import { parseFfmpegProgressSeconds, summarizeFfmpegError } from "../ffmpegOutput";
 import { RECORDINGS_DIR } from "../main";
 import { markRecordingStarted, markRecordingStopped } from "../recordingRecovery";
 import { getScreenMintUpdater } from "../updater";
@@ -66,7 +66,6 @@ import { registerMobileCaptureIpcHandlers } from "./mobileCaptureHandlers";
 import { registerPermissionDiagnosticsIpcHandlers } from "./permissionDiagnosticsHandlers";
 import { registerPostRecordingIpcHandlers } from "./postRecordingHandlers";
 import { registerProjectFileIpcHandlers } from "./projectFileHandlers";
-import { registerScreenshotIpcHandlers } from "./screenshotHandlers";
 import { registerSystemSettingsIpcHandlers } from "./systemSettingsHandlers";
 import { registerTelemetryReadIpcHandlers } from "./telemetryReadHandlers";
 
@@ -1087,7 +1086,47 @@ async function finishExportV2StreamSession(id: string) {
 	await session.pending;
 	await session.handle.close();
 	exportV2StreamSessions.delete(id);
-	return { path: session.path, bytesWritten: session.bytesWritten };
+	if (session.path.toLowerCase().endsWith(".mp4")) {
+		await moveMp4IndexToFront(session.path);
+	}
+	const { size } = await fs.stat(session.path);
+	return { path: session.path, bytesWritten: size };
+}
+
+/**
+ * A streamed MP4 is written with its index (moov) at the end, so players and upload sites must
+ * download the whole file before it can start. A stream-copy remux moves the index to the front.
+ * If the remux fails, the original (still valid) file is kept.
+ */
+async function moveMp4IndexToFront(filePath: string) {
+	const remuxedPath = `${filePath}.faststart.mp4`;
+	try {
+		await execFileAsync(
+			getFfmpegBinaryPath(),
+			[
+				"-y",
+				"-v",
+				"error",
+				"-i",
+				filePath,
+				"-map",
+				"0",
+				"-c",
+				"copy",
+				"-movflags",
+				"+faststart",
+				remuxedPath,
+			],
+			{ timeout: 10 * 60 * 1000, maxBuffer: 10 * 1024 * 1024 },
+		);
+		await fs.rename(remuxedPath, filePath);
+	} catch (error) {
+		console.warn(
+			"[export] Could not move the MP4 index to the front; keeping the file as is:",
+			error,
+		);
+		await fs.rm(remuxedPath, { force: true }).catch(() => undefined);
+	}
 }
 
 async function discardExportV2StreamSession(id: string) {
@@ -1418,30 +1457,6 @@ function getExportV2AttemptPath(outputPath: string, attemptIndex: number) {
 	const extension = path.extname(outputPath);
 	const base = extension ? outputPath.slice(0, -extension.length) : outputPath;
 	return `${base}.attempt-${attemptIndex + 1}${extension || ".tmp"}`;
-}
-
-function parseFfmpegProgressSeconds(output: string) {
-	const outTimeMsMatches = [...output.matchAll(/out_time_ms=(\d+)/g)];
-	const latestOutTimeMs = outTimeMsMatches[outTimeMsMatches.length - 1];
-	if (latestOutTimeMs) {
-		return Number(latestOutTimeMs[1]) / 1_000_000;
-	}
-
-	const outTimeMatches = [...output.matchAll(/out_time=(\d+):(\d+):(\d+(?:\.\d+)?)/g)];
-	const latestOutTime = outTimeMatches[outTimeMatches.length - 1];
-	if (latestOutTime) {
-		return (
-			Number(latestOutTime[1]) * 3600 + Number(latestOutTime[2]) * 60 + Number(latestOutTime[3])
-		);
-	}
-
-	const timeMatches = [...output.matchAll(/time=(\d+):(\d+):(\d+(?:\.\d+)?)/g)];
-	const latest = timeMatches[timeMatches.length - 1];
-	if (!latest) {
-		return 0;
-	}
-
-	return Number(latest[1]) * 3600 + Number(latest[2]) * 60 + Number(latest[3]);
 }
 
 function writeExportV2ClipboardPath(filePath: string) {
@@ -1777,6 +1792,9 @@ function waitForWgcCaptureStart(proc: ChildProcessWithoutNullStreams) {
 	});
 }
 
+// Generous: finalizing a long recording's file can take a while.
+const CAPTURE_STOP_TIMEOUT_MS = 30_000;
+
 function waitForWgcCaptureStop(proc: ChildProcessWithoutNullStreams) {
 	return new Promise<string>((resolve, reject) => {
 		const onClose = (code: number | null) => {
@@ -1802,7 +1820,14 @@ function waitForWgcCaptureStop(proc: ChildProcessWithoutNullStreams) {
 			reject(error);
 		};
 
+		// A helper that never exits must not leave the stop call hanging forever.
+		const timer = setTimeout(() => {
+			cleanup();
+			reject(new Error("WGC capture did not stop within 30 seconds."));
+		}, CAPTURE_STOP_TIMEOUT_MS);
+
 		const cleanup = () => {
+			clearTimeout(timer);
 			proc.off("close", onClose);
 			proc.off("error", onError);
 		};
@@ -1994,7 +2019,14 @@ function waitForNativeCaptureStop(process: ChildProcessWithoutNullStreams) {
 			reject(error);
 		};
 
+		// A helper that never exits must not leave the stop call hanging forever.
+		const timer = setTimeout(() => {
+			cleanup();
+			reject(new Error("Native capture helper did not stop within 30 seconds."));
+		}, CAPTURE_STOP_TIMEOUT_MS);
+
 		const cleanup = () => {
+			clearTimeout(timer);
 			process.off("close", onClose);
 			process.off("error", onError);
 		};
@@ -4235,14 +4267,7 @@ export function registerIpcHandlers(
 			void flashSelectedSourceHighlight(source);
 		},
 	});
-	registerScreenshotIpcHandlers({
-		getRecordingsDir,
-		getSelectedSource: () => selectedSource,
-		getSelectedArea: () => selectedArea,
-		getScreen,
-		writeBufferToUniqueFile,
-		isEnabled: () => isFeatureEnabled("screenshots"),
-	});
+
 	registerPermissionDiagnosticsIpcHandlers({
 		appBundleId: APP_BUNDLE_ID,
 		getAppBundlePath,
@@ -4597,6 +4622,10 @@ export function registerIpcHandlers(
 	ipcMain.handle(IPC_CHANNELS.recording.stopNative, async () => {
 		// Windows WGC stop path
 		if (process.platform === "win32" && wgcScreenRecordingActive) {
+			// Captured before any state is cleared, so the catch can still find the recording.
+			const procAtStop = wgcCaptureProcess;
+			const targetAtStop = wgcCaptureTargetPath;
+			let stoppedPath: string | null = null;
 			try {
 				if (!wgcCaptureProcess) {
 					throw new Error("WGC capture process is not running");
@@ -4607,6 +4636,7 @@ export function registerIpcHandlers(
 				wgcCaptureStopRequested = true;
 				proc.stdin.write("stop\n");
 				const tempVideoPath = await waitForWgcCaptureStop(proc);
+				stoppedPath = tempVideoPath;
 				wgcCaptureProcess = null;
 				wgcScreenRecordingActive = false;
 				nativeScreenRecordingActive = false;
@@ -4622,7 +4652,7 @@ export function registerIpcHandlers(
 				return { success: true, path: finalVideoPath };
 			} catch (error) {
 				console.error("Failed to stop WGC capture:", error);
-				const fallbackPath = wgcCaptureTargetPath;
+				procAtStop?.kill();
 				wgcScreenRecordingActive = false;
 				nativeScreenRecordingActive = false;
 				wgcCaptureProcess = null;
@@ -4632,7 +4662,8 @@ export function registerIpcHandlers(
 				wgcMicAudioPath = null;
 				wgcPendingVideoPath = null;
 
-				if (fallbackPath) {
+				for (const fallbackPath of [targetAtStop, stoppedPath]) {
+					if (!fallbackPath) continue;
 					try {
 						await fs.access(fallbackPath);
 						wgcPendingVideoPath = fallbackPath;
@@ -4658,6 +4689,10 @@ export function registerIpcHandlers(
 			return { success: false, message: "No native screen recording is active." };
 		}
 
+		// Captured before any state is cleared, so the catch can still find the recording.
+		const procAtStop = nativeCaptureProcess;
+		const targetAtStop = nativeCaptureTargetPath;
+		let stoppedPath: string | null = null;
 		try {
 			if (!nativeCaptureProcess) {
 				throw new Error("Native capture helper process is not running");
@@ -4669,6 +4704,7 @@ export function registerIpcHandlers(
 			nativeCaptureStopRequested = true;
 			process.stdin.write("stop\n");
 			const tempVideoPath = await waitForNativeCaptureStop(process);
+			stoppedPath = tempVideoPath;
 			nativeCaptureProcess = null;
 			nativeScreenRecordingActive = false;
 			nativeCaptureTargetPath = null;
@@ -4697,15 +4733,16 @@ export function registerIpcHandlers(
 			};
 		} catch (error) {
 			console.error("Failed to stop native ScreenCaptureKit recording:", error);
-			const fallbackPath = nativeCaptureTargetPath;
+			procAtStop?.kill();
 			nativeScreenRecordingActive = false;
 			nativeCaptureProcess = null;
 			nativeCaptureTargetPath = null;
 			nativeCaptureMicrophonePath = null;
 			nativeCaptureStopRequested = false;
 
-			// Try to recover: if the target file exists on disk, finalize with it
-			if (fallbackPath) {
+			// Try to recover: if the recording exists on disk, finalize with it
+			for (const fallbackPath of [targetAtStop, stoppedPath]) {
+				if (!fallbackPath) continue;
 				try {
 					await fs.access(fallbackPath);
 					console.log(
@@ -5235,7 +5272,9 @@ export function registerIpcHandlers(
 					error?: string;
 				}>((resolve) => {
 					let settled = false;
+					// Only a capped tail is kept for the error message; progress is parsed per chunk.
 					let stderr = "";
+					let encodedSec = 0;
 					const child = spawn(ffmpegPath, attempt.args, {
 						windowsHide: true,
 					});
@@ -5247,9 +5286,11 @@ export function registerIpcHandlers(
 					});
 
 					child.stderr.on("data", (chunk: Buffer) => {
-						stderr += chunk.toString();
-						const elapsedSec = parseFfmpegProgressSeconds(stderr);
-						const currentFrame = Math.min(totalFrames, Math.round(elapsedSec * request.frameRate));
+						const text = chunk.toString();
+						stderr = `${stderr}${text}`.slice(-16 * 1024);
+						// max(): a line split across chunks can parse as a smaller time.
+						encodedSec = Math.max(encodedSec, parseFfmpegProgressSeconds(text));
+						const currentFrame = Math.min(totalFrames, Math.round(encodedSec * request.frameRate));
 						const elapsedMs = Math.max(Date.now() - attemptStartedAtMs, 1);
 						const throughputFps = currentFrame > 0 ? (currentFrame / elapsedMs) * 1000 : 0;
 						const remainingFrames = Math.max(totalFrames - currentFrame, 0);
@@ -5288,12 +5329,7 @@ export function registerIpcHandlers(
 						}
 
 						if (code !== 0) {
-							resolve({
-								success: false,
-								error:
-									stderr.split("\n").slice(-8).join("\n").trim() ||
-									`FFmpeg export failed with code ${code ?? "unknown"}`,
-							});
+							resolve({ success: false, error: summarizeFfmpegError(stderr, code) });
 							return;
 						}
 

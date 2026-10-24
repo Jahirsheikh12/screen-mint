@@ -27,14 +27,21 @@ export const ICON_SIDEBAR_WIDTH = 48;
 
 export const ADDITIONAL_LAYER_OPTIONS: {
 	type: AdditionalLayerType;
+	/** Translation key (timeline namespace) for the row name. */
+	labelKey: string;
 	label: string;
 	icon: typeof Camera;
 }[] = [
-	{ type: "annotation", label: "Annotation", icon: MessageSquare },
-	{ type: "camera", label: "Layouts", icon: Camera },
-	{ type: "speed", label: "Speed", icon: Gauge },
-	{ type: "audio", label: "Audio", icon: Music },
-	{ type: "caption", label: "Caption", icon: MessageSquare },
+	{
+		type: "annotation",
+		labelKey: "timeline.editor.annotation",
+		label: "Annotation",
+		icon: MessageSquare,
+	},
+	{ type: "camera", labelKey: "timeline.editor.layouts", label: "Layouts", icon: Camera },
+	{ type: "speed", labelKey: "timeline.editor.speed", label: "Speed", icon: Gauge },
+	{ type: "audio", labelKey: "timeline.editor.audio", label: "Audio", icon: Music },
+	{ type: "caption", labelKey: "timeline.editor.caption", label: "Caption", icon: MessageSquare },
 ];
 
 export interface TimelineEditorProps {

@@ -74,11 +74,7 @@
 	"keyboardShortcuts": {
 		"title": "Atajos de teclado",
 		"customizeTooltip": "Personalizar atajos",
-		"customize": "Personalizar",
-		"panTimeline": "Desplazar línea de tiempo",
-		"zoomTimeline": "Zoom en línea de tiempo",
-		"cycleAnnotations": "Recorrer anotaciones",
-		"tab": "Tab"
+		"customize": "Personalizar"
 	},
 	"openRecordingsFolder": "Abrir carpeta de grabaciones",
 	"captions": {
@@ -233,7 +229,9 @@
 		"black": "Black",
 		"captionText": "Texto del subtítulo...",
 		"split": "Dividir",
-		"mergeNext": "Unir con el siguiente"
+		"mergeNext": "Unir con el siguiente",
+		"systemFont": "Sistema",
+		"uppercase": "MAYÚSCULAS"
 	},
 	"preview": {
 		"initFailed": "No se pudo iniciar el renderizador de la vista previa"
@@ -287,7 +285,22 @@
 		"noSavedPresets": "No hay estilos guardados",
 		"toggleLayout": "Cambiar diseño",
 		"projects": "Proyectos",
-		"openProjectBrowser": "Abrir el explorador de proyectos"
+		"openProjectBrowser": "Abrir el explorador de proyectos",
+		"failedToLoadProject": "No se pudo cargar el proyecto",
+		"invalidProjectFile": "Formato de archivo de proyecto no válido",
+		"projectLoadedFrom": "Proyecto cargado desde {{path}}",
+		"failedToOpenProject": "No se pudo abrir el proyecto",
+		"projectSavedTo": "Proyecto guardado en {{path}}",
+		"presetApplied": "Estilo «{{name}}» aplicado.",
+		"presetSaved": "Estilo «{{name}}» guardado.",
+		"presetDeleted": "Estilo «{{name}}» eliminado.",
+		"projectDeleteFailed": "No se pudo eliminar el proyecto.",
+		"filesDeleted": "Archivos eliminados: {{count}}.",
+		"externalFilesKept": "Archivos externos conservados: {{count}}.",
+		"recordingRemovedFromEditor": "Esta grabación se quitó del editor.",
+		"projectRemoved": "Proyecto eliminado.",
+		"webcamSourceMissing": "Falta la fuente de la cámara web. Vuelve a enlazarla o quítala del proyecto.",
+		"zoomRegionsCreated": "Zonas de zoom creadas: {{count}}"
 	},
 	"header": {
 		"presets": "Estilos"
@@ -324,7 +337,10 @@
 	},
 	"polishPanel": {
 		"autoPolish": "Pulido automático",
-		"oneClickStudioTemplates": "Plantillas de estudio con un clic"
+		"oneClickStudioTemplates": "Plantillas de estudio con un clic",
+		"landingPage": "Página de destino",
+		"pitchDeck": "Presentación para inversores",
+		"apply": "Aplicar"
 	},
 	"theme": {
 		"appearance": "Apariencia",
