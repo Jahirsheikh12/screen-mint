@@ -64,6 +64,9 @@
     ],
     "icon": "icons/icons/mac/icon.icns",
     "artifactName": "ScreenMint-${arch}.${ext}",
+    // The ScreenCaptureKit helpers are compiled for macOS 14 (scripts/build-native-helpers.mjs);
+    // macOS refuses to open the app on older versions instead of letting recording fail.
+    "minimumSystemVersion": "14.0",
     "extendInfo": {
       "NSAudioCaptureUsageDescription": "ScreenMint needs audio capture permission to record system audio.",
       "NSMicrophoneUsageDescription": "ScreenMint needs microphone access to record voice audio.",

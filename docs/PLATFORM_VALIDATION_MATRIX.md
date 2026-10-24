@@ -14,7 +14,7 @@ audio, permission, cursor, and GPU behavior differs by OS and hardware.
 
 ## Real Host Matrix
 
-| Area | macOS 12.3+ | Windows 10 19041+ | Linux modern distros | Evidence |
+| Area | macOS 14+ | Windows 10 19041+ | Linux modern distros | Evidence |
 | --- | --- | --- | --- | --- |
 | Clean install with `npm ci` | PENDING | PENDING | PENDING | Record host, CPU/GPU, OS build, Node/npm versions |
 | `npm run lint` | PENDING | PENDING | PENDING | Attach command result |
@@ -26,7 +26,6 @@ audio, permission, cursor, and GPU behavior differs by OS and hardware.
 | Display recording | PENDING | PENDING | PENDING | Verify output playback and duration |
 | Window recording | PENDING | PENDING | PENDING | Verify correct window and cursor projection |
 | Area recording | PENDING | PENDING | PENDING | Verify crop dimensions and cursor projection |
-| Screenshot capture | N/A | N/A | N/A | Disabled by feature flag for this production wave |
 | Microphone-only audio | PENDING | PENDING | PENDING | Verify exported audio stream |
 | System-audio-only capture | PENDING | PENDING | PENDING | Mark N/A where unavailable |
 | Mixed microphone + system audio | PENDING | PENDING | PENDING | Verify sync and mix levels |

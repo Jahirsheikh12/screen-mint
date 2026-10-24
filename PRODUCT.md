@@ -17,7 +17,7 @@ All three are primary for the marketing site; none outranks the others.
 ScreenMint is a free, open-source desktop screen recorder and editor. It records a display or a single window (with microphone and system audio where the OS allows), then turns the raw take into a polished video: automatic zooms on clicks, cursor smoothing and sway, click highlights, motion blur, wallpaper/gradient/color/image backgrounds with shadow, padding and roundness, annotations, and a non-destructive timeline with trim, speed, and zoom controls. It exports MP4 or GIF and saves editable `.screenmint` projects. Success for the website: a visitor understands that in seconds and downloads the build for their OS.
 
 ## Positioning
-The polish of paid screen-recording tools, but free, MIT-licensed, and cross-platform (macOS 12.3+, Windows 10 build 19041+, Linux), with no account, no watermark, and no upload: recordings, projects, and exports stay on the user's machine.
+The polish of paid screen-recording tools, but free, MIT-licensed, and cross-platform (macOS 14+, Windows 10 build 19041+, Linux), with no account, no watermark, and no upload: recordings, projects, and exports stay on the user's machine.
 
 ## Operating Context
 Visitors arrive from GitHub, social posts, and search, usually on a desktop browser, deciding whether to install. Downloads come from the latest GitHub release (`.dmg` for Apple Silicon and Intel, `.exe` for Windows, `.AppImage` for Linux). Unsigned macOS builds may need moving to /Applications and a one-time `xattr -rd com.apple.quarantine` command. The project is funded through GitHub Sponsors tiers and, when enabled, one-time card support via Creem.
