@@ -26,7 +26,7 @@ const allPlatforms = [
 		name: "macOS",
 		chip: "Intel",
 		href: DOWNLOAD_LINKS.macIntel,
-		note: "macOS 12.3+ · .dmg",
+		note: "macOS 14+ · .dmg",
 		Icon: AppleIcon,
 	},
 	{
