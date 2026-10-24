@@ -75,7 +75,7 @@ export const FAQ_GROUPS: { id: string; title: string; items: Faq[] }[] = [
 			{
 				question: "What platforms are supported?",
 				answer:
-					"macOS 12.3 or later, Windows 10 or later, and Linux. On each one, ScreenMint records with the operating system's own screen capture.",
+					"macOS 14 (Sonoma) or later, Windows 10 or later, and Linux. On each one, ScreenMint records with the operating system's own screen capture.",
 			},
 			{
 				question: "macOS says the app can't be opened?",

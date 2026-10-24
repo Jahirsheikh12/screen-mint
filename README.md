@@ -15,7 +15,7 @@ ScreenMint is an open-source desktop screen recorder and editor for creating pol
 
 ## Platform Support
 
-- macOS 12.3+
+- macOS 14 (Sonoma) or later
 - Windows 10 build 19041+
 - Linux on modern distros
 

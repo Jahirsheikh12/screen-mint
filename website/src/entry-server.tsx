@@ -30,7 +30,7 @@ export function structuredData() {
 				url: SITE_URL,
 				image: `${SITE_URL}images/og.jpg`,
 				applicationCategory: "MultimediaApplication",
-				operatingSystem: "macOS 12.3+, Windows 10+, Linux",
+				operatingSystem: "macOS 14+, Windows 10+, Linux",
 				offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
 				license: LICENSE_URL,
 				downloadUrl: `${REPO_URL}/releases/latest`,

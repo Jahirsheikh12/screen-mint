@@ -15,7 +15,7 @@ ScreenMint 是一个开源桌面录屏与视频编辑器，用于制作更精致
 
 ## 平台支持
 
-- macOS 12.3+
+- macOS 14（Sonoma）或更高版本
 - Windows 10 build 19041+
 - 现代 Linux 发行版
 
