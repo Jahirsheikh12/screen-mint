@@ -5,7 +5,7 @@ All notable changes to ScreenMint will be documented in this file.
 This project follows human-written release notes. Versions should match `package.json` and GitHub
 release tags.
 
-## Unreleased
+## 1.0.4 - 2026-10-25
 
 ### Added
 
